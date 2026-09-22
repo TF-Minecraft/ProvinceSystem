@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -122,6 +123,24 @@ def _minimal_catalog() -> dict:
 
 
 class CreateValidationWireTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from src.skins import db
+
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        paths = patch.multiple(
+            db,
+            DATA_DIR=root,
+            DB_PATH=root / "province.db",
+            SKINS_DIR=root / "skins",
+            DRINKS_DIR=root / "drinks",
+            WARDROBE_DIR=root / "wardrobe",
+        )
+        paths.start()
+        self.addCleanup(paths.stop)
+        db.migrate()
+
     def test_rejects_script_name(self) -> None:
         from src.characters.creates import CreateError, _validate_and_normalize
 

@@ -47,6 +47,8 @@ class _CharacterDbFixture:
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
         db_mod.migrate()
+        # Other fixtures reload codes; refresh the route's exception imports.
+        importlib.reload(importlib.import_module("src.api.characters_routes"))
 
         # wardrobe.py binds DATA_DIR / WARDROBE_DIR at import, so png deletes need
         # the same override.

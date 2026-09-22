@@ -262,8 +262,9 @@ class MapAccessUnitTest(unittest.TestCase):
         with mock.patch(
             "api.map_access.is_character_ui_dev",
             return_value=False,
-        ):
+        ), mock.patch("api.map_access.get_session", return_value=None) as get_session:
             ids = [item.id for item in list_accessible_maps(auth)]
+        get_session.assert_called_once_with(UI_DEV_SESSION_TOKEN)
         self.assertEqual(ids, ["main"])
 
 

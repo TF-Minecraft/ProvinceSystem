@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PYTHON'
+          import os, re, json
+          from pathlib import Path
+          tag = os.environ['TAG']
+          if not re.fullmatch(r'v\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?', tag) or 'SNAPSHOT' in tag.upper():
+              raise SystemExit('Use a numeric v tag, optionally with a prerelease suffix')
+          if json.loads(Path('frontend/package.json').read_text())['version'] != tag[1:]:
+              raise SystemExit('Tag must match the frontend package version')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={tag[1:]}\n')
+          PYTHON
+  build:
+    needs: validate
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: release
+      - name: Create draft release
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          sha256sum --check SHA256SUMS
+          flags=()
+          if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$TAG" *.tar.gz SHA256SUMS build.json --verify-tag --draft --generate-notes "${flags[@]}"

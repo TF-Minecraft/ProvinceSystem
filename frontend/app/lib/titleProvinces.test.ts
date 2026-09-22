@@ -94,7 +94,7 @@ describe("KINGDOM_1 spot-check (main defines)", () => {
     ) as T;
   }
 
-  it("matches union of COUNTY_1 through COUNTY_9 provinces", () => {
+  it("matches union of COUNTY_1 through COUNTY_15 provinces", () => {
     const county = loadJson<Record<string, TitleEntity>>("county.json");
     const duchy = loadJson<Record<string, TitleEntity>>("duchy.json");
     const kingdom = loadJson<Record<string, TitleEntity>>("kingdom.json");
@@ -111,6 +111,12 @@ describe("KINGDOM_1 spot-check (main defines)", () => {
       "COUNTY_7",
       "COUNTY_8",
       "COUNTY_9",
+      "COUNTY_10",
+      "COUNTY_11",
+      "COUNTY_12",
+      "COUNTY_13",
+      "COUNTY_14",
+      "COUNTY_15",
     ].flatMap((id) => county[id]?.provinces ?? []);
 
     const result = resolveTitleProvinces("KINGDOM_1", "kingdom", layers);

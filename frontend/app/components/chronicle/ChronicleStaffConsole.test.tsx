@@ -43,11 +43,13 @@ describe("ChronicleStaffConsole", () => {
       // A hand-rolled response rather than `new Response(...)`: jsdom does not
       // define the fetch response classes, and `fetchMapApi` only reads `ok`,
       // `status` and `json()`.
-      vi.fn(async () => ({
+      vi.fn(async (url: string) => ({
         ok: true,
         status: 200,
         statusText: "OK",
-        json: async () => ({
+        json: async () => String(url).includes("/maps/accessible") ? ({
+          maps: [{ id: "main", display_name: "Main", public: true, archived: false }],
+        }) : ({
           backups: [
             {
               id: 7,
