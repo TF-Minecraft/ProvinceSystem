@@ -33,6 +33,7 @@ Desktop.ini
 
 # Local investigation notes and test artifacts
 /.scratch/
+/Temp/
 
 # Repository-specific files
 logs/

@@ -25,6 +25,31 @@ It connects the Minecraft world with a browser experience: players can explore t
 
 Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
 
+## Generated map files
+
+`backend/src/output/` holds local runtime output and is not versioned. Keep the
+authored map inputs in `backend/src/input/` and definitions in `backend/src/defines/`.
+To populate a fresh checkout, install `backend/requirements.txt`, then run from
+`backend/` for each map you serve (for example, `main` and `dev`):
+
+```sh
+python -m src.scripts.tools.run_regen --map main --type fullregen
+python -m src.scripts.mapgen.mapmodes.terrain_mapmode --map main
+python -m src.scripts.mapgen.mapmodes.fertility_mapmode --map main
+```
+
+Run these commands before starting the backend; regeneration updates compiled
+definitions as well as map images. Docker Compose mounts the same output directory.
+When updating an existing deployment across the output-file cleanup, back up its
+output directory outside the checkout before pulling, then restore it afterward.
+Preserve runtime history and other server data: map regeneration only replaces
+rendered map assets, and does not reconstruct historical records.
+
+The retained ammo sprite source is `frontend/assets/wiki/ammo_sheet.png`. The
+grindstone assets are in `frontend/public/wiki/models/stations/` and
+`frontend/public/wiki/textures/stations/grindstone/`; temporary duplicate copies
+do not need to be committed.
+
 ## License
 
 Copyright (c) 2026 TF-Minecraft contributors.
