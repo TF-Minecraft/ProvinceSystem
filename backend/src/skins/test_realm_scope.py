@@ -53,6 +53,10 @@ class RealmScopeTest(unittest.TestCase):
 
         with mock.patch.object(
             creates_mod,
+            "require_synced_creation_catalog",
+            return_value={"web_creator_access": {"by_realm": {}}},
+        ), mock.patch.object(
+            creates_mod,
             "_validate_and_normalize",
             return_value={"client_request_id": None, "name": "DevChar"},
         ):
@@ -62,6 +66,10 @@ class RealmScopeTest(unittest.TestCase):
                 realm_id="dev",
             )
         with mock.patch.object(
+            creates_mod,
+            "require_synced_creation_catalog",
+            return_value={"web_creator_access": {"by_realm": {}}},
+        ), mock.patch.object(
             creates_mod,
             "_validate_and_normalize",
             return_value={"client_request_id": None, "name": "MainChar"},
@@ -128,6 +136,10 @@ class RealmScopeTest(unittest.TestCase):
         )
         with mock.patch.object(
             creates_mod,
+            "require_synced_creation_catalog",
+            return_value={"web_creator_access": {"by_realm": {}}},
+        ), mock.patch.object(
+            creates_mod,
             "_validate_and_normalize",
             return_value={"client_request_id": None, "name": "DevPending"},
         ):
@@ -137,6 +149,10 @@ class RealmScopeTest(unittest.TestCase):
                 realm_id="dev",
             )
         with mock.patch.object(
+            creates_mod,
+            "require_synced_creation_catalog",
+            return_value={"web_creator_access": {"by_realm": {}}},
+        ), mock.patch.object(
             creates_mod,
             "_validate_and_normalize",
             return_value={"client_request_id": None, "name": "MainPending"},
