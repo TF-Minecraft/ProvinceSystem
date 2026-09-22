@@ -166,7 +166,7 @@ Other multipliers (`tags.yml`): Raw ×0.5 nutrition; **Cooked** ×1.5 nutrition,
 A donator perk: you design your own alcoholic drink on the TFMC website, staff approve it, and the plugin automatically creates it as a real brewable BreweryX recipe plus a custom-textured bottle on the server.
 
 ### How a player actually uses it
-DrinkBuilder has **no in-game player commands**. The flow (from `plugin-src/DrinkBuilder/src/main/java/net/tfminecraft/DrinkBuilder/`):
+DrinkBuilder has **no in-game player commands**. The flow (from `plugin-src/DrinkBuilder/src/main/java/net/tfminecraft/drinkbuilder/`):
 1. Player with a donator rank opens the **ProvinceSystem website** drinks page (`/drinks`) and builds a drink: name (with colour stops), ingredients from the allowlist, cooking time, distill runs & time, barrel wood, age, difficulty, alcohol, lore, drink message, drink title, glint, potion effects, colour, and (higher ranks only) a custom bottle texture.
 2. The submission is reviewed. `AssetSyncService` uploads `potion_overlay.png` and `glass_bottle.png` to the API so the website and Discord review sheets can render a preview (`plugins/DrinkBuilder/assets/README.txt`).
 3. On approval, `PackPullRunner` pulls the pending drink and `RecipesYmlMerger.merge()` writes a new section into `plugins/BreweryX/recipes.yml` **keyed by the submission id**, and `IaDrinksWriter` writes the item into the ItemsAdder pack `tfmc_drinks`. The plugin then triggers `/iareload` and, after `ia-reload-delay-seconds: 8`, `/iazip` (`plugins/DrinkBuilder/config.yml`).
