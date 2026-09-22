@@ -56,6 +56,13 @@ jobs:
           name: test-reports-${{ github.run_id }}-${{ github.run_attempt }}
           path: test-results/*.xml
           if-no-files-found: error
+      - name: Cache Next.js build data
+        uses: actions/cache@v6
+        with:
+          path: frontend/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/app/**', 'frontend/components/**', 'frontend/lib/**', 'frontend/public/**', 'frontend/next.config.*', 'frontend/tsconfig*.json', 'shared/**') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}-
       - name: Build frontend
         working-directory: frontend
         env:

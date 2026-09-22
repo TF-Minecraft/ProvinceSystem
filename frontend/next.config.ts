@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   // ProvinceSystem root so ../shared/skins constants resolve under turbopack.
   // Docker copies shared → /shared (see frontend/Dockerfile).
   turbopack: {
-    root: "..",
+    root: path.resolve(__dirname, ".."),
   },
   devIndicators: false,
   // The app does not use next/image; disable the image optimizer endpoint
