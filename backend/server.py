@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,17 +23,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("startup")
 
-app = FastAPI()
-
 # --------------------
 # Startup confirmation
 # --------------------
-@app.on_event("startup")
-async def startup_log():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     from src.skins.db import migrate
 
     migrate()
     logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # --------------------------------
 # CORS MUST BE ADDED BEFORE ROUTERS

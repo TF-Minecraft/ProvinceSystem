@@ -20,6 +20,7 @@ import ChronicleStudio from "./ChronicleStudio";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -31,6 +32,8 @@ describe("ChronicleStudio", () => {
 
   it("mounts and paints its first step", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
+    // This shell smoke test does not render canvas content; jsdom has no backend.
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     // Never resolves: this test is about the shell mounting, not about what
     // the day/index fetches eventually return.
     vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
