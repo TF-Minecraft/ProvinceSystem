@@ -1,3 +1,8 @@
-node_modules/
+# Build output
 dist/
+
+# Dependencies
+node_modules/
+
+# Runtime files
 src/skins/
