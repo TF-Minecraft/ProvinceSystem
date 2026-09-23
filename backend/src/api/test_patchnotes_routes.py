@@ -1,0 +1,217 @@
+"""Route tests for the patch notes API (database fully mocked)."""
+
+from __future__ import annotations
+
+import os
+import sys
+import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+from unittest import mock
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+_BACKEND_SRC = _BACKEND_ROOT / "src"
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+if str(_BACKEND_SRC) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_SRC))
+
+os.environ.setdefault("SKINS_DEV", "1")
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from server import app  # noqa: E402
+from src.patchnotes.db import BulletNotFound, BulletNotPending, PatchnotesDBError  # noqa: E402
+
+_HEADERS = {"X-Staff-Key": "dev-staff-key"}
+_CREATED = datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc)
+
+
+def _row(**overrides):
+    row = {
+        "id": "bullet-1",
+        "week": "2026-W39",
+        "section": "new",
+        "body": "Added a station",
+        "status": "pending",
+        "deny_reason": None,
+        "created_at": _CREATED,
+        "reviewed_at": None,
+    }
+    row.update(overrides)
+    return row
+
+
+class PatchnotesRoutesTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    def test_staff_routes_require_auth(self) -> None:
+        self.assertEqual(self.client.post("/patchnotes/staff/bullets", json={}).status_code, 401)
+        self.assertEqual(self.client.get("/patchnotes/staff/queue").status_code, 401)
+        self.assertEqual(
+            self.client.post("/patchnotes/staff/bullets/bullet-1/approve").status_code, 401
+        )
+        self.assertEqual(
+            self.client.post(
+                "/patchnotes/staff/bullets/bullet-1/deny", json={"reason": "no"}
+            ).status_code,
+            401,
+        )
+
+    def test_bad_staff_key_does_not_fall_through_to_session(self) -> None:
+        res = self.client.get(
+            "/patchnotes/staff/queue", headers={"X-Staff-Key": "wrong-key"}
+        )
+        self.assertEqual(res.status_code, 401)
+
+    @mock.patch("src.api.patchnotes_routes.insert_bullet", return_value=_row())
+    def test_create_pending_bullet(self, mock_insert) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets",
+            json={"section": "new", "body": "Added a station", "week": "2026-W39"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["status"], "pending")
+        self.assertIsNone(body["deny_reason"])
+        mock_insert.assert_called_once_with(
+            section="new", body="Added a station", week="2026-W39"
+        )
+
+    def test_create_rejects_unknown_section(self) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets",
+            json={"section": "secret", "body": "nope"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 422)
+
+    def test_create_rejects_a_bad_week(self) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets",
+            json={"section": "fixed", "body": "Fixed a crash", "week": "this-week"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 422)
+
+    @mock.patch("src.api.patchnotes_routes.list_pending", return_value=[_row()])
+    def test_queue_returns_pending_bullets(self, mock_list) -> None:
+        res = self.client.get("/patchnotes/staff/queue?week=2026-W39", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["bullets"][0]["id"], "bullet-1")
+        mock_list.assert_called_once_with("2026-W39")
+
+    def test_queue_rejects_a_bad_week(self) -> None:
+        res = self.client.get("/patchnotes/staff/queue?week=nope", headers=_HEADERS)
+        self.assertEqual(res.status_code, 400)
+
+    @mock.patch(
+        "src.api.patchnotes_routes.require_site_staff",
+        return_value={"player_uuid": "staff-uuid"},
+    )
+    @mock.patch("src.api.patchnotes_routes.list_pending", return_value=[])
+    def test_queue_accepts_a_site_staff_session(self, _mock_list, mock_staff) -> None:
+        res = self.client.get(
+            "/patchnotes/staff/queue", headers={"Authorization": "Bearer sess-token"}
+        )
+        self.assertEqual(res.status_code, 200)
+        mock_staff.assert_called_once_with("Bearer sess-token")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.approve_bullet",
+        return_value=_row(status="approved", reviewed_at=_CREATED),
+    )
+    def test_approve(self, mock_approve) -> None:
+        res = self.client.post("/patchnotes/staff/bullets/bullet-1/approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["status"], "approved")
+        mock_approve.assert_called_once_with("bullet-1")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.deny_bullet",
+        return_value=_row(status="denied", deny_reason="Internal only", reviewed_at=_CREATED),
+    )
+    def test_deny_stores_the_reason(self, mock_deny) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets/bullet-1/deny",
+            json={"reason": "Internal only"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["deny_reason"], "Internal only")
+        mock_deny.assert_called_once_with("bullet-1", "Internal only")
+
+    def test_deny_requires_a_reason(self) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets/bullet-1/deny",
+            json={"reason": "   "},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 422)
+
+    @mock.patch(
+        "src.api.patchnotes_routes.approve_bullet",
+        side_effect=BulletNotFound("missing"),
+    )
+    def test_approve_missing_bullet(self, _mock_approve) -> None:
+        res = self.client.post("/patchnotes/staff/bullets/missing/approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 404)
+
+    @mock.patch(
+        "src.api.patchnotes_routes.deny_bullet",
+        side_effect=BulletNotPending("approved"),
+    )
+    def test_deny_already_reviewed(self, _mock_deny) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets/bullet-1/deny",
+            json={"reason": "too late"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 409)
+
+    @mock.patch(
+        "src.api.patchnotes_routes.list_pending",
+        side_effect=PatchnotesDBError("down"),
+    )
+    def test_database_failure(self, _mock_list) -> None:
+        res = self.client.get("/patchnotes/staff/queue", headers=_HEADERS)
+        self.assertEqual(res.status_code, 502)
+        self.assertNotIn("down", res.json()["detail"])
+
+    @mock.patch("src.api.patchnotes_routes.list_published_weeks", return_value=["2026-W39"])
+    def test_published_weeks_need_no_auth(self, _mock_weeks) -> None:
+        res = self.client.get("/patchnotes/weeks")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["weeks"], ["2026-W39"])
+
+    @mock.patch(
+        "src.api.patchnotes_routes.list_approved",
+        return_value=[
+            _row(
+                status="approved",
+                deny_reason="should not leak",
+                reviewed_at=_CREATED,
+            )
+        ],
+    )
+    def test_published_week_hides_review_fields(self, mock_list) -> None:
+        res = self.client.get("/patchnotes/weeks/2026-W39")
+        self.assertEqual(res.status_code, 200)
+        bullet = res.json()["bullets"][0]
+        self.assertEqual(bullet["body"], "Added a station")
+        self.assertNotIn("deny_reason", bullet)
+        self.assertNotIn("status", bullet)
+        self.assertNotIn("reviewed_at", bullet)
+        mock_list.assert_called_once_with("2026-W39")
+
+    def test_published_week_rejects_a_bad_week(self) -> None:
+        res = self.client.get("/patchnotes/weeks/nope")
+        self.assertEqual(res.status_code, 400)

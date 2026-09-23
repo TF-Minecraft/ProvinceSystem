@@ -120,6 +120,7 @@ from src.api.skins_routes import skins_router
 from src.api.characters_routes import characters_router
 from src.api.drinks_routes import drinks_router
 from src.api.precedent_routes import precedent_router
+from src.api.patchnotes_routes import patchnotes_router
 from src.api.wars_routes import wars_router
 
 app.include_router(map_router)
@@ -142,4 +143,5 @@ app.include_router(profile_router)
 app.include_router(characters_router)
 app.include_router(drinks_router)
 app.include_router(precedent_router)
+app.include_router(patchnotes_router)
 app.include_router(wars_router)
