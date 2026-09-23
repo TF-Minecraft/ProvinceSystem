@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -123,17 +123,43 @@ def parse_week(value: str) -> str:
     return f"{year}-W{week:02d}"
 
 
-def current_week(now: datetime | None = None) -> str:
-    """ISO week for `now` in PATCHNOTES_TZ (UTC when unset)."""
-    name = os.environ.get("PATCHNOTES_TZ", "UTC").strip() or "UTC"
+_DEFAULT_TZ = "Europe/Berlin"
+# The note week closes Friday at noon. Later changes belong to the next week.
+_FRIDAY_CUTOFF_HOUR = 12
+
+
+def _zone() -> ZoneInfo:
+    name = os.environ.get("PATCHNOTES_TZ", _DEFAULT_TZ).strip() or _DEFAULT_TZ
     try:
-        tz = ZoneInfo(name)
+        return ZoneInfo(name)
     except ZoneInfoNotFoundError as e:
         raise PatchnotesConfigError(f"PATCHNOTES_TZ is not a known timezone: {name}") from e
+
+
+def _local_now(now: datetime | None = None) -> datetime:
     moment = now if now is not None else datetime.now(timezone.utc)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
-    iso = moment.astimezone(tz).isocalendar()
+    return moment.astimezone(_zone())
+
+
+def current_week(now: datetime | None = None) -> str:
+    """ISO week a new bullet belongs to.
+
+    The week closes Friday at 12:00 in PATCHNOTES_TZ (Europe/Berlin when unset).
+    A change at or after that cutoff, through the weekend, is filed under the next week.
+    """
+    local = _local_now(now)
+    iso = local.isocalendar()
+    friday_noon = datetime.fromisocalendar(iso.year, iso.week, 5).replace(
+        hour=_FRIDAY_CUTOFF_HOUR,
+        minute=0,
+        second=0,
+        microsecond=0,
+        tzinfo=local.tzinfo,
+    )
+    if local >= friday_noon:
+        iso = (local + timedelta(days=7)).isocalendar()
     return f"{iso.year}-W{iso.week:02d}"
 
 
@@ -213,7 +239,7 @@ def migrate() -> None:
 
 
 def insert_bullet(*, section: str, body: str, week: str | None = None) -> dict[str, Any]:
-    """Insert a pending bullet. `week` defaults to the current ISO week."""
+    """Insert a pending bullet. `week` defaults to the note week that is still open."""
     if section not in SECTIONS:
         raise ValueError("section must be new, fixed, adjusted, or technical")
     text = _clean_body(body)

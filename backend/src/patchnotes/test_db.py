@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from unittest import mock
 
@@ -36,13 +37,33 @@ class ParseWeekTest(unittest.TestCase):
 
 
 class CurrentWeekTest(unittest.TestCase):
-    def test_zone_can_move_the_iso_week(self) -> None:
-        # Monday 2026-01-05 00:30 UTC is still Sunday in New York.
-        moment = datetime(2026, 1, 5, 0, 30, tzinfo=timezone.utc)
+    def test_zone_can_move_the_friday_cutoff(self) -> None:
+        # Friday 2026-09-25 10:30 UTC is still morning in UTC and past noon in Berlin.
+        moment = datetime(2026, 9, 25, 10, 30, tzinfo=timezone.utc)
         with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "UTC"}):
-            self.assertEqual(db.current_week(moment), "2026-W02")
-        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "America/New_York"}):
-            self.assertEqual(db.current_week(moment), "2026-W01")
+            self.assertEqual(db.current_week(moment), "2026-W39")
+        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Europe/Berlin"}):
+            self.assertEqual(db.current_week(moment), "2026-W40")
+
+    def test_friday_noon_closes_the_week(self) -> None:
+        berlin = ZoneInfo("Europe/Berlin")
+        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Europe/Berlin"}):
+            self.assertEqual(
+                db.current_week(datetime(2026, 9, 25, 11, 59, tzinfo=berlin)),
+                "2026-W39",
+            )
+            self.assertEqual(
+                db.current_week(datetime(2026, 9, 25, 12, 0, tzinfo=berlin)),
+                "2026-W40",
+            )
+            self.assertEqual(
+                db.current_week(datetime(2026, 9, 25, 17, 0, tzinfo=berlin)),
+                "2026-W40",
+            )
+            self.assertEqual(
+                db.current_week(datetime(2026, 9, 26, 9, 0, tzinfo=berlin)),
+                "2026-W40",
+            )
 
     def test_unknown_zone_is_a_config_error(self) -> None:
         with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Not/AZone"}):

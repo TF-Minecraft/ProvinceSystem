@@ -31,6 +31,7 @@ from src.patchnotes.db import (
     migrate,
     parse_week,
 )
+from src.patchnotes.safety import hidden_knowledge_warning
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
 
 logger = logging.getLogger("patchnotes.routes")
@@ -97,6 +98,9 @@ def _serialize(row: dict[str, Any], *, public: bool) -> dict[str, Any]:
     payload["status"] = row["status"]
     payload["deny_reason"] = row.get("deny_reason")
     payload["reviewed_at"] = _iso(row.get("reviewed_at"))
+    warning = hidden_knowledge_warning(str(row.get("body") or ""))
+    if warning:
+        payload["warning"] = warning
     return payload
 
 
