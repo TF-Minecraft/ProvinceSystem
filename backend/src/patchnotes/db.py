@@ -232,10 +232,51 @@ def migrate() -> None:
                     ON patchnote_bullets (week, status, created_at, id)
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_sources (
+                    source_key TEXT PRIMARY KEY,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
     finally:
         conn.close()
     _MIGRATED = True
     logger.info("Patch notes DB migrated")
+
+
+def insert_sourced_bullet(*, section: str, body: str, source_key: str) -> dict[str, Any] | None:
+    """Insert a pending bullet once per source key.
+
+    A repeated delivery of the same commit returns None and does not add a
+    second bullet. The week is the note week that is still open.
+    """
+    key = source_key.strip()
+    if not key or len(key) > 200:
+        raise ValueError("source_key is invalid")
+    if section not in SECTIONS:
+        raise ValueError("section must be new, fixed, adjusted, or technical")
+    text = _clean_body(body)
+    week_key = current_week()
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_sources (source_key)
+                VALUES (%s)
+                ON CONFLICT (source_key) DO NOTHING
+                RETURNING source_key
+                """,
+                (key,),
+            )
+            if cur.fetchone() is None:
+                return None
+            cur.execute(_INSERT_BULLET, (week_key, section, text))
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
 
 
 def insert_bullet(*, section: str, body: str, week: str | None = None) -> dict[str, Any]:

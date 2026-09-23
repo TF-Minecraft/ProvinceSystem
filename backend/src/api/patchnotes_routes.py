@@ -6,13 +6,15 @@ bullets and never include a deny reason.
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Literal
 
 import psycopg2
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from src.api.map_access import require_site_staff
@@ -24,6 +26,7 @@ from src.patchnotes.db import (
     approve_bullet,
     deny_bullet,
     insert_bullet,
+    insert_sourced_bullet,
     list_approved,
     list_pending,
     list_published_notes,
@@ -32,6 +35,7 @@ from src.patchnotes.db import (
     parse_week,
 )
 from src.patchnotes.safety import hidden_knowledge_warning
+from src.patchnotes.summarize import signature_ok, summarize_push
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
 
 logger = logging.getLogger("patchnotes.routes")
@@ -216,6 +220,69 @@ def published_week(week: str):
         logger.exception("published_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"week": week_key, "bullets": [_serialize(row, public=True) for row in bullets]}
+
+
+_WEBHOOK_MAX_BYTES = 1_000_000
+
+
+@patchnotes_router.post("/github")
+async def github_push(request: Request):
+    """Create pending bullets from a signed push to the default branch.
+
+    Set GITHUB_WEBHOOK_SECRET and point the TF-Minecraft webhook at this route.
+    Nothing here is published. Staff still approve or deny each line.
+    """
+    raw = await request.body()
+    if len(raw) > _WEBHOOK_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Payload too large")
+    secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "").strip()
+    if not secret:
+        raise HTTPException(status_code=503, detail="GitHub webhook is not configured")
+    if not signature_ok(raw, request.headers.get("X-Hub-Signature-256"), secret):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    event = (request.headers.get("X-GitHub-Event") or "").strip().lower()
+    if event == "ping":
+        return {"ok": True}
+    if event != "push":
+        return {"ok": True, "ignored": True}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON") from e
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    notes = summarize_push(payload)
+    if not notes.accepted:
+        return {"ok": True, "ignored": True, "created": 0}
+    created = 0
+    duplicates = 0
+    try:
+        migrate()
+        for draft in notes.drafts:
+            try:
+                row = insert_sourced_bullet(
+                    section=draft.section,
+                    body=draft.body,
+                    source_key=draft.source_key,
+                )
+            except ValueError:
+                logger.exception("Skipping a patch note draft that failed validation")
+                continue
+            if row is None:
+                duplicates += 1
+            else:
+                created += 1
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("github_push failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    if notes.withheld:
+        logger.warning("Withheld %s patch note line(s) from a GitHub push", notes.withheld)
+    return {
+        "ok": True,
+        "created": created,
+        "duplicates": duplicates,
+        "withheld": notes.withheld,
+    }
 
 
 @patchnotes_router.post("/staff/bullets", dependencies=[Depends(_staff_guard)])

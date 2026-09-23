@@ -95,6 +95,7 @@ class MigrateTest(unittest.TestCase):
 
         sql = " ".join(c.args[0] for c in cursor.execute.call_args_list)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_bullets", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_sources", sql)
         self.assertIn("patchnote_bullets_deny_reason_chk", sql)
         self.assertIn("status = 'pending'", sql)
         self.assertTrue(db._MIGRATED)
@@ -130,6 +131,52 @@ class InsertBulletTest(unittest.TestCase):
     def test_insert_rejects_unknown_section(self) -> None:
         with self.assertRaises(ValueError):
             db.insert_bullet(section="secret", body="nope", week="2026-W39")
+
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("patchnotes.db.current_week", return_value="2026-W39")
+    @mock.patch("patchnotes.db.psycopg2.connect")
+    def test_sourced_insert_writes_the_bullet_once(self, mock_connect, _week) -> None:
+        cursor = mock.MagicMock()
+        cursor.fetchone.side_effect = [
+            {"source_key": "TF-Minecraft/Gathering@abc1234"},
+            {
+                "id": "bullet-1",
+                "week": "2026-W39",
+                "section": "new",
+                "body": "Gathering: Added a node",
+                "status": "pending",
+            },
+        ]
+        mock_connect.return_value = _make_conn(cursor)
+
+        row = db.insert_sourced_bullet(
+            section="new",
+            body="Gathering: Added a node",
+            source_key="TF-Minecraft/Gathering@abc1234",
+        )
+
+        self.assertEqual(row["status"], "pending")
+        source_sql, source_params = cursor.execute.call_args_list[0].args
+        self.assertIn("ON CONFLICT (source_key) DO NOTHING", source_sql)
+        self.assertEqual(source_params, ("TF-Minecraft/Gathering@abc1234",))
+        _bullet_sql, bullet_params = cursor.execute.call_args_list[1].args
+        self.assertEqual(bullet_params, ("2026-W39", "new", "Gathering: Added a node"))
+
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("patchnotes.db.psycopg2.connect")
+    def test_sourced_insert_skips_a_duplicate(self, mock_connect) -> None:
+        cursor = mock.MagicMock()
+        cursor.fetchone.return_value = None
+        mock_connect.return_value = _make_conn(cursor)
+
+        row = db.insert_sourced_bullet(
+            section="new",
+            body="Gathering: Added a node",
+            source_key="TF-Minecraft/Gathering@abc1234",
+        )
+
+        self.assertIsNone(row)
+        self.assertEqual(cursor.execute.call_count, 1)
 
 
 class ReviewTest(unittest.TestCase):
