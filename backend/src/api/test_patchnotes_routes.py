@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import os
 import sys
 import unittest
@@ -274,3 +277,81 @@ class PatchnotesRoutesTest(unittest.TestCase):
     def test_published_week_rejects_a_bad_week(self) -> None:
         res = self.client.get("/patchnotes/weeks/nope")
         self.assertEqual(res.status_code, 400)
+
+
+def _signed_push(message: str, secret: str = "hook-secret") -> tuple[bytes, dict[str, str]]:
+    raw = json.dumps(
+        {
+            "ref": "refs/heads/main",
+            "repository": {
+                "name": "Gathering",
+                "full_name": "TF-Minecraft/Gathering",
+                "default_branch": "main",
+            },
+            "commits": [{"id": "a" * 40, "message": message, "distinct": True}],
+        }
+    ).encode()
+    digest = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+    return raw, {
+        "X-Hub-Signature-256": f"sha256={digest}",
+        "X-GitHub-Event": "push",
+        "Content-Type": "application/json",
+    }
+
+
+class GithubWebhookTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    def test_missing_secret_is_unavailable(self) -> None:
+        with mock.patch.dict("os.environ", {"GITHUB_WEBHOOK_SECRET": ""}, clear=False):
+            res = self.client.post("/patchnotes/github", content=b"{}")
+        self.assertEqual(res.status_code, 503)
+
+    @mock.patch.dict("os.environ", {"GITHUB_WEBHOOK_SECRET": "hook-secret"})
+    def test_bad_signature_is_rejected(self) -> None:
+        res = self.client.post(
+            "/patchnotes/github",
+            content=b"{}",
+            headers={"X-Hub-Signature-256": "sha256=" + ("0" * 64), "X-GitHub-Event": "push"},
+        )
+        self.assertEqual(res.status_code, 401)
+
+    @mock.patch.dict("os.environ", {"GITHUB_WEBHOOK_SECRET": "hook-secret"})
+    @mock.patch("src.api.patchnotes_routes.insert_sourced_bullet", return_value=_row())
+    def test_push_creates_a_pending_bullet_without_a_staff_key(self, mock_insert) -> None:
+        raw, headers = _signed_push("feat: Added a grove")
+        res = self.client.post("/patchnotes/github", content=raw, headers=headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["created"], 1)
+        mock_insert.assert_called_once_with(
+            section="new",
+            body="Gathering: Added a grove",
+            source_key="TF-Minecraft/Gathering@" + ("a" * 40),
+        )
+
+    @mock.patch.dict("os.environ", {"GITHUB_WEBHOOK_SECRET": "hook-secret"})
+    @mock.patch("src.api.patchnotes_routes.insert_sourced_bullet")
+    def test_lore_and_other_branches_are_not_stored(self, mock_insert) -> None:
+        raw, headers = _signed_push("feat: Moved a lore item")
+        res = self.client.post("/patchnotes/github", content=raw, headers=headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["created"], 0)
+        self.assertEqual(res.json()["withheld"], 1)
+        mock_insert.assert_not_called()
+
+        payload = json.loads(raw)
+        payload["ref"] = "refs/heads/dev"
+        raw = json.dumps(payload).encode()
+        digest = hmac.new(b"hook-secret", raw, hashlib.sha256).hexdigest()
+        headers["X-Hub-Signature-256"] = f"sha256={digest}"
+        res = self.client.post("/patchnotes/github", content=raw, headers=headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["ignored"])
+        mock_insert.assert_not_called()
