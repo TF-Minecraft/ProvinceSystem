@@ -109,7 +109,18 @@ class PatchnotesRoutesTest(unittest.TestCase):
         res = self.client.get("/patchnotes/staff/queue?week=2026-W39", headers=_HEADERS)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["bullets"][0]["id"], _BULLET_ID)
+        self.assertNotIn("warning", res.json()["bullets"][0])
         mock_list.assert_called_once_with("2026-W39")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.list_pending",
+        return_value=[_row(body="Moved a lore item")],
+    )
+    def test_queue_warns_when_a_line_names_a_lore_item(self, _mock_list) -> None:
+        res = self.client.get("/patchnotes/staff/queue", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        warning = res.json()["bullets"][0]["warning"]
+        self.assertIn("hidden knowledge", warning)
 
     def test_queue_rejects_a_bad_week(self) -> None:
         res = self.client.get("/patchnotes/staff/queue?week=nope", headers=_HEADERS)
@@ -257,6 +268,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertNotIn("deny_reason", bullet)
         self.assertNotIn("status", bullet)
         self.assertNotIn("reviewed_at", bullet)
+        self.assertNotIn("warning", bullet)
         mock_list.assert_called_once_with("2026-W39")
 
     def test_published_week_rejects_a_bad_week(self) -> None:
