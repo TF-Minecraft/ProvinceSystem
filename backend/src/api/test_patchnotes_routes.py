@@ -91,6 +91,25 @@ class PatchnotesRoutesTest(unittest.TestCase):
             section="new", body="Added a station", week="2026-W39"
         )
 
+    @mock.patch("src.api.patchnotes_routes.insert_sourced_bullet", return_value=None)
+    def test_create_with_source_key_reports_a_duplicate(self, mock_insert) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets",
+            json={
+                "section": "adjusted",
+                "body": "Adjusted the attack damage of Steel Sword",
+                "source_key": "mmoitems:swords.yml:STEEL_SWORD:abc",
+            },
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["duplicate"])
+        mock_insert.assert_called_once_with(
+            section="adjusted",
+            body="Adjusted the attack damage of Steel Sword",
+            source_key="mmoitems:swords.yml:STEEL_SWORD:abc",
+        )
+
     def test_create_rejects_unknown_section(self) -> None:
         res = self.client.post(
             "/patchnotes/staff/bullets",
