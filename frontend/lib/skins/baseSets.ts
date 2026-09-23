@@ -41,6 +41,7 @@ export const BASE_SETS: Record<SkinKind, readonly string[]> = {
   item_3d: [...HANDHELD, ...LARGE_HANDHELD],
   shield: ["shields"],
   helmet_3d: ["helmets"],
+  mask: ["masks"],
   gun: ["rifles", "pistols", "shotguns", "launchers"],
   book: ["books"],
 };
@@ -69,6 +70,7 @@ const LABELS: Record<string, string> = {
   crossbows: "Crossbows",
   shields: "Shields",
   helmets: "Helmets",
+  masks: "Masks",
   rifles: "Rifles",
   pistols: "Pistols",
   shotguns: "Shotguns",

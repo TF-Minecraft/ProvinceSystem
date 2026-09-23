@@ -26,6 +26,7 @@ const OPTIONS: {
   { value: "item_3d", label: "Item 3D", detail: "Model + texture" },
   { value: "shield", label: "Shield 3D", detail: "Model + texture" },
   { value: "helmet_3d", label: "Helmet 3D", detail: "Model + texture" },
+  { value: "mask", label: "Mask", detail: "3D helmet · hides identity" },
   { value: "gun", label: "Gun", detail: "Carry · reload · aim" },
   {
     value: "book",

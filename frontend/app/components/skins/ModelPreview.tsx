@@ -247,7 +247,7 @@ function itemSlotsForKind(
     { id: "thirdperson_righthand", label: "Right" },
     { id: "thirdperson_lefthand", label: "Left" },
   ];
-  if (kind === "helmet_3d") {
+  if (kind === "helmet_3d" || kind === "mask") {
     return [...base, { id: "head", label: "Head" }];
   }
   return base;

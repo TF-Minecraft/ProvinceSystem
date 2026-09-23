@@ -93,6 +93,10 @@ function frameObject(camera: THREE.PerspectiveCamera, object: THREE.Object3D): v
   setDefaultOrbit(camera, focus, frameSize);
 }
 
+function isWornHeadKind(kind: string | undefined): boolean {
+  return kind === "helmet_3d" || kind === "mask";
+}
+
 function wornHelmetGroup(
   root: THREE.Object3D,
   json: JavaModelJson | null
@@ -197,7 +201,7 @@ export async function renderPreviewJob(
   try {
     for (const view of job.views) {
       clearScene(scene);
-      if (view === "model" && kind === "helmet_3d") {
+      if (view === "model" && isWornHeadKind(kind)) {
         const { root, json } = await buildItemRoot(kind, assets, {
           center: false,
         });
@@ -232,11 +236,12 @@ export async function renderPreviewJob(
       } else if (view === "hat") {
         const steve = createSteveMannequin(null, "default");
         applySteveArmPose(steve, "idle");
-        const { root, json } = await buildItemRoot("helmet_3d", assets, {
+        const headKind = isWornHeadKind(kind) ? kind : "helmet_3d";
+        const { root, json } = await buildItemRoot(headKind, assets, {
           center: false,
         });
         const held = new THREE.Group();
-        const tab = resolveDisplayTab(json ?? { elements: [] }, "head", "helmet_3d");
+        const tab = resolveDisplayTab(json ?? { elements: [] }, "head", headKind);
         applyDisplayToObject(held, tab);
         held.add(root);
         steve.bones.itemSocketHead.add(held);

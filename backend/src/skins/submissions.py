@@ -74,6 +74,7 @@ ALLOWED_KINDS = frozenset(
         "item_3d",
         "shield",
         "helmet_3d",
+        "mask",
         "gun",
         "book",
     }
@@ -90,10 +91,11 @@ BASE_SETS: dict[str, frozenset[str]] = {
     "item_3d": _HANDHELD_BASES | _LARGE_HANDHELD_BASES,
     "shield": frozenset({"shields"}),
     "helmet_3d": frozenset({"helmets"}),
+    "mask": frozenset({"masks"}),
     "gun": frozenset({"rifles", "pistols", "shotguns", "launchers"}),
     "book": frozenset({"books"}),
 }
-MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
+MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d", "mask"})
 GUN_FIELDS = ("texture",) + GUN_MODEL_FIELDS
 GRIP_Y_MIN = 0.0
 GRIP_Y_MAX = 16.0
@@ -600,7 +602,7 @@ def create_submission(
     if kind not in ALLOWED_KINDS:
         raise SubmissionError(
             "kind must be armor_set, handheld, large_handheld, "
-            "bow, large_bow, crossbow, item_3d, shield, helmet_3d, gun, or book"
+            "bow, large_bow, crossbow, item_3d, shield, helmet_3d, mask, gun, or book"
         )
 
     try:

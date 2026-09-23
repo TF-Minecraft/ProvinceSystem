@@ -38,7 +38,7 @@ def assert_3d_pair_budgets(
     k = (kind or "").strip()
     cap = max(0, int(max_bytes))
 
-    if k in ("item_3d", "shield", "helmet_3d"):
+    if k in ("item_3d", "shield", "helmet_3d", "mask"):
         assert_pair(
             files_bytes.get("texture"),
             files_bytes.get("model"),

@@ -181,7 +181,7 @@ def _job_for_kind(kind: str, slug: str, out_dir: Path, tiers: list[str]) -> dict
         if "texture" not in files:
             return None
         views = ["model"]
-        if kind == "helmet_3d":
+        if kind in ("helmet_3d", "mask"):
             views.append("hat")
         return {"kind": kind, "views": views, "files": files}
 
