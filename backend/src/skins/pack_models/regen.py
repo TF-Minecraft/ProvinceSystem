@@ -59,7 +59,7 @@ def ensure_pack_models(submission_id: str) -> None:
             _ensure_large_handheld(out_dir, slug, meta.get("grip_preset"))
         elif kind == "large_bow":
             _ensure_large_bow(out_dir, slug)
-        elif kind in ("item_3d", "helmet_3d"):
+        elif kind in ("item_3d", "helmet_3d", "mask"):
             _ensure_normalized_3d(out_dir, slug)
         elif kind == "gun":
             _ensure_gun(out_dir, slug)

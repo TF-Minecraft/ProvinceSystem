@@ -59,6 +59,7 @@ const KNOWN_SKIN_KINDS = new Set<string>([
   "item_3d",
   "shield",
   "helmet_3d",
+  "mask",
   "gun",
   "book",
 ]);

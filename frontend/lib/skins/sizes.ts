@@ -8,6 +8,7 @@ export type SkinKind =
   | "item_3d"
   | "shield"
   | "helmet_3d"
+  | "mask"
   | "gun"
   | "book";
 
@@ -68,7 +69,12 @@ export function isBowFrameKind(kind: SkinKind): boolean {
 }
 
 export function isModel3dKind(kind: SkinKind): boolean {
-  return kind === "item_3d" || kind === "shield" || kind === "helmet_3d";
+  return (
+    kind === "item_3d" ||
+    kind === "shield" ||
+    kind === "helmet_3d" ||
+    kind === "mask"
+  );
 }
 
 export function isGunKind(kind: SkinKind): boolean {

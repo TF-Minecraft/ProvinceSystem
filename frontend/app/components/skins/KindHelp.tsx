@@ -97,6 +97,20 @@ const GUIDES: Record<SkinKind, KindGuide> = {
       "Set the item name / colours, then submit.",
     ],
   },
+  mask: {
+    title: "Mask",
+    summary:
+      "3D helmet model worn as an RP mask. Skin it onto a mask in the armour shop; wearing it hides your character name.",
+    steps: [
+      "Choose the Masks base set.",
+      "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
+      "Upload that JSON + texture PNG.",
+      "Set the item name / colours, then submit.",
+    ],
+    notes: [
+      "After approval, apply the skin to a mask item in the armour shop. Wearing that mask shows you as Masked in character chat.",
+    ],
+  },
   helmet_3d: {
     title: "Helmet 3D",
     summary: "Standalone 3D helmet (model + texture), not a full armor set.",

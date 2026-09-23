@@ -24,7 +24,13 @@ const IDENTITY_TAB: Required<DisplayTab> = {
   scale: [1, 1, 1],
 };
 
-export type DisplayKind = "item_3d" | "gun" | "shield" | "helmet_3d" | string;
+export type DisplayKind =
+  | "item_3d"
+  | "gun"
+  | "shield"
+  | "helmet_3d"
+  | "mask"
+  | string;
 
 function asVec3(
   value: unknown,

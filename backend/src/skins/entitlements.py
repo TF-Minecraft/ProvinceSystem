@@ -245,6 +245,7 @@ _STAFF_SKIN_KINDS = (
     "item_3d",
     "shield",
     "helmet_3d",
+    "mask",
     "gun",
     "book",
 )

@@ -180,7 +180,7 @@ def validate_java_block_model(model: dict[str, Any]) -> None:
 
 
 def required_tabs(kind: str) -> tuple[str, ...]:
-    if kind in ("shield", "helmet_3d", "armor_helmet_3d"):
+    if kind in ("shield", "helmet_3d", "armor_helmet_3d", "mask"):
         return COMMON_TABS + (HEAD_TAB,)
     if kind in ("item_3d", "gun"):
         return COMMON_TABS
