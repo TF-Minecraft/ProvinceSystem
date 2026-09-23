@@ -8,29 +8,38 @@ afterEach(() => {
 });
 
 describe("loadPublishedNotes", () => {
-  it("keeps approved lines and drops review rows", async () => {
+  it("loads every approved week in one request and drops review rows", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string) => {
-        if (url.endsWith("/patchnotes/weeks")) {
-          return new Response(JSON.stringify({ weeks: ["2026-W39", "nope"] }), { status: 200 });
-        }
-        return new Response(
-          JSON.stringify({
-            week: "2026-W39",
-            bullets: [
-              { id: "1", section: "new", body: "Visible", status: "approved" },
-              { id: "2", section: "fixed", body: "Still pending", status: "pending" },
-              { id: "3", section: "adjusted", body: "Rejected", deny_reason: "spoilers" },
-            ],
-          }),
-          { status: 200 },
-        );
-      }),
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          weeks: [
+            {
+              week: "2026-W39",
+              bullets: [
+                { id: "1", section: "new", body: "Visible", status: "approved" },
+                { id: "2", section: "fixed", body: "Still pending", status: "pending" },
+                { id: "3", section: "adjusted", body: "Rejected", deny_reason: "spoilers" },
+              ],
+            },
+            { week: "not-a-week", bullets: [] },
+          ],
+        }),
+        { status: 200 },
+      ),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
     const notes = await loadPublishedNotes();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://api.test/patchnotes",
+      expect.objectContaining({
+        cache: "no-store",
+        signal: expect.any(AbortSignal),
+      }),
+    );
     expect(notes.ok).toBe(true);
     if (!notes.ok) return;
     expect(notes.weeks).toHaveLength(1);

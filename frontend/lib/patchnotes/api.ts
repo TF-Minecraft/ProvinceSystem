@@ -10,6 +10,8 @@ export type PublishedNotes =
   | { ok: true; weeks: WeekNotes[] }
   | { ok: false };
 
+const REQUEST_TIMEOUT_MS = 5000;
+
 function apiBase(): string | null {
   const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
   return base || null;
@@ -28,39 +30,38 @@ function readBullet(value: unknown): PublicBullet | null {
   return { id: row.id, section: row.section, body: row.body };
 }
 
-async function fetchWeek(base: string, week: string): Promise<WeekNotes | null> {
-  const res = await fetch(`${base}/patchnotes/weeks/${encodeURIComponent(week)}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  const body: unknown = await res.json();
-  if (!body || typeof body !== "object") return null;
-  const row = body as Record<string, unknown>;
-  if (row.week !== week || !Array.isArray(row.bullets)) return null;
-  const bullets = row.bullets.map(readBullet).filter((bullet): bullet is PublicBullet => bullet !== null);
-  return { week, label: weekLabel(week), bullets };
+function readWeek(value: unknown): WeekNotes | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.week !== "string" || !isWeekKey(row.week) || !Array.isArray(row.bullets)) return null;
+  const bullets = row.bullets
+    .map(readBullet)
+    .filter((bullet): bullet is PublicBullet => bullet !== null);
+  if (bullets.length === 0) return null;
+  return { week: row.week, label: weekLabel(row.week), bullets };
 }
 
-/** Approved weeks, newest first. Any failure becomes an unavailable page. */
+/** Approved weeks, newest first. One request. Any failure becomes an unavailable page. */
 export async function loadPublishedNotes(): Promise<PublishedNotes> {
   const base = apiBase();
   if (!base) return { ok: false };
   try {
-    const res = await fetch(`${base}/patchnotes/weeks`, { cache: "no-store" });
+    const res = await fetch(`${base}/patchnotes`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
     if (!res.ok) return { ok: false };
     const body: unknown = await res.json();
     if (!body || typeof body !== "object" || !Array.isArray((body as { weeks?: unknown }).weeks)) {
       return { ok: false };
     }
-    const weeks = (body as { weeks: unknown[] }).weeks.filter(
-      (week): week is string => typeof week === "string" && isWeekKey(week),
-    );
-    const notes = await Promise.all(weeks.map((week) => fetchWeek(base, week)));
-    if (notes.some((week) => week === null)) return { ok: false };
-    return {
-      ok: true,
-      weeks: notes.filter((week): week is WeekNotes => week !== null && week.bullets.length > 0),
-    };
+    const weeks: WeekNotes[] = [];
+    for (const entry of (body as { weeks: unknown[] }).weeks) {
+      const week = readWeek(entry);
+      if (!entry || typeof entry !== "object") return { ok: false };
+      if (week) weeks.push(week);
+    }
+    return { ok: true, weeks };
   } catch {
     return { ok: false };
   }

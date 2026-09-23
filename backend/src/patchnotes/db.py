@@ -42,17 +42,29 @@ WHERE status = 'pending'
   AND (%s::text IS NULL OR week = %s)
 ORDER BY created_at ASC, id ASC
 """
-_LIST_APPROVED = f"""
-SELECT {_BULLET_COLUMNS}
-FROM patchnote_bullets
-WHERE week = %s AND status = 'approved'
-ORDER BY CASE section
+_SECTION_ORDER = """
+CASE section
     WHEN 'new' THEN 1
     WHEN 'fixed' THEN 2
     WHEN 'adjusted' THEN 3
     WHEN 'technical' THEN 4
     ELSE 5
-END,
+END
+"""
+_LIST_APPROVED = f"""
+SELECT {_BULLET_COLUMNS}
+FROM patchnote_bullets
+WHERE week = %s AND status = 'approved'
+ORDER BY {_SECTION_ORDER},
+created_at ASC,
+id ASC
+"""
+_LIST_PUBLISHED = f"""
+SELECT {_BULLET_COLUMNS}
+FROM patchnote_bullets
+WHERE status = 'approved'
+ORDER BY week DESC,
+{_SECTION_ORDER},
 created_at ASC,
 id ASC
 """
@@ -237,6 +249,23 @@ def list_approved(week: str) -> list[dict[str, Any]]:
             return [dict(row) for row in cur.fetchall()]
     finally:
         conn.close()
+
+
+def list_published_notes() -> list[dict[str, Any]]:
+    """Approved bullets grouped by week, newest week first."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(_LIST_PUBLISHED)
+            rows = [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    grouped: list[dict[str, Any]] = []
+    for row in rows:
+        if not grouped or grouped[-1]["week"] != row["week"]:
+            grouped.append({"week": row["week"], "bullets": []})
+        grouped[-1]["bullets"].append(row)
+    return grouped
 
 
 def list_published_weeks() -> list[str]:

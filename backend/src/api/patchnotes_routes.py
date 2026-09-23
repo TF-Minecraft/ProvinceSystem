@@ -26,6 +26,7 @@ from src.patchnotes.db import (
     insert_bullet,
     list_approved,
     list_pending,
+    list_published_notes,
     list_published_weeks,
     migrate,
     parse_week,
@@ -155,6 +156,26 @@ def _review_http(exc: Exception) -> HTTPException:
     if isinstance(exc, ValueError):
         return HTTPException(status_code=422, detail=str(exc))
     raise exc
+
+
+@patchnotes_router.get("")
+def published_notes():
+    """Every approved week in one response, newest first."""
+    try:
+        migrate()
+        weeks = list_published_notes()
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("published_notes failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {
+        "weeks": [
+            {
+                "week": week["week"],
+                "bullets": [_serialize(row, public=True) for row in week["bullets"]],
+            }
+            for week in weeks
+        ]
+    }
 
 
 @patchnotes_router.get("/weeks")
