@@ -4,7 +4,7 @@ import type { Recipe, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Magic (elements, shrines, spell runes, attunement) ----------
 //
-// Sources: docs/wiki-research/a-magic-knowledge.md section 1 (live Magic/*.yml,
+// Sources: https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/a-magic-knowledge.md section 1 (live Magic/*.yml,
 // MMOItems rune/charge definitions, the jar's plugin.yml). No source repository
 // exists for the Magic plugin, so everything here is config-derived.
 

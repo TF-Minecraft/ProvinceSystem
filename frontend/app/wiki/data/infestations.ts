@@ -2,7 +2,7 @@ import type { WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Infestations ----------
 //
-// Sourced from docs/wiki-research/e-adventure.md, "Infestations" section.
+// Sourced from https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/e-adventure.md, "Infestations" section.
 // Jar: infestations-0.1.0.jar. No player commands exist; the whole feature is
 // played with the Lure item and by walking into a province.
 

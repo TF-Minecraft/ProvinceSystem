@@ -1,5 +1,5 @@
 import type { WikiCommandSet, WikiSection } from "./types";
-// Source: docs/wiki-research/a-magic-knowledge.md, section 3.
+// Source: https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/a-magic-knowledge.md, section 3.
 export const codexStudies = {
   "columns": [
     "Codex id",
