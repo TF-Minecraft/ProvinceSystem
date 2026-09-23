@@ -11,6 +11,7 @@ const staticLinks = [
   { href: "/drinks", label: "Drinks" },
   { href: "/profile", label: "Profile" },
   { href: "/wiki", label: "Guide" },
+  { href: "/updates", label: "Updates" },
 ] as const;
 
 export default function SiteHeader() {
