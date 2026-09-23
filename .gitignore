@@ -47,13 +47,15 @@ yarn-error.log*
 .env.production.local
 /backend/src/output/
 /backend/benchmarks/regen/snapshots/
+/backend/benchmarks/regen/manifests/
+/backend/benchmarks/regen/timings/
+/backend/src/editor/province_validation.png
 .env/
 docker-compose.override.yml
 docker/data/
 *.db
 backend/src/data/skins/**
 !backend/src/data/skins/.gitkeep
-__deploy_temp__/
 .claude/
 backend/src/defines/*/derived_sources.json
 CLAUDE.md

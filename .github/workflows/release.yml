@@ -71,7 +71,7 @@ jobs:
           changes = re.sub(r"^## What's Changed\s*", '', changes)
           changes = re.sub(r'^(#{1,5}) ', r'\1# ', changes, flags=re.MULTILINE)
           lines = ['## Changes', '', changes or 'Initial release.', '', '## Downloads', '']
-          assets = sorted([*Path('.').glob('*.jar'), *Path('.').glob('*.tar.gz')])
+          assets = sorted(Path('.').glob('*.tar.gz'))
           assets += [Path('SHA256SUMS'), Path('build.json')]
           base = f"https://github.com/{os.environ['GH_REPO']}/releases/download/{quote(os.environ['TAG'], safe='')}/"
           for asset in assets:
