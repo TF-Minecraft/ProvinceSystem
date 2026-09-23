@@ -3,7 +3,7 @@ import { constructionStations } from "./vehicle-construction";
 import { T, V } from "./helpers";
 import modelCatalogue from "../../../public/wiki/models/vehicles/catalogue.json";
 
-// Source: docs/wiki-research/g-gadgets.md sections 0, 3 and 4.
+// Source: https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/g-gadgets.md sections 0, 3 and 4.
 // Speeds are raw configuration rankings, not measured travel speeds.
 export interface VehicleSkin { id: string; name: string; modelUrl?: string; skinUvUrl?: string; textures?: Record<string, string> }
 export interface VehicleInfo {

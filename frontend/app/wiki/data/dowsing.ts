@@ -2,7 +2,7 @@ import { M, T, V } from "./helpers";
 import type { Recipe, WikiSection } from "./types";
 
 // Source: plugins/Dowsing (config.yml, blocks.yml, types.yml, slots.yml, production_methods.yml),
-// ItemsAdder ia_tfmc/contents/nodes.yml, and docs/wiki-research/a2-gems-dowsing-archaeo.md.
+// ItemsAdder ia_tfmc/contents/nodes.yml, and https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/a2-gems-dowsing-archaeo.md.
 
 const planks = { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") };
 

@@ -162,7 +162,7 @@ export const serverCraftedMaterials: CatalogMaterial[] = [
 
 // Historical export name retained for the station recipe generator's catalogue scan.
 // Gathered/loot materials may also have unpacking recipes. Acquisition evidence:
-// docs/wiki-research/material-acquisition.md (cloned server config + local drop implementation).
+// https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/material-acquisition.md (cloned server config + local drop implementation).
 export const dropOnlyMaterials: DropOnlyMaterial[] = [
   { name: "Enchanted Dust", texture: T("magic_crafting/enchanted_dust.png"), lore: "A magical crafting ingredient used in equipment and material recipes." },
   {
