@@ -9,7 +9,6 @@
 **/venv
 frontend/dist
 frontend/build
-Planning
 *.md
 .env
 .env.*

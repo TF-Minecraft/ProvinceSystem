@@ -32,5 +32,4 @@ yarn-error.log*
 .vercel
 
 # Repository-specific files
-__deploy_temp__
 /backend/src/output/
