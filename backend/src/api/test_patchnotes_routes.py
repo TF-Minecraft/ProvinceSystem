@@ -204,6 +204,35 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertEqual(res.status_code, 502)
         self.assertNotIn("down", res.json()["detail"])
 
+    @mock.patch(
+        "src.api.patchnotes_routes.list_published_notes",
+        return_value=(
+            [
+                {
+                    "week": "2026-W39",
+                    "bullets": [
+                        _row(status="approved", deny_reason="should not leak", reviewed_at=_CREATED)
+                    ],
+                }
+            ],
+            True,
+        ),
+    )
+    def test_published_notes_are_one_public_payload(self, mock_notes) -> None:
+        res = self.client.get("/patchnotes?limit=1&before=2026-W40")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        bullet = body["weeks"][0]["bullets"][0]
+        self.assertEqual(bullet["body"], "Added a station")
+        self.assertNotIn("deny_reason", bullet)
+        self.assertNotIn("status", bullet)
+        self.assertTrue(body["has_more"])
+        mock_notes.assert_called_once_with(limit=1, before="2026-W40")
+
+    def test_published_notes_reject_an_unbounded_limit(self) -> None:
+        res = self.client.get("/patchnotes?limit=1000", headers=_HEADERS)
+        self.assertEqual(res.status_code, 400)
+
     @mock.patch("src.api.patchnotes_routes.list_published_weeks", return_value=["2026-W39"])
     def test_published_weeks_need_no_auth(self, _mock_weeks) -> None:
         res = self.client.get("/patchnotes/weeks")

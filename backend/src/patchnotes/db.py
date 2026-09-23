@@ -42,17 +42,29 @@ WHERE status = 'pending'
   AND (%s::text IS NULL OR week = %s)
 ORDER BY created_at ASC, id ASC
 """
-_LIST_APPROVED = f"""
-SELECT {_BULLET_COLUMNS}
-FROM patchnote_bullets
-WHERE week = %s AND status = 'approved'
-ORDER BY CASE section
+_SECTION_ORDER = """
+CASE section
     WHEN 'new' THEN 1
     WHEN 'fixed' THEN 2
     WHEN 'adjusted' THEN 3
     WHEN 'technical' THEN 4
     ELSE 5
-END,
+END
+"""
+_LIST_APPROVED = f"""
+SELECT {_BULLET_COLUMNS}
+FROM patchnote_bullets
+WHERE week = %s AND status = 'approved'
+ORDER BY {_SECTION_ORDER},
+created_at ASC,
+id ASC
+"""
+_LIST_PUBLISHED_FOR_WEEKS = f"""
+SELECT {_BULLET_COLUMNS}
+FROM patchnote_bullets
+WHERE status = 'approved' AND week = ANY(%s)
+ORDER BY week DESC,
+{_SECTION_ORDER},
 created_at ASC,
 id ASC
 """
@@ -237,6 +249,52 @@ def list_approved(week: str) -> list[dict[str, Any]]:
             return [dict(row) for row in cur.fetchall()]
     finally:
         conn.close()
+
+
+def list_published_notes(
+    *,
+    limit: int,
+    before: str | None = None,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Approved weeks, newest first, at most `limit` weeks.
+
+    Returns the page and whether an older week exists beyond it. `before` is an
+    exclusive ISO week cursor.
+    """
+    if limit < 1:
+        raise ValueError("limit must be at least 1")
+    before_key = parse_week(before) if before else None
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT week
+                FROM patchnote_bullets
+                WHERE status = 'approved'
+                  AND (%s::text IS NULL OR week < %s)
+                GROUP BY week
+                ORDER BY week DESC
+                LIMIT %s
+                """,
+                (before_key, before_key, limit + 1),
+            )
+            keys = [row[0] for row in cur.fetchall()]
+        has_more = len(keys) > limit
+        keys = keys[:limit]
+        if not keys:
+            return [], False
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(_LIST_PUBLISHED_FOR_WEEKS, (keys,))
+            rows = [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    grouped: list[dict[str, Any]] = []
+    for row in rows:
+        if not grouped or grouped[-1]["week"] != row["week"]:
+            grouped.append({"week": row["week"], "bullets": []})
+        grouped[-1]["bullets"].append(row)
+    return grouped, has_more
 
 
 def list_published_weeks() -> list[str]:

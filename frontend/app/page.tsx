@@ -57,6 +57,12 @@ export default function HubPage() {
           >
             Profile
           </Link>
+          <Link
+            href="/updates"
+            className="inline-flex min-w-[8.5rem] items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
+          >
+            Updates
+          </Link>
           <a
             href="http://patreon.com/c/tfmcrp"
             target="_blank"
