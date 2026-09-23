@@ -119,6 +119,7 @@ class CreateBulletBody(BaseModel):
     section: SectionName
     body: str = Field(..., min_length=1, max_length=1000)
     week: str | None = None
+    source_key: str | None = None
 
     @field_validator("body")
     @classmethod
@@ -134,6 +135,16 @@ class CreateBulletBody(BaseModel):
         if value is None:
             return None
         return parse_week(value)
+
+    @field_validator("source_key")
+    @classmethod
+    def _check_source(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        text = value.strip()
+        if not text or len(text) > 200:
+            raise ValueError("source_key is invalid")
+        return text
 
 
 class DenyBulletBody(BaseModel):
@@ -289,7 +300,16 @@ async def github_push(request: Request):
 def staff_create_bullet(body: CreateBulletBody):
     try:
         migrate()
-        row = insert_bullet(section=body.section, body=body.body, week=body.week)
+        if body.source_key:
+            row = insert_sourced_bullet(
+                section=body.section,
+                body=body.body,
+                source_key=body.source_key,
+            )
+            if row is None:
+                return {"duplicate": True, "source_key": body.source_key}
+        else:
+            row = insert_bullet(section=body.section, body=body.body, week=body.week)
     except (PatchnotesDBError, PatchnotesConfigError) as e:
         logger.exception("staff_create_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e

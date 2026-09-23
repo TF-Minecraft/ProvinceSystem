@@ -173,7 +173,7 @@ def _draft_commit(full_name: str, label: str, commit: object) -> tuple[Draft | N
     if not subject or _MERGE.match(subject) or _VAGUE.fullmatch(subject):
         return None, True
     kind, text = _split_conventional(subject)
-    cleaned = _player_text(text)
+    cleaned = player_text(text)
     if cleaned is None:
         return None, False
     if kind in _SKIP_KINDS or _BUMP.match(cleaned):
@@ -182,7 +182,7 @@ def _draft_commit(full_name: str, label: str, commit: object) -> tuple[Draft | N
     body = f"{label}: {cleaned}"
     if len(body) > _MAX_BODY:
         body = body[: _MAX_BODY - 1].rstrip() + "…"
-    if _player_text(body) is None:
+    if player_text(body) is None:
         return None, False
     return Draft(section=section, body=body, source_key=f"{full_name}@{sha}"), True
 
@@ -208,7 +208,7 @@ def _section(kind: str, text: str) -> str:
     return "technical"
 
 
-def _player_text(text: str) -> str | None:
+def player_text(text: str) -> str | None:
     """A line safe to store, or None when the line must not be stored at all."""
     if (
         hidden_knowledge_warning(text)
