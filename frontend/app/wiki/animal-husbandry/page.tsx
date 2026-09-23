@@ -2,7 +2,7 @@ import { Callout, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app
 
 export default function AnimalHusbandryPage() {
   return (
-    <WikiPage title="Animal Husbandry" lastModified="2026-09-20" intro="Raise livestock for milk, eggs, meat and materials. Claim your animals, keep them fed and clean, then breed successive generations for better genetics. You can own or co-own up to 15 animals.">
+    <WikiPage title="Animal Husbandry" lastModified="2026-09-23" intro="Raise livestock for milk, eggs, meat and materials. Claim your animals, keep them fed and clean, then breed successive generations for better genetics. You can own or co-own up to 15 animals.">
       <WikiSectionHeading id="getting-started">Claim your first animal</WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Get an Ownership Token, Universal Feed and a Glove.</li>
@@ -41,7 +41,7 @@ export default function AnimalHusbandryPage() {
         Breed animals using their normal Minecraft breeding foods. Both parents must be grown, fed, clean and not neutered. Babies inherit a genetics roll based on their parents, with variation; care does not change inherited genetics. Newly claimed wild animals start with 0 to 20 genetics and 0 care. Genetics can reach 1,000 through breeding.
       </p>
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-        Most babies take 1 hour to grow up; chickens take 45 minutes. You can claim babies immediately, but they must mature before breeding, producing milk or eggs, or yielding slaughter goods.
+        Most babies take 1 hour to grow up; chickens take 45 minutes. They keep their baby appearance until that time is up. You can claim babies immediately, but they must mature before breeding, producing milk or eggs, or yielding slaughter goods.
       </p>
       <Callout title="Neutering is permanent" className="mt-4">
         Right-click an animal you own with the Neutering Tool to prevent it from breeding. This cannot be undone through normal animal care.
