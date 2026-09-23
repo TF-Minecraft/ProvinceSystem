@@ -7,6 +7,7 @@ bullets and never include a deny reason.
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -138,16 +139,22 @@ class DenyBulletBody(BaseModel):
         return text
 
 
+def _bullet_id_or_404(bullet_id: str) -> str:
+    """A non-UUID never reaches Postgres, so a bad id is the same as a missing row."""
+    try:
+        return str(uuid.UUID(bullet_id))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail="Bullet not found") from e
+
+
 def _review_http(exc: Exception) -> HTTPException:
     if isinstance(exc, BulletNotFound):
         return HTTPException(status_code=404, detail="Bullet not found")
     if isinstance(exc, BulletNotPending):
         return HTTPException(status_code=409, detail="Bullet is not pending")
-    if isinstance(exc, psycopg2.Error):
-        return HTTPException(status_code=400, detail="Invalid bullet id")
     if isinstance(exc, ValueError):
         return HTTPException(status_code=422, detail=str(exc))
-    return HTTPException(status_code=502, detail=_client_detail(exc))
+    raise exc
 
 
 @patchnotes_router.get("/weeks")
@@ -203,12 +210,13 @@ def staff_queue(week: str | None = None):
 
 @patchnotes_router.post("/staff/bullets/{bullet_id}/approve", dependencies=[Depends(_staff_guard)])
 def staff_approve_bullet(bullet_id: str):
+    bullet_id = _bullet_id_or_404(bullet_id)
     try:
         migrate()
         row = approve_bullet(bullet_id)
-    except (BulletNotFound, BulletNotPending, psycopg2.Error, ValueError) as e:
+    except (BulletNotFound, BulletNotPending, ValueError) as e:
         raise _review_http(e) from e
-    except (PatchnotesDBError, PatchnotesConfigError) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
         logger.exception("staff_approve_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)
@@ -216,12 +224,13 @@ def staff_approve_bullet(bullet_id: str):
 
 @patchnotes_router.post("/staff/bullets/{bullet_id}/deny", dependencies=[Depends(_staff_guard)])
 def staff_deny_bullet(bullet_id: str, body: DenyBulletBody):
+    bullet_id = _bullet_id_or_404(bullet_id)
     try:
         migrate()
         row = deny_bullet(bullet_id, body.reason)
-    except (BulletNotFound, BulletNotPending, psycopg2.Error, ValueError) as e:
+    except (BulletNotFound, BulletNotPending, ValueError) as e:
         raise _review_http(e) from e
-    except (PatchnotesDBError, PatchnotesConfigError) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
         logger.exception("staff_deny_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)

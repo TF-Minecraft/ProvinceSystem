@@ -18,6 +18,7 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
+import psycopg2  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from server import app  # noqa: E402
@@ -25,11 +26,12 @@ from src.patchnotes.db import BulletNotFound, BulletNotPending, PatchnotesDBErro
 
 _HEADERS = {"X-Staff-Key": "dev-staff-key"}
 _CREATED = datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc)
+_BULLET_ID = "11111111-1111-1111-1111-111111111111"
 
 
 def _row(**overrides):
     row = {
-        "id": "bullet-1",
+        "id": _BULLET_ID,
         "week": "2026-W39",
         "section": "new",
         "body": "Added a station",
@@ -56,11 +58,11 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertEqual(self.client.post("/patchnotes/staff/bullets", json={}).status_code, 401)
         self.assertEqual(self.client.get("/patchnotes/staff/queue").status_code, 401)
         self.assertEqual(
-            self.client.post("/patchnotes/staff/bullets/bullet-1/approve").status_code, 401
+            self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve").status_code, 401
         )
         self.assertEqual(
             self.client.post(
-                "/patchnotes/staff/bullets/bullet-1/deny", json={"reason": "no"}
+                f"/patchnotes/staff/bullets/{_BULLET_ID}/deny", json={"reason": "no"}
             ).status_code,
             401,
         )
@@ -106,7 +108,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
     def test_queue_returns_pending_bullets(self, mock_list) -> None:
         res = self.client.get("/patchnotes/staff/queue?week=2026-W39", headers=_HEADERS)
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["bullets"][0]["id"], "bullet-1")
+        self.assertEqual(res.json()["bullets"][0]["id"], _BULLET_ID)
         mock_list.assert_called_once_with("2026-W39")
 
     def test_queue_rejects_a_bad_week(self) -> None:
@@ -130,10 +132,10 @@ class PatchnotesRoutesTest(unittest.TestCase):
         return_value=_row(status="approved", reviewed_at=_CREATED),
     )
     def test_approve(self, mock_approve) -> None:
-        res = self.client.post("/patchnotes/staff/bullets/bullet-1/approve", headers=_HEADERS)
+        res = self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve", headers=_HEADERS)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["status"], "approved")
-        mock_approve.assert_called_once_with("bullet-1")
+        mock_approve.assert_called_once_with(_BULLET_ID)
 
     @mock.patch(
         "src.api.patchnotes_routes.deny_bullet",
@@ -141,17 +143,17 @@ class PatchnotesRoutesTest(unittest.TestCase):
     )
     def test_deny_stores_the_reason(self, mock_deny) -> None:
         res = self.client.post(
-            "/patchnotes/staff/bullets/bullet-1/deny",
+            f"/patchnotes/staff/bullets/{_BULLET_ID}/deny",
             json={"reason": "Internal only"},
             headers=_HEADERS,
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["deny_reason"], "Internal only")
-        mock_deny.assert_called_once_with("bullet-1", "Internal only")
+        mock_deny.assert_called_once_with(_BULLET_ID, "Internal only")
 
     def test_deny_requires_a_reason(self) -> None:
         res = self.client.post(
-            "/patchnotes/staff/bullets/bullet-1/deny",
+            f"/patchnotes/staff/bullets/{_BULLET_ID}/deny",
             json={"reason": "   "},
             headers=_HEADERS,
         )
@@ -159,11 +161,27 @@ class PatchnotesRoutesTest(unittest.TestCase):
 
     @mock.patch(
         "src.api.patchnotes_routes.approve_bullet",
-        side_effect=BulletNotFound("missing"),
+        side_effect=BulletNotFound(_BULLET_ID),
     )
-    def test_approve_missing_bullet(self, _mock_approve) -> None:
-        res = self.client.post("/patchnotes/staff/bullets/missing/approve", headers=_HEADERS)
+    def test_approve_missing_bullet(self, mock_approve) -> None:
+        res = self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve", headers=_HEADERS)
         self.assertEqual(res.status_code, 404)
+        mock_approve.assert_called_once_with(_BULLET_ID)
+
+    @mock.patch(
+        "src.api.patchnotes_routes.approve_bullet",
+        side_effect=psycopg2.OperationalError("connection lost"),
+    )
+    def test_database_error_during_review_is_unavailable(self, _mock_approve) -> None:
+        res = self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 502)
+        self.assertNotIn("connection lost", res.json()["detail"])
+
+    @mock.patch("src.api.patchnotes_routes.approve_bullet")
+    def test_malformed_bullet_id_is_not_found(self, mock_approve) -> None:
+        res = self.client.post("/patchnotes/staff/bullets/bullet-1/approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 404)
+        mock_approve.assert_not_called()
 
     @mock.patch(
         "src.api.patchnotes_routes.deny_bullet",
@@ -171,7 +189,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
     )
     def test_deny_already_reviewed(self, _mock_deny) -> None:
         res = self.client.post(
-            "/patchnotes/staff/bullets/bullet-1/deny",
+            f"/patchnotes/staff/bullets/{_BULLET_ID}/deny",
             json={"reason": "too late"},
             headers=_HEADERS,
         )
