@@ -60,6 +60,8 @@ class PatchnotesRoutesTest(unittest.TestCase):
     def test_staff_routes_require_auth(self) -> None:
         self.assertEqual(self.client.post("/patchnotes/staff/bullets", json={}).status_code, 401)
         self.assertEqual(self.client.get("/patchnotes/staff/queue").status_code, 401)
+        self.assertEqual(self.client.get("/patchnotes/staff/preview").status_code, 401)
+        self.assertEqual(self.client.post("/patchnotes/staff/preview", json={}).status_code, 401)
         self.assertEqual(
             self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve").status_code, 401
         )
@@ -374,3 +376,54 @@ class GithubWebhookTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.json()["ignored"])
         mock_insert.assert_not_called()
+
+
+class PreviewRouteTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    @mock.patch("src.api.patchnotes_routes.list_pending", return_value=[])
+    @mock.patch(
+        "src.api.patchnotes_routes.list_approved",
+        return_value=[_row(status="approved", body="Added a station")],
+    )
+    @mock.patch("src.api.patchnotes_routes.replace_preview")
+    def test_preview_stores_the_week_without_review_fields(
+        self, mock_replace, _approved, _pending
+    ) -> None:
+        mock_replace.return_value = {
+            "week": "2026-W39",
+            "expires_at": _CREATED,
+            "bullets": [{"id": _BULLET_ID, "section": "new", "body": "Added a station"}],
+        }
+        res = self.client.post(
+            "/patchnotes/staff/preview",
+            headers=_HEADERS,
+            json={"week": "2026-W39"},
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["week"], "2026-W39")
+        self.assertNotIn("deny_reason", body)
+        self.assertNotIn("status", body["bullets"][0])
+        mock_replace.assert_called_once_with(
+            week="2026-W39",
+            bullets=[{"id": _BULLET_ID, "section": "new", "body": "Added a station"}],
+        )
+
+    @mock.patch("src.api.patchnotes_routes.load_preview", return_value=None)
+    def test_missing_preview_is_not_found(self, _load) -> None:
+        res = self.client.get("/patchnotes/staff/preview", headers=_HEADERS)
+        self.assertEqual(res.status_code, 404)
+
+    @mock.patch("src.api.patchnotes_routes.list_published_notes", return_value=([], False))
+    def test_public_notes_do_not_read_the_preview(self, _notes) -> None:
+        res = self.client.get("/patchnotes")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["weeks"], [])

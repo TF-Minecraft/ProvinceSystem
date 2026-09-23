@@ -240,6 +240,17 @@ def migrate() -> None:
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_previews (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    week TEXT NOT NULL,
+                    bullets JSONB NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    expires_at TIMESTAMPTZ NOT NULL
+                )
+                """
+            )
     finally:
         conn.close()
     _MIGRATED = True
@@ -411,3 +422,58 @@ def approve_bullet(bullet_id: str) -> dict[str, Any]:
 def deny_bullet(bullet_id: str, reason: str) -> dict[str, Any]:
     """Mark a pending bullet denied and store the reason."""
     return _review(bullet_id, status="denied", deny_reason=_clean_reason(reason))
+
+
+def replace_preview(*, week: str, bullets: list[dict[str, Any]]) -> dict[str, Any]:
+    """Store one staff-only test note and drop any previous one.
+
+    The row expires one hour after it is written. Public readers never see it.
+    """
+    week_key = parse_week(week)
+    stored: list[dict[str, str]] = []
+    for bullet in bullets:
+        section = str(bullet.get("section") or "")
+        if section not in SECTIONS:
+            raise ValueError("section must be new, fixed, adjusted, or technical")
+        stored.append(
+            {
+                "id": str(bullet.get("id") or ""),
+                "section": section,
+                "body": _clean_body(str(bullet.get("body") or "")),
+            }
+        )
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("DELETE FROM patchnote_previews")
+            cur.execute(
+                """
+                INSERT INTO patchnote_previews (week, bullets, expires_at)
+                VALUES (%s, %s, now() + interval '1 hour')
+                RETURNING id, week, bullets, created_at, expires_at
+                """,
+                (week_key, psycopg2.extras.Json(stored)),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def load_preview() -> dict[str, Any] | None:
+    """The current test note, after deleting any that have expired."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("DELETE FROM patchnote_previews WHERE expires_at <= now()")
+            cur.execute(
+                """
+                SELECT id, week, bullets, created_at, expires_at
+                FROM patchnote_previews
+                ORDER BY expires_at DESC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()

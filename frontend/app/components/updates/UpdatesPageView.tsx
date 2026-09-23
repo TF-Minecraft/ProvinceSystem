@@ -1,4 +1,5 @@
 import EarlierArchive from "@/app/components/updates/EarlierArchive";
+import StaffTestPreview from "@/app/components/updates/StaffTestPreview";
 import { WeekArchiveList, WeekSections } from "@/app/components/updates/WeekArchiveList";
 import type { WeekNotes } from "@/lib/patchnotes/notes";
 
@@ -17,6 +18,7 @@ export default function UpdatesPageView({
     <main className="mx-auto min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl px-6 py-16">
       <h1 className="font-[family-name:var(--font-fraunces)] text-4xl text-[var(--tfmc-cream)]">Updates</h1>
       <p className="mt-2 text-[var(--tfmc-mist)]">What changed on TFMC. Technical notes stay folded.</p>
+      <StaffTestPreview />
 
       {unavailable ? (
         <p className="mt-10 text-[var(--tfmc-stone)]">Patch notes are unavailable right now.</p>

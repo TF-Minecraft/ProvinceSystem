@@ -24,6 +24,7 @@ from src.patchnotes.db import (
     PatchnotesConfigError,
     PatchnotesDBError,
     approve_bullet,
+    current_week,
     deny_bullet,
     insert_bullet,
     insert_sourced_bullet,
@@ -31,8 +32,10 @@ from src.patchnotes.db import (
     list_pending,
     list_published_notes,
     list_published_weeks,
+    load_preview,
     migrate,
     parse_week,
+    replace_preview,
 )
 from src.patchnotes.safety import hidden_knowledge_warning
 from src.patchnotes.summarize import signature_ok, summarize_push
@@ -316,6 +319,77 @@ def staff_create_bullet(body: CreateBulletBody):
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     return _serialize(row, public=False)
+
+
+class PreviewBody(BaseModel):
+    week: str | None = None
+
+    @field_validator("week")
+    @classmethod
+    def _check_week(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return parse_week(value)
+
+
+def _preview_snapshot(week: str) -> list[dict[str, str]]:
+    """Approved lines plus anything still waiting, without review fields."""
+    approved = list_approved(week)
+    seen = {str(row["id"]) for row in approved}
+    pending = [row for row in list_pending(week) if str(row["id"]) not in seen]
+    return [
+        {"id": str(row["id"]), "section": str(row["section"]), "body": str(row["body"])}
+        for row in approved + pending
+    ]
+
+
+def _preview_payload(row: dict[str, Any]) -> dict[str, Any]:
+    bullets = row.get("bullets") if isinstance(row.get("bullets"), list) else []
+    clean = []
+    for bullet in bullets:
+        if not isinstance(bullet, dict):
+            continue
+        clean.append(
+            {
+                "id": str(bullet.get("id") or ""),
+                "section": bullet.get("section"),
+                "body": bullet.get("body"),
+            }
+        )
+    return {
+        "week": row["week"],
+        "expires_at": _iso(row.get("expires_at")),
+        "bullets": clean,
+    }
+
+
+@patchnotes_router.post("/staff/preview", dependencies=[Depends(_staff_guard)])
+def staff_create_preview(body: PreviewBody):
+    """Save this week's notes as a staff-only page that expires in one hour."""
+    week_key = body.week or current_week()
+    try:
+        migrate()
+        row = replace_preview(week=week_key, bullets=_preview_snapshot(week_key))
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_create_preview failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return _preview_payload(row)
+
+
+@patchnotes_router.get("/staff/preview", dependencies=[Depends(_staff_guard)])
+def staff_read_preview():
+    """The test note, if it has not expired. Missing and expired both 404."""
+    try:
+        migrate()
+        row = load_preview()
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_read_preview failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    if row is None:
+        raise HTTPException(status_code=404, detail="No test preview")
+    return _preview_payload(row)
 
 
 @patchnotes_router.get("/staff/queue", dependencies=[Depends(_staff_guard)])

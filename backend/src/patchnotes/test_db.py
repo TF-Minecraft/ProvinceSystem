@@ -96,12 +96,52 @@ class MigrateTest(unittest.TestCase):
         sql = " ".join(c.args[0] for c in cursor.execute.call_args_list)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_bullets", sql)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_sources", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_previews", sql)
         self.assertIn("patchnote_bullets_deny_reason_chk", sql)
         self.assertIn("status = 'pending'", sql)
         self.assertTrue(db._MIGRATED)
 
         db.migrate()
         mock_connect.assert_called_once()
+
+
+class PreviewTest(unittest.TestCase):
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("patchnotes.db.psycopg2.connect")
+    def test_replace_preview_expires_in_one_hour(self, mock_connect) -> None:
+        cursor = mock.MagicMock()
+        cursor.fetchone.return_value = {
+            "id": "preview-1",
+            "week": "2026-W39",
+            "bullets": [{"id": "b1", "section": "new", "body": "Added a station"}],
+            "created_at": None,
+            "expires_at": None,
+        }
+        mock_connect.return_value = _make_conn(cursor)
+
+        row = db.replace_preview(
+            week="2026-W39",
+            bullets=[{"id": "b1", "section": "new", "body": "  Added a station  "}],
+        )
+
+        self.assertEqual(row["week"], "2026-W39")
+        delete_sql = cursor.execute.call_args_list[0].args[0]
+        insert_sql, params = cursor.execute.call_args_list[1].args
+        self.assertIn("DELETE FROM patchnote_previews", delete_sql)
+        self.assertIn("interval '1 hour'", insert_sql)
+        self.assertEqual(params[0], "2026-W39")
+        self.assertEqual(params[1].adapted, [{"id": "b1", "section": "new", "body": "Added a station"}])
+
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("patchnotes.db.psycopg2.connect")
+    def test_load_preview_deletes_expired_rows(self, mock_connect) -> None:
+        cursor = mock.MagicMock()
+        cursor.fetchone.return_value = None
+        mock_connect.return_value = _make_conn(cursor)
+
+        self.assertIsNone(db.load_preview())
+        sql = cursor.execute.call_args_list[0].args[0]
+        self.assertIn("expires_at <= now()", sql)
 
 
 class InsertBulletTest(unittest.TestCase):
