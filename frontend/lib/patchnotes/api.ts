@@ -7,7 +7,7 @@ import {
 } from "./notes";
 
 export type PublishedNotes =
-  | { ok: true; weeks: WeekNotes[] }
+  | { ok: true; weeks: WeekNotes[]; hasMore: boolean }
   | { ok: false };
 
 const REQUEST_TIMEOUT_MS = 5000;
@@ -41,12 +41,19 @@ function readWeek(value: unknown): WeekNotes | null {
   return { week: row.week, label: weekLabel(row.week), bullets };
 }
 
-/** Approved weeks, newest first. One request. Any failure becomes an unavailable page. */
-export async function loadPublishedNotes(): Promise<PublishedNotes> {
+/** Approved weeks, newest first. One bounded request. Any failure becomes an unavailable page. */
+export async function loadPublishedNotes(options?: {
+  limit?: number;
+  before?: string;
+}): Promise<PublishedNotes> {
   const base = apiBase();
   if (!base) return { ok: false };
+  const params = new URLSearchParams();
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.before) params.set("before", options.before);
+  const query = params.toString();
   try {
-    const res = await fetch(`${base}/patchnotes`, {
+    const res = await fetch(query ? `${base}/patchnotes?${query}` : `${base}/patchnotes`, {
       cache: "no-store",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -55,13 +62,14 @@ export async function loadPublishedNotes(): Promise<PublishedNotes> {
     if (!body || typeof body !== "object" || !Array.isArray((body as { weeks?: unknown }).weeks)) {
       return { ok: false };
     }
+    const record = body as { weeks: unknown[]; has_more?: unknown };
     const weeks: WeekNotes[] = [];
-    for (const entry of (body as { weeks: unknown[] }).weeks) {
-      const week = readWeek(entry);
+    for (const entry of record.weeks) {
       if (!entry || typeof entry !== "object") return { ok: false };
+      const week = readWeek(entry);
       if (week) weeks.push(week);
     }
-    return { ok: true, weeks };
+    return { ok: true, weeks, hasMore: record.has_more === true };
   } catch {
     return { ok: false };
   }

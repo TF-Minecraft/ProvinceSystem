@@ -158,12 +158,22 @@ def _review_http(exc: Exception) -> HTTPException:
     raise exc
 
 
+_PUBLISHED_PAGE_LIMIT = 52
+
+
 @patchnotes_router.get("")
-def published_notes():
-    """Every approved week in one response, newest first."""
+def published_notes(limit: int = 8, before: str | None = None):
+    """A bounded page of approved weeks, newest first.
+
+    `before` is an exclusive week cursor. `has_more` is true when an older week
+    exists past this page.
+    """
+    if limit < 1 or limit > _PUBLISHED_PAGE_LIMIT:
+        raise HTTPException(status_code=400, detail="limit must be from 1 to 52")
+    before_key = _week_or_400(before) if before else None
     try:
         migrate()
-        weeks = list_published_notes()
+        weeks, has_more = list_published_notes(limit=limit, before=before_key)
     except (PatchnotesDBError, PatchnotesConfigError) as e:
         logger.exception("published_notes failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
@@ -174,7 +184,8 @@ def published_notes():
                 "bullets": [_serialize(row, public=True) for row in week["bullets"]],
             }
             for week in weeks
-        ]
+        ],
+        "has_more": has_more,
     }
 
 

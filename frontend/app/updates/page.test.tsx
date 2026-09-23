@@ -59,6 +59,13 @@ describe("Updates page", () => {
     expect(archive.indexOf("<details")).toBeLessThan(archive.indexOf("Fixed a chest"));
   });
 
+  it("offers the archive without including older weeks in the first response", () => {
+    const html = renderToStaticMarkup(<UpdatesPageView weeks={[current]} hasMore />);
+    expect(html).toContain("Earlier");
+    expect(html).toContain("Added a station");
+    expect(html).not.toContain("Fixed a chest");
+  });
+
   it("says when nothing is published", () => {
     expect(markup([])).toContain("Nothing has been published yet.");
   });

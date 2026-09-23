@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function UpdatesPage() {
-  const notes = await loadPublishedNotes();
+  const notes = await loadPublishedNotes({ limit: 1 });
   if (!notes.ok) {
     return <UpdatesPageView weeks={[]} unavailable />;
   }
-  return <UpdatesPageView weeks={notes.weeks} />;
+  return <UpdatesPageView weeks={notes.weeks} hasMore={notes.hasMore} />;
 }

@@ -204,23 +204,30 @@ class ListTest(unittest.TestCase):
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_published_notes_are_one_approved_query(self, mock_connect) -> None:
         cursor = mock.MagicMock()
-        cursor.fetchall.return_value = [
-            {"week": "2026-W39", "id": "a"},
-            {"week": "2026-W39", "id": "b"},
-            {"week": "2026-W38", "id": "c"},
+        cursor.fetchall.side_effect = [
+            [("2026-W39",), ("2026-W38",), ("2026-W37",)],
+            [
+                {"week": "2026-W39", "id": "a"},
+                {"week": "2026-W39", "id": "b"},
+                {"week": "2026-W38", "id": "c"},
+            ],
         ]
         mock_connect.return_value = _make_conn(cursor)
 
-        notes = db.list_published_notes()
+        notes, has_more = db.list_published_notes(limit=2, before="2026-W40")
 
+        self.assertTrue(has_more)
         self.assertEqual(
             [(week["week"], [bullet["id"] for bullet in week["bullets"]]) for week in notes],
             [("2026-W39", ["a", "b"]), ("2026-W38", ["c"])],
         )
-        sql = cursor.execute.call_args.args[0]
-        self.assertIn("status = 'approved'", sql)
-        self.assertIn("ORDER BY week DESC", sql)
-        self.assertEqual(cursor.execute.call_count, 1)
+        key_sql, key_params = cursor.execute.call_args_list[0].args
+        self.assertIn("LIMIT %s", key_sql)
+        self.assertEqual(key_params, ("2026-W40", "2026-W40", 3))
+        bullet_sql, bullet_params = cursor.execute.call_args_list[1].args
+        self.assertIn("week = ANY(%s)", bullet_sql)
+        self.assertEqual(bullet_params, (["2026-W39", "2026-W38"],))
+        self.assertIn("status = 'approved'", bullet_sql)
 
     @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")

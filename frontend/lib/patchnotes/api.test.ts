@@ -22,19 +22,19 @@ describe("loadPublishedNotes", () => {
                 { id: "3", section: "adjusted", body: "Rejected", deny_reason: "spoilers" },
               ],
             },
-            { week: "not-a-week", bullets: [] },
           ],
+          has_more: true,
         }),
         { status: 200 },
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const notes = await loadPublishedNotes();
+    const notes = await loadPublishedNotes({ limit: 1 });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://api.test/patchnotes",
+      "http://api.test/patchnotes?limit=1",
       expect.objectContaining({
         cache: "no-store",
         signal: expect.any(AbortSignal),
@@ -42,6 +42,7 @@ describe("loadPublishedNotes", () => {
     );
     expect(notes.ok).toBe(true);
     if (!notes.ok) return;
+    expect(notes.hasMore).toBe(true);
     expect(notes.weeks).toHaveLength(1);
     expect(notes.weeks[0].bullets.map((bullet) => bullet.body)).toEqual(["Visible"]);
     expect(JSON.stringify(notes.weeks)).not.toContain("spoilers");
