@@ -32,7 +32,7 @@ export default function UpdatesPageView({
               <WeekArchiveList weeks={earlier} />
             </section>
           ) : hasMore ? (
-            <EarlierArchive before={current.week} />
+            <EarlierArchive key={current.week} before={current.week} />
           ) : null}
         </div>
       ) : (
