@@ -25,6 +25,7 @@ import psycopg2  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from server import app  # noqa: E402
+from src.patchnotes.feedback import FeedbackError  # noqa: E402
 from src.patchnotes.db import (  # noqa: E402
     BulletNotFound,
     BulletNotPending,
@@ -91,6 +92,13 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertEqual(self.client.post("/patchnotes/staff/weeks/2026-W39/defer").status_code, 401)
         self.assertEqual(
             self.client.post("/patchnotes/staff/weeks/2026-W39/auto-approve").status_code, 401
+        )
+        self.assertEqual(
+            self.client.post(
+                "/patchnotes/staff/weeks/2026-W39/feedback",
+                json={"feedback": "Make the soup line shorter."},
+            ).status_code,
+            401,
         )
 
     def test_bad_staff_key_does_not_fall_through_to_session(self) -> None:
@@ -580,3 +588,47 @@ class WeekActionRouteTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["approved"], 3)
         mock_approve.assert_called_once_with("2026-W39")
+
+    @mock.patch("src.api.patchnotes_routes.apply_feedback")
+    @mock.patch("src.api.patchnotes_routes.interpret_feedback")
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets")
+    def test_feedback_rewrites_the_week(self, mock_list, mock_interpret, mock_apply) -> None:
+        mock_list.return_value = [_row()]
+        mock_interpret.return_value = [
+            {
+                "id": _BULLET_ID,
+                "action": "rewrite",
+                "section": "adjusted",
+                "body": "Soup keeps its food value.",
+            }
+        ]
+        mock_apply.return_value = {
+            "changed": 2,
+            "bullets": [_row(section="adjusted", body="Soup keeps its food value.")],
+        }
+        res = self.client.post(
+            "/patchnotes/staff/weeks/2026-W39/feedback",
+            headers=_HEADERS,
+            json={"feedback": "The soup line is too specific, and drop the masks line."},
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["changed"], 2)
+        self.assertEqual(res.json()["bullets"][0]["body"], "Soup keeps its food value.")
+        mock_interpret.assert_called_once()
+        self.assertEqual(
+            mock_interpret.call_args.args[1],
+            "The soup line is too specific, and drop the masks line.",
+        )
+
+    @mock.patch(
+        "src.api.patchnotes_routes.interpret_feedback",
+        side_effect=FeedbackError("Could not rewrite the note from that feedback."),
+    )
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
+    def test_feedback_failure_does_not_change_the_note(self, _mock_list, _mock_interpret) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/weeks/2026-W39/feedback",
+            headers=_HEADERS,
+            json={"feedback": "Make it shorter."},
+        )
+        self.assertEqual(res.status_code, 422)
