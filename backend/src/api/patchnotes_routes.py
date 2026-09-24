@@ -24,19 +24,29 @@ from src.patchnotes.db import (
     PatchnotesConfigError,
     PatchnotesDBError,
     approve_bullet,
+    add_folder_rule,
     current_week,
     deny_bullet,
+    ensure_folder,
+    get_folder,
     insert_bullet,
     insert_sourced_bullet,
     list_approved,
+    list_folders,
     list_pending,
     list_published_notes,
     list_published_weeks,
+    list_sync_tasks,
     load_preview,
     migrate,
+    observe_folder,
     parse_week,
+    queue_sync_task,
+    remove_added_folder,
     replace_preview,
+    request_added_folder,
 )
+from src.patchnotes.folders import catalog_entries, clean_folder_name, safe_rule
 from src.patchnotes.safety import hidden_knowledge_warning
 from src.patchnotes.summarize import signature_ok, summarize_push
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
@@ -304,10 +314,14 @@ def staff_create_bullet(body: CreateBulletBody):
     try:
         migrate()
         if body.source_key:
+            source_key = body.source_key
+            # One server-edit note per plugin per week. The watcher omits the week.
+            if source_key.startswith("watch:") and source_key.count(":") == 1:
+                source_key = f"{source_key}:{current_week()}"
             row = insert_sourced_bullet(
                 section=body.section,
                 body=body.body,
-                source_key=body.source_key,
+                source_key=source_key,
             )
             if row is None:
                 return {"duplicate": True, "source_key": body.source_key}
@@ -390,6 +404,211 @@ def staff_read_preview():
     if row is None:
         raise HTTPException(status_code=404, detail="No test preview")
     return _preview_payload(row)
+
+
+def _folder_payload(row: dict[str, Any], syncing: set[str]) -> dict[str, Any]:
+    rules = row.get("rules") if isinstance(row.get("rules"), list) else []
+    unclassified = row.get("unclassified") if isinstance(row.get("unclassified"), list) else []
+    return {
+        "name": row["name"],
+        "origin": row["origin"],
+        "repo": row.get("repo"),
+        "status": row["status"],
+        "dangerous": bool(row.get("dangerous")),
+        "reject_reason": row.get("reject_reason"),
+        "rules": rules,
+        "unclassified": unclassified,
+        "sync_task": row["name"] in syncing,
+    }
+
+
+class FolderNameBody(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def _check_name(cls, value: str) -> str:
+        return clean_folder_name(value)
+
+
+class FolderCatalogBody(BaseModel):
+    present: list[str] = Field(default_factory=list)
+
+    @field_validator("present")
+    @classmethod
+    def _check_present(cls, value: list[str]) -> list[str]:
+        return [clean_folder_name(item) for item in value]
+
+
+class FolderObservationBody(BaseModel):
+    status: Literal["pending", "active", "rejected"]
+    rules: list[str] | None = None
+    unclassified: list[str] = Field(default_factory=list)
+    reject_reason: str | None = None
+    dangerous: bool | None = None
+
+    @field_validator("rules")
+    @classmethod
+    def _check_rules(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        return [safe_rule(item) for item in value]
+
+    @field_validator("reject_reason")
+    @classmethod
+    def _check_reason(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        text = value.strip()
+        return text[:300] or None
+
+
+class FolderTrackBody(BaseModel):
+    glob: str
+
+    @field_validator("glob")
+    @classmethod
+    def _check_glob(cls, value: str) -> str:
+        return safe_rule(value)
+
+
+class SyncTaskBody(BaseModel):
+    folder: str
+
+    @field_validator("folder")
+    @classmethod
+    def _check_folder(cls, value: str) -> str:
+        return clean_folder_name(value)
+
+
+@patchnotes_router.get("/staff/folders", dependencies=[Depends(_staff_guard)])
+def staff_list_folders():
+    """Repo plugins, content packs, and folders staff added."""
+    try:
+        migrate()
+        rows = list_folders()
+        syncing = set(list_sync_tasks(current_week()))
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_list_folders failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"folders": [_folder_payload(row, syncing) for row in rows]}
+
+
+@patchnotes_router.post("/staff/folders", dependencies=[Depends(_staff_guard)])
+def staff_add_folder(body: FolderNameBody):
+    """Ask the host watcher to verify a plugin folder on TFMCMain."""
+    try:
+        migrate()
+        row = request_added_folder(body.name)
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_add_folder failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return _folder_payload(row, set())
+
+
+@patchnotes_router.delete("/staff/folders/{name}", dependencies=[Depends(_staff_guard)])
+def staff_remove_folder(name: str):
+    try:
+        folder_name = clean_folder_name(name)
+        migrate()
+        remove_added_folder(folder_name)
+    except BulletNotFound as e:
+        raise HTTPException(status_code=404, detail="Folder not found") from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_remove_folder failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"removed": folder_name}
+
+
+@patchnotes_router.post("/staff/folders/catalog", dependencies=[Depends(_staff_guard)])
+def staff_ensure_catalog(body: FolderCatalogBody):
+    """Keep repo plugins and content packs that exist on TFMCMain."""
+    present = set(body.present)
+    try:
+        migrate()
+        kept = []
+        for entry in catalog_entries():
+            if entry["name"] not in present:
+                continue
+            row = ensure_folder(
+                name=entry["name"],
+                origin=entry["origin"],
+                repo=entry["repo"],
+                dangerous=entry["dangerous"],
+                rules=entry["rules"],
+            )
+            kept.append(row["name"])
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_ensure_catalog failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {"ensured": kept}
+
+
+@patchnotes_router.post("/staff/folders/{name}/observation", dependencies=[Depends(_staff_guard)])
+def staff_observe_folder(name: str, body: FolderObservationBody):
+    try:
+        folder_name = clean_folder_name(name)
+        migrate()
+        row = observe_folder(
+            name=folder_name,
+            status=body.status,
+            rules=body.rules,
+            unclassified=body.unclassified,
+            reject_reason=body.reject_reason,
+            dangerous=body.dangerous,
+        )
+    except BulletNotFound as e:
+        raise HTTPException(status_code=404, detail="Folder not found") from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_observe_folder failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _folder_payload(row, set())
+
+
+@patchnotes_router.post("/staff/folders/{name}/track", dependencies=[Depends(_staff_guard)])
+def staff_track_rule(name: str, body: FolderTrackBody):
+    """Extend a folder's rules so a new kind of file can be watched."""
+    try:
+        folder_name = clean_folder_name(name)
+        migrate()
+        row = add_folder_rule(folder_name, body.glob)
+    except BulletNotFound as e:
+        raise HTTPException(status_code=404, detail="Folder not found") from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_track_rule failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _folder_payload(row, set())
+
+
+@patchnotes_router.post("/staff/sync-tasks", dependencies=[Depends(_staff_guard)])
+def staff_queue_sync_task(body: SyncTaskBody):
+    """Queue one Friday task to update GitHub from the main-server files."""
+    try:
+        migrate()
+        row = get_folder(body.folder)
+        if row is None or row["origin"] != "repo" or not row.get("repo"):
+            raise HTTPException(status_code=404, detail="Folder is not a GitHub plugin")
+        created = queue_sync_task(
+            folder_name=body.folder,
+            repo=str(row["repo"]),
+            week=current_week(),
+        )
+    except HTTPException:
+        raise
+    except (PatchnotesDBError, PatchnotesConfigError) as e:
+        logger.exception("staff_queue_sync_task failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"folder": body.folder, "created": created}
 
 
 @patchnotes_router.get("/staff/queue", dependencies=[Depends(_staff_guard)])

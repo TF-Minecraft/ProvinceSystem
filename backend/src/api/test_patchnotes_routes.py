@@ -62,6 +62,11 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertEqual(self.client.get("/patchnotes/staff/queue").status_code, 401)
         self.assertEqual(self.client.get("/patchnotes/staff/preview").status_code, 401)
         self.assertEqual(self.client.post("/patchnotes/staff/preview", json={}).status_code, 401)
+        self.assertEqual(self.client.get("/patchnotes/staff/folders").status_code, 401)
+        self.assertEqual(
+            self.client.post("/patchnotes/staff/folders", json={"name": "Essentials"}).status_code,
+            401,
+        )
         self.assertEqual(
             self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve").status_code, 401
         )
@@ -427,3 +432,63 @@ class PreviewRouteTest(unittest.TestCase):
         res = self.client.get("/patchnotes")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["weeks"], [])
+
+
+class FolderRouteTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    def test_a_path_is_not_a_folder_name(self) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/folders",
+            headers=_HEADERS,
+            json={"name": "../TFMCDev01"},
+        )
+        self.assertEqual(res.status_code, 422)
+
+    @mock.patch("src.api.patchnotes_routes.request_added_folder")
+    def test_add_folder_is_pending_until_the_watcher_checks_it(self, mock_add) -> None:
+        mock_add.return_value = {
+            "name": "Essentials",
+            "origin": "added",
+            "repo": None,
+            "status": "pending",
+            "dangerous": False,
+            "reject_reason": None,
+            "rules": [],
+            "unclassified": [],
+        }
+        res = self.client.post(
+            "/patchnotes/staff/folders",
+            headers=_HEADERS,
+            json={"name": "Essentials"},
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["status"], "pending")
+        self.assertEqual(res.json()["origin"], "added")
+
+    @mock.patch("src.api.patchnotes_routes.current_week", return_value="2026-W39")
+    @mock.patch("src.api.patchnotes_routes.insert_sourced_bullet", return_value=_row())
+    def test_a_watch_note_is_once_per_plugin_per_week(self, mock_insert, _week) -> None:
+        res = self.client.post(
+            "/patchnotes/staff/bullets",
+            headers=_HEADERS,
+            json={
+                "section": "adjusted",
+                "body": "A dungeon was adjusted on the main server.",
+                "source_key": "watch:MythicDungeons",
+            },
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn("MythicDungeons", res.json()["body"])
+        mock_insert.assert_called_once()
+        self.assertEqual(
+            mock_insert.call_args.kwargs["source_key"],
+            "watch:MythicDungeons:2026-W39",
+        )
