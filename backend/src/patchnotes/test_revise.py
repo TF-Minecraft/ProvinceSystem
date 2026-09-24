@@ -52,3 +52,12 @@ class RewriteTest(unittest.TestCase):
 
     def test_secret_replacement_is_refused(self) -> None:
         self.assertIsNone(rewrite("technical", "Rebuilt a plugin", "say: staff_key=abc"))
+
+    def test_a_question_is_not_the_new_line(self) -> None:
+        self.assertIsNone(
+            rewrite(
+                "adjusted",
+                "Adjusted the filet recipe",
+                "This has no use to the player, can you describe it better?",
+            )
+        )

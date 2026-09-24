@@ -100,6 +100,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
             ).status_code,
             401,
         )
+        self.assertEqual(self.client.post("/patchnotes/staff/weeks/2026-W39/reset").status_code, 401)
 
     def test_bad_staff_key_does_not_fall_through_to_session(self) -> None:
         res = self.client.get(
@@ -588,6 +589,16 @@ class WeekActionRouteTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["approved"], 3)
         mock_approve.assert_called_once_with("2026-W39")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.reset_week",
+        return_value={"week": "2026-W39", "deleted": 4},
+    )
+    def test_reset_removes_the_week(self, mock_reset) -> None:
+        res = self.client.post("/patchnotes/staff/weeks/2026-W39/reset", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["deleted"], 4)
+        mock_reset.assert_called_once_with("2026-W39")
 
     @mock.patch("src.api.patchnotes_routes.apply_feedback")
     @mock.patch("src.api.patchnotes_routes.interpret_feedback")

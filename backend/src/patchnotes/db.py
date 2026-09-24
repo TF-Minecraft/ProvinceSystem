@@ -973,6 +973,26 @@ def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dic
     return {"changed": changed, "bullets": bullets}
 
 
+def reset_week(week: str) -> dict[str, Any]:
+    """Remove every note for a week. Release keys stay, so those notes are not drafted again."""
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("DELETE FROM patchnote_bullets WHERE week = %s", (week_key,))
+            deleted = int(cur.rowcount)
+            cur.execute("DELETE FROM patchnote_previews WHERE week = %s", (week_key,))
+            cur.execute("DELETE FROM patchnote_week_status WHERE week = %s", (week_key,))
+            cur.execute("DELETE FROM patchnote_sync_tasks WHERE week = %s", (week_key,))
+            cur.execute(
+                "DELETE FROM patchnote_sources WHERE source_key LIKE %s",
+                (f"%{week_key}%",),
+            )
+    finally:
+        conn.close()
+    return {"week": week_key, "deleted": deleted}
+
+
 def get_week_status(week: str) -> dict[str, Any]:
     week_key = parse_week(week)
     conn = _connect()

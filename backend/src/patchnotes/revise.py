@@ -36,6 +36,7 @@ _COMPLAINT = re.compile(
     r")\b"
 )
 _SKIP_PHRASES = frozenset({"it", "this", "that", "the line", "line", "this line"})
+_ASK = re.compile(r"(?i)(\?\s*$|\b(can you|could you|would you)\b)")
 
 
 def rewrite(section: str, body: str, reason: str) -> tuple[str, str] | None:
@@ -78,7 +79,8 @@ def _explicit_replacement(reason: str) -> str | None:
 
 
 def _looks_like_replacement(reason: str) -> bool:
-    if _COMPLAINT.search(reason):
+    """A finished player sentence can replace a line. A question cannot."""
+    if _COMPLAINT.search(reason) or _ASK.search(reason):
         return False
     return player_text(reason) is not None
 
