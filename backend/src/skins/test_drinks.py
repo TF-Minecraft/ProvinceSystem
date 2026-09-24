@@ -445,12 +445,60 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(out["names"], "Sour Cider/Sunset Cider/Golden Cider")
         self.assertEqual(out["cooking_time"], 8)
         self.assertEqual(out["distill_time"], 40)
-        self.assertEqual(out["wood"], "oak")
+        self.assertEqual(out["wood"], 2)
+        self.assertEqual(out["barrel_type"], 2)
         self.assertEqual(out["difficulty"], 5)
         self.assertEqual(out["alcohol"], 12)
         self.assertTrue(out["glint"])
         self.assertEqual(out["drink_message"], "You feel tipsy.")
         self.assertEqual(out["color"], "#C45A12")
+
+    def test_wood_names_become_brewery_codes(self) -> None:
+        from skins.drinks import DrinkError, _validate_recipe
+
+        self._seed_catalog()
+        expected = {
+            "any": 0,
+            "birch": 1,
+            "oak": 2,
+            "jungle": 3,
+            "spruce": 4,
+            "acacia": 5,
+            "dark_oak": 6,
+            "dark oak": 6,
+            "crimson": 7,
+            "warped": 8,
+            "mangrove": 9,
+            "cherry": 10,
+            "bamboo": 11,
+            "cut_copper": 12,
+            "pale_oak": 13,
+            "Pale Oak": 13,
+            "0": 0,
+            "13": 13,
+            0: 0,
+            13: 13,
+        }
+        for raw, code in expected.items():
+            out = _validate_recipe(
+                {
+                    "name": "Wood Test",
+                    "ingredients": [{"id": "grape", "amount": 1}],
+                    "color": "#112233",
+                    "wood": raw,
+                }
+            )
+            self.assertEqual(out["wood"], code, raw)
+            self.assertEqual(out["barrel_type"], code, raw)
+        with self.assertRaises(DrinkError):
+            _validate_recipe(
+                {
+                    "name": "Wood Test",
+                    "ingredients": [{"id": "grape", "amount": 1}],
+                    "color": "#112233",
+                    "wood": "mahogany",
+                }
+            )
 
     def test_color_review_sheet(self) -> None:
         from skins.drink_review_sheet import build_drink_review_sheet

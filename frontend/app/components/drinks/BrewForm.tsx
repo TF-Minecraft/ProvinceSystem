@@ -74,7 +74,7 @@ export default function BrewForm({ session }: Props) {
   const [distillEnabled, setDistillEnabled] = useState(false);
   const [distillRuns, setDistillRuns] = useState(1);
   const [distillTime, setDistillTime] = useState(40);
-  const [wood, setWood] = useState("oak");
+  const [wood, setWood] = useState("2");
   const [age, setAge] = useState(0);
   const [difficulty, setDifficulty] = useState(3);
   const [alcohol, setAlcohol] = useState(0);
