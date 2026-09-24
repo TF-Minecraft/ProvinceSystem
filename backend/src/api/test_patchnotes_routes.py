@@ -592,12 +592,13 @@ class WeekActionRouteTest(unittest.TestCase):
 
     @mock.patch(
         "src.api.patchnotes_routes.reset_week",
-        return_value={"week": "2026-W39", "deleted": 4},
+        return_value={"week": "2026-W39", "removed": 1, "restored": 1},
     )
-    def test_reset_removes_the_week(self, mock_reset) -> None:
+    def test_reset_restores_original_notes(self, mock_reset) -> None:
         res = self.client.post("/patchnotes/staff/weeks/2026-W39/reset", headers=_HEADERS)
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["deleted"], 4)
+        self.assertEqual(res.json()["removed"], 1)
+        self.assertEqual(res.json()["restored"], 1)
         mock_reset.assert_called_once_with("2026-W39")
 
     @mock.patch("src.api.patchnotes_routes.apply_feedback")

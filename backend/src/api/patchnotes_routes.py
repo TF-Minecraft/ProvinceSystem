@@ -803,7 +803,7 @@ def staff_week_feedback(week: str, body: FeedbackBody):
 
 @patchnotes_router.post("/staff/weeks/{week}/reset", dependencies=[Depends(_staff_guard)])
 def staff_reset_week(week: str):
-    """Remove every note for a week."""
+    """Drop deny edits for a week and restore the original notes."""
     week_key = _week_or_400(week)
     try:
         migrate()

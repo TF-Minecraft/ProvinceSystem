@@ -974,23 +974,32 @@ def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dic
 
 
 def reset_week(week: str) -> dict[str, Any]:
-    """Remove every note for a week. Release keys stay, so those notes are not drafted again."""
+    """Drop deny edits and put the original notes back. Generated lines stay."""
     week_key = parse_week(week)
     conn = _connect()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("DELETE FROM patchnote_bullets WHERE week = %s", (week_key,))
-            deleted = int(cur.rowcount)
-            cur.execute("DELETE FROM patchnote_previews WHERE week = %s", (week_key,))
-            cur.execute("DELETE FROM patchnote_week_status WHERE week = %s", (week_key,))
-            cur.execute("DELETE FROM patchnote_sync_tasks WHERE week = %s", (week_key,))
             cur.execute(
-                "DELETE FROM patchnote_sources WHERE source_key LIKE %s",
-                (f"%{week_key}%",),
+                "DELETE FROM patchnote_bullets WHERE week = %s AND supersedes IS NOT NULL",
+                (week_key,),
             )
+            removed = int(cur.rowcount)
+            cur.execute(
+                """
+                UPDATE patchnote_bullets
+                SET status = 'pending',
+                    deny_reason = NULL,
+                    reviewed_at = NULL,
+                    revision_note = NULL
+                WHERE week = %s AND status = 'denied'
+                """,
+                (week_key,),
+            )
+            restored = int(cur.rowcount)
+            cur.execute("DELETE FROM patchnote_previews WHERE week = %s", (week_key,))
     finally:
         conn.close()
-    return {"week": week_key, "deleted": deleted}
+    return {"week": week_key, "removed": removed, "restored": restored}
 
 
 def get_week_status(week: str) -> dict[str, Any]:
