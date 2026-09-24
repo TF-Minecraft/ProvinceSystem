@@ -1,8 +1,9 @@
-import { Callout, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { Callout, CommandTable, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { animalHusbandryCommands } from "../data/animal-husbandry";
 
 export default function AnimalHusbandryPage() {
   return (
-    <WikiPage title="Animal Husbandry" lastModified="2026-09-23" intro="Raise livestock for milk, eggs, meat and materials. Claim your animals, keep them fed and clean, then breed successive generations for better genetics. You can own or co-own up to 15 animals.">
+    <WikiPage title="Animal Husbandry" lastModified="2026-09-24" intro="Raise livestock for milk, eggs, meat and materials. Claim your animals, keep them fed and clean, then breed successive generations for better genetics. You can own or co-own up to 15 animals.">
       <WikiSectionHeading id="getting-started">Claim your first animal</WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Get an Ownership Token, Universal Feed and a Glove.</li>
@@ -75,6 +76,12 @@ export default function AnimalHusbandryPage() {
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
         Food quality rolls between the star tier of effective genetics and the star tier of raw genetics. For example, 800 genetics and 100 care gives 400 effective genetics, so food can roll 3 to 5 stars. At 200 care, that animal produces 5-star food. Higher genetics also unlock better material drop tiers.
       </p>
+
+      <WikiSectionHeading id="finding">Finding your animals</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        <code>/animals</code> lists every animal you own or share, and the last place each one was seen. The count at the top is how many of your 15 slots are in use. Click a set of coordinates in chat to copy them. A shared animal is marked Co-owner. Visit an animal once if its place has not been recorded yet.
+      </p>
+      <CommandTable className="mt-4" commands={animalHusbandryCommands.commands} excludedStaffCommands={animalHusbandryCommands.excludedStaffCommands} />
 
       <WikiSectionHeading id="mounts">Caring for mounts</WikiSectionHeading>
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
