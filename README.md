@@ -40,15 +40,12 @@ python -m src.scripts.mapgen.mapmodes.fertility_mapmode --map main
 
 Run these commands before starting the backend; regeneration updates compiled
 definitions as well as map images. Docker Compose mounts the same output directory.
-When updating an existing deployment across the output-file cleanup, back up its
-output directory outside the checkout before pulling, then restore it afterward.
 Preserve runtime history and other server data: map regeneration only replaces
 rendered map assets, and does not reconstruct historical records.
 
-The retained ammo sprite source is `frontend/assets/wiki/ammo_sheet.png`. The
-grindstone assets are in `frontend/public/wiki/models/stations/` and
-`frontend/public/wiki/textures/stations/grindstone/`; temporary duplicate copies
-do not need to be committed.
+The ammo sprite source is `frontend/assets/wiki/ammo_sheet.png`. The grindstone
+assets are in `frontend/public/wiki/models/stations/` and
+`frontend/public/wiki/textures/stations/grindstone/`.
 
 ## License
 
