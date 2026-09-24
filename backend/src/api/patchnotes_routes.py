@@ -35,10 +35,12 @@ from src.patchnotes.db import (
     get_bullet,
     get_folder,
     get_week_status,
+    apply_feedback,
     insert_bullet,
     insert_sourced_bullet,
     list_approved,
     list_folders,
+    list_open_bullets,
     list_pending,
     list_published_notes,
     list_published_weeks,
@@ -55,6 +57,7 @@ from src.patchnotes.db import (
     revise_denied_bullet,
     undo_postpone,
 )
+from src.patchnotes.feedback import FeedbackError, interpret_feedback
 from src.patchnotes.folders import catalog_entries, clean_folder_name, safe_rule
 from src.patchnotes.safety import hidden_knowledge_warning
 from src.patchnotes.summarize import signature_ok, summarize_push
@@ -169,6 +172,18 @@ class CreateBulletBody(BaseModel):
         text = value.strip()
         if not text or len(text) > 200:
             raise ValueError("source_key is invalid")
+        return text
+
+
+class FeedbackBody(BaseModel):
+    feedback: str = Field(..., min_length=1, max_length=1000)
+
+    @field_validator("feedback")
+    @classmethod
+    def _strip_feedback(cls, value: str) -> str:
+        text = value.strip()
+        if not text:
+            raise ValueError("feedback is required")
         return text
 
 
@@ -756,3 +771,26 @@ def staff_auto_approve_week(week: str):
         logger.exception("staff_auto_approve_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"week": week_key, "approved": approved}
+
+
+@patchnotes_router.post("/staff/weeks/{week}/feedback", dependencies=[Depends(_staff_guard)])
+def staff_week_feedback(week: str, body: FeedbackBody):
+    """Rewrite this week's note from staff feedback. The feedback is not the new text."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        current = list_open_bullets(week_key)
+        edits = interpret_feedback(current, body.feedback)
+        result = apply_feedback(week_key, body.feedback, edits)
+    except FeedbackError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_feedback failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {
+        "week": week_key,
+        "changed": result["changed"],
+        "bullets": [_serialize(row, public=False) for row in result["bullets"]],
+    }
