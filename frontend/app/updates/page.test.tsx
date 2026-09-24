@@ -32,13 +32,21 @@ describe("Updates page", () => {
   it("shows the latest week open and folds technical notes", () => {
     const html = markup([current]);
     expect(html).toContain("Week of 21 September 2026");
+    expect(html).toContain("Highlights");
+    expect(html).toContain("Crafting");
     expect(html).toContain("Added a station");
+    expect(html).toContain("Bug fixes");
     expect(html).toContain("Fixed a door");
+    expect(html).toContain("Other");
     expect(html).toContain("Lowered a price");
     expect(html).toContain("Technical (1)");
     expect(html).toContain("Rebuilt a plugin");
+    expect(html).not.toContain(">New<");
+    expect(html).not.toContain(">Adjusted<");
     expect(html).not.toContain("<details open");
-    expect(html.indexOf("Added a station")).toBeLessThan(html.indexOf("<details"));
+    expect(html.indexOf("Highlights")).toBeLessThan(html.indexOf("Crafting"));
+    expect(html.indexOf("Crafting")).toBeLessThan(html.indexOf("Bug fixes"));
+    expect(html.indexOf("Bug fixes")).toBeLessThan(html.indexOf("<details"));
     expect(html.indexOf("<details")).toBeLessThan(html.indexOf("Rebuilt a plugin"));
   });
 

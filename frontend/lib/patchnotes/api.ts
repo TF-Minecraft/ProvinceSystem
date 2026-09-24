@@ -27,7 +27,13 @@ function readBullet(value: unknown): PublicBullet | null {
   // A leaked review row must not be rendered, even if this route is public.
   if ("status" in row && row.status !== "approved") return null;
   if (typeof row.deny_reason === "string" && row.deny_reason.trim() !== "") return null;
-  return { id: row.id, section: row.section, body: row.body };
+  return {
+    id: row.id,
+    section: row.section,
+    body: row.body,
+    ...(typeof row.topic === "string" && row.topic.trim() !== "" ? { topic: row.topic } : {}),
+    ...(row.highlight === true ? { highlight: true } : {}),
+  };
 }
 
 function readWeek(value: unknown): WeekNotes | null {

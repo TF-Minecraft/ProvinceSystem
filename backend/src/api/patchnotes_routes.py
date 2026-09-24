@@ -121,7 +121,11 @@ def _serialize(row: dict[str, Any], *, public: bool) -> dict[str, Any]:
         "section": row["section"],
         "body": row["body"],
         "created_at": _iso(row.get("created_at")),
+        "highlight": bool(row.get("highlight")),
     }
+    topic = str(row.get("topic") or "").strip()
+    if topic:
+        payload["topic"] = topic
     if public:
         return payload
     payload["status"] = row["status"]

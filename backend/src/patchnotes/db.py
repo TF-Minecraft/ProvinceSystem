@@ -30,7 +30,19 @@ _MIGRATED = False
 _WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
 
 _BULLET_COLUMNS = (
-    "id, week, section, body, status, deny_reason, created_at, reviewed_at, revision_note"
+    "id, week, section, body, status, deny_reason, created_at, reviewed_at, revision_note, topic, highlight"
+)
+TOPICS = (
+    "classes",
+    "combat",
+    "magic",
+    "crafting",
+    "professions",
+    "animals",
+    "world",
+    "town",
+    "dungeons",
+    "chat",
 )
 _NOT_POSTPONED = """
   AND NOT EXISTS (
@@ -204,6 +216,13 @@ def _clean_body(body: str) -> str:
     return text
 
 
+def _topic_or_none(value: Any) -> str | None:
+    text = str(value or "").strip().lower()
+    if text in TOPICS:
+        return text
+    return None
+
+
 def _clean_reason(reason: str) -> str:
     text = reason.strip()
     if not text:
@@ -309,7 +328,9 @@ def migrate() -> None:
                     ADD COLUMN IF NOT EXISTS supersedes UUID,
                     ADD COLUMN IF NOT EXISTS revision_note TEXT,
                     ADD COLUMN IF NOT EXISTS carried_from TEXT,
-                    ADD COLUMN IF NOT EXISTS carried_status TEXT
+                    ADD COLUMN IF NOT EXISTS carried_status TEXT,
+                    ADD COLUMN IF NOT EXISTS topic TEXT,
+                    ADD COLUMN IF NOT EXISTS highlight BOOLEAN NOT NULL DEFAULT FALSE
                 """
             )
             cur.execute(
@@ -522,18 +543,22 @@ def replace_preview(*, week: str, bullets: list[dict[str, Any]]) -> dict[str, An
     The row expires one hour after it is written. Public readers never see it.
     """
     week_key = parse_week(week)
-    stored: list[dict[str, str]] = []
+    stored: list[dict[str, Any]] = []
     for bullet in bullets:
         section = str(bullet.get("section") or "")
         if section not in SECTIONS:
             raise ValueError("section must be new, fixed, adjusted, or technical")
-        stored.append(
-            {
-                "id": str(bullet.get("id") or ""),
-                "section": section,
-                "body": _clean_body(str(bullet.get("body") or "")),
-            }
-        )
+        item: dict[str, Any] = {
+            "id": str(bullet.get("id") or ""),
+            "section": section,
+            "body": _clean_body(str(bullet.get("body") or "")),
+        }
+        topic = str(bullet.get("topic") or "").strip().lower()
+        if topic in TOPICS:
+            item["topic"] = topic
+        if bullet.get("highlight") is True:
+            item["highlight"] = True
+        stored.append(item)
     conn = _connect()
     try:
         with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -882,10 +907,17 @@ def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dic
                     cur.execute(
                         f"""
                         INSERT INTO patchnote_bullets
-                            (week, section, body, status, revision_note)
-                        VALUES (%s, %s, %s, 'pending', %s)
+                            (week, section, body, status, revision_note, topic, highlight)
+                        VALUES (%s, %s, %s, 'pending', %s, %s, %s)
                         """,
-                        (week_key, edit["section"], edit["body"], note),
+                        (
+                            week_key,
+                            edit["section"],
+                            edit["body"],
+                            note,
+                            _topic_or_none(edit.get("topic")),
+                            bool(edit.get("highlight")),
+                        ),
                     )
                     changed += 1
                     continue
@@ -896,10 +928,20 @@ def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dic
                         UPDATE patchnote_bullets
                         SET section = %s,
                             body = %s,
-                            revision_note = %s
+                            revision_note = %s,
+                            topic = %s,
+                            highlight = %s
                         WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
                         """,
-                        (edit["section"], edit["body"], note, bullet_id, week_key),
+                        (
+                            edit["section"],
+                            edit["body"],
+                            note,
+                            _topic_or_none(edit.get("topic")),
+                            bool(edit.get("highlight")),
+                            bullet_id,
+                            week_key,
+                        ),
                     )
                     changed += int(cur.rowcount)
                     continue

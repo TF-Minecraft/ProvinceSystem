@@ -20,6 +20,20 @@ logger = logging.getLogger("patchnotes.feedback")
 
 _MODEL = "claude-sonnet-5"
 _SECTIONS = frozenset({"new", "fixed", "adjusted", "technical"})
+_TOPICS = frozenset(
+    {
+        "classes",
+        "combat",
+        "magic",
+        "crafting",
+        "professions",
+        "animals",
+        "world",
+        "town",
+        "dungeons",
+        "chat",
+    }
+)
 _MAX_ADDS = 3
 
 _SYSTEM = """You rewrite a Minecraft server's weekly patch notes after staff feedback.
@@ -34,6 +48,9 @@ Rules:
 - drop a line when staff do not want it posted.
 - add a line only when staff asked for something that is not already there. At most 3.
 - Each body is one short player-facing sentence.
+- topic is one of classes, combat, magic, crafting, professions, animals, world, town, dungeons, chat.
+- highlight is true only for the few lines that belong in the short summary. At most 6.
+- A bug fix uses section fixed. A plugin or internal change uses section technical.
 - Do not copy the feedback into a body.
 - Do not include stat numbers, coordinates, file paths, commands, permissions, secrets, dungeon names, or lore-item names.
 - Never use an em dash.
@@ -101,26 +118,40 @@ def edits_from_response(
             body = _safe_body(str(item.get("body") or ""), feedback)
             if body is None:
                 continue
-            edits.append({"action": "add", "section": section, "body": body})
+            edits.append(_with_placement({"action": "add", "section": section, "body": body}, item))
             added += 1
     return edits
 
 
-def _rewrite(original: dict[str, Any], item: dict[str, Any], feedback: str) -> dict[str, str] | None:
+def _rewrite(original: dict[str, Any], item: dict[str, Any], feedback: str) -> dict[str, Any] | None:
     section = str(item.get("section") or original.get("section") or "")
     if section not in _SECTIONS:
         return None
     body = _safe_body(str(item.get("body") or ""), feedback)
     if body is None:
         return None
-    if body == str(original.get("body") or "").strip() and section == original.get("section"):
+    edit = _with_placement(
+        {
+            "id": str(original.get("id") or ""),
+            "action": "rewrite",
+            "section": section,
+            "body": body,
+        },
+        item,
+    )
+    same_line = body == str(original.get("body") or "").strip() and section == original.get("section")
+    if same_line and not edit.get("topic") and not edit.get("highlight"):
         return None
-    return {
-        "id": str(original.get("id") or ""),
-        "action": "rewrite",
-        "section": section,
-        "body": body,
-    }
+    return edit
+
+
+def _with_placement(edit: dict[str, Any], item: dict[str, Any]) -> dict[str, Any]:
+    topic = str(item.get("topic") or "").strip().lower()
+    if topic in _TOPICS:
+        edit["topic"] = topic
+    if item.get("highlight") is True:
+        edit["highlight"] = True
+    return edit
 
 
 def _safe_body(text: str, feedback: str) -> str | None:

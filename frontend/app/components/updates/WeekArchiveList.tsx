@@ -1,4 +1,4 @@
-import { groupBullets, SECTION_LABELS, type PublicBullet, type SectionName, type WeekNotes } from "@/lib/patchnotes/notes";
+import { arrangeNote, SECTION_LABELS, type PublicBullet, type WeekNotes } from "@/lib/patchnotes/notes";
 
 const detailsClass =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_35%,transparent)]";
@@ -38,14 +38,15 @@ export function TechnicalSection({ bullets }: { bullets: readonly PublicBullet[]
 }
 
 export function WeekSections({ bullets }: { bullets: readonly PublicBullet[] }) {
-  const groups = groupBullets(bullets);
-  const visible: SectionName[] = ["new", "fixed", "adjusted"];
+  const note = arrangeNote(bullets);
   return (
     <>
-      {visible.map((section) => (
-        <VisibleSection key={section} title={SECTION_LABELS[section]} bullets={groups[section]} />
+      <VisibleSection title="Highlights" bullets={note.highlights} />
+      {note.topics.map((topic) => (
+        <VisibleSection key={topic.id} title={topic.label} bullets={topic.bullets} />
       ))}
-      <TechnicalSection bullets={groups.technical} />
+      <VisibleSection title="Bug fixes" bullets={note.fixes} />
+      <TechnicalSection bullets={note.technical} />
     </>
   );
 }
