@@ -14,6 +14,7 @@ export const MAX_ARMOR_TIERS = ARMOR_TIERS.length;
 
 const HANDHELD = [
   "swords",
+  "lutes",
   "battleaxes",
   "daggers",
   "warhammers",
@@ -54,6 +55,7 @@ const LABELS: Record<string, string> = {
   mage: "Mage",
   infantry: "Infantry",
   swords: "Swords",
+  lutes: "Lutes",
   battleaxes: "Battleaxes",
   daggers: "Daggers",
   warhammers: "Warhammers",

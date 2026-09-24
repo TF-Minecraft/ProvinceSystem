@@ -50,6 +50,7 @@ ALLOWED_STYLES = frozenset(
 _HANDHELD_BASES = frozenset(
     {
         "swords",
+        "lutes",
         "battleaxes",
         "daggers",
         "warhammers",
