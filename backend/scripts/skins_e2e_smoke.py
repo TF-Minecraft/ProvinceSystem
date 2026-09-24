@@ -127,7 +127,8 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"link start: {r.status_code} {r.text}")
     start_body = r.json()
-    if not start_body.get("already_linked"):
+    completed_link = not start_body.get("already_linked")
+    if completed_link:
         if "code" not in start_body:
             fail(f"link start missing code: {start_body}")
         r = client.post(
@@ -153,8 +154,8 @@ def main() -> None:
     already = r.json()
     if not already.get("already_linked"):
         fail(f"expected already_linked: {already}")
-    if already.get("discord_username"):
-        fail(f"expected no stored discord_username: {already}")
+    if completed_link and already.get("discord_username") != "SmokeDiscord":
+        fail(f"expected stored discord_username SmokeDiscord: {already}")
     if "code" in already:
         fail(f"already linked should not return code: {already}")
 
@@ -170,8 +171,11 @@ def main() -> None:
     ]
     if match:
         notice_id = match[-1]["id"]
-        if match[-1].get("payload", {}).get("discord_username"):
-            fail(f"notice payload should not store username: {match[-1]}")
+        if (
+            completed_link
+            and match[-1].get("payload", {}).get("discord_username") != "SmokeDiscord"
+        ):
+            fail(f"notice payload should store username: {match[-1]}")
         r = client.post(
             "/skins/plugin/notices/ack",
             json={"ids": [notice_id]},

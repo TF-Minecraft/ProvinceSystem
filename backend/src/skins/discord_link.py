@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 from .codes import generate_plaintext_code, hash_secret
@@ -16,6 +17,10 @@ class LinkError(ValueError):
 
 
 _MC_NAME_MAX = 16
+_DISCORD_USERNAME_MAX = 32
+_USERNAME_UPDATES_MAX = 500
+# Account usernames only. Display names and nicks are not identity and are dropped.
+_DISCORD_USERNAME_RE = re.compile(r"^[A-Za-z0-9_.]{1,32}$")
 
 
 def _utcnow() -> datetime:
@@ -147,13 +152,69 @@ def start_link(
     return {"code": plaintext, "expires_at": expires_at}
 
 
+def _sanitize_discord_username(value: str | None) -> str | None:
+    """Keep a Discord account username. Anything else is omitted, never fatal."""
+    raw = str(value or "").strip()
+    if not raw or len(raw) > _DISCORD_USERNAME_MAX:
+        return None
+    if _DISCORD_USERNAME_RE.fullmatch(raw) is None:
+        return None
+    return raw
+
+
+def remember_discord_usernames(
+    updates: list[dict],
+    *,
+    overwrite: bool = False,
+) -> dict:
+    """Fill stored usernames for existing links. Does not create links."""
+    if not isinstance(updates, list):
+        raise LinkError("updates must be a list")
+    if len(updates) > _USERNAME_UPDATES_MAX:
+        raise LinkError("too many username updates")
+
+    updated = 0
+    with connect() as conn:
+        for item in updates:
+            if not isinstance(item, dict):
+                continue
+            discord_id = str(item.get("discord_user_id") or "").strip()
+            name = _sanitize_discord_username(item.get("discord_username"))
+            if not discord_id or name is None:
+                continue
+            if overwrite:
+                sql = """
+                    UPDATE discord_links
+                    SET discord_username = ?
+                    WHERE discord_user_id = ?
+                """
+            else:
+                sql = """
+                    UPDATE discord_links
+                    SET discord_username = ?
+                    WHERE discord_user_id = ?
+                      AND (
+                        discord_username IS NULL
+                        OR trim(discord_username) = ''
+                      )
+                """
+            cur = conn.execute(sql, (name, discord_id))
+            updated += cur.rowcount
+        conn.commit()
+    return {"updated": updated}
+
+
 def complete_link(
     code: str,
     discord_user_id: str,
     discord_username: str | None = None,
 ) -> dict:
-    """Bind Discord snowflake to Minecraft UUID. Nicks / display names are ignored."""
-    del discord_username  # identity is discord_user_id only
+    """Bind Discord snowflake to Minecraft UUID.
+
+    The snowflake is the identity. A Discord account username is stored only
+    so staff lookup can show it. Nicks and display names are ignored, and a
+    link still succeeds when the supplied name is not a username.
+    """
     plaintext = (code or "").strip()
     discord_id = (discord_user_id or "").strip()
     if not plaintext:
@@ -161,7 +222,7 @@ def complete_link(
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    username = None
+    username = _sanitize_discord_username(discord_username)
     code_hash = hash_secret(plaintext)
     now = _utcnow()
     linked_at = _iso(now)
@@ -532,8 +593,26 @@ if __name__ == "__main__":
 
     # Relink for alt check
     started2 = start_link(u1, "TestPlayer")
-    complete_link(started2["code"], d2, discord_username="DiscordTwo")
+    done2 = complete_link(started2["code"], d2, discord_username="DiscordTwo")
+    assert done2["discord_username"] == "DiscordTwo"
+    assert get_identity_status(u1)["discord_username"] == "DiscordTwo"
     assert get_discord_id_for_uuid(u1) == d2
+    filled = remember_discord_usernames(
+        [{"discord_user_id": d2, "discord_username": "other"}]
+    )
+    assert filled["updated"] == 0
+    replaced = remember_discord_usernames(
+        [{"discord_user_id": d2, "discord_username": "renamed_user"}],
+        overwrite=True,
+    )
+    assert replaced["updated"] == 1
+    assert get_identity_status(u1)["discord_username"] == "renamed_user"
+    skipped = remember_discord_usernames(
+        [{"discord_user_id": d2, "discord_username": "Bad Name"}],
+        overwrite=True,
+    )
+    assert skipped["updated"] == 0
+    assert get_identity_status(u1)["discord_username"] == "renamed_user"
 
     started3 = start_link(u2)
     try:
