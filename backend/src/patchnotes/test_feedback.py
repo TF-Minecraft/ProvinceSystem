@@ -98,6 +98,25 @@ class FeedbackInterpretationTest(unittest.TestCase):
         )
         self.assertEqual(edits, [])
 
+    def test_a_question_is_not_stored_as_a_line(self) -> None:
+        edits = interpret_feedback(
+            [_SOUP],
+            "The soup line is useless.",
+            complete=lambda _system, _user: _reply(
+                {
+                    "lines": [
+                        {
+                            "id": "soup",
+                            "action": "rewrite",
+                            "section": "adjusted",
+                            "body": "This has no use to the player, can you describe it better?",
+                        }
+                    ]
+                }
+            ),
+        )
+        self.assertEqual(edits, [])
+
     def test_unreadable_reply_is_an_error(self) -> None:
         with self.assertRaises(FeedbackError):
             interpret_feedback(

@@ -54,6 +54,7 @@ from src.patchnotes.db import (
     remove_added_folder,
     replace_preview,
     request_added_folder,
+    reset_week,
     revise_denied_bullet,
     undo_postpone,
 )
@@ -798,3 +799,18 @@ def staff_week_feedback(week: str, body: FeedbackBody):
         "changed": result["changed"],
         "bullets": [_serialize(row, public=False) for row in result["bullets"]],
     }
+
+
+@patchnotes_router.post("/staff/weeks/{week}/reset", dependencies=[Depends(_staff_guard)])
+def staff_reset_week(week: str):
+    """Remove every note for a week."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        result = reset_week(week_key)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_reset_week failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return result

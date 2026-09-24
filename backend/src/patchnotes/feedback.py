@@ -156,7 +156,7 @@ def _with_placement(edit: dict[str, Any], item: dict[str, Any]) -> dict[str, Any
 
 def _safe_body(text: str, feedback: str) -> str | None:
     cleaned = player_text(text.replace("—", ", ").replace("–", "-"))
-    if cleaned is None or _copies_feedback(cleaned, feedback):
+    if cleaned is None or cleaned.endswith("?") or _copies_feedback(cleaned, feedback):
         return None
     return cleaned
 
