@@ -23,12 +23,18 @@ from src.patchnotes.db import (
     BulletNotPending,
     PatchnotesConfigError,
     PatchnotesDBError,
+    WeekNotPostponed,
+    WeekPostponed,
     approve_bullet,
+    approve_pending_week,
     add_folder_rule,
     current_week,
+    defer_postponed_week,
     deny_bullet,
     ensure_folder,
+    get_bullet,
     get_folder,
+    get_week_status,
     insert_bullet,
     insert_sourced_bullet,
     list_approved,
@@ -41,10 +47,13 @@ from src.patchnotes.db import (
     migrate,
     observe_folder,
     parse_week,
+    postpone_week,
     queue_sync_task,
     remove_added_folder,
     replace_preview,
     request_added_folder,
+    revise_denied_bullet,
+    undo_postpone,
 )
 from src.patchnotes.folders import catalog_entries, clean_folder_name, safe_rule
 from src.patchnotes.safety import hidden_knowledge_warning
@@ -118,6 +127,9 @@ def _serialize(row: dict[str, Any], *, public: bool) -> dict[str, Any]:
     warning = hidden_knowledge_warning(str(row.get("body") or ""))
     if warning:
         payload["warning"] = warning
+    note = str(row.get("revision_note") or "").strip()
+    if note:
+        payload["revision_note"] = note
     return payload
 
 
@@ -649,4 +661,98 @@ def staff_deny_bullet(bullet_id: str, body: DenyBulletBody):
     except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
         logger.exception("staff_deny_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    try:
+        revision = revise_denied_bullet(row, body.reason)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error, ValueError):
+        logger.exception("staff_deny_bullet rewrite failed")
+        revision = None
+    payload = _serialize(row, public=False)
+    payload["revision"] = _serialize(revision, public=False) if revision else None
+    return payload
+
+
+@patchnotes_router.get("/staff/bullets/{bullet_id}", dependencies=[Depends(_staff_guard)])
+def staff_get_bullet(bullet_id: str):
+    bullet_id = _bullet_id_or_404(bullet_id)
+    try:
+        migrate()
+        row = get_bullet(bullet_id)
+    except BulletNotFound as e:
+        raise _review_http(e) from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_get_bullet failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)
+
+
+def _week_payload(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "week": row["week"],
+        "postponed": bool(row.get("postponed")),
+        "deferred_to": row.get("deferred_to"),
+    }
+
+
+@patchnotes_router.get("/staff/weeks/{week}", dependencies=[Depends(_staff_guard)])
+def staff_week_status(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        row = get_week_status(week_key)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_status failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _week_payload(row)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/postpone", dependencies=[Depends(_staff_guard)])
+def staff_postpone_week(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        row = postpone_week(week_key)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_postpone_week failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _week_payload(row)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/undo-postpone", dependencies=[Depends(_staff_guard)])
+def staff_undo_postpone(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        row = undo_postpone(week_key)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_undo_postpone failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _week_payload(row)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/defer", dependencies=[Depends(_staff_guard)])
+def staff_defer_week(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        row = defer_postponed_week(week_key)
+    except WeekNotPostponed as e:
+        raise HTTPException(status_code=409, detail="Week is not postponed") from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_defer_week failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _week_payload(row)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/auto-approve", dependencies=[Depends(_staff_guard)])
+def staff_auto_approve_week(week: str):
+    """Approve every line still waiting, except rewrites."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        approved = approve_pending_week(week_key)
+    except WeekPostponed as e:
+        raise HTTPException(status_code=409, detail="Week is postponed") from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_auto_approve_week failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"week": week_key, "approved": approved}

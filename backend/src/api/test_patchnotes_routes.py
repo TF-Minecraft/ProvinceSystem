@@ -25,7 +25,13 @@ import psycopg2  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from server import app  # noqa: E402
-from src.patchnotes.db import BulletNotFound, BulletNotPending, PatchnotesDBError  # noqa: E402
+from src.patchnotes.db import (  # noqa: E402
+    BulletNotFound,
+    BulletNotPending,
+    PatchnotesDBError,
+    WeekNotPostponed,
+    WeekPostponed,
+)
 
 _HEADERS = {"X-Staff-Key": "dev-staff-key"}
 _CREATED = datetime(2026, 9, 23, 12, 0, tzinfo=timezone.utc)
@@ -75,6 +81,16 @@ class PatchnotesRoutesTest(unittest.TestCase):
                 f"/patchnotes/staff/bullets/{_BULLET_ID}/deny", json={"reason": "no"}
             ).status_code,
             401,
+        )
+        self.assertEqual(self.client.get(f"/patchnotes/staff/bullets/{_BULLET_ID}").status_code, 401)
+        self.assertEqual(self.client.get("/patchnotes/staff/weeks/2026-W39").status_code, 401)
+        self.assertEqual(self.client.post("/patchnotes/staff/weeks/2026-W39/postpone").status_code, 401)
+        self.assertEqual(
+            self.client.post("/patchnotes/staff/weeks/2026-W39/undo-postpone").status_code, 401
+        )
+        self.assertEqual(self.client.post("/patchnotes/staff/weeks/2026-W39/defer").status_code, 401)
+        self.assertEqual(
+            self.client.post("/patchnotes/staff/weeks/2026-W39/auto-approve").status_code, 401
         )
 
     def test_bad_staff_key_does_not_fall_through_to_session(self) -> None:
@@ -177,19 +193,48 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertEqual(res.json()["status"], "approved")
         mock_approve.assert_called_once_with(_BULLET_ID)
 
+    @mock.patch("src.api.patchnotes_routes.revise_denied_bullet", return_value=None)
     @mock.patch(
         "src.api.patchnotes_routes.deny_bullet",
         return_value=_row(status="denied", deny_reason="Internal only", reviewed_at=_CREATED),
     )
-    def test_deny_stores_the_reason(self, mock_deny) -> None:
+    def test_deny_stores_the_reason(self, mock_deny, _mock_revise) -> None:
         res = self.client.post(
             f"/patchnotes/staff/bullets/{_BULLET_ID}/deny",
             json={"reason": "Internal only"},
             headers=_HEADERS,
         )
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["deny_reason"], "Internal only")
+        body = res.json()
+        self.assertEqual(body["deny_reason"], "Internal only")
+        self.assertIsNone(body["revision"])
         mock_deny.assert_called_once_with(_BULLET_ID, "Internal only")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.revise_denied_bullet",
+        return_value=_row(
+            id="22222222-2222-2222-2222-222222222222",
+            body="Added a station",
+            revision_note="Don't mention the vault",
+        ),
+    )
+    @mock.patch(
+        "src.api.patchnotes_routes.deny_bullet",
+        return_value=_row(status="denied", deny_reason="Don't mention the vault", reviewed_at=_CREATED),
+    )
+    def test_deny_returns_the_rewrite_without_putting_the_reason_in_the_body(
+        self, _mock_deny, _mock_revise
+    ) -> None:
+        res = self.client.post(
+            f"/patchnotes/staff/bullets/{_BULLET_ID}/deny",
+            json={"reason": "Don't mention the vault"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        revision = res.json()["revision"]
+        self.assertEqual(revision["body"], "Added a station")
+        self.assertEqual(revision["revision_note"], "Don't mention the vault")
+        self.assertNotIn("vault", revision["body"])
 
     def test_deny_requires_a_reason(self) -> None:
         res = self.client.post(
@@ -286,6 +331,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
                 status="approved",
                 deny_reason="should not leak",
                 reviewed_at=_CREATED,
+                revision_note="staff only",
             )
         ],
     )
@@ -298,6 +344,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
         self.assertNotIn("status", bullet)
         self.assertNotIn("reviewed_at", bullet)
         self.assertNotIn("warning", bullet)
+        self.assertNotIn("revision_note", bullet)
         mock_list.assert_called_once_with("2026-W39")
 
     def test_published_week_rejects_a_bad_week(self) -> None:
@@ -492,3 +539,44 @@ class FolderRouteTest(unittest.TestCase):
             mock_insert.call_args.kwargs["source_key"],
             "watch:MythicDungeons:2026-W39",
         )
+
+
+class WeekActionRouteTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    @mock.patch(
+        "src.api.patchnotes_routes.postpone_week",
+        return_value={"week": "2026-W39", "postponed": True, "deferred_to": None},
+    )
+    def test_postpone(self, mock_postpone) -> None:
+        res = self.client.post("/patchnotes/staff/weeks/2026-W39/postpone", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["postponed"])
+        mock_postpone.assert_called_once_with("2026-W39")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.defer_postponed_week",
+        side_effect=WeekNotPostponed("2026-W39"),
+    )
+    def test_defer_requires_a_hold(self, _mock_defer) -> None:
+        res = self.client.post("/patchnotes/staff/weeks/2026-W39/defer", headers=_HEADERS)
+        self.assertEqual(res.status_code, 409)
+
+    @mock.patch("src.api.patchnotes_routes.approve_pending_week", side_effect=WeekPostponed("2026-W39"))
+    def test_auto_approve_refuses_a_postponed_week(self, _mock_approve) -> None:
+        res = self.client.post("/patchnotes/staff/weeks/2026-W39/auto-approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 409)
+
+    @mock.patch("src.api.patchnotes_routes.approve_pending_week", return_value=3)
+    def test_auto_approve_counts_lines(self, mock_approve) -> None:
+        res = self.client.post("/patchnotes/staff/weeks/2026-W39/auto-approve", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["approved"], 3)
+        mock_approve.assert_called_once_with("2026-W39")

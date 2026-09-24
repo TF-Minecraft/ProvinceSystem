@@ -36,6 +36,12 @@ class ParseWeekTest(unittest.TestCase):
             db.parse_week("2026-W54")
 
 
+class NextWeekTest(unittest.TestCase):
+    def test_steps_into_the_next_iso_week(self) -> None:
+        self.assertEqual(db.next_week("2026-W39"), "2026-W40")
+        self.assertEqual(db.next_week("2026-W52"), "2026-W53")
+
+
 class CurrentWeekTest(unittest.TestCase):
     def test_zone_can_move_the_friday_cutoff(self) -> None:
         # Friday 2026-09-25 10:30 UTC is still morning in UTC and past noon in Berlin.
@@ -97,12 +103,27 @@ class MigrateTest(unittest.TestCase):
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_bullets", sql)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_sources", sql)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_previews", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_status", sql)
         self.assertIn("patchnote_bullets_deny_reason_chk", sql)
         self.assertIn("status = 'pending'", sql)
         self.assertTrue(db._MIGRATED)
 
         db.migrate()
         mock_connect.assert_called_once()
+
+
+class AutoApproveTest(unittest.TestCase):
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("patchnotes.db.get_week_status", return_value={"postponed": False})
+    @mock.patch("patchnotes.db.psycopg2.connect")
+    def test_skips_rewritten_lines(self, mock_connect, _status) -> None:
+        cursor = mock.MagicMock()
+        cursor.rowcount = 2
+        mock_connect.return_value = _make_conn(cursor)
+        self.assertEqual(db.approve_pending_week("2026-W39"), 2)
+        sql = cursor.execute.call_args.args[0]
+        self.assertIn("supersedes IS NULL", sql)
+        self.assertIn("status = 'pending'", sql)
 
 
 class PreviewTest(unittest.TestCase):
