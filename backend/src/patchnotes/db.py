@@ -840,6 +840,97 @@ def revise_denied_bullet(denied: dict[str, Any], reason: str) -> dict[str, Any] 
         conn.close()
 
 
+def list_open_bullets(week: str) -> list[dict[str, Any]]:
+    """Pending and approved lines that make up the current note."""
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT {_BULLET_COLUMNS}
+                FROM patchnote_bullets
+                WHERE week = %s AND status IN ('pending', 'approved')
+                ORDER BY created_at ASC, id ASC
+                """,
+                (week_key,),
+            )
+            return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dict[str, Any]:
+    """Apply interpreted edits. The feedback is stored on the review, not as the line.
+
+    Rewrites stay on the same row, so staff can deny again and Friday can still
+    publish a line that was waiting.
+    """
+    week_key = parse_week(week)
+    note = feedback.strip()
+    if not note:
+        raise ValueError("reason is required")
+    if len(note) > MAX_REASON_LEN:
+        note = note[: MAX_REASON_LEN - 1].rstrip() + "…"
+    changed = 0
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            for edit in edits:
+                action = str(edit.get("action") or "")
+                if action == "add":
+                    cur.execute(
+                        f"""
+                        INSERT INTO patchnote_bullets
+                            (week, section, body, status, revision_note)
+                        VALUES (%s, %s, %s, 'pending', %s)
+                        """,
+                        (week_key, edit["section"], edit["body"], note),
+                    )
+                    changed += 1
+                    continue
+                bullet_id = str(edit.get("id") or "")
+                if action == "rewrite" and bullet_id:
+                    cur.execute(
+                        """
+                        UPDATE patchnote_bullets
+                        SET section = %s,
+                            body = %s,
+                            revision_note = %s
+                        WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
+                        """,
+                        (edit["section"], edit["body"], note, bullet_id, week_key),
+                    )
+                    changed += int(cur.rowcount)
+                    continue
+                if action != "drop" or not bullet_id:
+                    continue
+                cur.execute(
+                    """
+                    UPDATE patchnote_bullets
+                    SET status = 'denied',
+                        deny_reason = %s,
+                        reviewed_at = now()
+                    WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
+                    """,
+                    (note, bullet_id, week_key),
+                )
+                changed += int(cur.rowcount)
+            cur.execute(
+                f"""
+                SELECT {_BULLET_COLUMNS}
+                FROM patchnote_bullets
+                WHERE week = %s AND status IN ('pending', 'approved')
+                ORDER BY created_at ASC, id ASC
+                """,
+                (week_key,),
+            )
+            bullets = [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    return {"changed": changed, "bullets": bullets}
+
+
 def get_week_status(week: str) -> dict[str, Any]:
     week_key = parse_week(week)
     conn = _connect()
