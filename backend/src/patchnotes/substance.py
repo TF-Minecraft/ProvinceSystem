@@ -18,6 +18,7 @@ _COLOR = re.compile(
     r"[&§][0-9a-fk-or]|&#[0-9a-fA-F]{6}|<[^>\n]{1,48}>|#[0-9a-fA-F]{6}",
     re.IGNORECASE,
 )
+_PLACEHOLDER = re.compile(r"\{[^{}\n]{1,40}\}|%[A-Za-z0-9_]{1,40}%")
 _UUID = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     re.IGNORECASE,
@@ -75,6 +76,11 @@ _LABELS = {
     "saturation": "food value",
     "max-stack-size": "stack size",
     "material": "look",
+    "cooking-options": "cooking",
+    "time": "cooking time",
+    "burn": "burning",
+    "freshness": "freshness",
+    "age": "freshness",
     "price": "price",
     "cost": "cost",
     "cooldown": "cooldown",
@@ -83,6 +89,9 @@ _LABELS = {
     "exp": "experience",
     "experience": "experience",
 }
+_GENERIC_KEY = frozenset(
+    {"item", "items", "type", "types", "default", "base", "data", "config", "custom", "template"}
+)
 _PARENT_NOUN = {
     "activities": "activity",
     "mobs": "creature",
@@ -193,18 +202,89 @@ def _canon(value):
     return value
 
 
-def _title(node: object) -> str | None:
+def _title(node: object, key: str = "") -> str | None:
+    """A name a player would recognize. Templates are read from the entry around them."""
     if not isinstance(node, dict):
         return None
+    raw = _raw_display(node)
+    if raw and not _PLACEHOLDER.search(raw):
+        return _safe_name(raw)
+    override = _override_subject(node)
+    if override:
+        return override
+    base = node.get("base")
+    if isinstance(base, dict):
+        named = _title(base, key)
+        if named:
+            return named
+    literal = _literal_words(raw)
+    human = _humanize(key)
+    if human and literal and literal not in human:
+        combined = f"{human} {literal}"
+    else:
+        combined = human or literal
+    if not combined or _PLACEHOLDER.search(combined):
+        return None
+    return _safe_name(combined)
+
+
+def _raw_display(node: dict) -> str | None:
     for key in _NAME_KEYS:
         raw = node.get(key)
         if isinstance(raw, str):
-            name = _safe_name(_plain(raw))
+            name = _plain(raw)
             if name:
                 return name
-    base = node.get("base")
-    if isinstance(base, dict):
-        return _title(base)
+    return None
+
+
+def _literal_words(raw: str | None) -> str:
+    if not raw:
+        return ""
+    text = _PLACEHOLDER.sub(" ", raw)
+    text = re.sub(r"[()]", " ", text)
+    words = re.findall(r"[A-Za-z]{3,}", text)
+    return " ".join(word.lower() for word in words)
+
+
+def _humanize(key: str) -> str:
+    if not key or _UUID.fullmatch(key):
+        return ""
+    parts = [
+        part.lower()
+        for part in re.split(r"[_\-\s]+", key)
+        if part and part.lower() not in _GENERIC_KEY and not part.isdigit()
+    ]
+    if not parts or len(parts) > 6:
+        return ""
+    return " ".join(parts)
+
+
+def _override_subject(node: dict) -> str | None:
+    """Concrete names under overrides, when the template name is only a placeholder."""
+    overrides = node.get("overrides")
+    if not isinstance(overrides, dict):
+        return None
+    names: list[str] = []
+    for item in overrides.values():
+        if not isinstance(item, dict):
+            continue
+        raw = _raw_display(item)
+        if not raw or _PLACEHOLDER.search(raw):
+            continue
+        safe = _safe_name(raw)
+        if safe and safe not in names:
+            names.append(safe)
+    if len(names) == 1:
+        return names[0]
+    if len(names) < 2:
+        return None
+    tails = [name.split()[-1].lower() for name in names]
+    word = max(set(tails), key=tails.count)
+    if tails.count(word) >= 2 and len(word) >= 3:
+        if not word.endswith("s"):
+            word += "s"
+        return _safe_name(word)
     return None
 
 
@@ -239,9 +319,7 @@ def _dict_facts(old: dict, new: dict, parent: str) -> list[tuple[str, str]]:
         noun = _PARENT_NOUN.get(str(key), "")
         if isinstance(before, dict) and isinstance(after, dict):
             if _looks_like_entry(before) or _looks_like_entry(after):
-                facts.extend(
-                    _entry_facts(_title(before), _title(after), before, after, noun or parent)
-                )
+                facts.extend(_entry_facts(before, after, noun or parent, str(key)))
             else:
                 facts.extend(_dict_facts(before, after, noun or parent or str(key)))
             continue
@@ -252,7 +330,7 @@ def _dict_facts(old: dict, new: dict, parent: str) -> list[tuple[str, str]]:
             facts.extend(_removed_tree(before, noun or parent))
             continue
         label = _LABELS.get(str(key))
-        title = _title(new) or _title(old)
+        title = _title(new, parent) or _title(old, parent)
         if label and title:
             sentence = _safe_sentence(f"Adjusted the {label} of {title}")
             if sentence:
@@ -260,33 +338,27 @@ def _dict_facts(old: dict, new: dict, parent: str) -> list[tuple[str, str]]:
     return _unique(facts)
 
 
-def _entry_facts(old_name: str | None, new_name: str | None, old: dict, new: dict, noun: str) -> list[tuple[str, str]]:
+def _entry_facts(old: dict, new: dict, noun: str, key: str) -> list[tuple[str, str]]:
     facts: list[tuple[str, str]] = []
-    if old_name and new_name and old_name != new_name:
+    old_name = _title(old, key)
+    new_name = _title(new, key)
+    old_display = _raw_display(old)
+    new_display = _raw_display(new)
+    if (
+        old_display
+        and new_display
+        and old_display != new_display
+        and not _PLACEHOLDER.search(old_display)
+        and not _PLACEHOLDER.search(new_display)
+        and old_name
+        and new_name
+        and old_name != new_name
+    ):
         sentence = _safe_sentence(f"Renamed {old_name} to {new_name}")
         if sentence:
             facts.append(("adjusted", sentence))
     title = new_name or old_name
-    labels: list[str] = []
-    for key in set(old) | set(new):
-        if str(key) == "base" and isinstance(old.get(key), dict) and isinstance(new.get(key), dict):
-            facts.extend(
-                _entry_facts(
-                    _title(old[key]) or title,
-                    _title(new[key]) or title,
-                    old[key],
-                    new[key],
-                    noun,
-                )
-            )
-            continue
-        if _skip_key(key) or key in _NAME_KEYS:
-            continue
-        if _canon(old.get(key)) == _canon(new.get(key)):
-            continue
-        label = _LABELS.get(str(key))
-        if label and label not in labels:
-            labels.append(label)
+    labels = _changed_labels(old, new)
     if title and labels:
         if len(labels) == 1:
             sentence = _safe_sentence(f"Adjusted the {labels[0]} of {title}")
@@ -296,52 +368,76 @@ def _entry_facts(old_name: str | None, new_name: str | None, old: dict, new: dic
             sentence = _safe_sentence(f"Adjusted {title}")
         if sentence:
             facts.append(("adjusted", sentence))
-    elif title and _canon(old) != _canon(new) and not facts:
-        sentence = _safe_sentence(_named("Adjusted", title, noun))
-        if sentence:
-            facts.append(("adjusted", sentence))
     return facts
 
 
-def _added_tree(node: dict, noun: str) -> list[tuple[str, str]]:
+def _changed_labels(old: dict, new: dict) -> list[str]:
+    """Player-visible fields that differ. Internal keys and templates are skipped."""
+    labels: list[str] = []
+    for key in set(old) | set(new):
+        if _skip_key(key) or key in _NAME_KEYS:
+            continue
+        before = old.get(key)
+        after = new.get(key)
+        if _canon(before) == _canon(after):
+            continue
+        if str(key) in {"base", "overrides"} and isinstance(before, dict) and isinstance(after, dict):
+            for nested in _changed_labels(before, after):
+                if nested not in labels:
+                    labels.append(nested)
+            continue
+        label = _LABELS.get(str(key))
+        if label and label not in labels:
+            labels.append(label)
+            continue
+        if isinstance(before, dict) and isinstance(after, dict) and not (
+            _looks_like_entry(before) or _looks_like_entry(after)
+        ):
+            for nested in _changed_labels(before, after):
+                if nested not in labels:
+                    labels.append(nested)
+    return labels
+
+
+def _added_tree(node: dict, noun: str, key: str = "") -> list[tuple[str, str]]:
     facts: list[tuple[str, str]] = []
-    title = _title(node)
+    title = _title(node, key)
     if title:
         sentence = _safe_sentence(_named("Added", title, noun))
         if sentence:
             facts.append(("new", sentence))
         return facts
-    for key, item in node.items():
-        if _skip_key(key) or not isinstance(item, dict):
+    for child_key, item in node.items():
+        if _skip_key(child_key) or not isinstance(item, dict):
             continue
-        child_noun = _PARENT_NOUN.get(str(key), noun)
-        if _title(item):
-            facts.extend(_added_tree(item, child_noun))
+        child_noun = _PARENT_NOUN.get(str(child_key), noun)
+        if _title(item, str(child_key)):
+            facts.extend(_added_tree(item, child_noun, str(child_key)))
         else:
-            for child in item.values():
-                if isinstance(child, dict) and _title(child):
-                    facts.extend(_added_tree(child, child_noun))
+            for grandchild_key, child in item.items():
+                if isinstance(child, dict) and _title(child, str(grandchild_key)):
+                    facts.extend(_added_tree(child, child_noun, str(grandchild_key)))
     return facts
 
 
-def _removed_tree(node: dict, noun: str) -> list[tuple[str, str]]:
-    title = _title(node)
+def _removed_tree(node: dict, noun: str, key: str = "") -> list[tuple[str, str]]:
+    title = _title(node, key)
     if title:
         sentence = _safe_sentence(_named("Removed", title, noun))
         if sentence:
             return [("adjusted", sentence)]
         return []
     facts: list[tuple[str, str]] = []
-    for key, item in node.items():
-        if _skip_key(key) or not isinstance(item, dict):
+    for child_key, item in node.items():
+        if _skip_key(child_key) or not isinstance(item, dict):
             continue
-        child_noun = _PARENT_NOUN.get(str(key), noun)
-        if _title(item):
-            facts.extend(_removed_tree(item, child_noun))
+        child_noun = _PARENT_NOUN.get(str(child_key), noun)
+        if _title(item, str(child_key)):
+            facts.extend(_removed_tree(item, child_noun, str(child_key)))
         else:
-            for child in item.values():
-                if isinstance(child, dict) and _title(child):
-                    facts.extend(_removed_tree(child, child_noun))
+            for grandchild_key, child in item.items():
+                if isinstance(child, dict) and _title(child, str(grandchild_key)):
+                    facts.extend(_removed_tree(child, child_noun, str(grandchild_key)))
     return facts
 
 
@@ -357,7 +453,7 @@ def _named(verb: str, title: str, noun: str) -> str:
 
 def _safe_sentence(text: str) -> str | None:
     cleaned = player_text(text)
-    if cleaned is None:
+    if cleaned is None or _PLACEHOLDER.search(cleaned):
         return None
     if cleaned[-1] not in ".!?":
         cleaned += "."

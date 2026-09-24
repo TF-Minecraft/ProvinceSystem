@@ -104,6 +104,56 @@ class FileReviewTest(unittest.TestCase):
         self.assertEqual(review.sentence, "")
         self.assertIsNone(summarize_reviews([review], dangerous=False))
 
+    def test_a_template_name_uses_the_entry_around_it(self) -> None:
+        old = """
+seafood_fish_filet:
+  name: '#6fa8dc{inherit} Filet'
+  food: 10
+  cooking-options:
+    frying_pan:
+      time: 15
+seafood_jellyfish:
+  name: '{inherit} Cubes'
+  model: seafood_jellyfish
+"""
+        new = """
+seafood_fish_filet:
+  name: '#6fa8dc{inherit} Filet'
+  food: 12
+  cooking-options:
+    frying_pan:
+      time: 20
+seafood_jellyfish:
+  name: '{inherit} Cubes'
+  model: seafood_jellyfish_cubes
+"""
+        review = file_review(old, new, compared=True)
+        self.assertIn("seafood fish filet", review.sentence)
+        self.assertNotIn("{inherit}", review.sentence)
+        self.assertNotIn("Cubes", review.sentence)
+        self.assertTrue(
+            "food value" in review.sentence or "cooking time" in review.sentence
+        )
+
+    def test_a_shared_override_name_is_used_when_the_template_is_empty(self) -> None:
+        old = """
+roast:
+  name: '{inherit}'
+  food: 20
+  overrides:
+    CHICKEN:
+      name: Whole Chicken
+    BEEF:
+      name: Beef Roast
+    PORK:
+      name: Pork Roast
+"""
+        new = old.replace("food: 20", "food: 16")
+        review = file_review(old, new, compared=True)
+        self.assertIn("roasts", review.sentence.lower())
+        self.assertNotIn("{inherit}", review.sentence)
+        self.assertIn("food value", review.sentence)
+
     def test_color_codes_alone_are_dropped(self) -> None:
         old = "display: '&aVoting'\n"
         new = "display: '&cVoting'\n"
