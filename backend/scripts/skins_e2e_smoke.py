@@ -136,7 +136,7 @@ def main() -> None:
             json={
                 "code": start_body["code"],
                 "discord_user_id": DISCORD_ID,
-                "discord_username": "SmokeDiscord",
+                "discord_username": "smokediscord",
             },
             headers={"X-Staff-Key": STAFF},
         )
@@ -154,8 +154,8 @@ def main() -> None:
     already = r.json()
     if not already.get("already_linked"):
         fail(f"expected already_linked: {already}")
-    if completed_link and already.get("discord_username") != "SmokeDiscord":
-        fail(f"expected stored discord_username SmokeDiscord: {already}")
+    if completed_link and already.get("discord_username") != "smokediscord":
+        fail(f"expected stored discord_username smokediscord: {already}")
     if "code" in already:
         fail(f"already linked should not return code: {already}")
 
@@ -173,7 +173,7 @@ def main() -> None:
         notice_id = match[-1]["id"]
         if (
             completed_link
-            and match[-1].get("payload", {}).get("discord_username") != "SmokeDiscord"
+            and match[-1].get("payload", {}).get("discord_username") != "smokediscord"
         ):
             fail(f"notice payload should store username: {match[-1]}")
         r = client.post(
@@ -263,7 +263,7 @@ def main() -> None:
         json={
             "code": r.json()["code"],
             "discord_user_id": DISCORD_ID,
-            "discord_username": "SmokeDiscord",
+            "discord_username": "smokediscord",
         },
         headers={"X-Staff-Key": STAFF},
     )

@@ -19,8 +19,11 @@ class LinkError(ValueError):
 _MC_NAME_MAX = 16
 _DISCORD_USERNAME_MAX = 32
 _USERNAME_UPDATES_MAX = 500
-# Account usernames only. Display names and nicks are not identity and are dropped.
-_DISCORD_USERNAME_RE = re.compile(r"^[A-Za-z0-9_.]{1,32}$")
+# Discord account usernames: lowercase, 2–32 chars, no leading, trailing,
+# or consecutive periods. Display names and nicks are dropped.
+_DISCORD_USERNAME_RE = re.compile(
+    r"^(?=.{2,32}$)(?!.*\.\.)[a-z0-9_](?:[a-z0-9_.]*[a-z0-9_])?$"
+)
 
 
 def _utcnow() -> datetime:
@@ -520,6 +523,11 @@ if __name__ == "__main__":
 
     migrate()
 
+    assert _sanitize_discord_username("DiscordTwo") is None
+    assert _sanitize_discord_username("a..b") is None
+    assert _sanitize_discord_username("a") is None
+    assert _sanitize_discord_username("ab") == "ab"
+
     u1 = "00000000-0000-0000-0000-00000000a501"
     u2 = "00000000-0000-0000-0000-00000000a502"
     d1 = "111111111111111111"
@@ -593,9 +601,9 @@ if __name__ == "__main__":
 
     # Relink for alt check
     started2 = start_link(u1, "TestPlayer")
-    done2 = complete_link(started2["code"], d2, discord_username="DiscordTwo")
-    assert done2["discord_username"] == "DiscordTwo"
-    assert get_identity_status(u1)["discord_username"] == "DiscordTwo"
+    done2 = complete_link(started2["code"], d2, discord_username="discordtwo")
+    assert done2["discord_username"] == "discordtwo"
+    assert get_identity_status(u1)["discord_username"] == "discordtwo"
     assert get_discord_id_for_uuid(u1) == d2
     filled = remember_discord_usernames(
         [{"discord_user_id": d2, "discord_username": "other"}]
