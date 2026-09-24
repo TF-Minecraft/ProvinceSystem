@@ -35,6 +35,7 @@ class RuleMatchTest(unittest.TestCase):
         files = {
             "config.yml": b"spawn: 1",
             "userdata/player.yml": b"home: 1",
+            "players.yml": b"points: 1",
             "item/sword.yml": b"name: sword",
             "language/lore-formats/item.yml": b"lore",
             "maps/dungeon1/players/11111111-1111-1111-1111-111111111111.yml": b"x",
@@ -100,7 +101,12 @@ class DiffTest(unittest.TestCase):
         change = FolderChange(
             edited=("maps/secretmaze/functions.yml", "maps/secretmaze/config.yml"),
         )
-        drafted = note_text("MythicDungeons", change, dangerous=True)
+        drafted = note_text(
+            "MythicDungeons",
+            change,
+            dangerous=True,
+            summary=("adjusted", "Adjusted a named room"),
+        )
         self.assertIsNotNone(drafted)
         assert drafted is not None
         _section, body = drafted
@@ -109,17 +115,32 @@ class DiffTest(unittest.TestCase):
         self.assertNotIn("functions", body)
         self.assertNotIn("MythicDungeons", body)
 
-    def test_an_ordinary_edit_names_the_plugin_only(self) -> None:
+    def test_an_ordinary_edit_keeps_the_summary_and_drops_a_vague_line(self) -> None:
         from patchnotes.folders import FolderChange
 
+        change = FolderChange(edited=("item/sword.yml",))
+        self.assertIsNone(note_text("MMOItems", change, dangerous=False, summary=None))
         drafted = note_text(
             "MMOItems",
-            FolderChange(edited=("item/sword.yml",)),
+            change,
             dangerous=False,
+            summary=("adjusted", "Adjusted the attack damage of Stone Sword."),
         )
         assert drafted is not None
-        self.assertEqual(drafted[1], "MMOItems was edited on the main server.")
-        self.assertNotIn("sword", drafted[1])
+        self.assertEqual(drafted[1], "Adjusted the attack damage of Stone Sword.")
+        self.assertNotIn("sword.yml", drafted[1])
+
+    def test_a_dungeon_without_a_real_diff_is_dropped(self) -> None:
+        from patchnotes.folders import FolderChange
+
+        self.assertIsNone(
+            note_text(
+                "MythicDungeons",
+                FolderChange(edited=("maps/secretmaze/config.yml",)),
+                dangerous=True,
+                summary=None,
+            )
+        )
 
 
 class PathTest(unittest.TestCase):
