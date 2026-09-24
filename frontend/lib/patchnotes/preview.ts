@@ -17,7 +17,13 @@ export function readStaffPreview(value: unknown): StaffPreview | null {
       continue;
     }
     if (!isSectionName(bullet.section) || bullet.body.trim() === "") continue;
-    bullets.push({ id: bullet.id, section: bullet.section, body: bullet.body });
+    bullets.push({
+      id: bullet.id,
+      section: bullet.section,
+      body: bullet.body,
+      ...(typeof bullet.topic === "string" && bullet.topic.trim() !== "" ? { topic: bullet.topic } : {}),
+      ...(bullet.highlight === true ? { highlight: true } : {}),
+    });
   }
   if (bullets.length === 0) return null;
   return { week: row.week, label: weekLabel(row.week), bullets, expiresAt: row.expires_at };
