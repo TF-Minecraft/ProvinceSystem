@@ -881,11 +881,10 @@ def _kit_skins_search_dirs() -> list:
         dirs.append(Path(env))
     # ProvinceSystem/backend/assets/kit_skins (plugin sync target)
     dirs.append(_kit_skins_dir())
-    # Monorepo fallback: RPC plugin resource shipped with the jar (local only)
+    # Workspace fallback: sibling RPCharacters checkout's bundled assets (local only)
     tfmc_root = _backend_root().parent.parent
     dirs.append(
         tfmc_root
-        / "Workspace"
         / "rpcharacters"
         / "src"
         / "main"
