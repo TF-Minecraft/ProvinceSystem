@@ -51,21 +51,22 @@ export function effectLabel(id: string): string {
     .join(" ");
 }
 
+/** BreweryX recipes.yml wood indexes. The form submits the code. */
 export const WOOD_OPTIONS: Array<{ id: string; label: string }> = [
   { id: "0", label: "Any" },
-  { id: "oak", label: "Oak" },
-  { id: "birch", label: "Birch" },
-  { id: "spruce", label: "Spruce" },
-  { id: "jungle", label: "Jungle" },
-  { id: "acacia", label: "Acacia" },
-  { id: "dark_oak", label: "Dark Oak" },
-  { id: "mangrove", label: "Mangrove" },
-  { id: "cherry", label: "Cherry" },
-  { id: "bamboo", label: "Bamboo" },
-  { id: "crimson", label: "Crimson" },
-  { id: "warped", label: "Warped" },
-  { id: "pale_oak", label: "Pale Oak" },
-  { id: "cut_copper", label: "Cut Copper" },
+  { id: "1", label: "Birch" },
+  { id: "2", label: "Oak" },
+  { id: "3", label: "Jungle" },
+  { id: "4", label: "Spruce" },
+  { id: "5", label: "Acacia" },
+  { id: "6", label: "Dark Oak" },
+  { id: "7", label: "Crimson" },
+  { id: "8", label: "Warped" },
+  { id: "9", label: "Mangrove" },
+  { id: "10", label: "Cherry" },
+  { id: "11", label: "Bamboo" },
+  { id: "12", label: "Cut Copper" },
+  { id: "13", label: "Pale Oak" },
 ];
 
 export const MAX_PNG_BYTES = 512 * 1024;

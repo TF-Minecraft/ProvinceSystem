@@ -385,24 +385,23 @@ def ack_drink_notification(notification_id: int) -> dict:
 
 # --- recipe validation ---
 
-WOOD_IDS = frozenset(
-    {
-        "any",
-        "birch",
-        "oak",
-        "jungle",
-        "spruce",
-        "acacia",
-        "dark_oak",
-        "crimson",
-        "warped",
-        "mangrove",
-        "cherry",
-        "bamboo",
-        "cut_copper",
-        "pale_oak",
-    }
-)
+# BreweryX BarrelWoodType indexes written to recipes.yml `wood:`.
+WOOD_CODES = {
+    "any": 0,
+    "birch": 1,
+    "oak": 2,
+    "jungle": 3,
+    "spruce": 4,
+    "acacia": 5,
+    "dark_oak": 6,
+    "crimson": 7,
+    "warped": 8,
+    "mangrove": 9,
+    "cherry": 10,
+    "bamboo": 11,
+    "cut_copper": 12,
+    "pale_oak": 13,
+}
 
 
 def _validate_names(raw: dict[str, Any]) -> str | None:
@@ -432,26 +431,30 @@ def _validate_names(raw: dict[str, Any]) -> str | None:
     return "/".join(out)
 
 
-def _validate_wood(raw: dict[str, Any]) -> int | str | None:
+def _validate_wood(raw: dict[str, Any]) -> int | None:
+    """Return the BreweryX wood index. Names are accepted and stored as that code."""
     wood_raw = raw.get("wood", raw.get("barrel_type"))
     if wood_raw is None or wood_raw == "":
         return None
     if isinstance(wood_raw, bool):
         raise DrinkError("wood must be an integer 0-13 or wood id")
-    if isinstance(wood_raw, (int, float)) and not isinstance(wood_raw, bool):
+    if isinstance(wood_raw, (int, float)):
+        if isinstance(wood_raw, float) and not wood_raw.is_integer():
+            raise DrinkError("wood must be an integer 0-13 or wood id")
         n = int(wood_raw)
         if n < 0 or n > 13:
             raise DrinkError("wood must be 0-13")
         return n
-    text = str(wood_raw).strip().lower().replace(" ", "_")
+    text = str(wood_raw).strip().lower().replace(" ", "_").replace("-", "_")
     if text.isdigit():
         n = int(text)
         if n < 0 or n > 13:
             raise DrinkError("wood must be 0-13")
         return n
-    if text not in WOOD_IDS:
+    code = WOOD_CODES.get(text)
+    if code is None:
         raise DrinkError(f"unknown wood '{wood_raw}'")
-    return text
+    return code
 
 
 def _optional_prose(raw: dict[str, Any], key: str, *, max_len: int) -> str | None:
