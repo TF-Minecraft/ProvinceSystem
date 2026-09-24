@@ -35,6 +35,7 @@ from src.skins.discord_link import (
     LinkError,
     complete_link,
     get_identity_status,
+    remember_discord_usernames,
     record_guild_joined,
     record_guild_left,
     start_link,
@@ -151,8 +152,18 @@ class LinkStartBody(BaseModel):
 class LinkCompleteBody(BaseModel):
     code: str = Field(..., min_length=1)
     discord_user_id: str = Field(..., min_length=1)
-    # Accepted for old bot payloads; ignored. Link is discord_user_id only.
+    # Optional account username for staff lookup. Display names are dropped.
     discord_username: str | None = None
+
+
+class DiscordUsernameUpdate(BaseModel):
+    discord_user_id: str = Field(..., min_length=1, max_length=32)
+    discord_username: str | None = Field(default=None, max_length=80)
+
+
+class DiscordUsernamesBody(BaseModel):
+    updates: list[DiscordUsernameUpdate] = Field(default_factory=list)
+    overwrite: bool = False
 
 
 class PluginNoticesAckBody(BaseModel):
@@ -343,7 +354,33 @@ def post_discord_link_complete(
 ):
     _require_staff(x_staff_key)
     try:
-        return complete_link(body.code, body.discord_user_id)
+        return complete_link(
+            body.code,
+            body.discord_user_id,
+            discord_username=body.discord_username,
+        )
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/usernames")
+def post_discord_usernames(
+    body: DiscordUsernamesBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    """Store Discord account usernames on existing links for staff lookup."""
+    _require_staff(x_staff_key)
+    try:
+        return remember_discord_usernames(
+            [
+                {
+                    "discord_user_id": item.discord_user_id,
+                    "discord_username": item.discord_username,
+                }
+                for item in body.updates
+            ],
+            overwrite=body.overwrite,
+        )
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
