@@ -32,8 +32,10 @@ from .folders import (
     skip_directory,
     tracked_files,
 )
+from .substance import file_review, summarize_reviews
 
 _MAX_READ = 2_000_000
+_MAX_TEXT = 100_000
 
 
 def read_plugin_files(folder: Path) -> dict[str, bytes]:
@@ -144,24 +146,84 @@ def _verify(plugins: Path, folder: dict) -> dict:
     }
 
 
-def _scan_active(plugins: Path, folder: dict, previous: dict | None) -> tuple[dict, FolderChange | None, bool]:
+def _text_snapshot(raw: dict[str, bytes], hashes: dict[str, str]) -> dict[str, str]:
+    texts: dict[str, str] = {}
+    for relative in hashes:
+        payload = raw.get(relative) or b""
+        if not payload or len(payload) > _MAX_TEXT:
+            continue
+        try:
+            texts[relative] = payload.decode("utf-8")
+        except UnicodeError:
+            continue
+    return texts
+
+
+def _previous_texts(previous: dict | None) -> dict[str, str]:
+    if not isinstance(previous, dict) or not isinstance(previous.get("texts"), dict):
+        return {}
+    return {
+        str(path): text
+        for path, text in previous["texts"].items()
+        if isinstance(text, str) and not excluded_relative(str(path))
+    }
+
+
+def _scan_active(
+    plugins: Path, folder: dict, previous: dict | None
+) -> tuple[dict, FolderChange | None, bool, tuple[str, str] | None]:
     name = str(folder["name"])
     found = plugin_folder(plugins, name)
     rules = list(folder.get("rules") or [])
     if found is None or not rules:
-        stored = previous or {"files": {}, "rules": rules}
-        return stored, None, False
-    current = tracked_files(read_plugin_files(found), rules)
+        stored = previous or {"files": {}, "rules": rules, "texts": {}}
+        return stored, None, False, None
+    raw = read_plugin_files(found)
+    current = tracked_files(raw, rules)
+    current_texts = _text_snapshot(raw, current)
     prev_files = None if previous is None else previous.get("files")
-    if prev_files is not None and not isinstance(prev_files, dict):
+    if not isinstance(prev_files, dict):
         prev_files = None
+    else:
+        prev_files = {
+            str(path): digest
+            for path, digest in prev_files.items()
+            if not excluded_relative(str(path))
+        }
+    prev_texts = _previous_texts(previous)
     rules_changed = previous is not None and list(previous.get("rules") or []) != rules
     snapshot, change, baselined = diff_tracked(
-        prev_files if isinstance(prev_files, dict) else None,
+        prev_files,
         current,
         rules_changed=rules_changed,
     )
-    return {"files": snapshot, "rules": rules}, change, baselined
+    kept_previous = change is None and not baselined and snapshot != current
+    if kept_previous:
+        texts = prev_texts
+    else:
+        texts = {path: current_texts[path] for path in snapshot if path in current_texts}
+    summary = None
+    if change is not None:
+        reviews = []
+        for path in (*change.added, *change.edited, *change.removed):
+            if path in change.added:
+                reviews.append(
+                    file_review(None, current_texts.get(path), compared=path in current_texts)
+                )
+            elif path in change.removed:
+                reviews.append(
+                    file_review(prev_texts.get(path), None, compared=path in prev_texts)
+                )
+            else:
+                reviews.append(
+                    file_review(
+                        prev_texts.get(path),
+                        current_texts.get(path),
+                        compared=path in prev_texts and path in current_texts,
+                    )
+                )
+        summary = summarize_reviews(reviews, dangerous=bool(folder.get("dangerous")))
+    return {"files": snapshot, "rules": rules, "texts": texts}, change, baselined, summary
 
 
 def scan(plugins: Path, state_path: Path, api_base: str, staff_key: str) -> dict:
@@ -192,14 +254,19 @@ def scan(plugins: Path, state_path: Path, api_base: str, staff_key: str) -> dict
             if folder.get("status") != "active":
                 continue
         previous = stored.get(name) if isinstance(stored.get(name), dict) else None
-        snapshot, change, did_baseline = _scan_active(root, folder, previous)
+        snapshot, change, did_baseline, summary = _scan_active(root, folder, previous)
         stored[name] = snapshot
         if did_baseline:
             baselined += 1
             continue
         if change is None:
             continue
-        drafted = note_text(name, change, dangerous=bool(folder.get("dangerous")))
+        drafted = note_text(
+            name,
+            change,
+            dangerous=bool(folder.get("dangerous")),
+            summary=summary,
+        )
         if drafted is None:
             continue
         section, body = drafted

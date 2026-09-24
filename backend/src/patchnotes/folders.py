@@ -59,7 +59,16 @@ HARD_SUFFIXES = (
     ".zip",
     ".lock",
 )
-SKIP_FILE_NAMES = frozenset({"permissions.yml", "plugin.yml", "session.lock"})
+SKIP_FILE_NAMES = frozenset(
+    {
+        "permissions.yml",
+        "plugin.yml",
+        "session.lock",
+        "players.yml",
+        "playerdata.yml",
+        "usercache.yml",
+    }
+)
 
 # Plugin folder on TFMCMain -> GitHub repo name. Aliases cover folders whose
 # names are not the repository name.
@@ -336,26 +345,33 @@ def diff_tracked(
     return current, change, False
 
 
-def note_text(folder: str, change: FolderChange, *, dangerous: bool) -> tuple[str, str] | None:
-    """A pending line, or None when the line would reveal something it should not."""
+def note_text(
+    folder: str,
+    change: FolderChange,
+    *,
+    dangerous: bool,
+    summary: tuple[str, str] | None = None,
+) -> tuple[str, str] | None:
+    """A pending line, or None when the diff has nothing safe to say.
+
+    Dangerous folders stay vague. Every other line has to name what changed.
+    """
+    if not change.any or summary is None:
+        return None
     if dangerous:
         body = "A dungeon was adjusted on the main server."
         section = "adjusted"
-    elif change.added and not change.edited and not change.removed:
-        body = f"New files were added under {folder} on the main server."
-        section = "new"
-    elif change.removed and not change.added and not change.edited:
-        body = f"Files were removed under {folder} on the main server."
-        section = "adjusted"
     else:
-        body = f"{folder} was edited on the main server."
-        section = "adjusted"
-    if player_text(body) is None:
+        section, body = summary
+        if section not in {"new", "fixed", "adjusted", "technical"}:
+            return None
+    cleaned = player_text(body)
+    if cleaned is None:
         return None
     for secret in (*change.added, *change.edited, *change.removed):
-        if secret and secret in body:
+        if secret and secret in cleaned:
             return None
-    return section, body
+    return section, cleaned
 
 
 def catalog_entries() -> list[dict]:
