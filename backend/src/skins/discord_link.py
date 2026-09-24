@@ -19,10 +19,11 @@ class LinkError(ValueError):
 _MC_NAME_MAX = 16
 _DISCORD_USERNAME_MAX = 32
 _USERNAME_UPDATES_MAX = 500
-# Discord account usernames: lowercase, 2–32 chars, no leading, trailing,
-# or consecutive periods. Display names and nicks are dropped.
+# Discord account usernames: lowercase, 2–32 characters, letters, digits,
+# underscore, and period. Consecutive periods are rejected. A period may
+# start or end the name. Display names and nicks are dropped.
 _DISCORD_USERNAME_RE = re.compile(
-    r"^(?=.{2,32}$)(?!.*\.\.)[a-z0-9_](?:[a-z0-9_.]*[a-z0-9_])?$"
+    r"^(?=.{2,32}$)(?!.*\.\.)[a-z0-9_.]+$"
 )
 
 
@@ -527,6 +528,7 @@ if __name__ == "__main__":
     assert _sanitize_discord_username("a..b") is None
     assert _sanitize_discord_username("a") is None
     assert _sanitize_discord_username("ab") == "ab"
+    assert _sanitize_discord_username(".a.b.") == ".a.b."
 
     u1 = "00000000-0000-0000-0000-00000000a501"
     u2 = "00000000-0000-0000-0000-00000000a502"
