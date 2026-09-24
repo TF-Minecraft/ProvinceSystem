@@ -1,9 +1,9 @@
 """Postgres storage for weekly patch note bullets.
 
 A bullet is one player-facing line in a week's note. Staff create it as
-pending, then approve it or deny it with a reason. Approved bullets are the
-only rows a public reader is allowed to see. Pending and denied rows stay on
-the staff queue.
+pending, then approve it or deny it with a reason. A denial that can be
+rewritten becomes a new pending line. Approved bullets are the only rows a
+public reader is allowed to see. A postponed week stays off the public page.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import psycopg2
 import psycopg2.extras
 
+from .revise import rewrite
+
 logger = logging.getLogger("patchnotes.db")
 
 SECTIONS = ("new", "fixed", "adjusted", "technical")
@@ -28,8 +30,16 @@ _MIGRATED = False
 _WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
 
 _BULLET_COLUMNS = (
-    "id, week, section, body, status, deny_reason, created_at, reviewed_at"
+    "id, week, section, body, status, deny_reason, created_at, reviewed_at, revision_note"
 )
+_NOT_POSTPONED = """
+  AND NOT EXISTS (
+      SELECT 1 FROM patchnote_week_status
+      WHERE patchnote_week_status.week = patchnote_bullets.week
+        AND patchnote_week_status.postponed
+  )
+"""
+_MAX_REVISIONS = 3
 _INSERT_BULLET = f"""
 INSERT INTO patchnote_bullets (week, section, body, status)
 VALUES (%s, %s, %s, 'pending')
@@ -55,6 +65,7 @@ _LIST_APPROVED = f"""
 SELECT {_BULLET_COLUMNS}
 FROM patchnote_bullets
 WHERE week = %s AND status = 'approved'
+{_NOT_POSTPONED}
 ORDER BY {_SECTION_ORDER},
 created_at ASC,
 id ASC
@@ -63,6 +74,7 @@ _LIST_PUBLISHED_FOR_WEEKS = f"""
 SELECT {_BULLET_COLUMNS}
 FROM patchnote_bullets
 WHERE status = 'approved' AND week = ANY(%s)
+{_NOT_POSTPONED}
 ORDER BY week DESC,
 {_SECTION_ORDER},
 created_at ASC,
@@ -88,6 +100,14 @@ class PatchnotesConfigError(RuntimeError):
 
 class BulletNotFound(LookupError):
     """No bullet exists with this id."""
+
+
+class WeekNotPostponed(ValueError):
+    """Defer was asked for a week that is not postponed."""
+
+
+class WeekPostponed(ValueError):
+    """Approve was asked for a week that is held."""
 
 
 class BulletNotPending(RuntimeError):
@@ -141,6 +161,18 @@ def _local_now(now: datetime | None = None) -> datetime:
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
     return moment.astimezone(_zone())
+
+
+def next_week(week: str) -> str:
+    """The ISO week after `week`."""
+    week_key = parse_week(week)
+    match = _WEEK_RE.match(week_key)
+    if match is None:
+        raise ValueError("week must look like 2026-W39")
+    year, number = int(match.group(1)), int(match.group(2))
+    monday = datetime.fromisocalendar(year, number, 1)
+    iso = (monday + timedelta(days=7)).isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
 
 
 def current_week(now: datetime | None = None) -> str:
@@ -273,6 +305,25 @@ def migrate() -> None:
             )
             cur.execute(
                 """
+                ALTER TABLE patchnote_bullets
+                    ADD COLUMN IF NOT EXISTS supersedes UUID,
+                    ADD COLUMN IF NOT EXISTS revision_note TEXT,
+                    ADD COLUMN IF NOT EXISTS carried_from TEXT,
+                    ADD COLUMN IF NOT EXISTS carried_status TEXT
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_week_status (
+                    week TEXT PRIMARY KEY,
+                    postponed BOOLEAN NOT NULL DEFAULT FALSE,
+                    deferred_to TEXT,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
                     folder_name TEXT NOT NULL,
                     week TEXT NOT NULL,
@@ -382,6 +433,11 @@ def list_published_notes(
                 FROM patchnote_bullets
                 WHERE status = 'approved'
                   AND (%s::text IS NULL OR week < %s)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM patchnote_week_status
+                      WHERE patchnote_week_status.week = patchnote_bullets.week
+                        AND patchnote_week_status.postponed
+                  )
                 GROUP BY week
                 ORDER BY week DESC
                 LIMIT %s
@@ -416,6 +472,11 @@ def list_published_weeks() -> list[str]:
                 SELECT week
                 FROM patchnote_bullets
                 WHERE status = 'approved'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM patchnote_week_status
+                      WHERE patchnote_week_status.week = patchnote_bullets.week
+                        AND patchnote_week_status.postponed
+                  )
                 GROUP BY week
                 ORDER BY week DESC
                 """
@@ -700,5 +761,221 @@ def list_sync_tasks(week: str) -> list[str]:
                 (week_key,),
             )
             return [row[0] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def _week_status_row(week: str, row: dict[str, Any] | None) -> dict[str, Any]:
+    if row is None:
+        return {"week": week, "postponed": False, "deferred_to": None}
+    deferred = row.get("deferred_to")
+    return {
+        "week": week,
+        "postponed": bool(row.get("postponed")),
+        "deferred_to": str(deferred) if deferred else None,
+    }
+
+
+def get_bullet(bullet_id: str) -> dict[str, Any]:
+    """One bullet, including a denied or approved row."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s",
+                (bullet_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise BulletNotFound(bullet_id)
+            return dict(row)
+    finally:
+        conn.close()
+
+
+def _revision_depth(cur, bullet_id: str) -> int:
+    depth = 0
+    current = bullet_id
+    seen: set[str] = set()
+    while current and current not in seen and depth < _MAX_REVISIONS:
+        seen.add(current)
+        cur.execute(
+            "SELECT supersedes FROM patchnote_bullets WHERE id = %s",
+            (current,),
+        )
+        row = cur.fetchone()
+        parent = None if row is None else row.get("supersedes")
+        if not parent:
+            break
+        current = str(parent)
+        depth += 1
+    return depth
+
+
+def revise_denied_bullet(denied: dict[str, Any], reason: str) -> dict[str, Any] | None:
+    """Store a rewritten pending line for one denial, or None when it stays denied."""
+    proposal = rewrite(str(denied.get("section") or ""), str(denied.get("body") or ""), reason)
+    if proposal is None:
+        return None
+    section, text = proposal
+    note = _clean_reason(reason)
+    week_key = parse_week(str(denied.get("week") or ""))
+    bullet_id = str(denied["id"])
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            if _revision_depth(cur, bullet_id) >= _MAX_REVISIONS:
+                return None
+            cur.execute(
+                f"""
+                INSERT INTO patchnote_bullets
+                    (week, section, body, status, supersedes, revision_note)
+                VALUES (%s, %s, %s, 'pending', %s, %s)
+                RETURNING {_BULLET_COLUMNS}
+                """,
+                (week_key, section, text, bullet_id, note),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def get_week_status(week: str) -> dict[str, Any]:
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT postponed, deferred_to
+                FROM patchnote_week_status
+                WHERE week = %s
+                """,
+                (week_key,),
+            )
+            return _week_status_row(week_key, cur.fetchone())
+    finally:
+        conn.close()
+
+
+def postpone_week(week: str) -> dict[str, Any]:
+    """Hold a week. The public page hides it until the hold is undone or deferred."""
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_week_status (week, postponed)
+                VALUES (%s, TRUE)
+                ON CONFLICT (week) DO UPDATE
+                    SET postponed = TRUE, updated_at = now()
+                RETURNING postponed, deferred_to
+                """,
+                (week_key,),
+            )
+            return _week_status_row(week_key, cur.fetchone())
+    finally:
+        conn.close()
+
+
+def undo_postpone(week: str) -> dict[str, Any]:
+    """Clear a hold and bring deferred lines back onto this week."""
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT deferred_to FROM patchnote_week_status WHERE week = %s",
+                (week_key,),
+            )
+            row = cur.fetchone()
+            if row is not None and row.get("deferred_to"):
+                cur.execute(
+                    """
+                    UPDATE patchnote_bullets
+                    SET week = %s,
+                        status = COALESCE(carried_status, 'pending'),
+                        reviewed_at = CASE
+                            WHEN carried_status = 'approved' THEN now()
+                            ELSE NULL
+                        END,
+                        carried_from = NULL,
+                        carried_status = NULL
+                    WHERE carried_from = %s
+                    """,
+                    (week_key, week_key),
+                )
+            cur.execute(
+                """
+                INSERT INTO patchnote_week_status (week, postponed, deferred_to)
+                VALUES (%s, FALSE, NULL)
+                ON CONFLICT (week) DO UPDATE
+                    SET postponed = FALSE, deferred_to = NULL, updated_at = now()
+                RETURNING postponed, deferred_to
+                """,
+                (week_key,),
+            )
+            return _week_status_row(week_key, cur.fetchone())
+    finally:
+        conn.close()
+
+
+def defer_postponed_week(week: str) -> dict[str, Any]:
+    """Move this week's notes onto the next week and keep them unpublished."""
+    week_key = parse_week(week)
+    status = get_week_status(week_key)
+    if not status["postponed"]:
+        raise WeekNotPostponed(week_key)
+    if status["deferred_to"]:
+        return status
+    destination = next_week(week_key)
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE patchnote_bullets
+                SET week = %s,
+                    carried_from = week,
+                    carried_status = status,
+                    status = 'pending',
+                    deny_reason = NULL,
+                    reviewed_at = NULL
+                WHERE week = %s AND status IN ('pending', 'approved')
+                """,
+                (destination, week_key),
+            )
+            cur.execute(
+                """
+                UPDATE patchnote_week_status
+                SET deferred_to = %s, updated_at = now()
+                WHERE week = %s
+                RETURNING postponed, deferred_to
+                """,
+                (destination, week_key),
+            )
+            return _week_status_row(week_key, cur.fetchone())
+    finally:
+        conn.close()
+
+
+def approve_pending_week(week: str) -> int:
+    """Approve lines nobody reviewed. Rewrites still need a staff click."""
+    week_key = parse_week(week)
+    if get_week_status(week_key)["postponed"]:
+        raise WeekPostponed(week_key)
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE patchnote_bullets
+                SET status = 'approved', deny_reason = NULL, reviewed_at = now()
+                WHERE week = %s AND status = 'pending' AND supersedes IS NULL
+                """,
+                (week_key,),
+            )
+            return int(cur.rowcount)
     finally:
         conn.close()
