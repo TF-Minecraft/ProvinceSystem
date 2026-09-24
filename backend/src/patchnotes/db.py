@@ -251,6 +251,37 @@ def migrate() -> None:
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_folders (
+                    name TEXT PRIMARY KEY,
+                    origin TEXT NOT NULL,
+                    repo TEXT,
+                    status TEXT NOT NULL,
+                    dangerous BOOLEAN NOT NULL DEFAULT FALSE,
+                    reject_reason TEXT,
+                    rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    unclassified JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    verified_at TIMESTAMPTZ,
+                    CONSTRAINT patchnote_folders_origin_chk
+                        CHECK (origin IN ('repo', 'content', 'added')),
+                    CONSTRAINT patchnote_folders_status_chk
+                        CHECK (status IN ('pending', 'active', 'rejected'))
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
+                    folder_name TEXT NOT NULL,
+                    week TEXT NOT NULL,
+                    repo TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (folder_name, week)
+                )
+                """
+            )
     finally:
         conn.close()
     _MIGRATED = True
@@ -475,5 +506,199 @@ def load_preview() -> dict[str, Any] | None:
             )
             row = cur.fetchone()
             return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+_FOLDER_COLUMNS = (
+    "name, origin, repo, status, dangerous, reject_reason, rules, unclassified, created_at, verified_at"
+)
+
+
+def list_folders() -> list[dict[str, Any]]:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT {_FOLDER_COLUMNS}
+                FROM patchnote_folders
+                ORDER BY origin, name
+                """
+            )
+            return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_folder(name: str) -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
+                (name,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def ensure_folder(
+    *,
+    name: str,
+    origin: str,
+    repo: str | None,
+    dangerous: bool,
+    rules: list[str] | None = None,
+) -> dict[str, Any]:
+    """Insert a watched folder if it is missing. An existing row is left as staff set it."""
+    if origin not in {"repo", "content", "added"}:
+        raise ValueError("origin is invalid")
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                INSERT INTO patchnote_folders
+                    (name, origin, repo, status, dangerous, rules)
+                VALUES (%s, %s, %s, 'pending', %s, %s)
+                ON CONFLICT (name) DO NOTHING
+                RETURNING {_FOLDER_COLUMNS}
+                """,
+                (name, origin, repo, dangerous, psycopg2.extras.Json(rules or [])),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                return dict(row)
+            cur.execute(
+                f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
+                (name,),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def request_added_folder(name: str) -> dict[str, Any]:
+    """Staff asked to watch a plugin folder. The host watcher accepts or rejects it."""
+    existing = get_folder(name)
+    if existing is not None:
+        raise ValueError("That folder is already on the list")
+    return ensure_folder(name=name, origin="added", repo=None, dangerous=False, rules=[])
+
+
+def remove_added_folder(name: str) -> None:
+    row = get_folder(name)
+    if row is None:
+        raise BulletNotFound(name)
+    if row["origin"] != "added":
+        raise ValueError("GitHub plugins and content packs stay on the list")
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("DELETE FROM patchnote_folders WHERE name = %s AND origin = 'added'", (name,))
+    finally:
+        conn.close()
+
+
+def observe_folder(
+    *,
+    name: str,
+    status: str,
+    rules: list[str] | None,
+    unclassified: list[str],
+    reject_reason: str | None,
+    dangerous: bool | None = None,
+) -> dict[str, Any]:
+    """Record what the host watcher found. Rules already stored are kept when omitted."""
+    if status not in {"pending", "active", "rejected"}:
+        raise ValueError("status is invalid")
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                UPDATE patchnote_folders
+                SET status = %s,
+                    reject_reason = %s,
+                    unclassified = %s,
+                    rules = COALESCE(%s, rules),
+                    dangerous = COALESCE(%s, dangerous),
+                    verified_at = now()
+                WHERE name = %s
+                RETURNING {_FOLDER_COLUMNS}
+                """,
+                (
+                    status,
+                    reject_reason,
+                    psycopg2.extras.Json(unclassified),
+                    psycopg2.extras.Json(rules) if rules is not None else None,
+                    dangerous,
+                    name,
+                ),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise BulletNotFound(name)
+            return dict(row)
+    finally:
+        conn.close()
+
+
+def add_folder_rule(name: str, pattern: str) -> dict[str, Any]:
+    row = get_folder(name)
+    if row is None:
+        raise BulletNotFound(name)
+    if row["status"] != "active":
+        raise ValueError("That folder is not being watched yet")
+    rules = list(row["rules"] or [])
+    if pattern not in rules:
+        rules.append(pattern)
+    return observe_folder(
+        name=name,
+        status="active",
+        rules=rules,
+        unclassified=list(row["unclassified"] or []),
+        reject_reason=None,
+    )
+
+
+def queue_sync_task(*, folder_name: str, repo: str, week: str) -> bool:
+    """One GitHub update task per repo plugin per week. True when this call created it."""
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_sync_tasks (folder_name, week, repo)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (folder_name, week) DO NOTHING
+                RETURNING folder_name
+                """,
+                (folder_name, week_key, repo),
+            )
+            return cur.fetchone() is not None
+    finally:
+        conn.close()
+
+
+def list_sync_tasks(week: str) -> list[str]:
+    week_key = parse_week(week)
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT folder_name
+                FROM patchnote_sync_tasks
+                WHERE week = %s
+                ORDER BY folder_name
+                """,
+                (week_key,),
+            )
+            return [row[0] for row in cur.fetchall()]
     finally:
         conn.close()
