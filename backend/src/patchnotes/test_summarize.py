@@ -96,6 +96,17 @@ class SummarizePushTest(unittest.TestCase):
             self.assertEqual(notes.drafts, [], message)
             self.assertEqual(notes.withheld, 1, message)
 
+    def test_leaves_out_pull_request_numbers(self) -> None:
+        notes = summarize_push(
+            _push("fry eggs using chicken genetics for quality (#38)")
+        )
+        self.assertEqual(len(notes.drafts), 1)
+        self.assertEqual(
+            notes.drafts[0].body,
+            "Gathering: fry eggs using chicken genetics for quality",
+        )
+        self.assertNotIn("#38", notes.drafts[0].body)
+
     def test_strips_coordinates_and_keeps_the_fix(self) -> None:
         notes = summarize_push(_push("fix: Fixed a chest at 1204, 64, -880"))
         self.assertEqual(len(notes.drafts), 1)

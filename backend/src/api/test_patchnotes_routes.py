@@ -335,6 +335,15 @@ class PatchnotesRoutesTest(unittest.TestCase):
 
     @mock.patch(
         "src.api.patchnotes_routes.list_approved",
+        return_value=[_row(status="approved", body="Added evil RP sessions (#33)")],
+    )
+    def test_published_week_hides_pull_request_numbers(self, _mock_list) -> None:
+        res = self.client.get("/patchnotes/weeks/2026-W39")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["bullets"][0]["body"], "Added evil RP sessions")
+
+    @mock.patch(
+        "src.api.patchnotes_routes.list_approved",
         return_value=[
             _row(
                 status="approved",

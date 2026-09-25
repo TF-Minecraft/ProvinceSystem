@@ -61,7 +61,7 @@ from src.patchnotes.db import (
 from src.patchnotes.feedback import FeedbackError, interpret_feedback
 from src.patchnotes.folders import catalog_entries, clean_folder_name, safe_rule
 from src.patchnotes.safety import hidden_knowledge_warning
-from src.patchnotes.summarize import signature_ok, summarize_push
+from src.patchnotes.summarize import signature_ok, strip_pr_numbers, summarize_push
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
 
 logger = logging.getLogger("patchnotes.routes")
@@ -120,7 +120,7 @@ def _serialize(row: dict[str, Any], *, public: bool) -> dict[str, Any]:
         "id": str(row["id"]),
         "week": row["week"],
         "section": row["section"],
-        "body": row["body"],
+        "body": strip_pr_numbers(str(row.get("body") or "")).strip(),
         "created_at": _iso(row.get("created_at")),
         "highlight": bool(row.get("highlight")),
     }

@@ -83,6 +83,7 @@ _PERMISSION = re.compile(
 _COORDS = re.compile(r"(?<![\w.])-?\d{3,6}\s*,\s*-?\d{1,4}\s*,\s*-?\d{3,6}(?![\w.])")
 _XYZ = re.compile(r"(?<![A-Za-z0-9])[xyz]\s*[:=]\s*-?\d{1,6}", re.IGNORECASE)
 _WORD = re.compile(r"[A-Za-z]{2,}")
+_PR_NUMBER = re.compile(r"\s*\(#\d+\)")
 
 
 @dataclass(frozen=True)
@@ -208,8 +209,14 @@ def _section(kind: str, text: str) -> str:
     return "technical"
 
 
+def strip_pr_numbers(text: str) -> str:
+    """Drop GitHub pull-request numbers. They are not part of the note."""
+    return _PR_NUMBER.sub("", text or "")
+
+
 def player_text(text: str) -> str | None:
     """A line safe to store, or None when the line must not be stored at all."""
+    text = strip_pr_numbers(text)
     if (
         hidden_knowledge_warning(text)
         or _SECRET.search(text)
