@@ -1,8 +1,9 @@
 """Turn a staff deny reason into a new pending line.
 
-The reason stays on the staff review. It is not copied into the public note
-unless staff wrote the replacement themselves. A line that should not be
-published is left denied.
+The reason is an instruction. It is not copied into the public note.
+Only an explicit replacement, such as "say: Added a station", becomes the
+line. Feedback that covers several points is handled for the whole week,
+not here. A line that should not be published is left denied.
 """
 
 from __future__ import annotations
@@ -28,15 +29,7 @@ _SECTION_INTENT = re.compile(
     r"(?i)\b(?:make (?:it|this)|move (?:it|this) to|this is|put (?:it|this) in)\b"
 )
 _QUOTED = re.compile(r"[\"“”']([^\"“”']{2,80})[\"“”']")
-_COMPLAINT = re.compile(
-    r"(?i)\b("
-    r"don'?t|do not|dont|remove|drop|without|spoiler|secret|lore|hidden|"
-    r"vague|unclear|wrong|leak|leaks|reveal|reveals|mention|shorter|technical|"
-    r"bugfix|bug fix|internal"
-    r")\b"
-)
 _SKIP_PHRASES = frozenset({"it", "this", "that", "the line", "line", "this line"})
-_ASK = re.compile(r"(?i)(\?\s*$|\b(can you|could you|would you)\b)")
 
 
 def rewrite(section: str, body: str, reason: str) -> tuple[str, str] | None:
@@ -55,8 +48,6 @@ def rewrite(section: str, body: str, reason: str) -> tuple[str, str] | None:
         return None
     stripped = _strip_requested(text, note)
     candidate = stripped if stripped is not None else text
-    if candidate == text and _looks_like_replacement(note):
-        candidate = note
     return _accept(section, text, candidate, note)
 
 
@@ -76,13 +67,6 @@ def _explicit_replacement(reason: str) -> str | None:
         return None
     text = match.group(1).strip()
     return text or None
-
-
-def _looks_like_replacement(reason: str) -> bool:
-    """A finished player sentence can replace a line. A question cannot."""
-    if _COMPLAINT.search(reason) or _ASK.search(reason):
-        return False
-    return player_text(reason) is not None
 
 
 def _section_of(reason: str, current: str) -> str:
