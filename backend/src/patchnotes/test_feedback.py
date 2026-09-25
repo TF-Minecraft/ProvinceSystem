@@ -11,7 +11,13 @@ _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from patchnotes.feedback import FeedbackError, interpret_feedback  # noqa: E402
+from patchnotes.feedback import (  # noqa: E402
+    FeedbackError,
+    _CUT_OFF,
+    _SYSTEM,
+    _text_from_response,
+    interpret_feedback,
+)
 
 _SOUP = {
     "id": "soup",
@@ -140,6 +146,44 @@ class FeedbackInterpretationTest(unittest.TestCase):
             edits,
             [{"action": "add", "section": "new", "body": "Baby animals grow up."}],
         )
+
+    def test_omitted_lines_stay_and_a_move_can_keep_its_body(self) -> None:
+        edits = interpret_feedback(
+            [_SOUP, _MASKS, _BOWLS],
+            "Drop the masks line and move bowls to technical.",
+            complete=lambda _system, _user: _reply(
+                {
+                    "lines": [
+                        {"id": "masks", "action": "drop"},
+                        {"id": "bowls", "action": "rewrite", "section": "technical"},
+                    ]
+                }
+            ),
+        )
+        self.assertEqual(
+            edits,
+            [
+                {"id": "masks", "action": "drop"},
+                {
+                    "id": "bowls",
+                    "action": "rewrite",
+                    "section": "technical",
+                    "body": "Bowls are returned after eating.",
+                },
+            ],
+        )
+
+    def test_prompt_returns_changes_only_and_staff_sections_win(self) -> None:
+        self.assertNotIn("Every input id appears once", _SYSTEM)
+        self.assertIn("Leave every other line out", _SYSTEM)
+        self.assertIn("staff win when they name one", _SYSTEM)
+        self.assertIn("backend work players will not care about", _SYSTEM)
+        self.assertNotIn("A plugin or internal change uses section technical", _SYSTEM)
+
+    def test_a_cut_off_reply_says_so(self) -> None:
+        with self.assertRaises(FeedbackError) as raised:
+            _text_from_response(type("Reply", (), {"stop_reason": "max_tokens", "content": []})())
+        self.assertEqual(str(raised.exception), _CUT_OFF)
 
 
 if __name__ == "__main__":

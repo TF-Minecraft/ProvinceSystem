@@ -35,22 +35,28 @@ _TOPICS = frozenset(
     }
 )
 _MAX_ADDS = 3
+_MAX_OUTPUT_TOKENS = 8000
+_CUT_OFF = "The rewrite was cut off before it finished."
 
 _SYSTEM = """You rewrite a Minecraft server's weekly patch notes after staff feedback.
 The feedback is an instruction about the note. It is not the new wording, except when staff clearly give a sentence they want published for one part of the note.
 Return one JSON object and nothing else:
-{"lines":[{"id":"...","action":"keep","section":"adjusted","body":"..."}],"add":[{"section":"fixed","body":"..."}]}
+{"lines":[{"id":"...","action":"rewrite","section":"adjusted","body":"..."}],"add":[{"section":"fixed","body":"..."}]}
 Rules:
-- Every input id appears once.
-- action is keep, rewrite, or drop.
-- keep leaves that line unchanged.
+- Return only lines you rewrite or drop. Leave every other line out. An omitted line stays unchanged.
+- action is rewrite or drop. keep is allowed and means leave that line unchanged.
 - Change every line the feedback is about. Several lines may change.
-- drop a line when staff do not want it posted.
+- drop a line when staff do not want it posted. A drop needs no body.
+- When staff only move a line to another section, or only drop it, keep the existing body. Change the body only when they give new wording or ask for a rewrite.
 - add a line only when staff asked for something that is not already there. At most 3.
-- Each body is one short player-facing sentence.
+- Sections, and staff win when they name one:
+  - new: a new player-facing thing.
+  - fixed: a player-facing bug that was fixed.
+  - adjusted: an existing feature that changed.
+  - technical: backend work players will not care about.
+- For new, fixed, and adjusted, each body is one short player-facing sentence. A technical line may keep its existing wording.
 - topic is one of classes, combat, magic, crafting, professions, animals, world, town, dungeons, chat.
 - highlight is true only for the few lines that belong in the short summary. At most 6.
-- A bug fix uses section fixed. A plugin or internal change uses section technical.
 - Do not copy the feedback into a body.
 - Do not include stat numbers, coordinates, file paths, commands, permissions, secrets, dungeon names, or lore-item names.
 - Never use an em dash.
@@ -127,7 +133,8 @@ def _rewrite(original: dict[str, Any], item: dict[str, Any], feedback: str) -> d
     section = str(item.get("section") or original.get("section") or "")
     if section not in _SECTIONS:
         return None
-    body = _safe_body(str(item.get("body") or ""), feedback)
+    raw_body = str(item.get("body") or "").strip() or str(original.get("body") or "")
+    body = _safe_body(raw_body, feedback)
     if body is None:
         return None
     edit = _with_placement(
@@ -212,6 +219,20 @@ def _json_object(text: str) -> dict[str, Any]:
     return payload
 
 
+def _text_from_response(response: Any) -> str:
+    """Text from a finished Messages response. A cut-off reply is an error."""
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        logger.error("Patch note feedback rewrite hit max_tokens")
+        raise FeedbackError(_CUT_OFF)
+    parts = [
+        block.text for block in response.content if getattr(block, "type", None) == "text"
+    ]
+    text = "\n".join(parts).strip()
+    if not text:
+        raise FeedbackError("Could not rewrite the note from that feedback.")
+    return text
+
+
 def _complete(system: str, user: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
@@ -220,7 +241,7 @@ def _complete(system: str, user: str) -> str:
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
             model=_MODEL,
-            max_tokens=1500,
+            max_tokens=_MAX_OUTPUT_TOKENS,
             system=system,
             messages=[{"role": "user", "content": user}],
             output_config={"effort": "low"},
@@ -228,10 +249,4 @@ def _complete(system: str, user: str) -> str:
     except anthropic.APIError as exc:
         logger.exception("Patch note feedback rewrite failed")
         raise FeedbackError("Could not rewrite the note from that feedback.") from exc
-    parts = [
-        block.text for block in response.content if getattr(block, "type", None) == "text"
-    ]
-    text = "\n".join(parts).strip()
-    if not text:
-        raise FeedbackError("Could not rewrite the note from that feedback.")
-    return text
+    return _text_from_response(response)
