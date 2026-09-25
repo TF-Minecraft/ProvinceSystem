@@ -107,6 +107,43 @@ class SummarizePushTest(unittest.TestCase):
         )
         self.assertNotIn("#38", notes.drafts[0].body)
 
+    def test_backend_work_stays_technical_even_when_written_as_a_fix(self) -> None:
+        notes = summarize_push(
+            {
+                "ref": "refs/heads/main",
+                "repository": {
+                    "name": "TLibs",
+                    "full_name": "TF-Minecraft/TLibs",
+                    "default_branch": "main",
+                },
+                "commits": [
+                    {
+                        "id": "1" * 40,
+                        "message": "fix: use the plugin logger for console messages",
+                        "distinct": True,
+                    },
+                    {
+                        "id": "2" * 40,
+                        "message": "feat: migrate deprecated level-up listeners",
+                        "distinct": True,
+                    },
+                    {
+                        "id": "3" * 40,
+                        "message": "Show the company icon under the banner for every guild",
+                        "distinct": True,
+                    },
+                ],
+            }
+        )
+        self.assertEqual(
+            [(draft.section, draft.body) for draft in notes.drafts],
+            [
+                ("technical", "TLibs: use the plugin logger for console messages"),
+                ("technical", "TLibs: migrate deprecated level-up listeners"),
+                ("adjusted", "TLibs: Show the company icon under the banner for every guild"),
+            ],
+        )
+
     def test_strips_coordinates_and_keeps_the_fix(self) -> None:
         notes = summarize_push(_push("fix: Fixed a chest at 1204, 64, -880"))
         self.assertEqual(len(notes.drafts), 1)

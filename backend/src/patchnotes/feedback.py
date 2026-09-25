@@ -49,11 +49,12 @@ Rules:
 - drop a line when staff do not want it posted. A drop needs no body.
 - When staff only move a line to another section, or only drop it, keep the existing body. Change the body only when they give new wording or ask for a rewrite.
 - add a line only when staff asked for something that is not already there. At most 3.
-- Sections, and staff win when they name one:
-  - new: a new player-facing thing.
-  - fixed: a player-facing bug that was fixed.
-  - adjusted: an existing feature that changed.
-  - technical: backend work players will not care about.
+- The note is structured in four sections. Choose the section from what players care about. Staff win when they name one.
+  - new: a new thing players care about. It is player facing.
+  - fixed: a bug players will care about that was fixed.
+  - adjusted: an existing feature that was adjusted.
+  - technical: something players will not care about. Backend work about the code, and nothing player facing.
+- A player-facing bug fix is fixed. A bug fix or a new change that players will not care about is technical, not fixed or new.
 - For new, fixed, and adjusted, each body is one short player-facing sentence. A technical line may keep its existing wording.
 - topic is one of classes, combat, magic, crafting, professions, animals, world, town, dungeons, chat.
 - highlight is true only for the few lines that belong in the short summary. At most 6.

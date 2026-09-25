@@ -176,8 +176,11 @@ class FeedbackInterpretationTest(unittest.TestCase):
     def test_prompt_returns_changes_only_and_staff_sections_win(self) -> None:
         self.assertNotIn("Every input id appears once", _SYSTEM)
         self.assertIn("Leave every other line out", _SYSTEM)
-        self.assertIn("staff win when they name one", _SYSTEM)
-        self.assertIn("backend work players will not care about", _SYSTEM)
+        self.assertIn("Staff win when they name one", _SYSTEM)
+        self.assertIn("a new thing players care about", _SYSTEM)
+        self.assertIn("a bug players will care about that was fixed", _SYSTEM)
+        self.assertIn("an existing feature that was adjusted", _SYSTEM)
+        self.assertIn("nothing player facing", _SYSTEM)
         self.assertNotIn("A plugin or internal change uses section technical", _SYSTEM)
 
     def test_a_cut_off_reply_says_so(self) -> None:

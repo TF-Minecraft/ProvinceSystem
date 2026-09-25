@@ -59,6 +59,27 @@ _ADJUST_WORDS = re.compile(
     re.IGNORECASE,
 )
 _NEW_WORDS = re.compile(r"\b(add|added|adds|new)\b", re.IGNORECASE)
+# Backend work players will not care about. It stays technical even when the
+# commit is written as a feature or a fix.
+_NOT_PLAYER_FACING = re.compile(
+    r"(?i)("
+    r"\bloggers?\b|\blogging\b|\bconsole\b|"
+    r"\bdeprecated\b|\blisteners?\b|"
+    r"\bworkspace layout\b|\bserver thread\b|"
+    r"\bdisk reads?\b|\bblock snapshots?\b|"
+    r"\bmigrat(?:e|ed|ing|ion)\b|"
+    r"\bmaterial exclusions?\b|"
+    r"\bfallbacks?\b"
+    r")"
+)
+_PLAYER_FACING = re.compile(
+    r"(?i)\b("
+    r"players?|guilds?|recipes?|prices?|costs?|animals?|pets?|"
+    r"masks?|soups?|roasts?|furniture|discord|shops?|"
+    r"banners?|icons?|helmets?|skins?|spells?|"
+    r"characters?|ledgers?|eggs?|dough"
+    r")\b"
+)
 
 _SECRET = re.compile(
     r"(?i)(api[_-]?key|client[_-]?secret|staff[_-]?key|password|private[_-]?key|"
@@ -198,14 +219,27 @@ def _split_conventional(subject: str) -> tuple[str, str]:
 
 
 def _section(kind: str, text: str) -> str:
-    if kind in _KIND_SECTION:
-        return _KIND_SECTION[kind]
+    """File a line by what players care about.
+
+    New is a new player-facing thing. Fixed is a player-facing bug that was
+    fixed. Adjusted is an existing feature that changed. Technical is backend
+    work players will not care about.
+    """
+    if _NOT_PLAYER_FACING.search(text):
+        return "technical"
+    mapped = _KIND_SECTION.get(kind)
+    if mapped == "technical":
+        return "technical"
+    if mapped:
+        return mapped
     if _FIX_WORDS.search(text):
         return "fixed"
     if _ADJUST_WORDS.search(text):
         return "adjusted"
     if _NEW_WORDS.search(text):
         return "new"
+    if _PLAYER_FACING.search(text):
+        return "adjusted"
     return "technical"
 
 
