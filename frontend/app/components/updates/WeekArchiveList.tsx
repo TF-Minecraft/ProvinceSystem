@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { arrangeNote, SECTION_LABELS, type PublicBullet, type WeekNotes } from "@/lib/patchnotes/notes";
+import { arrangeNote, SECTION_LABELS, type PublicBullet } from "@/lib/patchnotes/notes";
 
 const detailsClass =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_35%,transparent)]";
@@ -50,18 +48,5 @@ export function WeekSections({ bullets }: { bullets: readonly PublicBullet[] }) 
       <VisibleSection title="Bug fixes" bullets={note.fixes} />
       <TechnicalSection bullets={note.technical} />
     </>
-  );
-}
-
-export function WeekArticle({ notes }: { notes: WeekNotes }) {
-  return (
-    <article className="mt-12 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-10">
-      <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-        <Link href={`/updates/${notes.week}`} className="hover:underline">
-          {notes.label}
-        </Link>
-      </h2>
-      <WeekSections bullets={notes.bullets} />
-    </article>
   );
 }

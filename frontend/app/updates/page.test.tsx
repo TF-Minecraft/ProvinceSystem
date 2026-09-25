@@ -6,7 +6,17 @@ import { describe, expect, it } from "vitest";
 import UpdatesPageView, { WeekPageView } from "../components/updates/UpdatesPageView";
 import type { WeekNotes } from "@/lib/patchnotes/notes";
 
-const current: WeekNotes = {
+const current = {
+  week: "2026-W39",
+  label: "Week of 21 September 2026",
+};
+
+const earlier = {
+  week: "2026-W38",
+  label: "Week of 14 September 2026",
+};
+
+const notes: WeekNotes = {
   week: "2026-W39",
   label: "Week of 21 September 2026",
   bullets: [
@@ -18,20 +28,41 @@ const current: WeekNotes = {
   ],
 };
 
-const earlier: WeekNotes = {
-  week: "2026-W38",
-  label: "Week of 14 September 2026",
-  bullets: [{ id: "old-1", section: "fixed", body: "Fixed a chest" }],
-};
-
-function markup(weeks: WeekNotes[], unavailable = false): string {
+function markup(weeks: { week: string; label: string }[], unavailable = false): string {
   return renderToStaticMarkup(<UpdatesPageView weeks={weeks} unavailable={unavailable} />);
 }
 
 describe("Updates page", () => {
-  it("shows the latest week open and folds technical notes", () => {
-    const html = markup([current]);
+  it("lists each week as a button and leaves the notes off the index", () => {
+    const html = markup([current, earlier]);
     expect(html).toContain('href="/updates/2026-W39"');
+    expect(html).toContain('href="/updates/2026-W38"');
+    expect(html).toContain("Week of 21 September 2026");
+    expect(html).toContain("Week of 14 September 2026");
+    expect(html).toContain("rounded-sm border");
+    expect(html).not.toContain("Added a station");
+    expect(html).not.toContain("Fixed a chest");
+    expect(html).not.toContain("hover:underline");
+    expect(html.indexOf("2026-W39")).toBeLessThan(html.indexOf("2026-W38"));
+  });
+
+  it("says when nothing is published", () => {
+    expect(markup([])).toContain("Nothing has been published yet.");
+  });
+
+  it("says when the notes cannot be loaded", () => {
+    const html = markup([current], true);
+    expect(html).toContain("Patch notes are unavailable right now.");
+    expect(html).not.toContain("Week of 21 September 2026");
+  });
+});
+
+describe("Week page", () => {
+  it("shows that week and folds technical notes", () => {
+    const html = renderToStaticMarkup(<WeekPageView notes={notes} />);
+    expect(html).toContain('href="/updates"');
+    expect(html).toContain("All updates");
+    expect(html).toContain("rounded-sm border");
     expect(html).toContain("Week of 21 September 2026");
     expect(html).toContain("Highlights");
     expect(html).toContain("Crafting");
@@ -52,44 +83,8 @@ describe("Updates page", () => {
   });
 
   it("renders bullet text instead of HTML", () => {
-    const html = markup([current]);
+    const html = renderToStaticMarkup(<WeekPageView notes={notes} />);
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-  });
-
-  it("scrolls through older weeks and links each one", () => {
-    const html = markup([current, earlier]);
-    expect(html).toContain('href="/updates/2026-W39"');
-    expect(html).toContain('href="/updates/2026-W38"');
-    expect(html).toContain("Week of 14 September 2026");
-    expect(html).toContain("Fixed a chest");
-    expect(html.indexOf("Added a station")).toBeLessThan(html.indexOf("Fixed a chest"));
-    expect(html).not.toContain("Show older");
-  });
-
-  it("offers older weeks without including them in the first response", () => {
-    const html = renderToStaticMarkup(<UpdatesPageView weeks={[current]} hasMore />);
-    expect(html).toContain("Show older");
-    expect(html).toContain("Added a station");
-    expect(html).not.toContain("Fixed a chest");
-  });
-
-  it("shows one week on its own page", () => {
-    const html = renderToStaticMarkup(<WeekPageView notes={earlier} />);
-    expect(html).toContain('href="/updates"');
-    expect(html).toContain("Week of 14 September 2026");
-    expect(html).toContain("Fixed a chest");
-    expect(html).not.toContain("Added a station");
-    expect(html).not.toContain('href="/updates/2026-W38"');
-  });
-
-  it("says when nothing is published", () => {
-    expect(markup([])).toContain("Nothing has been published yet.");
-  });
-
-  it("says when the notes cannot be loaded", () => {
-    const html = markup([current], true);
-    expect(html).toContain("Patch notes are unavailable right now.");
-    expect(html).not.toContain("Added a station");
   });
 });

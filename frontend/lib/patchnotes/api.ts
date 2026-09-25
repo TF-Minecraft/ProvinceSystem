@@ -51,6 +51,35 @@ export type PublishedWeek =
   | { ok: true; week: WeekNotes }
   | { ok: false; missing: boolean };
 
+export type PublishedWeekIndex =
+  | { ok: true; weeks: { week: string; label: string }[] }
+  | { ok: false };
+
+/** Weeks that have published notes, newest first. The index does not need the lines. */
+export async function loadPublishedWeekIndex(): Promise<PublishedWeekIndex> {
+  const base = apiBase();
+  if (!base) return { ok: false };
+  try {
+    const res = await fetch(`${base}/patchnotes/weeks`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) return { ok: false };
+    const body: unknown = await res.json();
+    if (!body || typeof body !== "object" || !Array.isArray((body as { weeks?: unknown }).weeks)) {
+      return { ok: false };
+    }
+    const weeks: { week: string; label: string }[] = [];
+    for (const entry of (body as { weeks: unknown[] }).weeks) {
+      if (typeof entry !== "string" || !isWeekKey(entry)) return { ok: false };
+      weeks.push({ week: entry, label: weekLabel(entry) });
+    }
+    return { ok: true, weeks };
+  } catch {
+    return { ok: false };
+  }
+}
+
 /** Approved weeks, newest first. One bounded request. Any failure becomes an unavailable page. */
 export async function loadPublishedNotes(options?: {
   limit?: number;
