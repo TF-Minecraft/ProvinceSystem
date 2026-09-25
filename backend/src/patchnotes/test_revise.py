@@ -1,4 +1,4 @@
-"""Deny reasons become a new line, or the line stays denied."""
+"""Deny reasons become a new line only when staff give the replacement, or the line stays denied."""
 
 from __future__ import annotations
 
@@ -19,9 +19,17 @@ class RewriteTest(unittest.TestCase):
         self.assertEqual(section, "new")
         self.assertEqual(body, "Added a station")
 
-    def test_staff_sentence_is_the_new_line(self) -> None:
-        section, body = rewrite("adjusted", "Changed a price", "Lowered the station price")
-        self.assertEqual((section, body), ("adjusted", "Lowered the station price"))
+    def test_a_staff_sentence_is_not_the_new_line(self) -> None:
+        self.assertIsNone(rewrite("adjusted", "Changed a price", "Lowered the station price"))
+
+    def test_feedback_about_several_points_is_not_pasted_in(self) -> None:
+        self.assertIsNone(
+            rewrite(
+                "new",
+                "Custom masks can be skinned onto your character.",
+                "custom masks can be submitted via token, thats the important bit",
+            )
+        )
 
     def test_drop_leaves_the_line_denied(self) -> None:
         self.assertIsNone(rewrite("new", "Added a station", "Don't post this"))
