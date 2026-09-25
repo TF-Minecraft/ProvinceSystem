@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { arrangeNote, SECTION_LABELS, type PublicBullet, type WeekNotes } from "@/lib/patchnotes/notes";
 
 const detailsClass =
@@ -51,19 +53,15 @@ export function WeekSections({ bullets }: { bullets: readonly PublicBullet[] }) 
   );
 }
 
-export function WeekArchiveList({ weeks }: { weeks: readonly WeekNotes[] }) {
+export function WeekArticle({ notes }: { notes: WeekNotes }) {
   return (
-    <div className="mt-4 space-y-3">
-      {weeks.map((notes) => (
-        <details key={notes.week} className={detailsClass}>
-          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[var(--tfmc-cream)]">
-            {notes.label}
-          </summary>
-          <div className="border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 pb-4">
-            <WeekSections bullets={notes.bullets} />
-          </div>
-        </details>
-      ))}
-    </div>
+    <article className="mt-12 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-10">
+      <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
+        <Link href={`/updates/${notes.week}`} className="hover:underline">
+          {notes.label}
+        </Link>
+      </h2>
+      <WeekSections bullets={notes.bullets} />
+    </article>
   );
 }

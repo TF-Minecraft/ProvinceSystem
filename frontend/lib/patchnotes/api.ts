@@ -47,6 +47,10 @@ function readWeek(value: unknown): WeekNotes | null {
   return { week: row.week, label: weekLabel(row.week), bullets };
 }
 
+export type PublishedWeek =
+  | { ok: true; week: WeekNotes }
+  | { ok: false; missing: boolean };
+
 /** Approved weeks, newest first. One bounded request. Any failure becomes an unavailable page. */
 export async function loadPublishedNotes(options?: {
   limit?: number;
@@ -78,5 +82,26 @@ export async function loadPublishedNotes(options?: {
     return { ok: true, weeks, hasMore: record.has_more === true };
   } catch {
     return { ok: false };
+  }
+}
+
+/** One published week. A bad key or an empty week is missing; other failures leave the page unavailable. */
+export async function loadPublishedWeek(week: string): Promise<PublishedWeek> {
+  if (!isWeekKey(week)) return { ok: false, missing: true };
+  const base = apiBase();
+  if (!base) return { ok: false, missing: false };
+  try {
+    const res = await fetch(`${base}/patchnotes/weeks/${week}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (res.status === 400 || res.status === 404) return { ok: false, missing: true };
+    if (!res.ok) return { ok: false, missing: false };
+    const body: unknown = await res.json();
+    const notes = readWeek(body);
+    if (!notes) return { ok: false, missing: true };
+    return { ok: true, week: notes };
+  } catch {
+    return { ok: false, missing: false };
   }
 }
