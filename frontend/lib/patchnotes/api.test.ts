@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadPublishedNotes, loadPublishedWeek } from "./api";
+import { loadPublishedNotes, loadPublishedWeek, loadPublishedWeekIndex } from "./api";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -96,5 +96,35 @@ describe("loadPublishedWeek", () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
     vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 502 })));
     expect(await loadPublishedWeek("2026-W39")).toEqual({ ok: false, missing: false });
+  });
+});
+
+describe("loadPublishedWeekIndex", () => {
+  it("lists published weeks without their lines", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ weeks: ["2026-W39", "2026-W38"] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const notes = await loadPublishedWeekIndex();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://api.test/patchnotes/weeks",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
+    expect(notes).toEqual({
+      ok: true,
+      weeks: [
+        { week: "2026-W39", label: "Week of 21 September 2026" },
+        { week: "2026-W38", label: "Week of 14 September 2026" },
+      ],
+    });
+  });
+
+  it("reports the page unavailable when the API fails", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 502 })));
+    expect(await loadPublishedWeekIndex()).toEqual({ ok: false });
   });
 });

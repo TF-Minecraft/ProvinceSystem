@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import UpdatesPageView from "@/app/components/updates/UpdatesPageView";
-import { loadPublishedNotes } from "@/lib/patchnotes/api";
+import { loadPublishedWeekIndex } from "@/lib/patchnotes/api";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function UpdatesPage() {
-  const notes = await loadPublishedNotes({ limit: 8 });
+  const notes = await loadPublishedWeekIndex();
   if (!notes.ok) {
     return <UpdatesPageView weeks={[]} unavailable />;
   }
-  return <UpdatesPageView weeks={notes.weeks} hasMore={notes.hasMore} />;
+  return <UpdatesPageView weeks={notes.weeks} />;
 }
