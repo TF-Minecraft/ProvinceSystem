@@ -479,22 +479,41 @@ function resolveMmoItemTexture(contentsDir, item) {
 // dedicated handheld models whose layer0 is the authoritative inventory icon.
 // Keep this explicit: an arbitrary filename match must never replace a custom
 // model selected by CMD, and the model path proves which sprite Minecraft uses.
+// Items that do configure CMD or `model:` must not be listed here: the
+// artisan tools and enchanted charges once were, and kept showing stale art
+// after the server moved them to other sprites.
 const NAMED_MMOITEM_MODELS = new Map([
   "ABYSSALITE_AXE", "ABYSSALITE_HOE", "ABYSSALITE_PICKAXE", "ABYSSALITE_SHOVEL",
   "MYTHRIL_AXE", "MYTHRIL_HOE", "MYTHRIL_PICKAXE", "MYTHRIL_SHOVEL",
-].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]).concat([
-  ["HAND_PICK", "minecraft:item/tools/archeology_handpick"],
-  ["POINTING_TROWEL", "minecraft:item/tools/archeology_trowel"],
-  // Artisan tools: the pack's current sprites are the `forging_*` set (BREEZE_ROD CMD 24-30); the item config still names the older CMD 2-8.
-  ["HAMMER_TOOL", "minecraft:item/tools/forging_hammer"],
-  ["SMALL_HAMMER_TOOL", "minecraft:item/tools/forging_small_hammer"],
-  ["ENGRAVING_TOOL", "minecraft:item/tools/forging_engraving_tool"],
-  ["WHITTLING_TOOL", "minecraft:item/tools/forging_whittling_tool"],
-  ["ETCHING_TOOL", "minecraft:item/tools/forging_etching_tool"],
-  ["SEWING_NEEDLE", "minecraft:item/tools/forging_sewing_needle"],
-  // The pack ships the charges on ECHO_SHARD CMD 79-82; the item config still names a CMD that resolves to the pearl.
-  ...[1, 2, 3, 4].map((tier) => [`ENCHANTED_CHARGE_${tier}`, `minecraft:item/magic_runes/enchanted_charge_tier_${tier}`]),
-]));
+].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]));
+
+/**
+ * Resolves an MMOItems `model:` (item_model component) through
+ * `assets/<ns>/items/<name>.json` to the plain model it names, then to layer0.
+ */
+function resolveItemModelTexture(contentsDir, itemModel) {
+  const { namespace, relative } = modelParts(itemModel);
+  const matches = [];
+  for (const pack of readdirSync(contentsDir).sort()) {
+    const packRoot = path.join(contentsDir, pack, "resourcepack");
+    const definition = path.join(packRoot, "assets", namespace, "items", `${relative}.json`);
+    if (!existsSync(definition)) continue;
+    let node;
+    try {
+      node = JSON.parse(readFileSync(definition, "utf8")).model;
+    } catch {
+      continue;
+    }
+    if (String(node?.type).replace("minecraft:", "") !== "model" || typeof node.model !== "string") continue;
+    const resolvedModel = readModel(packRoot, node.model);
+    const layer0 = resolvedModel && resolveTextureVariable(resolvedModel.textures, "layer0");
+    if (!layer0) continue;
+    const texture = modelParts(layer0);
+    const file = path.join(packRoot, "assets", texture.namespace, "textures", `${texture.relative}.png`);
+    if (existsSync(file)) matches.push({ pack, model: resolvedModel.file, texture: file, hash: sha256(file) });
+  }
+  return { matches };
+}
 
 function resolveNamedMmoItemTexture(contentsDir, id) {
   const modelRef = NAMED_MMOITEM_MODELS.get(id);
@@ -532,9 +551,12 @@ async function extractMmoItemsTextures(contentsDir, stationsDir, itemDir) {
       ...(item.material ? { material: item.material } : {}),
       ...(Number.isFinite(item.customModelData) ? { customModelData: item.customModelData } : {}),
     };
-    if (Number.isFinite(item.customModelData) && !NAMED_MMOITEM_MODELS.has(id)) {
+    if (item.itemModel) record.itemModel = item.itemModel;
+    if ((item.itemModel || Number.isFinite(item.customModelData)) && !NAMED_MMOITEM_MODELS.has(id)) {
       customConfigured += 1;
-      const { matches } = resolveMmoItemTexture(contentsDir, item);
+      const { matches } = item.itemModel
+        ? resolveItemModelTexture(contentsDir, item.itemModel)
+        : resolveMmoItemTexture(contentsDir, item);
       const hashes = new Set(matches.map((match) => match.hash));
       if (hashes.size === 1 && matches.length) {
         const source = matches[0];
@@ -552,7 +574,11 @@ async function extractMmoItemsTextures(contentsDir, stationsDir, itemDir) {
       } else if (hashes.size > 1) {
         unresolved.push(`${id} (x${count}): conflicting custom sprites in ${matches.map((m) => m.pack).join(", ")}`);
       } else {
-        unresolved.push(`${id} (x${count}): no pack override for ${item.material} CMD ${item.customModelData}`);
+        unresolved.push(
+          item.itemModel
+            ? `${id} (x${count}): no pack item definition for model ${item.itemModel}`
+            : `${id} (x${count}): no pack override for ${item.material} CMD ${item.customModelData}`
+        );
       }
     } else {
       const source = resolveNamedMmoItemTexture(contentsDir, id);

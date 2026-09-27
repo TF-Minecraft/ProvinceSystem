@@ -47,14 +47,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/abyssalite_ingot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/abyssalite_ingot.png"
   },
-  "ABYSSALITE_LUTE": {
-    "name": "Abyssalite Lute",
-    "material": "IRON_SHOVEL",
-    "customModelData": 12,
-    "texture": "mmoitems/abyssalite_lute.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/weapons/abyssalite_lute.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/weapons/abyssalite_lute.png"
-  },
   "ABYSSALITE_PICKAXE": {
     "name": "Abyssalite Pickaxe",
     "material": "DIAMOND_PICKAXE",
@@ -87,6 +79,14 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/instruments/accordion.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/accordion.png"
   },
+  "AGATE": {
+    "name": "Agate",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 5,
+    "texture": "mmoitems/agate.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/agate.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/agate.png"
+  },
   "ALCHEMY_POWDER": {
     "name": "Alchemy Powder",
     "material": "NAUTILUS_SHELL",
@@ -96,12 +96,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/alchemy_powder.png"
   },
   "ANESTHETIC": {
-    "name": "Anesthetic",
+    "name": "Chloroform",
     "material": "SLIME_BALL",
-    "customModelData": 260,
+    "itemModel": "tfmc_surgery:chloroform",
     "texture": "mmoitems/anesthetic.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/anesthetic.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/anesthetic.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/chloroform.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/chloroform.png"
   },
   "ANIMAL_WHISTLE": {
     "name": "Mount Whistle",
@@ -112,20 +112,36 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/horse_whistle.png"
   },
   "ANTIBIOTICS": {
-    "name": "Antibiotics",
+    "name": "Willow-Bark Tincture",
     "material": "SLIME_BALL",
-    "customModelData": 253,
+    "itemModel": "tfmc_surgery:willow_bark_tincture",
     "texture": "mmoitems/antibiotics.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/antibiotics.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/antibiotics.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/willow_bark_tincture.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/willow_bark_tincture.png"
   },
   "ANTISEPTIC": {
-    "name": "Antiseptic",
+    "name": "Carbolic Acid",
     "material": "SLIME_BALL",
-    "customModelData": 261,
+    "itemModel": "tfmc_surgery:carbolic_acid",
     "texture": "mmoitems/antiseptic.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/antiseptic.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/antiseptic.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/carbolic_acid.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/carbolic_acid.png"
+  },
+  "ARCANE_CLAW_ARM": {
+    "name": "Arcane Claw Arm",
+    "material": "BREEZE_ROD",
+    "customModelData": 33,
+    "texture": "mmoitems/arcane_claw_arm.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/arcane_prosthetic_arm.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/arcane_prosthetic_arm.png"
+  },
+  "ARCANE_CLAW_LEG": {
+    "name": "Arcane Claw Leg",
+    "material": "BREEZE_ROD",
+    "customModelData": 36,
+    "texture": "mmoitems/arcane_claw_leg.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/arcane_prosthetic_leg.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/arcane_prosthetic_leg.png"
   },
   "ARCANE_CRYSTAL": {
     "name": "Arcane Crystal",
@@ -143,21 +159,17 @@
     "sourceModel": "vehicleframework/resourcepack/assets/minecraft/models/item/ammunition/arcane_fuel.json",
     "sourceTexture": "vehicleframework/resourcepack/assets/minecraft/textures/item/ammunition/arcane_fuel.png"
   },
-  "ARCANE_LEAF": {
-    "name": "Arcane Leaf",
-    "material": "KELP",
-    "customModelData": 5,
-    "texture": "mmoitems/arcane_leaf.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb5.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon5.png"
-  },
   "ARCHAEO_ESTABLISH": {
     "name": "Camp Kit",
     "material": "CAMPFIRE"
   },
   "ARCHAEO_PENCIL": {
     "name": "Field Pencil",
-    "material": "FEATHER"
+    "material": "BREEZE_ROD",
+    "customModelData": 37,
+    "texture": "mmoitems/archaeo_pencil.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_pencil.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_pencil.png"
   },
   "ARCHAEO_PROSPECT": {
     "name": "Soil Probe",
@@ -165,7 +177,51 @@
   },
   "ARCHAEO_TRACKER": {
     "name": "Field Compass",
-    "material": "RECOVERY_COMPASS"
+    "material": "BREEZE_ROD",
+    "customModelData": 38,
+    "texture": "mmoitems/archaeo_tracker.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_tracker.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_tracker.png"
+  },
+  "ARCHEOLOGY_HANDPICK": {
+    "name": "Hand Pick",
+    "material": "WOODEN_PICKAXE",
+    "customModelData": 1,
+    "texture": "mmoitems/archeology_handpick.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_handpick.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_handpick.png"
+  },
+  "ARCHEOLOGY_KNIFE": {
+    "name": "Knife",
+    "material": "WOODEN_PICKAXE",
+    "customModelData": 2,
+    "texture": "mmoitems/archeology_knife.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_knife.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_knife.png"
+  },
+  "ARCHEOLOGY_PICK": {
+    "name": "Breaker Pick",
+    "material": "IRON_PICKAXE"
+  },
+  "ARCHEOLOGY_SHOVEL": {
+    "name": "Spoil Shovel",
+    "material": "IRON_SHOVEL"
+  },
+  "ARCHEOLOGY_SPOON": {
+    "name": "Spoon",
+    "material": "WOODEN_SHOVEL",
+    "customModelData": 2,
+    "texture": "mmoitems/archeology_spoon.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_spoon.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_spoon.png"
+  },
+  "ARCHEOLOGY_TROWEL": {
+    "name": "Trowel",
+    "material": "WOODEN_SHOVEL",
+    "customModelData": 1,
+    "texture": "mmoitems/archeology_trowel.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_trowel.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_trowel.png"
   },
   "ASCENDANT_ARMOR_RUNESTONE": {
     "name": "Ascendant Armor Runestone",
@@ -207,14 +263,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/bark.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/bark.png"
   },
-  "BARKSHROOM": {
-    "name": "Barkshroom",
-    "material": "KELP",
-    "customModelData": 24,
-    "texture": "mmoitems/barkshroom.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb24.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon24.png"
-  },
   "BARKWOOD": {
     "name": "Barkwood",
     "material": "STICK",
@@ -223,11 +271,11 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/barkwood.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/barkwood.png"
   },
-  "BASIC_LOCKPICK_SET": {
+  "BASIC_LOCKPICK": {
     "name": "Basic Lockpick",
     "material": "IRON_NUGGET",
     "customModelData": 7,
-    "texture": "mmoitems/basic_lockpick_set.png",
+    "texture": "mmoitems/basic_lockpick.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/basic_lockpick.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/basic_lockpick.png"
   },
@@ -239,17 +287,16 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb22.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon22.png"
   },
-  "BLAZED_ROOT": {
-    "name": "Blazed Root",
-    "material": "KELP",
-    "customModelData": 44,
-    "texture": "mmoitems/blazed_root.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb44.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon44.png"
+  "BOOK": {
+    "material": "BOOK"
   },
-  "BREAKER_PICK": {
-    "name": "Breaker Pick",
-    "material": "IRON_PICKAXE"
+  "BROKEN_DISC": {
+    "name": "Broken Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 2,
+    "texture": "mmoitems/broken_disc.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/broken_disc.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/broken_disc.png"
   },
   "BRONZE_INGOT": {
     "name": "Bronze Ingot",
@@ -259,13 +306,53 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/bronze_ingot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/bronze_ingot.png"
   },
-  "BRONZESHOT": {
-    "name": "Bronzeshot",
+  "BRONZEROCKET": {
+    "name": "Bronze Rocket",
     "material": "GUNPOWDER",
-    "customModelData": 18,
+    "customModelData": 37,
+    "texture": "mmoitems/bronzerocket.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzerocket.png"
+  },
+  "BRONZEROCKET_POWERED": {
+    "name": "Powered Bronze Rocket",
+    "material": "GUNPOWDER",
+    "customModelData": 37,
+    "texture": "mmoitems/bronzerocket_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzerocket.png"
+  },
+  "BRONZESHOT": {
+    "name": "Bronze Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 29,
     "texture": "mmoitems/bronzeshot.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronzeshot.json",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_shot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzeshot.png"
+  },
+  "BRONZESHOT_POWERED": {
+    "name": "Powered Bronze Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 29,
+    "texture": "mmoitems/bronzeshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzeshot.png"
+  },
+  "BRONZESPREADSHOT": {
+    "name": "Bronze Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 33,
+    "texture": "mmoitems/bronzespreadshot.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzespreadshot.png"
+  },
+  "BRONZESPREADSHOT_POWERED": {
+    "name": "Powered Bronze Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 33,
+    "texture": "mmoitems/bronzespreadshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/bronze_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/bronzespreadshot.png"
   },
   "BULLET_BOX": {
     "name": "Box of Bullets",
@@ -307,14 +394,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/caringitem.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/caringitem.png"
   },
-  "CAVESHROOM": {
-    "name": "Caveshroom",
-    "material": "KELP",
-    "customModelData": 21,
-    "texture": "mmoitems/caveshroom.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb21.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon21.png"
-  },
   "CELTIC_HARP": {
     "name": "Celtic Harp",
     "material": "Stick",
@@ -323,21 +402,21 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/instruments/celtic_harp.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/celtic_harp.png"
   },
-  "CLAMP": {
-    "name": "Clamp",
-    "material": "SLIME_BALL",
-    "customModelData": 254,
-    "texture": "mmoitems/clamp.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/clamp.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/clamp.png"
-  },
-  "CLORO_CORE": {
-    "name": "Cloro Core",
-    "material": "KELP",
+  "CHRYSOPRASE": {
+    "name": "Chrysoprase",
+    "material": "AMETHYST_SHARD",
     "customModelData": 11,
-    "texture": "mmoitems/cloro_core.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb11.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon11.png"
+    "texture": "mmoitems/chrysoprase.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/chrysoprase.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/chrysoprase.png"
+  },
+  "CLAMP": {
+    "name": "Artery Forceps",
+    "material": "SLIME_BALL",
+    "itemModel": "tfmc_surgery:artery_forceps",
+    "texture": "mmoitems/clamp.png",
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/artery_forceps.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/artery_forceps.png"
   },
   "CLOVER": {
     "name": "Clover",
@@ -379,6 +458,22 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_58.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_58.png"
   },
+  "COOWNERSHIP_ITEM": {
+    "name": "Co-Ownership Token",
+    "material": "RABBIT_HIDE",
+    "customModelData": 10,
+    "texture": "mmoitems/coownership_item.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/coownershipitem.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/coownership.png"
+  },
+  "CORAL": {
+    "name": "Coral",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 10,
+    "texture": "mmoitems/coral.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/coral.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/coral.png"
+  },
   "COUGH_SYRUP": {
     "name": "Cough Syrup",
     "material": "SLIME_BALL",
@@ -395,21 +490,13 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/dead_geiger_counter.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/dead_geiger_counter.png"
   },
-  "DEATH_FRUIT": {
-    "name": "Death Fruit",
-    "material": "KELP",
-    "customModelData": 42,
-    "texture": "mmoitems/death_fruit.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb42.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon42.png"
-  },
   "DEFIBRILLATOR": {
-    "name": "Defibrillator",
+    "name": "Smelling Salts",
     "material": "SLIME_BALL",
-    "customModelData": 250,
+    "itemModel": "tfmc_surgery:smelling_salts",
     "texture": "mmoitems/defibrillator.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/defibrillator.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/defibrillator.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/smelling_salts.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/smelling_salts.png"
   },
   "DEMONWOOD": {
     "name": "Demonwood",
@@ -427,6 +514,14 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/detoxed_leather.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/detoxed_leather.png"
   },
+  "DIAMOND_FRAGMENT": {
+    "name": "Diamond Fragment",
+    "material": "RAW_GOLD",
+    "customModelData": 6,
+    "texture": "mmoitems/diamond_fragment.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/diamond_fragment.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/diamond_fragment.png"
+  },
   "DYING_LEAF": {
     "name": "Dying Leaf",
     "material": "KELP",
@@ -443,20 +538,132 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/dynamite.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/dynamite.png"
   },
+  "DISC_FRAGMENT": {
+    "name": "Music Disc Fragment",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 1,
+    "texture": "mmoitems/disc_fragment.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_fragment.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_fragment.png"
+  },
+  "DISC1": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 3,
+    "texture": "mmoitems/disc1.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_my_castle_town.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_my_castle_town.png"
+  },
+  "DISC10": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 12,
+    "texture": "mmoitems/disc10.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_prism_theme.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_prism_theme.png"
+  },
+  "DISC11": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 13,
+    "texture": "mmoitems/disc11.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_eoridcois_theme.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_eoridcois_theme.png"
+  },
+  "DISC12": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 14,
+    "texture": "mmoitems/disc12.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_to_light_the_aeon_dark.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_to_light_the_aeon_dark.png"
+  },
+  "DISC13": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 15,
+    "texture": "mmoitems/disc13.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_dearly_beloved.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_dearly_beloved.png"
+  },
+  "DISC2": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 4,
+    "texture": "mmoitems/disc2.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_lions_pride.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_lions_pride.png"
+  },
+  "DISC3": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 5,
+    "texture": "mmoitems/disc3.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_pull_up_a_chair.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_pull_up_a_chair.png"
+  },
+  "DISC4": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 6,
+    "texture": "mmoitems/disc4.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_party_in_the_shire.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_party_in_the_shire.png"
+  },
+  "DISC5": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 7,
+    "texture": "mmoitems/disc5.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_the_pirate_king.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_the_pirate_king.png"
+  },
+  "DISC6": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 8,
+    "texture": "mmoitems/disc6.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_kjope_hele_sverige.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_kjope_hele_sverige.png"
+  },
+  "DISC7": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 9,
+    "texture": "mmoitems/disc7.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_the_resonance_archives.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_the_resonance_archives.png"
+  },
+  "DISC8": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 10,
+    "texture": "mmoitems/disc8.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_sealed_vessel.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_sealed_vessel.png"
+  },
+  "DISC9": {
+    "name": "Music Disc",
+    "material": "RECOVERY_COMPASS",
+    "customModelData": 11,
+    "texture": "mmoitems/disc9.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/music/disc_from_the_new_world.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/music/disc_from_the_new_world.png"
+  },
   "DOCTORS_BOOTS": {
-    "name": "Doctor''s Boots",
+    "name": "Doctor's Boots",
     "material": "LEATHER_BOOTS"
   },
   "DOCTORS_COAT": {
-    "name": "Doctor''s Coat",
+    "name": "Doctor's Coat",
     "material": "LEATHER_CHESTPLATE"
   },
   "DOCTORS_LEGGINGS": {
-    "name": "Doctor''s Leggings",
+    "name": "Doctor's Leggings",
     "material": "LEATHER_LEGGINGS"
   },
   "DOCTORS_MASK": {
-    "name": "Doctor''s Mask",
+    "name": "Doctor's Mask",
     "material": "PLAYER_HEAD"
   },
   "DULCIMER": {
@@ -475,14 +682,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb46.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon46.png"
   },
-  "EYE_FRUIT": {
-    "name": "Eye Fruit",
-    "material": "KELP",
-    "customModelData": 25,
-    "texture": "mmoitems/eye_fruit.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb25.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon25.png"
-  },
   "ELDERWOOD": {
     "name": "Elderwood",
     "material": "STICK",
@@ -493,37 +692,33 @@
   },
   "ENCHANTED_CHARGE_1": {
     "name": "Enchanted Charge I",
-    "material": "AMETHYST_SHARD",
-    "customModelData": 9,
+    "material": "ECHO_SHARD",
+    "customModelData": 79,
     "texture": "mmoitems/enchanted_charge_1.png",
-    "sourceKind": "named-pack-model",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/enchanted_charge_tier_1.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/enchanted_charge_tier_1.png"
   },
   "ENCHANTED_CHARGE_2": {
     "name": "Enchanted Charge II",
-    "material": "AMETHYST_SHARD",
-    "customModelData": 9,
+    "material": "ECHO_SHARD",
+    "customModelData": 80,
     "texture": "mmoitems/enchanted_charge_2.png",
-    "sourceKind": "named-pack-model",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/enchanted_charge_tier_2.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/enchanted_charge_tier_2.png"
   },
   "ENCHANTED_CHARGE_3": {
     "name": "Enchanted Charge III",
-    "material": "AMETHYST_SHARD",
-    "customModelData": 9,
+    "material": "ECHO_SHARD",
+    "customModelData": 81,
     "texture": "mmoitems/enchanted_charge_3.png",
-    "sourceKind": "named-pack-model",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/enchanted_charge_tier_3.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/enchanted_charge_tier_3.png"
   },
   "ENCHANTED_CHARGE_4": {
     "name": "Enchanted Charge IV",
-    "material": "AMETHYST_SHARD",
-    "customModelData": 9,
+    "material": "ECHO_SHARD",
+    "customModelData": 82,
     "texture": "mmoitems/enchanted_charge_4.png",
-    "sourceKind": "named-pack-model",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/enchanted_charge_tier_4.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/enchanted_charge_tier_4.png"
   },
@@ -540,26 +735,16 @@
     "material": "BREEZE_ROD",
     "customModelData": 5,
     "texture": "mmoitems/engraving_tool.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_engraving_tool.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_engraving_tool.png"
-  },
-  "EPIC_FEATHER": {
-    "name": "Great Quality Feather",
-    "material": "FEATHER",
-    "customModelData": 2,
-    "texture": "mmoitems/epic_feather.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/epicfeather.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/epicfeather.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/engraving_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/engraving_tool.png"
   },
   "ETCHING_TOOL": {
     "name": "Etching Tool",
     "material": "BREEZE_ROD",
     "customModelData": 7,
     "texture": "mmoitems/etching_tool.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_etching_tool.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_etching_tool.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/etching_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/etching_tool.png"
   },
   "FERTILIZER": {
     "name": "Fertilizer",
@@ -613,14 +798,6 @@
     "sourceModel": "vehicleframework/resourcepack/assets/minecraft/models/item/ammunition/flak_bullets.json",
     "sourceTexture": "vehicleframework/resourcepack/assets/minecraft/textures/item/ammunition/flak_bullets.png"
   },
-  "FLATSHROOM": {
-    "name": "Flatshroom",
-    "material": "KELP",
-    "customModelData": 45,
-    "texture": "mmoitems/flatshroom.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb45.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon45.png"
-  },
   "FLOWER_CORE": {
     "name": "Flower Core",
     "material": "STICK",
@@ -637,21 +814,61 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/instruments/flute.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/flute.png"
   },
-  "FROST_FLOWERS": {
-    "name": "Frost Flowers",
-    "material": "KELP",
+  "FORGING_BRANDING_TOOL": {
+    "name": "Forging Branding Tool",
+    "material": "BREEZE_ROD",
     "customModelData": 23,
-    "texture": "mmoitems/frost_flowers.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb23.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon23.png"
+    "texture": "mmoitems/forging_branding_tool.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_branding_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_branding_tool.png"
   },
-  "FROST_ROOT": {
-    "name": "Frost Root",
-    "material": "KELP",
-    "customModelData": 13,
-    "texture": "mmoitems/frost_root.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb13.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon13.png"
+  "FORGING_ENGRAVING_TOOL": {
+    "name": "Forging Engraving Tool",
+    "material": "BREEZE_ROD",
+    "customModelData": 27,
+    "texture": "mmoitems/forging_engraving_tool.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_engraving_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_engraving_tool.png"
+  },
+  "FORGING_ETCHING_TOOL": {
+    "name": "Forging Etching Tool",
+    "material": "BREEZE_ROD",
+    "customModelData": 29,
+    "texture": "mmoitems/forging_etching_tool.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_etching_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_etching_tool.png"
+  },
+  "FORGING_HAMMER": {
+    "name": "Forging Hammer",
+    "material": "BREEZE_ROD",
+    "customModelData": 24,
+    "texture": "mmoitems/forging_hammer.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_hammer.png"
+  },
+  "FORGING_SEWING_NEEDLE": {
+    "name": "Forging Sewing Needle",
+    "material": "BREEZE_ROD",
+    "customModelData": 30,
+    "texture": "mmoitems/forging_sewing_needle.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_sewing_needle.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_sewing_needle.png"
+  },
+  "FORGING_SMALL_HAMMER": {
+    "name": "Forging Small Hammer",
+    "material": "BREEZE_ROD",
+    "customModelData": 25,
+    "texture": "mmoitems/forging_small_hammer.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_small_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_small_hammer.png"
+  },
+  "FORGING_WHITTLING_TOOL": {
+    "name": "Forging Whittling Tool",
+    "material": "BREEZE_ROD",
+    "customModelData": 28,
+    "texture": "mmoitems/forging_whittling_tool.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_whittling_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_whittling_tool.png"
   },
   "FROST_SERUM": {
     "name": "Frost Serum",
@@ -661,14 +878,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_170.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_170.png"
   },
-  "FROST_TUBES": {
-    "name": "Frost Tubes",
-    "material": "KELP",
-    "customModelData": 48,
-    "texture": "mmoitems/frost_tubes.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb48.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon48.png"
-  },
   "GEIGER_COUNTER": {
     "name": "Arcane Trace Detector",
     "material": "BREEZE_ROD",
@@ -676,14 +885,6 @@
     "texture": "mmoitems/geiger_counter.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/geiger_counter.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/geiger_counter.png"
-  },
-  "GLOWPEA_POD": {
-    "name": "Glowpea Pod",
-    "material": "KELP",
-    "customModelData": 34,
-    "texture": "mmoitems/glowpea_pod.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb34.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon34.png"
   },
   "GOLD_COIN": {
     "name": "Gold Denar",
@@ -696,38 +897,34 @@
   "GOLDSMITH_BRANDING_TOOL": {
     "name": "Goldsmith Branding Tool",
     "material": "BREEZE_ROD",
-    "customModelData": 1,
+    "customModelData": 19,
     "texture": "mmoitems/goldsmith_branding_tool.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/branding_tool.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/branding_tool.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/goldsmith_branding_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/goldsmith_branding_tool.png"
   },
   "GOLDSMITH_HAMMER": {
     "name": "Goldsmith Hammer",
     "material": "BREEZE_ROD",
-    "customModelData": 2,
+    "customModelData": 20,
     "texture": "mmoitems/goldsmith_hammer.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/smith_hammer.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/smith_hammer.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/goldsmith_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/goldsmith_hammer.png"
   },
   "GOLDSMITH_TINKER_TOOL": {
-    "name": "Goldsmith Tinker Tool",
+    "name": "Goldsmith Tinker Hammer",
     "material": "BREEZE_ROD",
-    "customModelData": 4,
+    "customModelData": 22,
     "texture": "mmoitems/goldsmith_tinker_tool.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/smith_tinker_tool.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/smith_tinker_tool.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/goldsmith_tinker_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/goldsmith_tinker_hammer.png"
   },
-  "GRAFTING_SPADE": {
-    "name": "Grafting Spade",
-    "material": "STONE_SHOVEL"
-  },
-  "GRAPEBERRIES": {
-    "name": "Grapeberries",
-    "material": "KELP",
-    "customModelData": 33,
-    "texture": "mmoitems/grapeberries.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb33.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon33.png"
+  "GRAVE_INSURANCE": {
+    "name": "Grave Insurance",
+    "material": "PAPER",
+    "customModelData": 8,
+    "texture": "mmoitems/grave_insurance.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/insurance_ticket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/insurance_ticket.png"
   },
   "GREATER_ARMOR_RUNESTONE": {
     "name": "Greater Armor Runestone",
@@ -774,17 +971,8 @@
     "material": "BREEZE_ROD",
     "customModelData": 2,
     "texture": "mmoitems/hammer_tool.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_hammer.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_hammer.png"
-  },
-  "HAND_PICK": {
-    "name": "Hand Pick",
-    "material": "WOODEN_PICKAXE",
-    "texture": "mmoitems/hand_pick.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_handpick.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_handpick.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/smith_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/smith_hammer.png"
   },
   "HANDFUL_OF_COINS": {
     "name": "Handful of Gold Denars",
@@ -802,14 +990,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_169.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_169.png"
   },
-  "HOLT_CORE": {
-    "name": "Holt Core",
-    "material": "KELP",
-    "customModelData": 9,
-    "texture": "mmoitems/holt_core.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb9.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon9.png"
-  },
   "IGNITIUM": {
     "name": "Ignitium",
     "material": "NETHERITE_SCRAP",
@@ -826,14 +1006,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/infusion_ticket.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/infusion_ticket.png"
   },
-  "INSURANCE_TICKET": {
-    "name": "Insurance Ticket",
-    "material": "PAPER",
-    "customModelData": 8,
-    "texture": "mmoitems/insurance_ticket.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/insurance_ticket.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/insurance_ticket.png"
-  },
   "IRON_ALCHEMY_COLLECTOR": {
     "name": "Iron Alchemist Collector",
     "material": "SHEARS",
@@ -849,6 +1021,22 @@
     "texture": "mmoitems/iron_axe.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/iron_hatchet.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/iron_hatchet.png"
+  },
+  "IRON_CLAW_ARM": {
+    "name": "Iron Claw Arm",
+    "material": "BREEZE_ROD",
+    "customModelData": 32,
+    "texture": "mmoitems/iron_claw_arm.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/basic_prosthetic_arm.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/basic_prosthetic_arm.png"
+  },
+  "IRON_CLAW_LEG": {
+    "name": "Iron Claw Leg",
+    "material": "BREEZE_ROD",
+    "customModelData": 35,
+    "texture": "mmoitems/iron_claw_leg.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/basic_prosthetic_leg.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/basic_prosthetic_leg.png"
   },
   "IRON_HOE": {
     "name": "Iron Hoe",
@@ -878,14 +1066,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/iron_key.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/iron_key.png"
   },
-  "IRON_LUTE": {
-    "name": "Iron Lute",
-    "material": "IRON_SHOVEL",
-    "customModelData": 10,
-    "texture": "mmoitems/iron_lute.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/weapons/iron_lute.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/weapons/iron_lute.png"
-  },
   "IRON_PICKAXE": {
     "name": "Iron Pickaxe",
     "material": "IRON_PICKAXE"
@@ -894,13 +1074,61 @@
     "name": "Iron Shovel",
     "material": "IRON_SHOVEL"
   },
-  "IRONSHOT": {
-    "name": "Ironshot",
+  "IRONROCKET": {
+    "name": "Iron Rocket",
     "material": "GUNPOWDER",
-    "customModelData": 1,
+    "customModelData": 35,
+    "texture": "mmoitems/ironrocket.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironrocket.png"
+  },
+  "IRONROCKET_POWERED": {
+    "name": "Powered Iron Rocket",
+    "material": "GUNPOWDER",
+    "customModelData": 35,
+    "texture": "mmoitems/ironrocket_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironrocket.png"
+  },
+  "IRONSHOT": {
+    "name": "Iron Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 27,
     "texture": "mmoitems/ironshot.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/ammo_musket.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/ammo_musket.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironshot.png"
+  },
+  "IRONSHOT_POWERED": {
+    "name": "Powered Iron Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 27,
+    "texture": "mmoitems/ironshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironshot.png"
+  },
+  "IRONSPREADSHOT": {
+    "name": "Iron Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 31,
+    "texture": "mmoitems/ironspreadshot.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironspreadshot.png"
+  },
+  "IRONSPREADSHOT_POWERED": {
+    "name": "Powered Iron Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 31,
+    "texture": "mmoitems/ironspreadshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/iron_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/ironspreadshot.png"
+  },
+  "JASPER": {
+    "name": "Jasper",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 6,
+    "texture": "mmoitems/jasper.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/jasper.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/jasper.png"
   },
   "KALIMBA": {
     "name": "Kalimba",
@@ -909,6 +1137,14 @@
     "texture": "mmoitems/kalimba.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/instruments/kalimba.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/kalimba.png"
+  },
+  "KEY_CHAIN": {
+    "name": "Key Chain",
+    "material": "GOLD_NUGGET",
+    "customModelData": 57,
+    "texture": "mmoitems/key_chain.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/thievery/key_chain_0.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/thievery/key_chain_0.png"
   },
   "KELPBERRY": {
     "name": "Kelpberry",
@@ -919,23 +1155,23 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon37.png"
   },
   "LAB_KIT": {
-    "name": "Lab Kit",
+    "name": "Clinical Thermometer",
     "material": "SLIME_BALL",
-    "customModelData": 256,
+    "itemModel": "tfmc_surgery:clinical_thermometer",
     "texture": "mmoitems/lab_kit.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/lab_kit.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/lab_kit.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/clinical_thermometer.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/clinical_thermometer.png"
+  },
+  "LARIMAR": {
+    "name": "Larimar",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 12,
+    "texture": "mmoitems/larimar.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/larimar.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/larimar.png"
   },
   "LEATHER": {
     "material": "LEATHER"
-  },
-  "LEGENDARY_FEATHER": {
-    "name": "Perfect Quality Feather",
-    "material": "FEATHER",
-    "customModelData": 3,
-    "texture": "mmoitems/legendary_feather.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/legendaryfeather.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/legendaryfeather.png"
   },
   "LESSER_ARMOR_RUNESTONE": {
     "name": "Lesser Armor Runestone",
@@ -968,14 +1204,6 @@
     "texture": "mmoitems/lesser_runestone.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/cerrith_rune_2.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/cerrith_rune_2.png"
-  },
-  "LOCKPICK": {
-    "name": "Chest Lockpick",
-    "material": "IRON_NUGGET",
-    "customModelData": 7,
-    "texture": "mmoitems/lockpick.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/basic_lockpick.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/basic_lockpick.png"
   },
   "LONG_LEAF": {
     "name": "Long Leaf",
@@ -1029,10 +1257,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/maplewood.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/maplewood.png"
   },
-  "MATTOCK": {
-    "name": "Mattock",
-    "material": "STONE_PICKAXE"
-  },
   "MEAT_TREAT": {
     "name": "Meat Treat",
     "material": "RABBIT_FOOT",
@@ -1080,14 +1304,6 @@
     "texture": "mmoitems/minor_runestone.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/cerrith_rune_1.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/cerrith_rune_1.png"
-  },
-  "MIRKBERRIES": {
-    "name": "Mirkberries",
-    "material": "KELP",
-    "customModelData": 28,
-    "texture": "mmoitems/mirkberries.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb28.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon28.png"
   },
   "MYTHRIL_ALCHEMY_COLLECTOR": {
     "name": "Mythril Alchemist Collector",
@@ -1137,14 +1353,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/mythril_ingot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/mythril_ingot.png"
   },
-  "MYTHRIL_LUTE": {
-    "name": "Mythril Lute",
-    "material": "IRON_SHOVEL",
-    "customModelData": 13,
-    "texture": "mmoitems/mythril_lute.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/weapons/mythril_lute.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/weapons/mythril_lute.png"
-  },
   "MYTHRIL_PICKAXE": {
     "name": "Mythril Pickaxe",
     "material": "NETHERITE_PICKAXE",
@@ -1177,6 +1385,54 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/mythrilite.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/mythrilite.png"
   },
+  "MYTHRILROCKET": {
+    "name": "Mythril Rocket",
+    "material": "GUNPOWDER",
+    "customModelData": 38,
+    "texture": "mmoitems/mythrilrocket.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilrocket.png"
+  },
+  "MYTHRILROCKET_POWERED": {
+    "name": "Powered Mythril Rocket",
+    "material": "GUNPOWDER",
+    "customModelData": 38,
+    "texture": "mmoitems/mythrilrocket_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilrocket.png"
+  },
+  "MYTHRILSHOT": {
+    "name": "Mythril Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 30,
+    "texture": "mmoitems/mythrilshot.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilshot.png"
+  },
+  "MYTHRILSHOT_POWERED": {
+    "name": "Powered Mythril Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 30,
+    "texture": "mmoitems/mythrilshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilshot.png"
+  },
+  "MYTHRILSPREADSHOT": {
+    "name": "Mythril Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 34,
+    "texture": "mmoitems/mythrilspreadshot.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilspreadshot.png"
+  },
+  "MYTHRILSPREADSHOT_POWERED": {
+    "name": "Powered Mythril Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 34,
+    "texture": "mmoitems/mythrilspreadshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilspreadshot.png"
+  },
   "MUSCLE_STIMULATOR": {
     "name": "Muscle Stimulant",
     "material": "SLIME_BALL",
@@ -1205,13 +1461,13 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_113.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_113.png"
   },
-  "NIGHTSHADE": {
-    "name": "Nightshade",
-    "material": "KELP",
-    "customModelData": 36,
-    "texture": "mmoitems/nightshade.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb36.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon36.png"
+  "NEUTERING_ITEM": {
+    "name": "Neutering Tool",
+    "material": "BREEZE_ROD",
+    "customModelData": 39,
+    "texture": "mmoitems/neutering_item.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/neutering_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/neutering_tool.png"
   },
   "NITER": {
     "name": "Niter",
@@ -1221,45 +1477,29 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/niter.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/niter.png"
   },
-  "PEBBLESHOT": {
-    "name": "Pebbleshot",
-    "material": "GUNPOWDER",
-    "customModelData": 21,
-    "texture": "mmoitems/pebbleshot.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/pebbleshot.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/pebbleshot.png"
+  "ONYX": {
+    "name": "Onyx",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 7,
+    "texture": "mmoitems/onyx.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/onyx.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/onyx.png"
+  },
+  "PEARL": {
+    "name": "Pearl",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 9,
+    "texture": "mmoitems/pearl.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/pearl.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/pearl.png"
   },
   "PINS": {
-    "name": "Pins",
+    "name": "Silver Wire",
     "material": "SLIME_BALL",
-    "customModelData": 251,
+    "itemModel": "tfmc_surgery:silver_wire",
     "texture": "mmoitems/pins.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/pins.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/pins.png"
-  },
-  "POINTING_TROWEL": {
-    "name": "Pointing Trowel",
-    "material": "WOODEN_SHOVEL",
-    "texture": "mmoitems/pointing_trowel.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/archeology_trowel.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/archeology_trowel.png"
-  },
-  "POISON_LEAF": {
-    "name": "Poison Leaf",
-    "material": "KELP",
-    "customModelData": 43,
-    "texture": "mmoitems/poison_leaf.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb43.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon43.png"
-  },
-  "POISON_ROOT": {
-    "name": "Poison Root",
-    "material": "KELP",
-    "customModelData": 1,
-    "texture": "mmoitems/poison_root.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb1.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon1.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/silver_wire.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/silver_wire.png"
   },
   "POTASH": {
     "name": "Potash",
@@ -1290,6 +1530,14 @@
     "material": "PAPER",
     "customModelData": 2,
     "texture": "mmoitems/r_abyssalite.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/research_paper.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/research_paper.png"
+  },
+  "R_ALCHEMY": {
+    "name": "Research Paper",
+    "material": "PAPER",
+    "customModelData": 2,
+    "texture": "mmoitems/r_alchemy.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/research_paper.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/research_paper.png"
   },
@@ -1381,13 +1629,13 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/research_paper.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/research_paper.png"
   },
-  "RARE_FEATHER": {
-    "name": "Good Quality Feather",
-    "material": "FEATHER",
-    "customModelData": 1,
-    "texture": "mmoitems/rare_feather.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/rarefeather.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/rarefeather.png"
+  "R_TRACE_DETECTION": {
+    "name": "Research Paper",
+    "material": "PAPER",
+    "customModelData": 2,
+    "texture": "mmoitems/r_trace_detection.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/research_paper.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/research_paper.png"
   },
   "RARE_RESEARCH_PAPER": {
     "name": "Unknown Research Paper",
@@ -1404,6 +1652,22 @@
     "texture": "mmoitems/raw_tin.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/raw_tin.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/raw_tin.png"
+  },
+  "RAWGOLD_FRAGMENT": {
+    "name": "Raw Gold Fragment",
+    "material": "RAW_GOLD",
+    "customModelData": 5,
+    "texture": "mmoitems/rawgold_fragment.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/rawgold_fragment.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/rawgold_fragment.png"
+  },
+  "RAWIRON_FRAGMENT": {
+    "name": "Raw Iron Fragment",
+    "material": "RAW_GOLD",
+    "customModelData": 4,
+    "texture": "mmoitems/rawiron_fragment.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/rawiron_fragment.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/rawiron_fragment.png"
   },
   "RED_CONCOCTION": {
     "name": "Red Concoction",
@@ -1453,13 +1717,13 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_63.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_63.png"
   },
-  "ROCKET": {
-    "name": "Rocket",
-    "material": "GUNPOWDER",
-    "customModelData": 26,
-    "texture": "mmoitems/rocket.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/rocket.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/rocket.png"
+  "RHODONITE": {
+    "name": "Rhodonite",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 13,
+    "texture": "mmoitems/rhodonite.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/rhodonite.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/rhodonite.png"
   },
   "ROOT_MIXTURE": {
     "name": "Root Mixture",
@@ -1480,10 +1744,10 @@
   "SCALPEL": {
     "name": "Scalpel",
     "material": "SLIME_BALL",
-    "customModelData": 258,
+    "itemModel": "tfmc_surgery:scalpel",
     "texture": "mmoitems/scalpel.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/scalpel.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/scalpel.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/scalpel.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/scalpel.png"
   },
   "SCRIBE_PAPER": {
     "name": "Parchment Paper",
@@ -1493,22 +1757,13 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/parchment_paper.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/parchment_paper.png"
   },
-  "SERPENT_ROOT": {
-    "name": "Serpent Root",
-    "material": "KELP",
-    "customModelData": 18,
-    "texture": "mmoitems/serpent_root.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb18.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon18.png"
-  },
   "SEWING_NEEDLE": {
     "name": "Sewing Needle",
     "material": "BREEZE_ROD",
     "customModelData": 8,
     "texture": "mmoitems/sewing_needle.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_sewing_needle.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_sewing_needle.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/sewing_needle.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/sewing_needle.png"
   },
   "SHROOM_SERUM": {
     "name": "Shroom Serum",
@@ -1583,41 +1838,36 @@
     "sourceTexture": "vehicleframework/resourcepack/assets/minecraft/textures/item/ammunition/small_bomb_rack.png"
   },
   "SMALL_GOLDSMITH_HAMMER": {
-    "name": "Small Goldsmith Hammer",
+    "name": "Goldsmith Small Hammer",
     "material": "BREEZE_ROD",
-    "customModelData": 3,
+    "customModelData": 21,
     "texture": "mmoitems/small_goldsmith_hammer.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/small_smith_hammer.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/small_smith_hammer.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/goldsmith_small_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/goldsmith_small_hammer.png"
   },
   "SMALL_HAMMER_TOOL": {
     "name": "Small Hammer Tool",
     "material": "BREEZE_ROD",
     "customModelData": 3,
     "texture": "mmoitems/small_hammer_tool.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_small_hammer.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_small_hammer.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/small_smith_hammer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/small_smith_hammer.png"
   },
   "SPLINT": {
     "name": "Splint",
     "material": "SLIME_BALL",
-    "customModelData": 262,
+    "itemModel": "tfmc_surgery:splint",
     "texture": "mmoitems/splint.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/splint.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/splint.png"
-  },
-  "SPOIL_SHOVEL": {
-    "name": "Spoil Shovel",
-    "material": "IRON_SHOVEL"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/splint.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/splint.png"
   },
   "SPONGE": {
-    "name": "Sponge",
+    "name": "Sea Sponge",
     "material": "SLIME_BALL",
-    "customModelData": 263,
+    "itemModel": "tfmc_surgery:sponge",
     "texture": "mmoitems/sponge.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/sponge.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/sponge.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/sponge.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/sponge.png"
   },
   "SPOT_LEAF": {
     "name": "Spot Leaf",
@@ -1626,14 +1876,6 @@
     "texture": "mmoitems/spot_leaf.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb19.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon19.png"
-  },
-  "SPREADSHOT": {
-    "name": "Spreadshot",
-    "material": "GUNPOWDER",
-    "customModelData": 20,
-    "texture": "mmoitems/spreadshot.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/spreadshot.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/spreadshot.png"
   },
   "STABILIZING_SERUM": {
     "name": "Stabilizing Serum",
@@ -1691,14 +1933,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/steel_ingot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/steel_ingot.png"
   },
-  "STEEL_LUTE": {
-    "name": "Steel Lute",
-    "material": "IRON_SHOVEL",
-    "customModelData": 11,
-    "texture": "mmoitems/steel_lute.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/weapons/steel_lute.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/weapons/steel_lute.png"
-  },
   "STEEL_PICKAXE": {
     "name": "Steel Pickaxe",
     "material": "IRON_PICKAXE",
@@ -1723,21 +1957,61 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/steel_shovel.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/steel_shovel.png"
   },
-  "STEELSHOT": {
-    "name": "Steelshot",
+  "STEELROCKET": {
+    "name": "Steel Rocket",
     "material": "GUNPOWDER",
-    "customModelData": 19,
+    "customModelData": 36,
+    "texture": "mmoitems/steelrocket.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelrocket.png"
+  },
+  "STEELROCKET_POWERED": {
+    "name": "Powered Steel Rocket",
+    "material": "GUNPOWDER",
+    "customModelData": 36,
+    "texture": "mmoitems/steelrocket_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_rocket.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelrocket.png"
+  },
+  "STEELSHOT": {
+    "name": "Steel Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 28,
     "texture": "mmoitems/steelshot.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steelshot.json",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_shot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelshot.png"
   },
+  "STEELSHOT_POWERED": {
+    "name": "Powered Steel Shot",
+    "material": "GUNPOWDER",
+    "customModelData": 28,
+    "texture": "mmoitems/steelshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_shot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelshot.png"
+  },
+  "STEELSPREADSHOT": {
+    "name": "Steel Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 32,
+    "texture": "mmoitems/steelspreadshot.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelspreadshot.png"
+  },
+  "STEELSPREADSHOT_POWERED": {
+    "name": "Powered Steel Spreadshot",
+    "material": "GUNPOWDER",
+    "customModelData": 32,
+    "texture": "mmoitems/steelspreadshot_powered.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/steel_spreadshot.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/steelspreadshot.png"
+  },
   "STITCHES": {
-    "name": "Stitches",
+    "name": "Catgut Suture",
     "material": "SLIME_BALL",
-    "customModelData": 259,
+    "itemModel": "tfmc_surgery:catgut_suture",
     "texture": "mmoitems/stitches.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/stitches.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/stitches.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/catgut_suture.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/catgut_suture.png"
   },
   "STONE_CORE": {
     "name": "Stone Core",
@@ -1747,11 +2021,11 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/stone_core.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/stone_core.png"
   },
-  "STRONG_LOCKPICK_SET": {
+  "STRONG_LOCKPICK": {
     "name": "Strong Lockpick",
     "material": "IRON_NUGGET",
     "customModelData": 8,
-    "texture": "mmoitems/strong_lockpick_set.png",
+    "texture": "mmoitems/strong_lockpick.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/strong_lockpick.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/strong_lockpick.png"
   },
@@ -1764,12 +2038,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/sulfur.png"
   },
   "SURGICAL_GLOVE": {
-    "name": "Surgical Glove",
+    "name": "Linen Dressing",
     "material": "SLIME_BALL",
-    "customModelData": 252,
+    "itemModel": "tfmc_surgery:linen_dressing",
     "texture": "mmoitems/surgical_glove.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/hand.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/hand.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/linen_dressing.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/linen_dressing.png"
   },
   "TAMING_ITEM": {
     "name": "Ownership Token",
@@ -1803,13 +2077,53 @@
     "sourceModel": "vehicleframework/resourcepack/assets/minecraft/models/item/ammunition/torpedo.json",
     "sourceTexture": "vehicleframework/resourcepack/assets/minecraft/textures/item/ammunition/torpedo.png"
   },
+  "TOURMALINE": {
+    "name": "Tourmaline",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 8,
+    "texture": "mmoitems/tourmaline.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/tourmaline.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/tourmaline.png"
+  },
+  "TRAIN_TRACK_JUNCTION": {
+    "name": "Train Track Junction",
+    "material": "IRON_NUGGET",
+    "customModelData": 11,
+    "texture": "mmoitems/train_track_junction.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/trains_icon_junction_creator.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/trains_icon_junction_creator.png"
+  },
+  "TRAIN_TRACK_LAYER": {
+    "name": "Train Track Layer",
+    "material": "IRON_NUGGET",
+    "customModelData": 9,
+    "texture": "mmoitems/train_track_layer.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/trains_icon_place_layer.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/trains_icon_place_layer.png"
+  },
+  "TRAIN_TRACK_RECORDER": {
+    "name": "Train Track Recorder",
+    "material": "IRON_NUGGET",
+    "customModelData": 12,
+    "texture": "mmoitems/train_track_recorder.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/trains_icon_track_recorder.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/trains_icon_track_recorder.png"
+  },
+  "TRAIN_TRACK_REMOVER": {
+    "name": "Train Track Remover",
+    "material": "IRON_NUGGET",
+    "customModelData": 10,
+    "texture": "mmoitems/train_track_remover.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/miscellaneous/trains_icon_track_remover.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/miscellaneous/trains_icon_track_remover.png"
+  },
   "TRANSFUSION": {
-    "name": "Transfusion",
+    "name": "Transfusion Syringe",
     "material": "SLIME_BALL",
-    "customModelData": 257,
+    "itemModel": "tfmc_surgery:transfusion_syringe",
     "texture": "mmoitems/transfusion.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/transfusion.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/transfusion.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/transfusion_syringe.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/transfusion_syringe.png"
   },
   "TRANSMUTATION_POWDER": {
     "name": "Transmutation Powder",
@@ -1828,12 +2142,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/trumpet.png"
   },
   "ULTRASOUND": {
-    "name": "Ultrasound",
+    "name": "Stethoscope",
     "material": "SLIME_BALL",
-    "customModelData": 255,
+    "itemModel": "tfmc_surgery:stethoscope",
     "texture": "mmoitems/ultrasound.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/ultrasound.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/ultrasound.png"
+    "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/stethoscope.json",
+    "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/stethoscope.png"
   },
   "UNSOCKET_TOOL": {
     "name": "Unsocket Tool",
@@ -1867,6 +2181,14 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_60.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_60.png"
   },
+  "VESUVIANITE": {
+    "name": "Vesuvianite",
+    "material": "AMETHYST_SHARD",
+    "customModelData": 14,
+    "texture": "mmoitems/vesuvianite.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/vesuvianite.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/vesuvianite.png"
+  },
   "VIELLE": {
     "name": "Vielle",
     "material": "Stick",
@@ -1888,9 +2210,24 @@
     "material": "BREEZE_ROD",
     "customModelData": 6,
     "texture": "mmoitems/whittling_tool.png",
-    "sourceKind": "named-pack-model",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/forging_whittling_tool.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/forging_whittling_tool.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/tools/whittling_tool.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/tools/whittling_tool.png"
+  },
+  "WOOD_CLAW_ARM": {
+    "name": "Wood Claw Arm",
+    "material": "BREEZE_ROD",
+    "customModelData": 31,
+    "texture": "mmoitems/wood_claw_arm.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/wooden_claw_arm.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/wooden_claw_arm.png"
+  },
+  "WOOD_CLAW_LEG": {
+    "name": "Wood Claw Leg",
+    "material": "BREEZE_ROD",
+    "customModelData": 34,
+    "texture": "mmoitems/wood_claw_leg.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/surgery/pegleg.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/surgery/pegleg.png"
   },
   "WOOD_CORE": {
     "name": "Wood Core",
@@ -1899,5 +2236,8 @@
     "texture": "mmoitems/wood_core.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/wood_core.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/wood_core.png"
+  },
+  "WRITABLE_BOOK": {
+    "material": "WRITABLE_BOOK"
   }
 }

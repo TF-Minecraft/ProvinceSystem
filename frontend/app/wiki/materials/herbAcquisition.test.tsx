@@ -44,7 +44,8 @@ describe("Alchemist Collector herb acquisition", () => {
     const text = html.replace(/<[^>]+>/g, "");
     expect(text).toContain("Harvest with an Alchemist Collector");
     expect(text).toContain("Gather this herb with an Alchemist Collector.");
-    expect(html).not.toMatch(/break|leaves|logs|grass|pumpkin|kelp/i);
+    // Whole words only: "used in" recipes legitimately name co-ingredients such as Kelpberry.
+    expect(html).not.toMatch(/\b(break|leaves|logs|grass|pumpkin|kelp)\b/i);
     expect(html).not.toContain("Chance:");
     expect(html).not.toContain("Acquisition details have not yet been verified");
   });

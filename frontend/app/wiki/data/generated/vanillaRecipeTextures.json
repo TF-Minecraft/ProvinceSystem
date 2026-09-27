@@ -1,6 +1,6 @@
 {
-  "copied": 1,
-  "existing": 457,
+  "copied": 10,
+  "existing": 453,
   "unresolved": [],
   "items": {
     "acacia_leaves": {
@@ -295,6 +295,12 @@
       "sourceModel": "assets/minecraft/models/item/bubble_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/bubble_coral_fan.png"
     },
+    "bundle": {
+      "texture": "vanilla/bundle.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/item/bundle.json",
+      "sourceTexture": "assets/minecraft/textures/item/bundle.png"
+    },
     "bush": {
       "texture": "vanilla/bush.png",
       "sourceJar": "1.21.10.jar",
@@ -330,12 +336,6 @@
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/item/campfire.json",
       "sourceTexture": "assets/minecraft/textures/item/campfire.png"
-    },
-    "carrot": {
-      "texture": "vanilla/carrot.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/carrot.json",
-      "sourceTexture": "assets/minecraft/textures/item/carrot.png"
     },
     "cat_spawn_egg": {
       "texture": "vanilla/cat_spawn_egg.png",
@@ -593,6 +593,12 @@
       "sourceModel": "assets/minecraft/models/item/dead_bush.json",
       "sourceTexture": "assets/minecraft/textures/block/dead_bush.png"
     },
+    "deepslate": {
+      "texture": "vanilla/deepslate.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/deepslate.json",
+      "sourceTexture": "assets/minecraft/textures/block/deepslate.png"
+    },
     "diamond": {
       "texture": "vanilla/diamond.png",
       "source": "existing checked-in asset"
@@ -656,6 +662,12 @@
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/item/echo_shard.json",
       "sourceTexture": "assets/minecraft/textures/item/echo_shard.png"
+    },
+    "emerald": {
+      "texture": "vanilla/emerald.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/item/emerald.json",
+      "sourceTexture": "assets/minecraft/textures/item/emerald.png"
     },
     "end_rod": {
       "texture": "vanilla/end_rod.png",
@@ -1099,6 +1111,12 @@
       "sourceModel": "assets/minecraft/models/item/kelp.json",
       "sourceTexture": "assets/minecraft/textures/item/kelp.png"
     },
+    "lapis_block": {
+      "texture": "vanilla/lapis_block.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/lapis_block.json",
+      "sourceTexture": "assets/minecraft/textures/block/lapis_block.png"
+    },
     "large_fern": {
       "texture": "vanilla/large_fern.png",
       "sourceJar": "1.21.10.jar",
@@ -1395,12 +1413,6 @@
       "texture": "vanilla/oak_planks.png",
       "source": "existing checked-in asset"
     },
-    "oak_sign": {
-      "texture": "vanilla/oak_sign.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/oak_sign.json",
-      "sourceTexture": "assets/minecraft/textures/item/oak_sign.png"
-    },
     "obsidian": {
       "texture": "vanilla/obsidian.png",
       "sourceJar": "1.21.10.jar",
@@ -1663,12 +1675,6 @@
       "sourceModel": "assets/minecraft/models/item/poppy.json",
       "sourceTexture": "assets/minecraft/textures/block/poppy.png"
     },
-    "potato": {
-      "texture": "vanilla/potato.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/potato.json",
-      "sourceTexture": "assets/minecraft/textures/item/potato.png"
-    },
     "prismarine": {
       "texture": "vanilla/prismarine.png",
       "sourceJar": "1.21.10.jar",
@@ -1735,11 +1741,23 @@
       "sourceModel": "assets/minecraft/models/item/rabbit_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/rabbit_spawn_egg.png"
     },
+    "raw_copper_block": {
+      "texture": "vanilla/raw_copper_block.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/raw_copper_block.json",
+      "sourceTexture": "assets/minecraft/textures/block/raw_copper_block.png"
+    },
     "raw_gold": {
       "texture": "vanilla/raw_gold.png",
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/item/raw_gold.json",
       "sourceTexture": "assets/minecraft/textures/item/raw_gold.png"
+    },
+    "raw_iron": {
+      "texture": "vanilla/raw_iron.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/item/raw_iron.json",
+      "sourceTexture": "assets/minecraft/textures/item/raw_iron.png"
     },
     "recovery_compass": {
       "texture": "vanilla/recovery_compass.png",
@@ -1775,6 +1793,12 @@
       "sourceModel": "assets/minecraft/models/block/red_sand.json",
       "sourceTexture": "assets/minecraft/textures/block/red_sand.png"
     },
+    "red_sandstone": {
+      "texture": "vanilla/red_sandstone.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/red_sandstone.json",
+      "sourceTexture": "assets/minecraft/textures/block/red_sandstone.png"
+    },
     "red_tulip": {
       "texture": "vanilla/red_tulip.png",
       "sourceJar": "1.21.10.jar",
@@ -1786,6 +1810,12 @@
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/block/red_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/red_wool.png"
+    },
+    "redstone_block": {
+      "texture": "vanilla/redstone_block.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/redstone_block.json",
+      "sourceTexture": "assets/minecraft/textures/block/redstone_block.png"
     },
     "redstone_lamp": {
       "texture": "vanilla/redstone_lamp.png",
@@ -1840,6 +1870,12 @@
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/block/sand.json",
       "sourceTexture": "assets/minecraft/textures/block/sand.png"
+    },
+    "sandstone": {
+      "texture": "vanilla/sandstone.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/sandstone.json",
+      "sourceTexture": "assets/minecraft/textures/block/sandstone.png"
     },
     "scaffolding": {
       "texture": "vanilla/scaffolding.png",
@@ -1977,23 +2013,15 @@
       "texture": "vanilla/stick.png",
       "source": "existing checked-in asset"
     },
+    "stone": {
+      "texture": "vanilla/stone.png",
+      "source": "existing checked-in asset"
+    },
     "stone_hoe": {
       "texture": "vanilla/stone_hoe.png",
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/item/stone_hoe.json",
       "sourceTexture": "assets/minecraft/textures/item/stone_hoe.png"
-    },
-    "stone_pickaxe": {
-      "texture": "vanilla/stone_pickaxe.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/stone_pickaxe.json",
-      "sourceTexture": "assets/minecraft/textures/item/stone_pickaxe.png"
-    },
-    "stone_shovel": {
-      "texture": "vanilla/stone_shovel.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/stone_shovel.json",
-      "sourceTexture": "assets/minecraft/textures/item/stone_shovel.png"
     },
     "string": {
       "texture": "vanilla/string.png",
@@ -2198,6 +2226,12 @@
       "sourceJar": "1.21.10.jar",
       "sourceModel": "assets/minecraft/models/item/copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_bars.png"
+    },
+    "waxed_copper_block": {
+      "texture": "vanilla/waxed_copper_block.png",
+      "sourceJar": "1.21.10.jar",
+      "sourceModel": "assets/minecraft/models/block/copper_block.json",
+      "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_copper_bulb": {
       "texture": "vanilla/waxed_copper_bulb.png",
@@ -2634,12 +2668,6 @@
     "weeping_vines": {
       "texture": "vanilla/weeping_vines.png",
       "source": "existing checked-in asset"
-    },
-    "wheat": {
-      "texture": "vanilla/wheat.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/wheat.json",
-      "sourceTexture": "assets/minecraft/textures/item/wheat.png"
     },
     "wheat_seeds": {
       "texture": "vanilla/wheat_seeds.png",
