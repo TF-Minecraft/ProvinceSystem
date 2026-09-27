@@ -245,6 +245,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * dates are carried unless the user deliberately strips them.
    */
   const [gifStampDay, setGifStampDay] = useState(true);
+  /** Logo and Discord line both travel with the file unless the user strips them. */
+  const [gifWatermark, setGifWatermark] = useState(true);
+  const [gifDiscordLink, setGifDiscordLink] = useState(true);
   const [gifStatus, setGifStatus] = useState<string | null>(null);
   const [gifError, setGifError] = useState<string | null>(null);
   const [gifNotice, setGifNotice] = useState<string | null>(null);
@@ -1612,6 +1615,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         loop,
         centroids: geometry.centroids,
         stampDay: gifStampDay,
+        watermark: gifWatermark,
+        discordLink: gifDiscordLink,
         signal: controller.signal,
         onProgress: (progress) => {
           setGifStatus(
@@ -1648,6 +1653,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, [
     gifSize,
     gifStampDay,
+    gifWatermark,
+    gifDiscordLink,
     mapSize,
     speed,
     loop,
@@ -1917,6 +1924,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 onGifSizeChange={setGifSize}
                 gifStampDay={gifStampDay}
                 onGifStampDayChange={setGifStampDay}
+                gifWatermark={gifWatermark}
+                onGifWatermarkChange={setGifWatermark}
+                gifDiscordLink={gifDiscordLink}
+                onGifDiscordLinkChange={setGifDiscordLink}
                 onExportGif={() => void exportGif()}
                 gifStatus={gifStatus}
                 gifError={gifError}

@@ -130,6 +130,10 @@ describe("ChroniclePlaybackPanel", () => {
         onGifSizeChange={noop}
         gifStampDay={false}
         onGifStampDayChange={noop}
+        gifWatermark
+        onGifWatermarkChange={noop}
+        gifDiscordLink
+        onGifDiscordLinkChange={noop}
         onExportGif={noop}
         gifStatus={null}
         gifError={null}
@@ -138,6 +142,9 @@ describe("ChroniclePlaybackPanel", () => {
       />
     );
     expect(container.textContent).toContain("2026-08-01");
+    expect(container.textContent).toContain("Watermark");
+    expect(container.textContent).toContain("Discord link");
+    expect(container.textContent).toContain("Stamp the date");
   });
 });
 
