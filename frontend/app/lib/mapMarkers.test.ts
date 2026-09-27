@@ -46,6 +46,12 @@ describe("mapMarkers", () => {
     expect(resolveMarkerImageSrc("battle", "small")).toBe("/battle.png");
   });
 
+  it("draws a large settlement icon at 75% of the original 160px", () => {
+    const layout = markerLayout(100, 200, "large", "settlement");
+    expect(layout.iconSize).toBe(120);
+    expect(layout.size).toBe(120);
+  });
+
   it("markerLayout centers icon on map coords", () => {
     const layout = markerLayout(100, 200, "small");
     expect(layout.imageX).toBe(50);
