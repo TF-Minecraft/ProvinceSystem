@@ -2,7 +2,7 @@ import { Callout, SeeAlso, WikiItemLink, WikiPage, WikiSectionHeading } from "@/
 export default function InfestationsPage() {
   return (
     <WikiPage
-      lastModified="2026-09-21"
+      lastModified="2026-09-27"
       title="Infestations"
       intro={
         <>
@@ -19,26 +19,26 @@ export default function InfestationsPage() {
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         An infested province is simply more dangerous ground. It keeps spawning monsters around
-        you for as long as you stand in it, at night. That is a steady stream of kills if you want
+        you for as long as you stand in it, day or night. That is a steady stream of kills if you want
         one. Committing to a <WikiItemLink name="Lure" /> raises the stakes further: a single scripted wave sized to the
         province&apos;s severity, fought to a clean win-or-lose result, with the province&apos;s
         infestation lifted entirely if you clear it.
       </p>
 
 
-      <WikiSectionHeading id="where" intro="Infestations are province-wide and only active at night.">
+      <WikiSectionHeading id="where" intro="Infestations are province-wide and active day and night.">
         Where to find one
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         Infested provinces are shown on the server&apos;s web map with a severity label. Ambient
-        spawning and <WikiItemLink name="Lure" /> waves only happen while it is <strong>night in-world</strong>: during the day an infested province is quiet.
+        spawning and <WikiItemLink name="Lure" /> waves run at <strong>any time of day</strong>.
       </p>
 
       <WikiSectionHeading id="loop" intro="What actually happens once you step into an infested province.">
         The loop
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Walk into an infested province at night. Ambient monsters spawn in a ring around you, up to a cap, on a fixed interval: both scale with severity.</li>
+        <li>Walk into an infested province. Ambient monsters spawn in a ring around you, up to a cap, on a fixed interval: both scale with severity.</li>
         <li>
           To go further, place a <WikiItemLink name="Lure"><strong>Lure</strong></WikiItemLink>. This opens a 20-second join window: leave
           the province, or right-click the <WikiItemLink name="Lure" /> to commit to the fight.

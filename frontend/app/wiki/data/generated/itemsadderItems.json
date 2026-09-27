@@ -26,6 +26,10 @@
     "name": "Bowl",
     "material": "PAPER"
   },
+  "bread_tray": {
+    "name": "Bread Tray",
+    "material": "PAPER"
+  },
   "bronze_block": {
     "name": "Block of Bronze",
     "material": "PAPER",
@@ -110,6 +114,10 @@
     "sourceConfig": "tfmc_cooking/contents/intermediates.yml",
     "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/intermediate/empty_cup.png"
   },
+  "fire_pit": {
+    "name": "Fire Pit",
+    "material": "PAPER"
+  },
   "frying_pan": {
     "name": "Frying Pan",
     "material": "PAPER"
@@ -186,6 +194,10 @@
     "name": "Milling Stone",
     "material": "PAPER"
   },
+  "mixing_bowl": {
+    "name": "Mixing Bowl",
+    "material": "PAPER"
+  },
   "mythril_block1": {
     "name": "Block of Mythril",
     "material": "PAPER",
@@ -217,6 +229,14 @@
     "sourceKind": "flat-sprite",
     "sourceConfig": "tfmc_blocks/configs/blocks.yml",
     "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/oxidized_mythril.png"
+  },
+  "oven_bottom": {
+    "name": "Oven Bottom",
+    "material": "PAPER"
+  },
+  "oven_top": {
+    "name": "Oven Top",
+    "material": "PAPER"
   },
   "pedestal": {
     "name": "Pedestal",
@@ -273,5 +293,9 @@
   "voting_booth": {
     "name": "Voting Booth",
     "material": "PAPER"
+  },
+  "watering_can": {
+    "name": "Watering Can",
+    "material": "GOLDEN_HORSE_ARMOR"
   }
 }

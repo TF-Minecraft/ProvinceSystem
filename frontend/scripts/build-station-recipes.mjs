@@ -269,6 +269,13 @@ export function buildItemIndex(itemDir) {
         if (entry.material === undefined) byId.set(id, { ...entry, material: material[1] });
         continue;
       }
+      // `model:` is the item_model component (`namespace:name`), which replaces CMD for newer items.
+      const itemModel = line.match(/^ {4}model:\s*['"]?([a-z0-9_.-]+:[a-z0-9_./-]+)['"]?\s*$/);
+      if (itemModel) {
+        const entry = byId.get(id) ?? {};
+        if (entry.itemModel === undefined) byId.set(id, { ...entry, itemModel: itemModel[1] });
+        continue;
+      }
       const customModelData = line.match(/^ {4}custom-model-data:\s*([0-9]+(?:\.[0-9]+)?)\s*$/);
       if (customModelData) {
         const entry = byId.get(id) ?? {};

@@ -13,7 +13,7 @@ export default async function VehicleDetail({ params }: { params: Promise<{ slug
   const vehicle = getVehicleBySlug(slug);
   if (!vehicle) notFound();
   return (
-    <WikiPage lastModified="2026-09-18" title={vehicle.name} intro={vehicle.kind}>
+    <WikiPage lastModified="2026-09-27" title={vehicle.name} intro={vehicle.kind}>
       <Link href="/wiki/vehicles" className="text-sm text-[var(--tfmc-accent)] underline">All vehicles and operating guide</Link>
       <VehiclePreview skins={vehicle.skins} />
       <WikiSectionHeading id="blueprint">Build blueprint</WikiSectionHeading>

@@ -62,16 +62,15 @@ describe("recipe textures", () => {
 
   it("keeps generated station coverage complete", () => {
     const slots = stationRecipes.flatMap((recipe) => [...recipe.ingredients, recipe.output]);
-    expect(stationRecipes).toHaveLength(682);
-    expect(slots).toHaveLength(1595);
-    expect(slots.filter((slot) => slot.name && (slot.texture || slot.model))).toHaveLength(1595);
+    expect(stationRecipes).toHaveLength(753);
+    expect(slots).toHaveLength(1752);
+    expect(slots.filter((slot) => slot.name && (slot.texture || slot.model))).toHaveLength(1752);
   });
 
   it("uses the exact TFMC sprites for lockpicks, collectors, and no-CMD tool families", () => {
     const exact: Record<string, string> = {
-      LOCKPICK: "item/tools/basic_lockpick.png",
-      BASIC_LOCKPICK_SET: "item/tools/basic_lockpick.png",
-      STRONG_LOCKPICK_SET: "item/tools/strong_lockpick.png",
+      BASIC_LOCKPICK: "item/tools/basic_lockpick.png",
+      STRONG_LOCKPICK: "item/tools/strong_lockpick.png",
       STEEL_ALCHEMY_COLLECTOR: "item/tools/steel_alchemy_collector.png",
       ABYSSALITE_AXE: "item/tools/abyssalite_axe.png",
       ABYSSALITE_PICKAXE: "item/tools/abyssalite_pickaxe.png",

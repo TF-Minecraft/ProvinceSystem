@@ -36,12 +36,12 @@ describe("station registry and source coverage", () => {
 
   it("assigns each recipe source to its correct station detail page", () => {
     const expectedCounts: Record<string, number> = {
-      "alchemy-station": 36, "animal-station": 28, "archeology-station": 12,
-      "block-station": 129, "copper-station": 118, "engineer-station": 12,
-      "engineering-table": 16, "fishing-station": 8, "forester-station": 117,
-      "gunsmithing-station": 21, "ingot-station": 61, "instrument-station": 16,
-      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 35,
-      dockyard: 5, "research-station": 28, "tool-station": 48,
+      "alchemy-station": 53, "animal-station": 29, "archeology-station": 12,
+      "block-station": 133, "copper-station": 119, "engineer-station": 17,
+      "engineering-table": 16, "fishing-station": 25, "forester-station": 117,
+      "gunsmithing-station": 21, "ingot-station": 71, "instrument-station": 9,
+      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 41,
+      dockyard: 5, "research-station": 36, "tool-station": 57,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {
       const station = stations.find((candidate) => candidate.slug === slug)!;
@@ -269,7 +269,7 @@ describe("station routes", () => {
   it("groups large catalogues and removes unavailable implementation placeholders", async () => {
     const station = await StationDetailPage({ params: Promise.resolve({ slug: "block-station" }) });
     const html = renderToStaticMarkup(station);
-    expect(html).toContain("129 recipes use this station");
+    expect(html).toContain("133 recipes use this station");
     expect(html).toContain("<details");
     expect(html).toContain("Stonecutter");
     expect(html).not.toMatch(/Not documented|No 3D model|NPC or command|TEMPORARILY DISABLED/i);
