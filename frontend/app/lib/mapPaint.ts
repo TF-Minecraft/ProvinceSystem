@@ -339,7 +339,7 @@ export function paintStampLabel(icon: PaintStampIconId): string {
  * world. This matches how the marker and label layers behave.
  *
  * The value is picked so painted furniture lands beside the real thing: a stamp
- * resolves to ~179 map px against MARKER_LARGE_PX (160), and medium label text
+ * resolves to ~179 map px against the original 160px large settlement icon, and medium label text
  * to ~84 against MARKER_LABEL_FONT_LARGE (72). Nudge this one constant to scale
  * the whole annotation layer.
  */
