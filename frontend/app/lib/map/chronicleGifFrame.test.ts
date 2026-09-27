@@ -102,14 +102,14 @@ describe("chronicleGifMarkerLayout", () => {
     expect(layout.iconY + layout.iconSize / 2).toBeCloseTo(540);
   });
 
-  it("scales a large settlement bigger than a small one", () => {
+  it("draws a large settlement icon at 90 map pixels", () => {
     const t = chronicleGifTransform(MAP, MAP, 1080);
     const small = chronicleGifMarkerLayout(t, marker())!;
     const large = chronicleGifMarkerLayout(
       t,
       marker({ markerSize: "large" })
     )!;
-    expect(large.iconSize).toBeGreaterThan(small.iconSize);
+    expect(large.iconSize).toBeCloseTo(small.iconSize * (90 / 100));
     expect(large.fontSize).toBeGreaterThan(small.fontSize);
   });
 
