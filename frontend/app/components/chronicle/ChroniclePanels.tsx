@@ -359,6 +359,37 @@ export function ChronicleBuildPanel({
 
 export const CHRONICLE_SPEEDS = [1, 2, 4, 8, 16] as const;
 
+function ExportCheck({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={`mt-2 flex items-start gap-2 text-sm ${
+        disabled
+          ? "cursor-not-allowed text-[var(--tfmc-stone)] opacity-60"
+          : "cursor-pointer text-[var(--tfmc-cream)]"
+      }`}
+    >
+      <input
+        type="checkbox"
+        className="mt-1 accent-[var(--tfmc-accent)]"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
 export function ChroniclePlaybackPanel({
   days,
   activeIndex,
@@ -378,6 +409,10 @@ export function ChroniclePlaybackPanel({
   onGifSizeChange,
   gifStampDay,
   onGifStampDayChange,
+  gifWatermark,
+  onGifWatermarkChange,
+  gifDiscordLink,
+  onGifDiscordLinkChange,
   onExportGif,
   gifStatus,
   gifError,
@@ -413,6 +448,12 @@ export function ChroniclePlaybackPanel({
    */
   gifStampDay: boolean;
   onGifStampDayChange: (stamp: boolean) => void;
+  /** The TFMC logo in the corner of the file. Independent of the Discord line. */
+  gifWatermark: boolean;
+  onGifWatermarkChange: (watermark: boolean) => void;
+  /** The discord.gg/tfmc line. Independent of the logo. */
+  gifDiscordLink: boolean;
+  onGifDiscordLinkChange: (discordLink: boolean) => void;
   onExportGif: () => void;
   /**
    * What the export is doing right now, or null when idle. Non-null is also
@@ -535,22 +576,24 @@ export function ChroniclePlaybackPanel({
             ))}
           </select>
         </label>
-        <label
-          className={`mt-2 flex items-start gap-2 text-sm ${
-            exporting
-              ? "cursor-not-allowed text-[var(--tfmc-stone)] opacity-60"
-              : "cursor-pointer text-[var(--tfmc-cream)]"
-          }`}
-        >
-          <input
-            type="checkbox"
-            className="mt-1 accent-[var(--tfmc-accent)]"
-            checked={gifStampDay}
-            disabled={exporting}
-            onChange={(e) => onGifStampDayChange(e.target.checked)}
-          />
-          <span>Stamp the date</span>
-        </label>
+        <ExportCheck
+          label="Watermark"
+          checked={gifWatermark}
+          disabled={exporting}
+          onChange={onGifWatermarkChange}
+        />
+        <ExportCheck
+          label="Discord link"
+          checked={gifDiscordLink}
+          disabled={exporting}
+          onChange={onGifDiscordLinkChange}
+        />
+        <ExportCheck
+          label="Stamp the date"
+          checked={gifStampDay}
+          disabled={exporting}
+          onChange={onGifStampDayChange}
+        />
         <button
           type="button"
           className={`${primaryButtonClass} mt-2 w-full`}

@@ -16,6 +16,7 @@ import {
   chronicleGifTransform,
   chronicleWatermarkLayout,
   type ChronicleGifTransform,
+  type ChronicleWatermarkParts,
 } from "../../lib/map/chronicleGifFrame";
 import { LABEL_INK, type ProvinceCentroids } from "../../lib/mapLabels";
 import { resolveMarkerImageSrc, type MapMarker } from "../../lib/mapMarkers";
@@ -125,6 +126,16 @@ export type ChronicleGifExportOptions = {
    * the day, and painting it twice would be noise.
    */
   stampDay: boolean;
+  /**
+   * The TFMC logo in the corner. Defaults to shown. Independent of the Discord
+   * line and of the date stamp.
+   */
+  watermark?: boolean;
+  /**
+   * The discord.gg/tfmc line. Defaults to shown. Independent of the logo and of
+   * the date stamp.
+   */
+  discordLink?: boolean;
   onProgress?: (progress: ChronicleGifProgress) => void;
   signal?: AbortSignal;
 };
@@ -441,7 +452,8 @@ function drawNationLabels(
 
 /**
  * The mark, bottom-left, and — when `day` is a usable string — the frame's
- * date directly beneath the link in the same scrim box.
+ * date in the same scrim box. The logo and the Discord line are each optional;
+ * with both off and no date, nothing is drawn.
  *
  * The date is drawn exactly as the chronicle stores it — `YYYY-MM-DD`, the
  * key the day file is filed under. It is sortable, unambiguous and the same
@@ -450,25 +462,34 @@ function drawNationLabels(
  * other way round.
  *
  * `day` is null when the "stamp the date" option is off, or when the frame's
- * day is not a usable string — either way the box comes out exactly as the
- * link-only layout, with no reserved space for a line that is not drawn.
+ * day is not a usable string. The box then has no reserved space for a line
+ * that is not drawn. Dropping the logo or the Discord line does the same for
+ * that piece.
  */
 function drawWatermark(
   ctx: AnyCanvasContext,
   size: number,
   logo: HTMLImageElement | null,
   sansStack: string,
-  day: string | null
+  day: string | null,
+  parts: ChronicleWatermarkParts
 ): void {
   const dateText = typeof day === "string" ? day.trim() : "";
   const hasDate = dateText.length > 0;
+  const showLogo = parts.logo !== false;
+  const showLink = parts.link !== false;
+  if (!showLogo && !showLink && !hasDate) return;
 
   // Measured before the layout is computed: the scrim has to know how wide
   // each line turned out, and only the context can say.
-  const probe = chronicleWatermarkLayout(size, 0, hasDate ? 0 : null);
+  const layoutParts = { logo: showLogo, link: showLink };
+  const probe = chronicleWatermarkLayout(size, 0, hasDate ? 0 : null, layoutParts);
   ctx.save();
-  ctx.font = `600 ${probe.fontSize}px ${sansStack}`;
-  const textWidth = ctx.measureText(CHRONICLE_WATERMARK_TEXT).width;
+  let textWidth = 0;
+  if (showLink) {
+    ctx.font = `600 ${probe.fontSize}px ${sansStack}`;
+    textWidth = ctx.measureText(CHRONICLE_WATERMARK_TEXT).width;
+  }
 
   let dateWidth: number | null = null;
   if (hasDate) {
@@ -476,7 +497,7 @@ function drawWatermark(
     dateWidth = ctx.measureText(dateText).width;
   }
 
-  const layout = chronicleWatermarkLayout(size, textWidth, dateWidth);
+  const layout = chronicleWatermarkLayout(size, textWidth, dateWidth, layoutParts);
 
   const { scrim } = layout;
   if (scrim.width > 0 && scrim.height > 0) {
@@ -492,7 +513,7 @@ function drawWatermark(
     ctx.fill();
   }
 
-  if (logo) {
+  if (showLogo && logo && layout.logoSize > 0) {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(
       logo,
@@ -508,12 +529,14 @@ function drawWatermark(
   ctx.lineJoin = "round";
   ctx.miterLimit = 2;
 
-  ctx.font = `600 ${layout.fontSize}px ${sansStack}`;
-  ctx.strokeStyle = MARKER_HALO;
-  ctx.lineWidth = layout.haloWidth;
-  ctx.strokeText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
-  ctx.fillStyle = CREAM;
-  ctx.fillText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
+  if (showLink) {
+    ctx.font = `600 ${layout.fontSize}px ${sansStack}`;
+    ctx.strokeStyle = MARKER_HALO;
+    ctx.lineWidth = layout.haloWidth;
+    ctx.strokeText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
+    ctx.fillStyle = CREAM;
+    ctx.fillText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
+  }
 
   if (layout.date && hasDate) {
     ctx.font = `600 ${layout.date.fontSize}px ${sansStack}`;
@@ -589,9 +612,17 @@ export async function exportChronicleGif(
     loop,
     centroids,
     stampDay,
+    watermark,
+    discordLink,
     onProgress,
     signal,
   } = options;
+  const showWatermark = watermark !== false;
+  const showDiscordLink = discordLink !== false;
+  const watermarkParts: ChronicleWatermarkParts = {
+    logo: showWatermark,
+    link: showDiscordLink,
+  };
 
   if (!frames.length) throw new Error("There are no built frames to export.");
 
@@ -622,14 +653,15 @@ export async function exportChronicleGif(
 
   const { serif, sans } = fontStacks();
 
-  const iconSources = new Set<string>([LOGO_SRC]);
+  const iconSources = new Set<string>();
+  if (showWatermark) iconSources.add(LOGO_SRC);
   for (const frame of frames) {
     for (const marker of frame.layers.markers) {
       iconSources.add(resolveMarkerImageSrc(marker.kind, marker.markerSize));
     }
   }
   const images = await loadImages(Array.from(iconSources));
-  const logo = images.get(LOGO_SRC) ?? null;
+  const logo = showWatermark ? (images.get(LOGO_SRC) ?? null) : null;
   // Custom faces are still swapping in on a cold load; measuring or drawing
   // before they settle bakes the fallback metrics into the file.
   try {
@@ -707,7 +739,14 @@ export async function exportChronicleGif(
       drawWarLines(ctx, frame.layers.wars, centroids, transform);
       drawMarkers(ctx, frame.layers.markers, images, transform, sans);
       drawNationLabels(ctx, frame.layers, transform, serif);
-      drawWatermark(ctx, edge, logo, sans, stampDay ? frame.day : null);
+      drawWatermark(
+        ctx,
+        edge,
+        logo,
+        sans,
+        stampDay ? frame.day : null,
+        watermarkParts
+      );
 
       let pixels: ImageData;
       try {

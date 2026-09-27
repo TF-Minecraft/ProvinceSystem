@@ -319,6 +319,80 @@ describe("chronicleWatermarkLayout", () => {
       expect(Number.isFinite(value)).toBe(true);
     }
   });
+
+  it("treats an explicit full mark the same as omitting the parts", () => {
+    for (const size of CHRONICLE_GIF_SIZES) {
+      expect(chronicleWatermarkLayout(size, 120, 90, { logo: true, link: true })).toEqual(
+        chronicleWatermarkLayout(size, 120, 90)
+      );
+    }
+  });
+
+  it("drops the Discord line without leaving a gap beside the logo", () => {
+    const full = chronicleWatermarkLayout(720, 200);
+    const logoOnly = chronicleWatermarkLayout(720, 200, null, { link: false });
+    expect(logoOnly.logoSize).toBe(full.logoSize);
+    expect(logoOnly.scrim.width).toBeLessThan(full.scrim.width);
+    expect(logoOnly.scrim.x + logoOnly.scrim.width).toBeLessThanOrEqual(
+      logoOnly.logoX + logoOnly.logoSize + logoOnly.fontSize
+    );
+  });
+
+  it("drops the logo and starts the Discord line at the margin", () => {
+    const linkOnly = chronicleWatermarkLayout(720, 140, null, { logo: false });
+    expect(linkOnly.logoSize).toBe(0);
+    expect(linkOnly.textX).toBeLessThan(40);
+    expect(linkOnly.scrim.width).toBeGreaterThan(140);
+    expect(linkOnly.scrim.x + linkOnly.scrim.width).toBeLessThanOrEqual(720);
+  });
+
+  it("draws nothing when the logo, the link, and the date are all off", () => {
+    const empty = chronicleWatermarkLayout(720, 140, null, {
+      logo: false,
+      link: false,
+    });
+    expect(empty.scrim.width).toBe(0);
+    expect(empty.scrim.height).toBe(0);
+    expect(empty.date).toBeNull();
+  });
+
+  it("keeps a date stamp when the logo and the Discord line are both off", () => {
+    const dateOnly = chronicleWatermarkLayout(720, 140, 80, {
+      logo: false,
+      link: false,
+    });
+    expect(dateOnly.logoSize).toBe(0);
+    expect(dateOnly.date).not.toBeNull();
+    expect(dateOnly.date!.textX).toBeLessThan(40);
+    expect(dateOnly.scrim.width).toBeGreaterThan(80);
+  });
+
+  it("sits a date beside the logo when the Discord line is off", () => {
+    const w = chronicleWatermarkLayout(720, 200, 90, { link: false });
+    expect(w.date).not.toBeNull();
+    expect(w.date!.textX).toBeGreaterThan(w.logoX + w.logoSize);
+    expect(w.date!.textBaselineY).toBeGreaterThan(w.logoY);
+    expect(w.date!.textBaselineY).toBeLessThan(w.logoY + w.logoSize);
+  });
+
+  it("keeps every reduced mark inside the canvas", () => {
+    const variants = [
+      { logo: false, link: true },
+      { logo: true, link: false },
+      { logo: false, link: false },
+    ] as const;
+    for (const size of CHRONICLE_GIF_SIZES) {
+      for (const parts of variants) {
+        for (const dateWidth of [null, 90]) {
+          const w = chronicleWatermarkLayout(size, 160, dateWidth, parts);
+          expect(w.scrim.x).toBeGreaterThanOrEqual(0);
+          expect(w.scrim.y).toBeGreaterThanOrEqual(0);
+          expect(w.scrim.x + w.scrim.width).toBeLessThanOrEqual(size);
+          expect(w.scrim.y + w.scrim.height).toBeLessThanOrEqual(size);
+        }
+      }
+    }
+  });
 });
 
 describe("chronicleGifDelayMs", () => {
