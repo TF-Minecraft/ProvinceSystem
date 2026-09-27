@@ -1,10 +1,10 @@
-import { CommandTable, DataTable, SeeAlso, WikiItemLink, WikiItemText, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { CommandTable, DataTable, SeeAlso, StationLink, WikiItemLink, WikiItemText, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { thieveryCommandSet, thieveryKeyCopies } from "../data/thievery";
 
 export default function ThieveryPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-27"
       title="Thievery"
       intro={
         <>
@@ -29,7 +29,7 @@ export default function ThieveryPage() {
         </li>
         <li>
           <strong>Containers</strong>: you automatically own any container you place. Sneak +
-          left-click a container you own to cycle its lock state: Private → Guild → Public → back to
+          left-click a container you own to cycle its lock state: Private → Guild → Faction → Public → back to
           Private. Ender chests are excluded from the whole system.
         </li>
       </ul>
@@ -61,7 +61,7 @@ export default function ThieveryPage() {
         Lockpicking
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Hold a lockpick (only one exists on this server: the <WikiItemLink name="Basic Lockpick">Basic Lockpick</WikiItemLink> Set) and right-click a closed, locked door within 3 blocks: or a lockable container, display furniture (<WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, <WikiItemLink name="Pedestal">pedestal</WikiItemLink>), or entity (armor stand, item frame, glow item frame).</li>
+        <li>Hold a lockpick (the <WikiItemLink name="Basic Lockpick">Basic Lockpick</WikiItemLink> or the stronger <WikiItemLink name="Strong Lockpick">Strong Lockpick</WikiItemLink>, both made at the <StationLink name="Tool Station" />) and right-click a closed, locked door within 3 blocks: or a lockable container, display furniture (<WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, <WikiItemLink name="Pedestal">pedestal</WikiItemLink>), or entity (armor stand, item frame, glow item frame).</li>
         <li>
           Doing this requires the &quot;thief&quot; character trait; without it you are told you
           lack the needed trait(s).

@@ -77,7 +77,7 @@ export const alloyForgeRecipe: Recipe = {
     { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
   ],
   output: { name: "Alloy Forge", qty: 1, sourceId: "itemsadder:alloy_forge", model: alloyForgeModel },
-  note: "Requires nearby lava to operate.",
+  note: "Right-click it with a Lava Bucket to forge; the bucket is emptied.",
 };
 
 export const advancedCraftingRecipes: Recipe[] = [

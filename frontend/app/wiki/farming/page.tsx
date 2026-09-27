@@ -16,7 +16,7 @@ const crops = [
   ["Cherry", "Fruits", true], ["Grape", "Fruits", true], ["Lemon", "Fruits", true],
   ["Lime", "Fruits", true], ["Orange", "Fruits", true], ["Peach", "Fruits", true],
   ["Pineapple", "Fruits", false], ["Pistachio", "Fruits", true], ["Plum", "Fruits", true],
-  ["Strawberry", "Fruits", false], ["Tomato", "Fruits", false], ["Corn", "Vegetables", false],
+  ["Strawberry", "Fruits", true], ["Tomato", "Fruits", false], ["Corn", "Vegetables", false],
   ["Cucumber", "Vegetables", false], ["Garlic", "Vegetables", false], ["Lettuce", "Vegetables", false],
   ["Mustard Seeds", "Vegetables", false], ["Olive", "Vegetables", true], ["Onion", "Vegetables", false],
   ["Rhubarb", "Vegetables", false], ["Rice", "Vegetables", false], ["Yeast", "Vegetables", false],
@@ -35,7 +35,7 @@ const cropGalleryItems = crops.map(([name, profession, regrows]) => ({
 export default function FarmingPage() {
   return (
     <WikiPage
-      lastModified="2026-09-20"
+      lastModified="2026-09-27"
       title="CustomCrops"
       width="lg"
       intro={

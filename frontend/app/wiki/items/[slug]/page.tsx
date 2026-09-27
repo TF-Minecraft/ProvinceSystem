@@ -16,7 +16,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ slu
   const item = getItemBySlug(slug);
   if (!item) notFound();
   return <WikiPage
-    lastModified="2026-09-20"
+    lastModified="2026-09-27"
     title={item.name}
     beforeTitle={<Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">&larr; Materials and crafting</Link>}
     titleVisual={item.model ? undefined : item.texture ? <RecipeItemIcon src={item.texture} alt={item.name} /> : undefined}

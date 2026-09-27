@@ -10,7 +10,7 @@ export default function StationsPage() {
 
   return (
     <WikiPage
-      lastModified="2026-09-19"
+      lastModified="2026-09-27"
       title="Crafting Stations"
       intro="Browse every station, learn which block opens it, and follow its link for recipes and requirements. Select a station to preview it."
       width="lg"

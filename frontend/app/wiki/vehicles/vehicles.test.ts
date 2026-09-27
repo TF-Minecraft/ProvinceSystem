@@ -22,8 +22,8 @@ describe("vehicle catalogue and actual assets", () => {
       expect(vehicleRecipes.find((r) => r.output.name === vehicle.name)?.ingredients.length).toBeGreaterThan(0);
     }
     expect(getVehicleBySlug("unknown")).toBeUndefined();
-    expect(vehicleRecipes.find((r) => r.output.name === "Wooden Cart")?.time).toBe(360);
-    expect(vehicleRecipes.find((r) => r.output.name === "Behemoth")?.time).toBe(5760);
+    expect(vehicleRecipes.find((r) => r.output.name === "Wooden Cart")?.time).toBe(2 * 3600);
+    expect(vehicleRecipes.find((r) => r.output.name === "Behemoth")?.time).toBe(3 * 86400);
   });
 
   it("loads every texture key, including Wooden Cart's 1–5 map, and builds finite geometry", () => {

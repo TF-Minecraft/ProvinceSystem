@@ -23,8 +23,8 @@ const ammunitionName = (name: string) => {
 
 export default function VehiclesPage() {
   return (
-    <WikiPage lastModified="2026-09-18" title="Vehicles & Construction" width="lg" intro="Build a cart, crew a ship or fly an airship. Choose a vehicle below for its materials, build time, fuel and 3D preview.">
-      <StatGrid stats={[{ label: "Vehicles", value: 21 }, { label: "Construction", value: "6 to 96 minutes" }, { label: "Air vehicle unlock", value: "6 Crafter points total" }]} />
+    <WikiPage lastModified="2026-09-27" title="Vehicles & Construction" width="lg" intro="Build a cart, crew a ship or fly an airship. Choose a vehicle below for its materials, build time, fuel and 3D preview.">
+      <StatGrid stats={[{ label: "Vehicles", value: 21 }, { label: "Construction", value: "2 hours to 3 days" }, { label: "Air vehicle unlock", value: "6 Crafter points total" }]} />
       <WikiSectionHeading id="catalogue">Choose a vehicle</WikiSectionHeading>
       <VehicleGallery vehicles={vehicles} />
       <WikiSectionHeading id="construction">Build your first vehicle</WikiSectionHeading>
@@ -36,7 +36,7 @@ export default function VehiclesPage() {
         <li>Wait for the build to finish. Stay within 96 blocks so the completed vehicle can appear, then right-click it to claim it and select a seat.</li>
       </ol>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">{constructionStations.map(recipe=><CraftingGrid key={recipe.key} recipe={recipe}/>)}</div>
-      <Callout title="A cargo cart to start with">The <Link href="/wiki/vehicles/wooden-cart" className={linkClass}>Wooden Cart</Link> needs Engineer I, 64 Oak Logs, 16 Iron Ingots and 16 Sticks. It takes six minutes to build and carries 54 cargo slots.</Callout>
+      <Callout title="A cargo cart to start with">The <Link href="/wiki/vehicles/wooden-cart" className={linkClass}>Wooden Cart</Link> needs Engineer I, 64 Oak Logs, 16 Iron Ingots and 16 Sticks. It takes two hours to build and carries 54 cargo slots.</Callout>
       <Callout variant="warning">Breaking the construction station during a build cancels construction and drops the materials at the station. Collect them before they despawn.</Callout>
       <WikiSectionHeading id="operation">Enter, drive, refuel and tow</WikiSectionHeading>
       <ol className="list-decimal space-y-3 pl-5 text-sm text-[var(--tfmc-mist)]">

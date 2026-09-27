@@ -29,7 +29,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "small-car",
     "category": "cars",
     "requirement": "Engineer I",
-    "buildTime": "12 min",
+    "buildTime": "4 h",
     "inputs": "32 Oak Log, 32 Iron Ingot, 2 Lantern, 2 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -59,7 +59,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "wooden-cart",
     "category": "carts",
     "requirement": "Engineer I",
-    "buildTime": "6 min",
+    "buildTime": "2 h",
     "inputs": "64 Oak Log, 16 Iron Ingot, 16 Stick",
     "station": "Engineering Table",
     "skins": [
@@ -83,7 +83,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "horse-cart",
     "category": "carts",
     "requirement": "Engineer I",
-    "buildTime": "24 min",
+    "buildTime": "1 day",
     "inputs": "64 Oak Log, 16 Iron Ingot, 16 Stick, 8 Steel Ingot",
     "station": "Engineering Table",
     "skins": [
@@ -107,7 +107,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "simple-locomotive",
     "category": "train",
     "requirement": "Engineer I",
-    "buildTime": "24 min",
+    "buildTime": "1 day",
     "inputs": "32 Oak Log, 32 Iron Ingot, 8 Furnace, 16 Stick",
     "station": "Engineering Table",
     "fuelStats": {
@@ -137,7 +137,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "coal-car",
     "category": "train",
     "requirement": "Engineer I",
-    "buildTime": "12 min",
+    "buildTime": "6 h",
     "inputs": "16 Oak Log, 16 Iron Ingot, 8 Stick",
     "station": "Engineering Table",
     "skins": [
@@ -161,7 +161,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "passenger-car",
     "category": "train",
     "requirement": "Engineer I",
-    "buildTime": "12 min",
+    "buildTime": "6 h",
     "inputs": "16 Oak Log, 16 Iron Ingot, 8 Stick, 16 Cyan Wool",
     "station": "Engineering Table",
     "skins": [
@@ -185,7 +185,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "gunboat",
     "category": "wooden_ships",
     "requirement": "Engineer II",
-    "buildTime": "24 min",
+    "buildTime": "1 day",
     "inputs": "64 Oak Log, 64 White Wool, 4 Steel Ingot",
     "station": "Dockyard",
     "skins": [
@@ -209,7 +209,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "sloop",
     "category": "wooden_ships",
     "requirement": "Engineer II",
-    "buildTime": "48 min",
+    "buildTime": "2 days",
     "inputs": "128 Oak Log, 128 White Wool, 16 Steel Ingot",
     "station": "Dockyard",
     "skins": [
@@ -233,7 +233,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "torpedoboat",
     "category": "iron_ships",
     "requirement": "Engineer II",
-    "buildTime": "48 min",
+    "buildTime": "1 day",
     "inputs": "64 Iron Ingot, 4 Furnace, 8 Steel Ingot",
     "station": "Dockyard",
     "fuelStats": {
@@ -263,7 +263,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "ironclad",
     "category": "iron_ships",
     "requirement": "Engineer II",
-    "buildTime": "1 h 12 min",
+    "buildTime": "2 days",
     "inputs": "128 Iron Ingot, 8 Furnace, 16 Steel Ingot",
     "station": "Dockyard",
     "fuelStats": {
@@ -293,7 +293,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "cruiser",
     "category": "iron_ships",
     "requirement": "Engineer II",
-    "buildTime": "1 h 36 min",
+    "buildTime": "3 days",
     "inputs": "256 Iron Ingot, 16 Furnace, 32 Steel Ingot",
     "station": "Dockyard",
     "fuelStats": {
@@ -323,7 +323,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "monoplane",
     "category": "planes",
     "requirement": "Engineer III",
-    "buildTime": "24 min",
+    "buildTime": "1 day",
     "inputs": "16 Oak Log, 16 White Wool, 16 Iron Ingot, 8 Steel Ingot, 8 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -401,7 +401,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "biplane",
     "category": "planes",
     "requirement": "Engineer III",
-    "buildTime": "48 min",
+    "buildTime": "2 days",
     "inputs": "32 Oak Log, 32 White Wool, 32 Iron Ingot, 16 Steel Ingot, 16 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -479,7 +479,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "bomber",
     "category": "planes",
     "requirement": "Engineer III",
-    "buildTime": "1 h 36 min",
+    "buildTime": "3 days",
     "inputs": "64 Oak Log, 64 White Wool, 64 Iron Ingot, 32 Steel Ingot, 32 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -509,7 +509,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "cloudskimmer",
     "category": "airships",
     "requirement": "Engineer III",
-    "buildTime": "12 min",
+    "buildTime": "12 h",
     "inputs": "32 Oak Log, 32 White Wool, 32 Iron Ingot, 2 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -547,7 +547,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "gyrobomber",
     "category": "airships",
     "requirement": "Engineer III",
-    "buildTime": "48 min",
+    "buildTime": "2 days",
     "inputs": "64 Oak Log, 64 White Wool, 64 Iron Ingot, 16 Steel Ingot, 16 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -581,7 +581,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "behemoth",
     "category": "airships",
     "requirement": "Engineer III",
-    "buildTime": "1 h 36 min",
+    "buildTime": "3 days",
     "inputs": "128 Oak Log, 128 White Wool, 128 Iron Ingot, 32 Steel Ingot, 32 Arcane Crystal",
     "station": "Engineering Table",
     "fuelStats": {
@@ -611,7 +611,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "aa-turret",
     "category": "fixed",
     "requirement": "Engineer I",
-    "buildTime": "24 min",
+    "buildTime": "1 day",
     "inputs": "16 Iron Ingot, 8 Oak Log, 8 Steel Ingot",
     "station": "Engineering Table",
     "skins": [
@@ -635,7 +635,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "anti-air",
     "category": "fixed",
     "requirement": "Engineer I",
-    "buildTime": "1 h 36 min",
+    "buildTime": "3 days",
     "inputs": "64 Iron Ingot, 32 Oak Log, 32 Steel Ingot",
     "station": "Engineering Table",
     "skins": [
@@ -659,7 +659,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "field-artillery",
     "category": "fixed",
     "requirement": "Engineer I",
-    "buildTime": "48 min",
+    "buildTime": "2 days",
     "inputs": "32 Iron Ingot, 16 Oak Log, 16 Steel Ingot",
     "station": "Engineering Table",
     "skins": [
@@ -683,7 +683,7 @@ export const vehicles: VehicleInfo[] = [
     "slug": "fixed-artillery",
     "category": "fixed",
     "requirement": "Engineer I",
-    "buildTime": "1 h 36 min",
+    "buildTime": "3 days",
     "inputs": "64 Iron Ingot, 32 Oak Log, 32 Steel Ingot",
     "station": "Engineering Table",
     "skins": [
@@ -745,7 +745,7 @@ function vehicleOutputSlot(vehicle: VehicleInfo): Slot {
 
 export const vehicleRecipes: Recipe[] = vehicles.map((vehicle) => ({
   key: `vehicle-${vehicle.slug}`, title: vehicle.name, station: vehicle.station,
-  time: (Number(vehicle.buildTime.match(/(\d+) h/)?.[1] ?? 0) * 60 + Number(vehicle.buildTime.match(/(\d+) min/)?.[1] ?? 0)) * 60,
+  time: ((Number(vehicle.buildTime.match(/(\d+) days?/)?.[1] ?? 0) * 24 + Number(vehicle.buildTime.match(/(\d+) h/)?.[1] ?? 0)) * 60 + Number(vehicle.buildTime.match(/(\d+) min/)?.[1] ?? 0)) * 60,
   requirement: vehicle.requirement,
   ingredients: vehicle.inputs.split(", ").map((input) => {
     const [qty, ...rest] = input.split(" ");

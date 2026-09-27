@@ -4,7 +4,7 @@ import { detectorRecipes, signalTable } from "../data/detector";
 
 export default function ArcaneTraceDetectorPage() {
   return (
-    <WikiPage lastModified="2026-09-12" title="Arcane Trace Detector" intro={<>
+    <WikiPage lastModified="2026-09-27" title="Arcane Trace Detector" intro={<>
         In-game item id: <code className="text-[var(--tfmc-accent)]">GEIGER_COUNTER</code>. Somewhere in the
         world, at all times, there is a single hidden source of Arcane Radiation. The Arcane Trace
         Detector senses where it is: hold it and it shows glowing particle rings and starts clicking,
@@ -17,8 +17,7 @@ export default function ArcaneTraceDetectorPage() {
         Step 1: Get a detector
       </h2>
       <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-        Everything here is crafted at the <StationLink name="Engineer Station" />. Every craft also gives Engineer
-        profession XP. The recharging step needs no profession, so you can trade or buy the
+        Everything here is crafted at the <StationLink name="Engineer Station" />. The recharging step needs no profession, so you can trade or buy the
         detector and fuel from other players and keep recharging it yourself.
       </p>
       <div className="mt-4 flex flex-col gap-4">

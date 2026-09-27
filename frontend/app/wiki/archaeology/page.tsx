@@ -5,7 +5,7 @@ import { archaeologyRecipes } from "../data/archaeology";
 export default function ArchaeologyPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-27"
       title="Archaeology"
       width="lg"
       intro="Find an unclaimed ruin, confirm it from soil samples, establish a field camp, excavate by sound, and preserve each find for study or display."

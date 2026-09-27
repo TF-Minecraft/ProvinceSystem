@@ -20,7 +20,7 @@ export default function MaterialsPage() {
   }));
 
   return (
-    <WikiPage lastModified="2026-09-18" title="Materials" width="lg" intro={<>
+    <WikiPage lastModified="2026-09-27" title="Materials" width="lg" intro={<>
         The custom material catalogue used across every crafting station on the server :
         ingots, herbal alchemy components, magical cores, and more. Icons shown are the exact
         item textures players see in their inventory.

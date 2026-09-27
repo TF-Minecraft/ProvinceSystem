@@ -71,7 +71,7 @@ export const paperRecipes = {
     [
       "r-rare-research-paper",
       "RARE_RESEARCH_PAPER",
-      "Lost Knowledge Fragment: 15 s craft"
+      "Lost Knowledge Fragment: 5 s craft"
     ]
   ]
 };
