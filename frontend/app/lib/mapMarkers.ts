@@ -8,8 +8,7 @@ export const MARKER_HOVER_TRANSITION = "transform 150ms ease-out";
 export const MARKER_VISIBILITY_TRANSITION = "opacity 200ms ease-out";
 
 export const MARKER_SMALL_PX = 100;
-/** 75% of the original 160px large settlement icon. */
-export const MARKER_LARGE_PX = 120;
+export const MARKER_LARGE_PX = 90;
 export const MARKER_LABEL_FONT_SMALL = 48;
 export const MARKER_LABEL_FONT_LARGE = 72;
 export const MARKER_LABEL_GAP = 2;

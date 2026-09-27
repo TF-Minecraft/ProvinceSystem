@@ -32,9 +32,8 @@ describe("settlementMarkers", () => {
 
   it("markerDimensions returns tier sizes", () => {
     expect(markerDimensions("large").fontSize).toBe(SETTLEMENT_LABEL_FONT_LARGE);
-    expect(markerDimensions("small").size).toBeLessThan(
-      markerDimensions("large").size
-    );
+    expect(markerDimensions("large").size).toBe(90);
+    expect(markerDimensions("small").size).toBe(100);
   });
 
   it("shouldShowSettlementMarker gates on screen font size", () => {
