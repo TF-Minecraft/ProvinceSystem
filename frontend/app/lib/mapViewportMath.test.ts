@@ -201,6 +201,29 @@ describe("zoomAtPoint", () => {
     expect(after.x).toBeCloseTo(before.x, 4);
     expect(after.y).toBeCloseTo(before.y, 4);
   });
+
+  it("leaves the transform unchanged for a zero vertical delta", () => {
+    const start = { userScale: 2, translateX: -100, translateY: -50 };
+    const next = zoomAtPoint(viewport, map, start, { x: 400, y: 600 }, 0);
+
+    expect(next).toEqual(start);
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "leaves the transform unchanged for a non-finite delta (%s)",
+    (wheelDelta) => {
+      const start = { userScale: 2, translateX: -100, translateY: -50 };
+      const next = zoomAtPoint(
+        viewport,
+        map,
+        start,
+        { x: 400, y: 600 },
+        wheelDelta
+      );
+
+      expect(next).toEqual(start);
+    }
+  );
 });
 
 describe("viewportTransformStyle", () => {

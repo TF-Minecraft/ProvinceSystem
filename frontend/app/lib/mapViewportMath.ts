@@ -163,6 +163,12 @@ export function zoomAtPoint(
   wheelDelta: number,
   mode: FitMode = "cover"
 ): ViewportTransform {
+  // Horizontal-only wheel events (sideways trackpad swipe, Shift+wheel on
+  // Windows) arrive with deltaY === 0 and carry no zoom direction.
+  if (wheelDelta === 0 || !Number.isFinite(wheelDelta)) {
+    return transform;
+  }
+
   const fitScale = computeFitScale(viewport, map, mode);
   const displayScale = computeDisplayScale(fitScale, transform.userScale);
   const translate = { x: transform.translateX, y: transform.translateY };
