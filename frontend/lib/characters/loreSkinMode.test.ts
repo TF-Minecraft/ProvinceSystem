@@ -4,7 +4,7 @@ import type { LoreItemRow } from "./api";
 import { resolveInitialSkinMode } from "./loreSkinMode";
 
 function item(
-  overrides: Partial<LoreItemRow> & { draft?: Partial<LoreItemRow["draft"]> } = {}
+  overrides: Omit<Partial<LoreItemRow>, "draft"> & { draft?: Partial<LoreItemRow["draft"]> } = {}
 ): LoreItemRow {
   const base: LoreItemRow = {
     kit_key: "iron_hunting_knife",

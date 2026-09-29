@@ -12,7 +12,7 @@ import { navItems, overviewNavItem, wikiSections } from "./data";
 
 type PageModule = { default: () => React.ReactNode | Promise<React.ReactNode> };
 
-const pageModules = import.meta.glob<PageModule>("./*/page.tsx", { eager: true });
+const pageModules = import.meta.glob("./*/page.tsx", { eager: true }) as Record<string, PageModule>;
 
 function hrefForModule(modulePath: string) {
   const slug = modulePath.match(/^\.\/([^/]+)\/page\.tsx$/)?.[1];

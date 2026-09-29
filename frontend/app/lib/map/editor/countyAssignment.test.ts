@@ -10,8 +10,8 @@ import {
 
 describe("countyAssignment", () => {
   const draft = {
-    COUNTY_1: { name: "Elvaris", provinces: [1, 2] },
-    COUNTY_2: { name: "Northmarch", provinces: [3] },
+    COUNTY_1: { name: "Elvaris", rgb: "1,1,1", provinces: [1, 2] },
+    COUNTY_2: { name: "Northmarch", rgb: "2,2,2", provinces: [3] },
   };
 
   const assignment = buildProvinceToCountyId(draft);
@@ -38,8 +38,8 @@ describe("countyAssignment", () => {
 
   it("findDuplicateProvinceIds detects duplicates", () => {
     const dupDraft = {
-      COUNTY_1: { provinces: [1, 2] },
-      COUNTY_2: { provinces: [2, 3] },
+      COUNTY_1: { name: "A", rgb: "1,1,1", provinces: [1, 2] },
+      COUNTY_2: { name: "B", rgb: "2,2,2", provinces: [2, 3] },
     };
     expect(findDuplicateProvinceIds(dupDraft)).toEqual([2]);
     expect(findDuplicateProvinceIds(draft)).toEqual([]);

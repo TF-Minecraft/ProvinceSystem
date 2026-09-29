@@ -86,7 +86,7 @@ describe("WikiItemLink", () => {
     const html = `${renderToStaticMarkup(<GamesPage />)}${renderToStaticMarkup(<FishingPage />)}`;
     expect(html).toContain('href="/wiki/items/deck-of-cards"');
     expect(html).toContain('href="/wiki/items/mythril-hook"');
-    expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>).)*<a\b/s);
+    expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*<a\b/);
   });
 
   it("links another material from a dynamic material description", async () => {
@@ -94,6 +94,6 @@ describe("WikiItemLink", () => {
       await MaterialDetailPage({ params: Promise.resolve({ slug: "ignitium" }) }),
     );
     expect(html).toContain('href="/wiki/materials/coke">Coke</a>');
-    expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>).)*<a\b/s);
+    expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*<a\b/);
   });
 });
