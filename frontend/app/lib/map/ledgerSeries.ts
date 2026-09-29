@@ -429,6 +429,23 @@ export function formatBreakdownBandLabel(key: string): string {
 }
 
 /**
+ * Registry rows whose `[first_seen_day, last_seen_day]` overlaps the built
+ * range. The registry is cumulative and survives a chronicle wipe, so without
+ * this a new season's dropdown still lists every nation from the seasons
+ * before it. Nations deleted *within* the range keep their option.
+ */
+export function factionsInRange(
+  factions: LedgerRegistryFaction[],
+  firstDay: string,
+  lastDay: string
+): LedgerRegistryFaction[] {
+  return factions.filter(
+    (faction) =>
+      overlapDayCount(faction.first_seen_day, faction.last_seen_day, firstDay, lastDay) > 0
+  );
+}
+
+/**
  * Every registry row folded into one dropdown option per exact name —
  * deleted nations included, since the entire point of keeping them in the
  * registry is to still chart them. A name backed by more than one registry
