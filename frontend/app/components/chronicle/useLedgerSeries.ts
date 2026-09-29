@@ -10,6 +10,7 @@ import {
 import {
   buildLedgerFactionOptions,
   defaultLedgerFactionOption,
+  factionsInRange,
   spliceLedgerFaction,
   type LedgerFactionOption,
   type MergedLedgerFaction,
@@ -141,11 +142,12 @@ export function useLedgerSeries({
           setBase({ status: "empty" });
           return;
         }
-        if (index.factions.length === 0) {
+        const factions = factionsInRange(index.factions, firstDay, lastDay);
+        if (factions.length === 0) {
           setBase({ status: "no-options" });
           return;
         }
-        setBase({ status: "ready", factions: index.factions });
+        setBase({ status: "ready", factions });
       } catch (err) {
         if (cancelled || isAbortError(err)) return;
         setBase({

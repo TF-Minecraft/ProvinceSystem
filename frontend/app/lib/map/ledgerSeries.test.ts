@@ -8,6 +8,7 @@ import {
   buildStepPath,
   defaultLedgerFactionOption,
   diffConsecutive,
+  factionsInRange,
   formatBreakdownBandLabel,
   formatLedgerFactionLabel,
   formatMoney,
@@ -425,6 +426,20 @@ describe("buildLedgerFactionOptions", () => {
     ];
     const options = buildLedgerFactionOptions(rows);
     expect(options.map((o) => o.name)).toEqual(["Karsk", "Velin"]);
+  });
+});
+
+describe("factionsInRange", () => {
+  it("drops nations last seen before the range, keeping ones deleted within it", () => {
+    const rows = [
+      faction({ key: "old", first_seen_day: "2026-09-13", last_seen_day: "2026-09-15", deleted_day: "2026-09-19" }),
+      faction({ key: "short", first_seen_day: "2026-09-19", last_seen_day: "2026-09-19", deleted_day: "2026-09-21" }),
+      faction({ key: "live", first_seen_day: "2026-09-19", last_seen_day: "2026-09-29" }),
+    ];
+    expect(factionsInRange(rows, "2026-09-19", "2026-09-29").map((f) => f.key)).toEqual([
+      "short",
+      "live",
+    ]);
   });
 });
 
