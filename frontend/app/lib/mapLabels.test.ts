@@ -850,8 +850,8 @@ const titleLabelLayers: TitleLayers = {
     DUCHY_EX: { titles: ["COUNTY_A", "COUNTY_B"] },
   },
   kingdom: {
-    KINGDOM_1: { titles: ["DUCHY_1"], rgb: "140,69,56" },
-    KINGDOM_EXCLAVE: { titles: ["DUCHY_EX"], rgb: "10,20,30" },
+    KINGDOM_1: { titles: ["DUCHY_1"] },
+    KINGDOM_EXCLAVE: { titles: ["DUCHY_EX"] },
   },
 };
 

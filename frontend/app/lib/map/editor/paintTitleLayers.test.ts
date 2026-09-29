@@ -156,7 +156,7 @@ describe("paintTitleLayers", () => {
 
   it("paintDuchyActiveLayer paints member county provinces with duchy rgb", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted: ImageData | null = null;
+    let painted = null as ImageData | null;
     const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
     const ctx = {
       canvas,
@@ -190,7 +190,7 @@ describe("paintTitleLayers", () => {
 
   it("paintParentActiveLayer paints kingdom members via resolveDuchyProvinces", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted: ImageData | null = null;
+    let painted = null as ImageData | null;
     const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
     const ctx = {
       canvas,
@@ -221,7 +221,7 @@ describe("paintTitleLayers", () => {
 
   it("paintParentActiveLayer unions multiple kingdom members for empire", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted: ImageData | null = null;
+    let painted = null as ImageData | null;
     const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
     const ctx = {
       canvas,

@@ -9,8 +9,8 @@ import {
 
 describe("duchyAssignment", () => {
   const draft = {
-    DUCHY_1: { name: "Valoris", titles: ["COUNTY_1", "COUNTY_2"] },
-    DUCHY_2: { name: "North", titles: ["COUNTY_3"] },
+    DUCHY_1: { name: "Valoris", rgb: "1,1,1", titles: ["COUNTY_1", "COUNTY_2"] },
+    DUCHY_2: { name: "North", rgb: "2,2,2", titles: ["COUNTY_3"] },
   };
 
   const assignment = buildCountyToDuchyId(draft);
@@ -29,8 +29,8 @@ describe("duchyAssignment", () => {
 
   it("findDuplicateCountyIds detects duplicates", () => {
     const dupDraft = {
-      DUCHY_1: { titles: ["COUNTY_1"] },
-      DUCHY_2: { titles: ["COUNTY_1", "COUNTY_2"] },
+      DUCHY_1: { name: "A", rgb: "1,1,1", titles: ["COUNTY_1"] },
+      DUCHY_2: { name: "B", rgb: "2,2,2", titles: ["COUNTY_1", "COUNTY_2"] },
     };
     expect(findDuplicateCountyIds(dupDraft)).toEqual(["COUNTY_1"]);
     expect(findDuplicateCountyIds(draft)).toEqual([]);

@@ -594,6 +594,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   }, [paint.enabled]);
 
   function handleMapTypeChange(mode: MapMode) {
+    // Re-selecting the active mode would clear the map objects without the
+    // mode-data effect re-running to repaint them.
+    if (mode === mapType) return;
     resetMapObjects();
     setMapType(mode);
   }
