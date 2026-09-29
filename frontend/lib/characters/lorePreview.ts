@@ -74,7 +74,10 @@ export function parseNameRuns(raw: string): LoreRun[] {
   return parseInlineRuns(String(raw || ""), "#ffffff");
 }
 
-function parseInlineRuns(line: string, defaultColor: string): LoreRun[] {
+function parseInlineRuns(raw: string, defaultColor: string): LoreRun[] {
+  // SimpleFactions gradient names double the section sign before each code
+  // (§§x§3§9…); collapse it so the stray § doesn't eat the x.
+  const line = raw.replace(/§{2,}/g, "§");
   const runs: LoreRun[] = [];
   let color = defaultColor;
   let bold = false;
