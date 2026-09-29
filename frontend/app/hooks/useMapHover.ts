@@ -295,6 +295,15 @@ export function useMapHover(props: UseMapHoverProps) {
   };
 
   const onMouseLeave = () => {
+    // Forget the pointer so the layer-change replay above cannot resurrect
+    // hover for a cursor that is no longer over the map, and drop any frame
+    // still queued from the last move.
+    lastPointerRef.current = null;
+    pendingEventRef.current = null;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     propsRef.current.setHoveredMarkerId?.(null);
     propsRef.current.setHoveredFortZoc?.(null);
     propsRef.current.setSelectedRegionId(null);
