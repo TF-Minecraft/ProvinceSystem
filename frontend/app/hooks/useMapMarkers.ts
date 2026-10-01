@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import type {
   FortMarker,
+  HubLink,
   InstallationMarker,
   MapId,
   SettlementMarker,
@@ -51,6 +52,7 @@ type MapMarkersState = {
   installations: InstallationMarker[];
   forts: FortMarker[];
   wars: WarExport[];
+  hubLinks: HubLink[];
   loading: boolean;
   error: string | null;
 };
@@ -71,6 +73,7 @@ export function useMapMarkers(
     installations: [],
     forts: [],
     wars: [],
+    hubLinks: [],
     loading: enabled,
     error: null,
   });
@@ -82,6 +85,7 @@ export function useMapMarkers(
         installations: [],
         forts: [],
         wars: [],
+        hubLinks: [],
         loading: false,
         error: null,
       });
@@ -126,6 +130,11 @@ export function useMapMarkers(
             "wars",
             warned
           ),
+          hubLinks: capMarkers(
+            Array.isArray(data.hub_links) ? data.hub_links : [],
+            "supply links",
+            warned
+          ),
           loading: false,
           error: null,
         });
@@ -139,6 +148,7 @@ export function useMapMarkers(
             installations: [],
             forts: [],
             wars: [],
+            hubLinks: [],
             loading: false,
             error: null,
           });
@@ -152,6 +162,7 @@ export function useMapMarkers(
           installations: [],
           forts: [],
           wars: [],
+          hubLinks: [],
           loading: false,
           error: message,
         });

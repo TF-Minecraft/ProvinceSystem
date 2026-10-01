@@ -114,6 +114,30 @@ export type InstallationMarker = {
   province_id?: number;
   map_x?: number;
   map_y?: number;
+  hub_slots?: number;
+  /** Supply hubs currently at this installation, active or not. */
+  hubs?: number;
+};
+
+export type HubLinkEnd = {
+  installation_id: string;
+  faction_id?: string;
+  name: string;
+  province_id?: number;
+  map_x?: number;
+  map_y?: number;
+};
+
+export type HubLink = {
+  guild_id: string;
+  guild_name: string;
+  faction_id: string;
+  mode: "rail" | "sea" | "air";
+  distance: number;
+  trade_share: number;
+  production_share: number;
+  from: HubLinkEnd;
+  to: HubLinkEnd;
 };
 
 export type FortMarker = {
@@ -194,6 +218,7 @@ export type MapMarkersResponse = {
   settlement_large_population_threshold?: number;
   settlements: SettlementMarker[];
   installations: InstallationMarker[];
+  hub_links?: HubLink[];
   forts: FortMarker[];
   wars?: WarExport[];
 };

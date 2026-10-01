@@ -26,6 +26,7 @@ from scripts.loader.markers import (  # noqa: E402
     clear_province_centroid_cache,
     load_province_centroids,
     load_raw_markers,
+    normalize_raw_markers,
     resolve_settlement_map_xy,
     world_coords_to_map_xy,
 )
@@ -190,6 +191,44 @@ class MarkersLoaderTest(unittest.TestCase):
 
         self.assertEqual(len(payload["installations"]), 1)
         self.assertEqual(payload["installations"][0]["kind"], "train_station")
+
+    def test_load_raw_markers_without_hub_links_returns_empty_list(self) -> None:
+        payload = normalize_raw_markers({"installations": []}, "main")
+        self.assertEqual(payload["hub_links"], [])
+
+    def test_build_markers_response_enriches_and_drops_unplaced_hub_links(self) -> None:
+        raw = {
+            "map_id": "main",
+            "exported_at": None,
+            "settlements": [],
+            "installations": [],
+            "forts": [],
+            "wars": [],
+            "hub_links": [
+                {
+                    "guild_id": "guild",
+                    "mode": "rail",
+                    "from": {"installation_id": "a", "province_id": 1},
+                    "to": {"installation_id": "b", "center_x": 30, "center_z": 40},
+                },
+                {
+                    "guild_id": "missing",
+                    "mode": "sea",
+                    "from": {"province_id": 2},
+                    "to": {"province_id": 3},
+                },
+            ],
+        }
+        payload = build_markers_response_from(
+            raw,
+            {"1": {"x": 10.4, "y": 20.6}},
+            {},
+            "main",
+        )
+        self.assertEqual(len(payload["hub_links"]), 1)
+        link = payload["hub_links"][0]
+        self.assertEqual((link["from"]["map_x"], link["from"]["map_y"]), (10, 21))
+        self.assertEqual((link["to"]["map_x"], link["to"]["map_y"]), (30, 40))
 
     def test_build_markers_response_enriches_installations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -20,6 +20,8 @@ export function installationToMapMarker(
   const displayName = cleanRegionName(installation.name);
   const kindLabel =
     installation.kind.charAt(0).toUpperCase() + installation.kind.slice(1);
+  const hubCount = installation.hubs ?? 0;
+  const hubSlots = installation.hub_slots ?? 0;
 
   return {
     id: `installation:${installation.id}`,
@@ -28,7 +30,7 @@ export function installationToMapMarker(
     mapX: installation.map_x!,
     mapY: installation.map_y!,
     label: displayName,
-    title: `${displayName} (${kindLabel})`,
+    title: `${displayName} (${kindLabel})${hubSlots > 0 ? `\nHubs: ${hubCount}/${hubSlots}` : ""}`,
     showLabelOnlyOnHover: true,
   };
 }

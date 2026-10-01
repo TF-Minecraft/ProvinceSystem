@@ -14,6 +14,7 @@ import type {
   MapMode,
   MapObject,
   WarExport,
+  HubLink,
 } from "./types";
 import { mapFallbackSize } from "./types";
 import type { MapMarker } from "../../lib/mapMarkers";
@@ -29,6 +30,7 @@ import PaintLayer from "./PaintLayer";
 import PaintTextEditor from "./PaintTextEditor";
 import type { UseMapPaintResult } from "../../hooks/useMapPaint";
 import WarCampaignLineLayer from "./WarCampaignLineLayer";
+import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { useMapViewport } from "../../hooks/useMapViewport";
@@ -158,6 +160,7 @@ type MapCanvasProps = {
   labels?: NationLabelSpec[];
   markers?: MapMarker[];
   wars?: WarExport[];
+  hubLinks?: HubLink[];
   centroids?: ProvinceCentroids | null;
   hoveredMarkerId?: string | null;
   hoveredNationId?: string | null;
@@ -211,6 +214,7 @@ export default function MapCanvas({
   labels = [],
   markers = [],
   wars = [],
+  hubLinks = [],
   centroids = null,
   hoveredMarkerId = null,
   hoveredNationId = null,
@@ -411,6 +415,13 @@ export default function MapCanvas({
           <WarCampaignLineLayer
             wars={wars}
             centroids={centroids}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+          />
+        )}
+        {isMarkerMapMode(mapType) && hubLinks.length > 0 && (
+          <SupplyLinkLayer
+            links={hubLinks}
             mapW={mapSize.w}
             mapH={mapSize.h}
           />
