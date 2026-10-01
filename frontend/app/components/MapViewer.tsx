@@ -14,6 +14,7 @@ import type { FitMode } from "../lib/mapViewportMath";
 import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
+import { addInstallationLinkDetails } from "../lib/supplyLinks";
 import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
 import {
   settlementToMapMarker,
@@ -161,6 +162,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   const [mapType, setMapType] = useState<MapMode>("nation");
   const [fitMode, setFitMode] = useState<FitMode>("contain");
+  const [installationsVisible, setInstallationsVisible] = useState(true);
+  const [supplyLinksVisible, setSupplyLinksVisible] = useState(true);
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
     null
   );
@@ -267,7 +270,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     ready: geometryReady,
   } = useMapGeometry(mapId, authToken);
   const markersEnabled = accessChecked && gateReason === null;
-  const { settlements, installations, forts, wars } = useMapMarkers(mapId, authToken, markersEnabled, day);
+  const {
+    settlements,
+    installations,
+    forts,
+    wars,
+    hubLinks,
+  } = useMapMarkers(mapId, authToken, markersEnabled, day);
 
   const mapMarkers = useMemo(() => {
     if (!isMarkerMapMode(mapType)) return [];
@@ -283,10 +292,26 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           ),
         })
       ),
-      ...installations.map(installationToMapMarker),
+      ...(installationsVisible
+        ? installations.map((installation) =>
+            addInstallationLinkDetails(
+              installationToMapMarker(installation),
+              installation,
+              hubLinks
+            )
+          )
+        : []),
       ...battleMarkers,
     ];
-  }, [settlements, installations, wars, mapType, mapObjects]);
+  }, [
+    settlements,
+    installations,
+    wars,
+    hubLinks,
+    installationsVisible,
+    mapType,
+    mapObjects,
+  ]);
 
   const labelGeometry = useMemo(() => {
     if (!LABEL_MAP_MODES.has(mapType)) return null;
@@ -871,27 +896,53 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           />
         }
         fitModeToggle={
-          <div className="flex items-center gap-1.5">
-            <span className={fitModeLabelClass(fitMode === "cover")}>Width</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={fitMode === "contain"}
-              aria-label="Toggle between filling the width and fitting the height"
-              onClick={() =>
-                setFitMode((mode) => (mode === "cover" ? "contain" : "cover"))
-              }
-              className="relative h-4 w-8 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] transition-colors"
-            >
-              <span
-                className="absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-[var(--tfmc-cream)]"
-                style={{
-                  transform: `translateX(${fitMode === "contain" ? 16 : 0}px)`,
-                  transition: "transform 150ms ease",
-                }}
-              />
-            </button>
-            <span className={fitModeLabelClass(fitMode === "contain")}>Height</span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <span className={fitModeLabelClass(fitMode === "cover")}>Width</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={fitMode === "contain"}
+                aria-label="Toggle between filling the width and fitting the height"
+                onClick={() =>
+                  setFitMode((mode) => (mode === "cover" ? "contain" : "cover"))
+                }
+                className="relative h-4 w-8 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] transition-colors"
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-[var(--tfmc-cream)]"
+                  style={{
+                    transform: `translateX(${fitMode === "contain" ? 16 : 0}px)`,
+                    transition: "transform 150ms ease",
+                  }}
+                />
+              </button>
+              <span className={fitModeLabelClass(fitMode === "contain")}>Height</span>
+            </div>
+            {day === null && isMarkerMapMode(mapType) ? (
+              <div className="space-y-1.5 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={installationsVisible}
+                    onChange={(event) =>
+                      setInstallationsVisible(event.target.checked)
+                    }
+                  />
+                  Installations
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={supplyLinksVisible}
+                    onChange={(event) =>
+                      setSupplyLinksVisible(event.target.checked)
+                    }
+                  />
+                  Supply links
+                </label>
+              </div>
+            ) : null}
           </div>
         }
         paintPanel={chronicle ? null : <PaintToolbar paint={paint} />}
@@ -909,6 +960,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           labels={regionLabels}
           markers={mapMarkers}
           wars={wars}
+          hubLinks={
+            day === null && installationsVisible && supplyLinksVisible
+              ? hubLinks
+              : []
+          }
           centroids={centroids}
           hoveredMarkerId={hoveredMarkerId}
           hoveredNationId={selectedRegionId}

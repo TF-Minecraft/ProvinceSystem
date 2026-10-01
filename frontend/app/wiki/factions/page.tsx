@@ -14,7 +14,7 @@ import { factionRanks, factionTiers, factionsCommands, installations } from "../
 export default function FactionsPage() {
   return (
     <WikiPage
-      lastModified="2026-09-18"
+      lastModified="2026-10-01"
       title="Factions"
       width="lg"
     >
@@ -123,6 +123,13 @@ export default function FactionsPage() {
         <code className="text-[var(--tfmc-accent)]">/faction vehicle maintenance pay</code>)
         cannot be repaired.
       </Callout>
+
+      <WikiSectionHeading id="supply-hubs" intro="Guilds can link eligible installations to move trade and production between provinces.">
+        Supply hubs and links
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        A guild can build a supply hub at a port, airport, or train station that has an open hub slot. Active hubs at installations of the same kind can connect by rail, sea, or air; different kinds do not connect. Links pass along part of the guild&apos;s trade and production, with the amount depending on the mode and distance. The map shows each link between its installations, using solid rail lines, dashed sea lines, and dotted air lines.
+      </p>
 
       <WikiSectionHeading id="mercenaries" intro="A guild can found a mercenary company and hire it out to other factions.">
         Mercenaries

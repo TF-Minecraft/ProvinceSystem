@@ -195,7 +195,12 @@ export function useMapHover(props: UseMapHoverProps) {
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
-      current.setCursorTooltip(null);
+      current.setCursorTooltip(markerHit.hoverText ? {
+        x: coords.screenX,
+        y: coords.screenY,
+        text: markerHit.hoverText,
+        hint: markerHit.hoverHint,
+      } : null);
       current.setHoveredOverlay(null);
       current.setSelectedRegionId(null);
       resetHoverCacheRef.current();

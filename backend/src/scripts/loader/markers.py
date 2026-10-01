@@ -21,6 +21,7 @@ def _empty_payload(map_name: str) -> dict:
         "exported_at": None,
         "settlements": [],
         "installations": [],
+        "hub_links": [],
         "forts": [],
         "wars": [],
     }
@@ -44,6 +45,10 @@ def normalize_raw_markers(data: object, map_name: str) -> dict:
     if not isinstance(installations, list):
         installations = []
 
+    hub_links = data.get("hub_links")
+    if not isinstance(hub_links, list):
+        hub_links = []
+
     forts = data.get("forts")
     if not isinstance(forts, list):
         forts = []
@@ -60,6 +65,7 @@ def normalize_raw_markers(data: object, map_name: str) -> dict:
         ),
         "settlements": settlements,
         "installations": installations,
+        "hub_links": hub_links,
         "forts": forts,
         "wars": wars,
     }
@@ -528,6 +534,28 @@ def enrich_installations(
     return enrich_marker_rows(installations, centroids)
 
 
+def enrich_hub_links(links: list, centroids: dict) -> list[dict]:
+    enriched: list[dict] = []
+    for entry in links:
+        if not isinstance(entry, dict):
+            continue
+        row = dict(entry)
+        placed = True
+        for end_name in ("from", "to"):
+            end = entry.get(end_name)
+            if not isinstance(end, dict):
+                placed = False
+                break
+            map_xy = resolve_marker_map_xy(end, centroids)
+            if map_xy is None:
+                placed = False
+                break
+            row[end_name] = {**end, "map_x": map_xy[0], "map_y": map_xy[1]}
+        if placed:
+            enriched.append(row)
+    return enriched
+
+
 def load_zoc_overlays(map_name: str) -> dict:
     validate_map(map_name)
     path = zoc_overlays_file(map_name)
@@ -600,6 +628,7 @@ def build_markers_response_from(
         ),
         "settlements": enrich_settlements(raw["settlements"], centroids),
         "installations": enrich_installations(raw["installations"], centroids),
+        "hub_links": enrich_hub_links(raw.get("hub_links") or [], centroids),
         "forts": enrich_forts(raw["forts"], centroids, overlays, map_name),
         "wars": enrich_wars(
             raw.get("wars") or [],
