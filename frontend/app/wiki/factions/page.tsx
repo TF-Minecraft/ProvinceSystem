@@ -119,8 +119,8 @@ export default function FactionsPage() {
         rows={installations.map((i) => [i.type, `${i.radius} blocks`, `${i.upkeepPerDay} d`, i.buildTime, i.slots])}
       />
       <Callout variant="note">
-        Berthing a vehicle requires the vehicle&apos;s owner to be online and consent. An unpaid
-        vehicle (see <code className="text-[var(--tfmc-accent)]">/faction vehicle maintenance pay</code>)
+        Trains are not stored at train stations. Berthing a vehicle requires the vehicle&apos;s owner to be online and consent. An unpaid vehicle (see{" "}
+        <code className="text-[var(--tfmc-accent)]">/faction vehicle maintenance pay</code>)
         cannot be repaired.
       </Callout>
 

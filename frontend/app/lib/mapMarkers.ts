@@ -45,7 +45,12 @@ export const MARKER_LAYER_Z_HOVERED = 17;
 
 export type MapMarkerSize = "small" | "large";
 
-export const INSTALLATION_MARKER_KINDS = new Set(["fort", "port", "airport"]);
+export const INSTALLATION_MARKER_KINDS = new Set([
+  "fort",
+  "port",
+  "airport",
+  "train_station",
+]);
 export const BATTLE_MARKER_KIND = "battle";
 
 export type MapMarker = {
@@ -143,6 +148,7 @@ export function resolveMarkerImageSrc(
   if (kind === "fort") return "/fort.png";
   if (kind === "port") return "/port.png";
   if (kind === "airport") return "/airport.png";
+  if (kind === "train_station") return "/train_station.png";
   if (kind === BATTLE_MARKER_KIND) return "/battle.png";
 
   const large = markerSize === "large";

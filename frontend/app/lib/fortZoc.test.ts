@@ -45,12 +45,14 @@ describe("lookupFortZocOverlay", () => {
     });
   });
 
-  it("returns null for port and airport markers", () => {
+  it("returns null for non-fort installation markers", () => {
     const portMarker: MapMarker = { ...fortMarker, kind: "port" };
     const airportMarker: MapMarker = { ...fortMarker, kind: "airport" };
+    const trainStationMarker: MapMarker = { ...fortMarker, kind: "train_station" };
 
     expect(lookupFortZocOverlay(portMarker, forts)).toBeNull();
     expect(lookupFortZocOverlay(airportMarker, forts)).toBeNull();
+    expect(lookupFortZocOverlay(trainStationMarker, forts)).toBeNull();
   });
 
   it("returns null when fort row is missing overlay or zoc_url", () => {

@@ -25,11 +25,14 @@ describe("installationMarkers", () => {
       {
         id: "c",
         name: "C",
-        kind: "airport",
+        kind: "train_station",
+        map_x: 3,
+        map_y: 4,
       },
     ]);
-    expect(out).toHaveLength(1);
+    expect(out).toHaveLength(2);
     expect(out[0].id).toBe("a");
+    expect(out[1].kind).toBe("train_station");
   });
 
   it("installationToMapMarker prefixes id and sets small size", () => {

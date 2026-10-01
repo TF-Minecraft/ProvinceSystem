@@ -40,6 +40,9 @@ describe("mapMarkers", () => {
     expect(resolveMarkerImageSrc("fort", "small")).toBe("/fort.png");
     expect(resolveMarkerImageSrc("port", undefined)).toBe("/port.png");
     expect(resolveMarkerImageSrc("airport", "large")).toBe("/airport.png");
+    expect(resolveMarkerImageSrc("train_station", "small")).toBe(
+      "/train_station.png"
+    );
   });
 
   it("resolveMarkerImageSrc picks battle asset", () => {
@@ -98,6 +101,7 @@ describe("mapMarkers", () => {
 
   it("markerIconScale is 0.75 for installations only", () => {
     expect(markerIconScale("fort")).toBe(0.75);
+    expect(markerIconScale("train_station")).toBe(0.75);
     expect(markerIconScale("settlement")).toBe(1);
   });
 

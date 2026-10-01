@@ -100,7 +100,11 @@ export type SettlementMarker = {
   map_y?: number;
 };
 
-export type InstallationMarkerKind = "fort" | "port" | "airport";
+export type InstallationMarkerKind =
+  | "fort"
+  | "port"
+  | "airport"
+  | "train_station";
 
 export type InstallationMarker = {
   id: string;
