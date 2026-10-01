@@ -42,7 +42,9 @@ describe("supplyLinks", () => {
       "The Guild connects to B Station (Rail; trade 63%, production 22%)",
     ]);
     expect(addInstallationLinkDetails(installationToMapMarker(installation), installation, [link]).hoverHint)
-      .toBe("The Guild connects to B Station (Rail; trade 63%, production 22%)");
+      .toBe("Hubs: 1/1\nThe Guild connects to B Station (Rail; trade 63%, production 22%)");
+    expect(installationToMapMarker(installation).hoverHint).toBe("Hubs: 1/1");
+    expect(installationToMapMarker({ ...installation, hub_slots: 0 }).hoverHint).toBeUndefined();
     expect(installationToMapMarker(installation).title).toContain("Hubs: 1/1");
   });
 });

@@ -65,7 +65,7 @@ export function addInstallationLinkDetails(
   links: HubLink[]
 ): MapMarker {
   const details = installationLinkDetails(installation, links);
-  return details.length
-    ? { ...marker, hoverText: marker.label, hoverHint: details.join("\n") }
-    : marker;
+  if (!details.length) return marker;
+  const lines = marker.hoverHint ? [marker.hoverHint, ...details] : details;
+  return { ...marker, hoverText: marker.label, hoverHint: lines.join("\n") };
 }

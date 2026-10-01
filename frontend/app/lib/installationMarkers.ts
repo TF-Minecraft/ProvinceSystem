@@ -31,6 +31,10 @@ export function installationToMapMarker(
     mapY: installation.map_y!,
     label: displayName,
     title: `${displayName} (${kindLabel})${hubSlots > 0 ? `\nHubs: ${hubCount}/${hubSlots}` : ""}`,
+    // The marker layer ignores the pointer, so the map tooltip is what a visitor sees.
+    ...(hubSlots > 0
+      ? { hoverText: displayName, hoverHint: `Hubs: ${hubCount}/${hubSlots}` }
+      : {}),
     showLabelOnlyOnHover: true,
   };
 }
