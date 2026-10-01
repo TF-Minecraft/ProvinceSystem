@@ -35,6 +35,7 @@ export type PaintStampIconId =
   | "raid"
   | "battle"
   | "airport"
+  | "train_station"
   | "airship_large"
   | "airship_small"
   | "iron_ship_small"
@@ -193,6 +194,7 @@ export const PAINT_STAMP_ICON_IDS: PaintStampIconId[] = [
   "raid",
   "battle",
   "airport",
+  "train_station",
   "settlement_small",
   "settlement_large",
   "capital_settlement_small",

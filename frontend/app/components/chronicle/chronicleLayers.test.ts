@@ -36,6 +36,7 @@ const markers: MapMarkersResponse = {
   installations: [
     { id: "i1", name: "Harbour", kind: "port", map_x: 10, map_y: 20 },
     { id: "i2", name: "Bastion", kind: "fort", map_x: 30, map_y: 40 },
+    { id: "i3", name: "Railhead", kind: "train_station", map_x: 50, map_y: 60 },
   ],
   forts: [],
   wars: [{ id: "w1", name: "The War" }],
@@ -224,6 +225,7 @@ describe("buildChronicleLayers", () => {
     expect(settlementLayer.markers.map((marker) => marker.id)).toEqual([
       "s1",
       "installation:i1",
+      "installation:i3",
     ]);
 
     const fortLayer = buildChronicleLayers({

@@ -88,7 +88,7 @@ export const CHRONICLE_TOGGLE_ORDER: {
   {
     key: "settlements",
     label: "Settlements & installations",
-    detail: "Towns, ports, airports",
+    detail: "Towns, ports, airports, train stations",
   },
   {
     key: "markerNames",

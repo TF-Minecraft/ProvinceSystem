@@ -179,7 +179,7 @@ class MarkersLoaderTest(unittest.TestCase):
             with open(markers_path, "w", encoding="utf-8") as f:
                 f.write(
                     '{"map_id":"main","installations":['
-                    '{"id":"lanhold","name":"Lanhold","kind":"fort","province_id":705,'
+                    '{"id":"lanhold","name":"Lanhold","kind":"train_station","province_id":705,'
                     '"faction_id":"Lantan","center_x":1748,"center_z":2739}]}'
                 )
             with mock.patch(
@@ -189,7 +189,7 @@ class MarkersLoaderTest(unittest.TestCase):
                 payload = load_raw_markers("main")
 
         self.assertEqual(len(payload["installations"]), 1)
-        self.assertEqual(payload["installations"][0]["kind"], "fort")
+        self.assertEqual(payload["installations"][0]["kind"], "train_station")
 
     def test_build_markers_response_enriches_installations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
