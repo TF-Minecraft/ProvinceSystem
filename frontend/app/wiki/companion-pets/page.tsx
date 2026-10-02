@@ -53,17 +53,17 @@ export default function CompanionPetsPage() {
           ["Feed your pet", "Universal Feed", "Right-click your pet to give it food."],
           ["Clean and groom it", "Glove", "Right-click to groom your pet. You keep the glove."],
           ["Treat a sick pet", "Green Concoction or Red Concoction", "Right-click a sick or weakened pet to give it medicine."],
-          ["Train and reward it", "Meat Treat or Fish Treat", "Hold a treat to begin training, then give treats as rewards."],
-          ["Play fetch", "--- (toy names pending)", "Craft pet toys at the Animal Station and throw one for your pet to fetch."],
-          ["Make a shelter", "Pet Shelter", "Craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
+          ["Train and reward it", "Meat Treat, Fish Treat or Fish Snack", "Hold a treat to begin training, then give treats as rewards."],
+          ["Play fetch", "Pet Ball, Chew Bone, Tug Rope, Mouse Plush or Teddy Bear Plush", "Craft a toy at the Animal Station and throw it for your pet to fetch."],
+          ["Make a shelter", "Pet Shelter (coming soon)", "Once available, craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
           ["Give affection", "Empty hand", "Right-click your pet to check on it and give it attention."],
         ]}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Get food, grooming supplies, medicine, treats and toys at the{" "}
         <StationLink name="Animal Station" />. These supplies work for all companions.
-        Universal Feed is their meal; Meat Treat
-        and Fish Treat are training rewards. Food, medicine and rewarded treats are used up.
+        Universal Feed is their meal; Meat Treat,
+        Fish Treat and Fish Snack are training rewards. Food, medicine and rewarded treats are used up.
         Keep your pet fed and rested before asking it to practise or play, and avoid feeding
         it more when it is already full.
       </p>
@@ -77,8 +77,10 @@ export default function CompanionPetsPage() {
         Playing and spending time together
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Craft a pet toy at the <StationLink name="Animal Station" /> and throw it for your
-        pet to fetch. It chases the toy and brings it
+        Choose a <strong>Pet Ball</strong>, <strong>Chew Bone</strong>, <strong>Tug Rope</strong>,
+        {" "}<strong>Mouse Plush</strong> or <strong>Teddy Bear Plush</strong> at the{" "}
+        <StationLink name="Animal Station" /> and throw it for your pet to fetch.
+        It chases the toy and brings it
         back to you. Play cheers it up, but a tired or sick companion needs a rest first.
         Between games, an empty-hand pet is a simple way to give it affection. Some pets
         roll onto their back for belly rubs; keep petting them to enjoy the moment together.
@@ -101,7 +103,7 @@ export default function CompanionPetsPage() {
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         When your pet is healthy, fed and rested, hold a <strong>Meat Treat</strong> or
-        <strong> Fish Treat</strong> and right-click it to begin a training session. Choose
+        <strong> Fish Treat</strong> or <strong>Fish Snack</strong> and right-click it to begin a training session. Choose
         a word or short phrase in chat, then pick the trick you want it to mean. Practise
         together and give a treat promptly after each attempt. Early efforts can be clumsy;
         encouragement helps, and rewarded successes teach it more quickly.
@@ -117,17 +119,17 @@ export default function CompanionPetsPage() {
       <WikiSectionHeading id="shelter" intro="A place to keep your companions between adventures.">
         Giving your pets a home
       </WikiSectionHeading>
+      <Callout>
+        The <strong>Pet Shelter</strong> is being prepared. Once available, you will be able
+        to craft it at the <StationLink name="Animal Station" />, place it on the ground
+        and right-click it to browse your companions. Only its owner will be able to open it.
+        Moving or breaking it will leave your stored companions safe; you will be able to
+        place a shelter again to visit them.
+      </Callout>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Craft a <strong>Pet Shelter</strong> at the <StationLink name="Animal Station" />
-        {" "}and place it on the ground. Right-click your shelter to browse your companions
-        and choose who comes along. Only you can open your shelter.
         From a pet&apos;s care sheet you can bring it out, call it to your side,
         send it back to the shelter or give it a new name. You can have several companions
         with you and choose who joins each outing.
-      </p>
-      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Moving or breaking your shelter does not remove the companions you have stored.
-        Place a shelter again whenever you need to visit them.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Sheltered pets keep their needs as they are, ready for your next visit. Their needs
