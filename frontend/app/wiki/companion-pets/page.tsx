@@ -7,7 +7,6 @@
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
-import { companionPetTypes } from "@/app/wiki/data/companion-pets";
 
 export default function CompanionPetsPage() {
   return (
@@ -32,11 +31,6 @@ export default function CompanionPetsPage() {
         can see how it feels, its personality and your growing bond.
       </p>
       <CompanionPetGallery />
-      <DataTable
-        caption="Companions and their eggs"
-        columns={[{ header: "Companion" }, { header: "Item you need" }]}
-        rows={companionPetTypes.map((pet) => [pet.name, pet.egg])}
-      />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Each companion has its own egg. Craft eggs and pet supplies at the{" "}
         <StationLink name="Animal Station" /> to prepare for your adventures together.
@@ -61,7 +55,7 @@ export default function CompanionPetsPage() {
           ["Treat a sick pet", "Green Concoction or Red Concoction", "Right-click a sick or weakened pet to give it medicine."],
           ["Train and reward it", "Meat Treat or Fish Treat", "Hold a treat to begin training, then give treats as rewards."],
           ["Play fetch", "--- (toy names pending)", "Craft pet toys at the Animal Station and throw one for your pet to fetch."],
-          ["Make a shelter", "--- (shelter block pending)", "The final shelter block is still to be added here."],
+          ["Make a shelter", "Pet Shelter", "Craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
           ["Give affection", "Empty hand", "Right-click your pet to check on it and give it attention."],
         ]}
       />
@@ -124,13 +118,16 @@ export default function CompanionPetsPage() {
         Giving your pets a home
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        A shelter lets you browse your companions and choose who comes along.
+        Craft a <strong>Pet Shelter</strong> at the <StationLink name="Animal Station" />
+        {" "}and place it on the ground. Right-click your shelter to browse your companions
+        and choose who comes along. Only you can open your shelter.
         From a pet&apos;s care sheet you can bring it out, call it to your side,
         send it back to the shelter or give it a new name. You can have several companions
         with you and choose who joins each outing.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        <strong>Shelter block:</strong> --- (pending).
+        Moving or breaking your shelter does not remove the companions you have stored.
+        Place a shelter again whenever you need to visit them.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Sheltered pets keep their needs as they are, ready for your next visit. Their needs

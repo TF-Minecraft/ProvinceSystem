@@ -6,25 +6,25 @@ import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
 // Each companion has its own egg; eggs/supplies/toys come from the Animal Station.
-// The shelter block and toy item names are awaiting their definitive assets.
-const petNames: Record<keyof typeof modelCatalogue, string> = {
-  beagle: "Beagle",
-  chihuahua: "Chihuahua",
-  corgi: "Corgi",
-  golden: "Golden Retriever",
-  husky: "Husky",
-  mainecoon: "Maine Coon",
-  catblack: "Black cat",
-  catfunny: "Funny cat",
-  catorange: "Orange cat",
-  fox: "Fox",
-  frog: "Frog",
+// Pet Shelter placement follows the pending ServerAssets / CompanionPets furniture
+// integration. Toy item names are awaiting their definitive assets.
+const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string }> = {
+  beagle: { name: "Beagle", egg: "Beagle Companion Egg" },
+  chihuahua: { name: "Chihuahua", egg: "Chihuahua Companion Egg" },
+  corgi: { name: "Corgi", egg: "Corgi Companion Egg" },
+  golden: { name: "Golden Retriever", egg: "Golden Companion Egg" },
+  husky: { name: "Husky", egg: "Husky Companion Egg" },
+  mainecoon: { name: "Maine Coon", egg: "Maine Coon Companion Egg" },
+  catblack: { name: "Black cat", egg: "Catblack Companion Egg" },
+  catfunny: { name: "Funny cat", egg: "Catfunny Companion Egg" },
+  catorange: { name: "Orange cat", egg: "Catorange Companion Egg" },
+  fox: { name: "Fox", egg: "Fox Companion Egg" },
+  frog: { name: "Frog", egg: "Frog Companion Egg" },
 };
 
-export const companionPetTypes = Object.entries(petNames).map(([id, name]) => ({
+export const companionPetTypes = Object.entries(petDetails).map(([id, details]) => ({
   id,
-  name,
-  egg: `${name} Companion Egg`,
+  ...details,
   ...modelCatalogue[id as keyof typeof modelCatalogue],
 }));
 

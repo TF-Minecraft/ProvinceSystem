@@ -16,10 +16,21 @@ it("lets readers choose any companion while mounting only its preview", () => {
     "Beagle", "Chihuahua", "Corgi", "Golden Retriever", "Husky", "Maine Coon",
     "Black cat", "Funny cat", "Orange cat", "Fox", "Frog",
   ]);
-  for (const [id, name] of [["husky", "Husky"], ["mainecoon", "Maine Coon"], ["frog", "Frog"]]) {
+  expect(screen.getByText("Beagle Companion Egg")).toBeTruthy();
+  for (const [id, name, egg] of [
+    ["husky", "Husky", "Husky Companion Egg"],
+    ["golden", "Golden Retriever", "Golden Companion Egg"],
+    ["catblack", "Black cat", "Catblack Companion Egg"],
+    ["mainecoon", "Maine Coon", "Maine Coon Companion Egg"],
+    ["frog", "Frog", "Frog Companion Egg"],
+  ]) {
     fireEvent.change(select, { target: { value: id } });
     expect(screen.getAllByRole("img")).toHaveLength(1);
     expect(screen.getByRole("img", { name })
       .getAttribute("data-model-url")).toBe(`/wiki/models/companion-pets/${id}.json`);
+    expect(screen.getByText(egg)).toBeTruthy();
+    expect(screen.queryByText("Beagle Companion Egg")).toBeNull();
   }
+  expect(screen.getByRole("link", { name: "Animal Station" }).getAttribute("href"))
+    .toBe("/wiki/stations/animal-station");
 });

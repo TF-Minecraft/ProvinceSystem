@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { companionPetTypes } from "@/app/wiki/data/companion-pets";
 import WikiModelViewer from "./WikiModelViewer";
+import StationLink from "./StationLink";
 
 export default function CompanionPetGallery() {
   const selectId = useId();
@@ -24,6 +25,10 @@ export default function CompanionPetGallery() {
           <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
         ))}
       </select>
+      <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-[var(--tfmc-mist)]">
+        Hatch {pet.name} with a <strong>{pet.egg}</strong>. Craft it at the{" "}
+        <StationLink name="Animal Station" />.
+      </p>
       <WikiModelViewer
         key={pet.id}
         modelUrl={pet.modelUrl}
@@ -32,7 +37,7 @@ export default function CompanionPetGallery() {
         height="sm"
       />
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Drag to look around your companion. Get its egg at the Animal Station.
+        Drag to look around your companion.
       </p>
     </div>
   );
