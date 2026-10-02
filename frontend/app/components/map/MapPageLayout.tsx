@@ -118,8 +118,10 @@ export default function MapPageLayout({
             {desktopSidePanel}
           </div>
 
-          <div className="pointer-events-auto absolute bottom-4 left-4 right-4 flex flex-col items-start gap-2">
-            {drillStackBar}
+          {/* This row spans the full map width, so it must let clicks through
+              to the map; only the panels inside it take pointer events. */}
+          <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-col items-start gap-2">
+            {drillStackBar ? <div className="pointer-events-auto max-w-full">{drillStackBar}</div> : null}
             <DraggablePanel storageKey="tfmc-map-panel-controls" className="pointer-events-auto w-fit">
               <div
                 className={`${overlayPanelClass} w-fit px-3 py-2 text-xs text-[var(--tfmc-stone)]`}
