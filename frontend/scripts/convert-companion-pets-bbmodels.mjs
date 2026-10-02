@@ -38,11 +38,17 @@ for (const file of files) {
   if (result.missing || !result.elements) {
     throw new Error(`${id}: missing model geometry or textures.`);
   }
-  catalogue[id] = {
+  const preview = {
     modelUrl: `/wiki/models/companion-pets/${id}.json`,
     textures: Object.fromEntries(Object.entries(result.textures)
       .map(([key, path]) => [key, `/wiki/textures/${path}`])),
   };
+  // Furniture has its own preview; it is not a hatchable companion.
+  if (id === "pethouse") {
+    writeFileSync(join(modelsDir, "pet-house-preview.json"), JSON.stringify(preview, null, 2) + "\n");
+  } else {
+    catalogue[id] = preview;
+  }
   console.log(`${id}: ${result.elements} cubes, ${result.pngs} textures`);
 }
 writeFileSync(join(modelsDir, "catalogue.json"), JSON.stringify(catalogue, null, 2) + "\n");

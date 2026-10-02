@@ -1,14 +1,18 @@
 import type { WikiSection } from "./types";
 import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue.json";
+import housePreview from "../../../public/wiki/models/companion-pets/pet-house-preview.json";
 
 // Item names and pet selection checked against TFMCDev01 on 2026-10-02:
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
 // Each companion has its own egg; eggs/supplies/toys come from the Animal Station.
-// Care also includes the current ServerAssets additions: Fish Snack and the five
-// custom pet toys. Pet Shelter instructions stay planned until furniture use is
+// Care includes Fish Snack and the five custom toys now configured on TF Dev.
+// The user named the new shelter Pet House; its preview is pethouse.bbmodel from
+// the same Downloads folder. House instructions stay planned until furniture use is
 // validated in game, even once its item and recipe are configured on TF Dev.
+export const petHousePreview = housePreview;
+
 const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string }> = {
   beagle: { name: "Beagle", egg: "Beagle Companion Egg" },
   chihuahua: { name: "Chihuahua", egg: "Chihuahua Companion Egg" },

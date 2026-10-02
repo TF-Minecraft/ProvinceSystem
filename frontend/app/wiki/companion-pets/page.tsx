@@ -7,6 +7,8 @@
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
+import WikiModelViewer from "@/app/components/wiki/WikiModelViewer";
+import { petHousePreview } from "@/app/wiki/data/companion-pets";
 
 export default function CompanionPetsPage() {
   return (
@@ -55,7 +57,7 @@ export default function CompanionPetsPage() {
           ["Treat a sick pet", "Green Concoction or Red Concoction", "Right-click a sick or weakened pet to give it medicine."],
           ["Train and reward it", "Meat Treat, Fish Treat or Fish Snack", "Hold a treat to begin training, then give treats as rewards."],
           ["Play fetch", "Pet Ball, Chew Bone, Tug Rope, Mouse Plush or Teddy Bear Plush", "Craft a toy at the Animal Station and throw it for your pet to fetch."],
-          ["Make a shelter", "Pet Shelter (coming soon)", "Once available, craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
+          ["Make a shelter", "Pet House (coming soon)", "Once available, craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
           ["Give affection", "Empty hand", "Right-click your pet to check on it and give it attention."],
         ]}
       />
@@ -102,7 +104,7 @@ export default function CompanionPetsPage() {
         pet&apos;s <strong>Tricks</strong> menu to see what it can learn and how it is progressing.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        When your pet is healthy, fed and rested, hold a <strong>Meat Treat</strong> or
+        When your pet is healthy, fed and rested, hold a <strong>Meat Treat</strong>,
         <strong> Fish Treat</strong> or <strong>Fish Snack</strong> and right-click it to begin a training session. Choose
         a word or short phrase in chat, then pick the trick you want it to mean. Practise
         together and give a treat promptly after each attempt. Early efforts can be clumsy;
@@ -120,12 +122,15 @@ export default function CompanionPetsPage() {
         Giving your pets a home
       </WikiSectionHeading>
       <Callout>
-        The <strong>Pet Shelter</strong> is being prepared. Once available, you will be able
+        The <strong>Pet House</strong> is being prepared. Once available, you will be able
         to craft it at the <StationLink name="Animal Station" />, place it on the ground
         and right-click it to browse your companions. Only its owner will be able to open it.
         Moving or breaking it will leave your stored companions safe; you will be able to
         place a shelter again to visit them.
       </Callout>
+      <div className="my-5">
+        <WikiModelViewer {...petHousePreview} label="Pet House" height="sm" />
+      </div>
       <p className="text-sm text-[var(--tfmc-mist)]">
         From a pet&apos;s care sheet you can bring it out, call it to your side,
         send it back to the shelter or give it a new name. You can have several companions
