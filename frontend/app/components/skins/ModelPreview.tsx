@@ -35,7 +35,6 @@ import {
   inferArmModelFromTexture,
   loadSteveTexture,
   setSteveOuterLayerVisible,
-  type ArmModel,
   type SteveArmPose,
   type SteveMannequin,
 } from "../../../lib/skins/steveMannequin";
@@ -464,6 +463,8 @@ export default function ModelPreview({
   const layoutGenRef = useRef(0);
   const gripYRef = useRef(gripY);
   gripYRef.current = gripY;
+  const potionTintColorRef = useRef(potionTintColor);
+  potionTintColorRef.current = potionTintColor;
   const showOuterLayerRef = useRef(true);
 
   const [status, setStatus] = useState<Status>("idle");
@@ -474,7 +475,6 @@ export default function ModelPreview({
   const [frame, setFrame] = useState<FlatFrameId>("texture");
   const [shieldMode, setShieldMode] = useState<"idle" | "blocking">("idle");
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
-  const [armModel, setArmModel] = useState<ArmModel>("default");
   const [showOuterLayer, setShowOuterLayer] = useState(true);
   const [contentVersion, setContentVersion] = useState(0);
   showOuterLayerRef.current = showOuterLayer;
@@ -574,25 +574,35 @@ export default function ModelPreview({
           const canvas = composeTintedPotionCanvas(tintColor, assets);
           if (!canvas) throw new Error("Invalid potion color");
           const texture = textureFromCanvas(canvas);
-          const imageData = canvasImageData(canvas);
-          const root = buildExtrudedItemGroup(imageData, texture, {
-            center: !onMannequin,
-          });
-          return { root, texture, javaJson: null, canvas };
+          try {
+            const imageData = canvasImageData(canvas);
+            const root = buildExtrudedItemGroup(imageData, texture, {
+              center: !onMannequin,
+            });
+            return { root, texture, javaJson: null, canvas };
+          } catch (err) {
+            texture.dispose();
+            throw err;
+          }
         }
         if (!activeFlatTexture) {
           throw new Error("No texture for selected frame");
         }
         const loaded = await loadImageDataFromFile(activeFlatTexture);
-        const root = buildExtrudedItemGroup(loaded.imageData, loaded.texture, {
-          center: !onMannequin,
-        });
-        return {
-          root,
-          texture: loaded.texture,
-          javaJson: null,
-          canvas: null,
-        };
+        try {
+          const root = buildExtrudedItemGroup(loaded.imageData, loaded.texture, {
+            center: !onMannequin,
+          });
+          return {
+            root,
+            texture: loaded.texture,
+            javaJson: null,
+            canvas: null,
+          };
+        } catch (err) {
+          loaded.texture.dispose();
+          throw err;
+        }
       }
       if (!activeModelFile || !textureFile) {
         throw new Error("Missing model or texture");
@@ -600,14 +610,19 @@ export default function ModelPreview({
       const modelText = await activeModelFile.text();
       const javaJson = parseJavaModelJson(modelText);
       const loaded = await loadTextureFromFile(textureFile);
-      const root = buildJavaModelGroup(
-        javaJson,
-        loaded.texture,
-        loaded.width,
-        loaded.height,
-        { center: !onMannequin }
-      );
-      return { root, texture: loaded.texture, javaJson, canvas: null };
+      try {
+        const root = buildJavaModelGroup(
+          javaJson,
+          loaded.texture,
+          loaded.width,
+          loaded.height,
+          { center: !onMannequin }
+        );
+        return { root, texture: loaded.texture, javaJson, canvas: null };
+      } catch (err) {
+        loaded.texture.dispose();
+        throw err;
+      }
     },
     [
       flat,
@@ -658,7 +673,6 @@ export default function ModelPreview({
           content.steveTexture = steveTex;
         }
         const detected = inferArmModelFromTexture(content.steveTexture);
-        setArmModel(detected);
         const steveRoot = createSteveMannequin(content.steveTexture, detected);
         if (isStale()) {
           disposeObject3D(steveRoot);
@@ -839,6 +853,8 @@ export default function ModelPreview({
 
     return () => {
       cancelled = true;
+      syncGenRef.current += 1;
+      layoutGenRef.current += 1;
       cancelAnimationFrame(runtime.raf);
       runtime.removeResize();
       runtime.controls.dispose();
@@ -879,7 +895,7 @@ export default function ModelPreview({
       try {
         const built = await buildItemMesh(
           meshOnMannequin,
-          potionTintColor ?? null
+          potionTintColorRef.current
         );
         if (gen !== syncGenRef.current) {
           disposeObject3D(built.root);
@@ -908,7 +924,7 @@ export default function ModelPreview({
         setStatus("error");
       }
     })();
-  }, [hasPreview, contentSignature, buildItemMesh, reportError, potionTintColor, meshOnMannequin]);
+  }, [hasPreview, pipelineKey, contentSignature, buildItemMesh, reportError, meshOnMannequin]);
 
   // Layout updates: slot / frame pose / shield / skin - preserve orbit.
   useEffect(() => {
