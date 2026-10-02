@@ -117,10 +117,12 @@ def _normalize_permission_flags(raw: Any) -> dict[str, bool]:
         node = str(key or "").strip()
         if not node:
             continue
-        try:
-            out[node] = _as_bool(value, f"permission_flags[{node}]")
-        except RpcPlayerMetaError:
-            out[node] = bool(value)
+        # Permissions fail closed: Python truthiness would turn an invalid
+        # value such as "denied" or [False] into a staff grant. Keep the
+        # supported boolean spellings, but do not accept arbitrary numbers.
+        if isinstance(value, (int, float)) and value not in (0, 1):
+            raise RpcPlayerMetaError(f"permission_flags[{node}] must be a boolean")
+        out[node] = _as_bool(value, f"permission_flags[{node}]")
     return out
 
 
