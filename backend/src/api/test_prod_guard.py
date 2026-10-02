@@ -76,6 +76,57 @@ class ProdGuardTest(unittest.TestCase):
         with patch.dict(os.environ, env, clear=True):
             assert_production_safe()
 
+    def test_prod_rejects_published_dev_keys_without_dev_flag(self) -> None:
+        for name in ("PLUGIN_KEY", "STAFF_KEY"):
+            for key in ("dev-plugin-key", "dev-staff-key"):
+                with self.subTest(name=name, key=key):
+                    env = {
+                        "PS_PRODUCTION": "1",
+                        "PLUGIN_KEY": "real-plugin",
+                        "STAFF_KEY": "real-staff",
+                        name: key,
+                    }
+                    with patch.dict(os.environ, env, clear=True):
+                        with self.assertRaises(RuntimeError) as ctx:
+                            assert_production_safe()
+                    self.assertIn(name, str(ctx.exception))
+                    self.assertNotIn(key, str(ctx.exception))
+
+    def test_prod_rejects_published_dev_key_as_secondary_plugin_key(self) -> None:
+        for key in ("dev-plugin-key", "dev-staff-key"):
+            with self.subTest(key=key):
+                env = {
+                    "PS_PRODUCTION": "1",
+                    "PLUGIN_KEY": "real-plugin",
+                    "STAFF_KEY": "real-staff",
+                    "PLUGIN_KEYS_SECONDARY": f"real-secondary, {key}, another-secondary",
+                }
+                with patch.dict(os.environ, env, clear=True):
+                    with self.assertRaises(RuntimeError) as ctx:
+                        assert_production_safe()
+                self.assertIn("PLUGIN_KEYS_SECONDARY", str(ctx.exception))
+                self.assertNotIn(key, str(ctx.exception))
+
+    def test_non_prod_allows_published_dev_keys(self) -> None:
+        env = {
+            "SKINS_DEV": "1",
+            "PLUGIN_KEY": "dev-plugin-key",
+            "STAFF_KEY": "dev-staff-key",
+            "PLUGIN_KEYS_SECONDARY": "dev-plugin-key",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            assert_production_safe()
+
+    def test_prod_accepts_real_secondary_keys(self) -> None:
+        env = {
+            "PS_PRODUCTION": "1",
+            "PLUGIN_KEY": "real-plugin",
+            "STAFF_KEY": "real-staff",
+            "PLUGIN_KEYS_SECONDARY": "real-secondary, another-secondary",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            assert_production_safe()
+
 
 if __name__ == "__main__":
     unittest.main()
