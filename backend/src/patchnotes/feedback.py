@@ -7,18 +7,11 @@ A line changes only when the rewrite is a different player-safe sentence.
 from __future__ import annotations
 
 import json
-import logging
-import os
 import re
-from typing import Any, Callable
+from typing import Any
 
-import anthropic
+from .summarize import forced_technical, player_text
 
-from .summarize import player_text
-
-logger = logging.getLogger("patchnotes.feedback")
-
-_MODEL = "claude-sonnet-5"
 _SECTIONS = frozenset({"new", "fixed", "adjusted", "technical"})
 _TOPICS = frozenset(
     {
@@ -35,16 +28,14 @@ _TOPICS = frozenset(
     }
 )
 _MAX_ADDS = 3
-_MAX_OUTPUT_TOKENS = 8000
-_CUT_OFF = "The rewrite was cut off before it finished."
-
-_SYSTEM = """You rewrite a Minecraft server's weekly patch notes after staff feedback.
+_SYSTEM = """Answer from this message only. Do not run commands or read files.
+You rewrite a Minecraft server's weekly patch notes after staff feedback.
 The feedback is an instruction about the note. It is not the new wording, except when staff clearly give a sentence they want published for one part of the note.
 Return one JSON object and nothing else:
-{"lines":[{"id":"...","action":"rewrite","section":"adjusted","body":"..."}],"add":[{"section":"fixed","body":"..."}]}
+{"lines":[{"n":1,"action":"rewrite","section":"adjusted","body":"...","topic":null,"highlight":false}],"add":[{"section":"fixed","body":"...","topic":null,"highlight":false}]}
 Rules:
 - Return only lines you rewrite or drop. Leave every other line out. An omitted line stays unchanged.
-- action is rewrite or drop. keep is allowed and means leave that line unchanged.
+- action is rewrite or drop. Omit unchanged lines.
 - Change every line the feedback is about. Several lines may change.
 - drop a line when staff do not want it posted. A drop needs no body.
 - When staff only move a line to another section, or only drop it, keep the existing body. Change the body only when they give new wording or ask for a rewrite.
@@ -58,6 +49,7 @@ Rules:
 - For new, fixed, and adjusted, each body is one short player-facing sentence. A technical line may keep its existing wording.
 - topic is one of classes, combat, magic, crafting, professions, animals, world, town, dungeons, chat.
 - highlight is true only for the few lines that belong in the short summary. At most 6.
+- A line you rewrite keeps its topic and highlight unless staff ask to change them. Repeat them in your answer.
 - Do not copy the feedback into a body.
 - Do not include stat numbers, coordinates, file paths, commands, permissions, secrets, dungeon names, or lore-item names.
 - Never use an em dash.
@@ -68,38 +60,22 @@ class FeedbackError(RuntimeError):
     """The note could not be rewritten from this feedback."""
 
 
-def interpret_feedback(
-    bullets: list[dict[str, Any]],
-    feedback: str,
-    *,
-    complete: Callable[[str, str], str] | None = None,
-) -> list[dict[str, str]]:
-    """Edits for the current note. Unchanged lines are omitted."""
-    note = feedback.strip()
-    if not note:
-        raise FeedbackError("Feedback is required.")
-    if not bullets:
-        return []
-    raw = (complete or _complete)(_SYSTEM, _user_prompt(bullets, note))
-    return edits_from_response(bullets, note, _json_object(raw))
-
-
 def edits_from_response(
     bullets: list[dict[str, Any]],
     feedback: str,
     payload: dict[str, Any],
-) -> list[dict[str, str]]:
+) -> list[dict[str, Any]]:
     """Keep only rewrites that are safe and are not the feedback itself."""
     by_id = {str(bullet.get("id") or ""): bullet for bullet in bullets if bullet.get("id")}
     lines = payload.get("lines")
     if not isinstance(lines, list):
         raise FeedbackError("Could not rewrite the note from that feedback.")
     seen: set[str] = set()
-    edits: list[dict[str, str]] = []
+    edits: list[dict[str, Any]] = []
     for item in lines:
         if not isinstance(item, dict):
             continue
-        bullet_id = str(item.get("id") or "").strip()
+        bullet_id = _line_id(bullets, item)
         if bullet_id not in by_id or bullet_id in seen:
             continue
         seen.add(bullet_id)
@@ -148,17 +124,21 @@ def _rewrite(original: dict[str, Any], item: dict[str, Any], feedback: str) -> d
         item,
     )
     same_line = body == str(original.get("body") or "").strip() and section == original.get("section")
-    if same_line and not edit.get("topic") and not edit.get("highlight"):
+    same_placement = (
+        edit.get("topic", original.get("topic")) == original.get("topic")
+        and edit.get("highlight", bool(original.get("highlight"))) == bool(original.get("highlight"))
+    )
+    if same_line and same_placement:
         return None
     return edit
 
 
 def _with_placement(edit: dict[str, Any], item: dict[str, Any]) -> dict[str, Any]:
     topic = str(item.get("topic") or "").strip().lower()
-    if topic in _TOPICS:
-        edit["topic"] = topic
-    if item.get("highlight") is True:
-        edit["highlight"] = True
+    if "topic" in item:
+        edit["topic"] = topic if topic in _TOPICS else None
+    if "highlight" in item:
+        edit["highlight"] = item["highlight"] is True
     return edit
 
 
@@ -184,22 +164,123 @@ def _flat(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
-def _user_prompt(bullets: list[dict[str, Any]], feedback: str) -> str:
-    lines = [
-        {
-            "id": str(bullet.get("id") or ""),
+def _numbered_lines(bullets: list[dict[str, Any]], *, placement: bool = False) -> str:
+    lines = []
+    for n, bullet in enumerate(bullets, 1):
+        line: dict[str, Any] = {
+            "n": n,
             "section": str(bullet.get("section") or ""),
             "body": str(bullet.get("body") or ""),
         }
-        for bullet in bullets
-        if bullet.get("id")
-    ]
+        if placement and bullet.get("topic"):
+            line["topic"] = str(bullet["topic"])
+        if placement and bullet.get("highlight"):
+            line["highlight"] = True
+        lines.append(line)
+    return json.dumps(lines, ensure_ascii=False)
+
+
+def feedback_prompt(bullets: list[dict[str, Any]], feedback: str) -> str:
     return (
-        "Current note:\n"
-        + json.dumps(lines, ensure_ascii=False)
-        + "\n\nStaff feedback:\n"
+        _SYSTEM
+        + "\nCurrent note:\n"
+        + _numbered_lines(bullets, placement=True)
+        + "\nStaff feedback:\n"
         + feedback
     )
+
+
+def sort_prompt(bullets: list[dict[str, Any]]) -> str:
+    return """Answer from this message only. Do not run commands or read files.
+Sort a Minecraft server's weekly patch notes. Never change wording.
+Return {"lines":[{"n":1,"section":"new","topic":null,"highlight":false}]}.
+Return every line whose section should change or that needs a topic or highlight.
+Sections:
+- new: a new thing players care about.
+- fixed: a bug players care about that was fixed.
+- adjusted: an existing feature that was adjusted.
+- technical: work players will not care about, including staff or admin work,
+  logging, console, APIs, hooks, tests, docs, and the ServerAssets, CoreProtect,
+  Docs and TLibs repositories.
+Topic is only for new and adjusted. Choose classes, combat, magic, crafting,
+professions, animals, world, town, dungeons, chat, or null when none fits.
+Highlight at most 6 lines, the biggest player-facing news. Never highlight technical.
+Current note:
+""" + _numbered_lines(bullets)
+
+
+def _object_schema(properties: dict[str, Any]) -> dict[str, Any]:
+    return {"type": "object", "additionalProperties": False,
+            "properties": properties, "required": list(properties)}
+
+
+_SECTION_SCHEMA = {"type": "string", "enum": sorted(_SECTIONS)}
+_TOPIC_SCHEMA = {"type": ["string", "null"], "enum": sorted(_TOPICS) + [None]}
+FEEDBACK_SCHEMA = _object_schema({
+    "lines": {"type": "array", "items": _object_schema({
+        "n": {"type": "integer"},
+        "action": {"type": "string", "enum": ["rewrite", "drop"]},
+        "section": {"type": ["string", "null"], "enum": sorted(_SECTIONS) + [None]},
+        "body": {"type": ["string", "null"]},
+        "topic": _TOPIC_SCHEMA, "highlight": {"type": "boolean"},
+    })},
+    "add": {"type": "array", "items": _object_schema({
+        "section": _SECTION_SCHEMA, "body": {"type": "string"},
+        "topic": _TOPIC_SCHEMA, "highlight": {"type": "boolean"},
+    })},
+})
+SORT_SCHEMA = _object_schema({
+    "lines": {"type": "array", "items": _object_schema({
+        "n": {"type": "integer"}, "section": _SECTION_SCHEMA,
+        "topic": _TOPIC_SCHEMA, "highlight": {"type": "boolean"},
+    })},
+})
+
+
+def _line_id(bullets: list[dict[str, Any]], item: dict[str, Any]) -> str:
+    if "n" in item:
+        n = item["n"]
+        if type(n) is int and 1 <= n <= len(bullets):
+            return str(bullets[n - 1].get("id") or "")
+        return ""
+    return str(item.get("id") or "").strip()
+
+
+def sort_edits_from_response(
+    bullets: list[dict[str, Any]], payload: dict[str, Any],
+) -> list[dict[str, Any]]:
+    lines = payload.get("lines")
+    if not isinstance(lines, list):
+        raise FeedbackError("Could not sort the note.")
+    by_id = {str(bullet["id"]): bullet for bullet in bullets}
+    placements = {}
+    for item in lines:
+        if not isinstance(item, dict) or not isinstance(item.get("section"), str):
+            continue
+        if item["section"] not in _SECTIONS:
+            continue
+        bullet_id = _line_id(bullets, item)
+        if bullet_id in by_id and bullet_id not in placements:
+            placements[bullet_id] = item
+    edits = []
+    highlights = 0
+    for bullet_id, bullet in by_id.items():
+        item = placements.get(bullet_id, {})
+        section = item.get("section", bullet["section"])
+        if forced_technical(str(bullet.get("body") or "")):
+            section = "technical"
+        topic = item.get("topic", bullet.get("topic"))
+        if section not in {"new", "adjusted"} or not isinstance(topic, str) or topic not in _TOPICS:
+            topic = None
+        highlight = item.get("highlight") is True
+        highlight = highlight and section != "technical" and highlights < 6
+        highlights += int(highlight)
+        if (section, topic, highlight) == (
+            bullet["section"], bullet.get("topic"), bool(bullet.get("highlight")),
+        ):
+            continue
+        edits.append({"id": bullet_id, "section": section, "topic": topic, "highlight": highlight})
+    return edits
 
 
 def _json_object(text: str) -> dict[str, Any]:
@@ -218,36 +299,3 @@ def _json_object(text: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise FeedbackError("Could not rewrite the note from that feedback.")
     return payload
-
-
-def _text_from_response(response: Any) -> str:
-    """Text from a finished Messages response. A cut-off reply is an error."""
-    if getattr(response, "stop_reason", None) == "max_tokens":
-        logger.error("Patch note feedback rewrite hit max_tokens")
-        raise FeedbackError(_CUT_OFF)
-    parts = [
-        block.text for block in response.content if getattr(block, "type", None) == "text"
-    ]
-    text = "\n".join(parts).strip()
-    if not text:
-        raise FeedbackError("Could not rewrite the note from that feedback.")
-    return text
-
-
-def _complete(system: str, user: str) -> str:
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if not api_key:
-        raise FeedbackError("The rewrite agent is not configured.")
-    try:
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_OUTPUT_TOKENS,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-            output_config={"effort": "low"},
-        )
-    except anthropic.APIError as exc:
-        logger.exception("Patch note feedback rewrite failed")
-        raise FeedbackError("Could not rewrite the note from that feedback.") from exc
-    return _text_from_response(response)

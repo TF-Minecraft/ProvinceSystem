@@ -1,0 +1,13 @@
+[Unit]
+Description=TFMC patch note rewrite worker
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/home/tfmc/ProvinceSystem/scripts/patchnotes-rewrite-worker.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

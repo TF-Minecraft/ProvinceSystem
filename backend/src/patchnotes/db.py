@@ -345,6 +345,36 @@ def migrate() -> None:
             )
             cur.execute(
                 """
+                CREATE TABLE IF NOT EXISTS patchnote_jobs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    week TEXT NOT NULL,
+                    kind TEXT NOT NULL CHECK (kind IN ('feedback', 'sort')),
+                    feedback TEXT,
+                    status TEXT NOT NULL DEFAULT 'queued'
+                        CHECK (status IN ('queued', 'running', 'done', 'failed')),
+                    error TEXT,
+                    changed INT,
+                    line_ids JSONB,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    claimed_at TIMESTAMPTZ,
+                    finished_at TIMESTAMPTZ
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS patchnote_jobs_week_created_idx
+                    ON patchnote_jobs (week, created_at)
+                """
+            )
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx
+                    ON patchnote_jobs (week) WHERE status IN ('queued', 'running')
+                """
+            )
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
                     folder_name TEXT NOT NULL,
                     week TEXT NOT NULL,
@@ -1141,3 +1171,270 @@ def approve_pending_week(week: str) -> int:
             return int(cur.rowcount)
     finally:
         conn.close()
+
+
+class JobActive(RuntimeError):
+    """This week already has a queued or running job."""
+
+
+class JobNotRunning(RuntimeError):
+    """A result arrived for a job that is no longer running."""
+
+
+class BulletNotOpen(RuntimeError):
+    """The requested review change is not valid for this bullet's state."""
+
+
+_JOB_COLUMNS = (
+    "id, week, kind, feedback, status, error, changed, line_ids, "
+    "created_at, claimed_at, finished_at"
+)
+
+
+def _expire_jobs(cur) -> None:
+    cur.execute(
+        """
+        UPDATE patchnote_jobs
+        SET status = 'failed', finished_at = now(),
+            error = CASE WHEN status = 'queued'
+                THEN 'The rewrite agent is not running.'
+                ELSE 'The rewrite took too long.' END
+        WHERE (status = 'queued' AND created_at < now() - interval '90 seconds')
+           OR (status = 'running' AND claimed_at < now() - interval '10 minutes')
+        """
+    )
+
+
+def create_job(week: str, kind: str, feedback: str | None = None) -> dict[str, Any]:
+    week_key = parse_week(week)
+    if kind not in {"feedback", "sort"}:
+        raise ValueError("Invalid job kind")
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            _expire_jobs(cur)
+            cur.execute(
+                f"""
+                INSERT INTO patchnote_jobs (week, kind, feedback)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (week) WHERE status IN ('queued', 'running') DO NOTHING
+                RETURNING {_JOB_COLUMNS}
+                """,
+                (week_key, kind, feedback),
+            )
+            row = cur.fetchone()
+        if row is None:
+            raise JobActive(week_key)
+        return dict(row)
+    finally:
+        conn.close()
+
+
+def claim_job() -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            _expire_jobs(cur)
+            cur.execute(
+                f"""
+                SELECT {_JOB_COLUMNS} FROM patchnote_jobs
+                WHERE status = 'queued' ORDER BY created_at ASC, id ASC
+                LIMIT 1 FOR UPDATE SKIP LOCKED
+                """
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            cur.execute(
+                """
+                SELECT id FROM patchnote_bullets
+                WHERE week = %s AND status IN ('pending', 'approved')
+                ORDER BY created_at ASC, id ASC
+                """,
+                (row["week"],),
+            )
+            line_ids = [str(line["id"]) for line in cur.fetchall()]
+            cur.execute(
+                f"""
+                UPDATE patchnote_jobs SET status = 'running', claimed_at = now(), line_ids = %s
+                WHERE id = %s RETURNING {_JOB_COLUMNS}
+                """,
+                (psycopg2.extras.Json(line_ids), str(row["id"])),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def finish_job(job_id: str, *, changed: int | None = None, error: str | None = None) -> dict[str, Any]:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                UPDATE patchnote_jobs
+                SET status = %s, changed = %s, error = %s, finished_at = now()
+                WHERE id = %s AND status = 'running' RETURNING {_JOB_COLUMNS}
+                """,
+                ("failed" if error is not None else "done", changed,
+                 error[:300] if error is not None else None, job_id),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise JobNotRunning(job_id)
+            return dict(row)
+    finally:
+        conn.close()
+
+
+def _read_job(where: str, params: tuple) -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            _expire_jobs(cur)
+            cur.execute(
+                f"SELECT {_JOB_COLUMNS} FROM patchnote_jobs {where}", params,
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def get_job(job_id: str) -> dict[str, Any] | None:
+    return _read_job("WHERE id = %s", (job_id,))
+
+
+def latest_job(week: str) -> dict[str, Any] | None:
+    return _read_job("WHERE week = %s ORDER BY created_at DESC, id DESC LIMIT 1", (parse_week(week),))
+
+
+def _edit_bullet(bullet_id: str, fields: dict[str, Any], *, denied: bool = False) -> dict[str, Any]:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s FOR UPDATE",
+                (bullet_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise BulletNotFound(bullet_id)
+            if (row["status"] == "denied") != denied:
+                raise BulletNotOpen("Bullet is not denied" if denied else "Bullet is not open")
+            if not fields:
+                return dict(row)
+            assignments = ", ".join(f"{key} = %s" for key in fields)
+            cur.execute(
+                f"UPDATE patchnote_bullets SET {assignments} WHERE id = %s RETURNING {_BULLET_COLUMNS}",
+                (*fields.values(), bullet_id),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def update_bullet(bullet_id: str, fields: dict[str, Any]) -> dict[str, Any]:
+    fields = dict(fields)
+    if set(fields) - {"section", "body", "topic", "highlight"}:
+        raise ValueError("Invalid bullet field")
+    if "section" in fields and fields["section"] not in SECTIONS:
+        raise ValueError("Invalid section")
+    if "body" in fields:
+        fields["body"] = _clean_body(fields["body"])
+    if "topic" in fields and fields["topic"] is not None and fields["topic"] not in TOPICS:
+        raise ValueError("Invalid topic")
+    if "highlight" in fields and type(fields["highlight"]) is not bool:
+        raise ValueError("Invalid highlight")
+    return _edit_bullet(bullet_id, fields)
+
+
+def drop_bullet(bullet_id: str) -> dict[str, Any]:
+    return _edit_bullet(bullet_id, {
+        "status": "denied", "deny_reason": "Removed in review.",
+        "reviewed_at": datetime.now(timezone.utc),
+    })
+
+
+def restore_bullet(bullet_id: str) -> dict[str, Any]:
+    return _edit_bullet(bullet_id, {"status": "pending", "deny_reason": None, "reviewed_at": None}, denied=True)
+
+
+def list_denied(week: str) -> list[dict[str, Any]]:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
+                WHERE week = %s AND status = 'denied' ORDER BY created_at ASC, id ASC""",
+                (parse_week(week),),
+            )
+            return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def list_review_weeks() -> list[dict[str, Any]]:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                WITH counts AS (
+                    SELECT week,
+                        count(*) FILTER (WHERE status = 'pending') AS pending,
+                        count(*) FILTER (WHERE status = 'approved') AS approved,
+                        count(*) FILTER (WHERE status = 'denied') AS denied
+                    FROM patchnote_bullets GROUP BY week
+                )
+                SELECT counts.*, COALESCE(state.postponed, FALSE) AS postponed
+                FROM counts LEFT JOIN patchnote_week_status state USING (week)
+                WHERE pending > 0 OR week IN (SELECT week FROM counts ORDER BY week DESC LIMIT 4)
+                ORDER BY week DESC
+                """
+            )
+            return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def apply_sort(week: str, edits: list[dict[str, Any]]) -> dict[str, Any]:
+    week_key = parse_week(week)
+    conn = _connect()
+    changed = 0
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id FROM patchnote_bullets
+                WHERE week = %s AND status IN ('pending', 'approved') AND highlight
+                FOR UPDATE""", (week_key,),
+            )
+            edited_ids = {str(edit["id"]) for edit in edits}
+            retained = [str(row["id"]) for row in cur.fetchall() if str(row["id"]) not in edited_ids]
+            cur.execute(
+                """UPDATE patchnote_bullets SET highlight = FALSE
+                WHERE week = %s AND status IN ('pending', 'approved')""", (week_key,),
+            )
+            # Omitted no-op edits keep their existing highlights.
+            if retained:
+                cur.execute(
+                    "UPDATE patchnote_bullets SET highlight = TRUE WHERE id = ANY(%s::uuid[])",
+                    (retained,),
+                )
+            for edit in edits:
+                cur.execute(
+                    """UPDATE patchnote_bullets SET section = %s, topic = %s, highlight = %s
+                    WHERE id = %s AND week = %s AND status IN ('pending', 'approved')""",
+                    (edit["section"], _topic_or_none(edit.get("topic")), bool(edit.get("highlight")),
+                     edit["id"], week_key),
+                )
+                changed += int(cur.rowcount)
+            cur.execute(
+                f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
+                WHERE week = %s AND status IN ('pending', 'approved') ORDER BY created_at ASC, id ASC""",
+                (week_key,),
+            )
+            bullets = [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    return {"changed": changed, "bullets": bullets}
