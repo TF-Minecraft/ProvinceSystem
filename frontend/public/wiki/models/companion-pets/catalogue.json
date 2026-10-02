@@ -1,0 +1,69 @@
+{
+  "beagle": {
+    "modelUrl": "/wiki/models/companion-pets/beagle.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/beagle/2.png"
+    }
+  },
+  "catblack": {
+    "modelUrl": "/wiki/models/companion-pets/catblack.json",
+    "textures": {
+      "1": "/wiki/textures/companion-pets/catblack/1.png",
+      "9": "/wiki/textures/companion-pets/catblack/9.png"
+    }
+  },
+  "catfunny": {
+    "modelUrl": "/wiki/models/companion-pets/catfunny.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/catfunny/9.png"
+    }
+  },
+  "catorange": {
+    "modelUrl": "/wiki/models/companion-pets/catorange.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/catorange/9.png"
+    }
+  },
+  "chihuahua": {
+    "modelUrl": "/wiki/models/companion-pets/chihuahua.json",
+    "textures": {
+      "3": "/wiki/textures/companion-pets/chihuahua/3.png"
+    }
+  },
+  "corgi": {
+    "modelUrl": "/wiki/models/companion-pets/corgi.json",
+    "textures": {
+      "0": "/wiki/textures/companion-pets/corgi/0.png"
+    }
+  },
+  "fox": {
+    "modelUrl": "/wiki/models/companion-pets/fox.json",
+    "textures": {
+      "7": "/wiki/textures/companion-pets/fox/7.png"
+    }
+  },
+  "frog": {
+    "modelUrl": "/wiki/models/companion-pets/frog.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/frog/2.png"
+    }
+  },
+  "golden": {
+    "modelUrl": "/wiki/models/companion-pets/golden.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/golden/2.png"
+    }
+  },
+  "husky": {
+    "modelUrl": "/wiki/models/companion-pets/husky.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/husky/2.png"
+    }
+  },
+  "mainecoon": {
+    "modelUrl": "/wiki/models/companion-pets/mainecoon.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/mainecoon/9.png"
+    }
+  }
+}

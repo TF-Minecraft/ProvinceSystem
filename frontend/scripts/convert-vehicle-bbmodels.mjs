@@ -82,12 +82,16 @@ function round(n) {
   return Math.round(n * 10000) / 10000;
 }
 
-export function convert(id, relPath, baseId) {
-  const src = join(BLUEPRINTS, `${relPath}.bbmodel`);
+export function convert(id, relPath, baseId, paths = {}) {
+  const blueprints = paths.blueprintsDir ?? BLUEPRINTS;
+  const outModels = paths.modelsDir ?? OUT_MODELS;
+  const outTextures = paths.texturesDir ?? OUT_TEXTURES;
+  const texturePrefix = paths.texturePrefix ?? "vehicles";
+  const src = join(blueprints, `${relPath}.bbmodel`);
   if (!existsSync(src)) return { id, missing: true };
 
   const bb = JSON.parse(readFileSync(src, "utf8"));
-  const base = baseId ? JSON.parse(readFileSync(join(BLUEPRINTS, `${VEHICLES[baseId]}.bbmodel`), "utf8")) : bb;
+  const base = baseId ? JSON.parse(readFileSync(join(blueprints, `${VEHICLES[baseId]}.bbmodel`), "utf8")) : bb;
   const resW = bb.resolution?.width || 16;
   const resH = bb.resolution?.height || 16;
 
@@ -112,7 +116,7 @@ export function convert(id, relPath, baseId) {
   indexOutliner(bb.outliner);
 
   // ---- textures ----
-  mkdirSync(join(OUT_TEXTURES, id), { recursive: true });
+  mkdirSync(join(outTextures, id), { recursive: true });
   const byHash = new Map();
   /** array index -> { key, file } */
   const slots = [];
@@ -134,7 +138,7 @@ export function convert(id, relPath, baseId) {
     let file = byHash.get(hash);
     if (!file) {
       file = `${key}.png`;
-      writeFileSync(join(OUT_TEXTURES, id, file), buf);
+      writeFileSync(join(outTextures, id, file), buf);
       byHash.set(hash, file);
     }
     slots[index] = {
@@ -144,8 +148,8 @@ export function convert(id, relPath, baseId) {
       uvHeight: tex.uv_height || resH,
     };
     textures[key] = baseTexture?.source === tex.source
-      ? `vehicles/${baseId}/${key}.png`
-      : `vehicles/${id}/${file}`;
+      ? `${texturePrefix}/${baseId}/${key}.png`
+      : `${texturePrefix}/${id}/${file}`;
   });
 
   // `particle` is metadata only -- it may point at a different PNG than any visible
@@ -153,7 +157,7 @@ export function convert(id, relPath, baseId) {
   // to it silently.
   const particleIndex = bb.textures.findIndex((t) => t.particle);
   if (particleIndex >= 0 && slots[particleIndex]) {
-    textures.particle = `vehicles/${id}/${slots[particleIndex].file}`;
+    textures.particle = `${texturePrefix}/${id}/${slots[particleIndex].file}`;
   }
 
   // ---- elements ----
@@ -163,6 +167,11 @@ export function convert(id, relPath, baseId) {
   let facesDropped = 0;
 
   for (const el of bb.elements) {
+    // Locators are attachment points, without visible geometry.
+    if (el.type === "locator") {
+      skipped++;
+      continue;
+    }
     if ((el.type || "cube") !== "cube") {
       throw new Error(`${id}: unsupported element type ${el.type}; refusing to publish an incomplete model`);
     }
@@ -220,11 +229,11 @@ export function convert(id, relPath, baseId) {
     elements.push(out);
   }
 
-  mkdirSync(OUT_MODELS, { recursive: true });
+  mkdirSync(outModels, { recursive: true });
   if (baseId) {
     // A skin may change UV placement, but never supplies vertices or bones.
     // UUID matching keeps texture overrides tied to the canonical base cubes.
-    const canonical = JSON.parse(readFileSync(join(OUT_MODELS, `${baseId}.json`), "utf8"));
+    const canonical = JSON.parse(readFileSync(join(outModels, `${baseId}.json`), "utf8"));
     const byUuid = new Map(elements.map((element) => [element.sourceUuid, element]));
     const faces = {};
     for (const element of canonical.elements) {
@@ -234,10 +243,10 @@ export function convert(id, relPath, baseId) {
       }
       if (JSON.stringify(variant.faces) !== JSON.stringify(element.faces)) faces[element.sourceUuid] = variant.faces;
     }
-    writeFileSync(join(OUT_MODELS, `${id}.json`), JSON.stringify({ baseModel: baseId, faces }));
+    writeFileSync(join(outModels, `${id}.json`), JSON.stringify({ baseModel: baseId, faces }));
   } else {
     const json = { texture_size: [resW, resH], textures, elements };
-    writeFileSync(join(OUT_MODELS, `${id}.json`), JSON.stringify(json));
+    writeFileSync(join(outModels, `${id}.json`), JSON.stringify(json));
   }
 
   return {

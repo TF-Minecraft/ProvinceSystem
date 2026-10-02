@@ -23,6 +23,7 @@ export * from "./brewing";
 export * from "./characters";
 export * from "./classes";
 export * from "./codex";
+export * from "./companion-pets";
 export * from "./cooking";
 export * from "./animal-husbandry";
 export * from "./detector";

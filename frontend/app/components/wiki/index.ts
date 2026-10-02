@@ -13,6 +13,8 @@ export type { CalloutProps, CalloutVariant } from "./Callout";
 export { default as CommandTable } from "./CommandTable";
 export type { CommandAccess, CommandRow, CommandTableProps } from "./CommandTable";
 
+export { default as CompanionPetGallery } from "./CompanionPetGallery";
+
 export { default as CropGallery } from "./CropGallery";
 export type { CropGalleryItem } from "./CropGallery";
 
