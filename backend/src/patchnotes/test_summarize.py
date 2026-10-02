@@ -140,7 +140,7 @@ class SummarizePushTest(unittest.TestCase):
             [
                 ("technical", "TLibs: use the plugin logger for console messages"),
                 ("technical", "TLibs: migrate deprecated level-up listeners"),
-                ("adjusted", "TLibs: Show the company icon under the banner for every guild"),
+                ("technical", "TLibs: Show the company icon under the banner for every guild"),
             ],
         )
 
@@ -158,3 +158,32 @@ class SummarizePushTest(unittest.TestCase):
         notes = summarize_push(payload)
         self.assertEqual(notes.drafts, [])
         self.assertEqual(notes.withheld, 0)
+
+
+class SectionRulesTest(unittest.TestCase):
+    def test_repository_rules_are_case_insensitive(self) -> None:
+        from patchnotes.summarize import forced_technical
+        for repo in ("ServerAssets", "coreprotect", "DOCS", "tLiBs"):
+            with self.subTest(repo=repo):
+                notes = summarize_push({
+                    "ref": "refs/heads/main",
+                    "repository": {"name": repo, "full_name": f"TF-Minecraft/{repo}", "default_branch": "main"},
+                    "commits": [{"id": "a" * 40, "message": "feat: Added pet toys", "distinct": True}],
+                })
+                self.assertEqual(notes.drafts[0].section, "technical")
+                self.assertTrue(forced_technical(f"{repo}: Added pet toys"))
+
+    def test_staff_terms_match_whole_words(self) -> None:
+        from patchnotes.summarize import _section, forced_technical
+        for term in ("staff", "admin", "admins", "log", "logs", "logged", "dev-only", "hook", "hooks", "API", "console", "logger", "logging"):
+            with self.subTest(term=term):
+                self.assertEqual(_section("feat", f"Added {term} tools"), "technical")
+                self.assertFalse(forced_technical(f"Improved {term} tools"))
+        for text in ("Added catalog recipes", "Added logbook recipes", "Added captain masks", "Added stafford pets"):
+            self.assertFalse(forced_technical(text))
+            self.assertEqual(_section("feat", text), "new")
+        self.assertFalse(forced_technical("Added ServerAssets: pet toys"))
+
+
+if __name__ == "__main__":
+    unittest.main()

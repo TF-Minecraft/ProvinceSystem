@@ -12,11 +12,26 @@ services:
       - SKINS_DEV=1
       - STAFF_KEY=dev-staff-key
       - PLUGIN_KEY=dev-plugin-key
+      # Patch notes need Postgres. Staging keeps its own, so nothing here reaches production.
+      - SUPABASE_DB_URL=postgresql://postgres:dev-patchnotes@patchnotes-db:5432/tfmc
     volumes:
       - ./backend/src/output:/app/src/output
       - ./backend/src/input:/app/src/input
       - ./backend/src/defines:/app/src/defines
       - ./backend/src/data:/app/src/data
+    depends_on:
+      - patchnotes-db
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  patchnotes-db:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_PASSWORD=dev-patchnotes
+      - POSTGRES_DB=tfmc
+    volumes:
+      - patchnotes-db:/var/lib/postgresql/data
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -36,3 +51,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+
+volumes:
+  patchnotes-db:

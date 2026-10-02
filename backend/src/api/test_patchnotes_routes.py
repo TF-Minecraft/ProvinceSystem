@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -25,7 +26,6 @@ import psycopg2  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from server import app  # noqa: E402
-from src.patchnotes.feedback import FeedbackError  # noqa: E402
 from src.patchnotes.db import (  # noqa: E402
     BulletNotFound,
     BulletNotPending,
@@ -54,9 +54,21 @@ def _row(**overrides):
     return row
 
 
+def _test_loop():
+    """Keep TestClient responsive when the sandbox blocks socket wakeups."""
+    loop = asyncio.new_event_loop()
+    try:
+        loop._csock.send(b"\0")
+    except PermissionError:
+        def tick():
+            loop.call_later(0.01, tick)
+        loop.call_soon(tick)
+    return loop
+
+
 class PatchnotesRoutesTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -392,7 +404,7 @@ def _signed_push(message: str, secret: str = "hook-secret") -> tuple[bytes, dict
 
 class GithubWebhookTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -450,7 +462,7 @@ class GithubWebhookTest(unittest.TestCase):
 
 class PreviewRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -501,7 +513,7 @@ class PreviewRouteTest(unittest.TestCase):
 
 class FolderRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -561,7 +573,7 @@ class FolderRouteTest(unittest.TestCase):
 
 class WeekActionRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -610,46 +622,234 @@ class WeekActionRouteTest(unittest.TestCase):
         self.assertEqual(res.json()["restored"], 1)
         mock_reset.assert_called_once_with("2026-W39")
 
-    @mock.patch("src.api.patchnotes_routes.apply_feedback")
-    @mock.patch("src.api.patchnotes_routes.interpret_feedback")
-    @mock.patch("src.api.patchnotes_routes.list_open_bullets")
-    def test_feedback_rewrites_the_week(self, mock_list, mock_interpret, mock_apply) -> None:
-        mock_list.return_value = [_row()]
-        mock_interpret.return_value = [
-            {
-                "id": _BULLET_ID,
-                "action": "rewrite",
-                "section": "adjusted",
-                "body": "Soup keeps its food value.",
-            }
-        ]
-        mock_apply.return_value = {
-            "changed": 2,
-            "bullets": [_row(section="adjusted", body="Soup keeps its food value.")],
-        }
-        res = self.client.post(
-            "/patchnotes/staff/weeks/2026-W39/feedback",
-            headers=_HEADERS,
-            json={"feedback": "The soup line is too specific, and drop the masks line."},
-        )
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["changed"], 2)
-        self.assertEqual(res.json()["bullets"][0]["body"], "Soup keeps its food value.")
-        mock_interpret.assert_called_once()
-        self.assertEqual(
-            mock_interpret.call_args.args[1],
-            "The soup line is too specific, and drop the masks line.",
-        )
 
-    @mock.patch(
-        "src.api.patchnotes_routes.interpret_feedback",
-        side_effect=FeedbackError("Could not rewrite the note from that feedback."),
-    )
+
+_JOB_ID = "22222222-2222-2222-2222-222222222222"
+
+
+def _job(**overrides):
+    row = {
+        "id": _JOB_ID, "week": "2026-W39", "kind": "feedback", "status": "queued",
+        "feedback": "Shorten it.", "error": None, "changed": None,
+        "created_at": _CREATED, "finished_at": None, "line_ids": [_BULLET_ID],
+    }
+    row.update(overrides)
+    return row
+
+
+class ReviewRoutesTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        patcher = mock.patch("src.api.patchnotes_routes.migrate")
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+    def tearDown(self) -> None:
+        self.client.close()
+
+    def test_new_routes_require_staff(self) -> None:
+        routes = [
+            ("get", "/staff/weeks"), ("get", "/staff/weeks/2026-W39/review"),
+            ("post", "/staff/weeks/2026-W39/sort"), ("get", f"/staff/jobs/{_JOB_ID}"),
+            ("post", "/staff/jobs/claim"), ("post", f"/staff/jobs/{_JOB_ID}/result"),
+            ("patch", f"/staff/bullets/{_BULLET_ID}"),
+            ("post", f"/staff/bullets/{_BULLET_ID}/drop"),
+            ("post", f"/staff/bullets/{_BULLET_ID}/restore"),
+        ]
+        for method, path in routes:
+            with self.subTest(path=path):
+                self.assertEqual(getattr(self.client, method)("/patchnotes" + path).status_code, 401)
+
+    @mock.patch("src.api.patchnotes_routes.current_week", return_value="2026-W40")
+    @mock.patch("src.api.patchnotes_routes.list_review_weeks", return_value=[{
+        "week": "2026-W39", "pending": 2, "approved": 1, "denied": 1, "postponed": True,
+    }])
+    def test_weeks_counts_and_current(self, _weeks, _current) -> None:
+        res = self.client.get("/patchnotes/staff/weeks", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["current"], "2026-W40")
+        self.assertEqual(res.json()["weeks"][0]["pending"], 2)
+
+    @mock.patch("src.api.patchnotes_routes.get_week_status", return_value={
+        "week": "2026-W39", "postponed": True, "deferred_to": "2026-W40",
+    })
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row(status="approved")])
+    @mock.patch("src.api.patchnotes_routes.list_denied", return_value=[_row(status="denied", deny_reason="Removed in review.")])
+    @mock.patch("src.api.patchnotes_routes.latest_job", return_value=_job())
+    def test_review_includes_open_removed_and_job(self, _job_mock, _denied, _open, _state) -> None:
+        res = self.client.get("/patchnotes/staff/weeks/2026-W39/review", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        payload = res.json()
+        self.assertEqual(payload["deferred_to"], "2026-W40")
+        self.assertEqual(payload["bullets"][0]["status"], "approved")
+        self.assertEqual(payload["removed"][0]["deny_reason"], "Removed in review.")
+        self.assertEqual(payload["job"]["created_at"], _CREATED.isoformat())
+        self.assertNotIn("line_ids", payload["job"])
+
+    @mock.patch("src.api.patchnotes_routes.latest_job", return_value=None)
     @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
-    def test_feedback_failure_does_not_change_the_note(self, _mock_list, _mock_interpret) -> None:
-        res = self.client.post(
-            "/patchnotes/staff/weeks/2026-W39/feedback",
-            headers=_HEADERS,
-            json={"feedback": "Make it shorter."},
-        )
-        self.assertEqual(res.status_code, 422)
+    @mock.patch("src.api.patchnotes_routes.create_job")
+    def test_feedback_and_sort_queue_jobs(self, create, _lines, _latest) -> None:
+        for kind in ("feedback", "sort"):
+            create.return_value = _job(kind=kind)
+            args = {"json": {"feedback": "  Shorten it.  "}} if kind == "feedback" else {}
+            res = self.client.post(f"/patchnotes/staff/weeks/2026-W39/{kind}", headers=_HEADERS, **args)
+            self.assertEqual(res.status_code, 202)
+            self.assertEqual(res.json()["job"]["status"], "queued")
+            create.assert_called_with("2026-W39", kind, "Shorten it." if kind == "feedback" else None)
+
+    @mock.patch("src.api.patchnotes_routes.latest_job")
+    @mock.patch("src.api.patchnotes_routes.create_job")
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[])
+    def test_queue_conflicts_and_empty_weeks(self, _lines, create, latest) -> None:
+        for kind in ("feedback", "sort"):
+            args = {"json": {"feedback": "Shorten it."}} if kind == "feedback" else {}
+            for status in ("queued", "running"):
+                latest.return_value = _job(status=status)
+                res = self.client.post(f"/patchnotes/staff/weeks/2026-W39/{kind}", headers=_HEADERS, **args)
+                self.assertEqual(res.status_code, 409)
+                self.assertEqual(res.json()["detail"], "A rewrite is already running for this week.")
+            latest.return_value = None
+            res = self.client.post(f"/patchnotes/staff/weeks/2026-W39/{kind}", headers=_HEADERS, **args)
+            self.assertEqual(res.status_code, 422)
+            self.assertEqual(res.json()["detail"], "Nothing to rewrite for this week.")
+        create.assert_not_called()
+
+    @mock.patch("src.api.patchnotes_routes.latest_job", return_value=None)
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
+    @mock.patch("src.api.patchnotes_routes.create_job")
+    def test_atomic_queue_conflict(self, create, _lines, _latest) -> None:
+        from src.patchnotes.db import JobActive
+        create.side_effect = JobActive("2026-W39")
+        self.assertEqual(self.client.post("/patchnotes/staff/weeks/2026-W39/sort", headers=_HEADERS).status_code, 409)
+
+    def test_feedback_validation_and_bad_week(self) -> None:
+        for text in (" ", "x" * 1001):
+            res = self.client.post("/patchnotes/staff/weeks/2026-W39/feedback", headers=_HEADERS, json={"feedback": text})
+            self.assertEqual(res.status_code, 422)
+        self.assertEqual(self.client.get("/patchnotes/staff/weeks/nope/review", headers=_HEADERS).status_code, 400)
+        self.assertEqual(self.client.post("/patchnotes/staff/weeks/nope/sort", headers=_HEADERS).status_code, 400)
+
+    @mock.patch("src.api.patchnotes_routes.get_job")
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
+    def test_job_read_only_includes_bullets_when_done(self, lines, get) -> None:
+        for status in ("queued", "running", "done", "failed"):
+            get.return_value = _job(status=status)
+            res = self.client.get(f"/patchnotes/staff/jobs/{_JOB_ID}", headers=_HEADERS)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual("bullets" in res.json(), status == "done")
+        lines.assert_called_once_with("2026-W39")
+        get.return_value = None
+        self.assertEqual(self.client.get(f"/patchnotes/staff/jobs/{_JOB_ID}", headers=_HEADERS).status_code, 404)
+        self.assertEqual(self.client.get("/patchnotes/staff/jobs/bad", headers=_HEADERS).status_code, 404)
+
+    @mock.patch("src.api.patchnotes_routes.claim_job")
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[
+        _row(id="33333333-3333-3333-3333-333333333333", body="Bowls are returned."),
+        _row(body="Soup keeps its food value."),
+    ])
+    def test_claim_prompt_uses_stored_order_and_schema(self, _lines, claim) -> None:
+        for kind in ("feedback", "sort"):
+            claim.return_value = _job(kind=kind, status="running", line_ids=[_BULLET_ID, "33333333-3333-3333-3333-333333333333"])
+            res = self.client.post("/patchnotes/staff/jobs/claim", headers=_HEADERS)
+            self.assertEqual(res.status_code, 200)
+            prompt = res.json()["prompt"]
+            self.assertLess(prompt.index("Soup keeps"), prompt.index("Bowls are"))
+            self.assertIn('"n": 1', prompt)
+            self.assertFalse(res.json()["schema"]["additionalProperties"])
+        claim.return_value = None
+        self.assertEqual(self.client.post("/patchnotes/staff/jobs/claim", headers=_HEADERS).json(), {"job": None})
+
+    @mock.patch("src.api.patchnotes_routes.get_job", return_value=_job(status="running"))
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
+    @mock.patch("src.api.patchnotes_routes.apply_feedback", return_value={"changed": 1, "bullets": []})
+    @mock.patch("src.api.patchnotes_routes.finish_job", return_value=_job(status="done", changed=1))
+    def test_result_maps_number_and_applies_feedback(self, finish, apply, _lines, _get) -> None:
+        res = self.client.post(f"/patchnotes/staff/jobs/{_JOB_ID}/result", headers=_HEADERS, json={
+            "output": json.dumps({"lines": [{"n": 1, "action": "rewrite", "section": "adjusted", "body": "Added another station."}], "add": []}),
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["job"]["changed"], 1)
+        self.assertEqual(apply.call_args.args[2][0]["id"], _BULLET_ID)
+        finish.assert_called_once_with(_JOB_ID, changed=1)
+
+    @mock.patch("src.api.patchnotes_routes.get_job", return_value=_job(status="running", kind="sort"))
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row(body="ServerAssets: Added pet toys.")])
+    @mock.patch("src.api.patchnotes_routes.apply_sort", return_value={"changed": 1, "bullets": []})
+    @mock.patch("src.api.patchnotes_routes.finish_job", return_value=_job(status="done", kind="sort", changed=1))
+    def test_result_sort_forces_technical_when_model_omits_it(self, finish, apply, _lines, _get) -> None:
+        res = self.client.post(f"/patchnotes/staff/jobs/{_JOB_ID}/result", headers=_HEADERS, json={"output": '{"lines":[]}'})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(apply.call_args.args[1], [{"id": _BULLET_ID, "section": "technical", "topic": None, "highlight": False}])
+        finish.assert_called_once_with(_JOB_ID, changed=1)
+
+    @mock.patch("src.api.patchnotes_routes.get_job", return_value=_job(status="running"))
+    @mock.patch("src.api.patchnotes_routes.list_open_bullets", return_value=[_row()])
+    @mock.patch("src.api.patchnotes_routes.apply_feedback")
+    @mock.patch("src.api.patchnotes_routes.finish_job", return_value=_job(status="failed"))
+    def test_bad_results_finish_failed_without_changing_lines(self, finish, apply, _lines, _get) -> None:
+        for body in ({"output": "not json"}, {"output": '{"lines":null}'}, {"error": "x" * 500}, {}):
+            res = self.client.post(f"/patchnotes/staff/jobs/{_JOB_ID}/result", headers=_HEADERS, json=body)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.json()["job"]["status"], "failed")
+            self.assertLessEqual(len(finish.call_args.kwargs["error"]), 300)
+        apply.assert_not_called()
+
+    @mock.patch("src.api.patchnotes_routes.get_job")
+    @mock.patch("src.api.patchnotes_routes.apply_feedback")
+    def test_result_missing_and_nonrunning_jobs(self, apply, get) -> None:
+        for status in ("queued", "done", "failed"):
+            get.return_value = _job(status=status)
+            res = self.client.post(f"/patchnotes/staff/jobs/{_JOB_ID}/result", headers=_HEADERS, json={"output": '{"lines":[]}'})
+            self.assertEqual(res.status_code, 409)
+        get.return_value = None
+        self.assertEqual(self.client.post(f"/patchnotes/staff/jobs/{_JOB_ID}/result", headers=_HEADERS, json={}).status_code, 404)
+        self.assertEqual(self.client.post("/patchnotes/staff/jobs/bad/result", headers=_HEADERS, json={}).status_code, 404)
+        apply.assert_not_called()
+
+    @mock.patch("src.api.patchnotes_routes.update_bullet", return_value=_row(topic=None))
+    def test_patch_only_changes_present_fields_and_cleans_text(self, update) -> None:
+        url = f"/patchnotes/staff/bullets/{_BULLET_ID}"
+        res = self.client.patch(url, headers=_HEADERS, json={"topic": None, "highlight": False})
+        self.assertEqual(res.status_code, 200)
+        update.assert_called_with(_BULLET_ID, {"topic": None, "highlight": False})
+        res = self.client.patch(url, headers=_HEADERS, json={"body": "  Added a station (#34)  "})
+        self.assertEqual(res.status_code, 200)
+        update.assert_called_with(_BULLET_ID, {"body": "Added a station"})
+
+    @mock.patch("src.api.patchnotes_routes.update_bullet")
+    def test_patch_invalid_and_unsafe_text(self, update) -> None:
+        url = f"/patchnotes/staff/bullets/{_BULLET_ID}"
+        for fields in ({"section": "invalid"}, {"topic": "invalid"}, {"body": " "}, {"status": "approved"},
+                       {"body": None}, {"section": None}, {"highlight": None}, {"highlight": "yes"},
+                       {"body": "The api_key=secretvalue is stored here."}):
+            self.assertEqual(self.client.patch(url, headers=_HEADERS, json=fields).status_code, 422)
+        res = self.client.patch(url, headers=_HEADERS, json={"body": "Added lore items."})
+        self.assertEqual(res.json()["detail"], "That line cannot be published as written.")
+        update.assert_not_called()
+
+    def test_patch_drop_restore_missing_conflicts_and_success(self) -> None:
+        from src.patchnotes.db import BulletNotOpen
+        for action, function, status in (("", "update_bullet", "pending"),
+                                         ("/drop", "drop_bullet", "denied"),
+                                         ("/restore", "restore_bullet", "pending")):
+            method = self.client.patch if not action else self.client.post
+            args = {"json": {"section": "new"}} if not action else {}
+            url = f"/patchnotes/staff/bullets/{_BULLET_ID}{action}"
+            with mock.patch("src.api.patchnotes_routes." + function, return_value=_row(status=status)) as change:
+                res = method(url, headers=_HEADERS, **args)
+                self.assertEqual(res.status_code, 200)
+                self.assertEqual(res.json()["status"], status)
+                change.side_effect = BulletNotFound(_BULLET_ID)
+                self.assertEqual(method(url, headers=_HEADERS, **args).status_code, 404)
+                change.side_effect = BulletNotOpen("Bullet is not open")
+                res = method(url, headers=_HEADERS, **args)
+                self.assertEqual(res.status_code, 409)
+                self.assertEqual(res.json()["detail"], "Bullet is not open")
+                self.assertEqual(method("/patchnotes/staff/bullets/bad" + action, headers=_HEADERS, **args).status_code, 404)
+
+    @mock.patch("src.api.patchnotes_routes.list_review_weeks", side_effect=PatchnotesDBError("private details"))
+    def test_database_errors_remain_private(self, _weeks) -> None:
+        res = self.client.get("/patchnotes/staff/weeks", headers=_HEADERS)
+        self.assertEqual(res.status_code, 502)
+        self.assertNotIn("private details", res.json()["detail"])

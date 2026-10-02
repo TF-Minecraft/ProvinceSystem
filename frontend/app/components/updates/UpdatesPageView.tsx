@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import StaffTestPreview from "@/app/components/updates/StaffTestPreview";
+import StaffReviewLink from "@/app/components/updates/StaffReviewLink";
 import { WeekSections } from "@/app/components/updates/WeekArchiveList";
 import type { WeekNotes } from "@/lib/patchnotes/notes";
 
@@ -19,6 +20,7 @@ export default function UpdatesPageView({
       <h1 className="font-[family-name:var(--font-fraunces)] text-4xl text-[var(--tfmc-cream)]">Updates</h1>
       <p className="mt-2 text-[var(--tfmc-mist)]">Each week that has notes has its own page.</p>
       <StaffTestPreview />
+      <StaffReviewLink />
 
       {unavailable ? (
         <p className="mt-10 text-[var(--tfmc-stone)]">Patch notes are unavailable right now.</p>

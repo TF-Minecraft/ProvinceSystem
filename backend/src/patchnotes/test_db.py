@@ -371,3 +371,151 @@ class ListTest(unittest.TestCase):
         sql = cursor.execute.call_args.args[0]
         self.assertIn("status = 'approved'", sql)
         self.assertIn("ORDER BY week DESC", sql)
+
+
+class JobStorageTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.cursor = mock.MagicMock()
+        self.conn = _make_conn(self.cursor)
+        patcher = mock.patch("patchnotes.db._connect", return_value=self.conn)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_create_job_expires_and_enforces_one_active_week(self) -> None:
+        self.cursor.fetchone.return_value = {"id": "j", "status": "queued"}
+        self.assertEqual(db.create_job("2026-W40", "feedback", "Shorten it.")["status"], "queued")
+        calls = self.cursor.execute.call_args_list
+        self.assertIn("interval '90 seconds'", calls[0].args[0])
+        self.assertIn("interval '10 minutes'", calls[0].args[0])
+        self.assertIn("The rewrite agent is not running.", calls[0].args[0])
+        self.assertIn("The rewrite took too long.", calls[0].args[0])
+        self.assertIn("ON CONFLICT (week) WHERE status IN ('queued', 'running')", calls[1].args[0])
+        self.assertEqual(calls[1].args[1], ("2026-W40", "feedback", "Shorten it."))
+        self.cursor.fetchone.return_value = None
+        with self.assertRaises(db.JobActive):
+            db.create_job("2026-W40", "sort", None)
+        self.conn.close.assert_called()
+
+    def test_claim_locks_oldest_and_stores_prompt_order(self) -> None:
+        self.cursor.fetchone.side_effect = [
+            {"id": "j", "week": "2026-W40"},
+            {"id": "j", "week": "2026-W40", "status": "running", "line_ids": ["b", "a"]},
+        ]
+        self.cursor.fetchall.return_value = [{"id": "b"}, {"id": "a"}]
+        job = db.claim_job()
+        self.assertEqual(job["status"], "running")
+        calls = self.cursor.execute.call_args_list
+        self.assertIn("FOR UPDATE SKIP LOCKED", calls[1].args[0])
+        self.assertIn("ORDER BY created_at ASC, id ASC", calls[2].args[0])
+        self.assertIn("claimed_at = now()", calls[3].args[0])
+        self.assertEqual(calls[3].args[1][0].adapted, ["b", "a"])
+
+    def test_claim_empty_queue(self) -> None:
+        self.cursor.fetchone.return_value = None
+        self.assertIsNone(db.claim_job())
+
+    def test_finish_success_and_failure_and_nonrunning(self) -> None:
+        self.cursor.fetchone.return_value = {"id": "j", "status": "done"}
+        db.finish_job("j", changed=3)
+        sql, params = self.cursor.execute.call_args.args
+        self.assertIn("status = 'running'", sql)
+        self.assertEqual(params, ("done", 3, None, "j"))
+        db.finish_job("j", error="x" * 500)
+        self.assertEqual(self.cursor.execute.call_args.args[1], ("failed", None, "x" * 300, "j"))
+        self.cursor.fetchone.return_value = None
+        with self.assertRaises(db.JobNotRunning):
+            db.finish_job("j", changed=1)
+
+    def test_reads_expire_jobs_and_latest_orders_newest_first(self) -> None:
+        self.cursor.fetchone.return_value = {"id": "j"}
+        self.assertEqual(db.get_job("j"), {"id": "j"})
+        self.assertIn("UPDATE patchnote_jobs", self.cursor.execute.call_args_list[0].args[0])
+        self.assertEqual(self.cursor.execute.call_args.args[1], ("j",))
+        self.cursor.reset_mock()
+        self.cursor.fetchone.return_value = None
+        self.assertIsNone(db.latest_job("2026-W40"))
+        self.assertIn("UPDATE patchnote_jobs", self.cursor.execute.call_args_list[0].args[0])
+        self.assertIn("ORDER BY created_at DESC", self.cursor.execute.call_args.args[0])
+
+    def test_migration_adds_jobs_and_partial_unique_index(self) -> None:
+        with mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}), mock.patch.object(db, "_MIGRATED", False):
+            db.migrate()
+        sql = " ".join(call.args[0] for call in self.cursor.execute.call_args_list)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_jobs", sql)
+        self.assertIn("CHECK (kind IN ('feedback', 'sort'))", sql)
+        self.assertIn("CHECK (status IN ('queued', 'running', 'done', 'failed'))", sql)
+        self.assertIn("CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx", sql)
+
+
+class ReviewStorageTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.cursor = mock.MagicMock()
+        patcher = mock.patch("patchnotes.db._connect", return_value=_make_conn(self.cursor))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_patch_changes_only_requested_fields(self) -> None:
+        self.cursor.fetchone.side_effect = [{"id": "b", "status": "approved"}, {"id": "b", "topic": None}]
+        db.update_bullet("b", {"topic": None})
+        sql, params = self.cursor.execute.call_args.args
+        self.assertIn("SET topic = %s", sql)
+        self.assertNotIn("body =", sql)
+        self.assertEqual(params, (None, "b"))
+
+    def test_patch_validation(self) -> None:
+        for fields in ({"topic": "invalid"}, {"section": "invalid"}, {"body": " "},
+                       {"highlight": 1}, {"status": "approved"}):
+            with self.subTest(fields=fields), self.assertRaises(ValueError):
+                db.update_bullet("b", fields)
+
+    def test_drop_and_restore_do_not_rewrite(self) -> None:
+        for status in ("pending", "approved"):
+            self.cursor.fetchone.side_effect = [{"status": status}, {"status": "denied"}]
+            row = db.drop_bullet("b")
+            self.assertEqual(row["status"], "denied")
+            self.assertIn("Removed in review.", self.cursor.execute.call_args.args[1])
+        self.cursor.fetchone.side_effect = [{"status": "denied"}, None, {"status": "pending"}]
+        self.assertEqual(db.restore_bullet("b")["status"], "pending")
+        self.assertEqual(self.cursor.execute.call_args.args[1], ("pending", None, None, "b"))
+
+    def test_restore_is_refused_when_a_rewrite_replaced_the_line(self) -> None:
+        self.cursor.fetchone.side_effect = [{"status": "denied"}, {"?column?": 1}]
+        with self.assertRaises(db.BulletNotOpen):
+            db.restore_bullet("b")
+
+    def test_state_conflicts_and_missing_bullets(self) -> None:
+        for operation, status in ((db.drop_bullet, "denied"), (db.restore_bullet, "approved")):
+            self.cursor.fetchone.return_value = {"status": status}
+            with self.assertRaises(db.BulletNotOpen):
+                operation("b")
+        self.cursor.fetchone.return_value = None
+        for operation in (db.drop_bullet, db.restore_bullet):
+            with self.assertRaises(db.BulletNotFound):
+                operation("missing")
+        self.cursor.fetchone.return_value = {"status": "denied"}
+        with self.assertRaises(db.BulletNotOpen):
+            db.update_bullet("b", {})
+
+    def test_denied_and_review_week_selection(self) -> None:
+        self.cursor.fetchall.return_value = []
+        self.assertEqual(db.list_denied("2026-W40"), [])
+        self.assertIn("status = 'denied'", self.cursor.execute.call_args.args[0])
+        db.list_review_weeks()
+        sql = self.cursor.execute.call_args.args[0]
+        self.assertIn("pending > 0 OR week IN", sql)
+        self.assertIn("LIMIT 4", sql)
+        self.assertIn("ORDER BY week DESC", sql)
+        self.assertIn("COALESCE(state.postponed, FALSE)", sql)
+
+    def test_sort_is_one_transaction_and_keeps_wording(self) -> None:
+        self.cursor.fetchall.side_effect = [[{"id": "unchanged"}], [{"id": "b", "section": "technical"}]]
+        self.cursor.rowcount = 1
+        result = db.apply_sort("2026-W40", [{"id": "b", "section": "technical", "topic": None, "highlight": False}])
+        self.assertEqual(result["changed"], 1)
+        calls = self.cursor.execute.call_args_list
+        self.assertIn("SET highlight = FALSE", calls[1].args[0])
+        self.assertEqual(calls[2].args[1], (["unchanged"],))
+        sql, params = calls[3].args
+        self.assertNotIn("body =", sql)
+        self.assertNotIn("revision_note", sql)
+        self.assertEqual(params, ("technical", None, False, "b", "2026-W40"))

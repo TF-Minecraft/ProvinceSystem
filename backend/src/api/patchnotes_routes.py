@@ -15,35 +15,48 @@ from typing import Any, Literal
 
 import psycopg2
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.api.map_access import require_site_staff
 from src.patchnotes.db import (
     BulletNotFound,
+    BulletNotOpen,
     BulletNotPending,
+    JobActive,
+    JobNotRunning,
     PatchnotesConfigError,
     PatchnotesDBError,
+    TOPICS,
     WeekNotPostponed,
     WeekPostponed,
+    add_folder_rule,
+    apply_feedback,
+    apply_sort,
     approve_bullet,
     approve_pending_week,
-    add_folder_rule,
+    claim_job,
+    create_job,
     current_week,
     defer_postponed_week,
     deny_bullet,
+    drop_bullet,
     ensure_folder,
+    finish_job,
     get_bullet,
     get_folder,
+    get_job,
     get_week_status,
-    apply_feedback,
     insert_bullet,
     insert_sourced_bullet,
+    latest_job,
     list_approved,
+    list_denied,
     list_folders,
     list_open_bullets,
     list_pending,
     list_published_notes,
     list_published_weeks,
+    list_review_weeks,
     list_sync_tasks,
     load_preview,
     migrate,
@@ -55,13 +68,24 @@ from src.patchnotes.db import (
     replace_preview,
     request_added_folder,
     reset_week,
+    restore_bullet,
     revise_denied_bullet,
     undo_postpone,
+    update_bullet,
 )
-from src.patchnotes.feedback import FeedbackError, interpret_feedback
+from src.patchnotes.feedback import (
+    FEEDBACK_SCHEMA,
+    SORT_SCHEMA,
+    FeedbackError,
+    _json_object,
+    edits_from_response,
+    feedback_prompt,
+    sort_edits_from_response,
+    sort_prompt,
+)
 from src.patchnotes.folders import catalog_entries, clean_folder_name, safe_rule
 from src.patchnotes.safety import hidden_knowledge_warning
-from src.patchnotes.summarize import signature_ok, strip_pr_numbers, summarize_push
+from src.patchnotes.summarize import player_text, signature_ok, strip_pr_numbers, summarize_push
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
 
 logger = logging.getLogger("patchnotes.routes")
@@ -778,27 +802,215 @@ def staff_auto_approve_week(week: str):
     return {"week": week_key, "approved": approved}
 
 
-@patchnotes_router.post("/staff/weeks/{week}/feedback", dependencies=[Depends(_staff_guard)])
-def staff_week_feedback(week: str, body: FeedbackBody):
-    """Rewrite this week's note from staff feedback. The feedback is not the new text."""
+def _job_payload(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(row["id"]),
+        "week": row["week"],
+        "kind": row["kind"],
+        "status": row["status"],
+        "error": row.get("error"),
+        "changed": row.get("changed"),
+        "feedback": row.get("feedback"),
+        "created_at": _iso(row.get("created_at")),
+        "finished_at": _iso(row.get("finished_at")),
+    }
+
+
+def _queue_job(week: str, kind: str, feedback: str | None = None):
     week_key = _week_or_400(week)
     try:
         migrate()
-        current = list_open_bullets(week_key)
-        edits = interpret_feedback(current, body.feedback)
-        result = apply_feedback(week_key, body.feedback, edits)
-    except FeedbackError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        active = latest_job(week_key)
+        if active and active["status"] in {"queued", "running"}:
+            raise JobActive(week_key)
+        if not list_open_bullets(week_key):
+            raise HTTPException(status_code=422, detail="Nothing to rewrite for this week.")
+        row = create_job(week_key, kind, feedback)
+    except JobActive as e:
+        raise HTTPException(status_code=409, detail="A rewrite is already running for this week.") from e
     except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
-        logger.exception("staff_week_feedback failed")
+        logger.exception("queue_job failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
-    return {
-        "week": week_key,
-        "changed": result["changed"],
-        "bullets": [_serialize(row, public=False) for row in result["bullets"]],
-    }
+    return {"job": _job_payload(row)}
+
+
+@patchnotes_router.post("/staff/weeks/{week}/feedback", status_code=202, dependencies=[Depends(_staff_guard)])
+def staff_week_feedback(week: str, body: FeedbackBody):
+    return _queue_job(week, "feedback", body.feedback)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/sort", status_code=202, dependencies=[Depends(_staff_guard)])
+def staff_week_sort(week: str):
+    return _queue_job(week, "sort")
+
+
+@patchnotes_router.get("/staff/weeks", dependencies=[Depends(_staff_guard)])
+def staff_review_weeks():
+    try:
+        migrate()
+        return {"current": current_week(), "weeks": list_review_weeks()}
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_review_weeks failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+@patchnotes_router.get("/staff/weeks/{week}/review", dependencies=[Depends(_staff_guard)])
+def staff_week_review(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        payload = _week_payload(get_week_status(week_key))
+        payload["bullets"] = [_serialize(row, public=False) for row in list_open_bullets(week_key)]
+        payload["removed"] = [_serialize(row, public=False) for row in list_denied(week_key)]
+        job = latest_job(week_key)
+        payload["job"] = _job_payload(job) if job else None
+        return payload
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_review failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+def _job_id_or_404(job_id: str) -> str:
+    try:
+        return str(uuid.UUID(job_id))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail="Job not found") from e
+
+
+def _job_lines(job: dict[str, Any]) -> list[dict[str, Any]]:
+    # Keep numbering stable if a line was added or removed after the claim.
+    by_id = {str(row["id"]): row for row in list_open_bullets(job["week"])}
+    return [by_id.get(str(line_id), {"id": str(line_id), "section": "technical", "body": ""})
+            for line_id in job.get("line_ids") or []]
+
+
+@patchnotes_router.get("/staff/jobs/{job_id}", dependencies=[Depends(_staff_guard)])
+def staff_get_job(job_id: str):
+    job_id = _job_id_or_404(job_id)
+    try:
+        migrate()
+        row = get_job(job_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+        payload = {"job": _job_payload(row)}
+        if row["status"] == "done":
+            payload["bullets"] = [_serialize(line, public=False) for line in list_open_bullets(row["week"])]
+        return payload
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_get_job failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+@patchnotes_router.post("/staff/jobs/claim", dependencies=[Depends(_staff_guard)])
+def staff_claim_job():
+    try:
+        migrate()
+        job = claim_job()
+        if job is None:
+            return {"job": None}
+        lines = _job_lines(job)
+        if job["kind"] == "feedback":
+            prompt = feedback_prompt(lines, job.get("feedback") or "")
+            schema = FEEDBACK_SCHEMA
+        else:
+            prompt, schema = sort_prompt(lines), SORT_SCHEMA
+        return {"job": _job_payload(job), "prompt": prompt, "schema": schema}
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_claim_job failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+class JobResultBody(BaseModel):
+    output: str | None = None
+    error: str | None = None
+
+
+@patchnotes_router.post("/staff/jobs/{job_id}/result", dependencies=[Depends(_staff_guard)])
+def staff_job_result(job_id: str, body: JobResultBody):
+    job_id = _job_id_or_404(job_id)
+    try:
+        migrate()
+        job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+        if job["status"] != "running":
+            raise JobNotRunning(job_id)
+        try:
+            if body.error is not None:
+                raise FeedbackError(body.error.strip()[:300] or "The rewrite agent failed.")
+            payload = _json_object(body.output or "")
+            lines = _job_lines(job)
+            if job["kind"] == "feedback":
+                feedback = job.get("feedback") or ""
+                edits = edits_from_response(lines, feedback, payload)
+                result = apply_feedback(job["week"], feedback, edits)
+            else:
+                edits = sort_edits_from_response(lines, payload)
+                result = apply_sort(job["week"], edits)
+            row = finish_job(job_id, changed=result["changed"])
+        except (FeedbackError, ValueError) as e:
+            row = finish_job(job_id, error=str(e)[:300])
+        return {"job": _job_payload(row)}
+    except JobNotRunning as e:
+        raise HTTPException(status_code=409, detail="Job is not running") from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_job_result failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+class PatchBulletBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section: SectionName | None = None
+    body: str | None = Field(default=None, min_length=1, max_length=1000)
+    topic: str | None = None
+    highlight: bool | None = Field(default=None, strict=True)
+
+    @field_validator("topic")
+    @classmethod
+    def _check_topic(cls, value: str | None) -> str | None:
+        if value is not None and value not in TOPICS:
+            raise ValueError("Invalid topic")
+        return value
+
+
+def _change_bullet(bullet_id: str, change, *args):
+    bullet_id = _bullet_id_or_404(bullet_id)
+    try:
+        migrate()
+        row = change(bullet_id, *args)
+    except BulletNotFound as e:
+        raise HTTPException(status_code=404, detail="Bullet not found") from e
+    except BulletNotOpen as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("change_bullet failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return _serialize(row, public=False)
+
+
+@patchnotes_router.patch("/staff/bullets/{bullet_id}", dependencies=[Depends(_staff_guard)])
+def staff_patch_bullet(bullet_id: str, body: PatchBulletBody):
+    fields = body.model_dump(exclude_unset=True)
+    if any(value is None for key, value in fields.items() if key != "topic"):
+        raise HTTPException(status_code=422, detail="Only topic may be null")
+    if "body" in fields:
+        fields["body"] = player_text(fields["body"])
+        if fields["body"] is None:
+            raise HTTPException(status_code=422, detail="That line cannot be published as written.")
+    return _change_bullet(bullet_id, update_bullet, fields)
+
+
+@patchnotes_router.post("/staff/bullets/{bullet_id}/drop", dependencies=[Depends(_staff_guard)])
+def staff_drop_bullet(bullet_id: str):
+    return _change_bullet(bullet_id, drop_bullet)
+
+
+@patchnotes_router.post("/staff/bullets/{bullet_id}/restore", dependencies=[Depends(_staff_guard)])
+def staff_restore_bullet(bullet_id: str):
+    return _change_bullet(bullet_id, restore_bullet)
 
 
 @patchnotes_router.post("/staff/weeks/{week}/reset", dependencies=[Depends(_staff_guard)])

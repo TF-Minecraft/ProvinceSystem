@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from .safety import hidden_knowledge_warning
 
 _DEFAULT_ORG = "TF-Minecraft"
+_TECHNICAL_REPOS = frozenset({"serverassets", "coreprotect", "docs", "tlibs"})
 _MAX_COMMITS = 20
 _MAX_BODY = 240
 
@@ -64,6 +65,8 @@ _NEW_WORDS = re.compile(r"\b(add|added|adds|new)\b", re.IGNORECASE)
 _NOT_PLAYER_FACING = re.compile(
     r"(?i)("
     r"\bloggers?\b|\blogging\b|\bconsole\b|"
+    r"\bstaff\b|\badmins?\b|\b(?:log|logs|logged)\b|"
+    r"\bdev-only\b|\bhooks?\b|\bAPI\b|"
     r"\bdeprecated\b|\blisteners?\b|"
     r"\bworkspace layout\b|\bserver thread\b|"
     r"\bdisk reads?\b|\bblock snapshots?\b|"
@@ -200,7 +203,7 @@ def _draft_commit(full_name: str, label: str, commit: object) -> tuple[Draft | N
         return None, False
     if kind in _SKIP_KINDS or _BUMP.match(cleaned):
         return None, True
-    section = _section(kind, cleaned)
+    section = "technical" if label.lower() in _TECHNICAL_REPOS else _section(kind, cleaned)
     body = f"{label}: {cleaned}"
     if len(body) > _MAX_BODY:
         body = body[: _MAX_BODY - 1].rstrip() + "…"
@@ -216,6 +219,16 @@ def _split_conventional(subject: str) -> tuple[str, str]:
     kind = match.group("kind").lower()
     rest = subject[match.end() :].strip()
     return kind, rest or subject
+
+
+def forced_technical(body: str) -> bool:
+    """True for a line from a repository players never see.
+
+    Wording alone is not enough here: a mage's staff and an oak log are player
+    facing, so the sort decides those lines from their meaning.
+    """
+    label, separator, _ = body.partition(": ")
+    return bool(separator) and label.strip().lower() in _TECHNICAL_REPOS
 
 
 def _section(kind: str, text: str) -> str:

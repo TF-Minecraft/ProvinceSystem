@@ -13,10 +13,14 @@ if str(_BACKEND_SRC) not in sys.path:
 
 from patchnotes.feedback import (  # noqa: E402
     FeedbackError,
-    _CUT_OFF,
     _SYSTEM,
-    _text_from_response,
-    interpret_feedback,
+    _json_object,
+    edits_from_response,
+    feedback_prompt,
+    sort_prompt,
+    sort_edits_from_response,
+    FEEDBACK_SCHEMA,
+    SORT_SCHEMA,
 )
 
 _SOUP = {
@@ -30,6 +34,10 @@ _BOWLS = {"id": "bowls", "section": "fixed", "body": "Bowls are returned after e
 
 def _reply(payload: dict) -> str:
     return json.dumps(payload)
+
+
+def interpret_feedback(bullets, feedback, *, complete):
+    return edits_from_response(bullets, feedback, _json_object(complete(_SYSTEM, feedback_prompt(bullets, feedback))))
 
 
 class FeedbackInterpretationTest(unittest.TestCase):
@@ -183,10 +191,108 @@ class FeedbackInterpretationTest(unittest.TestCase):
         self.assertIn("nothing player facing", _SYSTEM)
         self.assertNotIn("A plugin or internal change uses section technical", _SYSTEM)
 
-    def test_a_cut_off_reply_says_so(self) -> None:
-        with self.assertRaises(FeedbackError) as raised:
-            _text_from_response(type("Reply", (), {"stop_reason": "max_tokens", "content": []})())
-        self.assertEqual(str(raised.exception), _CUT_OFF)
+
+
+class JobPromptsTest(unittest.TestCase):
+    def test_prompts_number_lines_without_ids(self) -> None:
+        for prompt in (feedback_prompt([_SOUP, _MASKS], "Shorten it."), sort_prompt([_SOUP, _MASKS])):
+            self.assertTrue(prompt.startswith("Answer from this message only. Do not run commands or read files."))
+            self.assertIn('"n": 1', prompt)
+            self.assertIn('"n": 2', prompt)
+            self.assertNotIn('"id"', prompt)
+
+    def test_schemas_are_strict_at_every_object(self) -> None:
+        def check(schema):
+            if schema.get("type") == "object":
+                self.assertFalse(schema["additionalProperties"])
+                self.assertEqual(set(schema["properties"]), set(schema["required"]))
+                for child in schema["properties"].values():
+                    check(child)
+            if schema.get("type") == "array":
+                check(schema["items"])
+        for schema in (FEEDBACK_SCHEMA, SORT_SCHEMA):
+            check(schema)
+        self.assertEqual(FEEDBACK_SCHEMA["properties"]["lines"]["items"]["properties"]["section"]["type"], ["string", "null"])
+
+    def test_number_mapping_and_invalid_numbers(self) -> None:
+        edits = edits_from_response([_SOUP, _MASKS], "Drop masks.", {"lines": [
+            {"n": 2, "action": "drop"}, {"n": 0, "action": "drop"},
+            {"n": True, "action": "drop"}, {"n": 3, "action": "drop"},
+            {"n": "1", "action": "drop"}, {"n": 2, "action": "drop"},
+        ]})
+        self.assertEqual(edits, [{"id": "masks", "action": "drop"}])
+
+    def test_feedback_can_clear_placement(self) -> None:
+        edits = edits_from_response([dict(_MASKS, topic="animals", highlight=True)], "Clear placement.", {
+            "lines": [{"n": 1, "action": "rewrite", "section": None, "body": None, "topic": None, "highlight": False}],
+        })
+        self.assertEqual(edits[0]["topic"], None)
+        self.assertFalse(edits[0]["highlight"])
+
+    def test_additions_are_limited_and_unsafe_or_invalid_edits_ignored(self) -> None:
+        edits = edits_from_response([_SOUP], "Add some lines.", {
+            "lines": [{"n": 1, "action": "rewrite", "section": "invalid", "body": "New soup."}],
+            "add": [{"section": "new", "body": "Added pet toys."}] * 5,
+        })
+        self.assertEqual(len(edits), 3)
+
+
+class SortEditsTest(unittest.TestCase):
+    def test_forced_technical_overrides_model_and_omissions(self) -> None:
+        bullets = [dict(_SOUP, body="ServerAssets: Added pet toys."),
+                   dict(_MASKS, body="CoreProtect: Record lock changes.")]
+        edits = sort_edits_from_response(bullets, {"lines": [
+            {"n": 1, "section": "new", "topic": "animals", "highlight": True},
+        ]})
+        self.assertEqual([e["section"] for e in edits], ["technical", "technical"])
+        self.assertTrue(all(e["topic"] is None and not e["highlight"] for e in edits))
+
+    def test_wording_alone_does_not_override_the_model(self) -> None:
+        bullets = [dict(_MASKS, section="technical", body="Magic: Added an oak staff.")]
+        edits = sort_edits_from_response(bullets, {"lines": [
+            {"n": 1, "section": "new", "topic": "magic", "highlight": False},
+        ]})
+        self.assertEqual([(e["section"], e["topic"]) for e in edits], [("new", "magic")])
+
+    def test_highlights_cap_topics_and_noops(self) -> None:
+        bullets = [dict(_MASKS, id=str(n)) for n in range(8)]
+        edits = sort_edits_from_response(bullets, {"lines": [
+            {"n": n, "section": "new", "topic": "invalid", "highlight": True}
+            for n in range(1, 9)
+        ]})
+        self.assertEqual(len(edits), 6)
+        self.assertTrue(all(e["topic"] is None and e["highlight"] for e in edits))
+        self.assertEqual(sort_edits_from_response([_MASKS], {"lines": [
+            {"n": 1, "section": "new", "topic": None, "highlight": False},
+        ]}), [])
+
+    def test_only_new_and_adjusted_have_topics(self) -> None:
+        edits = sort_edits_from_response([dict(_BOWLS, topic="crafting")], {"lines": []})
+        self.assertIsNone(edits[0]["topic"])
+        self.assertEqual(sort_edits_from_response([_MASKS], {"lines": [
+            {"n": 1, "section": "invalid", "topic": "animals", "highlight": True},
+        ]}), [])
+
+    def test_sort_clears_unselected_highlights_and_keeps_selected_noops(self) -> None:
+        bullet = dict(_MASKS, highlight=True, topic="animals")
+        edits = sort_edits_from_response([bullet], {"lines": []})
+        self.assertEqual(edits, [{"id": "masks", "section": "new", "topic": "animals", "highlight": False}])
+        self.assertEqual(sort_edits_from_response([bullet], {"lines": [
+            {"n": 1, "section": "new", "topic": "animals", "highlight": True},
+        ]}), [])
+
+    def test_sort_ignores_malformed_sections_and_topics(self) -> None:
+        self.assertEqual(sort_edits_from_response([_MASKS], {"lines": [
+            {"n": 1, "section": []},
+        ]}), [])
+        edits = sort_edits_from_response([_MASKS], {"lines": [
+            {"n": 1, "section": "adjusted", "topic": {}, "highlight": False},
+        ]})
+        self.assertIsNone(edits[0]["topic"])
+
+    def test_bad_payload_fails(self) -> None:
+        with self.assertRaises(FeedbackError):
+            sort_edits_from_response([_MASKS], {})
 
 
 if __name__ == "__main__":
