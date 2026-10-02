@@ -1199,7 +1199,10 @@ def _expire_jobs(cur) -> None:
             error = CASE WHEN status = 'queued'
                 THEN 'The rewrite agent is not running.'
                 ELSE 'The rewrite took too long.' END
-        WHERE (status = 'queued' AND created_at < now() - interval '90 seconds')
+        WHERE (status = 'queued' AND created_at < now() - interval '90 seconds'
+               AND NOT EXISTS (
+                   SELECT 1 FROM patchnote_jobs active WHERE active.status = 'running'
+               ))
            OR (status = 'running' AND claimed_at < now() - interval '10 minutes')
         """
     )
@@ -1322,6 +1325,15 @@ def _edit_bullet(bullet_id: str, fields: dict[str, Any], *, denied: bool = False
                 raise BulletNotFound(bullet_id)
             if (row["status"] == "denied") != denied:
                 raise BulletNotOpen("Bullet is not denied" if denied else "Bullet is not open")
+            if denied:
+                # A denial that was rewritten already has its replacement in the note.
+                cur.execute(
+                    """SELECT 1 FROM patchnote_bullets
+                    WHERE supersedes = %s AND status IN ('pending', 'approved') LIMIT 1""",
+                    (bullet_id,),
+                )
+                if cur.fetchone() is not None:
+                    raise BulletNotOpen("A rewrite of this line is already in the note")
             if not fields:
                 return dict(row)
             assignments = ", ".join(f"{key} = %s" for key in fields)

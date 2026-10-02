@@ -474,9 +474,14 @@ class ReviewStorageTest(unittest.TestCase):
             row = db.drop_bullet("b")
             self.assertEqual(row["status"], "denied")
             self.assertIn("Removed in review.", self.cursor.execute.call_args.args[1])
-        self.cursor.fetchone.side_effect = [{"status": "denied"}, {"status": "pending"}]
+        self.cursor.fetchone.side_effect = [{"status": "denied"}, None, {"status": "pending"}]
         self.assertEqual(db.restore_bullet("b")["status"], "pending")
         self.assertEqual(self.cursor.execute.call_args.args[1], ("pending", None, None, "b"))
+
+    def test_restore_is_refused_when_a_rewrite_replaced_the_line(self) -> None:
+        self.cursor.fetchone.side_effect = [{"status": "denied"}, {"?column?": 1}]
+        with self.assertRaises(db.BulletNotOpen):
+            db.restore_bullet("b")
 
     def test_state_conflicts_and_missing_bullets(self) -> None:
         for operation, status in ((db.drop_bullet, "denied"), (db.restore_bullet, "approved")):

@@ -48,6 +48,11 @@ def _text(value) -> str:
     return str(value or "")
 
 
+def _cli_env() -> dict[str, str]:
+    """The CLI reads untrusted line text, so it never gets the staff key."""
+    return {key: value for key, value in os.environ.items() if key != "STAFF_KEY"}
+
+
 def run_job(prompt: str, schema: dict) -> dict:
     """Run in an empty directory and return an output or a short failure."""
     with tempfile.TemporaryDirectory(prefix="patchnotes-rewrite-") as directory:
@@ -64,7 +69,7 @@ def run_job(prompt: str, schema: dict) -> dict:
         ]
         try:
             result = subprocess.run(
-                command, input=prompt, capture_output=True, text=True,
+                command, input=prompt, capture_output=True, text=True, env=_cli_env(),
                 timeout=float(os.environ.get("PATCHNOTES_REWRITE_TIMEOUT", "420")),
             )
             diagnostics = _text(result.stdout) + "\n" + _text(result.stderr)

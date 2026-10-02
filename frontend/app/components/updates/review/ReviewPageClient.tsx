@@ -244,7 +244,10 @@ export default function ReviewPageClient() {
   useEffect(() => {
     if (!activeJob || !token) return;
     let cancelled = false;
+    let inFlight = false;
     const poll = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const result = await getReviewJob(token, activeJob.id);
         if (cancelled) return;
@@ -268,6 +271,8 @@ export default function ReviewPageClient() {
             ? reason.message
             : "Could not check the rewrite status.");
         }
+      } finally {
+        inFlight = false;
       }
     };
     const timer = window.setInterval(() => void poll(), 3000);
