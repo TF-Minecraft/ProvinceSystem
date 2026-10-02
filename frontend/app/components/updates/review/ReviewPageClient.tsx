@@ -117,6 +117,7 @@ export default function ReviewPageClient() {
     setError("");
     try {
       const updated = await patchReviewBullet(token, bullet.id, patch);
+      setLineError(bullet.id, "");
       setReview((current) => current
         ? {
           ...current,

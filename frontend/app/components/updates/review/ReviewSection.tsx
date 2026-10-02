@@ -30,7 +30,7 @@ export default function ReviewSection({
 }: ReviewSectionProps) {
   const open = filtering ? matchCount > 0 : section !== "technical";
   const summary = filtering
-    ? `${SECTION_LABELS[section]} (${bullets.length} matches)`
+    ? `${SECTION_LABELS[section]} (${bullets.length} ${bullets.length === 1 ? "match" : "matches"})`
     : `${SECTION_LABELS[section]} (${bullets.length})`;
 
   return (
