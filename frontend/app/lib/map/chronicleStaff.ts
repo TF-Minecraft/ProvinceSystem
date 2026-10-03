@@ -1,4 +1,4 @@
-import { liveMapHref } from "./chronicleDayRoute";
+import { mapBaseHref } from "./chronicleDayRoute";
 import type { MapId } from "@/app/components/map/types";
 
 /**
@@ -133,7 +133,7 @@ export function chronicleArchivePath(mapId: MapId): string {
 
 /** `/map/{map}/chronicle/staff` — the page these helpers back. */
 export function chronicleStaffHref(mapId: MapId): string {
-  return `${liveMapHref(mapId)}/chronicle/staff`;
+  return `${mapBaseHref(mapId)}/chronicle/staff`;
 }
 
 // ---------------------------------------------------------------------------

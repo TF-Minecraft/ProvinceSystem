@@ -34,7 +34,7 @@ export default function HubPage() {
         </p>
         <div className="hub-fade-delay mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
-            href="/map/main"
+            href="/map"
             className="inline-flex min-w-[8.5rem] items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-forest-deep)] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
           >
             Map

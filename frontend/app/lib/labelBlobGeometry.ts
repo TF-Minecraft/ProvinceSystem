@@ -444,37 +444,108 @@ function collectCandidates(
   return points.filter((_, index) => index % stride === 0);
 }
 
+/**
+ * Every pair of candidates, longest first (ties in the order the pairs were
+ * listed), handed out lazily from a heap. A 150-candidate blob has some
+ * 11,000 pairs, but a label usually fits within the first thousand or so, so
+ * sorting them all was most of the work of placing it. Built once per label
+ * and shared by the passes at each margin: the order does not depend on it.
+ */
+export class LongestFirstPairs {
+  readonly a: Uint32Array;
+  readonly b: Uint32Array;
+  readonly len: Float64Array;
+  private readonly heap: Uint32Array;
+  private heapSize: number;
+  /** The pairs handed out so far, in order. */
+  private readonly order: Uint32Array;
+  private handedOut = 0;
+
+  constructor(candidates: CandidatePoint[]) {
+    const n = candidates.length;
+    const count = (n * (n - 1)) / 2;
+    this.a = new Uint32Array(count);
+    this.b = new Uint32Array(count);
+    this.len = new Float64Array(count);
+    let k = 0;
+    for (let i = 0; i < n; i += 1) {
+      for (let j = i + 1; j < n; j += 1) {
+        this.a[k] = i;
+        this.b[k] = j;
+        this.len[k] = segmentPixelLength(
+          candidates[i].x,
+          candidates[i].y,
+          candidates[j].x,
+          candidates[j].y
+        );
+        k += 1;
+      }
+    }
+    this.heap = new Uint32Array(count);
+    for (let i = 0; i < count; i += 1) this.heap[i] = i;
+    this.heapSize = count;
+    for (let i = (count >> 1) - 1; i >= 0; i -= 1) this.siftDown(i);
+    this.order = new Uint32Array(count);
+  }
+
+  get count(): number {
+    return this.len.length;
+  }
+
+  /** The `k`th longest pair's index, or -1 past the last. */
+  at(k: number): number {
+    while (this.handedOut <= k && this.heapSize > 0) {
+      this.order[this.handedOut] = this.heap[0];
+      this.handedOut += 1;
+      this.heapSize -= 1;
+      this.heap[0] = this.heap[this.heapSize];
+      this.siftDown(0);
+    }
+    return k < this.handedOut ? this.order[k] : -1;
+  }
+
+  /** Strictly before: longer, or as long and listed earlier. */
+  private before(x: number, y: number): boolean {
+    const lx = this.len[x];
+    const ly = this.len[y];
+    return lx > ly || (lx === ly && x < y);
+  }
+
+  private siftDown(start: number): void {
+    const { heap } = this;
+    let i = start;
+    for (;;) {
+      const left = 2 * i + 1;
+      if (left >= this.heapSize) return;
+      const right = left + 1;
+      let best = left;
+      if (right < this.heapSize && this.before(heap[right], heap[left])) best = right;
+      if (!this.before(heap[best], heap[i])) return;
+      const swap = heap[i];
+      heap[i] = heap[best];
+      heap[best] = swap;
+      i = best;
+    }
+  }
+}
+
 function tryFindSegment(
   candidates: CandidatePoint[],
+  pairs: LongestFirstPairs,
   text: string,
   grid: ProvinceLabelGrid,
   dist: Float32Array,
   marginScale: number
 ): LabelEndpoints | null {
-  const pairs: Array<{ a: CandidatePoint; b: CandidatePoint; len: number }> =
-    [];
-
-  for (let i = 0; i < candidates.length; i += 1) {
-    for (let j = i + 1; j < candidates.length; j += 1) {
-      const a = candidates[i];
-      const b = candidates[j];
-      pairs.push({
-        a,
-        b,
-        len: segmentPixelLength(a.x, a.y, b.x, b.y),
-      });
-    }
-  }
-
-  pairs.sort((left, right) => right.len - left.len);
-
-  for (const pair of pairs) {
-    const fontSize = fontSizeForLabel(pair.len, text);
-    const margin = labelCorridorMargin(pair.len, fontSize) * marginScale;
-    if (
-      corridorClear(pair.a.x, pair.a.y, pair.b.x, pair.b.y, margin, grid, dist)
-    ) {
-      return { x1: pair.a.x, y1: pair.a.y, x2: pair.b.x, y2: pair.b.y };
+  for (let k = 0; k < pairs.count; k += 1) {
+    const index = pairs.at(k);
+    const pairLen = pairs.len[index];
+    const a = candidates[pairs.a[index]];
+    const b = candidates[pairs.b[index]];
+    const fontSize = fontSizeForLabel(pairLen, text);
+    const margin = labelCorridorMargin(pairLen, fontSize) * marginScale;
+    if (corridorClear(a.x, a.y, b.x, b.y, margin, grid, dist)) {
+      return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
     }
   }
 
@@ -676,8 +747,9 @@ export function insetLabelEndpoints(
   );
 
   if (candidates.length) {
+    const pairs = new LongestFirstPairs(candidates);
     for (const marginScale of [1, 0.75, 0.5]) {
-      const found = tryFindSegment(candidates, text, grid, dist, marginScale);
+      const found = tryFindSegment(candidates, pairs, text, grid, dist, marginScale);
       if (found) {
         return found;
       }

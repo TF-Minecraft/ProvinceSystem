@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
@@ -23,38 +23,57 @@ import {
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
 import {
-  computeRegionLabelGeometry,
+  computeRegionLabelGeometrySteps,
   filterRegionLabelsForMapObjects,
   LABEL_MAP_MODES,
+  type RegionLabelGeometryCache,
 } from "../lib/mapLabels";
 import {
   applyDrillStack,
   drillStackNames,
   getAncestryChain,
   getNextDrillTarget,
+  hasLandSubjects,
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, {
   type MapAccessGateReason,
 } from "./map/MapAccessGate";
-import MapCanvas from "./map/MapCanvas";
-import MapPageLayout from "./map/MapPageLayout";
-import MapToolbar from "./map/MapToolbar";
+import { provinceHoverBlocksRegionPick } from "../hooks/regionPick";
+import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
+import { mapModeLabel } from "./map/mapModes";
+import MapShell from "./map/shell/MapShell";
+import MapPlaque from "./map/shell/MapPlaque";
+import MapSearch from "./map/shell/MapSearch";
+import { MapModeBar, MapModeChips } from "./map/shell/MapModeBar";
+import MapZoomControls from "./map/shell/MapZoomControls";
+import MapLayersMenu, { type MapLayerToggle } from "./map/shell/MapLayersMenu";
+import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
+import { RealmPanelContent } from "./map/shell/RealmPanel";
+import { PlacePanelContent } from "./map/shell/PlacePanel";
+import { GuildPanelContent } from "./map/shell/GuildPanel";
 import {
-  MapDesktopSidePanel,
-  MapDrillStackBar,
-} from "./map/MapSidePanel";
-import NationDetailModal from "./map/NationDetailModal";
-import { buildRegionInfo } from "./map/regionInfo";
+  allGuilds,
+  findGuild,
+  guildKeyForId,
+  guildSeat,
+} from "@/app/lib/map/guildProfile";
+import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
+import { HistoryIcon } from "./map/shell/MapIcons";
 import type {
   CursorTooltip,
   HoverOverlay,
   MapId,
   MapMode,
   RegionInfo,
+  RegionRecord,
 } from "./map/types";
 import { mapFallbackSize, mapDisplayName } from "./map/types";
+import { buildMapSearchIndex, type MapSearchEntry } from "@/app/lib/map/mapSearch";
+import type { MapFocusInset } from "../hooks/useMapViewport";
+import type { MapRect } from "../lib/mapViewportMath";
+import { isTypingTarget } from "../lib/mapGestures";
 import { useAccessibleMaps } from "../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../hooks/useCharacterSessionToken";
 import { useCanEditMap } from "../hooks/useCanEditMap";
@@ -62,6 +81,7 @@ import {
   MapAccessError,
   fetchMapBlobUrl,
   fetchMapJson,
+  mapApiPathFromUrl,
   mapApiUrl,
   mapRequiresAuth,
   revokeMapBlobUrl,
@@ -83,42 +103,66 @@ import {
   type ProvinceIdGrid,
 } from "@/app/lib/map/chroniclePaint";
 
-const editTitlesLinkClass =
-  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] no-underline transition hover:brightness-110 hover:border-[var(--tfmc-accent)]";
+const actionLinkClass = "map-control h-9 px-2.5 text-xs no-underline";
 
 /**
- * The chronicle is the one feature nothing else on the map hints at, so this
- * sits beside the map's title in accent colours rather than reading as a peer
- * of "Edit titles". Without it a viewer has no way to discover the map has any
- * history at all.
+ * The chronicle is the one feature nothing else on the map hints at, so it
+ * keeps its own button on the name plate rather than hiding in the Layers
+ * menu. Without it a viewer has no way to discover the map has any history.
  */
-const reviewHistoryLinkClass =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_60%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_16%,transparent)] px-2.5 py-1.5 text-xs font-medium text-[var(--tfmc-cream)] no-underline transition hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_28%,transparent)]";
-
 function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
   return (
-    <Link href={chronicleStudioHref(mapId)} className={reviewHistoryLinkClass}>
-      <svg
-        viewBox="0 0 20 20"
-        fill="none"
-        aria-hidden
-        className="h-3.5 w-3.5 shrink-0 text-[var(--tfmc-accent)]"
-      >
-        <path
-          d="M10 5.5V10l2.75 1.75M3 10a7 7 0 1 0 2.2-5.1M3 3.5V7h3.5"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      Review History
+    <Link
+      href={chronicleStudioHref(mapId)}
+      className={actionLinkClass}
+      title="Review the map's history"
+    >
+      <HistoryIcon size={15} className="text-[var(--tfmc-stone)]" />
+      {/* The icon alone on a phone, where the top row is the search box's. */}
+      <span className="max-md:sr-only">History</span>
     </Link>
   );
 }
 
-const fitModeLabelClass = (active: boolean) =>
-  `text-xs transition ${active ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`;
+/** Modes whose tooltip describes the province under the pointer. */
+const PROVINCE_TOOLTIP_MODES = new Set<MapMode>([
+  "trade",
+  "prosperity",
+  "terrain",
+  "fertility",
+  "infestation",
+  "province",
+]);
+
+/**
+ * Desktop opens on the whole world. A phone held upright would show that as a
+ * small square with the screen empty below it, so there the map fills the
+ * screen top to bottom instead and the sides are a drag away.
+ */
+function useResponsiveFitMode(): FitMode {
+  const [fitMode, setFitMode] = useState<FitMode>("contain");
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 47.99rem)");
+    const apply = () => setFitMode(query.matches ? "cover" : "contain");
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+  return fitMode;
+}
+
+/** Room the desktop details panel and mode tray take from a "zoom to". */
+const DESKTOP_FOCUS_INSET: MapFocusInset = { left: 400, bottom: 110, top: 16, right: 80 };
+
+function focusInset(): MapFocusInset {
+  if (typeof window === "undefined") return {};
+  if (window.matchMedia("(min-width: 48rem)").matches) return DESKTOP_FOCUS_INSET;
+  // Phone: search and chips above, the details sheet below.
+  return { top: 150, bottom: Math.round(window.innerHeight * 0.45) };
+}
+
+/** Hover feeds a details card that no longer exists; selection replaced it. */
+const ignoreHoverRegionInfo = (_info: RegionInfo | null) => {};
 
 type MapViewerProps = {
   mapId: MapId;
@@ -134,6 +178,27 @@ type MapViewerProps = {
    */
   day?: string | null;
 };
+
+/**
+ * Name layouts already worked out this page view, by map, mode and the data
+ * they were laid out from. A handful: one per mode a reader flips between.
+ */
+const labelGeometryCache = new Map<string, RegionLabelGeometryCache | null>();
+const LABEL_GEOMETRY_CACHE_SIZE = 8;
+/** How long one slice of name layout may hold the page. */
+const LABEL_LAYOUT_SLICE_MS = 8;
+
+/**
+ * Phones and tablets: a touch screen as the main pointer. They pick on tap,
+ * where the half-size pick map's 2 px steps do not show, and they are the
+ * devices short of memory.
+ */
+/** Rows of the pick map copied into its canvas per frame. */
+const PICK_COPY_BAND = 256;
+
+function prefersSmallPickMap(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+}
 
 const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const chronicle = day !== null;
@@ -161,7 +226,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const [accessChecked, setAccessChecked] = useState(mapId === "main");
 
   const [mapType, setMapType] = useState<MapMode>("nation");
-  const [fitMode, setFitMode] = useState<FitMode>("contain");
+  const fitMode = useResponsiveFitMode();
   const [installationsVisible, setInstallationsVisible] = useState(true);
   const [supplyLinksVisible, setSupplyLinksVisible] = useState(true);
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
@@ -170,12 +235,27 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const [hoveredFortZoc, setHoveredFortZoc] = useState<HoverOverlay | null>(
     null
   );
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const [regionInfo, setRegionInfo] = useState<RegionInfo | null>(null);
-  const [modalRegionInfo, setModalRegionInfo] = useState<RegionInfo | null>(
-    null
+  /** The region under the pointer. Cleared as soon as the pointer leaves it. */
+  const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
+  /**
+   * The region whose details are open. Separate from hover on purpose: it
+   * survives the pointer moving on, and only an explicit choice (another
+   * click, a link in the panel, search, Escape, a mode change) replaces it.
+   */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** A clicked marker (settlement, installation, battle); exclusive with `selectedId`. */
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  /** A guild's card, `factionId/guildId`; exclusive with the two above. */
+  const [selectedGuildKey, setSelectedGuildKey] = useState<string | null>(null);
+  /** One card at a time: whatever opens clears the rest. */
+  const select = useCallback(
+    (next: { region?: string; place?: string; guild?: string } = {}) => {
+      setSelectedId(next.region ?? null);
+      setSelectedPlaceId(next.place ?? null);
+      setSelectedGuildKey(next.guild ?? null);
+    },
+    []
   );
-  const [modalOpen, setModalOpen] = useState(false);
   const [drillStack, setDrillStack] = useState<DrillLayer[]>([]);
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
   const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(
@@ -184,6 +264,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportControlsRef = useRef<MapViewportControls | null>(null);
   const viewportCoordsRef = useRef<MapPickViewport | null>(null);
   const lastProvinceIdRef = useRef<number | null>(null);
 
@@ -244,6 +325,35 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     day,
   });
   /**
+   * Guilds are described in the realm data (`/data/nation`), which only the
+   * realm map loads. Other modes that show guilds (the Guilds map, a guild
+   * card opened from search) read it from here, fetched once per map.
+   */
+  const [guildRealmData, setGuildRealmData] = useState<{
+    mapId: MapId;
+    data: RegionRecord;
+  } | null>(null);
+  const needsGuildRealmData = day === null && mapType !== "nation";
+  useEffect(() => {
+    if (!needsGuildRealmData || guildRealmData?.mapId === mapId) return;
+    let cancelled = false;
+    void fetchMapJson<RegionRecord>(`/${mapId}/data/nation`, { sessionToken: authToken })
+      .then((data) => {
+        if (!cancelled) setGuildRealmData({ mapId, data });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsGuildRealmData, guildRealmData, mapId, authToken]);
+  const guildData: RegionRecord | null =
+    mapType === "nation"
+      ? regionData
+      : guildRealmData?.mapId === mapId
+        ? guildRealmData.data
+        : null;
+
+  /**
    * `prosperity`, `infrastructure` and `infestation` under a stored day. These are drawn on the
    * live map as `/{mapId}/mapdata/{mode}`, a raster regenerated from today's
    * data with no per-day variant, so the day page paints them itself from that
@@ -281,17 +391,36 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const mapMarkers = useMemo(() => {
     if (!isMarkerMapMode(mapType)) return [];
     const battleMarkers = warBattleMarkersFromWars(wars);
+    // Provinces a guild (not a realm's own) is based in: their settlements
+    // are guild seats.
+    const guildSeatProvinces = new Set(
+      allGuilds(regionData)
+        .map((guild) => guild.homeProvince)
+        .filter((province): province is number => province !== null)
+    );
     return [
-      ...settlements.map((settlement) =>
-        settlementToMapMarker({
-          ...settlement,
-          kind: visibleSettlementKind(
-            settlement.kind,
-            settlement.faction_id,
-            mapObjects
-          ),
-        })
-      ),
+      ...settlements.map((settlement) => {
+        const kind = visibleSettlementKind(
+          settlement.kind,
+          settlement.faction_id,
+          mapObjects
+        );
+        // Sized by what the place is, not how many live there: a big
+        // village no longer outshouts a small capital.
+        const markerSize =
+          kind === "faction_capital"
+            ? "large"
+            : kind === "guild_capital" ||
+                (typeof settlement.province_id === "number" &&
+                  guildSeatProvinces.has(settlement.province_id))
+              ? "medium"
+              : "small";
+        return {
+          ...settlementToMapMarker({ ...settlement, kind }),
+          markerSize,
+          weight: settlement.population ?? 0,
+        } as const;
+      }),
       ...(installationsVisible
         ? installations.map((installation) =>
             addInstallationLinkDetails(
@@ -311,9 +440,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     installationsVisible,
     mapType,
     mapObjects,
+    regionData,
   ]);
 
-  const labelGeometry = useMemo(() => {
+  /**
+   * What the current mode's names are laid out from, and the content key a
+   * finished layout is cached under; null while something is still loading.
+   */
+  const labelJob = useMemo(() => {
     if (!LABEL_MAP_MODES.has(mapType)) return null;
     if (!regionData || !neighbors || !centroids) return null;
     const needsTitleLayers =
@@ -324,18 +458,24 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (needsTitleLayers && !titleLayers) {
       return null;
     }
-    return computeRegionLabelGeometry(
+    // Switching back to a mode fetches the same data again as a new object;
+    // keyed by content, a mode already seen this page view reuses its layout.
+    const key = [
+      mapId,
       mapType,
-      regionData,
-      titleLayers,
-      neighbors,
-      centroids,
-      {
+      labelGrid ? "grid" : "",
+      labelNeighbors ? "label-neighbours" : "",
+      JSON.stringify(regionData),
+      needsTitleLayers ? JSON.stringify(titleLayers) : "",
+    ].join("\u0000");
+    const start = () =>
+      computeRegionLabelGeometrySteps(mapType, regionData, titleLayers, neighbors, centroids, {
         grid: labelGrid ?? undefined,
         labelNeighbors: labelNeighbors ?? neighbors,
-      }
-    );
+      });
+    return { key, start };
   }, [
+    mapId,
     mapType,
     regionData,
     titleLayers,
@@ -344,6 +484,44 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     centroids,
     labelGrid,
   ]);
+
+  // A layout not yet cached is worked out in slices of a few milliseconds,
+  // with the browser free between them: done in one go, a first visit to the
+  // counties froze the page for a quarter of a second.
+  const [laidOut, setLaidOut] = useState<{
+    key: string;
+    geometry: RegionLabelGeometryCache | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!labelJob || labelGeometryCache.has(labelJob.key)) return;
+    const steps = labelJob.start();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const slice = () => {
+      const until = performance.now() + LABEL_LAYOUT_SLICE_MS;
+      let step = steps.next();
+      while (!step.done && performance.now() < until) step = steps.next();
+      if (!step.done) {
+        timer = setTimeout(slice, 0);
+        return;
+      }
+      labelGeometryCache.set(labelJob.key, step.value);
+      if (labelGeometryCache.size > LABEL_GEOMETRY_CACHE_SIZE) {
+        labelGeometryCache.delete(labelGeometryCache.keys().next().value!);
+      }
+      setLaidOut({ key: labelJob.key, geometry: step.value });
+    };
+    slice();
+    return () => {
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [labelJob]);
+  const labelGeometry = !labelJob
+    ? null
+    : labelGeometryCache.has(labelJob.key)
+      ? labelGeometryCache.get(labelJob.key)!
+      : laidOut?.key === labelJob.key
+        ? laidOut.geometry
+        : null;
 
   const regionLabels = useMemo(
     () => filterRegionLabelsForMapObjects(labelGeometry, mapType, mapObjects),
@@ -406,8 +584,47 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     // `day` only gates the fetch: the grid is geometry, shared by every day.
   }, [mapId, authToken, day]);
 
+  /**
+   * The same quarter-scale province grid on the live map, for the modes whose
+   * tooltip describes the province under the pointer. Hover then reads the id
+   * locally instead of asking the server on every mouse move, which made the
+   * trade tooltip flicker between the region and the province as answers
+   * landed. Fetched on first use and kept for the map.
+   */
+  const [liveProvinceGrid, setLiveProvinceGrid] = useState<{
+    mapId: MapId;
+    grid: ProvinceIdGrid;
+  } | null>(null);
+  const needsProvinceGrid = day === null && PROVINCE_TOOLTIP_MODES.has(mapType);
+  useEffect(() => {
+    if (!needsProvinceGrid || liveProvinceGrid?.mapId === mapId) return;
+    const controller = new AbortController();
+    void fetchProvinceIdGridQ4(mapId, authToken, controller.signal)
+      .then((grid) => setLiveProvinceGrid({ mapId, grid }))
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          console.error("Failed to load province grid:", err);
+        }
+      });
+    return () => controller.abort();
+  }, [needsProvinceGrid, liveProvinceGrid, mapId, authToken]);
+  const hoverProvinceGrid =
+    chronicleGrid ?? (liveProvinceGrid?.mapId === mapId ? liveProvinceGrid.grid : null);
+
   const mapCanvasMounted =
     !loading && geometryReady;
+
+  /**
+   * Once a map has been shown it stays on screen. Switching mode only swaps
+   * its overlays: `useMapModeData` empties the region data while the next
+   * mode loads, so nothing stale is drawn meanwhile, and the camera keeps its
+   * place. Only the first load of a map waits behind "Loading map…".
+   */
+  const [mapShownFor, setMapShownFor] = useState<MapId | null>(null);
+  useEffect(() => {
+    if (mapCanvasMounted) setMapShownFor(mapId);
+  }, [mapCanvasMounted, mapId]);
+  const mapShown = mapCanvasMounted || mapShownFor === mapId;
 
   // Pick pixels are read from the hidden canvas inside MapCanvas. That node
   // does not exist until loading/geometry finish, so this effect must wait
@@ -435,7 +652,20 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
-      const path = `/${mapId}/mapdata/${mapType}`;
+      // The raster modes (prosperity, terrain, ...) hover provinces from the
+      // province grid and never pick a region, so their full-size image would
+      // be downloaded and decoded only to sit unread. Clear the last mode's
+      // instead, so nothing (a pin's realm lookup) reads a stale region.
+      if (provinceHoverBlocksRegionPick(mapType)) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+
+      // Phones get a half-size pick map: the full one is a 6400 px canvas,
+      // over iOS Safari's canvas limit and enough, with the map, for Safari to
+      // run out of memory and reload the page over and over.
+      const pickScale = prefersSmallPickMap() ? 1 : 0;
+      const path = `/${mapId}/mapdata/${mapType}${pickScale ? `?scale=${pickScale}` : ""}`;
       let src = mapApiUrl(path);
       if (mapRequiresAuth(mapId, maps) && authToken) {
         try {
@@ -452,19 +682,57 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         return;
       }
 
+      const paint = async (source: CanvasImageSource, width: number, height: number) => {
+        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
+        // only touch the dimensions when the pick image actually changed size.
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        // A band of rows per frame, each cleared just before it is drawn (the
+        // map's transparent pixels must not keep the last mode's ids): the
+        // whole 6400 px map cleared and drawn at once held the page for
+        // ~200 ms; a 256-row band takes a few.
+        for (let y = 0; y < height; y += PICK_COPY_BAND) {
+          if (cancelled) return;
+          const rows = Math.min(PICK_COPY_BAND, height - y);
+          ctx.clearRect(0, y, width, rows);
+          ctx.drawImage(source, 0, y, width, rows, 0, y, width, rows);
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+      };
+
+      // Decoded off the main thread. Drawn straight from an <img>, the 6400 px
+      // pick map was decoded inside drawImage, holding the page for about a
+      // third of a second on every switch to a region mode. Colours exactly as
+      // stored: they are read back as region ids.
+      try {
+        const res = await fetch(src, { credentials: "omit" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        // Premultiplied, as the canvas stores it anyway (pick pixels are fully
+        // opaque or fully transparent, so no region's colour changes): left
+        // unpremultiplied, the copy into the canvas took nearly three times as long.
+        const bitmap = await createImageBitmap(await res.blob(), {
+          colorSpaceConversion: "none",
+        });
+        if (cancelled) {
+          bitmap.close();
+          return;
+        }
+        await paint(bitmap, bitmap.width, bitmap.height);
+        bitmap.close();
+        return;
+      } catch {
+        if (cancelled) return;
+        // Fall through to the plain image path below.
+      }
+
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
-        // only touch the dimensions when the pick image actually changed size.
-        if (canvas.width !== img.width || canvas.height !== img.height) {
-          canvas.width = img.width;
-          canvas.height = img.height;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        void paint(img, img.width, img.height);
       };
       img.onerror = () => {
         console.error("Failed to load pick map image:", src);
@@ -475,9 +743,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setDrillStack([]);
     setHoveredOverlay(null);
     setHoveredFortZoc(null);
-    setRegionInfo(null);
-    setModalOpen(false);
-    setModalRegionInfo(null);
+    setSelectedId(null);
     // `/mapdata/` is regenerated from today's data and has no per-day variant,
     // so a stored day must not download it — the effect below paints the pick
     // canvas from that day's own ownership instead.
@@ -573,7 +839,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     regionData,
   ]);
 
-  const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable, pickRegionAtEvent } = useMapHover({
+  const {
+    onMouseMove,
+    onMouseLeave: onHoverLeave,
+    isHoveringClickable,
+    pickRegionAtEvent,
+    pickMarkerAtEvent,
+  } = useMapHover({
     mapId,
     mapType,
     loading,
@@ -585,22 +857,23 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setCursorTooltip,
     setHoveredOverlay,
     setHoveredFortZoc,
-    setRegionInfo,
-    setSelectedRegionId,
+    setRegionInfo: ignoreHoverRegionInfo,
+    setSelectedRegionId: setHoveredRegionId,
     getHoverRegion,
     mapDisplayName: displayName,
     mapObjects,
     markers: mapMarkers,
+    labels: regionLabels,
     forts,
     setHoveredMarkerId,
     day,
-    chronicleGrid,
+    chronicleGrid: hoverProvinceGrid,
   });
 
   // Paint mode owns left-click and pointer tracking; the pick canvas is
   // pointer-events-none while it is on, but guard here too so no stale hover
   // state survives the switch.
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseMove = (event: React.MouseEvent<Element>) => {
     if (paint.enabled) return;
     onMouseMove(event);
   };
@@ -612,7 +885,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setCursorTooltip(null);
     setHoveredOverlay(null);
     setHoveredFortZoc(null);
-    setRegionInfo(null);
     lastProvinceIdRef.current = null;
     // onHoverLeave is stable enough for this one-shot cleanup.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -623,6 +895,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     // mode-data effect re-running to repaint them.
     if (mode === mapType) return;
     resetMapObjects();
+    select();
+    // The map stays mounted across modes, so hover from the old mode has to
+    // be cleared here rather than by a remount.
+    setHoveredOverlay(null);
+    setHoveredFortZoc(null);
+    setCursorTooltip(null);
     setMapType(mode);
   }
 
@@ -684,32 +962,42 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   };
 
-  const handleMapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMapClick = (event: React.MouseEvent<Element>) => {
     if (paint.enabled) return;
     if (event.button !== 0) return;
     if (!regionData) return;
 
+    // Pins sit above the land: a click on one opens its place card.
+    const marker = event.ctrlKey || event.metaKey ? null : pickMarkerAtEvent(event);
+    if (marker) {
+      select({ place: marker.id });
+      return;
+    }
+
     const regionId = pickRegionAtEvent(event);
-    if (!regionId) return;
+    if (!regionId) {
+      // Clicking open sea or unclaimed land puts the details away, as on any
+      // map site; Ctrl-click there is still a no-op.
+      if (!event.ctrlKey && !event.metaKey) {
+        clearSelection();
+      }
+      return;
+    }
 
     if (event.ctrlKey || event.metaKey) {
       handleDrill(regionId);
       return;
     }
 
-    const region = regionData[regionId];
-    if (!region) return;
-
-    setModalRegionInfo(
-      buildRegionInfo(
-        regionId,
-        region,
-        mapType,
-        displayName,
-        regionData
-      )
-    );
-    setModalOpen(true);
+    if (!regionData[regionId]) return;
+    // The Guilds map's areas are keyed by the guild that dominates them.
+    const guildKey = mapType === "trade" ? guildKeyForId(guildData, regionId) : null;
+    if (guildKey) {
+      select({ guild: guildKey });
+      return;
+    }
+    select({ region: regionId });
+    focusOnRegion(regionId);
   };
 
   const handleMouseLeave = () => {
@@ -718,10 +1006,258 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setCursorTooltip(null);
     setHoveredOverlay(null);
     setHoveredFortZoc(null);
-    setRegionInfo(null);
-    setSelectedRegionId(null);
+    setHoveredRegionId(null);
     lastProvinceIdRef.current = null;
   };
+
+  /** Open `regionId`'s own subject layer, and every layer above it. */
+  const openSubjects = useCallback(
+    (regionId: string) => {
+      if (!regionData?.[regionId]?.subjects?.length) return;
+      const stack: DrillLayer[] = getAncestryChain(regionId, regionData)
+        .reverse()
+        .map((id) => ({
+          regionId: id,
+          name: regionData[id]?.name || id,
+          rgb: regionData[id]?.rgb ?? "128,128,128",
+        }));
+      applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
+      setDrillStack(stack);
+    },
+    [regionData, resetDrillVisibility, drillDownRegion]
+  );
+
+  /**
+   * Focus the map on a selected region, as CK3 does with a realm: one with
+   * subjects opens to show them, anything else opens the realms above it so
+   * it is drawn as itself. The canvas dims the rest of the world.
+   */
+  const focusOnRegion = useCallback(
+    (regionId: string) => {
+      if (!regionData?.[regionId]) return;
+      const chain = getAncestryChain(regionId, regionData);
+      const open = hasLandSubjects(regionId, regionData) ? chain : chain.slice(1);
+      const stack: DrillLayer[] = open.reverse().map((id) => ({
+        regionId: id,
+        name: regionData[id]?.name || id,
+        rgb: regionData[id]?.rgb ?? "128,128,128",
+      }));
+      const unchanged =
+        stack.length === drillStack.length &&
+        stack.every((layer, index) => layer.regionId === drillStack[index].regionId);
+      if (unchanged) return;
+      applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
+      setDrillStack(stack);
+    },
+    [regionData, drillStack, resetDrillVisibility, drillDownRegion]
+  );
+
+  /** Close the details and put the map back as it was. */
+  const clearSelection = useCallback(() => {
+    select();
+    setDrillStack([]);
+    if (regionData) resetDrillVisibility(regionData);
+  }, [select, regionData, resetDrillVisibility]);
+
+  const focusRect = useCallback((rect: MapRect) => {
+    viewportControlsRef.current?.focusMapRect(rect, focusInset());
+  }, []);
+
+  const focusRegion = useCallback(
+    (regionId: string) => {
+      const box = regionData?.[regionId]?.overlay;
+      if (box) focusRect(box);
+    },
+    [regionData, focusRect]
+  );
+
+  const focusPoint = useCallback(
+    (mapX: number, mapY: number) => {
+      focusRect({ x: mapX - 80, y: mapY - 80, w: 160, h: 160 });
+    },
+    [focusRect]
+  );
+
+  /** A panel link or search result: show it, select it, frame it. */
+  const selectRegion = useCallback(
+    (regionId: string, options: { focus?: boolean } = {}) => {
+      if (!regionData?.[regionId]) return;
+      const guildKey = mapType === "trade" ? guildKeyForId(guildData, regionId) : null;
+      if (guildKey) {
+        select({ guild: guildKey });
+      } else {
+        select({ region: regionId });
+        focusOnRegion(regionId);
+      }
+      if (options.focus ?? true) focusRegion(regionId);
+    },
+    [regionData, focusOnRegion, focusRegion, mapType, guildData, select]
+  );
+
+  /**
+   * A realm, from a guild card or a place card in any mode: the realm card
+   * only exists on the realm map, so switch to it first and open the realm
+   * once its data has loaded.
+   */
+  const [pendingRealmId, setPendingRealmId] = useState<string | null>(null);
+  const openRealm = useCallback(
+    (regionId: string) => {
+      if (mapType === "nation") {
+        selectRegion(regionId);
+        return;
+      }
+      setPendingRealmId(regionId);
+      handleMapTypeChange("nation");
+    },
+    // handleMapTypeChange is redefined each render but only reads current state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mapType, selectRegion]
+  );
+  useEffect(() => {
+    if (!pendingRealmId || mapType !== "nation" || !regionData?.[pendingRealmId]) return;
+    // Wait for the realm map's layers too: the data lands first, and opening
+    // a realm's subjects before its layers exist would open nothing.
+    if (!mapObjects.some((obj) => (obj.baseId ?? obj.id) === pendingRealmId)) return;
+    selectRegion(pendingRealmId);
+    setPendingRealmId(null);
+  }, [pendingRealmId, mapType, regionData, mapObjects, selectRegion]);
+
+  const searchEntries = useMemo(
+    () =>
+      buildMapSearchIndex({
+        regionData,
+        tierLabel: mapModeLabel(mapType),
+        settlements,
+        installations,
+      }),
+    [regionData, mapType, settlements, installations]
+  );
+
+  const handleSearchSelect = useCallback(
+    (entry: MapSearchEntry) => {
+      if (entry.kind === "region") {
+        selectRegion(entry.regionId);
+      } else if (entry.kind === "guild") {
+        select({ guild: entry.guildKey });
+        const guild = findGuild(guildData, entry.guildKey);
+        const seat = guild ? guildSeat(guild, settlements) : null;
+        if (seat && typeof seat.map_x === "number" && typeof seat.map_y === "number") {
+          focusPoint(seat.map_x, seat.map_y);
+        }
+      } else {
+        const markerId = placeMarkerIdForSearchKey(entry.key);
+        if (markerId) {
+          select({ place: markerId });
+        }
+        focusPoint(entry.mapX, entry.mapY);
+      }
+    },
+    [selectRegion, focusPoint, select, guildData, settlements]
+  );
+
+  /**
+   * The selected region's `_hover` crop, kept lit under the details panel.
+   * Resolved like hover is, through the visible ancestor, so a subject inside
+   * a closed realm lights its overlord until its layer is opened.
+   */
+  const focusRealmId = drillStack[drillStack.length - 1]?.regionId ?? null;
+  /**
+   * The region kept lit for the open card. On the trade map a click opens the
+   * card of the guild that dominates the area, and the areas are keyed by
+   * that guild's id, so the guild's card lights its areas.
+   */
+  const litRegionId =
+    selectedId ??
+    (mapType === "trade" && selectedGuildKey
+      ? selectedGuildKey.slice(selectedGuildKey.indexOf("/") + 1)
+      : null);
+  const selectedOverlay = useMemo<HoverOverlay | null>(() => {
+    if (chronicle || !litRegionId || !regionData?.[litRegionId]) return null;
+    // An opened realm is lit by the focus itself; its own crop would cover
+    // the subjects it was opened to show.
+    if (litRegionId === focusRealmId) return null;
+    const target = getHoverRegion(mapType, mapId, litRegionId, regionData);
+    return target.imagePath
+      ? { url: target.imagePath, overlay: target.overlay }
+      : null;
+    // mapObjects: the visible ancestor changes when layers open and close.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chronicle, litRegionId, regionData, getHoverRegion, mapType, mapId, mapObjects, focusRealmId]);
+
+  /**
+   * What the canvas keeps lit. An opened realm: its whole shape, with its own
+   * layers drawn inside. Otherwise the selected region alone.
+   */
+  const mapFocus = useMemo<MapFocus | null>(() => {
+    if (chronicle || !regionData) return null;
+    if (focusRealmId) {
+      const shape = mapObjects.find(
+        (obj) => !obj.nested && (obj.baseId ?? obj.id) === focusRealmId
+      );
+      if (!shape) return null;
+      const objects = mapObjects.filter(
+        (obj) =>
+          obj.visible &&
+          getAncestryChain(obj.baseId ?? obj.id, regionData).includes(focusRealmId)
+      );
+      return {
+        shapePath: `/${mapId}/regions/${mapType}/${shape.path}`,
+        overlay: shape.overlay,
+        objects,
+        lit: selectedId === focusRealmId,
+      };
+    }
+    if (!selectedOverlay) return null;
+    const path = mapApiPathFromUrl(selectedOverlay.url);
+    return {
+      shapePath: path.endsWith("_hover") ? path.slice(0, -"_hover".length) : path,
+      overlay: selectedOverlay.overlay,
+      objects: [],
+      lit: true,
+    };
+  }, [chronicle, regionData, focusRealmId, mapObjects, mapId, mapType, selectedOverlay, selectedId]);
+
+  // Escape puts the details away, unless it is closing something in a field.
+  useEffect(() => {
+    if (!selectedId && !selectedPlaceId && !selectedGuildKey) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || isTypingTarget(event.target)) return;
+      clearSelection();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedId, selectedPlaceId, selectedGuildKey, clearSelection]);
+
+  const selectedMarker = useMemo(
+    () => (selectedPlaceId ? mapMarkers.find((m) => m.id === selectedPlaceId) ?? null : null),
+    [selectedPlaceId, mapMarkers]
+  );
+  // A pin that is no longer drawn (another mode, a stored day without it)
+  // closes its card.
+  useEffect(() => {
+    if (selectedPlaceId && mapMarkers.length > 0 && !selectedMarker) setSelectedPlaceId(null);
+  }, [selectedPlaceId, selectedMarker, mapMarkers.length]);
+  const selectedPlace = useMemo(
+    () =>
+      selectedMarker
+        ? buildPlaceProfile(selectedMarker, settlements, installations, regionData)
+        : null,
+    [selectedMarker, settlements, installations, regionData]
+  );
+
+  const selectedGuild = useMemo(
+    () => (selectedGuildKey ? findGuild(guildData, selectedGuildKey) : null),
+    [selectedGuildKey, guildData]
+  );
+  useEffect(() => {
+    if (selectedGuildKey && guildData && !selectedGuild) setSelectedGuildKey(null);
+  }, [selectedGuildKey, guildData, selectedGuild]);
+
+  // A selection the current data no longer has (a stored day without that
+  // realm, a mode reload) closes rather than showing an empty panel.
+  useEffect(() => {
+    if (selectedId && regionData && !regionData[selectedId]) setSelectedId(null);
+  }, [selectedId, regionData]);
 
   if (!accessChecked) {
     return (
@@ -767,7 +1303,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         <button
           type="button"
           onClick={() => handleMapTypeChange("nation")}
-          className={editTitlesLinkClass}
+          className={actionLinkClass}
         >
           Back to the nation map
         </button>
@@ -803,7 +1339,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         <button
           type="button"
           onClick={() => handleMapTypeChange("nation")}
-          className={editTitlesLinkClass}
+          className={actionLinkClass}
         >
           Back to the nation map
         </button>
@@ -811,12 +1347,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   }
 
-  // Do not render the map until region data is in hand. Mounting MapCanvas
-  // early (to start the base-map download sooner) meant the region overlays
-  // rendered before regionData settled, and a failed overlay request is made
-  // permanent by MapCanvas's onError handler setting display:none — borders
-  // then stay invisible until something forces a remount.
-  if (!mapCanvasMounted) {
+  // Do not render the map until region data is first in hand. Mounting
+  // MapCanvas early (to start the base-map download sooner) meant the region
+  // overlays rendered before regionData settled, and a failed overlay request
+  // is made permanent by MapCanvas's onError handler setting display:none —
+  // borders then stay invisible until something forces a remount. Later mode
+  // changes are safe: overlays are keyed by mode, and the list is empty until
+  // the new mode's data lands.
+  if (!mapShown) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
         <p className="text-lg font-medium text-[var(--tfmc-cream)]">
@@ -826,193 +1364,245 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   }
 
-  return (
-    <>
-      <MapPageLayout
-        mapDisplayName={displayName}
-        headerAction={
-          chronicle ? null : (
-            <div className="flex shrink-0 flex-col items-start gap-2">
-              {isArchivedMap(mapId, maps) ? (
-                <div className="flex shrink-0 flex-wrap items-center justify-start gap-2">
-                  <Link href={liveMapHref("main")} className={reviewHistoryLinkClass}>
-                    Live map
-                  </Link>
-                  {showReviewHistory(mapId, maps) ? (
-                    <ReviewHistoryLink mapId={mapId} />
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex shrink-0 flex-wrap items-center justify-start gap-2">
-                  {/* Shown to everyone, and shown even when this map has captured
-                      no days yet — the studio says so itself, which is a better
-                      answer than an entry point that silently is not there. Costs
-                      no request: the live map must not pay for the chronicle. */}
-                  <ReviewHistoryLink mapId={mapId} />
-                  <MapArchiveMenu maps={maps} linkClass={reviewHistoryLinkClass} />
-                </div>
-              )}
-              {/* The editor writes to the *live* map. Reaching it from a stored
-                  day would invite editing today's titles while looking at last
-                  year's — hence the whole block being hidden in chronicle mode. */}
-              {canEdit && !canEditLoading ? (
-                <Link href={editorUrl(mapId)} className={editTitlesLinkClass}>
-                  Edit titles
-                </Link>
-              ) : null}
-            </div>
-          )
-        }
-        mapModeSelectorMobile={
-          <MapToolbar
-            mapId={mapId}
-            mapType={mapType}
-            onMapTypeChange={handleMapTypeChange}
-            variant="bar"
-          />
-        }
-        mapModeSelectorDesktop={
-          <MapToolbar
-            mapId={mapId}
-            mapType={mapType}
-            onMapTypeChange={handleMapTypeChange}
-            variant="sidebar"
-          />
-        }
-        drillStackBar={
-          <MapDrillStackBar
-            drillStack={drillStack}
-            onSelectLayer={handleDrillToLayer}
-            onResetDrill={handleResetDrill}
-          />
-        }
-        desktopSidePanel={
-          <MapDesktopSidePanel
-            mapId={mapId}
-            mapType={mapType}
-            regionInfo={regionInfo}
-            regionData={regionData}
-            sessionToken={authToken}
-          />
-        }
-        fitModeToggle={
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <span className={fitModeLabelClass(fitMode === "cover")}>Width</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={fitMode === "contain"}
-                aria-label="Toggle between filling the width and fitting the height"
-                onClick={() =>
-                  setFitMode((mode) => (mode === "cover" ? "contain" : "cover"))
-                }
-                className="relative h-4 w-8 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] transition-colors"
-              >
-                <span
-                  className="absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-[var(--tfmc-cream)]"
-                  style={{
-                    transform: `translateX(${fitMode === "contain" ? 16 : 0}px)`,
-                    transition: "transform 150ms ease",
-                  }}
-                />
-              </button>
-              <span className={fitModeLabelClass(fitMode === "contain")}>Height</span>
-            </div>
-            {day === null && isMarkerMapMode(mapType) ? (
-              <div className="space-y-1.5 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={installationsVisible}
-                    onChange={(event) =>
-                      setInstallationsVisible(event.target.checked)
-                    }
-                  />
-                  Installations
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={supplyLinksVisible}
-                    onChange={(event) =>
-                      setSupplyLinksVisible(event.target.checked)
-                    }
-                  />
-                  Supply links
-                </label>
-              </div>
-            ) : null}
-          </div>
-        }
-        paintPanel={chronicle ? null : <PaintToolbar paint={paint} />}
-      >
-        <MapCanvas
-          mapId={mapId}
-          mapType={mapType}
-          sessionToken={authToken}
-          canvasRef={canvasRef}
-          viewportCoordsRef={viewportCoordsRef}
-          mapObjects={mapObjects}
-          hoveredOverlay={hoveredOverlay}
-          hoveredFortZoc={hoveredFortZoc}
-          cursorTooltip={cursorTooltip}
-          labels={regionLabels}
-          markers={mapMarkers}
-          wars={wars}
-          hubLinks={
-            day === null && installationsVisible && supplyLinksVisible
-              ? hubLinks
-              : []
-          }
-          centroids={centroids}
-          hoveredMarkerId={hoveredMarkerId}
-          hoveredNationId={selectedRegionId}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseLeave={handleMouseLeave}
-          onClick={handleMapClick}
-          isHoveringClickable={isHoveringClickable}
-          fill
-          fitMode={fitMode}
-          day={day}
-          paint={chronicle ? undefined : paint}
-          provinceOverlay={
-            usesChronicleProvincePaint(mapType, day) ? (
-              <ChronicleProvincePaintLayer
-                grid={chronicleGrid}
-                lut={provincePaint.lut}
-              />
-            ) : undefined
-          }
-          regionOverlay={
-            chronicle ? (
-              <ChronicleOwnershipLayer
-                grid={chronicleGrid}
-                regionData={regionData}
-                mapObjects={mapObjects}
-                // `selectedRegionId` is the region the pick canvas resolved,
-                // but it is not cleared on a miss — `hoveredOverlay` is, and it
-                // is set from the same resolution, so it is the honest gate for
-                // "is something hovered right now".
-                hoveredRegionId={hoveredOverlay ? selectedRegionId : null}
-                mapW={mapFallbackSize(mapId)}
-                mapH={mapFallbackSize(mapId)}
-              />
-            ) : undefined
-          }
-        />
-      </MapPageLayout>
+  const archived = isArchivedMap(mapId, maps);
+  const markerLayers = day === null && isMarkerMapMode(mapType);
+  const layerToggles: MapLayerToggle[] = [];
+  if (markerLayers) {
+    layerToggles.push(
+      {
+        id: "installations",
+        label: "Installations",
+        hint: "Forts, ports, airfields and stations",
+        checked: installationsVisible,
+        onChange: setInstallationsVisible,
+      },
+      {
+        id: "supply-links",
+        label: "Supply links",
+        hint: "Trade routes between supply hubs",
+        checked: supplyLinksVisible,
+        onChange: setSupplyLinksVisible,
+      }
+    );
+  }
+  const desktopLayerToggles: MapLayerToggle[] = chronicle
+    ? layerToggles
+    : [
+        ...layerToggles,
+        {
+          id: "paint",
+          label: "War planning",
+          hint: "Draw arrows, labels and objects over the map",
+          checked: paint.enabled,
+          onChange: paint.setEnabled,
+        },
+      ];
 
-      <NationDetailModal
-        open={modalOpen}
+  const plaqueActions = chronicle ? null : (
+    <>
+      {archived ? (
+        <Link href="/map" className={actionLinkClass}>
+          Live map
+        </Link>
+      ) : null}
+      {!archived || showReviewHistory(mapId, maps) ? (
+        <ReviewHistoryLink mapId={mapId} />
+      ) : null}
+      {/* The editor writes to the *live* map. Reaching it from a stored day
+          would invite editing today's titles while looking at last year's —
+          hence the whole block being hidden in chronicle mode. */}
+      {canEdit && !canEditLoading ? (
+        <Link href={editorUrl(mapId)} className={`${actionLinkClass} max-md:hidden`}>
+          Edit titles
+        </Link>
+      ) : null}
+    </>
+  );
+
+  const archiveFooter =
+    chronicle || archived ? null : (
+      <div className="flex items-center justify-between gap-2 text-sm text-[var(--tfmc-stone)]">
+        <span>Earlier chapters</span>
+        <MapArchiveMenu maps={maps} linkClass={actionLinkClass} />
+      </div>
+    );
+
+  const zoomControls = (
+    <MapZoomControls
+      onZoom={(factor) => viewportControlsRef.current?.zoomBy(factor)}
+      onReset={() => viewportControlsRef.current?.reset()}
+    />
+  );
+
+  const selectedRegion = selectedId ? regionData?.[selectedId] : undefined;
+  const canShowSubjects =
+    selectedId !== null &&
+    regionData !== null &&
+    (selectedRegion?.subjects?.length ?? 0) > 0 &&
+    !drillStack.some((layer) => layer.regionId === selectedId);
+
+  const details = selectedGuild ? (
+    <GuildPanelContent
+      guild={selectedGuild}
+      regionData={guildData}
+      seat={guildSeat(selectedGuild, settlements)}
+      tradeProvinces={
+        mapType === "trade" ? regionData?.[selectedGuild.id]?.size ?? null : null
+      }
+      onSelectRegion={openRealm}
+      onSelectPlace={(markerId) => select({ place: markerId })}
+      onFocusPoint={focusPoint}
+      onClose={clearSelection}
+    />
+  ) : selectedPlace && selectedMarker ? (
+    <PlacePanelContent
+      mapId={mapId}
+      place={selectedPlace}
+      marker={selectedMarker}
+      regionData={regionData}
+      sessionToken={authToken}
+      onSelectRegion={(id) => selectRegion(id)}
+      onFocusPoint={focusPoint}
+      onClose={clearSelection}
+      onSelectGuild={(key) => select({ guild: key })}
+    />
+  ) : selectedId && regionData && selectedRegion ? (
+      <RealmPanelContent
         mapId={mapId}
         mapType={mapType}
-        regionInfo={modalRegionInfo}
+        regionId={selectedId}
         regionData={regionData}
+        mapDisplayName={displayName}
         sessionToken={authToken}
-        onClose={() => setModalOpen(false)}
+        settlements={settlements}
+        onSelectRegion={(id) => selectRegion(id)}
+        onFocusPoint={focusPoint}
+        onSelectPlace={(markerId) => {
+          select({ place: markerId });
+        }}
+        onFocusRegion={
+          selectedRegion.overlay ? () => focusRegion(selectedId) : undefined
+        }
+        onShowSubjects={
+          canShowSubjects ? () => openSubjects(selectedId) : undefined
+        }
+        onClose={clearSelection}
+        onSelectGuild={(key) => select({ guild: key })}
       />
-    </>
+    ) : null;
+
+  return (
+    <MapShell
+      chronicle={chronicle}
+      plaque={
+        <MapPlaque
+          eyebrow={chronicle ? "Stored day" : archived ? "Archived chapter" : "World map"}
+          mapDisplayName={displayName}
+          actions={plaqueActions}
+          search={
+            <MapSearch
+              entries={searchEntries}
+              placeholder={`Search ${displayName}`}
+              onSelect={handleSearchSelect}
+            />
+          }
+        />
+      }
+      modeBar={<MapModeBar mapType={mapType} onMapTypeChange={handleMapTypeChange} />}
+      modeChips={<MapModeChips mapType={mapType} onMapTypeChange={handleMapTypeChange} />}
+      breadcrumb={
+        drillStack.length > 0 ? (
+          <MapDrillBreadcrumb
+            rootLabel={mapModeLabel(mapType)}
+            drillStack={drillStack}
+            onSelectLayer={handleDrillToLayer}
+            onReset={handleResetDrill}
+          />
+        ) : null
+      }
+      details={details}
+      detailsKey={
+        selectedGuildKey
+          ? `guild:${selectedGuildKey}`
+          : selectedPlaceId
+            ? `place:${selectedPlaceId}`
+            : selectedId
+      }
+      status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
+      zoomControls={zoomControls}
+      layers={<MapLayersMenu toggles={desktopLayerToggles} footer={archiveFooter} />}
+      layersMobile={
+        layerToggles.length > 0 ? (
+          <MapLayersMenu
+            toggles={layerToggles}
+            align="left"
+            placement="down"
+            iconOnly
+            triggerClassName="h-10 w-10 rounded-full"
+          />
+        ) : null
+      }
+      paintPanel={!chronicle && paint.enabled ? <PaintToolbar paint={paint} /> : null}
+    >
+      <MapCanvas
+        mapId={mapId}
+        mapType={mapType}
+        sessionToken={authToken}
+        canvasRef={canvasRef}
+        viewportCoordsRef={viewportCoordsRef}
+        controlsRef={viewportControlsRef}
+        mapObjects={mapObjects}
+        hoveredOverlay={hoveredOverlay}
+        selectedOverlay={selectedOverlay}
+        hoveredFortZoc={hoveredFortZoc}
+        cursorTooltip={cursorTooltip}
+        labels={regionLabels}
+        markers={mapMarkers}
+        wars={wars}
+        hubLinks={
+          day === null && installationsVisible && supplyLinksVisible
+            ? hubLinks
+            : []
+        }
+        centroids={centroids}
+        hoveredMarkerId={hoveredMarkerId ?? selectedPlaceId}
+        hoveredNationId={hoveredRegionId ?? litRegionId}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleMapClick}
+        isHoveringClickable={isHoveringClickable}
+        focus={mapFocus}
+        fill
+        fitMode={fitMode}
+        day={day}
+        paint={chronicle ? undefined : paint}
+        provinceOverlay={
+          usesChronicleProvincePaint(mapType, day) ? (
+            <ChronicleProvincePaintLayer
+              grid={chronicleGrid}
+              lut={provincePaint.lut}
+            />
+          ) : undefined
+        }
+        regionOverlay={
+          chronicle ? (
+            <ChronicleOwnershipLayer
+              grid={chronicleGrid}
+              regionData={regionData}
+              mapObjects={mapObjects}
+              // `hoveredRegionId` is the region the pick canvas resolved, but
+              // it is not cleared on a miss — `hoveredOverlay` is, and it is
+              // set from the same resolution, so it is the honest gate for
+              // "is something hovered right now". With nothing hovered, the
+              // open details panel's region stays lit.
+              hoveredRegionId={hoveredOverlay ? hoveredRegionId : selectedId}
+              mapW={mapFallbackSize(mapId)}
+              mapH={mapFallbackSize(mapId)}
+            />
+          ) : undefined
+        }
+      />
+    </MapShell>
   );
 };
 

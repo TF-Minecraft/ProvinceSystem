@@ -1,5 +1,9 @@
 export const MAP_ZOOM_MIN = 1;
-export const MAP_ZOOM_MAX = 4.5;
+/**
+ * Deep enough to read individual map pixels: at 16x a contain-fit 6400 px map
+ * shows about two screen pixels per map pixel on a 900 px tall viewport.
+ */
+export const MAP_ZOOM_MAX = 16;
 export const MAP_ZOOM_WHEEL_FACTOR = 1.1;
 
 export type Size = {
@@ -54,6 +58,14 @@ export function clampUserScale(scale: number): number {
   return Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, scale));
 }
 
+/**
+ * How far the map may be dragged: until one of its corners reaches the middle
+ * of the screen, and no further. Zoomed in, that lets any edge or corner of
+ * the world be brought to the centre of the view instead of stopping at the
+ * screen edge; at any zoom, at least a quarter of the screen is still map, so
+ * the map can never be lost off-screen. The same rule OpenFront uses
+ * ("up to half of the viewport can be outside the map on each side").
+ */
 export function clampTranslate(
   viewport: Size,
   map: Size,
@@ -64,29 +76,17 @@ export function clampTranslate(
   const displayW = map.w * displayScale;
   const displayH = map.h * displayScale;
 
-  let tx = translateX;
-  let ty = translateY;
+  // The map's left edge may come no further right than the screen's middle,
+  // and its right edge no further left; likewise vertically.
+  const minX = viewport.w / 2 - displayW;
+  const maxX = viewport.w / 2;
+  const minY = viewport.h / 2 - displayH;
+  const maxY = viewport.h / 2;
 
-  // A square map in a non-square (full-bleed) viewport leaves slack on
-  // whichever axis isn't the fit-limiting one — e.g. a wide screen has empty
-  // space left and right of a contain-fit square map. Centering that slack
-  // matches every other map viewer's default view; pinning it to 0 would
-  // shove the map into a corner with dead space beside it.
-  if (displayW <= viewport.w) {
-    tx = (viewport.w - displayW) / 2;
-  } else {
-    const minX = viewport.w - displayW;
-    tx = Math.min(0, Math.max(minX, tx));
-  }
-
-  if (displayH <= viewport.h) {
-    ty = (viewport.h - displayH) / 2;
-  } else {
-    const minY = viewport.h - displayH;
-    ty = Math.min(0, Math.max(minY, ty));
-  }
-
-  return { x: tx, y: ty };
+  return {
+    x: Math.min(maxX, Math.max(minX, translateX)),
+    y: Math.min(maxY, Math.max(minY, translateY)),
+  };
 }
 
 /**
@@ -169,30 +169,108 @@ export function zoomAtPoint(
     return transform;
   }
 
+  const zoomFactor =
+    wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
+  return zoomToScaleAtPoint(
+    viewport,
+    map,
+    transform,
+    cursor,
+    transform.userScale * zoomFactor,
+    mode
+  );
+}
+
+/**
+ * Zoom to `userScale` while keeping the map point under `anchor` (viewport
+ * pixels) fixed on screen. Shared by the wheel, the zoom buttons, double-click
+ * and pinch, which differ only in where the anchor is and how far they go.
+ */
+export function zoomToScaleAtPoint(
+  viewport: Size,
+  map: Size,
+  transform: ViewportTransform,
+  anchor: ViewportPoint,
+  userScale: number,
+  mode: FitMode = "cover"
+): ViewportTransform {
+  if (!Number.isFinite(userScale)) return transform;
+
   const fitScale = computeFitScale(viewport, map, mode);
   const displayScale = computeDisplayScale(fitScale, transform.userScale);
   const translate = { x: transform.translateX, y: transform.translateY };
+  const mapPoint = screenToMap(anchor.x, anchor.y, displayScale, translate);
 
-  const mapPoint = screenToMap(cursor.x, cursor.y, displayScale, translate);
-
-  const zoomFactor =
-    wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
-  const nextUserScale = clampUserScale(transform.userScale * zoomFactor);
+  const nextUserScale = clampUserScale(userScale);
   const nextDisplayScale = computeDisplayScale(fitScale, nextUserScale);
-
-  let nextTranslateX = cursor.x - mapPoint.x * nextDisplayScale;
-  let nextTranslateY = cursor.y - mapPoint.y * nextDisplayScale;
-
   const clamped = clampTranslate(
     viewport,
     map,
     nextDisplayScale,
-    nextTranslateX,
-    nextTranslateY
+    anchor.x - mapPoint.x * nextDisplayScale,
+    anchor.y - mapPoint.y * nextDisplayScale
   );
 
   return {
     userScale: nextUserScale,
+    translateX: clamped.x,
+    translateY: clamped.y,
+  };
+}
+
+/** A rectangle in map pixels, e.g. a region's overlay crop box. */
+export type MapRect = { x: number; y: number; w: number; h: number };
+
+/**
+ * The transform that centres `rect` and zooms until it fills `fill` of the
+ * viewport on its tighter axis. `inset` shifts the target centre away from
+ * screen furniture (a side panel on the left, a bottom sheet below), so the
+ * framed region lands in the part of the map the reader can actually see.
+ */
+export function transformForMapRect(
+  viewport: Size,
+  map: Size,
+  rect: MapRect,
+  mode: FitMode = "cover",
+  options: {
+    fill?: number;
+    maxUserScale?: number;
+    inset?: { left?: number; right?: number; top?: number; bottom?: number };
+  } = {}
+): ViewportTransform {
+  const fill = options.fill ?? 0.6;
+  const inset = options.inset ?? {};
+  const left = inset.left ?? 0;
+  const right = inset.right ?? 0;
+  const top = inset.top ?? 0;
+  const bottom = inset.bottom ?? 0;
+  const usableW = Math.max(1, viewport.w - left - right);
+  const usableH = Math.max(1, viewport.h - top - bottom);
+
+  const fitScale = computeFitScale(viewport, map, mode);
+  const rectW = Math.max(1, rect.w);
+  const rectH = Math.max(1, rect.h);
+  const wanted = Math.min(
+    (usableW * fill) / (rectW * fitScale),
+    (usableH * fill) / (rectH * fitScale)
+  );
+  const userScale = clampUserScale(
+    Math.min(wanted, options.maxUserScale ?? MAP_ZOOM_MAX)
+  );
+  const displayScale = computeDisplayScale(fitScale, userScale);
+
+  const centreX = left + usableW / 2;
+  const centreY = top + usableH / 2;
+  const clamped = clampTranslate(
+    viewport,
+    map,
+    displayScale,
+    centreX - (rect.x + rect.w / 2) * displayScale,
+    centreY - (rect.y + rect.h / 2) * displayScale
+  );
+
+  return {
+    userScale,
     translateX: clamped.x,
     translateY: clamped.y,
   };

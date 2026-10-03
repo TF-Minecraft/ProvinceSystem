@@ -52,6 +52,12 @@ export const LABEL_FONT_WEIGHT = 500;
 export const DEFAULT_MAP_ZOOM = 1;
 /** Minimum on-screen font size (px) for a label to appear. */
 export const LABEL_MIN_SCREEN_PX = 6;
+/**
+ * Realm names are drawn in map units, so they grow with zoom. Past this
+ * screen size a name is a wall of ink over the land it names; it fades out
+ * and the reader is close enough to see settlements instead.
+ */
+export const LABEL_MAX_SCREEN_PX = 140;
 
 export function labelScreenFontSize(
   fontSize: number,
@@ -66,7 +72,7 @@ export function shouldShowLabelAtScreenSize(
 ): boolean {
   if (displayScale <= 0 || fontSize <= 0) return false;
   const screenPx = labelScreenFontSize(fontSize, displayScale);
-  return screenPx >= LABEL_MIN_SCREEN_PX;
+  return screenPx >= LABEL_MIN_SCREEN_PX && screenPx <= LABEL_MAX_SCREEN_PX;
 }
 
 export type ProvinceNeighbors = Record<string, number[]>;
@@ -436,6 +442,84 @@ export function labelPathCenterOffset(
   const nx = dy / len;
   const ny = -dx / len;
   return { dx: -nx * offsetPx, dy: -ny * offsetPx };
+}
+
+/**
+ * The region whose drawn name is under map point (`x`, `y`), or null. The
+ * names ignore the pointer so the land under them stays hoverable, but a
+ * name laid across water or a neighbour's land is still read as its region:
+ * pointing at "The Clockwork" over the sea between its islands means The
+ * Clockwork. Only names drawn at this zoom count.
+ *
+ * Follows the text the way `LabelLayer` draws it: along the arched, extended
+ * baseline (`labelArcPathD`, shifted by `pathOffset`), centred on it, glyph
+ * centres `LABEL_TEXT_CENTER_OFFSET_EM` above it, about as long as
+ * `estimatedLabelWidthPx`.
+ */
+export function pickRegionLabelAt(
+  labels: NationLabelSpec[],
+  x: number,
+  y: number,
+  displayScale: number
+): string | null {
+  const SAMPLES = 48;
+  let best: { id: string; distance: number } | null = null;
+  for (const label of labels) {
+    if (!shouldShowLabelAtScreenSize(label.fontSize, displayScale)) continue;
+    const halfWidth = estimatedLabelWidthPx(label.fontSize, label.text) / 2;
+    const reach = halfWidth + label.fontSize;
+    if (Math.abs(x - label.cx) > reach + label.segmentPx || Math.abs(y - label.cy) > reach + label.segmentPx) {
+      continue;
+    }
+
+    const extended = extendLabelEndpoints(label.x1, label.y1, label.x2, label.y2);
+    const { x1: ax, y1: ay, x2: bx, y2: by } = orientLabelEndpoints(
+      extended.x1,
+      extended.y1,
+      extended.x2,
+      extended.y2
+    );
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len === 0) continue;
+    // Toward the top of the letters, as labelArcPathD bulges.
+    const nx = (by - ay) / len;
+    const ny = -(bx - ax) / len;
+    const bulge = len * LABEL_ARC_BULGE_RATIO;
+    const qx = (ax + bx) / 2 + nx * bulge;
+    const qy = (ay + by) / 2 + ny * bulge;
+    const lift = label.fontSize * LABEL_TEXT_CENTER_OFFSET_EM;
+    const ox = label.pathOffsetX + nx * lift;
+    const oy = label.pathOffsetY + ny * lift;
+
+    let travelled = 0;
+    let prevX = ax + ox;
+    let prevY = ay + oy;
+    let nearest = Infinity;
+    let nearestAt = 0;
+    const along: number[] = [];
+    for (let i = 0; i <= SAMPLES; i += 1) {
+      const t = i / SAMPLES;
+      const u = 1 - t;
+      const px = u * u * ax + 2 * u * t * qx + t * t * bx + ox;
+      const py = u * u * ay + 2 * u * t * qy + t * t * by + oy;
+      if (i > 0) travelled += Math.hypot(px - prevX, py - prevY);
+      along.push(travelled);
+      const distance = Math.hypot(x - px, y - py);
+      if (distance < nearest) {
+        nearest = distance;
+        nearestAt = i;
+      }
+      prevX = px;
+      prevY = py;
+    }
+    const fromMiddle = Math.abs(along[nearestAt] - travelled / 2);
+    // The width is an estimate; a third of a letter's slack catches the ends.
+    if (nearest > label.fontSize * 0.55 || fromMiddle > halfWidth + label.fontSize * 0.35) {
+      continue;
+    }
+    if (!best || nearest < best.distance) best = { id: label.nationId, distance: nearest };
+  }
+  return best?.id ?? null;
 }
 
 function centroidOf(
@@ -835,14 +919,19 @@ export function provincesForRegionLabelGeometry(
   return { provinces, scope: "full" };
 }
 
-export function computeRegionLabelGeometry(
+/**
+ * `computeRegionLabelGeometry` a region at a time: yields after each one, so a
+ * caller can spread a mode's layout over several tasks. Laid out in one go,
+ * the counties held the page for a quarter of a second on a first visit.
+ */
+export function* computeRegionLabelGeometrySteps(
   mapType: MapMode,
   regionData: Record<string, NationRegionInput>,
   titleLayers: TitleLayers | null,
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
   options?: ComputeNationLabelsOptions
-): RegionLabelGeometryCache | null {
+): Generator<void, RegionLabelGeometryCache | null, void> {
   if (mapType === "nation") {
     const nations: NationLabelGeometry[] = [];
     const occupation = buildOccupationIndex(regionData);
@@ -892,6 +981,7 @@ export function computeRegionLabelGeometry(
       }
 
       nations.push({ nationId, full, direct });
+      yield;
     }
 
     return { mapType: "nation", nations };
@@ -936,9 +1026,32 @@ export function computeRegionLabelGeometry(
         options
       )
     );
+    yield;
   }
 
   return { mapType, labels };
+}
+
+/** A mode's name layout, in one go. See `computeRegionLabelGeometrySteps`. */
+export function computeRegionLabelGeometry(
+  mapType: MapMode,
+  regionData: Record<string, NationRegionInput>,
+  titleLayers: TitleLayers | null,
+  neighbors: ProvinceNeighbors,
+  centroids: ProvinceCentroids,
+  options?: ComputeNationLabelsOptions
+): RegionLabelGeometryCache | null {
+  const steps = computeRegionLabelGeometrySteps(
+    mapType,
+    regionData,
+    titleLayers,
+    neighbors,
+    centroids,
+    options
+  );
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
 }
 
 export function filterRegionLabelsForMapObjects(

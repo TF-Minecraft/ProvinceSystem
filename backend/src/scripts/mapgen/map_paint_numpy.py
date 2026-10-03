@@ -53,26 +53,24 @@ def paint_from_rgb_lut(
 
     Missing keys remain transparent. Values may be RGB (alpha 255) or RGBA.
     """
-    height, width = provinces_rgba.shape[:2]
-    packed = pack_rgb(provinces_rgba[:, :, :3])
-    unique_keys, inverse = np.unique(packed, return_inverse=True)
-
-    colors = np.zeros((unique_keys.shape[0], 4), dtype=np.uint8)
-    for index, key in enumerate(unique_keys):
-        rgb = unpack_rgb_key(int(key))
-        mapped = rgb_to_color.get(rgb)
-        if mapped is None:
-            continue
-
+    # Index every possible packed RGB straight into a palette whose entry 0 is
+    # transparent. Sorting the map's pixels to find its distinct colours
+    # (np.unique) cost seconds per call on a 6400 px map; this is one gather.
+    palette = [(0, 0, 0, 0)]
+    index_dtype = np.uint16 if len(rgb_to_color) < 0xFFFF else np.uint32
+    palette_index = np.zeros(1 << 24, dtype=index_dtype)
+    for rgb, mapped in rgb_to_color.items():
         if color_overrides is not None:
             mapped_rgb = mapped[:3]
             mapped = color_overrides.get(mapped_rgb, mapped_rgb)
 
         rgba = _resolve_rgba(mapped, skip_black=skip_black)
         if rgba is not None:
-            colors[index] = rgba
+            palette_index[_pack_key(rgb)] = len(palette)
+            palette.append(rgba)
 
-    return colors[inverse].reshape(height, width, 4)
+    packed = pack_rgb(provinces_rgba[:, :, :3])
+    return np.asarray(palette, dtype=np.uint8)[palette_index[packed]]
 
 
 def _build_mode_lut(

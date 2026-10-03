@@ -5,8 +5,15 @@ import type { Size } from "../../lib/mapViewportMath";
 export type MapViewportProps = {
   mapSize: Size;
   viewportRef: RefObject<HTMLDivElement | null>;
+  /** The scaled layer; `useMapViewport` moves it directly during gestures. */
+  contentRef?: RefObject<HTMLDivElement | null>;
   transformStyle: string;
   transformTransition?: string;
+  /**
+   * CSS `zoom` on the map content, the resting scale `useMapViewport` keeps
+   * out of the transform (see its `restingZoom`). 1 by default.
+   */
+  zoom?: number;
   cursorClassName: string;
   isPanning: boolean;
   children: ReactNode;
@@ -18,17 +25,25 @@ export type MapViewportProps = {
    * the whole map inside whatever rectangle results.
    */
   fill?: boolean;
+  /**
+   * The viewport handles touch itself (one-finger pan, pinch zoom), so the
+   * browser must not scroll or zoom the page underneath it.
+   */
+  capturesTouch?: boolean;
 };
 
 export default function MapViewport({
   mapSize,
   viewportRef,
+  contentRef,
   transformStyle,
   transformTransition,
+  zoom = 1,
   cursorClassName,
   isPanning,
   children,
   fill = false,
+  capturesTouch = false,
 }: MapViewportProps) {
   const { w: mapW, h: mapH } = mapSize;
 
@@ -37,24 +52,29 @@ export default function MapViewport({
       ? { aspectRatio: `${mapW} / ${mapH}` }
       : undefined;
 
+  // The transform moves (and, mid-gesture, scales) the zoomed content; the
+  // map itself is laid out at its size on screen.
   const innerStyle: CSSProperties = {
-    width: mapW,
-    height: mapH,
+    width: mapW * zoom,
+    height: mapH * zoom,
     transform: transformStyle,
     transformOrigin: "0 0",
     transition: transformTransition,
   };
+  const zoomedStyle: CSSProperties = { width: mapW, height: mapH, zoom };
 
   return (
     <div
       ref={viewportRef}
       className={`relative overflow-hidden ${fill ? "h-full w-full" : "w-full"} ${cursorClassName}${
-        isPanning ? " select-none" : ""
-      }`}
+        isPanning || capturesTouch ? " select-none" : ""
+      }${capturesTouch ? " touch-none" : ""}`}
       style={outerStyle}
     >
-      <div className="relative" style={innerStyle}>
-        {children}
+      <div ref={contentRef} className="relative" style={innerStyle}>
+        <div className="relative" style={zoomedStyle}>
+          {children}
+        </div>
       </div>
     </div>
   );

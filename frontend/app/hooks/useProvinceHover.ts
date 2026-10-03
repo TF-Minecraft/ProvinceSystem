@@ -1,5 +1,5 @@
 // hooks/mapHover/useProvinceHover.ts
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type { MapId } from "../components/map/types";
 import { fetchMapJson } from "@/lib/map/api";
@@ -112,6 +112,31 @@ export function indexStoredProvinceData(
   return byId;
 }
 
+/**
+ * What a province hover produced this frame.
+ *
+ * - `consumed`: the mode is a province-tooltip mode and owns the pointer;
+ *   region hover must not run.
+ * - `lines`: the tooltip lines, worked out synchronously from data already in
+ *   memory; `null` when there is nothing to show here (sea, no data); and
+ *   `undefined` when the answer is coming over the network and the tooltip will
+ *   be set when it lands (the fallback when no province grid is available).
+ */
+export type ProvinceHoverResult = {
+  consumed: boolean;
+  lines: string[] | null | undefined;
+};
+
+/** Live modes whose hover reads `/compiled_data/provinces`. */
+const PROVINCE_FIGURE_MODES = new Set([
+  "terrain",
+  "fertility",
+  "prosperity",
+  "infrastructure",
+  "infestation",
+  "trade",
+]);
+
 export function useProvinceHover({
   mapId,
   mapType,
@@ -120,6 +145,7 @@ export function useProvinceHover({
   sessionToken,
   day = null,
   resolveProvinceId,
+  onDataReady,
 }: {
   mapId: MapId;
   mapType: string;
@@ -137,10 +163,17 @@ export function useProvinceHover({
   day?: string | null;
   /**
    * Map pixel -> province id, resolved client-side from the quarter-scale
-   * province id grid the chronicle already downloads. Only used on the day
-   * path; the live path keeps the server's `/meta` lookup.
+   * province id grid. With it, a hover costs no request: the id comes from the
+   * grid and the province's figures from data fetched once. Without it (the
+   * grid not loaded yet) the live path falls back to the server's `/meta`.
    */
   resolveProvinceId?: (x: number, y: number) => number | null;
+  /**
+   * Called once the province figures have arrived, so whatever is under the
+   * pointer can be shown. A mouse would show it on its next move; a tap has
+   * no next move.
+   */
+  onDataReady?: () => void;
 }) {
   const provinceCache = useRef<Record<number, any>>({});
   /** Stored `province_data`, indexed by id, keyed by `mapId:day`. */
@@ -156,6 +189,40 @@ export function useProvinceHover({
   } | null>(null);
   const countyPendingRef = useRef<string | null>(null);
 
+  /** `/compiled_data/provinces` for the live map, fetched once per map. */
+  const liveCompiledRef = useRef<{ key: string; byId: Record<number, any> } | null>(
+    null
+  );
+  const liveCompiledPendingRef = useRef<string | null>(null);
+
+  const onDataReadyRef = useRef(onDataReady);
+  onDataReadyRef.current = onDataReady;
+
+  /** Fetch the live province figures once per map, then say so. */
+  const loadLiveCompiled = useCallback(() => {
+    if (liveCompiledRef.current?.key === mapId || liveCompiledPendingRef.current === mapId) {
+      return;
+    }
+    liveCompiledPendingRef.current = mapId;
+    void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
+      sessionToken,
+    })
+      .then((all) => {
+        liveCompiledRef.current = { key: mapId, byId: all ?? {} };
+        onDataReadyRef.current?.();
+      })
+      .catch(() => {
+        liveCompiledPendingRef.current = null;
+      });
+  }, [mapId, sessionToken]);
+
+  // Fetched on entering a mode that reads them, not on the first hover, so
+  // the first tap on a phone already has them.
+  useEffect(() => {
+    if (day !== null || !PROVINCE_FIGURE_MODES.has(mapType)) return;
+    loadLiveCompiled();
+  }, [day, mapType, loadLiveCompiled]);
+
   const capitalize = (v: string) => v[0].toUpperCase() + v.slice(1);
 
   const handleProvinceHover = (
@@ -163,7 +230,7 @@ export function useProvinceHover({
     y: number,
     screenX: number,
     screenY: number
-  ): boolean => {
+  ): ProvinceHoverResult => {
     const active =
       mapType === "terrain" ||
       mapType === "fertility" ||
@@ -181,14 +248,11 @@ export function useProvinceHover({
       mapType === "infestation" ||
       mapType === "province";
 
-    if (!active) return false;
+    if (!active) return { consumed: false, lines: null };
 
-    const render = (data: any) => {
-      if (!data) return;
-      if (data.terrain === "sea" || data.terrain === "water") {
-        setCursorTooltip(null);
-        return;
-      }
+    /** The tooltip lines for one province's data, or null for none. */
+    const buildLines = (data: any): string[] | null => {
+      if (!data || data.terrain === "sea" || data.terrain === "water") return null;
 
       const lines = [`x: ${x}  z: ${y}`];
 
@@ -247,12 +311,77 @@ export function useProvinceHover({
         }
       }
 
+      return lines;
+    };
+
+    const render = (data: any) => {
+      if (!data) return;
+      const lines = buildLines(data);
+      // Water and sea have nothing to show; clear the last province's tooltip.
+      if (!lines) {
+        setCursorTooltip(null);
+        return;
+      }
       setCursorTooltip({
         x: screenX,
         y: screenY,
         text: lines.join("\n"),
       });
     };
+
+    // Live map with the province grid in memory: answer this frame, with no
+    // request. Trade and prosperity read the same compiled figures.
+    if (day === null && mapType !== "province" && resolveProvinceId) {
+      const compiled = liveCompiledRef.current;
+      if (compiled?.key !== mapId) {
+        loadLiveCompiled();
+        return { consumed: consumesHover, lines: null };
+      }
+      const pid = resolveProvinceId(x, y);
+      return {
+        consumed: consumesHover,
+        lines: pid ? buildLines(compiled.byId[pid]) : null,
+      };
+    }
+
+    if (mapType === "province" && resolveProvinceId) {
+      const pid = resolveProvinceId(x, y);
+      if (!pid) return { consumed: consumesHover, lines: null };
+      const compiled = liveCompiledRef.current;
+      const names = countyCacheRef.current?.key === mapId ? countyCacheRef.current.names : null;
+      if (compiled?.key !== mapId && liveCompiledPendingRef.current !== mapId) {
+        liveCompiledPendingRef.current = mapId;
+        void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
+          sessionToken,
+        })
+          .then((all) => {
+            liveCompiledRef.current = { key: mapId, byId: all ?? {} };
+          })
+          .catch(() => {
+            liveCompiledPendingRef.current = null;
+          });
+      }
+      if (!names && countyPendingRef.current !== mapId) {
+        countyPendingRef.current = mapId;
+        void fetchMapJson<Record<string, CountyNameEntry>>(`/${mapId}/data/county`, {
+          sessionToken,
+        })
+          .then((counties) => {
+            countyCacheRef.current = { key: mapId, names: buildProvinceCountyNames(counties) };
+          })
+          .catch(() => {
+            countyCacheRef.current = { key: mapId, names: new Map() };
+          });
+      }
+      const terrain = compiled?.key === mapId ? compiled.byId[pid]?.terrain : undefined;
+      const lines = [`x: ${x}  z: ${y}`, `Province: ${pid}`];
+      if (typeof terrain === "string" && terrain.length > 0) {
+        lines.push(`Terrain: ${capitalize(terrain)}`);
+      }
+      const county = names?.get(pid);
+      if (county) lines.push(`County: ${county}`);
+      return { consumed: consumesHover, lines };
+    }
 
     if (mapType === "province") {
       const renderProvince = (
@@ -303,7 +432,7 @@ export function useProvinceHover({
         })
         .catch(() => {});
 
-      return consumesHover;
+      return { consumed: consumesHover, lines: undefined };
     }
 
     if (day !== null) {
@@ -311,20 +440,14 @@ export function useProvinceHover({
       // province's own numbers come from that day's `province_data`. No live
       // request is issued from this path at all.
       const pid = resolveProvinceId?.(x, y) ?? null;
-      if (!pid) return consumesHover;
+      if (!pid) return { consumed: consumesHover, lines: null };
 
       const key = `${mapId}:${day}`;
       const cached = dayCacheRef.current;
       if (cached?.key === key) {
-        // Deferred to a microtask so the ordering matches the live map's.
-        // For `trade` (and `prosperity`) `consumesHover` is false, so the
-        // caller goes on to run region hover, which writes its own tooltip
-        // *after* this one. Live, that race is won by this path because its
-        // data arrives over the network; from a warm cache a synchronous
-        // render would lose it, and the province breakdown would flash once
-        // and never be seen again.
-        queueMicrotask(() => render(cached.byId[pid]));
-        return consumesHover;
+        // Returned rather than drawn: the caller folds these lines into the
+        // region tooltip for trade, so the two never take turns on screen.
+        return { consumed: consumesHover, lines: buildLines(cached.byId[pid]) };
       }
 
       if (dayPendingRef.current !== key) {
@@ -350,8 +473,14 @@ export function useProvinceHover({
           });
       }
 
-      return consumesHover;
+      return { consumed: consumesHover, lines: undefined };
     }
+
+    // Trade shares its tooltip with region hover. An answer that lands a
+    // moment later would replace the region tooltip and then be replaced back
+    // on the next move — the flicker this path used to cause — so without the
+    // grid, trade just shows the region.
+    if (!consumesHover) return { consumed: false, lines: null };
 
     void fetchMapJson<{ province_id?: number }>(
       `/${mapId}/province/${x},${y}/meta`,
@@ -376,7 +505,7 @@ export function useProvinceHover({
       })
       .catch(() => {});
 
-    return consumesHover;
+    return { consumed: consumesHover, lines: undefined };
   };
 
   return { handleProvinceHover };

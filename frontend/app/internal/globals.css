@@ -34,6 +34,32 @@ body {
   font-family: var(--font-source-sans), system-ui, sans-serif;
 }
 
+/* While the full-screen map is open (MapShell), the page does not scroll or
+   bounce: only the map and its panels move. */
+html.map-fullscreen,
+html.map-fullscreen body,
+html.map-fullscreen .map-route {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Nothing on the map page selects, drags or pops up a long-press menu: a long
+   press is a press on the map, not a text selection or "Save image". The
+   search box is the exception, or Safari would not let it be typed in. */
+html.map-fullscreen body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html.map-fullscreen img {
+  -webkit-user-drag: none;
+}
+html.map-fullscreen input,
+html.map-fullscreen textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Themed scrollbars (Firefox + Chromium/WebKit) */
 * {
   scrollbar-width: thin;
@@ -284,4 +310,174 @@ body {
 
 .char-toast-out {
   animation: char-toast-out 0.28s ease-in both;
+}
+
+/* ------------------------------------------------------------------------
+ * Map chrome
+ *
+ * Every floating control on the world map shares one quiet panel style, the
+ * same forest and cream as the rest of the site, so the map stays the thing
+ * being looked at.
+ * ---------------------------------------------------------------------- */
+
+/* In the components layer so Tailwind utilities on the same element (absolute,
+ * border-0, rounded-none…) still win, as they would over any component class. */
+@layer components {
+  .map-frame {
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--tfmc-forest-deep) 94%, transparent);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+    color: var(--tfmc-cream);
+    backdrop-filter: blur(8px);
+  }
+
+  .map-frame-header {
+    border-bottom: 1px solid color-mix(in srgb, var(--tfmc-cream) 10%, transparent);
+  }
+
+  /* Section heading inside a panel. */
+  .map-rule {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--tfmc-mist);
+  }
+
+  .map-tooltip {
+    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tfmc-forest-deep) 96%, transparent);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+  }
+
+  /* Round icon buttons for the map modes. */
+  .map-medallion {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: var(--tfmc-stone);
+    transition:
+      color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .map-medallion:hover {
+    color: var(--tfmc-cream);
+    background: color-mix(in srgb, var(--tfmc-cream) 10%, transparent);
+  }
+
+  .map-medallion[aria-pressed="true"] {
+    color: var(--tfmc-forest-deep);
+    background: color-mix(in srgb, var(--tfmc-cream) 92%, transparent);
+  }
+
+  .map-medallion:focus-visible,
+  .map-control:focus-visible {
+    outline: 2px solid var(--tfmc-accent);
+    outline-offset: 2px;
+  }
+
+  /* Rectangular controls: zoom, layers, panel buttons. */
+  .map-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--tfmc-forest-deep) 94%, transparent);
+    color: var(--tfmc-stone);
+    transition:
+      color 120ms ease,
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .map-control:hover:not(:disabled) {
+    color: var(--tfmc-cream);
+    border-color: color-mix(in srgb, var(--tfmc-cream) 25%, transparent);
+    background: color-mix(in srgb, var(--tfmc-forest) 94%, transparent);
+  }
+
+  .map-control[aria-pressed="true"],
+  .map-control[aria-expanded="true"] {
+    color: var(--tfmc-forest-deep);
+    border-color: transparent;
+    background: color-mix(in srgb, var(--tfmc-cream) 92%, transparent);
+  }
+
+  .map-control:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  /* A realm's banner. */
+  .map-banner-frame {
+    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 15%, transparent);
+    border-radius: 4px;
+    background: var(--tfmc-forest-deep);
+    overflow: hidden;
+  }
+
+  /* The selection's outline is a stack of drop-shadow filters, redrawn at
+   * every scale; while the map is being zoomed or dragged it stands down. */
+  [data-gesturing] .map-selected-region {
+    filter: none !important;
+  }
+
+  /* An in-text link to another realm or place. */
+  .map-link {
+    color: var(--tfmc-cream);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--tfmc-cream) 35%, transparent);
+    text-underline-offset: 2px;
+  }
+
+  .map-link:hover {
+    text-decoration-color: var(--tfmc-cream);
+  }
+}
+
+@keyframes map-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-sheet-in {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Details rise as a sheet on a phone and slide in from the left on desktop. */
+.map-details-enter {
+  animation: map-sheet-in 200ms ease-out;
+}
+
+@media (min-width: 48rem) {
+  .map-details-enter {
+    animation: map-panel-in 180ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-details-enter {
+    animation: none;
+  }
 }

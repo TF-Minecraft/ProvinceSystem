@@ -104,13 +104,12 @@ export function describeChronicleDay(
  * The date banner, and the single most important element on this page: a
  * screenshot of a stored day must carry its date.
  *
- * Fixed rather than in normal flow because `MapPageLayout` claims the whole
- * viewport below the site header on desktop and hides its own overflow —
- * anything stacked above it would push the map into a scroll region, and a
- * banner that can scroll out of frame is a banner that can be missing from the
- * screenshot. Pinned top-centre, the one strip of the map shell with no
- * floating panel in it (mode selector top-left, nation detail top-right,
- * drill stack and controls along the bottom).
+ * Fixed rather than in normal flow because `MapShell` claims the whole
+ * viewport below the site header and hides its own overflow — anything
+ * stacked above it would push the map into a scroll region, and a banner that
+ * can scroll out of frame is a banner that can be missing from the
+ * screenshot. Pinned top-centre; `MapShell` starts its top-row controls below
+ * it wherever the two would meet.
  */
 function ChronicleDateBanner({
   mapId,

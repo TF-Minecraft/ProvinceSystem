@@ -9,12 +9,19 @@ import { useRegionHover } from "./useRegionHover";
 import {
   provinceHoverBlocksRegionPick,
   resolveRegionAtPickPixel,
+  resolveRegionById,
 } from "./regionPick";
 import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
-import { filterVisibleMapMarkers, isMarkerMapMode, pickMapMarkerAt } from "../lib/mapMarkers";
+import {
+  filterVisibleMapMarkers,
+  hiddenMarkerLabels,
+  isMarkerMapMode,
+  pickMapMarkerAt,
+} from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
+import { pickRegionLabelAt, type NationLabelSpec } from "../lib/mapLabels";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 
 type UseMapHoverProps = {
@@ -44,6 +51,8 @@ type UseMapHoverProps = {
   mapDisplayName: string;
   mapObjects: MapObject[];
   markers?: MapMarker[];
+  /** The region names drawn on the map: pointing at one is pointing at its region. */
+  labels?: NationLabelSpec[];
   forts?: FortMarker[];
   setHoveredMarkerId?: (id: string | null) => void;
   setHoveredFortZoc?: (overlay: HoverOverlay | null) => void;
@@ -77,6 +86,17 @@ export function mapObjectsVisibilityKey(mapObjects: MapObject[]): string {
   return mapObjects
     .map((obj) => `${obj.id}:${obj.visible ? 1 : 0}`)
     .join("|");
+}
+
+/** The region whose drawn name is under map point (x, y), where names are hoverable. */
+function labelRegionAt(
+  props: UseMapHoverProps,
+  x: number,
+  y: number,
+  displayScale: number
+): string | null {
+  if (!props.labels?.length || provinceHoverBlocksRegionPick(props.mapType)) return null;
+  return pickRegionLabelAt(props.labels, x, y, displayScale);
 }
 
 export function useMapHover(props: UseMapHoverProps) {
@@ -131,6 +151,9 @@ export function useMapHover(props: UseMapHoverProps) {
     return id ? id : null;
   }, []);
 
+  /** Re-runs hover at the last pointer position; set below, once it can. */
+  const replayHoverRef = useRef<() => void>(() => {});
+
   const { handleProvinceHover } = useProvinceHover({
     mapId,
     mapType,
@@ -138,7 +161,11 @@ export function useMapHover(props: UseMapHoverProps) {
     guildNameCacheRef,
     sessionToken: props.sessionToken,
     day: props.day ?? null,
-    resolveProvinceId,
+    // Only offered once a grid is in memory, so the hover hook knows when it
+    // must fall back to asking the server.
+    resolveProvinceId: props.chronicleGrid ? resolveProvinceId : undefined,
+    // Show what the pointer (or the last tap) is over once the figures land.
+    onDataReady: () => replayHoverRef.current(),
   });
 
   const { handleRegionHover, resetHoverCache } = useRegionHover({
@@ -155,11 +182,11 @@ export function useMapHover(props: UseMapHoverProps) {
   handleProvinceHoverRef.current = handleProvinceHover;
 
   const rafRef = useRef<number | null>(null);
-  const pendingEventRef = useRef<React.MouseEvent<HTMLCanvasElement> | null>(null);
+  const pendingEventRef = useRef<React.MouseEvent<Element> | null>(null);
   const lastPointerRef = useRef<PointerPosition | null>(null);
   const [isHoveringClickable, setIsHoveringClickable] = useState(false);
 
-  const processHover = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+  const processHover = useCallback((event: React.MouseEvent<Element>) => {
     const current = propsRef.current;
     if (current.loading) return;
 
@@ -191,19 +218,44 @@ export function useMapHover(props: UseMapHoverProps) {
       ? filterVisibleMapMarkers(current.markers, displayScale)
       : [];
     const markerHit = visibleMarkers.length
-      ? pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+      ? pickMapMarkerAt(
+          visibleMarkers,
+          coords.x,
+          coords.y,
+          displayScale,
+          hiddenMarkerLabels(current.markers ?? [], displayScale)
+        )
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
+      // A pin sits inside a realm: keep that realm lit under the pointer, as
+      // if the pin were not there, and let only the tooltip belong to the pin.
+      const markerPickPixel = mapPixelToPickCanvas(
+        coords.x,
+        coords.y,
+        current.viewportCoordsRef.current?.mapSize,
+        canvas
+      );
+      if (markerPickPixel) {
+        handleRegionHoverRef.current(
+          ctx,
+          markerPickPixel.x,
+          markerPickPixel.y,
+          coords.screenX,
+          coords.screenY,
+          () => {}
+        );
+      } else {
+        current.setHoveredOverlay(null);
+        current.setSelectedRegionId(null);
+        resetHoverCacheRef.current();
+      }
       current.setCursorTooltip(markerHit.hoverText ? {
         x: coords.screenX,
         y: coords.screenY,
         text: markerHit.hoverText,
         hint: markerHit.hoverHint,
       } : null);
-      current.setHoveredOverlay(null);
-      current.setSelectedRegionId(null);
-      resetHoverCacheRef.current();
       if (isMarkerMapMode(current.mapType)) {
         current.setHoveredFortZoc?.(
           lookupFortZocOverlay(markerHit, current.forts ?? [])
@@ -217,20 +269,65 @@ export function useMapHover(props: UseMapHoverProps) {
 
     current.setHoveredFortZoc?.(null);
 
-    if (
-      handleProvinceHoverRef.current(
-        coords.x,
-        coords.y,
-        coords.screenX,
-        coords.screenY
-      )
-    ) {
+    // A name drawn across water or a neighbour's land still names its region.
+    const labelRegionId = labelRegionAt(current, coords.x, coords.y, displayScale);
+    if (labelRegionId) {
+      setIsHoveringClickable(
+        handleRegionHoverRef.current(
+          ctx,
+          0,
+          0,
+          coords.screenX,
+          coords.screenY,
+          current.setCursorTooltip,
+          labelRegionId
+        )
+      );
+      return;
+    }
+
+    const province = handleProvinceHoverRef.current(
+      coords.x,
+      coords.y,
+      coords.screenX,
+      coords.screenY
+    );
+    if (province.consumed) {
+      // `undefined`: the answer is on its way and will draw itself.
+      if (province.lines !== undefined) {
+        current.setCursorTooltip(
+          province.lines
+            ? { x: coords.screenX, y: coords.screenY, text: province.lines.join("\n") }
+            : null
+        );
+      }
       if (provinceHoverBlocksRegionPick(current.mapType)) {
         current.setSelectedRegionId(null);
       }
       setIsHoveringClickable(false);
       return;
     }
+
+    // Trade: the province's breakdown rides in the region's tooltip, one box
+    // drawn once per frame, instead of two tooltips taking turns.
+    const provinceLines = province.lines ?? null;
+    const setTooltip: typeof current.setCursorTooltip = provinceLines
+      ? (tooltip) =>
+          current.setCursorTooltip(
+            tooltip
+              ? {
+                  ...tooltip,
+                  hint: [...provinceLines.slice(1), tooltip.hint]
+                    .filter(Boolean)
+                    .join("\n"),
+                }
+              : {
+                  x: coords.screenX,
+                  y: coords.screenY,
+                  text: provinceLines.slice(1).join("\n"),
+                }
+          )
+      : current.setCursorTooltip;
 
     const pickPixel = mapPixelToPickCanvas(
       coords.x,
@@ -252,10 +349,20 @@ export function useMapHover(props: UseMapHoverProps) {
       pickPixel.y,
       coords.screenX,
       coords.screenY,
-      current.setCursorTooltip
+      setTooltip
     );
     setIsHoveringClickable(clickable);
   }, []);
+
+  replayHoverRef.current = () => {
+    const pointer = lastPointerRef.current;
+    if (!pointer || propsRef.current.loading) return;
+    resetHoverCacheRef.current();
+    processHover({
+      clientX: pointer.clientX,
+      clientY: pointer.clientY,
+    } as React.MouseEvent<Element>);
+  };
 
   const mapObjectsVisibility = useMemo(
     () => mapObjectsVisibilityKey(mapObjects),
@@ -277,10 +384,10 @@ export function useMapHover(props: UseMapHoverProps) {
     processHover({
       clientX: pointer.clientX,
       clientY: pointer.clientY,
-    } as React.MouseEvent<HTMLCanvasElement>);
+    } as React.MouseEvent<Element>);
   }, [loading, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
-  const onMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const onMouseMove = (event: React.MouseEvent<Element>) => {
     if (loading) return;
 
     lastPointerRef.current = {
@@ -316,7 +423,7 @@ export function useMapHover(props: UseMapHoverProps) {
   };
 
   const pickRegionAtEvent = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>): string | null => {
+    (event: React.MouseEvent<Element>): string | null => {
       const current = propsRef.current;
       if (current.loading || !current.regionData) return null;
 
@@ -340,13 +447,30 @@ export function useMapHover(props: UseMapHoverProps) {
         : [];
       if (
         visibleMarkers.length &&
-        pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+        pickMapMarkerAt(
+          visibleMarkers,
+          coords.x,
+          coords.y,
+          displayScale,
+          hiddenMarkerLabels(current.markers ?? [], displayScale)
+        )
       ) {
         return null;
       }
 
       if (provinceHoverBlocksRegionPick(current.mapType)) {
         return null;
+      }
+
+      const labelRegionId = labelRegionAt(current, coords.x, coords.y, displayScale);
+      if (labelRegionId) {
+        return resolveRegionById(
+          labelRegionId,
+          current.getHoverRegion,
+          current.mapType,
+          current.mapId,
+          current.regionData
+        )?.regionId ?? null;
       }
 
       const pickPixel = mapPixelToPickCanvas(
@@ -372,5 +496,36 @@ export function useMapHover(props: UseMapHoverProps) {
     [rgbToId]
   );
 
-  return { onMouseMove, onMouseLeave, isHoveringClickable, pickRegionAtEvent };
+  /** The marker under a click, if any; markers sit above regions. */
+  const pickMarkerAtEvent = useCallback(
+    (event: React.MouseEvent<Element>): MapMarker | null => {
+      const current = propsRef.current;
+      const canvas = current.canvasRef.current;
+      if (!canvas || !current.markers?.length) return null;
+      const coords = getMapCoords(
+        event,
+        canvas,
+        current.mapId,
+        current.viewportCoordsRef.current
+      );
+      if (!coords) return null;
+      const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
+      return pickMapMarkerAt(
+        filterVisibleMapMarkers(current.markers, displayScale),
+        coords.x,
+        coords.y,
+        displayScale,
+        hiddenMarkerLabels(current.markers, displayScale)
+      );
+    },
+    []
+  );
+
+  return {
+    onMouseMove,
+    onMouseLeave,
+    isHoveringClickable,
+    pickRegionAtEvent,
+    pickMarkerAtEvent,
+  };
 }

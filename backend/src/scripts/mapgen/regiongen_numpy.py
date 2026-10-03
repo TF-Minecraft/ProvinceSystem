@@ -11,11 +11,10 @@ import numpy as np
 from PIL import Image
 
 from ..util.border_paint import (
-    OPAQUE_UNION_OWNER,
-    apply_occupation_seam_dashes,
+    apply_occupation_seam_dashes_array,
     border_color_for_fill,
     border_thickness as default_border_thickness,
-    compute_opaque_union_borders,
+    stroke_opaque_union_array,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
@@ -124,10 +123,14 @@ class RegionBuffer:
         hover_rgb: OwnerColor,
         *,
         nested: bool = False,
+        origin: tuple[int, int] = (0, 0),
     ) -> None:
+        """Paint `mask`, whose top-left pixel sits at map `origin` (x, y)."""
         ys, xs = np.where(mask)
         if ys.size == 0:
             return
+        xs = xs + origin[0]
+        ys = ys + origin[1]
 
         self._expand(int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
         ly = ys - self.y0
@@ -171,6 +174,29 @@ def _save_layer_array(arr: np.ndarray, path: str) -> None:
     Image.fromarray(np.array(arr, dtype=np.uint8, copy=True), mode="RGBA").save(path, "PNG")
 
 
+def _stage_on_window(
+    buf: RegionBuffer,
+    box: tuple[int, int, int, int],
+    margin: int,
+    height: int,
+    width: int,
+    layer: str,
+) -> tuple[np.ndarray, tuple[int, int]]:
+    """The layer on its box grown by `margin`, clipped to the map, and the
+    window's map origin.
+
+    Stands in for the full map canvas: everything outside the box is
+    transparent, so with room for the stroke and the crop padding the window
+    gives the same pixels for a fraction of the work.
+    """
+    x0, y0, x1, y1 = box
+    wx0, wy0 = max(0, x0 - margin), max(0, y0 - margin)
+    wx1, wy1 = min(width, x1 + margin), min(height, y1 + margin)
+    window = np.zeros((wy1 - wy0, wx1 - wx0, 4), dtype=np.uint8)
+    window[y0 - wy0 : y1 - wy0, x0 - wx0 : x1 - wx0] = getattr(buf, layer)
+    return window, (wx0, wy0)
+
+
 def _finalize_buffer_layer(
     buf: RegionBuffer,
     layer: str,
@@ -178,8 +204,12 @@ def _finalize_buffer_layer(
     *,
     store_overlay_meta: bool = False,
     store_nested_overlay_meta: bool = False,
+    origin: tuple[int, int] = (0, 0),
 ) -> None:
+    """Crop `full` (a canvas whose top-left sits at map `origin`) to content."""
     cropped, meta = _finalize_layer_from_full(full)
+    if meta is not None:
+        meta = {**meta, "x": meta["x"] + origin[0], "y": meta["y"] + origin[1]}
     setattr(buf, layer, cropped)
     if store_overlay_meta and meta is not None:
         buf.overlay_meta = meta
@@ -191,56 +221,9 @@ def _finalize_buffer_layer(
     buf.y1 = cropped.shape[0]
 
 
-def _apply_region_borders_np(
-    img: np.ndarray,
-    region_color: OwnerColor,
-    border_owners: dict,
-    color: tuple[int, int, int, int],
-    thickness: int,
-) -> None:
-    """Paint border dilation on a writable (H, W, 4) array."""
-    height, width = img.shape[:2]
-    t = thickness
-    for (x, y), owners in border_owners.items():
-        if region_color not in owners:
-            continue
-        for dy in range(-t, t + 1):
-            ny = y + dy
-            if 0 <= ny < height:
-                for dx in range(-t, t + 1):
-                    nx = x + dx
-                    if 0 <= nx < width:
-                        img[ny, nx] = color
-
-
-def _stroke_opaque_union_np(
-    img: np.ndarray,
-    stroke: tuple[int, int, int, int],
-    thickness: int,
-) -> None:
-    height, width = img.shape[:2]
-    owners = compute_opaque_union_borders(
-        Image.fromarray(img, mode="RGBA").load(),
-        width,
-        height,
-    )
-    _apply_region_borders_np(img, OPAQUE_UNION_OWNER, owners, stroke, thickness)
-
-
-class _XyPixels:
-    """PIL-style [x, y] access over a (H, W, 4) array."""
-
-    def __init__(self, arr: np.ndarray):
-        self.arr = arr
-
-    def __getitem__(self, xy):
-        x, y = xy
-        pix = self.arr[y, x]
-        return (int(pix[0]), int(pix[1]), int(pix[2]), int(pix[3]))
-
-    def __setitem__(self, xy, value):
-        x, y = xy
-        self.arr[y, x] = value
+# crop_to_content's default padding. A region's window leaves room for it
+# beyond the stroke, so the crop matches the one taken from the full map.
+_CROP_PAD = 2
 
 
 def generate_regions_numpy(
@@ -317,9 +300,11 @@ def generate_regions_numpy(
         if pid is None:
             continue
 
-        mask = cache.province_id_map == pid
-        if not np.any(mask):
+        box = cache.province_box(pid)
+        if box is None:
             continue
+        px0, py0, px1, py1 = box
+        mask = cache.province_id_map[py0:py1, px0:px1] == pid
 
         current += 1
         log_progress(
@@ -339,108 +324,56 @@ def generate_regions_numpy(
             base,
             hover,
             nested=owner in overlord_colors,
+            origin=(px0, py0),
         )
 
         for anc in overlord_chains.get(owner, []):
-            ensure_region(anc).paint_flat(mask, display_rgb(anc), hover_rgb(anc))
+            ensure_region(anc).paint_flat(
+                mask, display_rgb(anc), hover_rgb(anc), origin=(px0, py0)
+            )
 
     print()
 
-    if borders and regions:
+    if regions:
         total_regions = len(regions)
         kind = "nested" if has_nesting else "fast"
+        margin = (border_thickness if borders else 0) + _CROP_PAD + 1
         for i, (color, buf) in enumerate(regions.items(), start=1):
-            log_progress(
-                f"Painting borders ({kind}): {i}/{total_regions} "
-                f"({i / max(total_regions, 1) * 100:5.1f}%)"
-            )
+            if borders:
+                log_progress(
+                    f"Painting borders ({kind}): {i}/{total_regions} "
+                    f"({i / max(total_regions, 1) * 100:5.1f}%)"
+                )
             display_color = display_rgb(color)
             base_stroke = border_color_for_fill(display_color)
             hover_stroke = border_color_for_fill(hover_rgb(color))
-            x0, y0, x1, y1 = buf.x0, buf.y0, buf.x1, buf.y1
-
-            full_base = _stage_on_full_canvas(buf, height, width, "base")
-            _stroke_opaque_union_np(full_base, base_stroke, border_thickness)
-
-            full_hover = np.zeros((height, width, 4), dtype=np.uint8)
-            full_hover[y0:y1, x0:x1] = buf.hover
-            _stroke_opaque_union_np(full_hover, hover_stroke, border_thickness)
-
-            if occupation_provinces:
-                occ_color = occupation_display_rgb(color)
-                base_px = _XyPixels(full_base)
-                apply_occupation_seam_dashes(
-                    base_px,
-                    [base_px, _XyPixels(full_hover)],
-                    width,
-                    height,
-                    display_color,
-                    occ_color,
-                )
-
-            _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
-            _finalize_buffer_layer(buf, "hover", full_hover)
-
-            if buf.with_nested and buf.nested is not None:
-                full_nested = np.zeros((height, width, 4), dtype=np.uint8)
-                full_nested[y0:y1, x0:x1] = buf.nested
-                _stroke_opaque_union_np(full_nested, base_stroke, border_thickness)
-
-                full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
-                full_nested_hover[y0:y1, x0:x1] = buf.nested_hover
-                _stroke_opaque_union_np(
-                    full_nested_hover, hover_stroke, border_thickness
-                )
-
-                if occupation_provinces:
-                    occ_color = occupation_display_rgb(color)
-                    nested_px = _XyPixels(full_nested)
-                    apply_occupation_seam_dashes(
-                        nested_px,
-                        [nested_px, _XyPixels(full_nested_hover)],
-                        width,
-                        height,
-                        display_color,
-                        occ_color,
-                    )
-
-                _finalize_buffer_layer(
-                    buf,
-                    "nested",
-                    full_nested,
-                    store_nested_overlay_meta=True,
-                )
-                _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
-    elif regions:
-        for buf in regions.values():
-            map_x0, map_y0, map_x1, map_y1 = buf.x0, buf.y0, buf.x1, buf.y1
-
-            full_base = np.zeros((height, width, 4), dtype=np.uint8)
-            full_base[map_y0:map_y1, map_x0:map_x1] = buf.base
-            _finalize_buffer_layer(
-                buf,
-                "base",
-                full_base,
-                store_overlay_meta=True,
-            )
-
-            full_hover = np.zeros((height, width, 4), dtype=np.uint8)
-            full_hover[map_y0:map_y1, map_x0:map_x1] = buf.hover
-            _finalize_buffer_layer(buf, "hover", full_hover)
-
+            box = (buf.x0, buf.y0, buf.x1, buf.y1)
+            layers = [("base", "hover", "overlay")]
             if buf.with_nested and buf.nested is not None and buf.nested_hover is not None:
-                full_nested = np.zeros((height, width, 4), dtype=np.uint8)
-                full_nested[map_y0:map_y1, map_x0:map_x1] = buf.nested
+                layers.append(("nested", "nested_hover", "nested_overlay"))
+
+            for fill_layer, hover_layer, meta_kind in layers:
+                fill, origin = _stage_on_window(buf, box, margin, height, width, fill_layer)
+                hover, _ = _stage_on_window(buf, box, margin, height, width, hover_layer)
+                if borders:
+                    stroke_opaque_union_array(fill, base_stroke, border_thickness)
+                    stroke_opaque_union_array(hover, hover_stroke, border_thickness)
+                    if occupation_provinces:
+                        apply_occupation_seam_dashes_array(
+                            fill,
+                            [fill, hover],
+                            display_color,
+                            occupation_display_rgb(color),
+                        )
                 _finalize_buffer_layer(
                     buf,
-                    "nested",
-                    full_nested,
-                    store_nested_overlay_meta=True,
+                    fill_layer,
+                    fill,
+                    store_overlay_meta=meta_kind == "overlay",
+                    store_nested_overlay_meta=meta_kind == "nested_overlay",
+                    origin=origin,
                 )
-
-                full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
-                full_nested_hover[map_y0:map_y1, map_x0:map_x1] = buf.nested_hover
-                _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
+                _finalize_buffer_layer(buf, hover_layer, hover, origin=origin)
 
     print()
 

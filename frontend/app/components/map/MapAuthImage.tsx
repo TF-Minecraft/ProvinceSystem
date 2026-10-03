@@ -16,6 +16,12 @@ type MapAuthImageProps = {
   onLoad?: (event: SyntheticEvent<HTMLImageElement>) => void;
   onError?: (event: SyntheticEvent<HTMLImageElement>) => void;
   imgRef?: (node: HTMLImageElement | null) => void;
+  /**
+   * Swap the source on the same `<img>` instead of mounting a new one, so
+   * the old picture stays up until the new one has loaded. For images whose
+   * path changes with zoom (reduced overlay copies).
+   */
+  replaceInPlace?: boolean;
 };
 
 // Only the base map (`/{mapId}/map`) has a low-res preview artifact generated
@@ -41,6 +47,7 @@ export default function MapAuthImage({
   onLoad,
   onError,
   imgRef,
+  replaceInPlace = false,
 }: MapAuthImageProps) {
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
@@ -73,12 +80,17 @@ export default function MapAuthImage({
 
   const fullImage = (
     <img
-      key={url}
+      key={replaceInPlace ? undefined : url}
       src={url}
       alt={alt}
       className={hasPreview ? undefined : className}
       style={hasPreview ? { ...FILL_STYLE, zIndex: 1 } : style}
       crossOrigin={crossOrigin}
+      // Map layers are thousands of pixels square, and the browser decodes
+      // them again at each new zoom scale. Async decoding keeps that off the
+      // frame: the old pixels stay up until the new ones are ready, instead
+      // of the page freezing mid-zoom.
+      decoding="async"
       ref={(node) => {
         imgRef?.(node);
         if (node?.complete) {
@@ -87,6 +99,9 @@ export default function MapAuthImage({
         }
       }}
       onLoad={(event) => {
+        // Decode the full image once, off the main thread, so the first zoom
+        // after load is not the moment the browser does it.
+        if (hasPreview) void event.currentTarget.decode().catch(() => {});
         setFullLoaded(true);
         onLoad?.(event);
       }}

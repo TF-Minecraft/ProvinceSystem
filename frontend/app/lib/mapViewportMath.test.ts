@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MAP_ZOOM_MAX,
   MAP_ZOOM_WHEEL_FACTOR,
   clampTranslate,
   computeCenteredTransform,
@@ -9,7 +10,9 @@ import {
   mapToScreen,
   screenToMap,
   viewportTransformStyle,
+  transformForMapRect,
   zoomAtPoint,
+  zoomToScaleAtPoint,
 } from "./mapViewportMath";
 
 const viewport = { w: 1000, h: 1000 };
@@ -40,90 +43,40 @@ describe("computeFitScale", () => {
 });
 
 describe("clampTranslate", () => {
-  it("forces translate to zero at user zoom 1", () => {
-    const fitScale = computeFitScale(viewport, map);
-    const displayScale = computeDisplayScale(fitScale, 1);
-    expect(clampTranslate(viewport, map, displayScale, -200, -300)).toEqual({
-      x: 0,
-      y: 0,
+  // viewport 1000 x 1000, map 2000 x 2000.
+  it("leaves a translate inside the bounds alone", () => {
+    expect(clampTranslate(viewport, map, 0.5, -200, -300)).toEqual({ x: -200, y: -300 });
+  });
+
+  it("lets a map corner reach the middle of the screen, and no further", () => {
+    const displayScale = 1; // the map is 2000 px across on a 1000 px screen
+    // Top-left corner at the centre: translate (500, 500).
+    expect(clampTranslate(viewport, map, displayScale, 900, 900)).toEqual({ x: 500, y: 500 });
+    // Bottom-right corner at the centre: translate (500 - 2000, ...).
+    expect(clampTranslate(viewport, map, displayScale, -5000, -5000)).toEqual({
+      x: -1500,
+      y: -1500,
     });
   });
 
-  it("cannot pan past edges at zoom 2", () => {
-    const fitScale = computeFitScale(viewport, map);
-    const displayScale = computeDisplayScale(fitScale, 2);
-    const minX = viewport.w - map.w * displayScale;
-    const minY = viewport.h - map.h * displayScale;
-
-    expect(
-      clampTranslate(viewport, map, displayScale, minX - 100, minY - 100)
-    ).toEqual({ x: minX, y: minY });
-    expect(
-      clampTranslate(viewport, map, displayScale, 100, 100)
-    ).toEqual({ x: 0, y: 0 });
+  it("keeps at least a quarter of the screen on the map at any zoom", () => {
+    for (const userScale of [1, 2, 3, MAP_ZOOM_MAX]) {
+      const displayScale = computeDisplayScale(computeFitScale(viewport, map), userScale);
+      for (const t of [-1e6, 1e6]) {
+        const { x, y } = clampTranslate(viewport, map, displayScale, t, t);
+        const visibleW = Math.min(viewport.w, x + map.w * displayScale) - Math.max(0, x);
+        const visibleH = Math.min(viewport.h, y + map.h * displayScale) - Math.max(0, y);
+        expect(visibleW).toBeGreaterThanOrEqual(viewport.w / 2 - 1e-9);
+        expect(visibleH).toBeGreaterThanOrEqual(viewport.h / 2 - 1e-9);
+      }
+    }
   });
 
-  it("cannot pan past edges at zoom 3", () => {
-    const fitScale = computeFitScale(viewport, map);
-    const displayScale = computeDisplayScale(fitScale, 3);
-    const minX = viewport.w - map.w * displayScale;
-    const minY = viewport.h - map.h * displayScale;
-
-    expect(clampTranslate(viewport, map, displayScale, minX - 50, 50)).toEqual(
-      { x: minX, y: 0 }
-    );
-  });
-
-  it("cannot pan past edges at max zoom 4.5", () => {
-    const fitScale = computeFitScale(viewport, map);
-    const displayScale = computeDisplayScale(fitScale, 4.5);
-    const minX = viewport.w - map.w * displayScale;
-
-    expect(clampTranslate(viewport, map, displayScale, minX - 25, 0)).toEqual(
-      { x: minX, y: 0 }
-    );
-  });
-});
-
-describe("clampTranslate centers a slack axis instead of pinning it to the edge", () => {
-  // Cover-fit (the actual fit mode) rarely leaves slack — it exists to
-  // guarantee both axes are fully covered. But nothing in clampTranslate
-  // itself assumes cover-fit produced displayScale; it must still do the
-  // right thing if a caller (or a future fit mode) ever passes a scale that
-  // leaves one axis short of the viewport. Constructing displayScale
-  // directly here, rather than through computeFitScale, tests that
-  // independently of which fit mode is active.
-  it("centers a narrower-than-viewport map horizontally instead of pinning it left", () => {
+  it("applies the same rule to a map smaller than the screen", () => {
     const wide = { w: 1600, h: 800 };
-    const displayScale = 0.3; // displayW = 600, short of the 1600 viewport
-    const displayW = map.w * displayScale;
-
-    const result = clampTranslate(wide, map, displayScale, 0, 0);
-    expect(result.x).toBe((wide.w - displayW) / 2);
-  });
-
-  it("centers a shorter-than-viewport map vertically instead of pinning it to the top", () => {
-    const tall = { w: 800, h: 1600 };
-    const displayScale = 0.3; // displayH = 600, short of the 1600 viewport
-    const displayH = map.h * displayScale;
-
-    const result = clampTranslate(tall, map, displayScale, 0, 0);
-    expect(result.y).toBe((tall.h - displayH) / 2);
-  });
-
-  it("still clamps to the edges once the map is at least as large as the viewport", () => {
-    const wide = { w: 1600, h: 800 };
-    const displayScale = 0.8; // displayW = 1600, exactly covers the viewport
-    const minX = wide.w - map.w * displayScale;
-
-    expect(clampTranslate(wide, map, displayScale, 100, 0)).toEqual({
-      x: 0,
-      y: 0,
-    });
-    expect(clampTranslate(wide, map, displayScale, minX - 100, 0)).toEqual({
-      x: minX,
-      y: 0,
-    });
+    const displayScale = 0.3; // 600 px across
+    expect(clampTranslate(wide, map, displayScale, 5000, 0).x).toBe(800);
+    expect(clampTranslate(wide, map, displayScale, -5000, 0).x).toBe(800 - 600);
   });
 });
 
@@ -231,5 +184,88 @@ describe("viewportTransformStyle", () => {
     expect(viewportTransformStyle(0.5, -10, 20)).toBe(
       "translate(-10px, 20px) scale(0.5)"
     );
+  });
+});
+
+describe("zoomToScaleAtPoint", () => {
+  it("keeps the anchored map point under the anchor", () => {
+    const start = { userScale: 1, translateX: 0, translateY: 0 };
+    const anchor = { x: 250, y: 400 };
+    const before = screenToMap(anchor.x, anchor.y, 0.5, { x: 0, y: 0 });
+
+    const next = zoomToScaleAtPoint(viewport, map, start, anchor, 2);
+    const after = screenToMap(
+      anchor.x,
+      anchor.y,
+      computeDisplayScale(0.5, next.userScale),
+      { x: next.translateX, y: next.translateY }
+    );
+
+    expect(next.userScale).toBe(2);
+    expect(after.x).toBeCloseTo(before.x);
+    expect(after.y).toBeCloseTo(before.y);
+  });
+
+  it("clamps to the zoom range", () => {
+    const start = { userScale: 1, translateX: 0, translateY: 0 };
+    const centre = { x: 500, y: 500 };
+
+    expect(zoomToScaleAtPoint(viewport, map, start, centre, 99).userScale).toBe(
+      MAP_ZOOM_MAX
+    );
+    expect(zoomToScaleAtPoint(viewport, map, start, centre, 0.1).userScale).toBe(1);
+  });
+
+  it("ignores a non-finite scale", () => {
+    const start = { userScale: 2, translateX: -100, translateY: -50 };
+
+    expect(
+      zoomToScaleAtPoint(viewport, map, start, { x: 0, y: 0 }, Number.NaN)
+    ).toBe(start);
+  });
+});
+
+describe("transformForMapRect", () => {
+  it("centres the rect and zooms until it fills the requested share", () => {
+    const rect = { x: 900, y: 900, w: 200, h: 100 };
+    const next = transformForMapRect(viewport, map, rect, "cover", { fill: 0.5 });
+    const displayScale = computeDisplayScale(0.5, next.userScale);
+
+    // 200 map px * 0.5 fit * 5 = 500 screen px = half the viewport width.
+    expect(next.userScale).toBe(5);
+    const centre = mapToScreen(1000, 950, displayScale, {
+      x: next.translateX,
+      y: next.translateY,
+    });
+    expect(centre.x).toBeCloseTo(500);
+    expect(centre.y).toBeCloseTo(500);
+  });
+
+  it("frames the rect in the space left beside an inset panel", () => {
+    const rect = { x: 900, y: 900, w: 200, h: 200 };
+    const next = transformForMapRect(viewport, map, rect, "cover", {
+      fill: 0.5,
+      inset: { left: 400 },
+    });
+    const displayScale = computeDisplayScale(0.5, next.userScale);
+    const centre = mapToScreen(1000, 1000, displayScale, {
+      x: next.translateX,
+      y: next.translateY,
+    });
+
+    expect(centre.x).toBeCloseTo(700);
+    expect(centre.y).toBeCloseTo(500);
+  });
+
+  it("never zooms past the cap for a tiny rect", () => {
+    const next = transformForMapRect(
+      viewport,
+      map,
+      { x: 1000, y: 1000, w: 1, h: 1 },
+      "cover",
+      { maxUserScale: 4 }
+    );
+
+    expect(next.userScale).toBe(4);
   });
 });

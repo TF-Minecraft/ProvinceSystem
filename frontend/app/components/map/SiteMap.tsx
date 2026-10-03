@@ -1,0 +1,65 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { MapEngineProvider } from "@/app/core/MapEngineContext";
+import MapViewer from "@/app/components/MapViewer";
+import { useAccessibleMaps } from "@/app/hooks/useAccessibleMaps";
+import { liveMapIdFrom, setLiveMapId } from "@/app/lib/map/chronicleDayRoute";
+
+import type { MapId } from "./types";
+
+function Loading() {
+  return (
+    <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
+      <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading map…</p>
+    </div>
+  );
+}
+
+/**
+ * A map page, given either a map id from the URL or, for `/map`, nothing: the
+ * site's live map. Which map that is comes from the backend's map list (`live`
+ * in its registry), so the dev site can show the Dev server's map at `/map`
+ * while the public site shows `main`. A URL naming the live map by id
+ * forwards to `/map`, the one address for it.
+ */
+export default function SiteMap({ mapId }: { mapId?: MapId }) {
+  const { maps, loading, error } = useAccessibleMaps();
+  const router = useRouter();
+  // The list reloads now and then (a login in another tab); keep the last
+  // answer meanwhile, or the map would unmount and lose its camera and card.
+  // A failed request is no answer at all: its empty list would read as "no
+  // map is marked live", i.e. `main`, wherever another map is.
+  const resolved = loading || error ? null : liveMapIdFrom(maps);
+  const [liveId, setLiveId] = useState<MapId | null>(resolved);
+  if (resolved !== null && resolved !== liveId) setLiveId(resolved);
+
+  useEffect(() => {
+    if (liveId) setLiveMapId(liveId);
+  }, [liveId]);
+
+  const forwardToLive = mapId !== undefined && liveId !== null && mapId === liveId;
+  useEffect(() => {
+    if (forwardToLive) router.replace(`/map${window.location.search}`);
+  }, [forwardToLive, router]);
+
+  if (liveId === null && error && !loading) {
+    return (
+      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)] px-6 text-center">
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
+          The map could not be loaded. Refresh the page to try again.
+        </p>
+      </div>
+    );
+  }
+  if (liveId === null || forwardToLive) return <Loading />;
+
+  const shown = mapId ?? liveId;
+  return (
+    <MapEngineProvider key={shown}>
+      <MapViewer mapId={shown} />
+    </MapEngineProvider>
+  );
+}

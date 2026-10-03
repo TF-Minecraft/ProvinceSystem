@@ -11,6 +11,7 @@ import {
   insetLabelEndpoints,
   isLabelCorridorWaterCell,
   labelCorridorMargin,
+  LongestFirstPairs,
   parseProvinceLabelGrid,
   tryRadialSegment,
   type ProvinceLabelGrid,
@@ -451,5 +452,22 @@ describe("sub-rect restriction", () => {
     const rect = componentSubRect(grid, [1])!;
     expect(rect.x0).toBeLessThan(9);
     expect(rect.x1).toBeGreaterThan(14);
+  });
+});
+
+describe("LongestFirstPairs", () => {
+  it("hands out pairs exactly as a stable longest-first sort would", () => {
+    // A grid of points gives plenty of equal lengths, so ties are exercised.
+    const candidates = [];
+    for (let y = 0; y < 6; y += 1) {
+      for (let x = 0; x < 7; x += 1) candidates.push({ x: x * 10, y: y * 10 });
+    }
+    const pairs = new LongestFirstPairs(candidates);
+    const expected = [...Array(pairs.count).keys()].sort(
+      (left, right) => pairs.len[right] - pairs.len[left]
+    );
+    const actual = expected.map((_, k) => pairs.at(k));
+    expect(actual).toEqual(expected);
+    expect(pairs.at(pairs.count)).toBe(-1);
   });
 });

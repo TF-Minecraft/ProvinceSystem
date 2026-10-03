@@ -50,6 +50,24 @@ class TestGeometryCache(unittest.TestCase):
 
         self.assertTrue(np.any(cache.land_mask))
 
+    def test_province_box_bounds_each_province(self):
+        ids = np.zeros((6, 8), dtype=np.uint16)
+        ids[1:3, 2:5] = 1
+        ids[5, 7] = 2
+        ids[0, 0] = 2
+        cache = MapGeometryCache(
+            width=8,
+            height=6,
+            provinces_rgba=np.zeros((6, 8, 4), dtype=np.uint8),
+            packed_rgb=np.zeros((6, 8), dtype=np.uint32),
+            province_id_map=ids,
+            land_mask=np.zeros((6, 8), dtype=bool),
+            rgb_to_id={},
+        )
+        self.assertEqual(cache.province_box(1), (2, 1, 5, 3))
+        self.assertEqual(cache.province_box(2), (0, 0, 8, 6))
+        self.assertIsNone(cache.province_box(3))
+
     def test_paint_from_province_id_lut_matches_rgb_lut(self):
         provinces = np.array(
             [
