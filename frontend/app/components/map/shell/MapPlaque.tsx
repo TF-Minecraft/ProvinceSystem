@@ -20,10 +20,10 @@ export default function MapPlaque({
     <div className="map-frame p-2.5 md:p-3">
       <div className="flex items-center justify-between gap-3 px-0.5">
         <div className="min-w-0">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[var(--tfmc-gilt)]">
+          <p className="text-xs text-[var(--tfmc-mist)]">
             {eyebrow}
           </p>
-          <h1 className="truncate font-[family-name:var(--font-fraunces)] text-lg leading-tight text-[var(--tfmc-parchment)] md:text-2xl">
+          <h1 className="truncate font-[family-name:var(--font-fraunces)] text-lg leading-tight text-[var(--tfmc-cream)] md:text-2xl">
             {mapDisplayName}
           </h1>
         </div>

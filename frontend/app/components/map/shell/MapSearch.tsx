@@ -65,8 +65,8 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
 
   return (
     <div ref={rootRef} className="relative">
-      <div className="flex items-center gap-2 rounded-md border border-[var(--tfmc-gilt-dim)] bg-[rgb(6_10_8/0.55)] px-2.5 focus-within:border-[var(--tfmc-gilt)]">
-        <SearchIcon size={16} className="shrink-0 text-[var(--tfmc-gilt)]" />
+      <div className="flex items-center gap-2 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)] px-2.5 focus-within:border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)]">
+        <SearchIcon size={16} className="shrink-0 text-[var(--tfmc-stone)]" />
         <input
           ref={inputRef}
           type="search"
@@ -102,7 +102,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
               inputRef.current?.blur();
             }
           }}
-          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[var(--tfmc-parchment)] placeholder:text-[var(--tfmc-stone)]/70 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)]/70 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query ? (
           <button
@@ -112,12 +112,12 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
               setQuery("");
               inputRef.current?.focus();
             }}
-            className="shrink-0 rounded p-1 text-[var(--tfmc-stone)] hover:text-[var(--tfmc-parchment)]"
+            className="shrink-0 rounded p-1 text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
           >
             <CloseIcon size={14} />
           </button>
         ) : (
-          <kbd className="hidden shrink-0 rounded border border-[var(--tfmc-gilt-dim)] px-1.5 text-[0.65rem] text-[var(--tfmc-stone)] md:inline">
+          <kbd className="hidden shrink-0 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] px-1.5 text-[0.65rem] text-[var(--tfmc-stone)] md:inline">
             /
           </kbd>
         )}
@@ -144,7 +144,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
                 onClick={() => choose(entry)}
                 onMouseEnter={() => setActive(index)}
                 className={`flex cursor-pointer items-center gap-2.5 rounded px-2.5 py-2 ${
-                  index === active ? "bg-[rgb(240_213_140/0.1)]" : ""
+                  index === active ? "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]" : ""
                 }`}
               >
                 {entry.kind === "region" ? (
@@ -154,10 +154,10 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
                     style={{ backgroundColor: entry.rgb ? `rgb(${entry.rgb})` : "#555" }}
                   />
                 ) : (
-                  <PinIcon size={15} className="shrink-0 text-[var(--tfmc-gilt)]" />
+                  <PinIcon size={15} className="shrink-0 text-[var(--tfmc-stone)]" />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-[var(--tfmc-parchment)]">
+                  <span className="block truncate text-sm text-[var(--tfmc-cream)]">
                     {entry.label}
                   </span>
                   <span className="block truncate text-xs text-[var(--tfmc-stone)]">

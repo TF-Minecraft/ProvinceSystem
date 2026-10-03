@@ -33,8 +33,8 @@ type MapShellProps = {
 };
 
 /**
- * Full-bleed map with its controls floating over it: Google Maps' layout in
- * CK3's frames. Search and the details panel down the left, zoom bottom right,
+ * Full-bleed map with its controls floating over it, laid out like Google
+ * Maps. Search and the details panel down the left, zoom bottom right,
  * map modes along the bottom, layers bottom left.
  *
  * On a phone the same pieces regroup instead of shrinking: search and mode
@@ -89,7 +89,7 @@ export default function MapShell({
         {details ? (
           <div
             key={detailsKey ?? undefined}
-            className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[6px] ${
+            className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[10px] ${
               sheetExpanded ? "max-h-[82%]" : "max-h-[44%]"
             } md:max-h-full`}
           >
@@ -100,7 +100,7 @@ export default function MapShell({
               aria-expanded={sheetExpanded}
               className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
             >
-              <span className="h-1 w-10 rounded-full bg-[var(--tfmc-gilt-dim)]" />
+              <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
             </button>
             <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4">
               {details}
@@ -122,7 +122,7 @@ export default function MapShell({
       {status ? (
         <div
           role="status"
-          className="map-frame pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-parchment)] md:bottom-[7rem]"
+          className="map-frame pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)] md:bottom-[7rem]"
         >
           {status}
         </div>

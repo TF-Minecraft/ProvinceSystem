@@ -103,7 +103,7 @@ function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
       className={actionLinkClass}
       title="Review the map's history"
     >
-      <HistoryIcon size={15} className="text-[var(--tfmc-gilt)]" />
+      <HistoryIcon size={15} className="text-[var(--tfmc-stone)]" />
       History
     </Link>
   );

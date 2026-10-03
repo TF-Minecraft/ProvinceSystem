@@ -12,22 +12,19 @@ type MapModeBarProps = {
 };
 
 /**
- * Desktop map-mode row: round medallions in a framed tray along the bottom
- * edge, political tiers then world modes, the way CK3 lays out its map modes.
- * The caption above the tray always names the active mode, so the icons never
- * have to be decoded from memory.
+ * Desktop map-mode row: round icon buttons in a tray along the bottom edge,
+ * political tiers then world modes. The caption above the tray always names
+ * the active mode, so the icons never have to be decoded from memory.
  */
 export function MapModeBar({ mapType, onMapTypeChange }: MapModeBarProps) {
   const options = mapModeOptions();
 
   return (
-    <nav aria-label="Map mode" className="map-frame px-3 pb-2.5 pt-1.5">
-      <p className="map-rule mb-1.5">
-        <span className="font-[family-name:var(--font-fraunces)] text-[0.8rem] normal-case tracking-normal text-[var(--tfmc-parchment)]">
-          {mapModeLabel(mapType)}
-        </span>
+    <nav aria-label="Map mode" className="map-frame px-2 pb-2 pt-1.5">
+      <p className="mb-1 text-center text-xs text-[var(--tfmc-mist)]">
+        {mapModeLabel(mapType)}
       </p>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         {options.map((option, index) => {
           const Glyph = MAP_MODE_ICONS[option.value];
           const groupBreak = index > 0 && options[index - 1].group !== option.group;
@@ -36,7 +33,7 @@ export function MapModeBar({ mapType, onMapTypeChange }: MapModeBarProps) {
               {groupBreak ? (
                 <span
                   aria-hidden
-                  className="mx-1 h-7 w-px bg-gradient-to-b from-transparent via-[var(--tfmc-gilt-dim)] to-transparent"
+                  className="mx-1 h-6 w-px bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]"
                 />
               ) : null}
               <button

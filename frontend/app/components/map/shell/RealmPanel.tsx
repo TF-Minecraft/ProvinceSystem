@@ -98,7 +98,7 @@ function RegionLink({
     <button
       type="button"
       onClick={() => onSelectRegion(id)}
-      className="text-left text-[var(--tfmc-gilt-bright)] underline decoration-[var(--tfmc-gilt-dim)] underline-offset-2 hover:decoration-[var(--tfmc-gilt-bright)]"
+      className="map-link text-left"
     >
       {name}
     </button>
@@ -108,10 +108,10 @@ function RegionLink({
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--tfmc-gilt)]">
+      <dt className="text-xs text-[var(--tfmc-mist)]">
         {label}
       </dt>
-      <dd className="mt-0.5 break-words text-sm text-[var(--tfmc-parchment)]">{children}</dd>
+      <dd className="mt-0.5 break-words text-sm text-[var(--tfmc-cream)]">{children}</dd>
     </div>
   );
 }
@@ -214,7 +214,7 @@ function RealmBody({
               <button
                 type="button"
                 onClick={() => onFocusPoint(capital.map_x!, capital.map_y!)}
-                className="text-left text-[var(--tfmc-gilt-bright)] underline decoration-[var(--tfmc-gilt-dim)] underline-offset-2 hover:decoration-[var(--tfmc-gilt-bright)]"
+                className="map-link text-left"
               >
                 {cleanRegionName(capital.name)}
               </button>
@@ -250,7 +250,7 @@ function RealmBody({
                 <button
                   type="button"
                   onClick={() => onSelectRegion(subjectId)}
-                  className="flex w-full items-center gap-2.5 rounded px-1.5 py-1 text-left hover:bg-[rgb(240_213_140/0.06)]"
+                  className="flex w-full items-center gap-2.5 rounded px-1.5 py-1 text-left hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
                 >
                   <Banner
                     mapId={mapId}
@@ -260,7 +260,7 @@ function RealmBody({
                     sessionToken={sessionToken}
                     className="h-8 w-6 shrink-0 border"
                   />
-                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--tfmc-parchment)]">
+                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--tfmc-cream)]">
                     {regionName(regionData, subjectId)}
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-[var(--tfmc-stone)]">
@@ -275,7 +275,7 @@ function RealmBody({
 
       {relations.length > 0 ? (
         <Section title="Relations">
-          <ul className="divide-y divide-[var(--tfmc-gilt-dim)]/25">
+          <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]">
             {relations.map((relation) => (
               <RelationRow
                 key={relation.id}
@@ -292,9 +292,8 @@ function RealmBody({
 }
 
 /**
- * The detail view for whatever is selected on the map, after CK3's realm
- * window: banner in a heraldic frame, the ruler, then the realm's facts,
- * subjects and relations. Every name in it is a link to that realm.
+ * The detail view for whatever is selected on the map: banner, the ruler,
+ * then the realm's facts, subjects and relations. Every name in it is a link to that realm.
  *
  * On the nation map it reads the allowlisted `RealmProfile`. Title and trade
  * modes carry less, so they get the same frame with the fields they have.
@@ -322,7 +321,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
 
   return (
     <article aria-label={name}>
-      <header className="map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[5px] px-4 pb-4 pt-4">
+      <header className="map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
         <Banner
           mapId={mapId}
           mapType={mapType}
@@ -332,10 +331,10 @@ export function RealmPanelContent(props: RealmPanelProps) {
           className="h-[5.5rem] w-16 shrink-0"
         />
         <div className="min-w-0 flex-1 pr-7">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--tfmc-gilt)]">
+          <p className="text-xs text-[var(--tfmc-mist)]">
             {profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier}
           </p>
-          <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-parchment)]">
+          <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
             {name}
           </h2>
           <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
@@ -365,11 +364,11 @@ export function RealmPanelContent(props: RealmPanelProps) {
       {profile ? (
         <>
           {profile.leader ? (
-            <div className="mb-4 flex items-baseline gap-2 rounded border border-[var(--tfmc-gilt-dim)]/60 bg-black/20 px-3 py-2">
-              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--tfmc-gilt)]">
+            <div className="mb-4 flex items-baseline gap-2 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-black/20 px-3 py-2">
+              <span className="text-xs text-[var(--tfmc-mist)]">
                 {profile.rulerTitle ?? "Ruler"}
               </span>
-              <span className="truncate font-[family-name:var(--font-fraunces)] text-base text-[var(--tfmc-parchment)]">
+              <span className="truncate font-[family-name:var(--font-fraunces)] text-base text-[var(--tfmc-cream)]">
                 {profile.leader}
               </span>
             </div>

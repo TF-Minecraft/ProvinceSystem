@@ -83,15 +83,15 @@ export default function MapLayersMenu({
               <ul className="space-y-1">
                 {toggles.map((toggle) => (
                   <li key={toggle.id}>
-                    <label className="flex cursor-pointer items-start gap-2.5 rounded px-1.5 py-1.5 hover:bg-[rgb(240_213_140/0.06)]">
+                    <label className="flex cursor-pointer items-start gap-2.5 rounded px-1.5 py-1.5 hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]">
                       <input
                         type="checkbox"
                         checked={toggle.checked}
                         onChange={(event) => toggle.onChange(event.target.checked)}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--tfmc-gilt)]"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--tfmc-accent)]"
                       />
                       <span className="min-w-0">
-                        <span className="block text-sm text-[var(--tfmc-parchment)]">
+                        <span className="block text-sm text-[var(--tfmc-cream)]">
                           {toggle.label}
                         </span>
                         {toggle.hint ? (
@@ -107,7 +107,7 @@ export default function MapLayersMenu({
             </>
           ) : null}
           {footer ? (
-            <div className={toggles.length > 0 ? "mt-3 border-t border-[var(--tfmc-gilt-dim)]/50 pt-3" : ""}>
+            <div className={toggles.length > 0 ? "mt-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pt-3" : ""}>
               {footer}
             </div>
           ) : null}

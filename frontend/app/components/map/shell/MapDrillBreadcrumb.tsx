@@ -33,7 +33,7 @@ export default function MapDrillBreadcrumb({
       <button
         type="button"
         onClick={onReset}
-        className="shrink-0 rounded px-1.5 py-1 text-[var(--tfmc-stone)] hover:text-[var(--tfmc-parchment)]"
+        className="shrink-0 rounded px-1.5 py-1 text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
       >
         {rootLabel}
       </button>
@@ -41,15 +41,15 @@ export default function MapDrillBreadcrumb({
         const current = index === drillStack.length - 1;
         return (
           <Fragment key={layer.regionId}>
-            <ChevronIcon size={14} className="shrink-0 text-[var(--tfmc-gilt-dim)]" />
+            <ChevronIcon size={14} className="shrink-0 text-[var(--tfmc-stone)]" />
             <button
               type="button"
               onClick={() => onSelectLayer(index)}
               aria-current={current ? "location" : undefined}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded px-1.5 py-1 ${
                 current
-                  ? "text-[var(--tfmc-parchment)]"
-                  : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-parchment)]"
+                  ? "text-[var(--tfmc-cream)]"
+                  : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
               }`}
             >
               <span

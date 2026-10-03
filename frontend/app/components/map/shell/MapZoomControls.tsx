@@ -16,14 +16,14 @@ export default function MapZoomControls({ onZoom, onReset }: MapZoomControlsProp
     <div className="map-frame flex flex-col overflow-hidden p-0" role="group" aria-label="Zoom">
       <button
         type="button"
-        className={`${buttonClass} rounded-t-[5px]`}
+        className={`${buttonClass} rounded-t-[9px]`}
         aria-label="Zoom in"
         title="Zoom in (+)"
         onClick={() => onZoom(MAP_ZOOM_STEP)}
       >
         <PlusIcon size={18} />
       </button>
-      <span aria-hidden className="mx-2 h-px bg-[var(--tfmc-gilt-dim)]" />
+      <span aria-hidden className="mx-2 h-px bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
       <button
         type="button"
         className={buttonClass}
@@ -33,10 +33,10 @@ export default function MapZoomControls({ onZoom, onReset }: MapZoomControlsProp
       >
         <MinusIcon size={18} />
       </button>
-      <span aria-hidden className="mx-2 h-px bg-[var(--tfmc-gilt-dim)]" />
+      <span aria-hidden className="mx-2 h-px bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
       <button
         type="button"
-        className={`${buttonClass} rounded-b-[5px]`}
+        className={`${buttonClass} rounded-b-[9px]`}
         aria-label="Show the whole map"
         title="Show the whole map"
         onClick={onReset}

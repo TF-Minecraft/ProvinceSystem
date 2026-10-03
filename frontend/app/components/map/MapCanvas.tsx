@@ -87,21 +87,21 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
 }
 
 /**
- * A gilt rim around the selected region. The overlay sits inside the scaled
+ * A light rim around the selected region. The overlay sits inside the scaled
  * map, so the glow is sized in map pixels divided by the current scale to stay
  * a constant couple of screen pixels at every zoom.
  */
 function selectedOutlineStyle(displayScale: number): React.CSSProperties {
   const px = displayScale > 0 ? 2 / displayScale : 0;
-  const gilt = "#f5d27a";
+  const rim = "#e8e4d9";
   // Four unblurred offsets trace a crisp rim; the last, blurred and dark,
   // lifts it off light terrain.
   return {
     filter: [
-      `drop-shadow(${px}px 0 0 ${gilt})`,
-      `drop-shadow(-${px}px 0 0 ${gilt})`,
-      `drop-shadow(0 ${px}px 0 ${gilt})`,
-      `drop-shadow(0 -${px}px 0 ${gilt})`,
+      `drop-shadow(${px}px 0 0 ${rim})`,
+      `drop-shadow(-${px}px 0 0 ${rim})`,
+      `drop-shadow(0 ${px}px 0 ${rim})`,
+      `drop-shadow(0 -${px}px 0 ${rim})`,
       `drop-shadow(0 0 ${px * 1.5}px rgb(0 0 0 / 0.8))`,
     ].join(" "),
   };
@@ -380,7 +380,7 @@ export default function MapCanvas({
             top: cursorTooltip.y + 14,
           }}
         >
-          <p className="whitespace-pre-line font-[family-name:var(--font-fraunces)] text-sm text-[var(--tfmc-parchment)]">
+          <p className="whitespace-pre-line font-[family-name:var(--font-fraunces)] text-sm text-[var(--tfmc-cream)]">
             {cursorTooltip.text}
           </p>
           {cursorTooltip.hint && (
