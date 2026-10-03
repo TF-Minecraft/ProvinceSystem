@@ -25,6 +25,7 @@ const ALL_MODES: MapMode[] = [
   "province",
   "trade",
   "prosperity",
+  "infrastructure",
   "infestation",
 ];
 
@@ -79,6 +80,7 @@ describe("chronicleProvincePaintSource", () => {
       "fertility",
       "province",
       "prosperity",
+      "infrastructure",
       "infestation",
     ] as MapMode[]) {
       expect(chronicleProvincePaintSource(mode, null)).toEqual({ kind: "live" });
@@ -108,9 +110,36 @@ describe("chronicleProvincePaintSource", () => {
     expect(showsLiveProvinceRaster("prosperity", DAY)).toBe(false);
     expect(showsLiveProvinceRaster("infestation", DAY)).toBe(false);
   });
+
+  it("day-scopes infrastructure under a stored day", () => {
+    expect(chronicleProvincePaintSource("infrastructure", DAY)).toEqual({
+      kind: "day",
+      day: DAY,
+      mapType: "infrastructure",
+      file: "province_data",
+    });
+    expect(showsLiveProvinceRaster("infrastructure", DAY)).toBe(false);
+  });
 });
 
 describe("chronicleProvincePaintLut", () => {
+  it("paints infrastructure from finite effective terrain only", async () => {
+    const { buildInfrastructureColorLut, infrastructureColor } = await import("./chronicleInfrastructure");
+    expect(infrastructureColor(0.3)).toEqual([244, 160, 160]);
+    expect(infrastructureColor(0.525)).toEqual([140, 70, 170]);
+    expect(infrastructureColor(0.75)).toEqual([20, 40, 120]);
+    const lut = buildInfrastructureColorLut([
+      { id: 1, effective_terrain: 0.3 },
+      { id: 2, effective_terrain: "0.525" },
+      { id: 3, effective_terrain: Number.NaN },
+      { id: 4, terrain: "sea", effective_terrain: 0.75 },
+    ]);
+    expect(lut[1]).not.toBe(0);
+    expect(lut[2] ?? 0).toBe(0);
+    expect(lut[3] ?? 0).toBe(0);
+    expect(lut[4] ?? 0).toBe(0);
+  });
+
   it("paints prosperity through the shared ramp, alpha included", () => {
     const lut = chronicleProvincePaintLut("prosperity", [
       { id: 3, prosperity: 12 },

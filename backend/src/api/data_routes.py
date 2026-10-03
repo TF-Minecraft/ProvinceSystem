@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, 
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 import json, logging, os, time
+import math
 
 from .http_headers import (
     add_no_cache,
@@ -93,6 +94,15 @@ def compute_trade_shares(trade: dict):
             best, dominant = v, g
     return shares, dominant, best / total
 
+
+def _finite_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
 def build_compiled_provinces(map_name: str):
     meta = load_province_metadata(map_name)
 
@@ -119,7 +129,7 @@ def build_compiled_provinces(map_name: str):
             except (TypeError, ValueError):
                 inf = None
 
-        out[pid] = {
+        province = {
             **m,
             "province_id": pid,
             "prosperity": p.get("prosperity", 0),
@@ -132,6 +142,11 @@ def build_compiled_provinces(map_name: str):
             "infestation_group": inf.get("group") if inf else None,
             "infestation_display": (inf.get("display") or inf.get("group")) if inf else None,
         }
+        for field in ("terrain_value", "infrastructure", "infrastructure_fill", "effective_terrain"):
+            value = p.get(field)
+            if _finite_number(value):
+                province[field] = value
+        out[pid] = province
 
     return out
 

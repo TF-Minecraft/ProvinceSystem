@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   indexStoredProvinceData,
+  infrastructureHoverText,
   storedTradeShares,
 } from "./useProvinceHover";
 
@@ -51,6 +52,24 @@ describe("storedTradeShares", () => {
 });
 
 describe("indexStoredProvinceData", () => {
+  it("keeps finite infrastructure fields and drops malformed numbers", () => {
+    const byId = indexStoredProvinceData([
+      { id: 1, terrain: "bog", terrain_value: 0.4, infrastructure: 12, infrastructure_fill: 0.6, effective_terrain: 0.61 },
+      { id: 2, terrain_value: "0.4", infrastructure: Number.NaN, infrastructure_fill: null, effective_terrain: "0.61" },
+    ]);
+    expect(byId[1]).toMatchObject({ terrain: "bog", terrain_value: 0.4, infrastructure: 12, infrastructure_fill: 0.6, effective_terrain: 0.61 });
+    expect(byId[2]).not.toHaveProperty("terrain_value");
+    expect(byId[2]).not.toHaveProperty("infrastructure");
+    expect(byId[2]).not.toHaveProperty("infrastructure_fill");
+    expect(byId[2]).not.toHaveProperty("effective_terrain");
+  });
+
+  it("formats infrastructure hover details with optional fields", () => {
+    expect(infrastructureHoverText({ terrain: "bog", terrain_value: 0.4, infrastructure_fill: 0.6, effective_terrain: 0.61 })).toBe("Bog 0.40, infrastructure 60%, counts as 0.61");
+    expect(infrastructureHoverText({ terrain: "bog", terrain_value: 0.4 })).toBe("Bog 0.40");
+    expect(infrastructureHoverText({ terrain: "bog" })).toBe("Bog");
+  });
+
   it("indexes the stored list by province id", () => {
     const byId = indexStoredProvinceData([
       { id: 1, prosperity: 0, trade: { Lantan: { trade: 0.73 } } },
