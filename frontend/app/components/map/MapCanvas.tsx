@@ -290,6 +290,14 @@ export default function MapCanvas({
     fitMode,
     dragPan: !paintEnabled,
     keyboard: true,
+    // Mid-gesture the transform runs ahead of React; keep hover picking on
+    // what is actually on screen.
+    onLiveTransform: (live) => {
+      if (!viewportCoordsRef?.current) return;
+      viewportCoordsRef.current.displayScale = live.displayScale;
+      viewportCoordsRef.current.translateX = live.translateX;
+      viewportCoordsRef.current.translateY = live.translateY;
+    },
   });
 
   if (controlsRef) {
@@ -393,6 +401,7 @@ export default function MapCanvas({
       <MapViewport
         mapSize={mapSize}
         viewportRef={viewport.viewportRef}
+        contentRef={viewport.contentRef}
         transformStyle={viewport.transformStyle}
         transformTransition={viewport.transformTransition}
         cursorClassName={interactionCursor}
@@ -405,7 +414,12 @@ export default function MapCanvas({
           path={`/${mapId}/map`}
           sessionToken={sessionToken}
           alt="Map"
-          className="pointer-events-none block h-full w-full"
+          // Past one screen pixel per map pixel, show the map's own pixels
+          // sharp rather than smeared; below it, smooth downscaling reads
+          // better.
+          className={`pointer-events-none block h-full w-full ${
+            viewport.displayScale >= 1 ? "[image-rendering:pixelated]" : ""
+          }`}
           imgRef={(node) => {
             if (node?.complete) {
               syncNaturalMapSize(node);
@@ -483,6 +497,7 @@ export default function MapCanvas({
             mapH={mapSize.h}
             opacity={0.8}
             alt="Selected region"
+            imageClassName="map-selected-region"
             imageStyle={selectedOutlineStyle(viewport.displayScale)}
           />
         )}

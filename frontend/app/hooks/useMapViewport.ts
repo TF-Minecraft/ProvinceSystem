@@ -47,6 +47,16 @@ export type UseMapViewportOptions = {
   dragPan?: boolean;
   /** Arrow keys pan and +/- zoom while the pointer is not in a text field. */
   keyboard?: boolean;
+  /**
+   * Called on every frame of a gesture with the transform actually on
+   * screen, before React state catches up. Hover picking reads it so a
+   * pointer over the map resolves against what the reader sees.
+   */
+  onLiveTransform?: (live: {
+    displayScale: number;
+    translateX: number;
+    translateY: number;
+  }) => void;
 };
 
 export type MapFocusInset = {
@@ -58,6 +68,12 @@ export type MapFocusInset = {
 
 export type UseMapViewportResult = {
   viewportRef: RefObject<HTMLDivElement | null>;
+  /**
+   * The scaled content element. While a gesture runs the hook moves it
+   * directly, so wheel, drag and pinch cost one style write per frame
+   * instead of a React render of every overlay, label and marker.
+   */
+  contentRef: RefObject<HTMLDivElement | null>;
   userScale: number;
   translateX: number;
   translateY: number;
@@ -92,6 +108,12 @@ const VIEWPORT_RESET_TRANSITION_MS = 200;
 const VIEWPORT_RESET_TRANSITION = `transform ${VIEWPORT_RESET_TRANSITION_MS}ms ease-out`;
 const VIEWPORT_FOCUS_TRANSITION_MS = 450;
 const VIEWPORT_FOCUS_TRANSITION = `transform ${VIEWPORT_FOCUS_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+/**
+ * How long the map must be still before a gesture's transform is committed to
+ * React state. Until then labels and markers keep their last layout and the
+ * GPU scales the cached layer, which is what makes the zoom smooth.
+ */
+const GESTURE_SETTLE_MS = 140;
 
 const INITIAL_TRANSFORM: ViewportTransform = {
   userScale: 1,
@@ -137,15 +159,25 @@ export function useMapViewport({
   fitMode = "cover",
   dragPan = false,
   keyboard = false,
+  onLiveTransform,
 }: UseMapViewportOptions): UseMapViewportResult {
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState<Size>({ w: 0, h: 0 });
   const [transform, setTransform] = useState<ViewportTransform>(INITIAL_TRANSFORM);
   const [isPanning, setIsPanning] = useState(false);
   const [transition, setTransition] = useState<string | undefined>(undefined);
 
+  /**
+   * The transform on screen. Equal to `transform` except mid-gesture, when it
+   * runs ahead of React state until `commitLive` catches state up.
+   */
   const transformRef = useRef(transform);
-  transformRef.current = transform;
+  const liveActiveRef = useRef(false);
+  if (!liveActiveRef.current) transformRef.current = transform;
+  const onLiveTransformRef = useRef(onLiveTransform);
+  onLiveTransformRef.current = onLiveTransform;
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewportSizeRef = useRef(viewportSize);
   viewportSizeRef.current = viewportSize;
   const mapSizeRef = useRef(mapSize);
@@ -161,6 +193,57 @@ export function useMapViewport({
   const dragClickRef = useRef(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /** Hand the on-screen transform back to React state. */
+  const commitLive = useCallback(() => {
+    if (settleTimerRef.current !== null) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+    if (!liveActiveRef.current) return;
+    liveActiveRef.current = false;
+    contentRef.current?.removeAttribute("data-gesturing");
+    setTransform(transformRef.current);
+  }, []);
+
+  /**
+   * Put `next` on screen now, outside React. Falls back to state when the
+   * content element is not attached (the editor's canvas).
+   */
+  const presentLive = useCallback(
+    (next: ViewportTransform) => {
+      const content = contentRef.current;
+      if (!content) {
+        setTransform(next);
+        return;
+      }
+      transformRef.current = next;
+      liveActiveRef.current = true;
+      const displayScale = computeDisplayScale(
+        computeFitScale(viewportSizeRef.current, mapSizeRef.current, fitModeRef.current),
+        next.userScale
+      );
+      // No `will-change` here: on a 6400 px layer it makes the browser
+      // rasterise one enormous texture, which measured slower than letting it
+      // re-tile. `data-gesturing` lets costly effects (the selection's
+      // outline filter) stand down until the map settles.
+      content.setAttribute("data-gesturing", "");
+      content.style.transition = "none";
+      content.style.transform = viewportTransformStyle(
+        displayScale,
+        next.translateX,
+        next.translateY
+      );
+      onLiveTransformRef.current?.({
+        displayScale,
+        translateX: next.translateX,
+        translateY: next.translateY,
+      });
+      if (settleTimerRef.current !== null) clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = setTimeout(commitLive, GESTURE_SETTLE_MS);
+    },
+    [commitLive]
+  );
+
   const clearTransition = useCallback(() => {
     if (transitionTimerRef.current !== null) {
       clearTimeout(transitionTimerRef.current);
@@ -172,7 +255,11 @@ export function useMapViewport({
   /** Apply `next` with a CSS transition that is dropped once it has run. */
   const animateTo = useCallback(
     (next: ViewportTransform, css: string, ms: number) => {
+      commitLive();
       clearTransition();
+      // The live path wrote `transition: none` straight onto the element;
+      // React will not clear what it did not set.
+      contentRef.current?.style.removeProperty("transition");
       setTransform(next);
       if (prefersReducedMotion()) return;
       setTransition(css);
@@ -181,7 +268,7 @@ export function useMapViewport({
         setTransition(undefined);
       }, ms);
     },
-    [clearTransition]
+    [clearTransition, commitLive]
   );
 
   const fitScale = useMemo(
@@ -217,7 +304,8 @@ export function useMapViewport({
     gestureRef.current = null;
     pointersRef.current.clear();
     setIsPanning(false);
-  }, []);
+    commitLive();
+  }, [commitLive]);
 
   const resetViewport = useCallback((options?: ViewportResetOptions) => {
     // Same centered position the view opens with, not the raw (0,0) sentinel
@@ -394,12 +482,12 @@ export function useMapViewport({
       event.preventDefault();
       clearTransition();
       const cursor = toViewportPoint(event);
-      setTransform((current) =>
+      presentLive(
         applyClampedTransform(
           zoomAtPoint(
             viewportSizeRef.current,
             mapSizeRef.current,
-            current,
+            transformRef.current,
             cursor,
             event.deltaY,
             fitModeRef.current
@@ -458,7 +546,7 @@ export function useMapViewport({
           pinchUserScale(gesture.startTransform.userScale, gesture.start, sample),
           fitModeRef.current
         );
-        setTransform(
+        presentLive(
           applyClampedTransform({
             userScale: zoomed.userScale,
             translateX: zoomed.translateX + sample.midpoint.x - gesture.start.midpoint.x,
@@ -477,7 +565,7 @@ export function useMapViewport({
         setIsPanning(true);
       }
       event.preventDefault();
-      setTransform(
+      presentLive(
         applyClampedTransform({
           userScale: transformRef.current.userScale,
           translateX: gesture.startTranslateX + deltaX,
@@ -577,7 +665,7 @@ export function useMapViewport({
       window.removeEventListener("pointercancel", handlePointerUp);
       window.removeEventListener("blur", endOnBlur);
     };
-  }, [animateTo, applyClampedTransform, clearTransition, enabled, endGesture]);
+  }, [animateTo, applyClampedTransform, clearTransition, enabled, endGesture, presentLive]);
 
   useEffect(() => {
     if (!enabled || !keyboard) return;
@@ -612,6 +700,9 @@ export function useMapViewport({
     return () => {
       if (transitionTimerRef.current !== null) {
         clearTimeout(transitionTimerRef.current);
+      }
+      if (settleTimerRef.current !== null) {
+        clearTimeout(settleTimerRef.current);
       }
     };
   }, []);
@@ -661,6 +752,7 @@ export function useMapViewport({
 
   return {
     viewportRef,
+    contentRef,
     userScale: transform.userScale,
     translateX: transform.translateX,
     translateY: transform.translateY,

@@ -1,10 +1,9 @@
 export const MAP_ZOOM_MIN = 1;
 /**
- * Deep enough that settlement names and province borders are readable on a
- * phone: at 8x a contain-fit 6400 px map shows roughly one map pixel per
- * screen pixel on a 900 px tall viewport.
+ * Deep enough to read individual map pixels: at 16x a contain-fit 6400 px map
+ * shows about two screen pixels per map pixel on a 900 px tall viewport.
  */
-export const MAP_ZOOM_MAX = 8;
+export const MAP_ZOOM_MAX = 16;
 export const MAP_ZOOM_WHEEL_FACTOR = 1.1;
 
 export type Size = {

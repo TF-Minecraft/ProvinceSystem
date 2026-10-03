@@ -5,6 +5,8 @@ import type { Size } from "../../lib/mapViewportMath";
 export type MapViewportProps = {
   mapSize: Size;
   viewportRef: RefObject<HTMLDivElement | null>;
+  /** The scaled layer; `useMapViewport` moves it directly during gestures. */
+  contentRef?: RefObject<HTMLDivElement | null>;
   transformStyle: string;
   transformTransition?: string;
   cursorClassName: string;
@@ -28,6 +30,7 @@ export type MapViewportProps = {
 export default function MapViewport({
   mapSize,
   viewportRef,
+  contentRef,
   transformStyle,
   transformTransition,
   cursorClassName,
@@ -59,7 +62,7 @@ export default function MapViewport({
       }${capturesTouch ? " touch-none" : ""}`}
       style={outerStyle}
     >
-      <div className="relative" style={innerStyle}>
+      <div ref={contentRef} className="relative" style={innerStyle}>
         {children}
       </div>
     </div>

@@ -79,6 +79,11 @@ export default function MapAuthImage({
       className={hasPreview ? undefined : className}
       style={hasPreview ? { ...FILL_STYLE, zIndex: 1 } : style}
       crossOrigin={crossOrigin}
+      // Map layers are thousands of pixels square, and the browser decodes
+      // them again at each new zoom scale. Async decoding keeps that off the
+      // frame: the old pixels stay up until the new ones are ready, instead
+      // of the page freezing mid-zoom.
+      decoding="async"
       ref={(node) => {
         imgRef?.(node);
         if (node?.complete) {
@@ -87,6 +92,9 @@ export default function MapAuthImage({
         }
       }}
       onLoad={(event) => {
+        // Decode the full image once, off the main thread, so the first zoom
+        // after load is not the moment the browser does it.
+        if (hasPreview) void event.currentTarget.decode().catch(() => {});
         setFullLoaded(true);
         onLoad?.(event);
       }}
