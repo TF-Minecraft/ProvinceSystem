@@ -23,7 +23,7 @@ function Icon({ size = 20, children, ...rest }: IconProps & { children: ReactNod
   );
 }
 
-/* Map modes. Heraldic shapes for the political tiers, plain glyphs for the rest. */
+/* Map modes. A shield for realms, crowns for the title tiers, plain glyphs for the rest. */
 
 export const RealmIcon = (props: IconProps) => (
   <Icon {...props}>
@@ -32,34 +32,49 @@ export const RealmIcon = (props: IconProps) => (
   </Icon>
 );
 
+/*
+ * The title tiers, as one family of crowns that grows with rank, the way CK3
+ * marks them: a county's low coronet of pearls, a duchy's taller one of leaves,
+ * a kingdom's crown with an arch and cross, an empire's double-arched crown
+ * with an orb. Each reads from its silhouette alone at bar size.
+ */
 export const CountyIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M7 20V9l-1.5-1V5h2.5v1.5h2V5h4v1.5h2V5h2.5v3L17 9v11" />
-    <path d="M5 20h14M10.5 20v-4a1.5 1.5 0 0 1 3 0v4" />
+    <path d="M5 21h14v-3H5v3Z" />
+    <path d="M5 18l1.2-3.6L9 16.2l3-3.4 3 3.4 2.8-1.8L19 18" />
+    <circle cx="6.2" cy="13.5" r="0.9" />
+    <circle cx="12" cy="11.9" r="0.9" />
+    <circle cx="17.8" cy="13.5" r="0.9" />
   </Icon>
 );
 
 export const DuchyIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M4 17h16l-1.5-8-3.5 3.5L12 7l-3 5.5L5.5 9 4 17Z" />
-    <path d="M4 20h16" />
+    <path d="M5 21h14v-3H5v3Z" />
+    <path d="M5 18 4.4 11.8 8 14.6l4-5.4 4 5.4 3.6-2.8L19 18" />
+    <path d="M12 9.2c-1.3-.7-1.6-2.6 0-3.6 1.6 1 1.3 2.9 0 3.6ZM4.4 11.8c-1.2-.4-1.6-2.1-.3-2.9 1.2.6 1.3 2.2.3 2.9ZM19.6 11.8c1.2-.4 1.6-2.1.3-2.9-1.2.6-1.3 2.2-.3 2.9Z" />
   </Icon>
 );
 
 export const KingdomIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M3.5 18h17l1-10-5 4L12 5l-4.5 7-5-4 1 10Z" />
-    <circle cx="12" cy="4" r="1" />
-    <circle cx="2.5" cy="7.5" r="0.8" />
-    <circle cx="21.5" cy="7.5" r="0.8" />
-    <path d="M3.5 21h17" />
+    <path d="M5 21h14v-3H5v3Z" />
+    <path d="M5 18 4.4 12.4 8 15l4-5 4 5 3.6-2.6L19 18" />
+    <path d="M4.4 12.4C5.4 8.8 8.4 7.2 12 7.2s6.6 1.6 7.6 5.2" />
+    <path d="M12 7.2V3.4M10.7 4.6h2.6" />
   </Icon>
 );
 
 export const EmpireIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="14" r="6" />
-    <path d="M6 14h12M12 8V3M10 5h4" />
+    <path d="M3.5 21h17v-3.5h-17V21Z" />
+    <path d="M3.5 17.5C3.5 11 7.5 7.6 12 7.6s8.5 3.4 8.5 9.9" />
+    <path d="M8 17.5c0-5 1.8-8.4 4-9.9 2.2 1.5 4 4.9 4 9.9" />
+    <circle cx="12" cy="5.6" r="1.6" />
+    <path d="M12 4V1.3M10.8 2.4h2.4" />
+    <circle cx="7" cy="19.25" r="0.45" fill="currentColor" />
+    <circle cx="12" cy="19.25" r="0.45" fill="currentColor" />
+    <circle cx="17" cy="19.25" r="0.45" fill="currentColor" />
   </Icon>
 );
 
