@@ -109,6 +109,16 @@ function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
   );
 }
 
+/** Modes whose tooltip describes the province under the pointer. */
+const PROVINCE_TOOLTIP_MODES = new Set<MapMode>([
+  "trade",
+  "prosperity",
+  "terrain",
+  "fertility",
+  "infestation",
+  "province",
+]);
+
 /**
  * Desktop opens on the whole world. A phone held upright would show that as a
  * small square with the screen empty below it, so there the map fills the
@@ -428,6 +438,33 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     // `day` only gates the fetch: the grid is geometry, shared by every day.
   }, [mapId, authToken, day]);
 
+  /**
+   * The same quarter-scale province grid on the live map, for the modes whose
+   * tooltip describes the province under the pointer. Hover then reads the id
+   * locally instead of asking the server on every mouse move, which made the
+   * trade tooltip flicker between the region and the province as answers
+   * landed. Fetched on first use and kept for the map.
+   */
+  const [liveProvinceGrid, setLiveProvinceGrid] = useState<{
+    mapId: MapId;
+    grid: ProvinceIdGrid;
+  } | null>(null);
+  const needsProvinceGrid = day === null && PROVINCE_TOOLTIP_MODES.has(mapType);
+  useEffect(() => {
+    if (!needsProvinceGrid || liveProvinceGrid?.mapId === mapId) return;
+    const controller = new AbortController();
+    void fetchProvinceIdGridQ4(mapId, authToken, controller.signal)
+      .then((grid) => setLiveProvinceGrid({ mapId, grid }))
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          console.error("Failed to load province grid:", err);
+        }
+      });
+    return () => controller.abort();
+  }, [needsProvinceGrid, liveProvinceGrid, mapId, authToken]);
+  const hoverProvinceGrid =
+    chronicleGrid ?? (liveProvinceGrid?.mapId === mapId ? liveProvinceGrid.grid : null);
+
   const mapCanvasMounted =
     !loading && geometryReady;
 
@@ -626,7 +663,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     forts,
     setHoveredMarkerId,
     day,
-    chronicleGrid,
+    chronicleGrid: hoverProvinceGrid,
   });
 
   // Paint mode owns left-click and pointer tracking; the pick canvas is

@@ -138,7 +138,9 @@ export function useMapHover(props: UseMapHoverProps) {
     guildNameCacheRef,
     sessionToken: props.sessionToken,
     day: props.day ?? null,
-    resolveProvinceId,
+    // Only offered once a grid is in memory, so the hover hook knows when it
+    // must fall back to asking the server.
+    resolveProvinceId: props.chronicleGrid ? resolveProvinceId : undefined,
   });
 
   const { handleRegionHover, resetHoverCache } = useRegionHover({
@@ -217,20 +219,48 @@ export function useMapHover(props: UseMapHoverProps) {
 
     current.setHoveredFortZoc?.(null);
 
-    if (
-      handleProvinceHoverRef.current(
-        coords.x,
-        coords.y,
-        coords.screenX,
-        coords.screenY
-      )
-    ) {
+    const province = handleProvinceHoverRef.current(
+      coords.x,
+      coords.y,
+      coords.screenX,
+      coords.screenY
+    );
+    if (province.consumed) {
+      // `undefined`: the answer is on its way and will draw itself.
+      if (province.lines !== undefined) {
+        current.setCursorTooltip(
+          province.lines
+            ? { x: coords.screenX, y: coords.screenY, text: province.lines.join("\n") }
+            : null
+        );
+      }
       if (provinceHoverBlocksRegionPick(current.mapType)) {
         current.setSelectedRegionId(null);
       }
       setIsHoveringClickable(false);
       return;
     }
+
+    // Trade: the province's breakdown rides in the region's tooltip, one box
+    // drawn once per frame, instead of two tooltips taking turns.
+    const provinceLines = province.lines ?? null;
+    const setTooltip: typeof current.setCursorTooltip = provinceLines
+      ? (tooltip) =>
+          current.setCursorTooltip(
+            tooltip
+              ? {
+                  ...tooltip,
+                  hint: [...provinceLines.slice(1), tooltip.hint]
+                    .filter(Boolean)
+                    .join("\n"),
+                }
+              : {
+                  x: coords.screenX,
+                  y: coords.screenY,
+                  text: provinceLines.slice(1).join("\n"),
+                }
+          )
+      : current.setCursorTooltip;
 
     const pickPixel = mapPixelToPickCanvas(
       coords.x,
@@ -252,7 +282,7 @@ export function useMapHover(props: UseMapHoverProps) {
       pickPixel.y,
       coords.screenX,
       coords.screenY,
-      current.setCursorTooltip
+      setTooltip
     );
     setIsHoveringClickable(clickable);
   }, []);
