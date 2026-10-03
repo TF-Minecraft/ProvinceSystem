@@ -115,6 +115,10 @@ def migrate() -> None:
     denied_ids: list[str] = []
     with connect() as conn:
         conn.executescript(schema)
+        if "link_event" not in _column_names(conn, "patreon_desired"):
+            conn.execute("ALTER TABLE patreon_desired ADD COLUMN link_event TEXT")
+        if "patreon_changes" in _tables(conn) and "dm_suppressed" not in _column_names(conn, "patreon_changes"):
+            conn.execute("ALTER TABLE patreon_changes ADD COLUMN dm_suppressed INTEGER NOT NULL DEFAULT 0")
         if "grip_preset" not in _column_names(conn, "submissions"):
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN grip_preset TEXT"

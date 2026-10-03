@@ -6,6 +6,7 @@ import CharacterList from "../components/character/CharacterList";
 import ProfileCustomItemsList from "../components/profile/ProfileCustomItemsList";
 import ProfileRedeemForm from "../components/profile/ProfileRedeemForm";
 import ProfileSubmissionList from "../components/profile/ProfileSubmissionList";
+import SupporterPanel from "../components/profile/SupporterPanel";
 import { logoutCharacter } from "../../lib/characters/api";
 import {
   ProfileApiError,
@@ -209,6 +210,7 @@ export default function ProfilePage() {
         <ProfileRedeemForm onRedeemed={onRedeemed} />
       ) : (
         <>
+          <SupporterPanel sessionToken={session!.session_token} />
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-stone)]">
             <span>
               Session expires {formatExpiresIn(session!.expires_at)} (

@@ -1,6 +1,8 @@
-"""Give test fixtures one database module across both supported import paths."""
+"""Share the database module and keep sandboxed threaded ASGI tests responsive."""
 from pathlib import Path
 import sys
+import asyncio
+import pytest
 
 backend = Path(__file__).resolve().parent
 sys.path.insert(0, str(backend))
@@ -13,3 +15,25 @@ from src.skins import db
 # functions must retain that same module's globals throughout test collection.
 sys.modules["skins"] = skins
 sys.modules["skins.db"] = db
+
+
+@pytest.fixture(scope="session", autouse=True)
+def sandbox_event_loop_wakeup():
+    # Same fallback as test_patchnotes_routes.py; only blocked sockets need it.
+    original = asyncio.DefaultEventLoopPolicy.new_event_loop
+
+    def new_event_loop(policy):
+        loop = original(policy)
+        try:
+            loop._csock.send(b"\0")
+        except PermissionError:
+            def tick():
+                loop.call_later(.01, tick)
+            loop.call_soon(tick)
+        return loop
+
+    asyncio.DefaultEventLoopPolicy.new_event_loop = new_event_loop
+    try:
+        yield
+    finally:
+        asyncio.DefaultEventLoopPolicy.new_event_loop = original

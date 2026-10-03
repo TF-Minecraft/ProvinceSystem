@@ -438,3 +438,107 @@ CREATE INDEX IF NOT EXISTS idx_map_ledger_factions_id
     ON map_ledger_factions(map_id, faction_id);
 CREATE INDEX IF NOT EXISTS idx_map_ledger_faction_days_key
     ON map_ledger_faction_days(map_id, faction_key, day);
+
+-- Patreon lives beside discord_links; link tombstones retain relink history.
+CREATE TABLE IF NOT EXISTS patreon_members (
+    member_id TEXT PRIMARY KEY,
+    patreon_user_id TEXT NOT NULL UNIQUE,
+    data_json TEXT NOT NULL,
+    last_tier TEXT,
+    declined_since TEXT,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS patreon_links (
+    patreon_user_id TEXT PRIMARY KEY,
+    discord_user_id TEXT,
+    player_uuid TEXT,
+    method TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    linked_at TEXT NOT NULL,
+    person_changed_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_patreon_link_discord
+    ON patreon_links(discord_user_id) WHERE active = 1;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_patreon_link_uuid
+    ON patreon_links(player_uuid) WHERE active = 1;
+CREATE TABLE IF NOT EXISTS patreon_tokens (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS patreon_leases (
+    name TEXT PRIMARY KEY,
+    owner TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS patreon_sync_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    last_sync_at TEXT,
+    last_sync_ok INTEGER,
+    consecutive_failures INTEGER NOT NULL DEFAULT 0,
+    brake_held INTEGER NOT NULL DEFAULT 0
+);
+INSERT OR IGNORE INTO patreon_sync_state(id) VALUES (1);
+CREATE TABLE IF NOT EXISTS patreon_applied (
+    target TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    tiers_json TEXT NOT NULL DEFAULT '[]',
+    ever_granted INTEGER NOT NULL DEFAULT 0,
+    dm_generation INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (target, subject)
+);
+CREATE TABLE IF NOT EXISTS patreon_desired (
+    target TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    tier_key TEXT,
+    grace_until TEXT,
+    dm TEXT,
+    generation INTEGER NOT NULL DEFAULT 1,
+    link_event TEXT,
+    PRIMARY KEY (target, subject)
+);
+CREATE TABLE IF NOT EXISTS patreon_changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    add_tier TEXT,
+    remove_json TEXT NOT NULL,
+    dm TEXT,
+    grace_until TEXT,
+    generation INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    dispatched_at TEXT,
+    acked_at TEXT,
+    cancelled_at TEXT,
+    dm_suppressed INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_patreon_changes_pending
+    ON patreon_changes(target, acked_at, cancelled_at, subject);
+CREATE TABLE IF NOT EXISTS patreon_alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    acked_at TEXT
+);
+CREATE TABLE IF NOT EXISTS patreon_brake_approvals (
+    target TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    generation INTEGER NOT NULL,
+    PRIMARY KEY (target, subject)
+);
+-- OAuth state is stored hashed, single-use, and bound to the subject that started it.
+CREATE TABLE IF NOT EXISTS patreon_oauth_states (
+    state_hash TEXT PRIMARY KEY,
+    discord_user_id TEXT,
+    player_uuid TEXT,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    CHECK ((discord_user_id IS NULL) <> (player_uuid IS NULL))
+);
+-- Webhook member ids waiting for an out-of-band refresh (kept if the sync lease is busy).
+CREATE TABLE IF NOT EXISTS patreon_webhook_members (
+    member_id TEXT PRIMARY KEY,
+    recorded_at TEXT NOT NULL
+);
