@@ -26,11 +26,13 @@ function Loading() {
  * forwards to `/map`, the one address for it.
  */
 export default function SiteMap({ mapId }: { mapId?: MapId }) {
-  const { maps, loading } = useAccessibleMaps();
+  const { maps, loading, error } = useAccessibleMaps();
   const router = useRouter();
   // The list reloads now and then (a login in another tab); keep the last
   // answer meanwhile, or the map would unmount and lose its camera and card.
-  const resolved = loading ? null : liveMapIdFrom(maps);
+  // A failed request is no answer at all: its empty list would read as "no
+  // map is marked live", i.e. `main`, wherever another map is.
+  const resolved = loading || error ? null : liveMapIdFrom(maps);
   const [liveId, setLiveId] = useState<MapId | null>(resolved);
   if (resolved !== null && resolved !== liveId) setLiveId(resolved);
 
@@ -43,6 +45,15 @@ export default function SiteMap({ mapId }: { mapId?: MapId }) {
     if (forwardToLive) router.replace(`/map${window.location.search}`);
   }, [forwardToLive, router]);
 
+  if (liveId === null && error && !loading) {
+    return (
+      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)] px-6 text-center">
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
+          The map could not be loaded. Refresh the page to try again.
+        </p>
+      </div>
+    );
+  }
   if (liveId === null || forwardToLive) return <Loading />;
 
   const shown = mapId ?? liveId;
