@@ -103,6 +103,10 @@ def _finite_number(value):
     except OverflowError:
         return False
 
+# These come from the plugin's province_data row. provinces.txt is free-form
+# key=value, so a stray infrastructure=unknown must not survive into the hover.
+_MEASUREMENT_FIELDS = ("terrain_value", "infrastructure", "infrastructure_fill", "effective_terrain")
+
 def build_compiled_provinces(map_name: str):
     meta = load_province_metadata(map_name)
 
@@ -130,7 +134,7 @@ def build_compiled_provinces(map_name: str):
                 inf = None
 
         province = {
-            **m,
+            **{key: value for key, value in m.items() if key not in _MEASUREMENT_FIELDS},
             "province_id": pid,
             "prosperity": p.get("prosperity", 0),
             "trade": trade,
@@ -142,7 +146,7 @@ def build_compiled_provinces(map_name: str):
             "infestation_group": inf.get("group") if inf else None,
             "infestation_display": (inf.get("display") or inf.get("group")) if inf else None,
         }
-        for field in ("terrain_value", "infrastructure", "infrastructure_fill", "effective_terrain"):
+        for field in _MEASUREMENT_FIELDS:
             value = p.get(field)
             if _finite_number(value):
                 province[field] = value

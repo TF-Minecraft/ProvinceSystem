@@ -184,7 +184,11 @@ export function useProvinceHover({
     if (!active) return false;
 
     const render = (data: any) => {
-      if (!data || data.terrain === "sea" || data.terrain === "water") return;
+      if (!data) return;
+      if (data.terrain === "sea" || data.terrain === "water") {
+        setCursorTooltip(null);
+        return;
+      }
 
       const lines = [`x: ${x}  z: ${y}`];
 

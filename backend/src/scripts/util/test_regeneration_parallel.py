@@ -112,6 +112,20 @@ class TestParallelRegenHelpers(unittest.TestCase):
             )
         infrastructure.assert_called_once_with("main", "infrastructure_map", cache=None)
 
+    def test_parallel_trade_worker_draws_infrastructure_map(self) -> None:
+        from . import mode_worker
+
+        cache = object()
+        with (
+            patch("src.scripts.mapgen.geometry_cache.MapGeometryCache.load", return_value=cache),
+            patch("src.scripts.mapgen.mapgen.create_map"),
+            patch("src.scripts.mapgen.prosperitygen.create_prosperity_map"),
+            patch("src.scripts.mapgen.infrastructuregen.create_infrastructure_map") as infrastructure,
+            patch("src.scripts.mapgen.regiongen.generate_regions"),
+        ):
+            mode_worker.run_mode("main", "trade", True)
+        infrastructure.assert_called_once_with("main", "infrastructure_map", cache=cache)
+
 
 if __name__ == "__main__":
     unittest.main()
