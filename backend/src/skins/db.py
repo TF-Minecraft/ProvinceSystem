@@ -11,9 +11,19 @@ DRINKS_DIR = DATA_DIR / "drinks"
 SCHEMA_PATH = _SKINS_PKG / "schema.sql"
 
 
+class _ClosingConnection(sqlite3.Connection):
+    """Keep SQLite's transaction context behavior and also release the handle."""
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+
+
 def connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, factory=_ClosingConnection)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
