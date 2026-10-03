@@ -124,8 +124,9 @@ function regionHighlightStyle(
 
 /**
  * What the map is focused on: a selected region, or a realm opened to show
- * its subjects. Everything outside `shapePath` (a region crop, as an API
- * path) is dimmed; `objects` are the realm's own layers, drawn over it.
+ * its subjects. Every other region's colour fades; the focus keeps its own,
+ * drawn over the faded layer from `shapePath` (a region crop, as an API path)
+ * or, for an opened realm, from its own layers in `objects`.
  */
 export type MapFocus = {
   shapePath: string;
@@ -133,44 +134,22 @@ export type MapFocus = {
   objects: MapObject[];
 };
 
-/** The wash over everything outside the focus. */
-const FOCUS_DIM = "rgb(12 18 15 / 0.55)";
+/**
+ * The flattened colours' opacity while something is focused. Low enough that
+ * the rest of the world reads as background, and that what shows through
+ * under the focus (drawn at full strength over it) tints it by only a few
+ * per cent.
+ */
+const FOCUS_MUTED_OPACITY = 0.3;
 
 /**
- * A mask that keeps everything but `box`'s opaque pixels: the full layer
- * with the shape cut out. The map content is laid out in map pixels, so the
- * box places the shape as is.
+ * Whether `url` has loaded, so the colours fade only once what replaces them
+ * is ready to draw.
  */
-function focusHoleMask(url: string, box: OverlayBBox): React.CSSProperties {
-  const image = `url("${url}"), linear-gradient(#000, #000)`;
-  const size = `${box.w}px ${box.h}px, 100% 100%`;
-  const position = `${box.x}px ${box.y}px, 0 0`;
-  return {
-    maskImage: image,
-    WebkitMaskImage: image,
-    maskSize: size,
-    WebkitMaskSize: size,
-    maskPosition: position,
-    WebkitMaskPosition: position,
-    maskRepeat: "no-repeat",
-    WebkitMaskRepeat: "no-repeat",
-    maskComposite: "exclude",
-    WebkitMaskComposite: "xor",
-  };
-}
-
-/**
- * The last of the URLs given that has finished loading. A new one replaces it
- * only once it has loaded, so a mask never applies with its image missing
- * (which would dim the focus too) and a change of reduction does not blink.
- */
-function useLoadedImageUrl(url: string | null): string | null {
+function useImageLoaded(url: string | null): boolean {
   const [loaded, setLoaded] = useState<string | null>(null);
   useEffect(() => {
-    if (!url) {
-      setLoaded(null);
-      return;
-    }
+    if (!url) return;
     let cancelled = false;
     const image = new Image();
     image.crossOrigin = "anonymous";
@@ -182,7 +161,7 @@ function useLoadedImageUrl(url: string | null): string | null {
       cancelled = true;
     };
   }, [url]);
-  return url ? loaded : null;
+  return url !== null && loaded === url;
 }
 
 /** Region modes the backend can flatten and tile (`regions-{mode}`). */
@@ -319,9 +298,9 @@ type MapCanvasProps = {
   onClick: (e: React.MouseEvent<Element>) => void;
   isHoveringClickable?: boolean;
   /**
-   * Live map only: the selected region or opened realm. Everything else is
-   * dimmed, and an opened realm's subjects are drawn over the flattened
-   * tiles, which otherwise stay as first shown.
+   * Live map only: the selected region or opened realm. Every other region's
+   * colour fades, and an opened realm's own layers are drawn over the
+   * flattened tiles, which otherwise stay as first shown.
    */
   focus?: MapFocus | null;
   /** Filled with the camera controls once the viewport is mounted. */
@@ -431,7 +410,7 @@ export default function MapCanvas({
    * A region mode's overlays as first shown, flattened and tiled by the
    * backend. Switching mode then loads a few tiles instead of one image per
    * region (85 for counties). They stay up when a realm is opened: only that
-   * realm's own layers are drawn separately, over a hole cut for them.
+   * realm's own layers are drawn separately, over them.
    */
   const regionLayer =
     regionOverlay === undefined && REGION_TILE_MODES.has(mapType)
@@ -501,8 +480,9 @@ export default function MapCanvas({
   // the base map.
   const lod = overlayLod(viewport.displayScale, devicePixelRatio);
 
-  // The focus: a wash over everything outside its shape. Applied once the
-  // shape has loaded; until then the map shows as it was.
+  // The focus. Its shape is the same crop the selection highlight draws, so
+  // once it has loaded the highlight is ready to stand in for the faded
+  // colour under it.
   const focusShapePath =
     focus && regionOverlay === undefined
       ? lod > 0 && focus.shapePath.includes("/regions/")
@@ -515,12 +495,9 @@ export default function MapCanvas({
     sessionToken,
     Boolean(focusShapePath)
   );
-  const focusShapeReady = useLoadedImageUrl(focusShapeUrl);
-  const focusMask =
-    focus?.overlay && focusShapeReady ? focusHoleMask(focusShapeReady, focus.overlay) : null;
-  // An opened realm's layers go over a hole in the flattened tiles, so its
-  // subjects are not tinted by the colour the tiles give its whole area. The
-  // hole opens once they have all loaded, so it never shows bare land.
+  const focusShapeLoaded = useImageLoaded(focusShapeUrl);
+  // An opened realm draws its own layers instead; the colours fade once they
+  // have all loaded, so the realm never shows faded in between.
   const focusObjects = useRegionTiles && focus ? focus.objects : [];
   const focusObjectsKey = focusObjects.map((obj) => obj.id).join("|");
   const [focusLoaded, setFocusLoaded] = useState<{ key: string; ids: Set<string> }>({
@@ -536,11 +513,11 @@ export default function MapCanvas({
       }),
     [focusObjectsKey]
   );
-  const focusObjectsReady =
-    focusObjects.length > 0 &&
-    focusLoaded.key === focusObjectsKey &&
-    focusObjects.every((obj) => focusLoaded.ids.has(obj.id));
-  const regionTilesMask = focusObjectsReady ? focusMask : null;
+  const focusReady =
+    focusObjects.length > 0
+      ? focusLoaded.key === focusObjectsKey &&
+        focusObjects.every((obj) => focusLoaded.ids.has(obj.id))
+      : focusShapeLoaded;
 
   /**
    * The pick canvas is read with `getImageData`, never seen. It used to sit
@@ -729,24 +706,22 @@ export default function MapCanvas({
             provinceOverlay ?? null
           ))}
         {regionOverlay === undefined && useRegionTiles && regionTiles.manifest ? (
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={regionTilesMask ?? undefined}
-          >
-            <TileLayer
-              // One instance per mode and version: what was loaded or held for
-              // the last mode says nothing about this one.
-              key={regionTilesKey ?? undefined}
-              manifest={regionTiles.manifest}
-              tileUrl={(level, x, y) =>
-                tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
-              }
-              view={tileView}
-              style={{ opacity: DRILL_STACK_OVERLAY_OPACITY }}
-              onReady={() => setRegionTilesReadyKey(regionTilesKey)}
-              onTileError={regionTiles.refresh}
-            />
-          </div>
+          <TileLayer
+            // One instance per mode and version: what was loaded or held for
+            // the last mode says nothing about this one.
+            key={regionTilesKey ?? undefined}
+            manifest={regionTiles.manifest}
+            tileUrl={(level, x, y) =>
+              tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
+            }
+            view={tileView}
+            className="transition-opacity duration-200 ease-out"
+            style={{
+              opacity: focusReady ? FOCUS_MUTED_OPACITY : DRILL_STACK_OVERLAY_OPACITY,
+            }}
+            onReady={() => setRegionTilesReadyKey(regionTilesKey)}
+            onTileError={regionTiles.refresh}
+          />
         ) : regionOverlay === undefined && holdRegionOverlays ? null : regionOverlay === undefined
           ? mapObjects
               .filter((obj) => obj.visible)
@@ -787,17 +762,6 @@ export default function MapCanvas({
                 />
               ))
           : regionOverlay}
-        {regionOverlay === undefined && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 transition-opacity duration-200 ease-out"
-            style={{
-              backgroundColor: FOCUS_DIM,
-              opacity: focusMask ? 1 : 0,
-              ...(focusMask ?? {}),
-            }}
-          />
-        )}
         {focusObjects.map((obj) => (
           <MapAuthImage
             key={`focus:${mapType}:${obj.id}`}
