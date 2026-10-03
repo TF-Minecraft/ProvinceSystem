@@ -1,11 +1,6 @@
-import { MapEngineProvider } from "../core/MapEngineContext";
-import MapViewer from "../components/MapViewer";
+import SiteMap from "../components/map/SiteMap";
 
-/** The live `main` map. `/map/main` redirects here (see `next.config.ts`). */
+/** The site's live map: `main` on the public site, the Dev server's on dev. */
 export default function Page() {
-  return (
-    <MapEngineProvider>
-      <MapViewer mapId="main" />
-    </MapEngineProvider>
-  );
+  return <SiteMap />;
 }

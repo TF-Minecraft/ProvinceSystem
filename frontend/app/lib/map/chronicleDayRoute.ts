@@ -64,9 +64,25 @@ export function mapBaseHref(mapId: MapId): string {
   return `/map/${mapRouteSegment(mapId)}`;
 }
 
-/** `/map` for `main`, `/map/r3b1rth` or `/map/{archive}` — the live map. */
+/**
+ * The map this site shows at `/map`: `main` on the public site, the Dev
+ * server's map on the dev site. Set from the backend's map list once it has
+ * loaded (`setLiveMapId`), so every link below agrees with the page.
+ */
+let liveMapIdForLinks: MapId = "main";
+
+export function setLiveMapId(mapId: MapId): void {
+  liveMapIdForLinks = mapId;
+}
+
+/** The live map in a `/maps/accessible` list; `main` if none says so. */
+export function liveMapIdFrom(maps: readonly { id: string; live?: boolean }[]): MapId {
+  return maps.find((entry) => entry.live)?.id ?? "main";
+}
+
+/** `/map` for the site's live map, else `/map/r3b1rth` or `/map/{archive}`. */
 export function liveMapHref(mapId: MapId): string {
-  return mapId === "main" ? "/map" : mapBaseHref(mapId);
+  return mapId === liveMapIdForLinks ? "/map" : mapBaseHref(mapId);
 }
 
 /** `/map/{map}/chronicle` — the timelapse studio. */

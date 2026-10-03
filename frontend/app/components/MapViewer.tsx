@@ -1106,7 +1106,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const plaqueActions = chronicle ? null : (
     <>
       {archived ? (
-        <Link href={liveMapHref("main")} className={actionLinkClass}>
+        <Link href="/map" className={actionLinkClass}>
           Live map
         </Link>
       ) : null}

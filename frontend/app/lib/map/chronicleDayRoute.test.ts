@@ -7,6 +7,8 @@ import {
   chronicleStudioHref,
   isValidChronicleDay,
   liveMapHref,
+  liveMapIdFrom,
+  setLiveMapId,
   parseChronicleDayRange,
   parseMapRouteSegment,
 } from "./chronicleDayRoute";
@@ -75,6 +77,12 @@ describe("isValidChronicleDay", () => {
 describe("chronicle route hrefs", () => {
   it("maps the dev map id onto its public segment", () => {
     expect(liveMapHref("main")).toBe("/map");
+    setLiveMapId("dev");
+    expect(liveMapHref("dev")).toBe("/map");
+    expect(liveMapHref("main")).toBe("/map/main");
+    setLiveMapId("main");
+    expect(liveMapIdFrom([{ id: "main" }, { id: "dev", live: true }])).toBe("dev");
+    expect(liveMapIdFrom([{ id: "main" }])).toBe("main");
     expect(liveMapHref("dev")).toBe("/map/r3b1rth");
     expect(chronicleStudioHref("main")).toBe("/map/main/chronicle");
     expect(chronicleStudioHref("dev")).toBe("/map/r3b1rth/chronicle");

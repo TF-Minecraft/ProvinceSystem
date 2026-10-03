@@ -14,6 +14,8 @@ export type AccessibleMapEntry = {
   chapter_name?: string;
   /** Present on archived chapters only. True when the chronicle index has days. */
   has_chronicle_days?: boolean;
+  /** The map this site's `/map` shows (`main` on the public site). */
+  live?: boolean;
 };
 
 export type AccessibleMapsResponse = {
