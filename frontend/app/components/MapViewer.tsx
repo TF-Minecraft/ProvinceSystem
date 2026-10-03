@@ -190,6 +190,9 @@ const LABEL_GEOMETRY_CACHE_SIZE = 8;
  * where the half-size pick map's 2 px steps do not show, and they are the
  * devices short of memory.
  */
+/** Rows of the pick map copied into its canvas per frame. */
+const PICK_COPY_BAND = 256;
+
 function prefersSmallPickMap(): boolean {
   return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 }
@@ -647,7 +650,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         return;
       }
 
-      const paint = (source: CanvasImageSource, width: number, height: number) => {
+      const paint = async (source: CanvasImageSource, width: number, height: number) => {
         // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
         // only touch the dimensions when the pick image actually changed size.
         if (canvas.width !== width || canvas.height !== height) {
@@ -655,7 +658,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           canvas.height = height;
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(source, 0, 0);
+        // A band of rows per frame: the whole 6400 px map in one drawImage
+        // held the page for ~100 ms; a 256-row band takes a few.
+        for (let y = 0; y < height; y += PICK_COPY_BAND) {
+          if (cancelled) return;
+          const rows = Math.min(PICK_COPY_BAND, height - y);
+          ctx.drawImage(source, 0, y, width, rows, 0, y, width, rows);
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
       };
 
       // Decoded off the main thread. Drawn straight from an <img>, the 6400 px
@@ -665,15 +675,17 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       try {
         const res = await fetch(src, { credentials: "omit" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        // Premultiplied, as the canvas stores it anyway (pick pixels are fully
+        // opaque or fully transparent, so no region's colour changes): left
+        // unpremultiplied, the copy into the canvas took nearly three times as long.
         const bitmap = await createImageBitmap(await res.blob(), {
           colorSpaceConversion: "none",
-          premultiplyAlpha: "none",
         });
         if (cancelled) {
           bitmap.close();
           return;
         }
-        paint(bitmap, bitmap.width, bitmap.height);
+        await paint(bitmap, bitmap.width, bitmap.height);
         bitmap.close();
         return;
       } catch {
@@ -686,7 +698,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        paint(img, img.width, img.height);
+        void paint(img, img.width, img.height);
       };
       img.onerror = () => {
         console.error("Failed to load pick map image:", src);
