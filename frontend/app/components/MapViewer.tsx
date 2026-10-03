@@ -50,7 +50,12 @@ import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
 import { RealmPanelContent } from "./map/shell/RealmPanel";
 import { PlacePanelContent } from "./map/shell/PlacePanel";
 import { GuildPanelContent } from "./map/shell/GuildPanel";
-import { allGuilds, findGuild, guildSeat } from "@/app/lib/map/guildProfile";
+import {
+  allGuilds,
+  findGuild,
+  guildKeyForId,
+  guildSeat,
+} from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
 import { HistoryIcon } from "./map/shell/MapIcons";
 import type {
@@ -59,6 +64,7 @@ import type {
   MapId,
   MapMode,
   RegionInfo,
+  RegionRecord,
 } from "./map/types";
 import { mapFallbackSize, mapDisplayName } from "./map/types";
 import { buildMapSearchIndex, type MapSearchEntry } from "@/app/lib/map/mapSearch";
@@ -292,6 +298,35 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     sessionToken: authToken,
     day,
   });
+  /**
+   * Guilds are described in the realm data (`/data/nation`), which only the
+   * realm map loads. Other modes that show guilds (the Guilds map, a guild
+   * card opened from search) read it from here, fetched once per map.
+   */
+  const [guildRealmData, setGuildRealmData] = useState<{
+    mapId: MapId;
+    data: RegionRecord;
+  } | null>(null);
+  const needsGuildRealmData = day === null && mapType !== "nation";
+  useEffect(() => {
+    if (!needsGuildRealmData || guildRealmData?.mapId === mapId) return;
+    let cancelled = false;
+    void fetchMapJson<RegionRecord>(`/${mapId}/data/nation`, { sessionToken: authToken })
+      .then((data) => {
+        if (!cancelled) setGuildRealmData({ mapId, data });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsGuildRealmData, guildRealmData, mapId, authToken]);
+  const guildData: RegionRecord | null =
+    mapType === "nation"
+      ? regionData
+      : guildRealmData?.mapId === mapId
+        ? guildRealmData.data
+        : null;
+
   /**
    * `prosperity` and `infestation` under a stored day. Both are drawn on the
    * live map as `/{mapId}/mapdata/{mode}`, a raster regenerated from today's
@@ -829,6 +864,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     }
 
     if (!regionData[regionId]) return;
+    // The Guilds map's areas are keyed by the guild that dominates them.
+    const guildKey = mapType === "trade" ? guildKeyForId(guildData, regionId) : null;
+    if (guildKey) {
+      select({ guild: guildKey });
+      return;
+    }
     select({ region: regionId });
   };
 
@@ -908,12 +949,42 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const selectRegion = useCallback(
     (regionId: string, options: { focus?: boolean } = {}) => {
       if (!regionData?.[regionId]) return;
-      revealRegion(regionId);
-      select({ region: regionId });
+      const guildKey = mapType === "trade" ? guildKeyForId(guildData, regionId) : null;
+      if (guildKey) {
+        select({ guild: guildKey });
+      } else {
+        revealRegion(regionId);
+        select({ region: regionId });
+      }
       if (options.focus ?? true) focusRegion(regionId);
     },
-    [regionData, revealRegion, focusRegion]
+    [regionData, revealRegion, focusRegion, mapType, guildData, select]
   );
+
+  /**
+   * A realm, from a guild card or a place card in any mode: the realm card
+   * only exists on the realm map, so switch to it first and open the realm
+   * once its data has loaded.
+   */
+  const [pendingRealmId, setPendingRealmId] = useState<string | null>(null);
+  const openRealm = useCallback(
+    (regionId: string) => {
+      if (mapType === "nation") {
+        selectRegion(regionId);
+        return;
+      }
+      setPendingRealmId(regionId);
+      handleMapTypeChange("nation");
+    },
+    // handleMapTypeChange is redefined each render but only reads current state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mapType, selectRegion]
+  );
+  useEffect(() => {
+    if (!pendingRealmId || mapType !== "nation" || !regionData?.[pendingRealmId]) return;
+    selectRegion(pendingRealmId);
+    setPendingRealmId(null);
+  }, [pendingRealmId, mapType, regionData, selectRegion]);
 
   const searchEntries = useMemo(
     () =>
@@ -932,7 +1003,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         selectRegion(entry.regionId);
       } else if (entry.kind === "guild") {
         select({ guild: entry.guildKey });
-        const guild = findGuild(regionData, entry.guildKey);
+        const guild = findGuild(guildData, entry.guildKey);
         const seat = guild ? guildSeat(guild, settlements) : null;
         if (seat && typeof seat.map_x === "number" && typeof seat.map_y === "number") {
           focusPoint(seat.map_x, seat.map_y);
@@ -992,12 +1063,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   );
 
   const selectedGuild = useMemo(
-    () => (selectedGuildKey ? findGuild(regionData, selectedGuildKey) : null),
-    [selectedGuildKey, regionData]
+    () => (selectedGuildKey ? findGuild(guildData, selectedGuildKey) : null),
+    [selectedGuildKey, guildData]
   );
   useEffect(() => {
-    if (selectedGuildKey && regionData && !selectedGuild) setSelectedGuildKey(null);
-  }, [selectedGuildKey, regionData, selectedGuild]);
+    if (selectedGuildKey && guildData && !selectedGuild) setSelectedGuildKey(null);
+  }, [selectedGuildKey, guildData, selectedGuild]);
 
   // A selection the current data no longer has (a stored day without that
   // realm, a mode reload) closes rather than showing an empty panel.
@@ -1192,7 +1263,10 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       guild={selectedGuild}
       regionData={regionData}
       seat={guildSeat(selectedGuild, settlements)}
-      onSelectRegion={(id) => selectRegion(id)}
+      tradeProvinces={
+        mapType === "trade" ? regionData?.[selectedGuild.id]?.size ?? null : null
+      }
+      onSelectRegion={openRealm}
       onSelectPlace={(markerId) => select({ place: markerId })}
       onFocusPoint={focusPoint}
       onClose={() => select()}

@@ -12,6 +12,8 @@ type GuildPanelProps = {
   regionData: RegionRecord | null;
   /** The guild's capital settlement, if the map has one there. */
   seat: SettlementMarker | null;
+  /** Provinces whose trade it dominates, when the Guilds map is open. */
+  tradeProvinces?: number | null;
   onSelectRegion: (regionId: string) => void;
   onSelectPlace: (markerId: string) => void;
   onFocusPoint: (mapX: number, mapY: number) => void;
@@ -23,6 +25,7 @@ export function GuildPanelContent({
   guild,
   regionData,
   seat,
+  tradeProvinces = null,
   onSelectRegion,
   onSelectPlace,
   onFocusPoint,
@@ -83,6 +86,11 @@ export function GuildPanelContent({
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         <Fact label="Members">{guild.members}</Fact>
+        {tradeProvinces !== null ? (
+          <Fact label="Dominates trade in">
+            {tradeProvinces} {tradeProvinces === 1 ? "province" : "provinces"}
+          </Fact>
+        ) : null}
         <Fact label="Capital">
           {seat ? (
             <button

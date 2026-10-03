@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildGuildProfile,
   findGuild,
+  guildKeyForId,
   guildSeat,
   guildsInProvince,
   guildTypeLabel,
@@ -86,6 +87,13 @@ describe("realm guilds", () => {
       ])?.id
     ).toBe("Oyfthyr");
     expect(guildSeat({ ...guild, homeProvince: null }, [])).toBeNull();
+  });
+
+  it("finds a realm's own guild by key, and any guild by id", () => {
+    expect(findGuild(regionData, "Thalendor/Thalendor")?.typeLabel).toBe("Realm guild");
+    expect(guildKeyForId(regionData, "Oyfthyr")).toBe("Thalendor/Oyfthyr");
+    expect(guildKeyForId(regionData, "Thalendor")).toBe("Thalendor/Thalendor");
+    expect(guildKeyForId(regionData, "Nobody")).toBeNull();
   });
 
   it("labels guild types", () => {

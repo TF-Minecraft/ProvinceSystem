@@ -98,11 +98,33 @@ export function allGuilds(regionData: RegionRecord | null): GuildProfile[] {
   );
 }
 
+/** Every guild of a realm, its own realm guild included. */
+function everyGuildOf(factionId: string, region: unknown): GuildProfile[] {
+  const raw = (region as { guilds?: unknown } | undefined)?.guilds;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (entry && typeof entry === "object" ? buildGuildProfile(factionId, entry as RawGuild) : null))
+    .filter((guild): guild is GuildProfile => guild !== null);
+}
+
+/** A guild by `factionId/guildId`, realm guilds included. */
 export function findGuild(regionData: RegionRecord | null, key: string): GuildProfile | null {
   const slash = key.indexOf("/");
   if (slash <= 0) return null;
   const factionId = key.slice(0, slash);
-  return realmGuilds(factionId, regionData?.[factionId]).find((guild) => guild.key === key) ?? null;
+  return everyGuildOf(factionId, regionData?.[factionId]).find((guild) => guild.key === key) ?? null;
+}
+
+/**
+ * The key of the guild with this id, in any realm. The trade map's areas are
+ * keyed by the id of the guild that dominates them.
+ */
+export function guildKeyForId(regionData: RegionRecord | null, guildId: string): string | null {
+  for (const [factionId, region] of Object.entries(regionData ?? {})) {
+    const match = everyGuildOf(factionId, region).find((guild) => guild.id === guildId);
+    if (match) return match.key;
+  }
+  return null;
 }
 
 /** Guilds based in a province, e.g. the one a settlement sits in. */
