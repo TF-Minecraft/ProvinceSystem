@@ -13,7 +13,12 @@ import {
 import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
-import { filterVisibleMapMarkers, isMarkerMapMode, pickMapMarkerAt } from "../lib/mapMarkers";
+import {
+  filterVisibleMapMarkers,
+  hiddenMarkerLabels,
+  isMarkerMapMode,
+  pickMapMarkerAt,
+} from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 
@@ -193,7 +198,13 @@ export function useMapHover(props: UseMapHoverProps) {
       ? filterVisibleMapMarkers(current.markers, displayScale)
       : [];
     const markerHit = visibleMarkers.length
-      ? pickMapMarkerAt(visibleMarkers, coords.x, coords.y, displayScale)
+      ? pickMapMarkerAt(
+          visibleMarkers,
+          coords.x,
+          coords.y,
+          displayScale,
+          hiddenMarkerLabels(current.markers ?? [], displayScale)
+        )
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
@@ -389,7 +400,13 @@ export function useMapHover(props: UseMapHoverProps) {
         : [];
       if (
         visibleMarkers.length &&
-        pickMapMarkerAt(visibleMarkers, coords.x, coords.y, displayScale)
+        pickMapMarkerAt(
+          visibleMarkers,
+          coords.x,
+          coords.y,
+          displayScale,
+          hiddenMarkerLabels(current.markers ?? [], displayScale)
+        )
       ) {
         return null;
       }
@@ -439,7 +456,8 @@ export function useMapHover(props: UseMapHoverProps) {
         filterVisibleMapMarkers(current.markers, displayScale),
         coords.x,
         coords.y,
-        displayScale
+        displayScale,
+        hiddenMarkerLabels(current.markers, displayScale)
       );
     },
     []

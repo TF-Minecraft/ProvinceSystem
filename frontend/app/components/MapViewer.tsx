@@ -50,7 +50,7 @@ import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
 import { RealmPanelContent } from "./map/shell/RealmPanel";
 import { PlacePanelContent } from "./map/shell/PlacePanel";
 import { GuildPanelContent } from "./map/shell/GuildPanel";
-import { findGuild, guildSeat } from "@/app/lib/map/guildProfile";
+import { allGuilds, findGuild, guildSeat } from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
 import { HistoryIcon } from "./map/shell/MapIcons";
 import type {
@@ -330,17 +330,36 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const mapMarkers = useMemo(() => {
     if (!isMarkerMapMode(mapType)) return [];
     const battleMarkers = warBattleMarkersFromWars(wars);
+    // Provinces a guild (not a realm's own) is based in: their settlements
+    // are guild seats.
+    const guildSeatProvinces = new Set(
+      allGuilds(regionData)
+        .map((guild) => guild.homeProvince)
+        .filter((province): province is number => province !== null)
+    );
     return [
-      ...settlements.map((settlement) =>
-        settlementToMapMarker({
-          ...settlement,
-          kind: visibleSettlementKind(
-            settlement.kind,
-            settlement.faction_id,
-            mapObjects
-          ),
-        })
-      ),
+      ...settlements.map((settlement) => {
+        const kind = visibleSettlementKind(
+          settlement.kind,
+          settlement.faction_id,
+          mapObjects
+        );
+        // Sized by what the place is, not how many live there: a big
+        // village no longer outshouts a small capital.
+        const markerSize =
+          kind === "faction_capital"
+            ? "large"
+            : kind === "guild_capital" ||
+                (typeof settlement.province_id === "number" &&
+                  guildSeatProvinces.has(settlement.province_id))
+              ? "medium"
+              : "small";
+        return {
+          ...settlementToMapMarker({ ...settlement, kind }),
+          markerSize,
+          weight: settlement.population ?? 0,
+        } as const;
+      }),
       ...(installationsVisible
         ? installations.map((installation) =>
             addInstallationLinkDetails(
@@ -360,6 +379,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     installationsVisible,
     mapType,
     mapObjects,
+    regionData,
   ]);
 
   const labelGeometry = useMemo(() => {
