@@ -197,15 +197,34 @@ export function useMapHover(props: UseMapHoverProps) {
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
+      // A pin sits inside a realm: keep that realm lit under the pointer, as
+      // if the pin were not there, and let only the tooltip belong to the pin.
+      const markerPickPixel = mapPixelToPickCanvas(
+        coords.x,
+        coords.y,
+        current.viewportCoordsRef.current?.mapSize,
+        canvas
+      );
+      if (markerPickPixel) {
+        handleRegionHoverRef.current(
+          ctx,
+          markerPickPixel.x,
+          markerPickPixel.y,
+          coords.screenX,
+          coords.screenY,
+          () => {}
+        );
+      } else {
+        current.setHoveredOverlay(null);
+        current.setSelectedRegionId(null);
+        resetHoverCacheRef.current();
+      }
       current.setCursorTooltip(markerHit.hoverText ? {
         x: coords.screenX,
         y: coords.screenY,
         text: markerHit.hoverText,
         hint: markerHit.hoverHint,
       } : null);
-      current.setHoveredOverlay(null);
-      current.setSelectedRegionId(null);
-      resetHoverCacheRef.current();
       if (isMarkerMapMode(current.mapType)) {
         current.setHoveredFortZoc?.(
           lookupFortZocOverlay(markerHit, current.forts ?? [])

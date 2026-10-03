@@ -95,23 +95,28 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
   return "cursor-crosshair";
 }
 
+
 /**
- * A light rim around the selected region. The overlay sits inside the scaled
- * map, so the glow is sized in map pixels divided by the current scale to stay
- * a constant couple of screen pixels at every zoom.
+ * The highlight drawn over a region: its own shape, a little brighter, with a
+ * light rim `rimPx` screen pixels wide. The overlay sits inside the scaled
+ * map, so the rim is sized in map pixels divided by the scale to stay
+ * constant on screen. Hover gets a thin rim, the region whose details are
+ * open a thicker one; both stand down mid-gesture (`.map-selected-region`).
  */
-function selectedOutlineStyle(displayScale: number): React.CSSProperties {
-  const px = displayScale > 0 ? 2 / displayScale : 0;
-  const rim = "#e8e4d9";
-  // Four unblurred offsets trace a crisp rim; the last, blurred and dark,
-  // lifts it off light terrain.
+function regionHighlightStyle(
+  displayScale: number,
+  rimPx: number,
+  rimAlpha: number
+): React.CSSProperties {
+  const px = displayScale > 0 ? rimPx / displayScale : 0;
+  const rim = `rgb(232 228 217 / ${rimAlpha})`;
   return {
     filter: [
+      "brightness(1.18) saturate(1.08)",
       `drop-shadow(${px}px 0 0 ${rim})`,
       `drop-shadow(-${px}px 0 0 ${rim})`,
       `drop-shadow(0 ${px}px 0 ${rim})`,
       `drop-shadow(0 -${px}px 0 ${rim})`,
-      `drop-shadow(0 0 ${px * 1.5}px rgb(0 0 0 / 0.8))`,
     ].join(" "),
   };
 }
@@ -154,6 +159,7 @@ function HoverOverlayImage({
   imageClassName = "",
   imageStyle,
   lod = 0,
+  ownShape = false,
 }: {
   mapId: MapId;
   sessionToken?: string | null;
@@ -166,9 +172,17 @@ function HoverOverlayImage({
   imageStyle?: React.CSSProperties;
   /** Reduced copy to ask for; only region crops have them. */
   lod?: number;
+  /**
+   * Draw the region's own overlay rather than its `_hover` variant: the same
+   * colours as the map under it, so a highlight reads as that realm lit up,
+   * not swapped for a paler copy.
+   */
+  ownShape?: boolean;
 }) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const basePath = mapApiPathFromUrl(overlay.url);
+  const hoverPath = mapApiPathFromUrl(overlay.url);
+  const basePath =
+    ownShape && hoverPath.endsWith("_hover") ? hoverPath.slice(0, -"_hover".length) : hoverPath;
   const path =
     lod > 0 && basePath.includes("/regions/") ? `${basePath}?lod=${lod}` : basePath;
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
@@ -688,11 +702,12 @@ export default function MapCanvas({
             overlay={selectedOverlay}
             mapW={mapSize.w}
             mapH={mapSize.h}
-            opacity={0.8}
+            opacity={1}
             alt="Selected region"
             lod={lod}
+            ownShape
             imageClassName="map-selected-region"
-            imageStyle={selectedOutlineStyle(viewport.displayScale)}
+            imageStyle={regionHighlightStyle(viewport.displayScale, 2.5, 0.95)}
           />
         )}
         {regionOverlay === undefined && hoveredOverlay && (
@@ -703,6 +718,10 @@ export default function MapCanvas({
             mapW={mapSize.w}
             mapH={mapSize.h}
             lod={lod}
+            ownShape
+            opacity={1}
+            imageClassName="map-selected-region"
+            imageStyle={regionHighlightStyle(viewport.displayScale, 1.25, 0.75)}
           />
         )}
         {isMarkerMapMode(mapType) && wars.length > 0 && (
