@@ -185,6 +185,15 @@ type MapViewerProps = {
 const labelGeometryCache = new Map<string, RegionLabelGeometryCache | null>();
 const LABEL_GEOMETRY_CACHE_SIZE = 8;
 
+/**
+ * Phones and tablets: a touch screen as the main pointer. They pick on tap,
+ * where the half-size pick map's 2 px steps do not show, and they are the
+ * devices short of memory.
+ */
+function prefersSmallPickMap(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+}
+
 const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const chronicle = day !== null;
   /*
@@ -617,7 +626,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         return;
       }
 
-      const path = `/${mapId}/mapdata/${mapType}`;
+      // Phones get a half-size pick map: the full one is a 6400 px canvas,
+      // over iOS Safari's canvas limit and enough, with the map, for Safari to
+      // run out of memory and reload the page over and over.
+      const pickScale = prefersSmallPickMap() ? 1 : 0;
+      const path = `/${mapId}/mapdata/${mapType}${pickScale ? `?scale=${pickScale}` : ""}`;
       let src = mapApiUrl(path);
       if (mapRequiresAuth(mapId, maps) && authToken) {
         try {

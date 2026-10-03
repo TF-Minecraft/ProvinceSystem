@@ -309,3 +309,61 @@ def lod_variant(source: os.PathLike[str] | str, lod: int) -> Path | None:
             if stale != target:
                 stale.unlink(missing_ok=True)
     return target
+
+
+# ---------------------------------------------------------------------------
+# Reduced pick maps
+#
+# The client reads region ids back out of a `mapdata` pick map pixel by pixel,
+# from a canvas the pick map's own size: 6400 px square, some 160 MB, and over
+# the 16.7-megapixel limit iOS Safari puts on a canvas. A phone that held it
+# alongside the map ran out of memory and Safari reloaded the page, again and
+# again. `pick_variant` serves the pick map reduced by 2**scale with nearest-
+# neighbour sampling, so every pixel is still exactly one region's colour.
+# ---------------------------------------------------------------------------
+
+MAX_PICK_SCALE = 2
+
+_PICK_DIR = _ROUTER_DIR.parent / "output" / "_derived" / "pick"
+_pick_lock = threading.Lock()
+
+
+def pick_variant(source: os.PathLike[str] | str, scale: int) -> Path | None:
+    """`source` reduced by 2**scale, nearest-neighbour, as a PNG; cached."""
+    from PIL import Image
+
+    if scale <= 0:
+        return Path(source)
+    scale = min(scale, MAX_PICK_SCALE)
+    source_path = Path(source)
+    version = _version_of(source_path)
+    if version is None:
+        return None
+    target = _PICK_DIR / f"{_source_key(source_path)}_{version}_{scale}.png"
+    if target.is_file():
+        return target
+
+    with _pick_lock:
+        if target.is_file():
+            return target
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(dir=target.parent, suffix=".tmp")
+        os.close(fd)
+        tmp = Path(tmp_name)
+        try:
+            with Image.open(source_path) as opened:
+                opened.load()
+                factor = 2**scale
+                size = (max(1, opened.width // factor), max(1, opened.height // factor))
+                reduced = opened.resize(size, Image.Resampling.NEAREST)
+            reduced.save(tmp, "PNG", compress_level=6)
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, target)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+        for stale in target.parent.glob(f"{_source_key(source_path)}_*_{scale}.png"):
+            if stale != target:
+                stale.unlink(missing_ok=True)
+    return target
+

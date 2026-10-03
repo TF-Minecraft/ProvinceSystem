@@ -177,3 +177,16 @@ export function overlayLod(
   if (!(wanted > 0)) return 0;
   return Math.max(0, Math.min(maxLod, Math.floor(Math.log2(1 / wanted))));
 }
+
+/**
+ * The screen density map imagery is fetched for. A 3x phone would otherwise
+ * load about twice the tiles of a 2x one, for detail it can barely show, and
+ * hold them all decoded; iOS Safari reloads a page that uses too much memory.
+ * Google Maps serves phones 2x tiles at most, too.
+ */
+export const MAX_TILE_PIXEL_RATIO = 2;
+
+export function tilePixelRatio(): number {
+  if (typeof window === "undefined") return 1;
+  return Math.min(window.devicePixelRatio || 1, MAX_TILE_PIXEL_RATIO);
+}

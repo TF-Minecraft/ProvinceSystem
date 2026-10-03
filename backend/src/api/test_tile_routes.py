@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 import sys
 import tempfile
@@ -62,7 +63,11 @@ class TileRoutesTest(unittest.TestCase):
         file_routes.OUTPUT_BASE = self.output_dir
         self.addCleanup(self._restore_dirs)
 
-        for name, value in (("_CACHE_DIR", root / "tiles"), ("_LOD_DIR", root / "lod")):
+        for name, value in (
+            ("_CACHE_DIR", root / "tiles"),
+            ("_LOD_DIR", root / "lod"),
+            ("_PICK_DIR", root / "pick"),
+        ):
             patcher = patch.object(tile_cache, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -126,6 +131,16 @@ class TileRoutesTest(unittest.TestCase):
             f"/main/tiles/mapdata-terrain/{manifest['version']}/0/0/0.webp"
         )
         self.assertEqual(tile.status_code, 200)
+
+    def test_reduced_pick_map(self) -> None:
+        full = self.client.get("/main/mapdata/terrain")
+        reduced = self.client.get("/main/mapdata/terrain?scale=1")
+        self.assertEqual(full.status_code, 200)
+        self.assertEqual(reduced.status_code, 200)
+        self.assertEqual(reduced.headers["content-type"], "image/png")
+        with Image.open(io.BytesIO(reduced.content)) as image:
+            self.assertEqual(image.size, (150, 150))
+        self.assertEqual(self.client.get("/main/mapdata/terrain?scale=7").status_code, 422)
 
     def test_stale_or_bad_tile_requests_are_404(self) -> None:
         manifest = self._manifest("base")

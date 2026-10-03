@@ -42,7 +42,7 @@ import {
   tileUrl,
   useTileManifest,
 } from "../../hooks/useTileManifest";
-import { overlayLod } from "../../lib/map/tilePyramid";
+import { overlayLod, tilePixelRatio } from "../../lib/map/tilePyramid";
 import {
   useMapViewport,
   type MapFocusInset,
@@ -484,8 +484,7 @@ export default function MapCanvas({
     ]
   );
 
-  const devicePixelRatio =
-    typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  const devicePixelRatio = tilePixelRatio();
   // Zoomed out, realm overlays come as reduced copies: decoding a crop at
   // full size only to draw it a few pixels across is what the tiles fix for
   // the base map.

@@ -6,6 +6,7 @@ import {
   allTiles,
   backdropLevel,
   pickTileLevel,
+  tilePixelRatio,
   visibleTiles,
   type PlacedTile,
   type TileManifest,
@@ -49,7 +50,7 @@ function TileLayer({
   onReady,
   onTileError,
 }: TileLayerProps) {
-  const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  const dpr = tilePixelRatio();
   const level = pickTileLevel(manifest, view.displayScale, dpr);
   const backdrop = Math.min(backdropLevel(manifest), level);
 

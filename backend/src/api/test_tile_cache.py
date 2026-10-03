@@ -133,6 +133,45 @@ class PyramidTest(unittest.TestCase):
         self.assertIsNone(tile_cache.tile_file(missing, "1", 0, 0, 0))
 
 
+class PickVariantTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+        patcher = patch.object(tile_cache, "_PICK_DIR", self.tmp / "pick")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        # Two regions meeting along a ragged edge, which averaging would blur.
+        self.source = self.tmp / "nation_map.png"
+        image = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+        for x in range(64):
+            for y in range(32):
+                if (x + (y % 3)) % 7 < 3:
+                    image.putpixel((x, y), (10, 20, 30, 255))
+                elif x > 20:
+                    image.putpixel((x, y), (200, 100, 50, 255))
+        image.save(self.source, "PNG")
+
+    def test_scale_zero_is_the_original(self) -> None:
+        self.assertEqual(tile_cache.pick_variant(self.source, 0), self.source)
+
+    def test_halves_without_inventing_colours(self) -> None:
+        reduced = tile_cache.pick_variant(self.source, 1)
+        assert reduced is not None
+        with Image.open(self.source) as original, Image.open(reduced) as image:
+            self.assertEqual(image.size, (32, 16))
+            source_colours = {colour for _, colour in original.getcolors(4096)}
+            reduced_colours = {colour for _, colour in image.getcolors(4096)}
+        self.assertLessEqual(reduced_colours, source_colours)
+        self.assertEqual(tile_cache.pick_variant(self.source, 1), reduced)
+
+    def test_caps_the_scale(self) -> None:
+        capped = tile_cache.pick_variant(self.source, 9)
+        assert capped is not None
+        with Image.open(capped) as image:
+            self.assertEqual(image.size, (64 // 2**tile_cache.MAX_PICK_SCALE, 32 // 2**tile_cache.MAX_PICK_SCALE))
+
+
 class LodVariantTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   allTiles,
@@ -8,6 +8,7 @@ import {
   pickTileLevel,
   visibleTiles,
   type TileManifest,
+  tilePixelRatio,
 } from "./tilePyramid";
 
 // The live map's shape: 6400 px square, five halvings to one tile.
@@ -127,5 +128,18 @@ describe("overlayLod", () => {
     expect(overlayLod(2)).toBe(0);
     expect(overlayLod(0.01)).toBe(3);
     expect(overlayLod(0)).toBe(0);
+  });
+});
+
+describe("tilePixelRatio", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("caps dense screens at 2x", () => {
+    vi.stubGlobal("window", { devicePixelRatio: 3 });
+    expect(tilePixelRatio()).toBe(2);
+    vi.stubGlobal("window", { devicePixelRatio: 1.5 });
+    expect(tilePixelRatio()).toBe(1.5);
   });
 });

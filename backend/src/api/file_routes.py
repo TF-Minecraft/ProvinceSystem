@@ -5,7 +5,7 @@ from .http_headers import conditional_file_response
 from .map_access import ensure_map_access
 from .path_safety import is_safe_segment, resolve_within
 from .webp_cache import webp_variant
-from .tile_cache import MAX_LOD, lod_variant
+from .tile_cache import MAX_LOD, MAX_PICK_SCALE, lod_variant, pick_variant
 from ..scripts.util import dirs
 from ..scripts.util.dirs import (
     map_image,
@@ -92,11 +92,18 @@ async def get_map_file(
     authorization: str | None = Header(default=None),
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
+    scale: int = Query(default=0, ge=0, le=MAX_PICK_SCALE),
 ):
     map_name = ensure_map_access(map_name, authorization).id
     file_path = resolve_mapdata_path(map_name, map_type)
     if file_path is None:
         raise HTTPException(status_code=404, detail="Map not found")
+    # Phones ask for a smaller copy: the full-size pick canvas is more than
+    # iOS Safari will hold (see tile_cache.pick_variant).
+    if scale > 0:
+        file_path = pick_variant(file_path, scale)
+        if file_path is None:
+            raise HTTPException(status_code=404, detail="Map not found")
 
     # Deliberately NOT routed through webp_variant: this is the pick map. The
     # client draws it to an offscreen canvas and reads exact RGB values back to
