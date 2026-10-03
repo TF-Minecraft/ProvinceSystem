@@ -205,7 +205,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   /*
    * A stored day offers the *same* mode list as the live map, with no
    * filtering. Every mode now has an honest day answer: the day-varying ones
-   * (`nation`, `trade`, `empire`, `prosperity`, `infestation`) come out of that
+   * (`nation`, `trade`, `empire`, `prosperity`, `infrastructure`, `infestation`) come out of that
    * day's capture, and the static ones (`terrain`, `fertility`, `province`)
    * are province geometry that does not change day to day, so their live
    * source *is* their historical answer. Title modes (`county`, `duchy`,
@@ -354,7 +354,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         : null;
 
   /**
-   * `prosperity` and `infestation` under a stored day. Both are drawn on the
+   * `prosperity`, `infrastructure` and `infestation` under a stored day. These are drawn on the
    * live map as `/{mapId}/mapdata/{mode}`, a raster regenerated from today's
    * data with no per-day variant, so the day page paints them itself from that
    * day's captured file — see `ChronicleProvincePaintLayer`.
@@ -1321,7 +1321,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    */
   /**
    * Either the region source for this mode is missing from the day, or (for
-   * `prosperity`/`infestation`) the raster source is. `main` has no
+   * `prosperity`/`infrastructure`/`infestation`) the raster source is. `main` has no
    * `infestation_data.json` at all, so that mode lands here on every day —
    * which is the honest answer, not an error.
    */

@@ -99,8 +99,9 @@ async def get_map_file(
     if file_path is None:
         raise HTTPException(status_code=404, detail="Map not found")
     # Phones ask for a smaller copy: the full-size pick canvas is more than
-    # iOS Safari will hold (see tile_cache.pick_variant).
-    if scale > 0:
+    # iOS Safari will hold (see tile_cache.pick_variant). Called directly
+    # (not through FastAPI) the parameter is still its Query default.
+    if isinstance(scale, int) and scale > 0:
         file_path = pick_variant(file_path, scale)
         if file_path is None:
             raise HTTPException(status_code=404, detail="Map not found")

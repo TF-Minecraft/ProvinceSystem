@@ -21,6 +21,7 @@ from ..mapgen.parchmentgen import (
 )
 from ..mapgen.infestationgen import create_infestation_map
 from ..mapgen.prosperitygen import create_prosperity_map
+from ..mapgen.infrastructuregen import create_infrastructure_map
 from ..mapgen.regiongen import generate_regions
 from ..mapgen.zocgen import generate_zoc_overlays
 from ..map_tools.province_geometry import write_province_geometry
@@ -174,6 +175,8 @@ def _run_mode_serial(
     if mode == "trade":
         with timings.timed(f"{mode}.prosperity"):
             create_prosperity_map(map_name, "prosperity_map", cache=cache)
+        with timings.timed(f"{mode}.infrastructure"):
+            create_infrastructure_map(map_name, "infrastructure_map", cache=cache)
 
     with timings.timed(f"{mode}.map"):
         create_map(map_name, mode, f"{mode}_map", False, cache=cache)

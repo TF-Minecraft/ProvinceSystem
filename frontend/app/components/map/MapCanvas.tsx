@@ -353,7 +353,7 @@ type MapCanvasProps = {
   /**
    * A chronicle day, or `null` for the live map. Read only by
    * `showsLiveProvinceRaster` below, which is what stops a stored day from
-   * showing today's prosperity or infestation raster.
+   * showing today's prosperity, infrastructure or infestation raster.
    */
   day?: string | null;
   /**
@@ -628,7 +628,7 @@ export default function MapCanvas({
   }, [mapId, viewport.resetViewport]);
 
   /**
-   * The four modes drawn as a full-map raster over the base map rather than as
+   * The province modes drawn as a full-map raster over the base map rather than as
    * region shapes. `showsLiveProvinceRaster` then decides *which* raster: the
    * server's, or — for `prosperity` and `infestation` under a stored day —
    * `provinceOverlay`, painted from that day's capture.

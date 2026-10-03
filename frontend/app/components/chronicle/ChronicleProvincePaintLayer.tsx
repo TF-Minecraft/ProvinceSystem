@@ -10,7 +10,7 @@ import {
 
 /**
  * The chronicle's replacement for `/{map}/mapdata/{mode}` — the server-rendered
- * raster the live map shows for `prosperity` and `infestation`.
+ * raster the live map shows for `prosperity`, `infrastructure` and `infestation`.
  *
  * Those PNGs are regenerated from *today's* data and have no per-day variant,
  * so a stored day paints its own from that day's captured file. Same quarter-
