@@ -45,7 +45,8 @@ def run_mode(map_name: str, mode: str, full_regions: bool) -> dict:
     generate_regions(
         map_name,
         mode,
-        borders=mode != "trade",
+        # Every mode, trade included; see regeneration._run_mode_serial.
+        borders=True,
         queued_regen=(not full_regions and mode != "trade"),
         cache=cache,
     )

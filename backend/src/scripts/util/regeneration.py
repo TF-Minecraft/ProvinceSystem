@@ -183,8 +183,8 @@ def _run_mode_serial(
         generate_regions(
             map_name,
             mode,
-            # Every mode, trade included: the trade map is the map of guilds,
-            # and without outlines neighbouring guilds' areas ran together.
+            # Every mode, trade included: without outlines, neighbouring
+            # areas dominated by different guilds ran together.
             borders=True,
             queued_regen=region_regen_queued(spec, mode),
             cache=cache,

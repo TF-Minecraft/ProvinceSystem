@@ -1,3 +1,5 @@
+import numpy as np
+
 # Now, after all provinces are painted, paint the borders
 border_color = (0, 0, 0, 255)  # Solid black for kingdom borders (legacy paint_borders)
 duchy_border_color = (255, 255, 255, 255)  # White for duchy borders
@@ -248,6 +250,119 @@ def apply_occupation_seam_dashes(
     for target in targets:
         stamp_dashed_polylines(
             target,
+            width,
+            height,
+            polylines,
+            color=color,
+            thickness=thickness,
+            dash_on=dash_on,
+            dash_off=dash_off,
+        )
+
+
+# ------------------------------------------------------------
+# Array versions
+# ------------------------------------------------------------
+# The functions above visit every pixel in Python, which over a 6400 px map
+# costs seconds per image. These do the same on (H, W, 4) uint8 arrays with
+# whole-array operations, and produce identical pixels.
+
+
+def _any_neighbour4(mask: np.ndarray, outside: bool = False) -> np.ndarray:
+    """Pixels with at least one 4-neighbour set; off the array counts as `outside`."""
+    padded = np.pad(mask, 1, constant_values=outside)
+    return padded[:-2, 1:-1] | padded[2:, 1:-1] | padded[1:-1, :-2] | padded[1:-1, 2:]
+
+
+def dilate_square(mask: np.ndarray, radius: int) -> np.ndarray:
+    """Grow `mask` by a (2r+1) square, clipped to the array, as the per-pixel
+    stamp in `apply_region_borders` does."""
+    out = mask
+    if radius <= 0:
+        return out.copy()
+    for axis in (0, 1):
+        n = out.shape[axis]
+        sums = np.cumsum(out, axis=axis, dtype=np.int32)
+        sums = np.concatenate(
+            [np.zeros_like(np.take(sums, [0], axis=axis)), sums], axis=axis
+        )
+        index = np.arange(n)
+        high = np.minimum(index + radius + 1, n)
+        low = np.maximum(index - radius, 0)
+        out = (np.take(sums, high, axis=axis) - np.take(sums, low, axis=axis)) > 0
+    return out
+
+
+def stroke_opaque_union_array(
+    img: np.ndarray, color: tuple[int, int, int, int], thickness: int
+) -> None:
+    """`apply_opaque_union_borders` on an array: outline the opaque pixels.
+
+    The array's edge counts as transparent, as the map's edge does, so pass the
+    whole map or a window that only meets the map's edge where the map ends.
+    """
+    opaque = img[:, :, 3] != 0
+    outline = opaque & _any_neighbour4(~opaque, outside=True)
+    img[dilate_square(outline, thickness)] = color
+
+
+def occupation_seam_mask(
+    img: np.ndarray,
+    home_rgb: tuple[int, int, int],
+    occ_rgb: tuple[int, int, int],
+) -> np.ndarray:
+    """`compute_occupation_seam_pixels` as a mask over an array."""
+    if tuple(home_rgb) == tuple(occ_rgb):
+        return np.zeros(img.shape[:2], dtype=bool)
+    opaque = img[:, :, 3] != 0
+    rgb = img[:, :, :3]
+    is_occ = opaque & np.all(rgb == np.asarray(occ_rgb, dtype=img.dtype), axis=-1)
+    is_home = opaque & np.all(rgb == np.asarray(home_rgb, dtype=img.dtype), axis=-1)
+    return is_occ & _any_neighbour4(is_home)
+
+
+class _ArrayPixels:
+    """PIL-style [x, y] access over an (H, W, 4) array."""
+
+    def __init__(self, arr: np.ndarray):
+        self.arr = arr
+
+    def __getitem__(self, xy):
+        x, y = xy
+        pix = self.arr[y, x]
+        return (int(pix[0]), int(pix[1]), int(pix[2]), int(pix[3]))
+
+    def __setitem__(self, xy, value):
+        x, y = xy
+        self.arr[y, x] = value
+
+
+def apply_occupation_seam_dashes_array(
+    source: np.ndarray,
+    targets: list[np.ndarray],
+    home_rgb: tuple[int, int, int],
+    occ_rgb: tuple[int, int, int],
+    color=OCCUPATION_DASH_COLOR,
+    thickness=OCCUPATION_DASH_THICKNESS,
+    dash_on=OCCUPATION_DASH_ON,
+    dash_off=OCCUPATION_DASH_OFF,
+) -> None:
+    """`apply_occupation_seam_dashes` on arrays."""
+    seam = occupation_seam_mask(source, home_rgb, occ_rgb)
+    if not seam.any():
+        return
+    if dash_off == 0:
+        # A solid line stamps every seam pixel, so the walk order is moot.
+        stamp = dilate_square(seam, thickness)
+        for target in targets:
+            target[stamp] = color
+        return
+    ys, xs = np.nonzero(seam)
+    polylines = occupation_seam_polylines(set(zip(xs.tolist(), ys.tolist())))
+    for target in targets:
+        height, width = target.shape[:2]
+        stamp_dashed_polylines(
+            _ArrayPixels(target),
             width,
             height,
             polylines,
