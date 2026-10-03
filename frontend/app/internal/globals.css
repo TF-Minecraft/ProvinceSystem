@@ -34,6 +34,15 @@ body {
   font-family: var(--font-source-sans), system-ui, sans-serif;
 }
 
+/* While the full-screen map is open (MapShell), the page does not scroll or
+   bounce: only the map and its panels move. */
+html.map-fullscreen,
+html.map-fullscreen body,
+html.map-fullscreen .map-route {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Themed scrollbars (Firefox + Chromium/WebKit) */
 * {
   scrollbar-width: thin;

@@ -5,7 +5,7 @@ export default function MapLayout({
 }) {
   return (
     <div
-      className="w-full overflow-auto"
+      className="map-route w-full overflow-auto"
       style={{ minHeight: "calc(100dvh - var(--tfmc-header-h))" }}
     >
       {children}

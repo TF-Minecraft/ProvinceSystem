@@ -64,6 +64,16 @@ export default function MapShell({
     setSheetExpanded(false);
   }, [detailsKey]);
 
+  // The map fills the screen below the header and nothing else is on the
+  // page, so the page itself must not move: on an iPhone a drag on the panels
+  // scrolled or rubber-banded it, sliding them under the header. Scrolling
+  // inside the panels is unaffected.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("map-fullscreen");
+    return () => root.classList.remove("map-fullscreen");
+  }, []);
+
   const hasDetails = Boolean(details);
   const chronicleTop = chronicle ? "max-xl:top-[10.75rem]" : "";
 
