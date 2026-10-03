@@ -29,6 +29,9 @@ it("lets readers choose any companion while mounting only its preview", () => {
     expect(screen.getByRole("img", { name })
       .getAttribute("data-model-url")).toBe(`/wiki/models/companion-pets/${id}.json`);
     expect(screen.getByText(egg)).toBeTruthy();
+    const eggIcon = screen.getByText(egg).parentElement?.querySelector("img");
+    const family = ["catblack", "mainecoon"].includes(id) ? "cat" : id === "frog" ? "frog" : "wolf";
+    expect(eggIcon?.getAttribute("src")).toBe(`/wiki/textures/vanilla/${family}_spawn_egg.png`);
     expect(screen.queryByText("Beagle Companion Egg")).toBeNull();
   }
   expect(screen.getByRole("link", { name: "Animal Station" }).getAttribute("href"))

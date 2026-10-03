@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { companionPetTypes } from "@/app/wiki/data/companion-pets";
 import WikiModelViewer from "./WikiModelViewer";
 import StationLink from "./StationLink";
+import ItemChip from "./ItemChip";
 
 export default function CompanionPetGallery() {
   const selectId = useId();
@@ -26,8 +27,8 @@ export default function CompanionPetGallery() {
         ))}
       </select>
       <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-[var(--tfmc-mist)]">
-        Hatch {pet.name} with a <strong>{pet.egg}</strong>. Craft it at the{" "}
-        <StationLink name="Animal Station" />.
+        Hatch {pet.name} with a <ItemChip name={pet.egg} texture={pet.eggTexture} link={false} />. Craft it at the{" "}
+        <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>.
       </p>
       <WikiModelViewer
         key={pet.id}

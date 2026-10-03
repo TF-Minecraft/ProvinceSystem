@@ -1,14 +1,23 @@
-﻿import {
+import {
   Callout,
   CompanionPetGallery,
   DataTable,
+  ItemChip,
   SeeAlso,
   StationLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import WikiModelViewer from "@/app/components/wiki/WikiModelViewer";
-import { petHousePreview } from "@/app/wiki/data/companion-pets";
+import { companionPetItems, petHousePreview } from "@/app/wiki/data/companion-pets";
+
+function PetItem({ id }: { id: keyof typeof companionPetItems }) {
+  return <ItemChip {...companionPetItems[id]} link={false} />;
+}
+
+function AnimalStation() {
+  return <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>;
+}
 
 export default function CompanionPetsPage() {
   return (
@@ -26,7 +35,7 @@ export default function CompanionPetsPage() {
         They keep their name, preferences and learned tricks as you spend time together.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Get the egg for the companion you want at the <StationLink name="Animal Station" />.
+        Get the egg for the companion you want at the <AnimalStation />.
         Right-click with it and follow the
         naming prompts in chat to welcome your new pet. Once it is beside you,
         sneak-right-click it with an empty hand to open its care sheet. This is where you
@@ -35,7 +44,7 @@ export default function CompanionPetsPage() {
       <CompanionPetGallery />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Each companion has its own egg. Craft eggs and pet supplies at the{" "}
-        <StationLink name="Animal Station" /> to prepare for your adventures together.
+        <AnimalStation /> to prepare for your adventures together.
       </p>
 
       <WikiSectionHeading id="care" intro="A happy companion needs food, attention, rest and a little grooming.">
@@ -52,20 +61,21 @@ export default function CompanionPetsPage() {
         caption="Care supplies for every companion, including frogs"
         columns={[{ header: "What you want to do" }, { header: "Item you need" }, { header: "How to use it" }]}
         rows={[
-          ["Feed your pet", "Universal Feed", "Right-click your pet to give it food."],
-          ["Clean and groom it", "Glove", "Right-click to groom your pet. You keep the glove."],
-          ["Treat a sick pet", "Green Concoction or Red Concoction", "Right-click a sick or weakened pet to give it medicine."],
-          ["Train and reward it", "Meat Treat, Fish Treat or Fish Snack", "Hold a treat to begin training, then give treats as rewards."],
-          ["Play fetch", "Pet Ball, Chew Bone, Tug Rope, Mouse Plush or Teddy Bear Plush", "Craft a toy at the Animal Station and throw it for your pet to fetch."],
-          ["Make a shelter", "Pet House", "Craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
+          ["Feed your pet", <><PetItem id="meatMeal" /> or <PetItem id="fishMeal" /></>, "Right-click your pet to give it food."],
+          ["Clean and groom it", <PetItem id="brush" />, "Right-click to groom your pet. You keep the brush."],
+          ["Treat a sick pet", <><PetItem id="greenMedicine" /> or <PetItem id="redMedicine" /></>, "Right-click a sick or weakened pet to give it medicine."],
+          ["Train and reward it", <><PetItem id="fishSnack" /> or <PetItem id="biscuit" /></>, "Hold a treat to begin training, then give treats as rewards."],
+          ["Play fetch", <><PetItem id="ball" />, <PetItem id="bone" />, <PetItem id="rope" />, <PetItem id="mouse" /> or <PetItem id="teddy" /></>, <>Craft a toy at the <AnimalStation /> and throw it for your pet to fetch.</>],
+          ["Make a shelter", <PetItem id="house" />, <>Craft it at the <AnimalStation />, place it on the ground and right-click to open your shelter.</>],
           ["Give affection", "Empty hand", "Right-click your pet to check on it and give it attention."],
         ]}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Get food, grooming supplies, medicine, treats and toys at the{" "}
-        <StationLink name="Animal Station" />. These supplies work for all companions.
-        Universal Feed is their meal; Meat Treat,
-        Fish Treat and Fish Snack are training rewards. Food, medicine and rewarded treats are used up.
+        <AnimalStation />. These supplies work for all companions.
+        <PetItem id="meatMeal" /> and <PetItem id="fishMeal" /> are their meals;
+        {" "}<PetItem id="fishSnack" /> and <PetItem id="biscuit" /> are training rewards.
+        Food, medicine and rewarded treats are used up.
         Keep your pet fed and rested before asking it to practise or play, and avoid feeding
         it more when it is already full.
       </p>
@@ -79,9 +89,9 @@ export default function CompanionPetsPage() {
         Playing and spending time together
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Choose a <strong>Pet Ball</strong>, <strong>Chew Bone</strong>, <strong>Tug Rope</strong>,
-        {" "}<strong>Mouse Plush</strong> or <strong>Teddy Bear Plush</strong> at the{" "}
-        <StationLink name="Animal Station" /> and throw it for your pet to fetch.
+        Choose a <PetItem id="ball" />, <PetItem id="bone" />, <PetItem id="rope" />,
+        {" "}<PetItem id="mouse" /> or <PetItem id="teddy" /> at the{" "}
+        <AnimalStation /> and throw it for your pet to fetch.
         It chases the toy and brings it
         back to you. Play cheers it up, but a tired or sick companion needs a rest first.
         Between games, an empty-hand pet is a simple way to give it affection. Some pets
@@ -104,8 +114,8 @@ export default function CompanionPetsPage() {
         pet&apos;s <strong>Tricks</strong> menu to see what it can learn and how it is progressing.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        When your pet is healthy, fed and rested, hold a <strong>Meat Treat</strong>,
-        <strong> Fish Treat</strong> or <strong>Fish Snack</strong> and right-click it to begin a training session. Choose
+        When your pet is healthy, fed and rested, hold a <PetItem id="fishSnack" /> or
+        {" "}<PetItem id="biscuit" /> and right-click it to begin a training session. Choose
         a word or short phrase in chat, then pick the trick you want it to mean. Practise
         together and give a treat promptly after each attempt. Early efforts can be clumsy;
         encouragement helps, and rewarded successes teach it more quickly.
@@ -122,7 +132,7 @@ export default function CompanionPetsPage() {
         Giving your pets a home
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Craft a <strong>Pet House</strong> at the <StationLink name="Animal Station" />,
+        Craft a <PetItem id="house" /> at the <AnimalStation />,
         place it on the ground and right-click it to browse your companions.
         Only you can open your house. Moving or breaking it leaves your stored companions
         safe: place a house again whenever you want to visit them.

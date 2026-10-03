@@ -2,7 +2,7 @@ import type { WikiSection } from "./types";
 import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue.json";
 import housePreview from "../../../public/wiki/models/companion-pets/pet-house-preview.json";
 
-// Item names and pet selection checked against TFMCDev01 on 2026-10-02:
+// Item names, roles and textures checked against TFMCDev01 on 2026-10-03:
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
@@ -12,6 +12,31 @@ import housePreview from "../../../public/wiki/models/companion-pets/pet-house-p
 // the same Downloads folder. The server owner confirmed Pet House is available
 // on 2026-10-03.
 export const petHousePreview = housePreview;
+
+const itemTexture = (file: string) => `/wiki/textures/companion-pets/items/${file}.png`;
+export const companionPetItems = {
+  meatMeal: { name: "Meat Meal", texture: itemTexture("meat_meal") },
+  fishMeal: { name: "Fish Meal", texture: itemTexture("fish_meal") },
+  brush: { name: "Pet Brush", texture: itemTexture("pet_brush") },
+  greenMedicine: { name: "Green Concoction", texture: itemTexture("greenconcoction") },
+  redMedicine: { name: "Red Concoction", texture: itemTexture("redconcoction") },
+  fishSnack: { name: "Fish Snack", texture: itemTexture("fish_snack") },
+  biscuit: { name: "Biscuit Treat", texture: itemTexture("biscuit_treat") },
+  ball: { name: "Pet Ball", texture: itemTexture("pet_ball") },
+  bone: { name: "Chew Bone", texture: itemTexture("pet_chew_bone") },
+  rope: { name: "Tug Rope", texture: itemTexture("pet_tug_rope") },
+  mouse: { name: "Mouse Plush", texture: itemTexture("pet_mouse_plush") },
+  teddy: { name: "Teddy Bear Plush", texture: itemTexture("pet_teddy_plush") },
+  house: { name: "Pet House", texture: "/wiki/thumbnails/companion-pets/pet-house.webp" },
+};
+
+// Configured eggs retain their vanilla material appearance: no pack overrides.
+// Husky/Maine Coon follow the owner's requested roster and corresponding family.
+const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
+  beagle: "wolf", chihuahua: "wolf", corgi: "wolf", golden: "wolf", husky: "wolf",
+  mainecoon: "cat", catblack: "cat", catfunny: "cat", catorange: "cat",
+  fox: "fox", frog: "frog",
+};
 
 const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string }> = {
   beagle: { name: "Beagle", egg: "Beagle Companion Egg" },
@@ -30,6 +55,7 @@ const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: strin
 export const companionPetTypes = Object.entries(petDetails).map(([id, details]) => ({
   id,
   ...details,
+  eggTexture: `/wiki/textures/vanilla/${eggMaterials[id as keyof typeof modelCatalogue]}_spawn_egg.png`,
   ...modelCatalogue[id as keyof typeof modelCatalogue],
 }));
 
