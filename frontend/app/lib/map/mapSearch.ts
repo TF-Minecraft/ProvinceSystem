@@ -4,12 +4,21 @@ import type {
   SettlementMarker,
 } from "@/app/components/map/types";
 import { cleanRegionName } from "@/app/lib/mapLabels";
+import { allGuilds } from "./guildProfile";
 
 export type MapSearchEntry =
   | {
       kind: "region";
       key: string;
       regionId: string;
+      label: string;
+      detail: string;
+      rgb: string | null;
+    }
+  | {
+      kind: "guild";
+      key: string;
+      guildKey: string;
       label: string;
       detail: string;
       rgb: string | null;
@@ -87,6 +96,19 @@ export function buildMapSearchIndex({
     });
   }
 
+  // Guilds live inside the realm map's data; other modes have none.
+  for (const guild of allGuilds(regionData)) {
+    const realm = ownerName(guild.factionId, regionData);
+    entries.push({
+      kind: "guild",
+      key: `guild:${guild.key}`,
+      guildKey: guild.key,
+      label: guild.name,
+      detail: realm ? `${guild.typeLabel} · ${realm}` : guild.typeLabel,
+      rgb: guild.rgb,
+    });
+  }
+
   for (const settlement of settlements) {
     if (typeof settlement.map_x !== "number" || typeof settlement.map_y !== "number") {
       continue;
@@ -129,6 +151,11 @@ export function buildMapSearchIndex({
   return entries;
 }
 
+/** On an equal match: realms and titles, then guilds, then places. */
+function kindRank(entry: MapSearchEntry): number {
+  return entry.kind === "region" ? 0 : entry.kind === "guild" ? 1 : 2;
+}
+
 /**
  * Best matches first: the whole name starting with the query, then any word
  * in it starting with the query, then the query anywhere. Ties go to regions
@@ -156,7 +183,7 @@ export function searchMap(
   scored.sort(
     (a, b) =>
       a.score - b.score ||
-      (a.entry.kind === b.entry.kind ? 0 : a.entry.kind === "region" ? -1 : 1) ||
+      kindRank(a.entry) - kindRank(b.entry) ||
       a.entry.label.length - b.entry.label.length ||
       a.entry.label.localeCompare(b.entry.label)
   );

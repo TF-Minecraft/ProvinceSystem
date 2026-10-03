@@ -12,11 +12,13 @@ import {
   type RealmRelation,
 } from "@/app/lib/map/realmProfile";
 import { cleanRegionName } from "@/app/lib/mapLabels";
+import { realmGuilds } from "@/app/lib/map/guildProfile";
 
 import MapAuthImage from "../MapAuthImage";
 import { buildRegionInfo } from "../regionInfo";
 import type { MapId, MapMode, RegionRecord, SettlementMarker } from "../types";
 import { CloseIcon, FocusIcon, SubjectsIcon } from "./MapIcons";
+import { GuildList } from "./GuildPanel";
 
 export type RealmPanelProps = {
   mapId: MapId;
@@ -32,6 +34,8 @@ export type RealmPanelProps = {
   onFocusPoint?: (mapX: number, mapY: number) => void;
   /** Open a settlement's own card, e.g. the capital's. */
   onSelectPlace?: (markerId: string) => void;
+  /** Open a guild's card. */
+  onSelectGuild?: (guildKey: string) => void;
   onFocusRegion?: () => void;
   /** Open the subject layout; absent when the region has none to show. */
   onShowSubjects?: () => void;
@@ -208,6 +212,7 @@ function RealmBody({
   } = props;
   const capital = realmCapitalSettlement(profile, settlements);
   const relations = sortRealmRelations(profile.relations);
+  const guilds = realmGuilds(profile.id, regionData[profile.id]);
   const subjectSize = profile.realmSize - profile.provinces;
 
   return (
@@ -283,6 +288,12 @@ function RealmBody({
               </li>
             ))}
           </ul>
+        </Section>
+      ) : null}
+
+      {props.onSelectGuild && guilds.length > 0 ? (
+        <Section title={`Guilds · ${guilds.length}`}>
+          <GuildList guilds={guilds} onSelectGuild={props.onSelectGuild} />
         </Section>
       ) : null}
 

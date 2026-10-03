@@ -105,3 +105,29 @@ describe("searchMap", () => {
     expect(searchMap(index, "o", 2)).toHaveLength(2);
   });
 });
+
+describe("guild search", () => {
+  const withGuilds = buildMapSearchIndex({
+    regionData: {
+      Thalendor: {
+        name: "Thalendor",
+        rgb: "1,1,1",
+        guilds: [
+          { id: "Thalendor", name: "Thalendor", type: "realm", members: [] },
+          { id: "Oyfthyr", name: "Oyfthyr", type: "guild", rgb: "2,2,2", members: ["a"] },
+        ],
+      } as never,
+    },
+    tierLabel: "Realms",
+    settlements: [{ id: "Oyfthyr", name: "Oyfthyr", map_x: 1, map_y: 2, faction_id: "Thalendor" }],
+    installations: [],
+  });
+
+  it("finds guilds, not the realm's own guild, and ranks them between realms and places", () => {
+    const results = searchMap(withGuilds, "oyf");
+    expect(results.map((entry) => entry.kind)).toEqual(["guild", "place"]);
+    expect(results[0]).toMatchObject({ guildKey: "Thalendor/Oyfthyr", detail: "Guild · Thalendor" });
+    expect(searchMap(withGuilds, "thal").map((entry) => entry.kind)).toEqual(["region"]);
+  });
+});
+

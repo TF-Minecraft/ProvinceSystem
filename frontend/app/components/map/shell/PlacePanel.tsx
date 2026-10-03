@@ -12,7 +12,9 @@ import { cleanRegionName } from "@/app/lib/mapLabels";
 import { resolveMarkerImageSrc, type MapMarker } from "@/app/lib/mapMarkers";
 
 import type { MapId, RegionRecord } from "../types";
-import { Fact, RegionLink } from "./RealmPanel";
+import { Fact, RegionLink, Section } from "./RealmPanel";
+import { GuildList } from "./GuildPanel";
+import { guildsInProvince } from "@/app/lib/map/guildProfile";
 import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
 
 /** Province id -> county name per map, shared by every place panel. */
@@ -53,6 +55,8 @@ function useCountyName(
 }
 
 type PlacePanelProps = {
+  /** Open a guild's card. */
+  onSelectGuild: (guildKey: string) => void;
   mapId: MapId;
   place: PlaceProfile;
   marker: MapMarker;
@@ -77,7 +81,12 @@ export function PlacePanelContent({
   onSelectRegion,
   onFocusPoint,
   onClose,
+  onSelectGuild,
 }: PlacePanelProps) {
+  const guildsHere =
+    place.provinces.length > 0 && place.kindLabel !== "Battle"
+      ? guildsInProvince(regionData, place.provinces[0])
+      : [];
   const county = useCountyName(mapId, place.provinces, sessionToken);
   const owner = place.ownerId ? regionData?.[place.ownerId] : undefined;
   const ownerName = place.ownerId
@@ -167,6 +176,12 @@ export function PlacePanelContent({
           </button>
         ) : null}
       </div>
+
+      {guildsHere.length > 0 ? (
+        <Section title="Guilds based here">
+          <GuildList guilds={guildsHere} onSelectGuild={onSelectGuild} />
+        </Section>
+      ) : null}
     </article>
   );
 }

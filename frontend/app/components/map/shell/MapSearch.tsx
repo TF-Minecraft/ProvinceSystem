@@ -147,7 +147,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
                   index === active ? "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]" : ""
                 }`}
               >
-                {entry.kind === "region" ? (
+                {entry.kind !== "place" ? (
                   <span
                     aria-hidden
                     className="h-3.5 w-3.5 shrink-0 rounded-sm ring-1 ring-black/60"

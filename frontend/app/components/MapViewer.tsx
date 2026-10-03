@@ -49,6 +49,8 @@ import MapLayersMenu, { type MapLayerToggle } from "./map/shell/MapLayersMenu";
 import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
 import { RealmPanelContent } from "./map/shell/RealmPanel";
 import { PlacePanelContent } from "./map/shell/PlacePanel";
+import { GuildPanelContent } from "./map/shell/GuildPanel";
+import { findGuild, guildSeat } from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
 import { HistoryIcon } from "./map/shell/MapIcons";
 import type {
@@ -211,6 +213,17 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** A clicked marker (settlement, installation, battle); exclusive with `selectedId`. */
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  /** A guild's card, `factionId/guildId`; exclusive with the two above. */
+  const [selectedGuildKey, setSelectedGuildKey] = useState<string | null>(null);
+  /** One card at a time: whatever opens clears the rest. */
+  const select = useCallback(
+    (next: { region?: string; place?: string; guild?: string } = {}) => {
+      setSelectedId(next.region ?? null);
+      setSelectedPlaceId(next.place ?? null);
+      setSelectedGuildKey(next.guild ?? null);
+    },
+    []
+  );
   const [drillStack, setDrillStack] = useState<DrillLayer[]>([]);
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
   const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(
@@ -701,8 +714,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     // mode-data effect re-running to repaint them.
     if (mode === mapType) return;
     resetMapObjects();
-    setSelectedId(null);
-    setSelectedPlaceId(null);
+    select();
     // The map stays mounted across modes, so hover from the old mode has to
     // be cleared here rather than by a remount.
     setHoveredOverlay(null);
@@ -777,8 +789,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     // Pins sit above the land: a click on one opens its place card.
     const marker = event.ctrlKey || event.metaKey ? null : pickMarkerAtEvent(event);
     if (marker) {
-      setSelectedId(null);
-      setSelectedPlaceId(marker.id);
+      select({ place: marker.id });
       return;
     }
 
@@ -787,8 +798,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       // Clicking open sea or unclaimed land puts the details away, as on any
       // map site; Ctrl-click there is still a no-op.
       if (!event.ctrlKey && !event.metaKey) {
-        setSelectedId(null);
-        setSelectedPlaceId(null);
+        select();
       }
       return;
     }
@@ -799,8 +809,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     }
 
     if (!regionData[regionId]) return;
-    setSelectedPlaceId(null);
-    setSelectedId(regionId);
+    select({ region: regionId });
   };
 
   const handleMouseLeave = () => {
@@ -880,8 +889,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     (regionId: string, options: { focus?: boolean } = {}) => {
       if (!regionData?.[regionId]) return;
       revealRegion(regionId);
-      setSelectedPlaceId(null);
-      setSelectedId(regionId);
+      select({ region: regionId });
       if (options.focus ?? true) focusRegion(regionId);
     },
     [regionData, revealRegion, focusRegion]
@@ -902,11 +910,17 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     (entry: MapSearchEntry) => {
       if (entry.kind === "region") {
         selectRegion(entry.regionId);
+      } else if (entry.kind === "guild") {
+        select({ guild: entry.guildKey });
+        const guild = findGuild(regionData, entry.guildKey);
+        const seat = guild ? guildSeat(guild, settlements) : null;
+        if (seat && typeof seat.map_x === "number" && typeof seat.map_y === "number") {
+          focusPoint(seat.map_x, seat.map_y);
+        }
       } else {
         const markerId = placeMarkerIdForSearchKey(entry.key);
         if (markerId) {
-          setSelectedId(null);
-          setSelectedPlaceId(markerId);
+          select({ place: markerId });
         }
         focusPoint(entry.mapX, entry.mapY);
       }
@@ -931,15 +945,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   // Escape puts the details away, unless it is closing something in a field.
   useEffect(() => {
-    if (!selectedId && !selectedPlaceId) return;
+    if (!selectedId && !selectedPlaceId && !selectedGuildKey) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || isTypingTarget(event.target)) return;
-      setSelectedId(null);
-      setSelectedPlaceId(null);
+      select();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId, selectedPlaceId]);
+  }, [selectedId, selectedPlaceId, selectedGuildKey, select]);
 
   const selectedMarker = useMemo(
     () => (selectedPlaceId ? mapMarkers.find((m) => m.id === selectedPlaceId) ?? null : null),
@@ -957,6 +970,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         : null,
     [selectedMarker, settlements, installations, regionData]
   );
+
+  const selectedGuild = useMemo(
+    () => (selectedGuildKey ? findGuild(regionData, selectedGuildKey) : null),
+    [selectedGuildKey, regionData]
+  );
+  useEffect(() => {
+    if (selectedGuildKey && regionData && !selectedGuild) setSelectedGuildKey(null);
+  }, [selectedGuildKey, regionData, selectedGuild]);
 
   // A selection the current data no longer has (a stored day without that
   // realm, a mode reload) closes rather than showing an empty panel.
@@ -1146,7 +1167,17 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     (selectedRegion?.subjects?.length ?? 0) > 0 &&
     !drillStack.some((layer) => layer.regionId === selectedId);
 
-  const details = selectedPlace && selectedMarker ? (
+  const details = selectedGuild ? (
+    <GuildPanelContent
+      guild={selectedGuild}
+      regionData={regionData}
+      seat={guildSeat(selectedGuild, settlements)}
+      onSelectRegion={(id) => selectRegion(id)}
+      onSelectPlace={(markerId) => select({ place: markerId })}
+      onFocusPoint={focusPoint}
+      onClose={() => select()}
+    />
+  ) : selectedPlace && selectedMarker ? (
     <PlacePanelContent
       mapId={mapId}
       place={selectedPlace}
@@ -1155,7 +1186,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       sessionToken={authToken}
       onSelectRegion={(id) => selectRegion(id)}
       onFocusPoint={focusPoint}
-      onClose={() => setSelectedPlaceId(null)}
+      onClose={() => select()}
+      onSelectGuild={(key) => select({ guild: key })}
     />
   ) : selectedId && regionData && selectedRegion ? (
       <RealmPanelContent
@@ -1169,8 +1201,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         onSelectRegion={(id) => selectRegion(id)}
         onFocusPoint={focusPoint}
         onSelectPlace={(markerId) => {
-          setSelectedId(null);
-          setSelectedPlaceId(markerId);
+          select({ place: markerId });
         }}
         onFocusRegion={
           selectedRegion.overlay ? () => focusRegion(selectedId) : undefined
@@ -1178,7 +1209,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         onShowSubjects={
           canShowSubjects ? () => openSubjects(selectedId) : undefined
         }
-        onClose={() => setSelectedId(null)}
+        onClose={() => select()}
+        onSelectGuild={(key) => select({ guild: key })}
       />
     ) : null;
 
@@ -1212,7 +1244,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         ) : null
       }
       details={details}
-      detailsKey={selectedPlaceId ? `place:${selectedPlaceId}` : selectedId}
+      detailsKey={
+        selectedGuildKey
+          ? `guild:${selectedGuildKey}`
+          : selectedPlaceId
+            ? `place:${selectedPlaceId}`
+            : selectedId
+      }
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
       layers={<MapLayersMenu toggles={desktopLayerToggles} footer={archiveFooter} />}

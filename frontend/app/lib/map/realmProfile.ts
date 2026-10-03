@@ -112,7 +112,7 @@ export function parseRealmRelation(raw: string): RealmRelation | null {
  * checking again here covers an export written between a leadership change
  * and the next save.
  */
-function leaderCharacter(raw: RawRealm): string | null {
+export function leaderCharacterName(raw: Record<string, unknown>): string | null {
   const name = text(raw["leader character"]);
   if (!name) return null;
   const of = raw["leader character of"];
@@ -138,7 +138,7 @@ export function buildRealmProfile(id: string, raw: RawRealm): RealmProfile {
     banner: typeof raw.banner === "string" && raw.banner ? raw.banner : null,
     rank: realmRankLabel(raw.rank),
     rulerTitle: text(raw["ruler title"]),
-    leader: leaderCharacter(raw),
+    leader: leaderCharacterName(raw),
     government: text(raw.government),
     culture: text(raw.culture),
     religion: text(raw.religion),
