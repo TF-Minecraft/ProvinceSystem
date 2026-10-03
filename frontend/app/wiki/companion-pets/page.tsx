@@ -19,10 +19,14 @@ function AnimalStation() {
   return <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>;
 }
 
+function MedicineStation() {
+  return <StationLink name="Medicine Station"><ItemChip name="Medicine Station" texture="/wiki/thumbnails/stations/medicine-station.webp" link={false} /></StationLink>;
+}
+
 export default function CompanionPetsPage() {
   return (
     <WikiPage
-      lastModified="2026-10-03"
+      lastModified="2026-10-04"
       title="Companion Pets"
       intro="A companion is a little personality to share your adventures with. Give it a name, look after it, play together and teach it tricks. The more time you spend together, the stronger your bond becomes."
     >
@@ -43,7 +47,7 @@ export default function CompanionPetsPage() {
       </p>
       <CompanionPetGallery />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Each companion has its own egg. Craft eggs and pet supplies at the{" "}
+        Each companion has its own egg. Craft eggs, food, grooming supplies, treats and toys at the{" "}
         <AnimalStation /> to prepare for your adventures together.
       </p>
 
@@ -63,7 +67,7 @@ export default function CompanionPetsPage() {
         rows={[
           ["Feed your pet", <><PetItem id="meatMeal" /> or <PetItem id="fishMeal" /></>, "Right-click your pet to give it food."],
           ["Clean and groom it", <PetItem id="brush" />, "Right-click to groom your pet. You keep the brush."],
-          ["Treat a sick pet", <><PetItem id="greenMedicine" /> or <PetItem id="redMedicine" /></>, "Right-click a sick or weakened pet to give it medicine."],
+          ["Treat a sick pet", <PetItem id="medicine" />, <>A Physician crafts it at the <MedicineStation />. Right-click a sick or weakened pet to give it medicine.</>],
           ["Train and reward it", <><PetItem id="fishSnack" /> or <PetItem id="biscuit" /></>, "Hold a treat to begin training, then give treats as rewards."],
           ["Play fetch", <><PetItem id="ball" />, <PetItem id="bone" />, <PetItem id="rope" />, <PetItem id="mouse" /> or <PetItem id="teddy" /></>, <>Craft a toy at the <AnimalStation /> and throw it for your pet to fetch.</>],
           ["Make a shelter", <PetItem id="house" />, <>Craft it at the <AnimalStation />, place it on the ground and right-click to open your shelter.</>],
@@ -71,8 +75,9 @@ export default function CompanionPetsPage() {
         ]}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Get food, grooming supplies, medicine, treats and toys at the{" "}
-        <AnimalStation />. These supplies work for all companions.
+        Get food, grooming supplies, treats and toys at the{" "}
+        <AnimalStation />. For a sick companion, get <PetItem id="medicine" />,
+        crafted by a Physician at the <MedicineStation />. These supplies work for all companions.
         <PetItem id="meatMeal" /> and <PetItem id="fishMeal" /> are their meals;
         {" "}<PetItem id="fishSnack" /> and <PetItem id="biscuit" /> are training rewards.
         Food, medicine and rewarded treats are used up.

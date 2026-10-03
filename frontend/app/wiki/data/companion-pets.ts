@@ -2,11 +2,13 @@ import type { WikiSection } from "./types";
 import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue.json";
 import housePreview from "../../../public/wiki/models/companion-pets/pet-house-preview.json";
 
-// Item names, roles and textures checked against TFMCDev01 on 2026-10-03:
+// Item names, roles and textures checked against TFMCDev01 on 2026-10-03;
+// Pet Medicine and its station recipe rechecked for the 2026-10-04 wiki update.
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
-// Each companion has its own egg; eggs/supplies/toys come from the Animal Station.
+// Eggs, food, grooming supplies, treats and toys come from the Animal Station;
+// Pet Medicine is crafted by a Physician at the Medicine Station.
 // Care includes Fish Snack and the five custom toys now configured on TF Dev.
 // The user named the new shelter Pet House; its preview is pethouse.bbmodel from
 // the same Downloads folder. The server owner confirmed Pet House is available
@@ -18,8 +20,7 @@ export const companionPetItems = {
   meatMeal: { name: "Meat Meal", texture: itemTexture("meat_meal") },
   fishMeal: { name: "Fish Meal", texture: itemTexture("fish_meal") },
   brush: { name: "Pet Brush", texture: itemTexture("pet_brush") },
-  greenMedicine: { name: "Green Concoction", texture: itemTexture("greenconcoction") },
-  redMedicine: { name: "Red Concoction", texture: itemTexture("redconcoction") },
+  medicine: { name: "Pet Medicine", texture: itemTexture("pet_medicine") },
   fishSnack: { name: "Fish Snack", texture: itemTexture("fish_snack") },
   biscuit: { name: "Biscuit Treat", texture: itemTexture("biscuit_treat") },
   ball: { name: "Pet Ball", texture: itemTexture("pet_ball") },
