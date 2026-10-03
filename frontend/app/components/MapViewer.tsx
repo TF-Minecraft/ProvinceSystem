@@ -26,6 +26,7 @@ import {
   computeRegionLabelGeometry,
   filterRegionLabelsForMapObjects,
   LABEL_MAP_MODES,
+  type RegionLabelGeometryCache,
 } from "../lib/mapLabels";
 import {
   applyDrillStack,
@@ -175,6 +176,13 @@ type MapViewerProps = {
    */
   day?: string | null;
 };
+
+/**
+ * Name layouts already worked out this page view, by map, mode and the data
+ * they were laid out from. A handful: one per mode a reader flips between.
+ */
+const labelGeometryCache = new Map<string, RegionLabelGeometryCache | null>();
+const LABEL_GEOMETRY_CACHE_SIZE = 8;
 
 const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const chronicle = day !== null;
@@ -430,7 +438,20 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (needsTitleLayers && !titleLayers) {
       return null;
     }
-    return computeRegionLabelGeometry(
+    // Laying out a mode's names takes a noticeable moment (counties most), and
+    // switching back to a mode fetches the same data again as a new object.
+    // Keyed by content, a mode already seen this page view reuses its layout.
+    const geometryKey = [
+      mapId,
+      mapType,
+      labelGrid ? "grid" : "",
+      labelNeighbors ? "label-neighbours" : "",
+      JSON.stringify(regionData),
+      needsTitleLayers ? JSON.stringify(titleLayers) : "",
+    ].join("\u0000");
+    const cached = labelGeometryCache.get(geometryKey);
+    if (cached !== undefined) return cached;
+    const geometry = computeRegionLabelGeometry(
       mapType,
       regionData,
       titleLayers,
@@ -441,7 +462,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         labelNeighbors: labelNeighbors ?? neighbors,
       }
     );
+    labelGeometryCache.set(geometryKey, geometry);
+    if (labelGeometryCache.size > LABEL_GEOMETRY_CACHE_SIZE) {
+      labelGeometryCache.delete(labelGeometryCache.keys().next().value!);
+    }
+    return geometry;
   }, [
+    mapId,
     mapType,
     regionData,
     titleLayers,
