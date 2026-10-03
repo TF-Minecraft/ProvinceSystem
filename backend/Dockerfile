@@ -18,16 +18,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# The sheet renderer's packages, Chromium and Chromium's system libraries,
+# before the code: they change rarely, and installed after it every code
+# change downloaded and installed them again. --ignore-scripts skips the
+# postinstall build, which needs the sources copied below.
+WORKDIR /app/render
+COPY backend/render/package.json backend/render/package-lock.json ./
+RUN npm ci --ignore-scripts \
+    && npx playwright install chromium \
+    && npx playwright install-deps chromium
+
+WORKDIR /app
 COPY backend/ .
 # constants.py resolves ProvinceSystem/shared via parents[4] → /shared/...
 COPY shared /shared
 # Shared Three.js helpers (also synced locally via scripts/sync-skins.mjs before build).
 COPY frontend/lib/skins /app/render/src/skins
 
+# The renderer's own bundle, which the skipped postinstall would have built.
 WORKDIR /app/render
-RUN npm ci \
-    && npx playwright install chromium \
-    && npx playwright install-deps chromium
+RUN npm run build
 
 WORKDIR /app
 
