@@ -33,6 +33,7 @@ import {
   LABEL_MIN_SCREEN_PX,
   labelScreenFontSize,
   shouldShowLabelAtScreenSize,
+  LABEL_MAX_SCREEN_PX,
   type LabelMapObject,
   type ProvinceCentroids,
   type ProvinceNeighbors,
@@ -249,6 +250,12 @@ describe("shouldShowLabelAtScreenSize", () => {
     const displayScale = 1;
     expect(shouldShowLabelAtScreenSize(80, displayScale)).toBe(true);
     expect(shouldShowLabelAtScreenSize(24, displayScale)).toBe(true);
+  });
+
+  it("hides labels once they would fill the screen", () => {
+    expect(shouldShowLabelAtScreenSize(LABEL_MAX_SCREEN_PX, 1)).toBe(true);
+    expect(shouldShowLabelAtScreenSize(LABEL_MAX_SCREEN_PX + 1, 1)).toBe(false);
+    expect(shouldShowLabelAtScreenSize(80, 2)).toBe(false);
   });
 
   it("hides labels when display scale is zero", () => {
