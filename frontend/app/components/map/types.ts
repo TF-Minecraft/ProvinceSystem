@@ -9,6 +9,7 @@ export type MapMode =
   | "empire"
   | "trade"
   | "prosperity"
+  | "infrastructure"
   | "terrain"
   | "fertility"
   | "infestation"

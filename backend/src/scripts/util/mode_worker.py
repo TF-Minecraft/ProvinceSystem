@@ -18,6 +18,7 @@ def run_mode(map_name: str, mode: str, full_regions: bool) -> dict:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     from ..mapgen.geometry_cache import MapGeometryCache
+    from ..mapgen.infrastructuregen import create_infrastructure_map
     from ..mapgen.mapgen import create_map
     from ..mapgen.prosperitygen import create_prosperity_map
     from ..mapgen.regiongen import generate_regions
@@ -35,6 +36,9 @@ def run_mode(map_name: str, mode: str, full_regions: bool) -> dict:
         t0 = time.perf_counter()
         create_prosperity_map(map_name, "prosperity_map", cache=cache)
         steps[f"{mode}.prosperity"] = time.perf_counter() - t0
+        t0 = time.perf_counter()
+        create_infrastructure_map(map_name, "infrastructure_map", cache=cache)
+        steps[f"{mode}.infrastructure"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
     create_map(map_name, mode, f"{mode}_map", False, cache=cache)

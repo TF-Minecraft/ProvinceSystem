@@ -25,6 +25,7 @@ const ALL_MODES: MapMode[] = [
   "empire",
   "trade",
   "prosperity",
+  "infrastructure",
   "terrain",
   "fertility",
   "province",
@@ -51,7 +52,7 @@ const STATIC_MODES: MapMode[] = ["terrain", "fertility", "province"];
  * The two that vary per day but are *not* region records: they are per-province
  * measurement lists, painted through `CHRONICLE_PROVINCE_PAINT_SOURCE` instead.
  */
-const RASTER_DAY_MODES: MapMode[] = ["prosperity", "infestation"];
+const RASTER_DAY_MODES: MapMode[] = ["prosperity", "infrastructure", "infestation"];
 
 function gzipResponse(body: string): Response {
   const gz = gzipSync(Buffer.from(body, "utf-8"));

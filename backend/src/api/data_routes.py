@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, 
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 import json, logging, os, time
+import math
 
 from .http_headers import (
     add_no_cache,
@@ -93,6 +94,19 @@ def compute_trade_shares(trade: dict):
             best, dominant = v, g
     return shares, dominant, best / total
 
+
+def _finite_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+# These come from the plugin's province_data row. provinces.txt is free-form
+# key=value, so a stray infrastructure=unknown must not survive into the hover.
+_MEASUREMENT_FIELDS = ("terrain_value", "infrastructure", "infrastructure_fill", "effective_terrain")
+
 def build_compiled_provinces(map_name: str):
     meta = load_province_metadata(map_name)
 
@@ -119,8 +133,8 @@ def build_compiled_provinces(map_name: str):
             except (TypeError, ValueError):
                 inf = None
 
-        out[pid] = {
-            **m,
+        province = {
+            **{key: value for key, value in m.items() if key not in _MEASUREMENT_FIELDS},
             "province_id": pid,
             "prosperity": p.get("prosperity", 0),
             "trade": trade,
@@ -132,6 +146,11 @@ def build_compiled_provinces(map_name: str):
             "infestation_group": inf.get("group") if inf else None,
             "infestation_display": (inf.get("display") or inf.get("group")) if inf else None,
         }
+        for field in _MEASUREMENT_FIELDS:
+            value = p.get(field)
+            if _finite_number(value):
+                province[field] = value
+        out[pid] = province
 
     return out
 

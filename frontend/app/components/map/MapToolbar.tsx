@@ -20,6 +20,7 @@ const EXTRA_MODE_OPTIONS: { value: MapMode; label: string }[] = [
   { value: "fertility", label: "Fertility" },
   { value: "trade", label: "Trade" },
   { value: "prosperity", label: "Prosperity" },
+  { value: "infrastructure", label: "Infrastructure" },
   { value: "infestation", label: "Infestation" },
 ];
 

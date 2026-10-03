@@ -26,6 +26,7 @@ export function provinceHoverBlocksRegionPick(mapType: string): boolean {
     mapType === "terrain" ||
     mapType === "fertility" ||
     mapType === "prosperity" ||
+    mapType === "infrastructure" ||
     mapType === "infestation" ||
     mapType === "province"
   );

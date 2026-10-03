@@ -98,6 +98,34 @@ class TestParallelRegenHelpers(unittest.TestCase):
         runnable = modes_to_run("main", parse_regen_type("queued"))
         self.assertEqual(runnable, ["nation", "trade"])
 
+    def test_trade_regen_draws_infrastructure_map(self) -> None:
+        from . import regeneration
+
+        with (
+            patch.object(regeneration, "create_map"),
+            patch.object(regeneration, "create_prosperity_map"),
+            patch.object(regeneration, "create_infrastructure_map") as infrastructure,
+            patch.object(regeneration, "generate_regions"),
+        ):
+            regeneration._run_mode_serial(
+                "main", "trade", parse_regen_type("fullregen"), None, _RegenTimings()
+            )
+        infrastructure.assert_called_once_with("main", "infrastructure_map", cache=None)
+
+    def test_parallel_trade_worker_draws_infrastructure_map(self) -> None:
+        from . import mode_worker
+
+        cache = object()
+        with (
+            patch("src.scripts.mapgen.geometry_cache.MapGeometryCache.load", return_value=cache),
+            patch("src.scripts.mapgen.mapgen.create_map"),
+            patch("src.scripts.mapgen.prosperitygen.create_prosperity_map"),
+            patch("src.scripts.mapgen.infrastructuregen.create_infrastructure_map") as infrastructure,
+            patch("src.scripts.mapgen.regiongen.generate_regions"),
+        ):
+            mode_worker.run_mode("main", "trade", True)
+        infrastructure.assert_called_once_with("main", "infrastructure_map", cache=cache)
+
 
 if __name__ == "__main__":
     unittest.main()
