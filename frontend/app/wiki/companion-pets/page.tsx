@@ -13,7 +13,7 @@ import { petHousePreview } from "@/app/wiki/data/companion-pets";
 export default function CompanionPetsPage() {
   return (
     <WikiPage
-      lastModified="2026-10-02"
+      lastModified="2026-10-03"
       title="Companion Pets"
       intro="A companion is a little personality to share your adventures with. Give it a name, look after it, play together and teach it tricks. The more time you spend together, the stronger your bond becomes."
     >
@@ -57,7 +57,7 @@ export default function CompanionPetsPage() {
           ["Treat a sick pet", "Green Concoction or Red Concoction", "Right-click a sick or weakened pet to give it medicine."],
           ["Train and reward it", "Meat Treat, Fish Treat or Fish Snack", "Hold a treat to begin training, then give treats as rewards."],
           ["Play fetch", "Pet Ball, Chew Bone, Tug Rope, Mouse Plush or Teddy Bear Plush", "Craft a toy at the Animal Station and throw it for your pet to fetch."],
-          ["Make a shelter", "Pet House (coming soon)", "Once available, craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
+          ["Make a shelter", "Pet House", "Craft it at the Animal Station, place it on the ground and right-click to open your shelter."],
           ["Give affection", "Empty hand", "Right-click your pet to check on it and give it attention."],
         ]}
       />
@@ -121,13 +121,12 @@ export default function CompanionPetsPage() {
       <WikiSectionHeading id="shelter" intro="A place to keep your companions between adventures.">
         Giving your pets a home
       </WikiSectionHeading>
-      <Callout>
-        The <strong>Pet House</strong> is being prepared. Once available, you will be able
-        to craft it at the <StationLink name="Animal Station" />, place it on the ground
-        and right-click it to browse your companions. Only its owner will be able to open it.
-        Moving or breaking it will leave your stored companions safe; you will be able to
-        place a shelter again to visit them.
-      </Callout>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Craft a <strong>Pet House</strong> at the <StationLink name="Animal Station" />,
+        place it on the ground and right-click it to browse your companions.
+        Only you can open your house. Moving or breaking it leaves your stored companions
+        safe: place a house again whenever you want to visit them.
+      </p>
       <div className="my-5">
         <WikiModelViewer {...petHousePreview} label="Pet House" height="sm" />
       </div>

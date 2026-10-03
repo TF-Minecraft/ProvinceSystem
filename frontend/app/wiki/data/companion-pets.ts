@@ -9,8 +9,8 @@ import housePreview from "../../../public/wiki/models/companion-pets/pet-house-p
 // Each companion has its own egg; eggs/supplies/toys come from the Animal Station.
 // Care includes Fish Snack and the five custom toys now configured on TF Dev.
 // The user named the new shelter Pet House; its preview is pethouse.bbmodel from
-// the same Downloads folder. House instructions stay planned until furniture use is
-// validated in game, even once its item and recipe are configured on TF Dev.
+// the same Downloads folder. The server owner confirmed Pet House is available
+// on 2026-10-03.
 export const petHousePreview = housePreview;
 
 const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string }> = {
