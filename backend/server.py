@@ -125,6 +125,7 @@ from src.api.ledger_routes import ledger_router
 from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
+from src.api.tile_routes import tile_router
 from src.api.maps_routes import maps_router
 from src.api.profile_routes import profile_router
 from src.api.skins_routes import skins_router
@@ -150,6 +151,7 @@ app.include_router(chronicle_staff_router)
 app.include_router(ledger_router)
 app.include_router(regen_router)
 app.include_router(file_router)
+app.include_router(tile_router)
 app.include_router(skins_router)
 app.include_router(profile_router)
 app.include_router(characters_router)

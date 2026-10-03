@@ -12,7 +12,7 @@ export default function EditorDisabledGate() {
           workflow. Map viewing is unchanged.
         </p>
         <Link
-          href="/map/main"
+          href="/map"
           className="mt-6 inline-flex rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_40%,var(--tfmc-forest-deep))] px-4 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition-colors hover:text-white"
         >
           Back to map

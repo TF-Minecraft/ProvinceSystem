@@ -54,14 +54,40 @@ export function mapRouteSegment(mapId: MapId): string {
   return mapId === "dev" ? DEV_PUBLIC_SEGMENT : mapId;
 }
 
-/** `/map/main` or `/map/r3b1rth` — the live map. */
-export function liveMapHref(mapId: MapId): string {
+/**
+ * The map's own path, `/map/{segment}`. Pages nested under a map (chronicle,
+ * staff console) build on this rather than on `liveMapHref`, because `main`'s
+ * live map lives at the bare `/map` and `/map/chronicle` would read as a map
+ * called "chronicle".
+ */
+export function mapBaseHref(mapId: MapId): string {
   return `/map/${mapRouteSegment(mapId)}`;
+}
+
+/**
+ * The map this site shows at `/map`: `main` on the public site, the Dev
+ * server's map on the dev site. Set from the backend's map list once it has
+ * loaded (`setLiveMapId`), so every link below agrees with the page.
+ */
+let liveMapIdForLinks: MapId = "main";
+
+export function setLiveMapId(mapId: MapId): void {
+  liveMapIdForLinks = mapId;
+}
+
+/** The live map in a `/maps/accessible` list; `main` if none says so. */
+export function liveMapIdFrom(maps: readonly { id: string; live?: boolean }[]): MapId {
+  return maps.find((entry) => entry.live)?.id ?? "main";
+}
+
+/** `/map` for the site's live map, else `/map/r3b1rth` or `/map/{archive}`. */
+export function liveMapHref(mapId: MapId): string {
+  return mapId === liveMapIdForLinks ? "/map" : mapBaseHref(mapId);
 }
 
 /** `/map/{map}/chronicle` — the timelapse studio. */
 export function chronicleStudioHref(mapId: MapId): string {
-  return `${liveMapHref(mapId)}/chronicle`;
+  return `${mapBaseHref(mapId)}/chronicle`;
 }
 
 /**

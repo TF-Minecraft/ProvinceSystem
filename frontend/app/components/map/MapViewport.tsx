@@ -5,6 +5,8 @@ import type { Size } from "../../lib/mapViewportMath";
 export type MapViewportProps = {
   mapSize: Size;
   viewportRef: RefObject<HTMLDivElement | null>;
+  /** The scaled layer; `useMapViewport` moves it directly during gestures. */
+  contentRef?: RefObject<HTMLDivElement | null>;
   transformStyle: string;
   transformTransition?: string;
   cursorClassName: string;
@@ -18,17 +20,24 @@ export type MapViewportProps = {
    * the whole map inside whatever rectangle results.
    */
   fill?: boolean;
+  /**
+   * The viewport handles touch itself (one-finger pan, pinch zoom), so the
+   * browser must not scroll or zoom the page underneath it.
+   */
+  capturesTouch?: boolean;
 };
 
 export default function MapViewport({
   mapSize,
   viewportRef,
+  contentRef,
   transformStyle,
   transformTransition,
   cursorClassName,
   isPanning,
   children,
   fill = false,
+  capturesTouch = false,
 }: MapViewportProps) {
   const { w: mapW, h: mapH } = mapSize;
 
@@ -49,11 +58,11 @@ export default function MapViewport({
     <div
       ref={viewportRef}
       className={`relative overflow-hidden ${fill ? "h-full w-full" : "w-full"} ${cursorClassName}${
-        isPanning ? " select-none" : ""
-      }`}
+        isPanning || capturesTouch ? " select-none" : ""
+      }${capturesTouch ? " touch-none" : ""}`}
       style={outerStyle}
     >
-      <div className="relative" style={innerStyle}>
+      <div ref={contentRef} className="relative" style={innerStyle}>
         {children}
       </div>
     </div>

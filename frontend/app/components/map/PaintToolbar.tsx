@@ -26,8 +26,7 @@ import {
 } from "../../lib/mapPaint";
 import type { UseMapPaintResult } from "../../hooks/useMapPaint";
 
-const panelClass =
-  "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
+const panelClass = "map-frame";
 
 const activeClass =
   "bg-[color-mix(in_srgb,var(--tfmc-cream)_92%,transparent)] text-[var(--tfmc-forest-deep)]";
@@ -65,9 +64,8 @@ const TEXT_MARKS: {
 type PaintToolbarProps = { paint: UseMapPaintResult };
 
 /**
- * Floating panel for the war-planning paint layer. Every control is a real
- * <button>/<input> because DraggablePanel deliberately lets clicks on those
- * through instead of starting a drag.
+ * Floating panel for the war-planning paint layer, shown while paint mode is
+ * on (the Layers menu's "War planning" switch turns it on).
  */
 export default function PaintToolbar({ paint }: PaintToolbarProps) {
   const [confirmingClear, setConfirmingClear] = useState(false);

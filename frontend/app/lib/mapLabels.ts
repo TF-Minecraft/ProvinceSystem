@@ -52,6 +52,12 @@ export const LABEL_FONT_WEIGHT = 500;
 export const DEFAULT_MAP_ZOOM = 1;
 /** Minimum on-screen font size (px) for a label to appear. */
 export const LABEL_MIN_SCREEN_PX = 6;
+/**
+ * Realm names are drawn in map units, so they grow with zoom. Past this
+ * screen size a name is a wall of ink over the land it names; it fades out
+ * and the reader is close enough to see settlements instead.
+ */
+export const LABEL_MAX_SCREEN_PX = 140;
 
 export function labelScreenFontSize(
   fontSize: number,
@@ -66,7 +72,7 @@ export function shouldShowLabelAtScreenSize(
 ): boolean {
   if (displayScale <= 0 || fontSize <= 0) return false;
   const screenPx = labelScreenFontSize(fontSize, displayScale);
-  return screenPx >= LABEL_MIN_SCREEN_PX;
+  return screenPx >= LABEL_MIN_SCREEN_PX && screenPx <= LABEL_MAX_SCREEN_PX;
 }
 
 export type ProvinceNeighbors = Record<string, number[]>;

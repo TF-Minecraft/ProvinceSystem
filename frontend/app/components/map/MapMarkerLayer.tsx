@@ -13,6 +13,8 @@ import {
   markerDimensions,
   markerLabelTextStyle,
   markerLayout,
+  markerZoomScale,
+  hiddenMarkerLabels,
   resolveMarkerImageSrc,
   shouldShowMapMarker,
   type MapMarker,
@@ -66,6 +68,12 @@ function MapMarkerLayer({
     return null;
   }
 
+  // Over the full list, not this layer's slice, so both layers (and hover)
+  // agree on which names were thinned out.
+  const hiddenLabels = alwaysVisible
+    ? new Set<string>()
+    : hiddenMarkerLabels(markers, displayScale);
+
   const layerZ =
     layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_ABOVE_LABELS;
 
@@ -80,7 +88,8 @@ function MapMarkerLayer({
           marker.mapX,
           marker.mapY,
           marker.markerSize,
-          marker.kind
+          marker.kind,
+          markerZoomScale(displayScale)
         );
         const visible =
           alwaysVisible || shouldShowMapMarker(marker, displayScale);
@@ -88,7 +97,10 @@ function MapMarkerLayer({
         const baseScale = marker.baseScale ?? 1;
         const scale = baseScale * (hovered ? MARKER_HOVER_SCALE : 1);
         const src = resolveMarkerImageSrc(marker.kind, marker.markerSize);
-        const showLabel = !marker.showLabelOnlyOnHover || hovered;
+        // Hover always names a pin, even one whose label gave way to a
+        // more prominent neighbour.
+        const showLabel =
+          hovered || (!marker.showLabelOnlyOnHover && !hiddenLabels.has(marker.id));
         const iconOffset = (layout.size - layout.iconSize) / 2;
         const ringSize = layout.iconSize * 1.2;
 
