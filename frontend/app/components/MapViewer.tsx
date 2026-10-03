@@ -688,12 +688,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           canvas.width = width;
           canvas.height = height;
         }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // A band of rows per frame: the whole 6400 px map in one drawImage
-        // held the page for ~100 ms; a 256-row band takes a few.
+        // A band of rows per frame, each cleared just before it is drawn (the
+        // map's transparent pixels must not keep the last mode's ids): the
+        // whole 6400 px map cleared and drawn at once held the page for
+        // ~200 ms; a 256-row band takes a few.
         for (let y = 0; y < height; y += PICK_COPY_BAND) {
           if (cancelled) return;
           const rows = Math.min(PICK_COPY_BAND, height - y);
+          ctx.clearRect(0, y, width, rows);
           ctx.drawImage(source, 0, y, width, rows, 0, y, width, rows);
           await new Promise((resolve) => requestAnimationFrame(resolve));
         }
