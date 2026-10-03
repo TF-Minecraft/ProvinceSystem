@@ -43,6 +43,7 @@ import {
   useTileManifest,
 } from "../../hooks/useTileManifest";
 import { overlayLod, tilePixelRatio } from "../../lib/map/tilePyramid";
+import { mapFiltersSupportedHere } from "../../lib/map/mapFilters";
 import {
   useMapViewport,
   type MapFocusInset,
@@ -109,6 +110,10 @@ function regionHighlightStyle(
   rimPx: number,
   rimAlpha: number
 ): React.CSSProperties {
+  // Safari would draw the highlighted region not at all (see mapFilters).
+  // Unfiltered, it still stands out: drawn again over its own colour, and,
+  // when selected, over the faded rest of the world.
+  if (!mapFiltersSupportedHere()) return {};
   const px = displayScale > 0 ? rimPx / displayScale : 0;
   const rim = `rgb(232 228 217 / ${rimAlpha})`;
   return {
