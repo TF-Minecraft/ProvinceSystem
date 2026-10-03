@@ -12,7 +12,7 @@ import { cleanRegionName } from "@/app/lib/mapLabels";
 import { resolveMarkerImageSrc, type MapMarker } from "@/app/lib/mapMarkers";
 
 import type { MapId, RegionRecord } from "../types";
-import { Banner, Fact, RegionLink } from "./RealmPanel";
+import { Fact, RegionLink } from "./RealmPanel";
 import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
 
 /** Province id -> county name per map, shared by every place panel. */
@@ -93,7 +93,7 @@ export function PlacePanelContent({
           <img
             src={resolveMarkerImageSrc(marker.kind, marker.markerSize)}
             alt=""
-            className="h-10 w-10 [image-rendering:pixelated]"
+            className="h-12 w-12 object-contain [image-rendering:pixelated]"
           />
         </div>
         <div className="min-w-0 flex-1 pr-7">
@@ -162,18 +162,7 @@ export function PlacePanelContent({
             onClick={() => onSelectRegion(place.ownerId!)}
             className="map-control h-9 px-3 text-sm"
           >
-            {owner?.banner ? (
-              <Banner
-                mapId={mapId}
-                mapType="nation"
-                banner={owner.banner}
-                name={ownerName ?? ""}
-                sessionToken={sessionToken}
-                className="h-5 w-4 border"
-              />
-            ) : (
-              <RealmIcon size={16} />
-            )}
+            <RealmIcon size={16} />
             View realm
           </button>
         ) : null}
