@@ -22,6 +22,7 @@ it("lets readers choose any companion while mounting only its preview", () => {
     ["golden", "Golden Retriever", "Golden Companion Egg"],
     ["catblack", "Black cat", "Catblack Companion Egg"],
     ["mainecoon", "Maine Coon", "Maine Coon Companion Egg"],
+    ["fox", "Fox", "Fox Companion Egg"],
     ["frog", "Frog", "Frog Companion Egg"],
   ]) {
     fireEvent.change(select, { target: { value: id } });
@@ -30,7 +31,7 @@ it("lets readers choose any companion while mounting only its preview", () => {
       .getAttribute("data-model-url")).toBe(`/wiki/models/companion-pets/${id}.json`);
     expect(screen.getByText(egg)).toBeTruthy();
     const eggIcon = screen.getByText(egg).parentElement?.querySelector("img");
-    const family = ["catblack", "mainecoon"].includes(id) ? "cat" : id === "frog" ? "frog" : "wolf";
+    const family = ["catblack", "mainecoon"].includes(id) ? "cat" : id === "frog" ? "frog" : id === "fox" ? "fox" : "wolf";
     expect(eggIcon?.getAttribute("src")).toBe(`/wiki/textures/vanilla/${family}_spawn_egg.png`);
     expect(screen.queryByText("Beagle Companion Egg")).toBeNull();
   }
