@@ -12,9 +12,10 @@ type MapModeBarProps = {
 };
 
 /**
- * Desktop map-mode row: round icon buttons in a tray along the bottom edge,
- * political tiers then world modes. The caption above the tray always names
- * the active mode, so the icons never have to be decoded from memory.
+ * Desktop map-mode row: round icon buttons in a tray along the bottom edge:
+ * realms, then the title tiers from empires down, then the world modes. The
+ * caption above the tray always names the active mode, so the icons never
+ * have to be decoded from memory.
  */
 export function MapModeBar({ mapType, onMapTypeChange }: MapModeBarProps) {
   const options = mapModeOptions();

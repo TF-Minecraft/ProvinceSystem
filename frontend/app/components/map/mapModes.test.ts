@@ -5,10 +5,10 @@ import type { MapMode } from "./types";
 
 const ALL_MODES: MapMode[] = [
   "nation",
-  "county",
-  "duchy",
-  "kingdom",
   "empire",
+  "kingdom",
+  "duchy",
+  "county",
   "province",
   "terrain",
   "fertility",
@@ -24,9 +24,10 @@ describe("mapModeOptions", () => {
     expect(values).toEqual(ALL_MODES);
   });
 
-  it("groups the political tiers before the world modes", () => {
+  it("puts realms first, then the title tiers from the top, then the world modes", () => {
     const groups = mapModeOptions().map((opt) => opt.group);
-    expect(groups.slice(0, 5).every((group) => group === "political")).toBe(true);
+    expect(groups[0]).toBe("realms");
+    expect(groups.slice(1, 5).every((group) => group === "titles")).toBe(true);
     expect(groups.slice(5).every((group) => group === "world")).toBe(true);
   });
 });

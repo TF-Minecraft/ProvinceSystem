@@ -1,6 +1,7 @@
 import type { MapMode } from "./types";
 
-export type MapModeGroup = "political" | "world";
+/** The bar's sections: who rules, the title tiers top down, then the land. */
+export type MapModeGroup = "realms" | "titles" | "world";
 
 export type MapModeOption = {
   value: MapMode;
@@ -18,11 +19,11 @@ export type MapModeOption = {
  * bar.
  */
 const MODE_OPTIONS: MapModeOption[] = [
-  { value: "nation", label: "Realms", short: "Realms", group: "political" },
-  { value: "county", label: "Counties", short: "Counties", group: "political" },
-  { value: "duchy", label: "Duchies", short: "Duchies", group: "political" },
-  { value: "kingdom", label: "Kingdoms", short: "Kingdoms", group: "political" },
-  { value: "empire", label: "Empires", short: "Empires", group: "political" },
+  { value: "nation", label: "Realms", short: "Realms", group: "realms" },
+  { value: "empire", label: "Empires", short: "Empires", group: "titles" },
+  { value: "kingdom", label: "Kingdoms", short: "Kingdoms", group: "titles" },
+  { value: "duchy", label: "Duchies", short: "Duchies", group: "titles" },
+  { value: "county", label: "Counties", short: "Counties", group: "titles" },
   { value: "province", label: "Provinces", short: "Provinces", group: "world" },
   { value: "terrain", label: "Terrain", short: "Terrain", group: "world" },
   { value: "fertility", label: "Fertility", short: "Fertility", group: "world" },
