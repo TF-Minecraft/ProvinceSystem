@@ -15,6 +15,7 @@ import type {
   MapId,
   MapMode,
   MapObject,
+  OverlayBBox,
   WarExport,
   HubLink,
 } from "./types";
@@ -119,6 +120,69 @@ function regionHighlightStyle(
       `drop-shadow(0 -${px}px 0 ${rim})`,
     ].join(" "),
   };
+}
+
+/**
+ * What the map is focused on: a selected region, or a realm opened to show
+ * its subjects. Everything outside `shapePath` (a region crop, as an API
+ * path) is dimmed; `objects` are the realm's own layers, drawn over it.
+ */
+export type MapFocus = {
+  shapePath: string;
+  overlay?: OverlayBBox;
+  objects: MapObject[];
+};
+
+/** The wash over everything outside the focus. */
+const FOCUS_DIM = "rgb(12 18 15 / 0.55)";
+
+/**
+ * A mask that keeps everything but `box`'s opaque pixels: the full layer
+ * with the shape cut out. The map content is laid out in map pixels, so the
+ * box places the shape as is.
+ */
+function focusHoleMask(url: string, box: OverlayBBox): React.CSSProperties {
+  const image = `url("${url}"), linear-gradient(#000, #000)`;
+  const size = `${box.w}px ${box.h}px, 100% 100%`;
+  const position = `${box.x}px ${box.y}px, 0 0`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: position,
+    WebkitMaskPosition: position,
+    maskRepeat: "no-repeat",
+    WebkitMaskRepeat: "no-repeat",
+    maskComposite: "exclude",
+    WebkitMaskComposite: "xor",
+  };
+}
+
+/**
+ * The last of the URLs given that has finished loading. A new one replaces it
+ * only once it has loaded, so a mask never applies with its image missing
+ * (which would dim the focus too) and a change of reduction does not blink.
+ */
+function useLoadedImageUrl(url: string | null): string | null {
+  const [loaded, setLoaded] = useState<string | null>(null);
+  useEffect(() => {
+    if (!url) {
+      setLoaded(null);
+      return;
+    }
+    let cancelled = false;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (!cancelled) setLoaded(url);
+    };
+    image.src = url;
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+  return url ? loaded : null;
 }
 
 /** Region modes the backend can flatten and tile (`regions-{mode}`). */
@@ -255,10 +319,11 @@ type MapCanvasProps = {
   onClick: (e: React.MouseEvent<Element>) => void;
   isHoveringClickable?: boolean;
   /**
-   * No subject layers are open, so the mode's overlays are exactly as first
-   * shown and can come from the flattened tiles.
+   * Live map only: the selected region or opened realm. Everything else is
+   * dimmed, and an opened realm's subjects are drawn over the flattened
+   * tiles, which otherwise stay as first shown.
    */
-  regionsAtDefault?: boolean;
+  focus?: MapFocus | null;
   /** Filled with the camera controls once the viewport is mounted. */
   controlsRef?: MutableRefObject<MapViewportControls | null>;
   /** Full-bleed mode: fills its container instead of sizing to the map itself
@@ -316,7 +381,7 @@ export default function MapCanvas({
   onMouseLeave,
   onClick,
   isHoveringClickable = false,
-  regionsAtDefault = false,
+  focus = null,
   controlsRef,
   fill = false,
   fitMode = "cover",
@@ -365,19 +430,18 @@ export default function MapCanvas({
   /**
    * A region mode's overlays as first shown, flattened and tiled by the
    * backend. Switching mode then loads a few tiles instead of one image per
-   * region (85 for counties). Once subject layers are open the per-region
-   * images take over again, since the flattened picture no longer matches.
+   * region (85 for counties). They stay up when a realm is opened: only that
+   * realm's own layers are drawn separately, over a hole cut for them.
    */
   const regionLayer =
     regionOverlay === undefined && REGION_TILE_MODES.has(mapType)
       ? `regions-${mapType}`
       : null;
   const regionTiles = useTileManifest(mapId, regionLayer, tilesAllowed);
-  const useRegionTiles = regionsAtDefault && regionTiles.manifest !== null;
+  const useRegionTiles = regionTiles.manifest !== null;
   // Until the first answer, draw neither: guessing "no tiles" would start
   // dozens of overlay downloads that the tiles make pointless.
-  const holdRegionOverlays =
-    regionsAtDefault && regionLayer !== null && regionTiles.status === "loading";
+  const holdRegionOverlays = regionLayer !== null && regionTiles.status === "loading";
 
   // Once the map has settled, warm every other region mode so switching to
   // one shows its colour at once.
@@ -406,7 +470,6 @@ export default function MapCanvas({
     : null;
   const labelsShown =
     !regionLayer ||
-    !regionsAtDefault ||
     (useRegionTiles
       ? regionTilesReadyKey === regionTilesKey
       : regionTiles.status !== "loading");
@@ -437,6 +500,47 @@ export default function MapCanvas({
   // full size only to draw it a few pixels across is what the tiles fix for
   // the base map.
   const lod = overlayLod(viewport.displayScale, devicePixelRatio);
+
+  // The focus: a wash over everything outside its shape. Applied once the
+  // shape has loaded; until then the map shows as it was.
+  const focusShapePath =
+    focus && regionOverlay === undefined
+      ? lod > 0 && focus.shapePath.includes("/regions/")
+        ? `${focus.shapePath}?lod=${lod}`
+        : focus.shapePath
+      : "";
+  const { url: focusShapeUrl } = useMapAssetUrl(
+    mapId,
+    focusShapePath,
+    sessionToken,
+    Boolean(focusShapePath)
+  );
+  const focusShapeReady = useLoadedImageUrl(focusShapeUrl);
+  const focusMask =
+    focus?.overlay && focusShapeReady ? focusHoleMask(focusShapeReady, focus.overlay) : null;
+  // An opened realm's layers go over a hole in the flattened tiles, so its
+  // subjects are not tinted by the colour the tiles give its whole area. The
+  // hole opens once they have all loaded, so it never shows bare land.
+  const focusObjects = useRegionTiles && focus ? focus.objects : [];
+  const focusObjectsKey = focusObjects.map((obj) => obj.id).join("|");
+  const [focusLoaded, setFocusLoaded] = useState<{ key: string; ids: Set<string> }>({
+    key: "",
+    ids: new Set(),
+  });
+  const markFocusObjectLoaded = useCallback(
+    (id: string) =>
+      setFocusLoaded((current) => {
+        const ids = current.key === focusObjectsKey ? current.ids : new Set<string>();
+        if (ids.has(id)) return current;
+        return { key: focusObjectsKey, ids: new Set(ids).add(id) };
+      }),
+    [focusObjectsKey]
+  );
+  const focusObjectsReady =
+    focusObjects.length > 0 &&
+    focusLoaded.key === focusObjectsKey &&
+    focusObjects.every((obj) => focusLoaded.ids.has(obj.id));
+  const regionTilesMask = focusObjectsReady ? focusMask : null;
 
   /**
    * The pick canvas is read with `getImageData`, never seen. It used to sit
@@ -625,19 +729,24 @@ export default function MapCanvas({
             provinceOverlay ?? null
           ))}
         {regionOverlay === undefined && useRegionTiles && regionTiles.manifest ? (
-          <TileLayer
-            // One instance per mode and version: what was loaded or held for
-            // the last mode says nothing about this one.
-            key={regionTilesKey ?? undefined}
-            manifest={regionTiles.manifest}
-            tileUrl={(level, x, y) =>
-              tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
-            }
-            view={tileView}
-            style={{ opacity: DRILL_STACK_OVERLAY_OPACITY }}
-            onReady={() => setRegionTilesReadyKey(regionTilesKey)}
-            onTileError={regionTiles.refresh}
-          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={regionTilesMask ?? undefined}
+          >
+            <TileLayer
+              // One instance per mode and version: what was loaded or held for
+              // the last mode says nothing about this one.
+              key={regionTilesKey ?? undefined}
+              manifest={regionTiles.manifest}
+              tileUrl={(level, x, y) =>
+                tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
+              }
+              view={tileView}
+              style={{ opacity: DRILL_STACK_OVERLAY_OPACITY }}
+              onReady={() => setRegionTilesReadyKey(regionTilesKey)}
+              onTileError={regionTiles.refresh}
+            />
+          </div>
         ) : regionOverlay === undefined && holdRegionOverlays ? null : regionOverlay === undefined
           ? mapObjects
               .filter((obj) => obj.visible)
@@ -678,6 +787,36 @@ export default function MapCanvas({
                 />
               ))
           : regionOverlay}
+        {regionOverlay === undefined && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 transition-opacity duration-200 ease-out"
+            style={{
+              backgroundColor: FOCUS_DIM,
+              opacity: focusMask ? 1 : 0,
+              ...(focusMask ?? {}),
+            }}
+          />
+        )}
+        {focusObjects.map((obj) => (
+          <MapAuthImage
+            key={`focus:${mapType}:${obj.id}`}
+            mapId={mapId}
+            path={`/${mapId}/regions/${mapType}/${obj.path}${lod > 0 ? `?lod=${lod}` : ""}`}
+            sessionToken={sessionToken}
+            crossOrigin="anonymous"
+            alt={`Overlay ${obj.id}`}
+            replaceInPlace
+            className={OVERLAY_TRANSITION_CLASS}
+            style={{
+              ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                expand: hoveredPath && obj.path === hoveredPath ? HOVER_OVERLAY_EXPAND : 0,
+              }),
+              opacity: DRILL_STACK_OVERLAY_OPACITY,
+            }}
+            onLoad={() => markFocusObjectLoaded(obj.id)}
+          />
+        ))}
         {/*
           `regionOverlay` is only ever passed by the chronicle. Fort ZoC is a
           server-rendered `/zoc/{id}.png` regenerated from *today's* state, so

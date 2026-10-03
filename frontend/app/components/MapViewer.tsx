@@ -32,12 +32,13 @@ import {
   drillStackNames,
   getAncestryChain,
   getNextDrillTarget,
+  hasLandSubjects,
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, {
   type MapAccessGateReason,
 } from "./map/MapAccessGate";
-import MapCanvas, { type MapViewportControls } from "./map/MapCanvas";
+import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
 import { mapModeLabel } from "./map/mapModes";
 import MapShell from "./map/shell/MapShell";
@@ -78,6 +79,7 @@ import {
   MapAccessError,
   fetchMapBlobUrl,
   fetchMapJson,
+  mapApiPathFromUrl,
   mapApiUrl,
   mapRequiresAuth,
   revokeMapBlobUrl,
@@ -853,7 +855,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       // Clicking open sea or unclaimed land puts the details away, as on any
       // map site; Ctrl-click there is still a no-op.
       if (!event.ctrlKey && !event.metaKey) {
-        select();
+        clearSelection();
       }
       return;
     }
@@ -871,6 +873,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       return;
     }
     select({ region: regionId });
+    focusOnRegion(regionId);
   };
 
   const handleMouseLeave = () => {
@@ -882,32 +885,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setHoveredRegionId(null);
     lastProvinceIdRef.current = null;
   };
-
-  /**
-   * Open the subject layers above `regionId` so it is drawn as itself rather
-   * than inside its overlord's colour. Needed when a panel link or search
-   * picks a subject that the current drill state hides.
-   */
-  const revealRegion = useCallback(
-    (regionId: string) => {
-      if (!regionData) return;
-      const ownObject = mapObjects.find(
-        (obj) => !obj.nested && obj.baseId === regionId
-      );
-      if (!ownObject || ownObject.visible) return;
-
-      const ancestors = getAncestryChain(regionId, regionData).slice(1).reverse();
-      if (ancestors.length === 0) return;
-      const stack: DrillLayer[] = ancestors.map((id) => ({
-        regionId: id,
-        name: regionData[id]?.name || id,
-        rgb: regionData[id]?.rgb ?? "128,128,128",
-      }));
-      applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
-      setDrillStack(stack);
-    },
-    [regionData, mapObjects, resetDrillVisibility, drillDownRegion]
-  );
 
   /** Open `regionId`'s own subject layer, and every layer above it. */
   const openSubjects = useCallback(
@@ -925,6 +902,38 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     },
     [regionData, resetDrillVisibility, drillDownRegion]
   );
+
+  /**
+   * Focus the map on a selected region, as CK3 does with a realm: one with
+   * subjects opens to show them, anything else opens the realms above it so
+   * it is drawn as itself. The canvas dims the rest of the world.
+   */
+  const focusOnRegion = useCallback(
+    (regionId: string) => {
+      if (!regionData?.[regionId]) return;
+      const chain = getAncestryChain(regionId, regionData);
+      const open = hasLandSubjects(regionId, regionData) ? chain : chain.slice(1);
+      const stack: DrillLayer[] = open.reverse().map((id) => ({
+        regionId: id,
+        name: regionData[id]?.name || id,
+        rgb: regionData[id]?.rgb ?? "128,128,128",
+      }));
+      const unchanged =
+        stack.length === drillStack.length &&
+        stack.every((layer, index) => layer.regionId === drillStack[index].regionId);
+      if (unchanged) return;
+      applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
+      setDrillStack(stack);
+    },
+    [regionData, drillStack, resetDrillVisibility, drillDownRegion]
+  );
+
+  /** Close the details and put the map back as it was. */
+  const clearSelection = useCallback(() => {
+    select();
+    setDrillStack([]);
+    if (regionData) resetDrillVisibility(regionData);
+  }, [select, regionData, resetDrillVisibility]);
 
   const focusRect = useCallback((rect: MapRect) => {
     viewportControlsRef.current?.focusMapRect(rect, focusInset());
@@ -953,12 +962,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       if (guildKey) {
         select({ guild: guildKey });
       } else {
-        revealRegion(regionId);
         select({ region: regionId });
+        focusOnRegion(regionId);
       }
       if (options.focus ?? true) focusRegion(regionId);
     },
-    [regionData, revealRegion, focusRegion, mapType, guildData, select]
+    [regionData, focusOnRegion, focusRegion, mapType, guildData, select]
   );
 
   /**
@@ -1024,26 +1033,61 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * Resolved like hover is, through the visible ancestor, so a subject inside
    * a closed realm lights its overlord until its layer is opened.
    */
+  const focusRealmId = drillStack[drillStack.length - 1]?.regionId ?? null;
   const selectedOverlay = useMemo<HoverOverlay | null>(() => {
     if (chronicle || !selectedId || !regionData?.[selectedId]) return null;
+    // An opened realm is lit by the focus itself; its own crop would cover
+    // the subjects it was opened to show.
+    if (selectedId === focusRealmId) return null;
     const target = getHoverRegion(mapType, mapId, selectedId, regionData);
     return target.imagePath
       ? { url: target.imagePath, overlay: target.overlay }
       : null;
     // mapObjects: the visible ancestor changes when layers open and close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chronicle, selectedId, regionData, getHoverRegion, mapType, mapId, mapObjects]);
+  }, [chronicle, selectedId, regionData, getHoverRegion, mapType, mapId, mapObjects, focusRealmId]);
+
+  /**
+   * What the canvas keeps lit. An opened realm: its whole shape, with its own
+   * layers drawn inside. Otherwise the selected region alone.
+   */
+  const mapFocus = useMemo<MapFocus | null>(() => {
+    if (chronicle || !regionData) return null;
+    if (focusRealmId) {
+      const shape = mapObjects.find(
+        (obj) => !obj.nested && (obj.baseId ?? obj.id) === focusRealmId
+      );
+      if (!shape) return null;
+      const objects = mapObjects.filter(
+        (obj) =>
+          obj.visible &&
+          getAncestryChain(obj.baseId ?? obj.id, regionData).includes(focusRealmId)
+      );
+      return {
+        shapePath: `/${mapId}/regions/${mapType}/${shape.path}`,
+        overlay: shape.overlay,
+        objects,
+      };
+    }
+    if (!selectedOverlay) return null;
+    const path = mapApiPathFromUrl(selectedOverlay.url);
+    return {
+      shapePath: path.endsWith("_hover") ? path.slice(0, -"_hover".length) : path,
+      overlay: selectedOverlay.overlay,
+      objects: [],
+    };
+  }, [chronicle, regionData, focusRealmId, mapObjects, mapId, mapType, selectedOverlay]);
 
   // Escape puts the details away, unless it is closing something in a field.
   useEffect(() => {
     if (!selectedId && !selectedPlaceId && !selectedGuildKey) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || isTypingTarget(event.target)) return;
-      select();
+      clearSelection();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId, selectedPlaceId, selectedGuildKey, select]);
+  }, [selectedId, selectedPlaceId, selectedGuildKey, clearSelection]);
 
   const selectedMarker = useMemo(
     () => (selectedPlaceId ? mapMarkers.find((m) => m.id === selectedPlaceId) ?? null : null),
@@ -1269,7 +1313,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       onSelectRegion={openRealm}
       onSelectPlace={(markerId) => select({ place: markerId })}
       onFocusPoint={focusPoint}
-      onClose={() => select()}
+      onClose={clearSelection}
     />
   ) : selectedPlace && selectedMarker ? (
     <PlacePanelContent
@@ -1280,7 +1324,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       sessionToken={authToken}
       onSelectRegion={(id) => selectRegion(id)}
       onFocusPoint={focusPoint}
-      onClose={() => select()}
+      onClose={clearSelection}
       onSelectGuild={(key) => select({ guild: key })}
     />
   ) : selectedId && regionData && selectedRegion ? (
@@ -1303,7 +1347,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         onShowSubjects={
           canShowSubjects ? () => openSubjects(selectedId) : undefined
         }
-        onClose={() => select()}
+        onClose={clearSelection}
         onSelectGuild={(key) => select({ guild: key })}
       />
     ) : null;
@@ -1386,7 +1430,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         onMouseLeave={handleMouseLeave}
         onClick={handleMapClick}
         isHoveringClickable={isHoveringClickable}
-        regionsAtDefault={drillStack.length === 0}
+        focus={mapFocus}
         fill
         fitMode={fitMode}
         day={day}
