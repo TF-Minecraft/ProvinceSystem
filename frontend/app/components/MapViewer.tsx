@@ -991,9 +991,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   );
   useEffect(() => {
     if (!pendingRealmId || mapType !== "nation" || !regionData?.[pendingRealmId]) return;
+    // Wait for the realm map's layers too: the data lands first, and opening
+    // a realm's subjects before its layers exist would open nothing.
+    if (!mapObjects.some((obj) => (obj.baseId ?? obj.id) === pendingRealmId)) return;
     selectRegion(pendingRealmId);
     setPendingRealmId(null);
-  }, [pendingRealmId, mapType, regionData, selectRegion]);
+  }, [pendingRealmId, mapType, regionData, mapObjects, selectRegion]);
 
   const searchEntries = useMemo(
     () =>
@@ -1067,6 +1070,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         shapePath: `/${mapId}/regions/${mapType}/${shape.path}`,
         overlay: shape.overlay,
         objects,
+        lit: selectedId === focusRealmId,
       };
     }
     if (!selectedOverlay) return null;
@@ -1075,8 +1079,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       shapePath: path.endsWith("_hover") ? path.slice(0, -"_hover".length) : path,
       overlay: selectedOverlay.overlay,
       objects: [],
+      lit: true,
     };
-  }, [chronicle, regionData, focusRealmId, mapObjects, mapId, mapType, selectedOverlay]);
+  }, [chronicle, regionData, focusRealmId, mapObjects, mapId, mapType, selectedOverlay, selectedId]);
 
   // Escape puts the details away, unless it is closing something in a field.
   useEffect(() => {

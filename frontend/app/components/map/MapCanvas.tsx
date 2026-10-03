@@ -132,6 +132,11 @@ export type MapFocus = {
   shapePath: string;
   overlay?: OverlayBBox;
   objects: MapObject[];
+  /**
+   * The focus is itself the selection, and gets the selection's rim. An
+   * opened realm with one of its subjects selected keeps a thinner one.
+   */
+  lit: boolean;
 };
 
 /**
@@ -762,25 +767,38 @@ export default function MapCanvas({
                 />
               ))
           : regionOverlay}
-        {focusObjects.map((obj) => (
-          <MapAuthImage
-            key={`focus:${mapType}:${obj.id}`}
-            mapId={mapId}
-            path={`/${mapId}/regions/${mapType}/${obj.path}${lod > 0 ? `?lod=${lod}` : ""}`}
-            sessionToken={sessionToken}
-            crossOrigin="anonymous"
-            alt={`Overlay ${obj.id}`}
-            replaceInPlace
-            className={OVERLAY_TRANSITION_CLASS}
+        {focusObjects.length > 0 && (
+          // One group, so the rim follows the realm's outer edge rather than
+          // every subject's, and the opacity applies once over the lot.
+          <div
+            className="map-selected-region pointer-events-none absolute inset-0"
             style={{
-              ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
-                expand: hoveredPath && obj.path === hoveredPath ? HOVER_OVERLAY_EXPAND : 0,
-              }),
               opacity: DRILL_STACK_OVERLAY_OPACITY,
+              ...(focusReady
+                ? focus?.lit
+                  ? regionHighlightStyle(viewport.displayScale, 2.5, 0.95)
+                  : regionHighlightStyle(viewport.displayScale, 1.25, 0.6)
+                : {}),
             }}
-            onLoad={() => markFocusObjectLoaded(obj.id)}
-          />
-        ))}
+          >
+            {focusObjects.map((obj) => (
+              <MapAuthImage
+                key={`focus:${mapType}:${obj.id}`}
+                mapId={mapId}
+                path={`/${mapId}/regions/${mapType}/${obj.path}${lod > 0 ? `?lod=${lod}` : ""}`}
+                sessionToken={sessionToken}
+                crossOrigin="anonymous"
+                alt={`Overlay ${obj.id}`}
+                replaceInPlace
+                className={OVERLAY_TRANSITION_CLASS}
+                style={overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                  expand: hoveredPath && obj.path === hoveredPath ? HOVER_OVERLAY_EXPAND : 0,
+                })}
+                onLoad={() => markFocusObjectLoaded(obj.id)}
+              />
+            ))}
+          </div>
+        )}
         {/*
           `regionOverlay` is only ever passed by the chronicle. Fort ZoC is a
           server-rendered `/zoc/{id}.png` regenerated from *today's* state, so
