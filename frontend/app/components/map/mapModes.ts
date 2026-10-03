@@ -26,9 +26,9 @@ const MODE_OPTIONS: MapModeOption[] = [
   { value: "province", label: "Provinces", short: "Provinces", group: "world" },
   { value: "terrain", label: "Terrain", short: "Terrain", group: "world" },
   { value: "fertility", label: "Fertility", short: "Fertility", group: "world" },
-  // The trade map colours each area by the guild that dominates its trade:
-  // it is the map of guilds.
-  { value: "trade", label: "Guilds", short: "Guilds", group: "world" },
+  // Each area is coloured by the guild that dominates its trade; clicking one
+  // opens that guild's card. Trade influence, not territory: guilds own none.
+  { value: "trade", label: "Trade", short: "Trade", group: "world" },
   { value: "prosperity", label: "Prosperity", short: "Prosperity", group: "world" },
   { value: "infestation", label: "Infestation", short: "Infestation", group: "world" },
 ];
