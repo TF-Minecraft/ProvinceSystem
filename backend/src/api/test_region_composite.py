@@ -81,10 +81,11 @@ class RegionCompositeTest(unittest.TestCase):
             )
         (self.regions_dir / "overlays.json").write_text(
             json.dumps(
+                # The real sidecar shape: the box sits under "overlay".
                 {
-                    "1,1,1": {"x": 0, "y": 0, "w": 20, "h": 20},
-                    "2,2,2": {"x": 50, "y": 50, "w": 20, "h": 20},
-                    "3,3,3": {"x": 10, "y": 60, "w": 20, "h": 20},
+                    "1,1,1": {"overlay": {"x": 0, "y": 0, "w": 20, "h": 20}},
+                    "2,2,2": {"overlay": {"x": 50, "y": 50, "w": 20, "h": 20}},
+                    "3,3,3": {"overlay": {"x": 10, "y": 60, "w": 20, "h": 20}},
                 }
             ),
             encoding="utf-8",

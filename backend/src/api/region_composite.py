@@ -32,6 +32,9 @@ from . import tile_cache
 
 _COMPOSITE_DIR = Path(__file__).resolve().parent.parent / "output" / "_derived" / "composite"
 
+# Bump when the way a composite is drawn changes, so existing ones rebuild.
+_COMPOSITE_FORMAT = 2
+
 _building: set[str] = set()
 _building_lock = threading.Lock()
 
@@ -79,7 +82,7 @@ def composite_version(map_name: str, mode: str) -> str | None:
     if regions is None:
         return None
     visible = sorted(default_visible_regions(mode, regions))
-    raw = json.dumps([visible, overlays_mtime, base_mtime])
+    raw = json.dumps([_COMPOSITE_FORMAT, visible, overlays_mtime, base_mtime])
     return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
@@ -129,8 +132,10 @@ def build_composite(map_name: str, mode: str) -> Path | None:
     canvas = Image.new("RGBA", size, (0, 0, 0, 0))
 
     for rgb in default_visible_regions(mode, regions):
-        box = boxes.get(rgb)
-        if not box:
+        # Sidecar entries are `{"overlay": {x, y, w, h}, "overlay_nested": ...}`,
+        # the fields the data route merges onto each region.
+        box = (boxes.get(rgb) or {}).get("overlay")
+        if not isinstance(box, dict):
             continue
         png = region_image(map_name, mode, f"{rgb.replace(',', '_')}.png")
         try:
