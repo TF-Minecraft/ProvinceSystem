@@ -23,7 +23,7 @@ import {
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
 import {
-  computeRegionLabelGeometry,
+  computeRegionLabelGeometrySteps,
   filterRegionLabelsForMapObjects,
   LABEL_MAP_MODES,
   type RegionLabelGeometryCache,
@@ -184,6 +184,8 @@ type MapViewerProps = {
  */
 const labelGeometryCache = new Map<string, RegionLabelGeometryCache | null>();
 const LABEL_GEOMETRY_CACHE_SIZE = 8;
+/** How long one slice of name layout may hold the page. */
+const LABEL_LAYOUT_SLICE_MS = 8;
 
 /**
  * Phones and tablets: a touch screen as the main pointer. They pick on tap,
@@ -440,7 +442,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     regionData,
   ]);
 
-  const labelGeometry = useMemo(() => {
+  /**
+   * What the current mode's names are laid out from, and the content key a
+   * finished layout is cached under; null while something is still loading.
+   */
+  const labelJob = useMemo(() => {
     if (!LABEL_MAP_MODES.has(mapType)) return null;
     if (!regionData || !neighbors || !centroids) return null;
     const needsTitleLayers =
@@ -451,10 +457,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (needsTitleLayers && !titleLayers) {
       return null;
     }
-    // Laying out a mode's names takes a noticeable moment (counties most), and
-    // switching back to a mode fetches the same data again as a new object.
-    // Keyed by content, a mode already seen this page view reuses its layout.
-    const geometryKey = [
+    // Switching back to a mode fetches the same data again as a new object;
+    // keyed by content, a mode already seen this page view reuses its layout.
+    const key = [
       mapId,
       mapType,
       labelGrid ? "grid" : "",
@@ -462,24 +467,12 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       JSON.stringify(regionData),
       needsTitleLayers ? JSON.stringify(titleLayers) : "",
     ].join("\u0000");
-    const cached = labelGeometryCache.get(geometryKey);
-    if (cached !== undefined) return cached;
-    const geometry = computeRegionLabelGeometry(
-      mapType,
-      regionData,
-      titleLayers,
-      neighbors,
-      centroids,
-      {
+    const start = () =>
+      computeRegionLabelGeometrySteps(mapType, regionData, titleLayers, neighbors, centroids, {
         grid: labelGrid ?? undefined,
         labelNeighbors: labelNeighbors ?? neighbors,
-      }
-    );
-    labelGeometryCache.set(geometryKey, geometry);
-    if (labelGeometryCache.size > LABEL_GEOMETRY_CACHE_SIZE) {
-      labelGeometryCache.delete(labelGeometryCache.keys().next().value!);
-    }
-    return geometry;
+      });
+    return { key, start };
   }, [
     mapId,
     mapType,
@@ -490,6 +483,44 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     centroids,
     labelGrid,
   ]);
+
+  // A layout not yet cached is worked out in slices of a few milliseconds,
+  // with the browser free between them: done in one go, a first visit to the
+  // counties froze the page for a quarter of a second.
+  const [laidOut, setLaidOut] = useState<{
+    key: string;
+    geometry: RegionLabelGeometryCache | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!labelJob || labelGeometryCache.has(labelJob.key)) return;
+    const steps = labelJob.start();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const slice = () => {
+      const until = performance.now() + LABEL_LAYOUT_SLICE_MS;
+      let step = steps.next();
+      while (!step.done && performance.now() < until) step = steps.next();
+      if (!step.done) {
+        timer = setTimeout(slice, 0);
+        return;
+      }
+      labelGeometryCache.set(labelJob.key, step.value);
+      if (labelGeometryCache.size > LABEL_GEOMETRY_CACHE_SIZE) {
+        labelGeometryCache.delete(labelGeometryCache.keys().next().value!);
+      }
+      setLaidOut({ key: labelJob.key, geometry: step.value });
+    };
+    slice();
+    return () => {
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [labelJob]);
+  const labelGeometry = !labelJob
+    ? null
+    : labelGeometryCache.has(labelJob.key)
+      ? labelGeometryCache.get(labelJob.key)!
+      : laidOut?.key === labelJob.key
+        ? laidOut.geometry
+        : null;
 
   const regionLabels = useMemo(
     () => filterRegionLabelsForMapObjects(labelGeometry, mapType, mapObjects),

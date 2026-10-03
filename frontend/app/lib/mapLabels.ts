@@ -919,14 +919,19 @@ export function provincesForRegionLabelGeometry(
   return { provinces, scope: "full" };
 }
 
-export function computeRegionLabelGeometry(
+/**
+ * `computeRegionLabelGeometry` a region at a time: yields after each one, so a
+ * caller can spread a mode's layout over several tasks. Laid out in one go,
+ * the counties held the page for a quarter of a second on a first visit.
+ */
+export function* computeRegionLabelGeometrySteps(
   mapType: MapMode,
   regionData: Record<string, NationRegionInput>,
   titleLayers: TitleLayers | null,
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
   options?: ComputeNationLabelsOptions
-): RegionLabelGeometryCache | null {
+): Generator<void, RegionLabelGeometryCache | null, void> {
   if (mapType === "nation") {
     const nations: NationLabelGeometry[] = [];
     const occupation = buildOccupationIndex(regionData);
@@ -976,6 +981,7 @@ export function computeRegionLabelGeometry(
       }
 
       nations.push({ nationId, full, direct });
+      yield;
     }
 
     return { mapType: "nation", nations };
@@ -1020,9 +1026,32 @@ export function computeRegionLabelGeometry(
         options
       )
     );
+    yield;
   }
 
   return { mapType, labels };
+}
+
+/** A mode's name layout, in one go. See `computeRegionLabelGeometrySteps`. */
+export function computeRegionLabelGeometry(
+  mapType: MapMode,
+  regionData: Record<string, NationRegionInput>,
+  titleLayers: TitleLayers | null,
+  neighbors: ProvinceNeighbors,
+  centroids: ProvinceCentroids,
+  options?: ComputeNationLabelsOptions
+): RegionLabelGeometryCache | null {
+  const steps = computeRegionLabelGeometrySteps(
+    mapType,
+    regionData,
+    titleLayers,
+    neighbors,
+    centroids,
+    options
+  );
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
 }
 
 export function filterRegionLabelsForMapObjects(
