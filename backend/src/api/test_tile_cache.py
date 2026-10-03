@@ -107,6 +107,18 @@ class PyramidTest(unittest.TestCase):
         siblings = [p.name for p in tile_cache.pyramid_dir(self.source, "x").parent.iterdir()]
         self.assertEqual(siblings, [new["version"]])
 
+    def test_previous_version_serves_while_the_new_one_builds(self) -> None:
+        old = tile_cache.build_pyramid(self.source)
+        assert old is not None
+        Image.new("RGB", (600, 300), (200, 200, 0)).save(self.source, "PNG")
+        stat = self.source.stat()
+        os.utime(self.source, ns=(stat.st_atime_ns, stat.st_mtime_ns + 10_000_000))
+
+        with patch.object(tile_cache, "_build_in_background") as background:
+            self.assertEqual(tile_cache.ready_manifest(self.source), old)
+            background.assert_called_once()
+        self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+
     def test_manifest_is_written_last(self) -> None:
         manifest = tile_cache.build_pyramid(self.source)
         assert manifest is not None

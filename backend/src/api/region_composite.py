@@ -210,5 +210,15 @@ def ready_composite(map_name: str, mode: str, *, background: bool = True) -> Pat
     return built
 
 
+def latest_manifest(map_name: str, mode: str) -> dict | None:
+    """The composite's current tile pyramid or, while a newer one is being
+    built (`ready_composite` starts it), the last one finished. None only when
+    no composite of this mode has been tiled yet."""
+    target = composite_path(map_name, mode)
+    if ready_composite(map_name, mode) is not None:
+        return tile_cache.existing_manifest(target)
+    return tile_cache.latest_manifest(target)
+
+
 def has_inputs(map_name: str, mode: str) -> bool:
     return composite_version(map_name, mode) is not None

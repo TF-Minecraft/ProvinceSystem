@@ -39,6 +39,7 @@ import {
 import MapAccessGate, {
   type MapAccessGateReason,
 } from "./map/MapAccessGate";
+import { provinceHoverBlocksRegionPick } from "../hooks/regionPick";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
 import { mapModeLabel } from "./map/mapModes";
@@ -606,6 +607,15 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       // getImageData runs per hover frame; keep the backing store CPU-side.
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
+
+      // The raster modes (prosperity, terrain, ...) hover provinces from the
+      // province grid and never pick a region, so their full-size image would
+      // be downloaded and decoded only to sit unread. Clear the last mode's
+      // instead, so nothing (a pin's realm lookup) reads a stale region.
+      if (provinceHoverBlocksRegionPick(mapType)) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
 
       const path = `/${mapId}/mapdata/${mapType}`;
       let src = mapApiUrl(path);

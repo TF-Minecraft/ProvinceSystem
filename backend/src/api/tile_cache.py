@@ -12,11 +12,13 @@ only ever fetches and decodes the handful of tiles on screen, at the level
 that matches its zoom.
 
 Building a pyramid takes a few seconds, so it is never done inside a request.
-A request either finds a ready pyramid for the source's current mtime or gets
-"not ready" (the client keeps using the single image) while a background
-thread builds it. Each build lives in a directory named after the source's
-mtime, so a regenerated map invalidates itself and a reader never sees a
-half-written level.
+A request finds a ready pyramid for the source's current mtime or, while a
+background thread builds that one, the previous version's; only a source that
+has never been tiled answers "not ready" (the client then uses the single
+image). Each build lives in a directory named after the source's mtime, so a
+regenerated map invalidates itself and a reader never sees a half-written
+level. Regeneration starts the builds itself (`tile_warm`) rather than
+leaving them to the first visitor.
 
 Tiles are lossy WebP: they are only ever drawn, never read back. The pick maps
 the client reads pixel-by-pixel still come from the original PNG routes.
@@ -189,7 +191,13 @@ def _build_in_background(source: Path) -> None:
 def ready_manifest(
     source: os.PathLike[str] | str, *, background: bool = True
 ) -> dict | None:
-    """The manifest for `source`'s current version, or None while it builds."""
+    """The manifest for `source`'s current version.
+
+    While that version builds, the newest one already built: a map regenerated
+    every few minutes (prosperity follows every trade update) would otherwise
+    answer "not ready" for most of its life and send readers the full-size
+    image. None only when nothing has been built yet.
+    """
     source_path = Path(source)
     version = _version_of(source_path)
     if version is None:
@@ -199,8 +207,26 @@ def ready_manifest(
         return manifest
     if background:
         _build_in_background(source_path)
-        return None
+        return latest_manifest(source_path)
     return build_pyramid(source_path)
+
+
+def latest_manifest(source: os.PathLike[str] | str) -> dict | None:
+    """The newest finished pyramid of `source`, whatever its version.
+
+    Its tiles stay on disk until a newer build replaces them, so it can be
+    served while that build runs (`tile_file` keeps answering for it).
+    """
+    parent = _CACHE_DIR / _source_key(Path(source))
+    try:
+        versions = [entry for entry in parent.iterdir() if entry.name.isdigit()]
+    except OSError:
+        return None
+    for directory in sorted(versions, key=lambda entry: int(entry.name), reverse=True):
+        manifest = read_manifest(directory)
+        if manifest is not None:
+            return manifest
+    return None
 
 
 def existing_manifest(source: os.PathLike[str] | str) -> dict | None:

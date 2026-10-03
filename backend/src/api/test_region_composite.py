@@ -177,6 +177,41 @@ class RegionCompositeTest(unittest.TestCase):
         self.assertEqual(client.get("/main/tiles/regions-duchy/manifest").status_code, 404)
         self.assertEqual(client.get("/main/tiles/regions-bogus/manifest").status_code, 404)
 
+    def test_route_serves_the_last_composite_while_the_next_builds(self) -> None:
+        app = FastAPI()
+        app.include_router(tile_router)
+        client = TestClient(app)
+        self.addCleanup(client.close)
+
+        region_composite.ready_composite("main", "nation", background=False)
+        first = client.get("/main/tiles/regions-nation/manifest").json()
+
+        # C gains its independence: a new picture to build.
+        self._write_nations(balance=1, subject_free=True)
+        with patch.object(region_composite, "_build_in_background") as background:
+            stale = client.get("/main/tiles/regions-nation/manifest")
+        self.assertEqual(stale.status_code, 200)
+        self.assertEqual(stale.json()["version"], first["version"])
+        background.assert_called_once()
+        tile = client.get(f"/main/tiles/regions-nation/{first['version']}/0/0/0.webp")
+        self.assertEqual(tile.status_code, 200)
+
+    def test_regeneration_warm_up_queues_out_of_date_layers(self) -> None:
+        from src.api import tile_warm
+
+        maps = Path(dirs.OUTPUT_DIR) / "main" / "maps"
+        maps.mkdir(parents=True)
+        Image.new("RGB", (100, 100), (9, 9, 9)).save(maps / "prosperity_map.png")
+
+        with patch.object(tile_cache, "_build_in_background") as rasters, patch.object(
+            region_composite, "_build_in_background"
+        ) as composites:
+            tile_warm.warm_map_tiles("main")
+        self.assertEqual(
+            [call.args[0].name for call in rasters.call_args_list], ["prosperity_map.png"]
+        )
+        composites.assert_called_once_with("main", "nation")
+
 
 if __name__ == "__main__":
     unittest.main()

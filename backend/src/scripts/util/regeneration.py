@@ -601,6 +601,13 @@ def _sync_regeneration(map_name: str, regen_type: str):
     # After the summary so it never hides the real regen cost, but still inside
     # the map lock so a request cannot race a half-written cache entry.
     warm_webp_cache(map_name, timings)
+    try:
+        # Background builds; this only queues them.
+        from ...api.tile_warm import warm_map_tiles
+
+        warm_map_tiles(map_name)
+    except Exception as exc:  # the map is regenerated either way
+        print(f"[tiles] could not start tile builds for '{map_name}': {exc}")
     return timings, elapsed
 
 

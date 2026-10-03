@@ -409,7 +409,8 @@ export default function MapCanvas({
     PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day)
       ? `mapdata-${mapType}`
       : null;
-  const rasterTiles = useTileManifest(mapId, rasterLayer, tilesAllowed).manifest;
+  const rasterTileState = useTileManifest(mapId, rasterLayer, tilesAllowed);
+  const rasterTiles = rasterTileState.manifest;
 
   /**
    * A region mode's overlays as first shown, flattened and tiled by the
@@ -433,9 +434,14 @@ export default function MapCanvas({
     if (!tilesAllowed || regionOverlay !== undefined) return;
     const signal = { cancelled: false };
     const timer = setTimeout(() => {
-      const others = [...REGION_TILE_MODES]
-        .filter((mode) => mode !== mapType)
-        .map((mode) => `regions-${mode}`);
+      const others = [
+        ...[...REGION_TILE_MODES]
+          .filter((mode) => mode !== mapType)
+          .map((mode) => `regions-${mode}`),
+        ...[...PROVINCE_RASTER_MODES]
+          .filter((mode) => mode !== mapType && showsLiveProvinceRaster(mode, day))
+          .map((mode) => `mapdata-${mode}`),
+      ];
       void prefetchTileBackdrops(mapId, others, signal);
     }, 2500);
     return () => {
@@ -697,6 +703,9 @@ export default function MapCanvas({
               view={tileView}
               className={pixelatedClass(viewport.displayScale)}
               style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
+              // A newer pyramid replaced the one this manifest names (the
+              // server hands out the last finished one while it builds).
+              onTileError={rasterTileState.refresh}
             />
           ) : liveProvinceRaster ? (
             <MapAuthImage
