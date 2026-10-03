@@ -533,6 +533,21 @@ CREATE TABLE IF NOT EXISTS patreon_oauth_states (
     state_hash TEXT PRIMARY KEY,
     discord_user_id TEXT,
     player_uuid TEXT,
+    target_kind TEXT,
+    target_name TEXT,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    CHECK ((discord_user_id IS NULL) <> (player_uuid IS NULL))
+);
+-- Consent alone grants nothing; the patron must explicitly confirm this target.
+CREATE TABLE IF NOT EXISTS patreon_pending_links (
+    token_hash TEXT PRIMARY KEY,
+    patreon_user_id TEXT NOT NULL,
+    patreon_name TEXT NOT NULL,
+    discord_user_id TEXT,
+    player_uuid TEXT,
+    target_kind TEXT NOT NULL CHECK (target_kind IN ('discord', 'minecraft')),
+    target_name TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     used_at TEXT,
     CHECK ((discord_user_id IS NULL) <> (player_uuid IS NULL))

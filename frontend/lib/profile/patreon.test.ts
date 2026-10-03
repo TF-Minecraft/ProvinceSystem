@@ -1,8 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   selectSupporterPanelState,
+  unlinkPatreon,
   type PatreonStatus,
 } from "./patreon";
+
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
+it("sends JSON with the website unlink request", async () => {
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.invalid");
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ unlinked: true }) });
+  vi.stubGlobal("fetch", fetchMock);
+  await unlinkPatreon("session-token");
+  expect(fetchMock.mock.calls[0][0]).toMatch(/\/patreon\/link\/unlink$/);
+  expect(fetchMock.mock.calls[0][1]).toMatchObject({
+    method: "POST", body: "{}", headers: { "Content-Type": "application/json", Authorization: "Bearer session-token" },
+  });
+});
 
 describe("supporter panel state", () => {
   it("shows connect for an unlinked account", () => {

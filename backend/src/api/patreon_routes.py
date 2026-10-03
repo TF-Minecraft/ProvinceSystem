@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -77,6 +77,10 @@ class StartBody(SubjectBody):
     minecraft_name: str | None = None
 
 
+class ConfirmBody(BaseModel):
+    token: str
+
+
 class UnlinkBody(SubjectBody):
     patreon_user_id: str | None = None
 
@@ -112,13 +116,36 @@ def link_start(request: Request, body: StartBody):
     subject = caller_subject(request, discord_user_id=body.discord_user_id, player_uuid=body.player_uuid)
     if not os.getenv("PATREON_CLIENT_ID", "").strip():
         raise HTTPException(503, detail="patreon_client_unconfigured")
-    return invoke(linking.start_link, **subject)
+    # A profile caller cannot choose the target's UUID or display name.
+    profile = not request.headers.get("X-Staff-Key") and not request.headers.get("X-Plugin-Key")
+    return invoke(linking.start_link, **subject, discord_username=body.discord_username,
+                  minecraft_name=None if profile else body.minecraft_name)
 
 
 @patreon_router.get("/oauth/callback")
 def oauth_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     status, tier = linking.finish_callback(code, state, denied=error is not None)
-    return RedirectResponse(linking.redirect_url(status, tier), status_code=302)
+    response = RedirectResponse(linking.redirect_url(status, tier), status_code=302)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@patreon_router.post("/link/pending")
+def link_pending(body: ConfirmBody, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return linking.pending_link(body.token)
+
+
+@patreon_router.post("/link/confirm")
+def link_confirm(body: ConfirmBody, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return linking.confirm_link(body.token)
+
+
+@patreon_router.post("/link/cancel")
+def link_cancel(body: ConfirmBody, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return linking.cancel_link(body.token)
 
 
 @patreon_router.post("/webhook")
@@ -149,8 +176,8 @@ def get_status(request: Request, discord_user_id: str | None = None, player_uuid
 
 
 @patreon_router.post("/link/unlink")
-def post_unlink(request: Request, body: SubjectBody):
-    return invoke(service.unlink, **caller_subject(request, **body.model_dump()))
+def post_unlink(request: Request, body: SubjectBody | None = None):
+    return invoke(service.unlink, **caller_subject(request, **(body or SubjectBody()).model_dump()))
 
 
 @staff.get("/role-changes")

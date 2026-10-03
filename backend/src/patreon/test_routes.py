@@ -112,3 +112,13 @@ def test_production_guard_requires_all_credentials(monkeypatch, missing):
         assert_production_safe()
     monkeypatch.setenv("PATREON_ENABLED", "0")
     assert_production_safe()
+
+
+def test_profile_unlink_accepts_missing_body(api, monkeypatch):
+    sync([member(discord=None)])
+    s.create_or_update_link("1", player_uuid=player(), config=CONFIG)
+    s.recompute_link("1", config=CONFIG)
+    monkeypatch.setattr(characters_routes, "get_session", lambda token: {"player_uuid": player(), "scope": "profile"})
+    response = api.post("/patreon/link/unlink", headers={"Authorization": "Bearer valid"})
+    assert response.status_code == 200 and response.json() == {"unlinked": True}
+    assert not s.status(player_uuid=player(), config=CONFIG)["linked"]

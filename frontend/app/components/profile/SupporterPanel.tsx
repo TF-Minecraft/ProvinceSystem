@@ -108,6 +108,7 @@ export default function SupporterPanel({ sessionToken }: { sessionToken: string 
               Become a supporter
             </a>
           </div>
+          {actionError ? <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">{actionError}</p> : null}
         </div>
       ) : null}
 

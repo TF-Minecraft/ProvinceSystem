@@ -3,7 +3,55 @@
 The tier mapping is `tiers.yaml`. New tables are in `src/skins/schema.sql`,
 created by the existing `src.skins.db.migrate()` in the app lifespan. They
 share `province.db` with `discord_links`. Patron linking lives in `linking.py`:
-hashed single-use OAuth state, `link/start`, `oauth/callback`, and `webhook`.
+hashed single-use OAuth state and confirmation tokens, `link/start`,
+`oauth/callback`, `link/pending`, `link/confirm`, `link/cancel`, and `webhook`.
+
+## Explicit OAuth link confirmation
+
+`POST /patreon/link/start` keeps the existing staff (Discord), plugin
+(Minecraft), and profile-session entry points. It stores the target kind and
+the supplied `discord_username` or `minecraft_name` with the subject and
+hashed state. Profile sessions always use the session UUID and ignore supplied
+names: resolve the Minecraft name from `discord_links`, then the most recent
+`discord_link_codes` record. If no name is available, display the UUID (or the
+Discord id for a nameless Discord request) so the target remains explicit.
+
+Consent alone does not create a link or grant perks. The callback consumes
+the state, exchanges the code, reads the Patreon id and full name, and discards
+the patron tokens. It stores the identity and target in `patreon_pending_links`
+under a fresh random token, stored only as a SHA-256 hash, valid for 10 minutes.
+It redirects to `{PATREON_PUBLIC_SITE_URL}/patreon/linked#confirm=<token>`.
+The fragment is never sent in an HTTP request or Referer header. Failure
+redirects retain `?status=<status>&tier=` and never contain identities.
+
+All three public confirmation routes accept `{"token": ".."}` in a POST
+body; the token is the credential, with no browser session required:
+
+- `/patreon/link/pending` returns only `target_kind` (`discord` or `minecraft`),
+  `target_name`, and `patreon_name`, without consuming the token.
+- `/patreon/link/confirm` consumes it before attempting the link, then creates
+  the OAuth link and recomputes. An unknown member triggers the existing
+  creator sync before returning an entitlement result. The response is always
+  `{"status": "ok|not_a_member|already_linked|relink_cooldown|expired|error",
+  "tier": "<tier key or empty>"}`. Consumed tokens stay consumed on failures.
+- `/patreon/link/cancel` consumes it and creates nothing, returning
+  `{"status": "ok"}`.
+
+Unknown, used or expired tokens return `expired` (`{"status": "expired"}`
+for pending/cancel, with an empty `tier` for confirm). Responses and callback
+redirects disable caching. Logs contain fixed messages/status codes only.
+Existing OAuth states without display metadata are treated as expired after
+migration, requiring callers to start again.
+
+The website removes the fragment from the address bar, loads the pending
+names as text, and asks the person to confirm that the target is theirs.
+Cancel displays the existing “Link not completed” result. This addresses login
+CSRF across all three entry points: someone completing an attacker's consent
+URL sees the attacker's account before any link is created. A browser-session
+binding cannot establish ownership for links started in Discord or Minecraft.
+`POST /patreon/link/unlink` also accepts an absent body for profile sessions;
+staff/plugin requests still require their subject through the existing auth
+helper.
 
 ## Interface for OAuth and webhook routes
 
@@ -42,7 +90,7 @@ Import `PatreonClient` from `src.patreon.client`:
   with fixed, non-sensitive codes. Never log tokens or API response bodies.
 
 `conn=` on link and recompute functions participates in the caller's
-transaction without committing. For an atomic callback use
+transaction without committing. Confirmation uses
 `with src.skins.db.connect() as conn`, `BEGIN IMMEDIATE`, create the link and,
 if successful, recompute with that connection. `Config.from_env()` supplies
 runtime configuration. Router helpers `require_enabled`, `caller_subject`,

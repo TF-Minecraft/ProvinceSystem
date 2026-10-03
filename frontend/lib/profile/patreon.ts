@@ -91,5 +91,7 @@ export async function startPatreonLink(sessionToken: string): Promise<string> {
 export async function unlinkPatreon(sessionToken: string): Promise<void> {
   await patreonRequest("/patreon/link/unlink", sessionToken, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
   });
 }

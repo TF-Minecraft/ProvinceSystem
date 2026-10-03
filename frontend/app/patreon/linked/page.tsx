@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPatreonLinkedResult } from "../../../lib/profile/patreonLinked";
+import PatreonLinkConfirmation from "../../components/profile/PatreonLinkConfirmation";
 
 type SearchParams = {
   status?: string | string[];
@@ -32,10 +33,7 @@ export default async function PatreonLinkedPage({
         }}
       />
       <section className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-6">
-        <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-          {result.title}
-        </h1>
-        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{result.message}</p>
+        <PatreonLinkConfirmation fallback={result} />
         <Link
           href="/profile"
           className="mt-6 inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)]"

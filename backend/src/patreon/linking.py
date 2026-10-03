@@ -21,6 +21,7 @@ from . import service
 logger = logging.getLogger("patreon")
 
 STATE_TTL = timedelta(minutes=10)
+CONFIRM_TTL = timedelta(minutes=10)
 REDIRECT_DEFAULT = "https://www.tfminecraft.net/api/patreon/oauth/callback"
 SITE_DEFAULT = "https://www.tfminecraft.net"
 PUBLIC_STATUSES = {"ok", "not_a_member", "already_linked", "relink_cooldown", "expired", "denied", "error"}
@@ -42,7 +43,7 @@ def build_client(config: Config | None = None) -> PatreonClient:
     return PatreonClient(config or Config.from_env())
 
 
-def start_link(*, discord_user_id=None, player_uuid=None) -> dict:
+def start_link(*, discord_user_id=None, player_uuid=None, discord_username=None, minecraft_name=None) -> dict:
     discord, player = service._clean_subjects(discord_user_id, player_uuid)
     if bool(discord) == bool(player) or (discord and len(discord) > 64):
         raise service.ServiceError("invalid_subject")
@@ -54,9 +55,20 @@ def start_link(*, discord_user_id=None, player_uuid=None) -> dict:
     expires = now + STATE_TTL
     with db.connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
+        target_kind = "discord" if discord else "minecraft"
+        target_name = discord_username if discord else minecraft_name
+        if not target_name:
+            column, value = ("discord_user_id", discord) if discord else ("player_uuid", player)
+            name_column = "discord_username" if discord else "minecraft_name"
+            known = conn.execute(f"SELECT {name_column} FROM discord_links WHERE {column}=?", (value,)).fetchone()
+            target_name = known[0] if known else None
+            if not target_name and player:
+                known = conn.execute("SELECT minecraft_name FROM discord_link_codes WHERE player_uuid=? AND minecraft_name IS NOT NULL ORDER BY created_at DESC LIMIT 1", (player,)).fetchone()
+                target_name = known[0] if known else None
+        target_name = (target_name or "").strip() or discord or player
         conn.execute("DELETE FROM patreon_oauth_states WHERE expires_at<=? OR used_at IS NOT NULL", (iso(now),))
-        conn.execute("INSERT INTO patreon_oauth_states(state_hash,discord_user_id,player_uuid,expires_at) VALUES (?,?,?,?)",
-                     (hashlib.sha256(token.encode("utf-8")).hexdigest(), discord, player, iso(expires)))
+        conn.execute("INSERT INTO patreon_oauth_states(state_hash,discord_user_id,player_uuid,target_kind,target_name,expires_at) VALUES (?,?,?,?,?,?)",
+                     (hashlib.sha256(token.encode("utf-8")).hexdigest(), discord, player, target_kind, target_name, iso(expires)))
     redirect_uri = os.getenv("PATREON_REDIRECT_URI", REDIRECT_DEFAULT).strip() or REDIRECT_DEFAULT
     query = urlencode([
         ("response_type", "code"),
@@ -72,19 +84,20 @@ def consume_state(token: str | None) -> dict | None:
     if not token or len(token) > 256:
         return None
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    now = utcnow()
     with db.connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute("SELECT discord_user_id, player_uuid, expires_at, used_at FROM patreon_oauth_states WHERE state_hash=?", (digest,)).fetchone()
-        if row is None or row["used_at"] is not None or parse(row["expires_at"]) <= now:
+        now = utcnow()
+        row = conn.execute("SELECT * FROM patreon_oauth_states WHERE state_hash=?", (digest,)).fetchone()
+        if row is None or row["used_at"] is not None or parse(row["expires_at"]) <= now or not row["target_kind"] or not row["target_name"]:
             return None
         updated = conn.execute("UPDATE patreon_oauth_states SET used_at=? WHERE state_hash=? AND used_at IS NULL", (iso(now), digest))
         if updated.rowcount != 1:
             return None
-        return {"discord_user_id": row["discord_user_id"], "player_uuid": row["player_uuid"]}
+        return {key: row[key] for key in ("discord_user_id", "player_uuid", "target_kind", "target_name")}
 
 
 def redirect_url(status: str, tier: str = "") -> str:
+    confirm = tier if status == "pending" else ""
     status = status if status in PUBLIC_STATUSES else "error"
     if status != "ok" or not _TIER.fullmatch(tier or ""):
         tier = ""
@@ -93,6 +106,8 @@ def redirect_url(status: str, tier: str = "") -> str:
     if parts.scheme not in {"https", "http"} or not parts.hostname or parts.username or parts.password:
         parts = urlsplit(SITE_DEFAULT)
     path = (parts.path or "").rstrip("/") + "/patreon/linked"
+    if confirm:
+        return urlunsplit((parts.scheme, parts.netloc, path, "", urlencode({"confirm": confirm})))
     return urlunsplit((parts.scheme, parts.netloc, path, urlencode([("status", status), ("tier", tier)]), ""))
 
 
@@ -106,7 +121,7 @@ def finish_callback(code: str | None, state: str | None, *, denied: bool) -> tup
         logger.warning("Patreon oauth callback failed code=%s", exc)
     except Exception:
         logger.warning("Patreon oauth callback failed")
-    logger.info("Patreon oauth callback status=%s", status)
+    logger.info("Patreon oauth callback status=%s", status if status in PUBLIC_STATUSES or status == "pending" else "error")
     return status, tier
 
 
@@ -130,20 +145,81 @@ def _finish_callback(code: str | None, state: str | None, *, denied: bool) -> tu
                 return "error", ""
             identity = client.identity(access)
             user_id = str(identity.get("id") or "") if isinstance(identity, dict) else ""
+            attributes = identity.get("attributes") if isinstance(identity, dict) else None
+            name = attributes.get("full_name") if isinstance(attributes, dict) else None
+            name = name if isinstance(name, str) and name.strip() else "Patreon account"
         finally:
             access = None
             if isinstance(token, dict):
                 token.clear()
         if not _USER_ID.fullmatch(user_id):
             return "error", ""
+        confirm = secrets.token_urlsafe(32)
         with db.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            result = service.create_or_update_link(user_id, discord_user_id=subject["discord_user_id"], player_uuid=subject["player_uuid"], method="oauth", config=config, conn=conn)
-            if result != "ok":
-                return (result if result in {"already_linked", "relink_cooldown"} else "error"), ""
-            known = conn.execute("SELECT 1 FROM patreon_members WHERE patreon_user_id=?", (user_id,)).fetchone()
-            if known:
-                return _tier_status(service.recompute_link(user_id, config=config, conn=conn, link_success=True), config)
+            now = utcnow()
+            conn.execute("DELETE FROM patreon_pending_links WHERE expires_at<=? OR used_at IS NOT NULL", (iso(now),))
+            conn.execute("INSERT INTO patreon_pending_links(token_hash,patreon_user_id,patreon_name,discord_user_id,player_uuid,target_kind,target_name,expires_at) VALUES (?,?,?,?,?,?,?,?)",
+                         (hashlib.sha256(confirm.encode()).hexdigest(), user_id, name, subject["discord_user_id"], subject["player_uuid"], subject["target_kind"], subject["target_name"], iso(now + CONFIRM_TTL)))
+        return "pending", confirm
+    finally:
+        client.close()
+
+
+def _pending(token: str, *, consume: bool = False) -> dict | None:
+    if not token or len(token) > 256:
+        return None
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    with db.connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        now = utcnow()
+        row = conn.execute("SELECT * FROM patreon_pending_links WHERE token_hash=?", (digest,)).fetchone()
+        if row is None or row["used_at"] is not None or parse(row["expires_at"]) <= now:
+            return None
+        if consume:
+            conn.execute("UPDATE patreon_pending_links SET used_at=? WHERE token_hash=? AND used_at IS NULL", (iso(now), digest))
+        return dict(row)
+
+
+def pending_link(token: str) -> dict:
+    row = _pending(token)
+    if row is None:
+        return {"status": "expired"}
+    return {key: row[key] for key in ("target_kind", "target_name", "patreon_name")}
+
+
+def cancel_link(token: str) -> dict:
+    return {"status": "ok" if _pending(token, consume=True) else "expired"}
+
+
+def confirm_link(token: str) -> dict:
+    status, tier = "error", ""
+    try:
+        status, tier = _confirm_link(token)
+    except (PatreonError, service.ServiceError):
+        logger.warning("Patreon link confirmation failed")
+    except Exception:
+        logger.warning("Patreon link confirmation failed")
+    logger.info("Patreon link confirmation status=%s", status)
+    return {"status": status, "tier": tier}
+
+
+def _confirm_link(token: str) -> tuple[str, str]:
+    subject = _pending(token, consume=True)
+    if subject is None:
+        return "expired", ""
+    config = Config.from_env()
+    user_id = subject["patreon_user_id"]
+    with db.connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        result = service.create_or_update_link(user_id, discord_user_id=subject["discord_user_id"], player_uuid=subject["player_uuid"], method="oauth", config=config, conn=conn)
+        if result != "ok":
+            return (result if result in {"already_linked", "relink_cooldown"} else "error"), ""
+        known = conn.execute("SELECT 1 FROM patreon_members WHERE patreon_user_id=?", (user_id,)).fetchone()
+        if known:
+            return _tier_status(service.recompute_link(user_id, config=config, conn=conn, link_success=True), config)
+    client = build_client(config)
+    try:
         synced = service.sync_now(config=config, client=client)
         if not synced.get("ok"):
             detail = synced.get("detail")
