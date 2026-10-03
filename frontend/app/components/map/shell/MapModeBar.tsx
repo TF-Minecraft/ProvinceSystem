@@ -28,7 +28,8 @@ export function MapModeBar({ mapType, onMapTypeChange }: MapModeBarProps) {
       <div className="flex items-center gap-1">
         {options.map((option, index) => {
           const Glyph = MAP_MODE_ICONS[option.value];
-          const groupBreak = index > 0 && options[index - 1].group !== option.group;
+          const groupBreak =
+            index > 0 && options[index - 1].group !== option.group;
           return (
             <Fragment key={option.value}>
               {groupBreak ? (
@@ -61,27 +62,32 @@ export function MapModeBar({ mapType, onMapTypeChange }: MapModeBarProps) {
  * to explain them on a phone.
  */
 export function MapModeChips({ mapType, onMapTypeChange }: MapModeBarProps) {
+  // iOS Safari draws its scroll indicator under a swiped row whatever the
+  // scrollbar CSS says. The row gets room below the chips for it, and the
+  // wrapper clips that strip off.
   return (
-    <nav
-      aria-label="Map mode"
-      className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    >
-      {mapModeOptions().map((option) => {
-        const Glyph = MAP_MODE_ICONS[option.value];
-        const active = option.value === mapType;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onMapTypeChange(option.value)}
-            className="map-control h-9 shrink-0 rounded-full px-3 text-sm"
-          >
-            <Glyph size={16} />
-            {option.short}
-          </button>
-        );
-      })}
-    </nav>
+    <div className="-mx-3 overflow-hidden">
+      <nav
+        aria-label="Map mode"
+        className="-mb-3 flex gap-1.5 overflow-x-auto px-3 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {mapModeOptions().map((option) => {
+          const Glyph = MAP_MODE_ICONS[option.value];
+          const active = option.value === mapType;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onMapTypeChange(option.value)}
+              className="map-control h-9 shrink-0 rounded-full px-3 text-sm"
+            >
+              <Glyph size={16} />
+              {option.short}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
