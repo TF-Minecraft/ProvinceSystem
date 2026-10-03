@@ -392,6 +392,9 @@ export default function MapCanvas({
     fitMode,
     dragPan: !paintEnabled,
     keyboard: true,
+    // Safari would otherwise back the scaled-down 6400 px map with a
+    // full-size layer and run out of memory (see restingZoom).
+    restingZoom: true,
     // Mid-gesture the transform runs ahead of React; keep hover picking on
     // what is actually on screen.
     onLiveTransform: (live) => {
@@ -664,6 +667,7 @@ export default function MapCanvas({
         viewportRef={viewport.viewportRef}
         contentRef={viewport.contentRef}
         transformStyle={viewport.transformStyle}
+        zoom={viewport.zoom}
         transformTransition={viewport.transformTransition}
         cursorClassName={interactionCursor}
         isPanning={viewport.isPanning}

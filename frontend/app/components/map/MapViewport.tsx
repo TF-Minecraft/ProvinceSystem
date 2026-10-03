@@ -9,6 +9,11 @@ export type MapViewportProps = {
   contentRef?: RefObject<HTMLDivElement | null>;
   transformStyle: string;
   transformTransition?: string;
+  /**
+   * CSS `zoom` on the map content, the resting scale `useMapViewport` keeps
+   * out of the transform (see its `restingZoom`). 1 by default.
+   */
+  zoom?: number;
   cursorClassName: string;
   isPanning: boolean;
   children: ReactNode;
@@ -33,6 +38,7 @@ export default function MapViewport({
   contentRef,
   transformStyle,
   transformTransition,
+  zoom = 1,
   cursorClassName,
   isPanning,
   children,
@@ -46,13 +52,16 @@ export default function MapViewport({
       ? { aspectRatio: `${mapW} / ${mapH}` }
       : undefined;
 
+  // The transform moves (and, mid-gesture, scales) the zoomed content; the
+  // map itself is laid out at its size on screen.
   const innerStyle: CSSProperties = {
-    width: mapW,
-    height: mapH,
+    width: mapW * zoom,
+    height: mapH * zoom,
     transform: transformStyle,
     transformOrigin: "0 0",
     transition: transformTransition,
   };
+  const zoomedStyle: CSSProperties = { width: mapW, height: mapH, zoom };
 
   return (
     <div
@@ -63,7 +72,9 @@ export default function MapViewport({
       style={outerStyle}
     >
       <div ref={contentRef} className="relative" style={innerStyle}>
-        {children}
+        <div className="relative" style={zoomedStyle}>
+          {children}
+        </div>
       </div>
     </div>
   );

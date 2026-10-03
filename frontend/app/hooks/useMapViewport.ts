@@ -57,6 +57,19 @@ export type UseMapViewportOptions = {
     translateX: number;
     translateY: number;
   }) => void;
+  /**
+   * Hold the resting scale as CSS `zoom` on the content, leaving the transform
+   * a plain translate once the map settles; gestures and animations still
+   * scale with the transform, relative to that zoom.
+   *
+   * WebKit (Safari, every iPhone browser) sizes a layer's backing store from
+   * its own CSS size times the screen density, ignoring an ancestor's scale.
+   * The 6400 px map scaled down to fit a phone got a store 19,200 px square
+   * (~1.5 GB) once something made it its own layer, as a mode switch did;
+   * iOS killed the page and Safari reported "a problem repeatedly occurred".
+   * Zoomed instead, the content is laid out at its size on screen.
+   */
+  restingZoom?: boolean;
 };
 
 export type MapFocusInset = {
@@ -84,6 +97,8 @@ export type UseMapViewportResult = {
   isPanning: boolean;
   transformStyle: string;
   transformTransition?: string;
+  /** CSS `zoom` for the content (see `restingZoom`); 1 when not in use. */
+  zoom: number;
   cursorClassName: string;
   resetViewport: (options?: ViewportResetOptions) => void;
   /** Zoom by `factor` around the viewport centre, animated. */
@@ -162,6 +177,7 @@ export function useMapViewport({
   dragPan = false,
   keyboard = false,
   onLiveTransform,
+  restingZoom = false,
 }: UseMapViewportOptions): UseMapViewportResult {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -175,6 +191,11 @@ export function useMapViewport({
    * runs ahead of React state until `commitLive` catches state up.
    */
   const transformRef = useRef(transform);
+  /** The scale held as CSS `zoom` (see `restingZoom`); 1 when not in use. */
+  const [zoomBase, setZoomBase] = useState(1);
+  const appliedZoom = restingZoom ? zoomBase : 1;
+  const appliedZoomRef = useRef(appliedZoom);
+  appliedZoomRef.current = appliedZoom;
   const liveActiveRef = useRef(false);
   if (!liveActiveRef.current) transformRef.current = transform;
   const onLiveTransformRef = useRef(onLiveTransform);
@@ -231,7 +252,7 @@ export function useMapViewport({
       content.setAttribute("data-gesturing", "");
       content.style.transition = "none";
       content.style.transform = viewportTransformStyle(
-        displayScale,
+        displayScale / appliedZoomRef.current,
         next.translateX,
         next.translateY
       );
@@ -744,8 +765,17 @@ export function useMapViewport({
     []
   );
 
+  // Once nothing is moving the map, hand its scale to `zoom`. Until then (a
+  // gesture, an animated move) the transform carries the change relative to
+  // the zoom already applied, so nothing jumps.
+  useEffect(() => {
+    if (!restingZoom || transition !== undefined || isPanning) return;
+    if (!(displayScale > 0) || displayScale === zoomBase) return;
+    setZoomBase(displayScale);
+  }, [restingZoom, displayScale, transition, isPanning, zoomBase]);
+
   const transformStyle = viewportTransformStyle(
-    displayScale,
+    displayScale / appliedZoom,
     transform.translateX,
     transform.translateY
   );
@@ -764,6 +794,7 @@ export function useMapViewport({
     isPanning,
     transformStyle,
     transformTransition,
+    zoom: appliedZoom,
     cursorClassName,
     resetViewport,
     zoomBy,
