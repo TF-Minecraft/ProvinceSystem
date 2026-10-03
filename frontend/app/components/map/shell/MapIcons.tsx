@@ -23,7 +23,7 @@ function Icon({ size = 20, children, ...rest }: IconProps & { children: ReactNod
   );
 }
 
-/* Map modes. A shield for realms, crowns for the title tiers, plain glyphs for the rest. */
+/* Map modes. A shield for realms, crowns for the title tiers, a thing each for the world modes. */
 
 export const RealmIcon = (props: IconProps) => (
   <Icon {...props}>
@@ -78,17 +78,23 @@ export const EmpireIcon = (props: IconProps) => (
   </Icon>
 );
 
+/*
+ * The world modes: each a thing the mode is about, not a chart. Provinces is
+ * land cut into territories, trade a merchant's cog, prosperity a full purse,
+ * infestation the monsters' skull.
+ */
 export const ProvinceIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M4 5l6-2 5 3 5-1v14l-5 2-5-3-6 2V5Z" />
-    <path d="M10 3v15M15 6v15" />
+    <path d="M3.5 8 8.5 4 14 5.5l5.5-1.7 1.1 6.2-1.6 4.5 1.2 4.5-6.2 1.4-4-1.8-5.4 1.4-1-5.2L5 11 3.5 8Z" />
+    <path d="M8.5 4 10 10.5 5 11M10 10.5l5-1 5.6.5M15 9.5l-1 6.4-4 2.7M14 15.9l5-1.4" />
   </Icon>
 );
 
 export const TerrainIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M2 19 9 7l4 6 2.5-3.5L22 19H2Z" />
-    <path d="m7.5 9.5 1.5 1.5 1.5-1.5" />
+    <path d="M2.5 19.5 9 8l3.3 5.6L15.2 9.5l6.3 10H2.5Z" />
+    <path d="M7 11.6 9 13l1.9-1.6" />
+    <path d="m15.2 9.5-1.6 2.6" />
   </Icon>
 );
 
@@ -101,24 +107,27 @@ export const FertilityIcon = (props: IconProps) => (
 
 export const TradeIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M12 3v18M8 21h8M4 7h16" />
-    <path d="M6 7 3.5 13a2.5 2.5 0 0 0 5 0L6 7ZM18 7l-2.5 6a2.5 2.5 0 0 0 5 0L18 7Z" />
+    <path d="M2.8 13.6c2.4.9 5 1.2 9.2 1.2s6.8-.3 9.2-1.2l-2.3 5.6c-1.9.5-4.1.7-6.9.7s-5-.2-6.9-.7l-2.3-5.6Z" />
+    <path d="M12 14.8V2.8" />
+    <path d="M7.2 4.8h9.6c.6 2.6.4 5.4-.8 7.8H8c-1.2-2.4-1.4-5.2-.8-7.8Z" />
+    <path d="m12 2.8 3 1-3 1" />
   </Icon>
 );
 
 export const ProsperityIcon = (props: IconProps) => (
   <Icon {...props}>
-    <ellipse cx="12" cy="6" rx="7" ry="2.5" />
-    <path d="M5 6v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6" />
-    <path d="M5 10v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4" />
-    <path d="M5 14v4c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-4" />
+    <path d="M9 8h6c3.2 2.4 5 5.4 5 8.3 0 2.9-2.7 4.4-8 4.4s-8-1.5-8-4.4C4 13.4 5.8 10.4 9 8Z" />
+    <path d="M9 8 7.4 4.6c1.6.6 3 .4 4.6-.6 1.6 1 3 1.2 4.6.6L15 8" />
+    <circle cx="12" cy="15.2" r="2.4" />
   </Icon>
 );
 
 export const InfestationIcon = (props: IconProps) => (
   <Icon {...props}>
-    <ellipse cx="12" cy="13.5" rx="4" ry="5.5" />
-    <path d="M12 8V5M10 5.5 8.5 3.5M14 5.5l1.5-2M8 11H4.5M8 15l-3.5 1.5M16 11h3.5M16 15l3.5 1.5M12 8v11" />
+    <path d="M12 3.5c-4.3 0-7.5 3-7.5 7.3 0 2.3 1.1 4.1 3 5.2v3.8h9V16c1.9-1.1 3-2.9 3-5.2 0-4.3-3.2-7.3-7.5-7.3Z" />
+    <circle cx="9.1" cy="11" r="1.7" />
+    <circle cx="14.9" cy="11" r="1.7" />
+    <path d="m12 13.6-1 1.7h2l-1-1.7ZM10.5 19.8v-2M13.5 19.8v-2" />
   </Icon>
 );
 
