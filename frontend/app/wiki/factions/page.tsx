@@ -14,7 +14,7 @@ import { factionRanks, factionTiers, factionsCommands, installations } from "../
 export default function FactionsPage() {
   return (
     <WikiPage
-      lastModified="2026-10-01"
+      lastModified="2026-10-03"
       title="Factions"
       width="lg"
     >
@@ -75,7 +75,7 @@ export default function FactionsPage() {
       <p className="text-sm text-[var(--tfmc-mist)]">
         Any non-leader member can <code className="text-[var(--tfmc-accent)]">/guild create &lt;name&gt;</code> to
         start a sub-guild with its own bank, leadership, and trade branches (Bureaucracy, Guild
-        Halls, Workshops, Storehouses). The faction leader runs the &quot;base guild&quot; automatically.
+        Halls, Workshops, Storehouses, Supply Lines). The faction leader runs the &quot;base guild&quot; automatically.
         From <code className="text-[var(--tfmc-accent)]">/faction menu</code> you can also open
         government, laws, taxes, council and elections: under a democracy the leader can&apos;t be
         set directly; players vote at <WikiItemLink name="Voting Booth">voting booths</WikiItemLink> instead.
@@ -115,20 +115,55 @@ export default function FactionsPage() {
           { header: "Upkeep / day", align: "right" },
           { header: "Build time", align: "right" },
           { header: "Vehicle slots" },
+          { header: "Hub slots", align: "right" },
         ]}
-        rows={installations.map((i) => [i.type, `${i.radius} blocks`, `${i.upkeepPerDay} d`, i.buildTime, i.slots])}
+        rows={installations.map((i) => [i.type, `${i.radius} blocks`, `${i.upkeepPerDay} d`, i.buildTime, i.slots, i.hubSlots])}
       />
       <Callout variant="note">
         Trains are not stored at train stations. Berthing a vehicle requires the vehicle&apos;s owner to be online and consent. An unpaid vehicle (see{" "}
         <code className="text-[var(--tfmc-accent)]">/faction vehicle maintenance pay</code>)
-        cannot be repaired.
+        cannot be repaired. The upkeep column is for a newly built installation. A train station at level 2 costs 35 denars a day (3-day build, 2 hub slots, 3 static emplacements). Level 3 costs 100 denars a day (5-day build, 4 hub slots, 4 static emplacements).
       </Callout>
 
-      <WikiSectionHeading id="supply-hubs" intro="Guilds can link eligible installations to move trade and production between provinces.">
-        Supply hubs and links
+      <WikiSectionHeading id="supply-hubs" intro="Guilds place hubs so trade and production can move between provinces.">
+        Supply hubs, agreements, and infrastructure
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        A guild can build a supply hub at a port, airport, or train station that has an open hub slot. Active hubs at installations of the same kind can connect by rail, sea, or air; different kinds do not connect. Links pass along part of the guild&apos;s trade and production, with the amount depending on the mode and distance. The map shows each link between its installations, using solid rail lines, dashed sea lines, and dotted air lines.
+        A hub sits on a port, airport, or train station that still has an open hub slot. Forts have none. Once two of a guild&apos;s hubs are active, railway track can join any two of them, whatever kind they are. Ports can also link across the sea, and airports through the air. Trade starts at the capital, so the first hub is most useful there, and the second where that trade should arrive. On the map, rail is a solid line, sea a dashed line, and air a dotted line.
+      </p>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Each link passes on part of the guild&apos;s trade and production. The shares below are before distance. Every 1,000 blocks then keeps 90% of a rail link, 85% of a sea link, and 80% of an air link. Rail follows the track. Sea and air are straight-line distances. No link passes on more than 95%. Supply Lines on the guild that owns the hubs raises this by 5% more trade and 8% more production per level. The realm guild&apos;s Infrastructure branch does the same for hubs that guild owns.
+      </p>
+      <DataTable
+        columns={[
+          { header: "Link" },
+          { header: "Trade", align: "right" },
+          { header: "Production", align: "right" },
+          { header: "Reach" },
+        ]}
+        rows={[
+          ["Rail", "40%", "80%", "Along the track"],
+          ["Sea", "30%", "70%", "4,000 blocks"],
+          ["Air", "20%", "50%", "2,500 blocks"],
+        ]}
+      />
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        The guild leader opens the guild menu, then Supply Hubs, and chooses Propose a hub. Ready now can be built at once when the installation is in your own realm. In another realm, that click opens a negotiation. Worth building means a station has to be built there first, with <code className="text-[var(--tfmc-accent)]">/faction construct</code>. The Supply Hubs screen shows how many hubs the guild can have. Supply Lines raises that limit.
+      </p>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        A hub in another realm needs an agreement, and the host has to allow a hub tax in its laws. The host sets a tax on the hub&apos;s trade, inside the range those laws allow, and a daily fee up to the allowed maximum. The term is 14 days. A new agreement renews on both sides until one side turns renewal off. If renewal is off, both sides are told during the last 3 days. An offer nobody answers lapses after 7 days. The guild leader offers, accepts, declines, or withdraws. The host&apos;s council, including the faction leader, answers from the faction menu under Hub offers. You can accept only terms the other side sent. The screen shows about how much each side would gain or lose, and a break-even tax rate for the host: the rate where the host&apos;s gain, tax, and fee come out even. A higher fee lowers that rate.
+      </p>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Each hub has a daily upkeep from the guild bank, starting at 1 denar and rising by half a denar for each level of Supply Lines. The realm guild&apos;s Infrastructure branch raises upkeep the same way for its own hubs. If the bank cannot cover the upkeep and any fees, hubs are removed, newest first, until the bank can cover what remains. Removing a hub yourself is a choice in the Supply Hubs menu. A hub marked dormant still owes its fee for as long as the agreement stands, and the guild leader is told once. Removing the hub stops the fee. If the installation is transferred into another realm, the agreement ends and the hub is removed, and the guild leader and both councils are told. A transfer into the guild&apos;s own realm ends the agreement and keeps the hub. If the hub and the guild end up in the same realm some other way, the agreement ends at the next daily check and the hub stays.
+      </p>
+      <Callout variant="note">
+        The figures say &quot;about&quot;, and they are worked out once a day. Until that pass has run, the list says estimates are not ready yet. Where there is no railway yet, the estimate assumes a straight line of track and says how long that line would be.
+      </Callout>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        The realm guild&apos;s Infrastructure branch improves poor land for every guild in the realm, starting at the capital. Each level costs 1 denar a day. Upgrading or downgrading it shows Estimated Realm Income Change, for the whole realm. The faction menu states about how much that infrastructure is worth each day, once the daily figure is ready. Stations, ports, airports, and railway track add infrastructure in the provinces they occupy. Forts add none. Before <code className="text-[var(--tfmc-accent)]">/faction construct</code> starts a build, the confirmation shows the infrastructure it would add here, about how much that is worth to the realm each day, and the upkeep. You can confirm while that figure is still being worked out.
+      </p>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        On the web map, the Infrastructure view colours each province from light red (the poorest land) through purple to dark blue (the best land). Hovering a province shows the land type, how much of the infrastructure fill it has, and what the owning guilds count it as. For example: Bog 0.40, infrastructure 60%, counts as 0.61.
       </p>
 
       <WikiSectionHeading id="mercenaries" intro="A guild can found a mercenary company and hire it out to other factions.">
