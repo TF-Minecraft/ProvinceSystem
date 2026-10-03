@@ -43,6 +43,23 @@ html.map-fullscreen .map-route {
   overscroll-behavior: none;
 }
 
+/* Nothing on the map page selects, drags or pops up a long-press menu: a long
+   press is a press on the map, not a text selection or "Save image". The
+   search box is the exception, or Safari would not let it be typed in. */
+html.map-fullscreen body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html.map-fullscreen img {
+  -webkit-user-drag: none;
+}
+html.map-fullscreen input,
+html.map-fullscreen textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Themed scrollbars (Firefox + Chromium/WebKit) */
 * {
   scrollbar-width: thin;
