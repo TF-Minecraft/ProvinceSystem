@@ -497,6 +497,8 @@ export default function MapCanvas({
   // full size only to draw it a few pixels across is what the tiles fix for
   // the base map.
   const lod = overlayLod(viewport.displayScale, devicePixelRatio);
+  /** The last press on the map was a finger (see the hit target below). */
+  const touchPointerRef = useRef(false);
 
   // The focus. Its shape is the same crop the selection highlight draws, so
   // once it has loaded the highlight is ready to stand in for the faded
@@ -917,7 +919,22 @@ export default function MapCanvas({
           className={`${
             paintEnabled ? "pointer-events-none" : "pointer-events-auto"
           } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
-          onMouseMove={onMouseMove}
+          // A tap also sends a mouse move, which would leave a hover tooltip
+          // and highlight standing at the finger, over the details sheet.
+          // Touch has no hover: after one, those moves only clear it.
+          onPointerDown={(event) => {
+            touchPointerRef.current = event.pointerType === "touch";
+          }}
+          onPointerMove={(event) => {
+            if (event.pointerType === "mouse") touchPointerRef.current = false;
+          }}
+          onMouseMove={(event) => {
+            if (touchPointerRef.current) {
+              onMouseLeave();
+              return;
+            }
+            onMouseMove(event);
+          }}
           onMouseLeave={onMouseLeave}
           onClick={(event) => {
             if (viewport.consumeDragClick()) return;
