@@ -19,7 +19,11 @@ ENV NEXT_PUBLIC_SITE_DEV_GATE=$NEXT_PUBLIC_SITE_DEV_GATE
 ARG PS_PRODUCTION=0
 ENV PS_PRODUCTION=$PS_PRODUCTION
 
-RUN npm run build
+# Next keeps its build cache (Turbopack's, and the incremental type check's)
+# in .next/cache. A cache mount keeps it from one image build to the next, so
+# a rebuild redoes only what changed; it also stays out of the image.
+# sharing=locked: the main and dev sites build on the same host.
+RUN --mount=type=cache,target=/app/.next/cache,sharing=locked npm run build
 
 
 # --- RUNTIME STAGE ---
