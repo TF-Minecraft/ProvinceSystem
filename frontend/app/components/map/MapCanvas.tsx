@@ -36,6 +36,7 @@ import WarCampaignLineLayer from "./WarCampaignLineLayer";
 import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
+import { provinceHoverBlocksRegionPick } from "../../hooks/regionPick";
 import TileLayer from "./TileLayer";
 import {
   prefetchTileBackdrops,
@@ -172,6 +173,21 @@ function useImageLoaded(url: string | null): boolean {
     };
   }, [url]);
   return url !== null && loaded === url;
+}
+
+/**
+ * Where the pointer's tooltip goes: below and to the right of it, flipped to
+ * the other side near the window's right or bottom edge so it is never cut off
+ * (on a phone the finger is often near the edge).
+ */
+function tooltipPosition(x: number, y: number): React.CSSProperties {
+  const gap = 14;
+  const width = typeof window === "undefined" ? Infinity : window.innerWidth;
+  const height = typeof window === "undefined" ? Infinity : window.innerHeight;
+  return {
+    ...(x + gap + 240 > width ? { right: Math.max(8, width - x + gap) } : { left: x + gap }),
+    ...(y + gap + 110 > height ? { bottom: Math.max(8, height - y + gap) } : { top: y + gap }),
+  };
 }
 
 /** Region modes the backend can flatten and tile (`regions-{mode}`). */
@@ -648,11 +664,8 @@ export default function MapCanvas({
     >
       {cursorTooltip?.text && !viewport.isPanning && (
         <div
-          className="map-tooltip pointer-events-none fixed z-50 max-w-xs px-3 py-1.5"
-          style={{
-            left: cursorTooltip.x + 14,
-            top: cursorTooltip.y + 14,
-          }}
+          className="map-tooltip pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1.5rem))] px-3 py-1.5"
+          style={tooltipPosition(cursorTooltip.x, cursorTooltip.y)}
         >
           <p className="whitespace-pre-line font-[family-name:var(--font-fraunces)] text-sm text-[var(--tfmc-cream)]">
             {cursorTooltip.text}
@@ -919,17 +932,21 @@ export default function MapCanvas({
           className={`${
             paintEnabled ? "pointer-events-none" : "pointer-events-auto"
           } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
-          // A tap also sends a mouse move, which would leave a hover tooltip
-          // and highlight standing at the finger, over the details sheet.
-          // Touch has no hover: after one, those moves only clear it.
+          // Touch has no hover. A press clears whatever the last tap showed
+          // (it would stand at a stale spot once the map moved), and the mouse
+          // move a tap sends after it counts only where the tap has nothing
+          // else to do: in the raster modes it shows that province's details,
+          // as hovering does with a mouse. Elsewhere a tap opens a card, and a
+          // hover tooltip at the finger would only sit over the sheet.
           onPointerDown={(event) => {
             touchPointerRef.current = event.pointerType === "touch";
+            if (touchPointerRef.current) onMouseLeave();
           }}
           onPointerMove={(event) => {
             if (event.pointerType === "mouse") touchPointerRef.current = false;
           }}
           onMouseMove={(event) => {
-            if (touchPointerRef.current) {
+            if (touchPointerRef.current && !provinceHoverBlocksRegionPick(mapType)) {
               onMouseLeave();
               return;
             }
