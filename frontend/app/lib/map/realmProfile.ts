@@ -19,6 +19,12 @@ export type RealmProfile = {
   /** "Obscure", "Influential", "Powerful", "Glorious", or null if unranked. */
   rank: string | null;
   rulerTitle: string | null;
+  /**
+   * The ruler's roleplay character name, as SimpleFactions last saw it in
+   * RPCharacters. Never the Minecraft username: the map names people by their
+   * character, and a realm whose leader has not been seen online since the
+   * export learned this shows no ruler name rather than an account name.
+   */
   leader: string | null;
   government: string | null;
   culture: string | null;
@@ -100,6 +106,23 @@ export function parseRealmRelation(raw: string): RealmRelation | null {
   };
 }
 
+/**
+ * `leader character`, but only while it still belongs to the current leader
+ * (`leader character of`). SimpleFactions already drops a stale name on save;
+ * checking again here covers an export written between a leadership change
+ * and the next save.
+ */
+function leaderCharacter(raw: RawRealm): string | null {
+  const name = text(raw["leader character"]);
+  if (!name) return null;
+  const of = raw["leader character of"];
+  const leader = raw.leader;
+  if (typeof of === "string" && typeof leader === "string") {
+    if (of.toLowerCase() !== leader.toLowerCase()) return null;
+  }
+  return name;
+}
+
 export function buildRealmProfile(id: string, raw: RawRealm): RealmProfile {
   const capital = finiteNumber(raw.capital);
   const foundedAt = finiteNumber(raw["founded at"]);
@@ -115,7 +138,7 @@ export function buildRealmProfile(id: string, raw: RawRealm): RealmProfile {
     banner: typeof raw.banner === "string" && raw.banner ? raw.banner : null,
     rank: realmRankLabel(raw.rank),
     rulerTitle: text(raw["ruler title"]),
-    leader: text(raw.leader),
+    leader: leaderCharacter(raw),
     government: text(raw.government),
     culture: text(raw.culture),
     religion: text(raw.religion),

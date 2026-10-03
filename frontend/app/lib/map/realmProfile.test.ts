@@ -67,6 +67,8 @@ describe("buildRealmProfile", () => {
     name: "§x§a§3§a§1§8§4Rat Hill",
     rgb: "90,200,120",
     leader: "GingerBAR",
+    "leader character": "§6Ginger of the Hill",
+    "leader character of": "GingerBAR",
     "ruler title": "Leader",
     government: "Community",
     culture: "Multicultural",
@@ -92,7 +94,7 @@ describe("buildRealmProfile", () => {
       name: "Rat Hill",
       rank: "Influential",
       rulerTitle: "Leader",
-      leader: "GingerBAR",
+      leader: "Ginger of the Hill",
       government: "Community",
       culture: "Multicultural",
       religion: "The Eye",
@@ -114,6 +116,28 @@ describe("buildRealmProfile", () => {
     expect(serialised).not.toContain("someone");
     expect(serialised).not.toContain("1234");
     expect(Object.keys(profile)).not.toContain("guilds");
+  });
+
+  it("never shows the Minecraft username as the ruler", () => {
+    expect(buildRealmProfile("Grunk", { leader: "rushork" }).leader).toBeNull();
+    expect(JSON.stringify(buildRealmProfile("Rat_Hill", raw))).not.toContain("GingerBAR");
+  });
+
+  it("drops a character name that belongs to a previous leader", () => {
+    expect(
+      buildRealmProfile("Grunk", {
+        leader: "newking",
+        "leader character": "Grunk the Bold",
+        "leader character of": "rushork",
+      }).leader
+    ).toBeNull();
+    expect(
+      buildRealmProfile("Grunk", {
+        leader: "RUSHORK",
+        "leader character": "Grunk the Bold",
+        "leader character of": "rushork",
+      }).leader
+    ).toBe("Grunk the Bold");
   });
 
   it("treats -1 as no capital and tolerates missing fields", () => {
