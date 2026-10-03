@@ -25,27 +25,18 @@ It connects the Minecraft world with a browser experience: players can explore t
 
 Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
 
-## Generated map files
+## Tests
 
-`backend/src/output/` holds local runtime output and is not versioned. Keep the
-authored map inputs in `backend/src/input/` and definitions in `backend/src/defines/`.
-To populate a fresh checkout, install `backend/requirements.txt`, then run from
-`backend/` for each map you serve (for example, `main` and `dev`):
+CI runs the frontend Vitest suite and the backend pytest suite, then builds the
+Next.js frontend. To run the same suites from the repository root:
 
 ```sh
-python -m src.scripts.tools.run_regen --map main --type fullregen
-python -m src.scripts.mapgen.mapmodes.terrain_mapmode --map main
-python -m src.scripts.mapgen.mapmodes.fertility_mapmode --map main
+(cd frontend && npm ci && npm test)
+(cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q)
 ```
 
-Run these commands before starting the backend; regeneration updates compiled
-definitions as well as map images. Docker Compose mounts the same output directory.
-Preserve runtime history and other server data: map regeneration only replaces
-rendered map assets, and does not reconstruct historical records.
-
-The ammo sprite source is `frontend/assets/wiki/ammo_sheet.png`. The grindstone
-assets are in `frontend/public/wiki/models/stations/` and
-`frontend/public/wiki/textures/stations/grindstone/`.
+The suites cover the website and API in isolation; they do not run a Minecraft
+server or the companion plugins.
 
 ## License
 
