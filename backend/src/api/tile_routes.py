@@ -7,16 +7,26 @@ from pathlib import Path
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import FileResponse
 
-from . import file_routes, map_routes
+from . import file_routes, map_routes, region_composite
 from .http_headers import add_cors, conditional_json_response
 from .map_access import ensure_map_access
-from .tile_cache import ready_manifest, tile_file
+from .tile_cache import existing_manifest, ready_manifest, tile_file
+from ..scripts.util.regen_types import MODES as REGION_MODES
 
 tile_router = APIRouter()
 
 # `base` is the satellite map the viewer draws under everything; `mapdata-X`
-# is mode X's full-map raster (terrain, fertility, province, ...).
+# is mode X's full-map raster (terrain, fertility, province, ...); `regions-X`
+# is region mode X's overlays flattened as first shown (see region_composite).
 _MAPDATA_PREFIX = "mapdata-"
+_REGIONS_PREFIX = "regions-"
+
+
+def _region_mode(layer: str) -> str | None:
+    if not layer.startswith(_REGIONS_PREFIX):
+        return None
+    mode = layer[len(_REGIONS_PREFIX):]
+    return mode if mode in REGION_MODES else None
 
 
 def _tile_source(map_name: str, layer: str) -> Path | None:
@@ -25,7 +35,16 @@ def _tile_source(map_name: str, layer: str) -> Path | None:
         return Path(path) if path else None
     if layer.startswith(_MAPDATA_PREFIX):
         return file_routes.resolve_mapdata_path(map_name, layer[len(_MAPDATA_PREFIX):])
+    mode = _region_mode(layer)
+    if mode is not None:
+        return region_composite.composite_path(map_name, mode)
     return None
+
+
+def _not_ready():
+    response = conditional_json_response({"ready": False})
+    response.status_code = 202
+    return response
 
 
 @tile_router.get("/{map_name}/tiles/{layer}/manifest")
@@ -41,15 +60,26 @@ async def get_tile_manifest(
     the single image and asks again later.
     """
     map_name = ensure_map_access(map_name, authorization).id
+
+    mode = _region_mode(layer)
+    if mode is not None:
+        if not region_composite.has_inputs(map_name, mode):
+            raise HTTPException(status_code=404, detail="Layer not found")
+        composite = region_composite.ready_composite(map_name, mode)
+        manifest = existing_manifest(composite) if composite is not None else None
+        if manifest is None:
+            return _not_ready()
+        return conditional_json_response(
+            {"ready": True, **manifest}, if_none_match=if_none_match
+        )
+
     source = _tile_source(map_name, layer)
     if source is None:
         raise HTTPException(status_code=404, detail="Layer not found")
 
     manifest = ready_manifest(source)
     if manifest is None:
-        response = conditional_json_response({"ready": False})
-        response.status_code = 202
-        return response
+        return _not_ready()
     return conditional_json_response(
         {"ready": True, **manifest}, if_none_match=if_none_match
     )

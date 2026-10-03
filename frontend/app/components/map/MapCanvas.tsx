@@ -112,6 +112,16 @@ function selectedOutlineStyle(displayScale: number): React.CSSProperties {
   };
 }
 
+/** Region modes the backend can flatten and tile (`regions-{mode}`). */
+const REGION_TILE_MODES = new Set<MapMode>([
+  "nation",
+  "county",
+  "duchy",
+  "kingdom",
+  "empire",
+  "trade",
+]);
+
 function pixelatedClass(displayScale: number): string {
   return displayScale >= 1 ? "[image-rendering:pixelated]" : "";
 }
@@ -226,6 +236,11 @@ type MapCanvasProps = {
   onMouseLeave: () => void;
   onClick: (e: React.MouseEvent<Element>) => void;
   isHoveringClickable?: boolean;
+  /**
+   * No subject layers are open, so the mode's overlays are exactly as first
+   * shown and can come from the flattened tiles.
+   */
+  regionsAtDefault?: boolean;
   /** Filled with the camera controls once the viewport is mounted. */
   controlsRef?: MutableRefObject<MapViewportControls | null>;
   /** Full-bleed mode: fills its container instead of sizing to the map itself
@@ -283,6 +298,7 @@ export default function MapCanvas({
   onMouseLeave,
   onClick,
   isHoveringClickable = false,
+  regionsAtDefault = false,
   controlsRef,
   fill = false,
   fitMode = "cover",
@@ -321,12 +337,42 @@ export default function MapCanvas({
    * images. Until a pyramid is ready the single image is drawn as before.
    */
   const tilesAllowed = !sessionToken;
-  const baseTiles = useTileManifest(mapId, "base", tilesAllowed);
+  const baseTiles = useTileManifest(mapId, "base", tilesAllowed).manifest;
   const rasterLayer =
     PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day)
       ? `mapdata-${mapType}`
       : null;
-  const rasterTiles = useTileManifest(mapId, rasterLayer, tilesAllowed);
+  const rasterTiles = useTileManifest(mapId, rasterLayer, tilesAllowed).manifest;
+
+  /**
+   * A region mode's overlays as first shown, flattened and tiled by the
+   * backend. Switching mode then loads a few tiles instead of one image per
+   * region (85 for counties). Once subject layers are open the per-region
+   * images take over again, since the flattened picture no longer matches.
+   */
+  const regionLayer =
+    regionOverlay === undefined && REGION_TILE_MODES.has(mapType)
+      ? `regions-${mapType}`
+      : null;
+  const regionTiles = useTileManifest(mapId, regionLayer, tilesAllowed);
+  const useRegionTiles = regionsAtDefault && regionTiles.manifest !== null;
+  // Until the first answer, draw neither: guessing "no tiles" would start
+  // dozens of overlay downloads that the tiles make pointless.
+  const holdRegionOverlays =
+    regionsAtDefault && regionLayer !== null && regionTiles.status === "loading";
+
+  // Names wait for the colour under them, so a mode switch does not show
+  // floating text over bare terrain for the moment the shapes take to land.
+  const [regionTilesReadyKey, setRegionTilesReadyKey] = useState<string | null>(null);
+  const regionTilesKey = regionTiles.manifest
+    ? `${mapType}:${regionTiles.manifest.version}`
+    : null;
+  const labelsShown =
+    !regionLayer ||
+    !regionsAtDefault ||
+    (useRegionTiles
+      ? regionTilesReadyKey === regionTilesKey
+      : regionTiles.status !== "loading");
 
   // The settled view the tile layers fetch for. A new object only when the
   // committed transform changes, so mid-gesture the tile layers do not
@@ -544,7 +590,20 @@ export default function MapCanvas({
           ) : (
             provinceOverlay ?? null
           ))}
-        {regionOverlay === undefined
+        {regionOverlay === undefined && useRegionTiles && regionTiles.manifest ? (
+          <TileLayer
+            manifest={regionTiles.manifest}
+            tileUrl={(level, x, y) =>
+              mapApiUrl(
+                `/${mapId}/tiles/regions-${mapType}/${regionTiles.manifest!.version}/${level}/${x}/${y}.webp`
+              )
+            }
+            view={tileView}
+            style={{ opacity: DRILL_STACK_OVERLAY_OPACITY }}
+            onReady={() => setRegionTilesReadyKey(regionTilesKey)}
+            onTileError={regionTiles.refresh}
+          />
+        ) : regionOverlay === undefined && holdRegionOverlays ? null : regionOverlay === undefined
           ? mapObjects
               .filter((obj) => obj.visible)
               .map((obj) => (
@@ -649,6 +708,14 @@ export default function MapCanvas({
           displayScale={viewport.displayScale}
           layer="base"
         />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            zIndex: 15,
+            opacity: labelsShown ? 1 : 0,
+            transition: "opacity 200ms ease-out",
+          }}
+        >
         <LabelLayer
           labels={labels}
           mapW={mapSize.w}
@@ -656,6 +723,7 @@ export default function MapCanvas({
           displayScale={viewport.displayScale}
           hoveredNationId={hoveredNationId}
         />
+        </div>
         <MapMarkerLayer
           markers={markers}
           hoveredMarkerId={hoveredMarkerId}

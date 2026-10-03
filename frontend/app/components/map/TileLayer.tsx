@@ -20,6 +20,10 @@ type TileLayerProps = {
   view: TileView;
   className?: string;
   style?: CSSProperties;
+  /** Fired once the backdrop has loaded: the layer is on screen, if soft. */
+  onReady?: () => void;
+  /** A tile failed to load, typically because its pyramid was replaced. */
+  onTileError?: () => void;
 };
 
 /**
@@ -36,7 +40,15 @@ type TileLayerProps = {
  * the GPU, which is why zooming stays smooth. Once the view settles the right
  * level's tiles are fetched and fade in over the stretched ones.
  */
-function TileLayer({ manifest, tileUrl, view, className, style }: TileLayerProps) {
+function TileLayer({
+  manifest,
+  tileUrl,
+  view,
+  className,
+  style,
+  onReady,
+  onTileError,
+}: TileLayerProps) {
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const level = pickTileLevel(manifest, view.displayScale, dpr);
   const backdrop = Math.min(backdropLevel(manifest), level);
@@ -65,6 +77,15 @@ function TileLayer({ manifest, tileUrl, view, className, style }: TileLayerProps
   useEffect(() => {
     if (currentLoaded && settledLevel !== level) setSettledLevel(level);
   }, [currentLoaded, level, settledLevel]);
+
+  const backdropLoaded =
+    backdropTiles.length > 0 &&
+    backdropTiles.every((tile) => loadedRef.current.has(tile.key));
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  useEffect(() => {
+    if (backdropLoaded) onReadyRef.current?.();
+  }, [backdropLoaded, manifest.version]);
 
   // The previous sharp level, held under the new one until it has loaded.
   const holdTiles = useMemo(
@@ -95,6 +116,7 @@ function TileLayer({ manifest, tileUrl, view, className, style }: TileLayerProps
         draggable={false}
         decoding="async"
         onLoad={() => markLoaded(tile.key)}
+        onError={onTileError}
         className="absolute max-w-none select-none"
         style={{
           left: tile.left,

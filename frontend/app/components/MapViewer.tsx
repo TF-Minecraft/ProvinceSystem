@@ -1156,6 +1156,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         onMouseLeave={handleMouseLeave}
         onClick={handleMapClick}
         isHoveringClickable={isHoveringClickable}
+        regionsAtDefault={drillStack.length === 0}
         fill
         fitMode={fitMode}
         day={day}

@@ -95,11 +95,15 @@ class PyramidTest(unittest.TestCase):
         stat = self.source.stat()
         os.utime(self.source, ns=(stat.st_atime_ns, stat.st_mtime_ns + 10_000_000))
 
-        # A tile URL of the old version must never answer with new pixels.
-        self.assertIsNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+        # The old version keeps serving its own pixels until the rebuild...
+        self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+        self.assertIsNone(tile_cache.existing_manifest(self.source))
         new = tile_cache.build_pyramid(self.source)
         assert new is not None
         self.assertNotEqual(new["version"], old["version"])
+        # ...and is gone once the new one replaces it.
+        self.assertIsNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+        self.assertEqual(tile_cache.existing_manifest(self.source), new)
         siblings = [p.name for p in tile_cache.pyramid_dir(self.source, "x").parent.iterdir()]
         self.assertEqual(siblings, [new["version"]])
 

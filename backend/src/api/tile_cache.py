@@ -43,6 +43,11 @@ _CACHE_DIR = _ROUTER_DIR.parent / "output" / "_derived" / "tiles"
 _building: set[str] = set()
 _building_lock = threading.Lock()
 
+# One full-map build at a time. Each holds a 6400 px image (~160 MB) and its
+# smaller levels in memory; several modes asked for at once must queue rather
+# than stack up in the API's memory.
+BUILD_LOCK = threading.Lock()
+
 
 def _source_key(source: Path) -> str:
     return hashlib.sha1(
@@ -170,7 +175,8 @@ def _build_in_background(source: Path) -> None:
 
     def run() -> None:
         try:
-            build_pyramid(source)
+            with BUILD_LOCK:
+                build_pyramid(source)
         except Exception as exc:  # pragma: no cover - background best effort
             print(f"[tiles] build failed for {source}: {exc}")
         finally:
@@ -197,18 +203,27 @@ def ready_manifest(
     return build_pyramid(source_path)
 
 
+def existing_manifest(source: os.PathLike[str] | str) -> dict | None:
+    """The manifest for `source`'s current version if built; never builds."""
+    version = _version_of(Path(source))
+    if version is None:
+        return None
+    return read_manifest(pyramid_dir(source, version))
+
+
 def tile_file(
     source: os.PathLike[str] | str, version: str, level: int, x: int, y: int
 ) -> Path | None:
-    """A tile of the *current* version, or None.
+    """A tile of `version`, while that version's pyramid is still on disk.
 
-    A stale version is refused rather than served: its URL is cached forever
-    by clients, so it must never answer with different pixels.
+    Versions live in separate directories, so a URL can never answer with
+    different pixels; an older version keeps serving until the next build
+    replaces it, which lets a client holding the previous manifest finish
+    loading rather than 404 the moment the source changes.
     """
-    source_path = Path(source)
-    if _version_of(source_path) != version:
+    if not version.isdigit():
         return None
-    path = pyramid_dir(source_path, version) / str(level) / f"{x}_{y}.webp"
+    path = pyramid_dir(Path(source), version) / str(level) / f"{x}_{y}.webp"
     return path if path.is_file() else None
 
 
