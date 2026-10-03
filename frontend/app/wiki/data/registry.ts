@@ -8,6 +8,7 @@ import { charactersSection } from "./characters";
 import { classesSection } from "./classes";
 import { codexSection } from "./codex";
 import { commandIndexSection } from "./command-index";
+import { companionPetsSection } from "./companion-pets";
 import { cookingSection } from "./cooking";
 import { animalHusbandrySection } from "./animal-husbandry";
 import { detectorSection } from "./detector";
@@ -93,6 +94,7 @@ export const wikiSections: readonly WikiSection[] = [
   economySection,
   marketBlockSection,
   birdMailSection,
+  companionPetsSection,
   gamesSection,
   instrumentsSection,
   recyclerSection,

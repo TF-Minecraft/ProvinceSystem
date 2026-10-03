@@ -6,7 +6,7 @@ import { navItemsForCategory, populatedCategories } from "./data";
 export default function WikiOverviewPage() {
   return (
     <WikiPage
-      lastModified="2026-09-19"
+      lastModified="2026-10-02"
       title="Gameplay Guide"
       intro="TFMC Season 5: crafting stations, recipes, and mechanics for the custom systems on the server. More sections will be added as the season goes on."
       width="sm"

@@ -24,7 +24,7 @@ const stoneRecipes = [
 export default function ServerFeaturesPage() {
   return (
     <WikiPage
-      lastModified="2026-09-18"
+      lastModified="2026-10-02"
       title="Server Features & Website Link"
     >
       <WikiSectionHeading id="sealed-letters" intro="Not to be confused with BirdMessenger's mail: see below.">
@@ -152,7 +152,19 @@ export default function ServerFeaturesPage() {
         showAliases={false}
       />
 
-      <SeeAlso hrefs={["/wiki/stations", "/wiki/bird-mail", "/wiki/characters"]} />
+      <WikiSectionHeading id="companion-pets" intro="Hatch a companion, care for it and teach it tricks.">
+        Companion pets
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Use a pet egg, name your companion in chat and look after its food, mood, rest,
+        cleanliness and health. A shelter keeps your pets safe between outings. See the{" "}
+        <Link href="/wiki/companion-pets" className="text-[var(--tfmc-accent)] hover:underline">
+          Companion Pets guide
+        </Link>{" "}
+        for care supplies, shelter controls, playing fetch and teaching your own words for tricks.
+      </p>
+
+      <SeeAlso hrefs={["/wiki/stations", "/wiki/bird-mail", "/wiki/characters", "/wiki/companion-pets"]} />
     </WikiPage>
   );
 }
