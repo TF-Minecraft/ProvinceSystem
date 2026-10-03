@@ -1261,7 +1261,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const details = selectedGuild ? (
     <GuildPanelContent
       guild={selectedGuild}
-      regionData={regionData}
+      regionData={guildData}
       seat={guildSeat(selectedGuild, settlements)}
       tradeProvinces={
         mapType === "trade" ? regionData?.[selectedGuild.id]?.size ?? null : null
