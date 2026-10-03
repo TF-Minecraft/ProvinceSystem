@@ -144,7 +144,12 @@ def build_composite(map_name: str, mode: str) -> Path | None:
         except OSError:
             continue
         x, y = int(box.get("x", 0)), int(box.get("y", 0))
-        canvas.alpha_composite(layer, dest=(max(0, x), max(0, y)))
+        # A box starting off the map's top or left edge keeps its pixels in
+        # place: cut off the part beyond the edge rather than shifting it in.
+        left, top = max(0, -x), max(0, -y)
+        if left >= layer.width or top >= layer.height:
+            continue
+        canvas.alpha_composite(layer, dest=(max(0, x), max(0, y)), source=(left, top))
 
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=target.parent, suffix=".tmp")

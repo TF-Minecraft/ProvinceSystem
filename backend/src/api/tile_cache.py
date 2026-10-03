@@ -155,8 +155,10 @@ def build_pyramid(source: os.PathLike[str] | str) -> dict | None:
         shutil.rmtree(staging, ignore_errors=True)
         raise
 
+    # Only versions older than this one: a build of an earlier source that
+    # finishes last must not delete the newer pyramid clients are now served.
     for sibling in parent.iterdir():
-        if sibling.name != version and not sibling.name.startswith(".build-"):
+        if sibling.name.isdigit() and int(sibling.name) < int(version):
             shutil.rmtree(sibling, ignore_errors=True)
     return read_manifest(final)
 

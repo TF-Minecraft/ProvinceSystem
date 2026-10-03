@@ -1152,7 +1152,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         focusPoint(entry.mapX, entry.mapY);
       }
     },
-    [selectRegion, focusPoint]
+    [selectRegion, focusPoint, select, guildData, settlements]
   );
 
   /**

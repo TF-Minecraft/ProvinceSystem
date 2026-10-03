@@ -119,6 +119,16 @@ class PyramidTest(unittest.TestCase):
             background.assert_called_once()
         self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
 
+    def test_an_older_build_finishing_last_keeps_the_newer_pyramid(self) -> None:
+        newer = tile_cache.build_pyramid(self.source)
+        assert newer is not None
+        # A build of an earlier version of the source, landing after it.
+        earlier = str(int(newer["version"]) - 1)
+        with patch.object(tile_cache, "_version_of", return_value=earlier):
+            self.assertIsNotNone(tile_cache.build_pyramid(self.source))
+        self.assertEqual(tile_cache.existing_manifest(self.source), newer)
+        self.assertIsNotNone(tile_cache.tile_file(self.source, newer["version"], 0, 0, 0))
+
     def test_manifest_is_written_last(self) -> None:
         manifest = tile_cache.build_pyramid(self.source)
         assert manifest is not None

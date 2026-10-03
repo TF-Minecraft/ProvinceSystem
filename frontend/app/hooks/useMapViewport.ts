@@ -697,6 +697,14 @@ export function useMapViewport({
         return;
       }
       if (isTypingTarget(event.target)) return;
+      // Only keys aimed at the map (or at nothing in particular): with a card,
+      // a button or a scrolling panel focused, arrows belong to that.
+      const target = event.target;
+      const fromMap =
+        target === document.body ||
+        target === document.documentElement ||
+        (target instanceof Node && viewportRef.current?.contains(target) === true);
+      if (!fromMap) return;
       const action = keyboardMapAction(event.key);
       if (!action) return;
       event.preventDefault();

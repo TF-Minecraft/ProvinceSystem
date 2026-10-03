@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { MapEngineProvider } from "@/app/core/MapEngineContext";
@@ -28,7 +28,11 @@ function Loading() {
 export default function SiteMap({ mapId }: { mapId?: MapId }) {
   const { maps, loading } = useAccessibleMaps();
   const router = useRouter();
-  const liveId = loading ? null : liveMapIdFrom(maps);
+  // The list reloads now and then (a login in another tab); keep the last
+  // answer meanwhile, or the map would unmount and lose its camera and card.
+  const resolved = loading ? null : liveMapIdFrom(maps);
+  const [liveId, setLiveId] = useState<MapId | null>(resolved);
+  if (resolved !== null && resolved !== liveId) setLiveId(resolved);
 
   useEffect(() => {
     if (liveId) setLiveMapId(liveId);

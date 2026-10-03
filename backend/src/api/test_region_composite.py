@@ -177,6 +177,17 @@ class RegionCompositeTest(unittest.TestCase):
         self.assertEqual(client.get("/main/tiles/regions-duchy/manifest").status_code, 404)
         self.assertEqual(client.get("/main/tiles/regions-bogus/manifest").status_code, 404)
 
+    def test_overlay_off_the_left_edge_is_clipped_not_shifted(self) -> None:
+        # B's 20 px box now starts 5 px beyond the left edge, at y 40.
+        boxes = json.loads((self.regions_dir / "overlays.json").read_text(encoding="utf-8"))
+        boxes["2,2,2"]["overlay"] = {"x": -5, "y": 40, "w": 20, "h": 20}
+        (self.regions_dir / "overlays.json").write_text(json.dumps(boxes), encoding="utf-8")
+        composite = region_composite.build_composite("main", "nation")
+        assert composite is not None
+        with Image.open(composite) as image:
+            self.assertEqual(image.getpixel((14, 45)), BLUE)  # B's right edge stays at x 14
+            self.assertEqual(image.getpixel((15, 45))[3], 0)  # not shifted 5 px right
+
     def test_route_serves_the_last_composite_while_the_next_builds(self) -> None:
         app = FastAPI()
         app.include_router(tile_router)

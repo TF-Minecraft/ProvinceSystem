@@ -52,6 +52,15 @@ function TileLayer({
 }: TileLayerProps) {
   const dpr = tilePixelRatio();
   const level = pickTileLevel(manifest, view.displayScale, dpr);
+
+  // A replaced pyramid 404s every tile on screen at once: say so once per
+  // version, not once per tile, or each would refetch the manifest.
+  const reportedVersionRef = useRef<string | null>(null);
+  const reportTileError = () => {
+    if (reportedVersionRef.current === manifest.version) return;
+    reportedVersionRef.current = manifest.version;
+    onTileError?.();
+  };
   const backdrop = Math.min(backdropLevel(manifest), level);
 
   const backdropTiles = useMemo(() => allTiles(manifest, backdrop), [manifest, backdrop]);
@@ -121,7 +130,7 @@ function TileLayer({
         draggable={false}
         decoding="async"
         onLoad={() => markLoaded(loadedKey(tile))}
-        onError={onTileError}
+        onError={reportTileError}
         className="absolute max-w-none select-none"
         style={{
           left: tile.left,
