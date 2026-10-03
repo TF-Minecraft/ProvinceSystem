@@ -402,5 +402,35 @@ export function useMapHover(props: UseMapHoverProps) {
     [rgbToId]
   );
 
-  return { onMouseMove, onMouseLeave, isHoveringClickable, pickRegionAtEvent };
+  /** The marker under a click, if any; markers sit above regions. */
+  const pickMarkerAtEvent = useCallback(
+    (event: React.MouseEvent<Element>): MapMarker | null => {
+      const current = propsRef.current;
+      const canvas = current.canvasRef.current;
+      if (!canvas || !current.markers?.length) return null;
+      const coords = getMapCoords(
+        event,
+        canvas,
+        current.mapId,
+        current.viewportCoordsRef.current
+      );
+      if (!coords) return null;
+      const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
+      return pickMapMarkerAt(
+        filterVisibleMapMarkers(current.markers, displayScale),
+        coords.x,
+        coords.y,
+        displayScale
+      );
+    },
+    []
+  );
+
+  return {
+    onMouseMove,
+    onMouseLeave,
+    isHoveringClickable,
+    pickRegionAtEvent,
+    pickMarkerAtEvent,
+  };
 }

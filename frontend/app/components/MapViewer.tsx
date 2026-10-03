@@ -48,6 +48,8 @@ import MapZoomControls from "./map/shell/MapZoomControls";
 import MapLayersMenu, { type MapLayerToggle } from "./map/shell/MapLayersMenu";
 import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
 import { RealmPanelContent } from "./map/shell/RealmPanel";
+import { PlacePanelContent } from "./map/shell/PlacePanel";
+import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
 import { HistoryIcon } from "./map/shell/MapIcons";
 import type {
   CursorTooltip,
@@ -207,6 +209,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * click, a link in the panel, search, Escape, a mode change) replaces it.
    */
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** A clicked marker (settlement, installation, battle); exclusive with `selectedId`. */
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [drillStack, setDrillStack] = useState<DrillLayer[]>([]);
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
   const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(
@@ -642,7 +646,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     regionData,
   ]);
 
-  const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable, pickRegionAtEvent } = useMapHover({
+  const {
+    onMouseMove,
+    onMouseLeave: onHoverLeave,
+    isHoveringClickable,
+    pickRegionAtEvent,
+    pickMarkerAtEvent,
+  } = useMapHover({
     mapId,
     mapType,
     loading,
@@ -692,6 +702,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (mode === mapType) return;
     resetMapObjects();
     setSelectedId(null);
+    setSelectedPlaceId(null);
     // The map stays mounted across modes, so hover from the old mode has to
     // be cleared here rather than by a remount.
     setHoveredOverlay(null);
@@ -763,11 +774,22 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (event.button !== 0) return;
     if (!regionData) return;
 
+    // Pins sit above the land: a click on one opens its place card.
+    const marker = event.ctrlKey || event.metaKey ? null : pickMarkerAtEvent(event);
+    if (marker) {
+      setSelectedId(null);
+      setSelectedPlaceId(marker.id);
+      return;
+    }
+
     const regionId = pickRegionAtEvent(event);
     if (!regionId) {
       // Clicking open sea or unclaimed land puts the details away, as on any
       // map site; Ctrl-click there is still a no-op.
-      if (!event.ctrlKey && !event.metaKey) setSelectedId(null);
+      if (!event.ctrlKey && !event.metaKey) {
+        setSelectedId(null);
+        setSelectedPlaceId(null);
+      }
       return;
     }
 
@@ -777,6 +799,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     }
 
     if (!regionData[regionId]) return;
+    setSelectedPlaceId(null);
     setSelectedId(regionId);
   };
 
@@ -857,6 +880,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     (regionId: string, options: { focus?: boolean } = {}) => {
       if (!regionData?.[regionId]) return;
       revealRegion(regionId);
+      setSelectedPlaceId(null);
       setSelectedId(regionId);
       if (options.focus ?? true) focusRegion(regionId);
     },
@@ -879,6 +903,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       if (entry.kind === "region") {
         selectRegion(entry.regionId);
       } else {
+        const markerId = placeMarkerIdForSearchKey(entry.key);
+        if (markerId) {
+          setSelectedId(null);
+          setSelectedPlaceId(markerId);
+        }
         focusPoint(entry.mapX, entry.mapY);
       }
     },
@@ -902,14 +931,32 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   // Escape puts the details away, unless it is closing something in a field.
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId && !selectedPlaceId) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || isTypingTarget(event.target)) return;
       setSelectedId(null);
+      setSelectedPlaceId(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId]);
+  }, [selectedId, selectedPlaceId]);
+
+  const selectedMarker = useMemo(
+    () => (selectedPlaceId ? mapMarkers.find((m) => m.id === selectedPlaceId) ?? null : null),
+    [selectedPlaceId, mapMarkers]
+  );
+  // A pin that is no longer drawn (another mode, a stored day without it)
+  // closes its card.
+  useEffect(() => {
+    if (selectedPlaceId && mapMarkers.length > 0 && !selectedMarker) setSelectedPlaceId(null);
+  }, [selectedPlaceId, selectedMarker, mapMarkers.length]);
+  const selectedPlace = useMemo(
+    () =>
+      selectedMarker
+        ? buildPlaceProfile(selectedMarker, settlements, installations, regionData)
+        : null,
+    [selectedMarker, settlements, installations, regionData]
+  );
 
   // A selection the current data no longer has (a stored day without that
   // realm, a mode reload) closes rather than showing an empty panel.
@@ -1099,8 +1146,18 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     (selectedRegion?.subjects?.length ?? 0) > 0 &&
     !drillStack.some((layer) => layer.regionId === selectedId);
 
-  const details =
-    selectedId && regionData && selectedRegion ? (
+  const details = selectedPlace && selectedMarker ? (
+    <PlacePanelContent
+      mapId={mapId}
+      place={selectedPlace}
+      marker={selectedMarker}
+      regionData={regionData}
+      sessionToken={authToken}
+      onSelectRegion={(id) => selectRegion(id)}
+      onFocusPoint={focusPoint}
+      onClose={() => setSelectedPlaceId(null)}
+    />
+  ) : selectedId && regionData && selectedRegion ? (
       <RealmPanelContent
         mapId={mapId}
         mapType={mapType}
@@ -1111,6 +1168,10 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         settlements={settlements}
         onSelectRegion={(id) => selectRegion(id)}
         onFocusPoint={focusPoint}
+        onSelectPlace={(markerId) => {
+          setSelectedId(null);
+          setSelectedPlaceId(markerId);
+        }}
         onFocusRegion={
           selectedRegion.overlay ? () => focusRegion(selectedId) : undefined
         }
@@ -1151,7 +1212,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         ) : null
       }
       details={details}
-      detailsKey={selectedId}
+      detailsKey={selectedPlaceId ? `place:${selectedPlaceId}` : selectedId}
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
       layers={<MapLayersMenu toggles={desktopLayerToggles} footer={archiveFooter} />}
@@ -1187,7 +1248,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             : []
         }
         centroids={centroids}
-        hoveredMarkerId={hoveredMarkerId}
+        hoveredMarkerId={hoveredMarkerId ?? selectedPlaceId}
         hoveredNationId={hoveredRegionId ?? selectedId}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleMouseLeave}

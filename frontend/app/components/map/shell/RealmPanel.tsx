@@ -30,6 +30,8 @@ export type RealmPanelProps = {
   onSelectRegion: (regionId: string) => void;
   /** Fly to a map point, e.g. the capital. */
   onFocusPoint?: (mapX: number, mapY: number) => void;
+  /** Open a settlement's own card, e.g. the capital's. */
+  onSelectPlace?: (markerId: string) => void;
   onFocusRegion?: () => void;
   /** Open the subject layout; absent when the region has none to show. */
   onShowSubjects?: () => void;
@@ -47,7 +49,7 @@ function regionName(regionData: RegionRecord, id: string): string {
   return cleanRegionName(regionData[id]?.name ?? id) || id;
 }
 
-function Banner({
+export function Banner({
   mapId,
   mapType,
   banner,
@@ -82,7 +84,7 @@ function Banner({
   );
 }
 
-function RegionLink({
+export function RegionLink({
   id,
   regionData,
   onSelectRegion,
@@ -105,7 +107,7 @@ function RegionLink({
   );
 }
 
-function Fact({ label, children }: { label: string; children: ReactNode }) {
+export function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-[var(--tfmc-mist)]">
@@ -116,7 +118,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-5">
       <h3 className="map-rule mb-2.5">{title}</h3>
@@ -194,8 +196,16 @@ function RealmBody({
   profile: RealmProfile;
   props: RealmPanelProps;
 }) {
-  const { mapId, mapType, regionData, sessionToken, settlements, onSelectRegion, onFocusPoint } =
-    props;
+  const {
+    mapId,
+    mapType,
+    regionData,
+    sessionToken,
+    settlements,
+    onSelectRegion,
+    onFocusPoint,
+    onSelectPlace,
+  } = props;
   const capital = realmCapitalSettlement(profile, settlements);
   const relations = sortRealmRelations(profile.relations);
   const subjectSize = profile.realmSize - profile.provinces;
@@ -213,7 +223,10 @@ function RealmBody({
             onFocusPoint ? (
               <button
                 type="button"
-                onClick={() => onFocusPoint(capital.map_x!, capital.map_y!)}
+                onClick={() => {
+                  onSelectPlace?.(capital.id);
+                  onFocusPoint(capital.map_x!, capital.map_y!);
+                }}
                 className="map-link text-left"
               >
                 {cleanRegionName(capital.name)}
