@@ -1537,7 +1537,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             toggles={layerToggles}
             align="left"
             placement="down"
-            triggerClassName="h-10 px-3 text-sm"
+            iconOnly
+            triggerClassName="h-10 w-10 rounded-full"
           />
         ) : null
       }

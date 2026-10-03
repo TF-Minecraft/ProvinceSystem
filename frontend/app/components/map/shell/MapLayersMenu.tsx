@@ -22,6 +22,8 @@ type MapLayersMenuProps = {
   triggerClassName?: string;
   /** Which edge of the trigger the popover lines up with. */
   align?: "left" | "right";
+  /** Just the icon, as Google Maps' phone app does; the word stays for screen readers. */
+  iconOnly?: boolean;
 };
 
 /**
@@ -35,6 +37,7 @@ export default function MapLayersMenu({
   footer,
   triggerClassName = "h-10 px-3 text-sm",
   align = "left",
+  iconOnly = false,
 }: MapLayersMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -64,10 +67,11 @@ export default function MapLayersMenu({
         className={`map-control ${triggerClassName}`}
         aria-expanded={open}
         aria-haspopup="dialog"
+        title={iconOnly ? "Layers" : undefined}
         onClick={() => setOpen((value) => !value)}
       >
         <LayersIcon size={18} />
-        <span>Layers</span>
+        <span className={iconOnly ? "sr-only" : undefined}>Layers</span>
       </button>
       {open ? (
         <div
