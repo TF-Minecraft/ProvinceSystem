@@ -36,6 +36,20 @@ export const MARKER_CHIP_TRANSITION =
 export const MARKER_ICON_HOVER_GLOW =
   "drop-shadow(0 0 6px color-mix(in srgb, var(--tfmc-accent) 45%, transparent))";
 export const MARKER_LABEL_MIN_SCREEN_PX = 9;
+
+/**
+ * Markers are sized in map pixels, so they grow as the map zooms in. Past
+ * this display scale they stop growing and hold their screen size, the way
+ * map pins do on Google Maps: at 0.35 a small marker's icon is 35 px across.
+ */
+export const MARKER_MAX_DISPLAY_SCALE = 0.35;
+
+/** Factor to shrink a marker's map-pixel size by so it holds its screen size. */
+export function markerZoomScale(displayScale: number): number {
+  return displayScale > MARKER_MAX_DISPLAY_SCALE
+    ? MARKER_MAX_DISPLAY_SCALE / displayScale
+    : 1;
+}
 export const INSTALLATION_ICON_SCALE = 0.75;
 export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
 // Marker chips sit above the serif nation labels (z-15) so a settlement name is
@@ -191,9 +205,12 @@ export function markerLayout(
   mapX: number,
   mapY: number,
   markerSize: MapMarkerSize | undefined,
-  kind?: string
+  kind?: string,
+  zoomScale = 1
 ): MapMarkerLayout {
-  const { size, fontSize } = markerDimensions(markerSize);
+  const dimensions = markerDimensions(markerSize);
+  const size = dimensions.size * zoomScale;
+  const fontSize = dimensions.fontSize * zoomScale;
   const iconSize = size * markerIconScale(kind);
   const imageY = mapY - size / 2;
   return {
@@ -204,7 +221,7 @@ export function markerLayout(
     size,
     iconSize,
     fontSize,
-    textY: imageY + size + MARKER_LABEL_GAP,
+    textY: imageY + size + MARKER_LABEL_GAP * zoomScale,
   };
 }
 
@@ -250,15 +267,19 @@ export function markerHitBounds(
 export function pickMapMarkerAt(
   markers: MapMarker[],
   x: number,
-  y: number
+  y: number,
+  displayScale = 0
 ): MapMarker | null {
+  // Hit-test the marker at the size it is drawn, not its map-pixel size.
+  const zoomScale = markerZoomScale(displayScale);
   for (let i = markers.length - 1; i >= 0; i--) {
     const marker = markers[i];
     const layout = markerLayout(
       marker.mapX,
       marker.mapY,
       marker.markerSize,
-      marker.kind
+      marker.kind,
+      zoomScale
     );
     const bounds = markerHitBounds(
       layout,

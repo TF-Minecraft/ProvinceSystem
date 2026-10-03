@@ -155,11 +155,11 @@ export function useMapHover(props: UseMapHoverProps) {
   handleProvinceHoverRef.current = handleProvinceHover;
 
   const rafRef = useRef<number | null>(null);
-  const pendingEventRef = useRef<React.MouseEvent<HTMLCanvasElement> | null>(null);
+  const pendingEventRef = useRef<React.MouseEvent<Element> | null>(null);
   const lastPointerRef = useRef<PointerPosition | null>(null);
   const [isHoveringClickable, setIsHoveringClickable] = useState(false);
 
-  const processHover = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+  const processHover = useCallback((event: React.MouseEvent<Element>) => {
     const current = propsRef.current;
     if (current.loading) return;
 
@@ -191,7 +191,7 @@ export function useMapHover(props: UseMapHoverProps) {
       ? filterVisibleMapMarkers(current.markers, displayScale)
       : [];
     const markerHit = visibleMarkers.length
-      ? pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+      ? pickMapMarkerAt(visibleMarkers, coords.x, coords.y, displayScale)
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
@@ -277,10 +277,10 @@ export function useMapHover(props: UseMapHoverProps) {
     processHover({
       clientX: pointer.clientX,
       clientY: pointer.clientY,
-    } as React.MouseEvent<HTMLCanvasElement>);
+    } as React.MouseEvent<Element>);
   }, [loading, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
-  const onMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const onMouseMove = (event: React.MouseEvent<Element>) => {
     if (loading) return;
 
     lastPointerRef.current = {
@@ -316,7 +316,7 @@ export function useMapHover(props: UseMapHoverProps) {
   };
 
   const pickRegionAtEvent = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>): string | null => {
+    (event: React.MouseEvent<Element>): string | null => {
       const current = propsRef.current;
       if (current.loading || !current.regionData) return null;
 
@@ -340,7 +340,7 @@ export function useMapHover(props: UseMapHoverProps) {
         : [];
       if (
         visibleMarkers.length &&
-        pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+        pickMapMarkerAt(visibleMarkers, coords.x, coords.y, displayScale)
       ) {
         return null;
       }

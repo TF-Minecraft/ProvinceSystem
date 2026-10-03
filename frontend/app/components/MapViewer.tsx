@@ -632,7 +632,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   // Paint mode owns left-click and pointer tracking; the pick canvas is
   // pointer-events-none while it is on, but guard here too so no stale hover
   // state survives the switch.
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseMove = (event: React.MouseEvent<Element>) => {
     if (paint.enabled) return;
     onMouseMove(event);
   };
@@ -721,7 +721,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   };
 
-  const handleMapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMapClick = (event: React.MouseEvent<Element>) => {
     if (paint.enabled) return;
     if (event.button !== 0) return;
     if (!regionData) return;

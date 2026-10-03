@@ -16,6 +16,12 @@ type MapAuthImageProps = {
   onLoad?: (event: SyntheticEvent<HTMLImageElement>) => void;
   onError?: (event: SyntheticEvent<HTMLImageElement>) => void;
   imgRef?: (node: HTMLImageElement | null) => void;
+  /**
+   * Swap the source on the same `<img>` instead of mounting a new one, so
+   * the old picture stays up until the new one has loaded. For images whose
+   * path changes with zoom (reduced overlay copies).
+   */
+  replaceInPlace?: boolean;
 };
 
 // Only the base map (`/{mapId}/map`) has a low-res preview artifact generated
@@ -41,6 +47,7 @@ export default function MapAuthImage({
   onLoad,
   onError,
   imgRef,
+  replaceInPlace = false,
 }: MapAuthImageProps) {
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
@@ -73,7 +80,7 @@ export default function MapAuthImage({
 
   const fullImage = (
     <img
-      key={url}
+      key={replaceInPlace ? undefined : url}
       src={url}
       alt={alt}
       className={hasPreview ? undefined : className}

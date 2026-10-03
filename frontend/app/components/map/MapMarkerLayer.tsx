@@ -13,6 +13,7 @@ import {
   markerDimensions,
   markerLabelTextStyle,
   markerLayout,
+  markerZoomScale,
   resolveMarkerImageSrc,
   shouldShowMapMarker,
   type MapMarker,
@@ -80,7 +81,8 @@ function MapMarkerLayer({
           marker.mapX,
           marker.mapY,
           marker.markerSize,
-          marker.kind
+          marker.kind,
+          markerZoomScale(displayScale)
         );
         const visible =
           alwaysVisible || shouldShowMapMarker(marker, displayScale);

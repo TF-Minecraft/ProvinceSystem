@@ -1,6 +1,8 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -33,6 +35,9 @@ import WarCampaignLineLayer from "./WarCampaignLineLayer";
 import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
+import TileLayer from "./TileLayer";
+import { useTileManifest } from "../../hooks/useTileManifest";
+import { overlayLod } from "../../lib/map/tilePyramid";
 import {
   useMapViewport,
   type MapFocusInset,
@@ -41,7 +46,7 @@ import type { FitMode, MapRect } from "../../lib/mapViewportMath";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
-import { mapApiPathFromUrl } from "@/lib/map/api";
+import { mapApiPathFromUrl, mapApiUrl } from "@/lib/map/api";
 import {
   PROVINCE_RASTER_MODES,
   showsLiveProvinceRaster,
@@ -107,6 +112,10 @@ function selectedOutlineStyle(displayScale: number): React.CSSProperties {
   };
 }
 
+function pixelatedClass(displayScale: number): string {
+  return displayScale >= 1 ? "[image-rendering:pixelated]" : "";
+}
+
 function applyNaturalMapSize(
   img: HTMLImageElement,
   setMapSize: Dispatch<SetStateAction<{ w: number; h: number }>>
@@ -130,6 +139,7 @@ function HoverOverlayImage({
   alt = "Hovered region",
   imageClassName = "",
   imageStyle,
+  lod = 0,
 }: {
   mapId: MapId;
   sessionToken?: string | null;
@@ -140,9 +150,13 @@ function HoverOverlayImage({
   alt?: string;
   imageClassName?: string;
   imageStyle?: React.CSSProperties;
+  /** Reduced copy to ask for; only region crops have them. */
+  lod?: number;
 }) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const path = mapApiPathFromUrl(overlay.url);
+  const basePath = mapApiPathFromUrl(overlay.url);
+  const path =
+    lod > 0 && basePath.includes("/regions/") ? `${basePath}?lod=${lod}` : basePath;
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
   useEffect(() => {
@@ -208,9 +222,9 @@ type MapCanvasProps = {
   hoveredMarkerId?: string | null;
   hoveredNationId?: string | null;
   viewportCoordsRef?: MutableRefObject<MapPickViewport | null>;
-  onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onMouseMove: (e: React.MouseEvent<Element>) => void;
   onMouseLeave: () => void;
-  onClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onClick: (e: React.MouseEvent<Element>) => void;
   isHoveringClickable?: boolean;
   /** Filled with the camera controls once the viewport is mounted. */
   controlsRef?: MutableRefObject<MapViewportControls | null>;
@@ -300,6 +314,64 @@ export default function MapCanvas({
     },
   });
 
+  /**
+   * Tiles for the base map and the raster modes, Google Maps style: only the
+   * tiles on screen, at the level the zoom needs. Public maps only — a staff
+   * map's assets need a bearer token per request, so it keeps the single
+   * images. Until a pyramid is ready the single image is drawn as before.
+   */
+  const tilesAllowed = !sessionToken;
+  const baseTiles = useTileManifest(mapId, "base", tilesAllowed);
+  const rasterLayer =
+    PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day)
+      ? `mapdata-${mapType}`
+      : null;
+  const rasterTiles = useTileManifest(mapId, rasterLayer, tilesAllowed);
+
+  // The settled view the tile layers fetch for. A new object only when the
+  // committed transform changes, so mid-gesture the tile layers do not
+  // re-render at all.
+  const tileView = useMemo(
+    () => ({
+      displayScale: viewport.displayScale,
+      translateX: viewport.translateX,
+      translateY: viewport.translateY,
+      viewportW: viewport.viewportSize.w,
+      viewportH: viewport.viewportSize.h,
+    }),
+    [
+      viewport.displayScale,
+      viewport.translateX,
+      viewport.translateY,
+      viewport.viewportSize.w,
+      viewport.viewportSize.h,
+    ]
+  );
+
+  const devicePixelRatio =
+    typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  // Zoomed out, realm overlays come as reduced copies: decoding a crop at
+  // full size only to draw it a few pixels across is what the tiles fix for
+  // the base map.
+  const lod = overlayLod(viewport.displayScale, devicePixelRatio);
+
+  /**
+   * The pick canvas is read with `getImageData`, never seen. It used to sit
+   * in the map layer at full map size (6400 px square, transparent), where
+   * the browser still had to composite it at every zoom step. Detached, it is
+   * just memory; a plain div takes its pointer events.
+   */
+  useLayoutEffect(() => {
+    const canvas = document.createElement("canvas");
+    (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = canvas;
+    return () => {
+      const ref = canvasRef as React.MutableRefObject<HTMLCanvasElement | null>;
+      if (ref.current === canvas) ref.current = null;
+      canvas.width = 0;
+      canvas.height = 0;
+    };
+  }, [canvasRef]);
+
   if (controlsRef) {
     controlsRef.current = {
       zoomBy: viewport.zoomBy,
@@ -335,6 +407,16 @@ export default function MapCanvas({
     appliedNaturalSizeRef.current = null;
     setMapSize({ w: mapFallbackSize(mapId), h: mapFallbackSize(mapId) });
   }, [mapId]);
+
+  // With tiles there is no single base image to read a natural size from.
+  useEffect(() => {
+    if (!baseTiles) return;
+    setMapSize((current) =>
+      current.w === baseTiles.width && current.h === baseTiles.height
+        ? current
+        : { w: baseTiles.width, h: baseTiles.height }
+    );
+  }, [baseTiles]);
 
   // A different map opens on its whole-world view. A mode change is only a
   // new overlay on the same map, so the camera stays where the reader left it.
@@ -409,26 +491,48 @@ export default function MapCanvas({
         fill={fill}
         capturesTouch
       >
-        <MapAuthImage
-          mapId={mapId}
-          path={`/${mapId}/map`}
-          sessionToken={sessionToken}
-          alt="Map"
-          // Past one screen pixel per map pixel, show the map's own pixels
-          // sharp rather than smeared; below it, smooth downscaling reads
-          // better.
-          className={`pointer-events-none block h-full w-full ${
-            viewport.displayScale >= 1 ? "[image-rendering:pixelated]" : ""
-          }`}
-          imgRef={(node) => {
-            if (node?.complete) {
-              syncNaturalMapSize(node);
+        {baseTiles ? (
+          <TileLayer
+            manifest={baseTiles}
+            tileUrl={(level, x, y) =>
+              mapApiUrl(`/${mapId}/tiles/base/${baseTiles.version}/${level}/${x}/${y}.webp`)
             }
-          }}
-          onLoad={handleBaseMapLoad}
-        />
+            view={tileView}
+            // Past one screen pixel per map pixel, show the map's own pixels
+            // sharp rather than smeared.
+            className={pixelatedClass(viewport.displayScale)}
+          />
+        ) : (
+          <MapAuthImage
+            mapId={mapId}
+            path={`/${mapId}/map`}
+            sessionToken={sessionToken}
+            alt="Map"
+            className={`pointer-events-none block h-full w-full ${pixelatedClass(
+              viewport.displayScale
+            )}`}
+            imgRef={(node) => {
+              if (node?.complete) {
+                syncNaturalMapSize(node);
+              }
+            }}
+            onLoad={handleBaseMapLoad}
+          />
+        )}
         {showProvinceOverlay &&
-          (liveProvinceRaster ? (
+          (liveProvinceRaster && rasterTiles ? (
+            <TileLayer
+              manifest={rasterTiles}
+              tileUrl={(level, x, y) =>
+                mapApiUrl(
+                  `/${mapId}/tiles/mapdata-${mapType}/${rasterTiles.version}/${level}/${x}/${y}.webp`
+                )
+              }
+              view={tileView}
+              className={pixelatedClass(viewport.displayScale)}
+              style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
+            />
+          ) : liveProvinceRaster ? (
             <MapAuthImage
               mapId={mapId}
               path={`/${mapId}/mapdata/${mapType}`}
@@ -451,10 +555,16 @@ export default function MapCanvas({
                   // `display: none`).
                   key={`${mapType}:${obj.id}`}
                   mapId={mapId}
-                  path={`/${mapId}/regions/${mapType}/${obj.path}`}
+                  path={`/${mapId}/regions/${mapType}/${obj.path}${
+                    lod > 0 ? `?lod=${lod}` : ""
+                  }`}
                   sessionToken={sessionToken}
                   crossOrigin="anonymous"
                   alt={`Overlay ${obj.id}`}
+                  // A zoom that changes the reduction swaps the source on the
+                  // same element, so the old copy stays up until the new one
+                  // has loaded rather than the overlay blinking out.
+                  replaceInPlace
                   className={OVERLAY_TRANSITION_CLASS}
                   style={{
                     ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
@@ -464,6 +574,9 @@ export default function MapCanvas({
                           : 0,
                     }),
                     opacity: DRILL_STACK_OVERLAY_OPACITY,
+                  }}
+                  onLoad={(e) => {
+                    e.currentTarget.style.display = "";
                   }}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
@@ -497,6 +610,7 @@ export default function MapCanvas({
             mapH={mapSize.h}
             opacity={0.8}
             alt="Selected region"
+            lod={lod}
             imageClassName="map-selected-region"
             imageStyle={selectedOutlineStyle(viewport.displayScale)}
           />
@@ -508,6 +622,7 @@ export default function MapCanvas({
             overlay={hoveredOverlay}
             mapW={mapSize.w}
             mapH={mapSize.h}
+            lod={lod}
           />
         )}
         {isMarkerMapMode(mapType) && wars.length > 0 && (
@@ -550,8 +665,7 @@ export default function MapCanvas({
           displayScale={viewport.displayScale}
           layer="hovered"
         />
-        <canvas
-          ref={canvasRef}
+        <div
           className={`${
             paintEnabled ? "pointer-events-none" : "pointer-events-auto"
           } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}

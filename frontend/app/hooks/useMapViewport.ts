@@ -75,6 +75,8 @@ export type UseMapViewportResult = {
    */
   contentRef: RefObject<HTMLDivElement | null>;
   userScale: number;
+  /** Measured size of the viewport element, in CSS pixels. */
+  viewportSize: Size;
   translateX: number;
   translateY: number;
   displayScale: number;
@@ -754,6 +756,7 @@ export function useMapViewport({
     viewportRef,
     contentRef,
     userScale: transform.userScale,
+    viewportSize,
     translateX: transform.translateX,
     translateY: transform.translateY,
     displayScale,
