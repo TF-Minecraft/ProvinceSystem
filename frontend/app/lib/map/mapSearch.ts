@@ -109,6 +109,12 @@ export function buildMapSearchIndex({
     });
   }
 
+  const guildCapitals = new Set(
+    allGuilds(regionData)
+      .map((guild) => guild.homeProvince)
+      .filter((province): province is number => province !== null)
+  );
+
   for (const settlement of settlements) {
     if (typeof settlement.map_x !== "number" || typeof settlement.map_y !== "number") {
       continue;
@@ -116,7 +122,12 @@ export function buildMapSearchIndex({
     const label = cleanRegionName(settlement.name);
     if (!label) continue;
     const owner = ownerName(settlement.faction_id, regionData);
-    const kind = SETTLEMENT_LABELS[settlement.kind ?? "settlement"] ?? "Settlement";
+    const kind =
+      (settlement.kind ?? "settlement") === "settlement" &&
+      typeof settlement.province_id === "number" &&
+      guildCapitals.has(settlement.province_id)
+        ? "Guild capital"
+        : SETTLEMENT_LABELS[settlement.kind ?? "settlement"] ?? "Settlement";
     entries.push({
       kind: "place",
       key: `settlement:${settlement.id}`,

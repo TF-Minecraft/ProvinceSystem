@@ -10,7 +10,7 @@ import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
 type GuildPanelProps = {
   guild: GuildProfile;
   regionData: RegionRecord | null;
-  /** The settlement the guild is based in, if the map has one there. */
+  /** The guild's capital settlement, if the map has one there. */
   seat: SettlementMarker | null;
   onSelectRegion: (regionId: string) => void;
   onSelectPlace: (markerId: string) => void;
@@ -83,7 +83,7 @@ export function GuildPanelContent({
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         <Fact label="Members">{guild.members}</Fact>
-        <Fact label="Based in">
+        <Fact label="Capital">
           {seat ? (
             <button
               type="button"

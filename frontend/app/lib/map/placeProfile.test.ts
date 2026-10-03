@@ -80,6 +80,24 @@ describe("buildPlaceProfile", () => {
   });
 });
 
+describe("guild capitals", () => {
+  it("calls a settlement a guild's capital when a guild has made it one", () => {
+    const withGuild = {
+      Thalendor: {
+        name: "Thalendor",
+        guilds: [{ id: "Oyfthyr", name: "Oyfthyr", type: "guild", capital: 163, members: [] }],
+      },
+    };
+    const town = [{ id: "Oyfthyr", name: "Oyfthyr", faction_id: "Thalendor", kind: "settlement" as const, province_id: 163 }];
+    expect(
+      buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], withGuild as never).kindLabel
+    ).toBe("Guild capital");
+    expect(
+      buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], regionData).kindLabel
+    ).toBe("Settlement");
+  });
+});
+
 describe("placeMarkerIdForSearchKey", () => {
   it("maps search results to marker ids", () => {
     expect(placeMarkerIdForSearchKey("settlement:Porokhgrad")).toBe("Porokhgrad");

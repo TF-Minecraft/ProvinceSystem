@@ -92,8 +92,15 @@ export function PlacePanelContent({
   const ownerName = place.ownerId
     ? cleanRegionName(owner?.name ?? place.ownerId) || place.ownerId
     : null;
+  // A settlement is a capital of its realm or of a guild, never the other way
+  // round: say whose, by name.
+  const onlyGuild = guildsHere.length === 1 ? guildsHere[0] : null;
   const eyebrow =
-    place.kindLabel === "Capital" && ownerName ? `Capital of ${ownerName}` : place.kindLabel;
+    place.kindLabel === "Capital" && ownerName
+      ? `Capital of ${ownerName}`
+      : place.kindLabel === "Guild capital" && onlyGuild
+        ? `Capital of ${onlyGuild.name}`
+        : place.kindLabel;
 
   return (
     <article aria-label={place.name}>
@@ -110,7 +117,28 @@ export function PlacePanelContent({
           <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
             {place.name}
           </h2>
-          {place.ownerId ? (
+          {onlyGuild && place.kindLabel === "Guild capital" ? (
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/60"
+                style={{ backgroundColor: onlyGuild.rgb ? `rgb(${onlyGuild.rgb})` : "#555" }}
+              />
+              <button
+                type="button"
+                onClick={() => onSelectGuild(onlyGuild.key)}
+                className="map-link text-left"
+              >
+                {onlyGuild.name}
+              </button>
+              {place.ownerId ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <RegionLink id={place.ownerId} regionData={regionData ?? {}} onSelectRegion={onSelectRegion} />
+                </>
+              ) : null}
+            </p>
+          ) : place.ownerId ? (
             <p className="mt-1 flex items-center gap-2 text-sm text-[var(--tfmc-stone)]">
               <span
                 aria-hidden
@@ -178,7 +206,7 @@ export function PlacePanelContent({
       </div>
 
       {guildsHere.length > 0 ? (
-        <Section title="Guilds based here">
+        <Section title={place.kindLabel === "Capital" ? "Also capital of" : "Capital of"}>
           <GuildList guilds={guildsHere} onSelectGuild={onSelectGuild} />
         </Section>
       ) : null}

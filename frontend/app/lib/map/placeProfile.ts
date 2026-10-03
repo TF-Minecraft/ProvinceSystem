@@ -6,6 +6,7 @@ import type {
 import type { MapMarker } from "@/app/lib/mapMarkers";
 import { isBattleMarkerKind } from "@/app/lib/mapMarkers";
 import { cleanRegionName } from "@/app/lib/mapLabels";
+import { guildsInProvince } from "./guildProfile";
 
 /**
  * What the details panel shows for a marker: a settlement, an installation or
@@ -99,10 +100,19 @@ export function buildPlaceProfile(
     : typeof settlement.province_id === "number"
       ? [settlement.province_id]
       : [];
+  // A plain settlement that a guild has made its capital is that guild's
+  // capital first and foremost.
+  const kind = settlement.kind ?? "settlement";
+  const guildCapital =
+    kind === "settlement" &&
+    provinces.length > 0 &&
+    guildsInProvince(regionData, provinces[0]).length > 0;
   return {
     ...base,
     name: cleanRegionName(settlement.name) || base.name,
-    kindLabel: SETTLEMENT_KIND_LABELS[settlement.kind ?? "settlement"] ?? "Settlement",
+    kindLabel: guildCapital
+      ? "Guild capital"
+      : SETTLEMENT_KIND_LABELS[kind] ?? "Settlement",
     ownerId: known(settlement.faction_id),
     population: typeof settlement.population === "number" ? settlement.population : null,
     provinces,
