@@ -933,10 +933,9 @@ export default function MapCanvas({
             paintEnabled ? "pointer-events-none" : "pointer-events-auto"
           } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
           // Touch has no hover. A press clears whatever the last tap showed
-          // (it would stand at a stale spot once the map moved), and the mouse
-          // move a tap sends after it counts only where the tap has nothing
-          // else to do: in the raster modes it shows that province's details,
-          // as hovering does with a mouse. Elsewhere a tap opens a card, and a
+          // (it would stand at a stale spot once the map moved). In the raster
+          // modes a tap then shows that province's details, as hovering does
+          // with a mouse (see onClick); elsewhere a tap opens a card, and a
           // hover tooltip at the finger would only sit over the sheet.
           onPointerDown={(event) => {
             touchPointerRef.current = event.pointerType === "touch";
@@ -955,6 +954,11 @@ export default function MapCanvas({
           onMouseLeave={onMouseLeave}
           onClick={(event) => {
             if (viewport.consumeDragClick()) return;
+            // A tap's own click, not the mouse move a browser may or may not
+            // send before it, is what shows a raster mode's province.
+            if (touchPointerRef.current && provinceHoverBlocksRegionPick(mapType)) {
+              onMouseMove(event);
+            }
             onClick(event);
           }}
         />
