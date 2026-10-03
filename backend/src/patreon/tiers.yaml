@@ -1,0 +1,16 @@
+tiers:
+  - key: noble
+    rank: 1
+    patreon_id: '25226332'
+    patreon_title: Noble Tier
+    display_name: Noble
+  - key: gilded
+    rank: 2
+    patreon_id: '25226340'
+    patreon_title: Gilded Tier
+    display_name: Gilded
+  - key: ascended
+    rank: 3
+    patreon_id: '25226353'
+    patreon_title: Ascended Tier
+    display_name: Ascended

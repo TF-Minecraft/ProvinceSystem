@@ -1,0 +1,110 @@
+{
+ "data": [
+  {
+   "id": "13707169",
+   "type": "campaign",
+   "attributes": {
+    "creation_name": "Roleplaying, Bonus Points!",
+    "patron_count": 144,
+    "vanity": "TFMCRP"
+   },
+   "relationships": {
+    "tiers": {
+     "data": [
+      {
+       "id": "25226095",
+       "type": "tier"
+      },
+      {
+       "id": "25226469",
+       "type": "tier"
+      },
+      {
+       "id": "25226332",
+       "type": "tier"
+      },
+      {
+       "id": "25226340",
+       "type": "tier"
+      },
+      {
+       "id": "25226353",
+       "type": "tier"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "included": [
+  {
+   "id": "25226095",
+   "type": "tier",
+   "attributes": {
+    "amount_cents": 0,
+    "discord_role_ids": null,
+    "patron_count": 78,
+    "published": true,
+    "title": "Free"
+   }
+  },
+  {
+   "id": "25226469",
+   "type": "tier",
+   "attributes": {
+    "amount_cents": 200,
+    "discord_role_ids": null,
+    "patron_count": 3,
+    "published": true,
+    "title": "Knight Tier"
+   }
+  },
+  {
+   "id": "25226332",
+   "type": "tier",
+   "attributes": {
+    "amount_cents": 500,
+    "discord_role_ids": [
+     "1344297077957726218"
+    ],
+    "patron_count": 4,
+    "published": true,
+    "title": "Noble Tier"
+   }
+  },
+  {
+   "id": "25226340",
+   "type": "tier",
+   "attributes": {
+    "amount_cents": 800,
+    "discord_role_ids": [
+     "1344297592724652165"
+    ],
+    "patron_count": 4,
+    "published": true,
+    "title": "Gilded Tier"
+   }
+  },
+  {
+   "id": "25226353",
+   "type": "tier",
+   "attributes": {
+    "amount_cents": 1200,
+    "discord_role_ids": [
+     "1344297832336850974"
+    ],
+    "patron_count": 37,
+    "published": true,
+    "title": "Ascended Tier"
+   }
+  }
+ ],
+ "meta": {
+  "pagination": {
+   "total": 1,
+   "cursors": {
+    "next": null
+   }
+  }
+ }
+}

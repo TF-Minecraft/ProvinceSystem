@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -31,8 +32,18 @@ async def lifespan(app: FastAPI):
     from src.skins.db import migrate
 
     migrate()
+    from src.patreon.config import Config
+    from src.patreon.service import sync_loop
+
+    patreon_stop = asyncio.Event()
+    patreon_task = asyncio.create_task(sync_loop(patreon_stop)) if Config.from_env().enabled else None
     logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
-    yield
+    try:
+        yield
+    finally:
+        if patreon_task is not None:
+            patreon_stop.set()
+            await patreon_task
 
 
 app = FastAPI(lifespan=lifespan)
@@ -122,6 +133,7 @@ from src.api.drinks_routes import drinks_router
 from src.api.precedent_routes import precedent_router
 from src.api.patchnotes_routes import patchnotes_router
 from src.api.wars_routes import wars_router
+from src.api.patreon_routes import patreon_router
 
 app.include_router(map_router)
 app.include_router(editor_router)
@@ -145,3 +157,4 @@ app.include_router(drinks_router)
 app.include_router(precedent_router)
 app.include_router(patchnotes_router)
 app.include_router(wars_router)
+app.include_router(patreon_router)
