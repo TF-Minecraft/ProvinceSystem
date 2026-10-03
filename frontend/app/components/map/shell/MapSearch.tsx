@@ -102,7 +102,8 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
               inputRef.current?.blur();
             }
           }}
-          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)]/70 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          // 16 px on phones: Safari zooms the page into any smaller field.
+          className="h-10 min-w-0 flex-1 bg-transparent text-base text-[var(--tfmc-cream)] md:text-sm placeholder:text-[var(--tfmc-stone)]/70 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query ? (
           <button
