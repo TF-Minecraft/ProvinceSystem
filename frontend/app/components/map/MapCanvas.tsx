@@ -328,9 +328,14 @@ export default function MapCanvas({
     setMapSize({ w: mapFallbackSize(mapId), h: mapFallbackSize(mapId) });
   }, [mapId]);
 
+  // A different map opens on its whole-world view. A mode change is only a
+  // new overlay on the same map, so the camera stays where the reader left it.
+  const previousMapIdRef = useRef(mapId);
   useEffect(() => {
-    viewport.resetViewport({ animated: true });
-  }, [mapId, mapType, viewport.resetViewport]);
+    if (previousMapIdRef.current === mapId) return;
+    previousMapIdRef.current = mapId;
+    viewport.resetViewport({ animated: false });
+  }, [mapId, viewport.resetViewport]);
 
   /**
    * The four modes drawn as a full-map raster over the base map rather than as
@@ -426,7 +431,11 @@ export default function MapCanvas({
               .filter((obj) => obj.visible)
               .map((obj) => (
                 <MapAuthImage
-                  key={obj.id}
+                  // Keyed by mode too: the map stays mounted across mode
+                  // changes, and a region id shared by two modes must not
+                  // inherit the other mode's image (or its failed-load
+                  // `display: none`).
+                  key={`${mapType}:${obj.id}`}
                   mapId={mapId}
                   path={`/${mapId}/regions/${mapType}/${obj.path}`}
                   sessionToken={sessionToken}

@@ -431,6 +431,18 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const mapCanvasMounted =
     !loading && geometryReady;
 
+  /**
+   * Once a map has been shown it stays on screen. Switching mode only swaps
+   * its overlays: `useMapModeData` empties the region data while the next
+   * mode loads, so nothing stale is drawn meanwhile, and the camera keeps its
+   * place. Only the first load of a map waits behind "Loading map…".
+   */
+  const [mapShownFor, setMapShownFor] = useState<MapId | null>(null);
+  useEffect(() => {
+    if (mapCanvasMounted) setMapShownFor(mapId);
+  }, [mapCanvasMounted, mapId]);
+  const mapShown = mapCanvasMounted || mapShownFor === mapId;
+
   // Pick pixels are read from the hidden canvas inside MapCanvas. That node
   // does not exist until loading/geometry finish, so this effect must wait
   // for mapCanvasMounted or it draws once into a null ref and never retries.
@@ -643,6 +655,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     if (mode === mapType) return;
     resetMapObjects();
     setSelectedId(null);
+    // The map stays mounted across modes, so hover from the old mode has to
+    // be cleared here rather than by a remount.
+    setHoveredOverlay(null);
+    setHoveredFortZoc(null);
+    setCursorTooltip(null);
     setMapType(mode);
   }
 
@@ -951,12 +968,14 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   }
 
-  // Do not render the map until region data is in hand. Mounting MapCanvas
-  // early (to start the base-map download sooner) meant the region overlays
-  // rendered before regionData settled, and a failed overlay request is made
-  // permanent by MapCanvas's onError handler setting display:none — borders
-  // then stay invisible until something forces a remount.
-  if (!mapCanvasMounted) {
+  // Do not render the map until region data is first in hand. Mounting
+  // MapCanvas early (to start the base-map download sooner) meant the region
+  // overlays rendered before regionData settled, and a failed overlay request
+  // is made permanent by MapCanvas's onError handler setting display:none —
+  // borders then stay invisible until something forces a remount. Later mode
+  // changes are safe: overlays are keyed by mode, and the list is empty until
+  // the new mode's data lands.
+  if (!mapShown) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
         <p className="text-lg font-medium text-[var(--tfmc-cream)]">
@@ -1096,6 +1115,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       }
       details={details}
       detailsKey={selectedId}
+      status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
       layers={<MapLayersMenu toggles={desktopLayerToggles} footer={archiveFooter} />}
       layersMobile={

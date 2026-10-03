@@ -13,6 +13,8 @@ type MapShellProps = {
   modeChips: ReactNode;
   /** Drill-down breadcrumb, top centre; null when not drilled in. */
   breadcrumb?: ReactNode;
+  /** A short note while a map mode loads; null when idle. */
+  status?: string | null;
   /** The selected region's details; null when nothing is selected. */
   details?: ReactNode;
   /** Changes whenever a different region is selected, to reset the sheet. */
@@ -48,6 +50,7 @@ export default function MapShell({
   breadcrumb,
   details,
   detailsKey,
+  status,
   zoomControls,
   layers,
   layersMobile,
@@ -113,6 +116,15 @@ export default function MapShell({
           }`}
         >
           <div className="pointer-events-auto">{breadcrumb}</div>
+        </div>
+      ) : null}
+
+      {status ? (
+        <div
+          role="status"
+          className="map-frame pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-parchment)] md:bottom-[7rem]"
+        >
+          {status}
         </div>
       ) : null}
 
