@@ -9,7 +9,11 @@ type MapPlaqueProps = {
   search?: ReactNode;
 };
 
-/** The map's name plate with the search box under it, top left. */
+/**
+ * The map's name plate with the search box under it, top left. On a phone it
+ * is one slim row, search and actions: the search box already names the map
+ * ("Search Vardera"), and the screen has little height to spare.
+ */
 export default function MapPlaque({
   eyebrow,
   mapDisplayName,
@@ -17,19 +21,19 @@ export default function MapPlaque({
   search,
 }: MapPlaqueProps) {
   return (
-    <div className="map-frame p-2.5 md:p-3">
-      <div className="flex items-center justify-between gap-3 px-0.5">
-        <div className="min-w-0">
-          <p className="text-xs text-[var(--tfmc-mist)]">
-            {eyebrow}
-          </p>
-          <h1 className="truncate font-[family-name:var(--font-fraunces)] text-lg leading-tight text-[var(--tfmc-cream)] md:text-2xl">
-            {mapDisplayName}
-          </h1>
-        </div>
-        {actions ? <div className="flex shrink-0 items-center gap-1.5">{actions}</div> : null}
+    <div className="map-frame flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3">
+      <div className="hidden min-w-0 flex-1 px-0.5 md:block">
+        <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
+        <h1 className="truncate font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
+          {mapDisplayName}
+        </h1>
       </div>
-      {search ? <div className="mt-2 md:mt-2.5">{search}</div> : null}
+      {actions ? (
+        <div className="order-2 flex shrink-0 items-center gap-1.5 md:order-none">{actions}</div>
+      ) : null}
+      {search ? (
+        <div className="order-1 min-w-0 flex-1 md:order-none md:mt-2.5 md:basis-full">{search}</div>
+      ) : null}
     </div>
   );
 }

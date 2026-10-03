@@ -9,7 +9,7 @@ type MapShellProps = {
   plaque: ReactNode;
   /** Desktop map-mode tray, bottom centre. */
   modeBar: ReactNode;
-  /** Mobile map-mode chips, under the search box. */
+  /** Mobile map-mode chips, along the bottom while no sheet is open. */
   modeChips: ReactNode;
   /** Drill-down breadcrumb, top centre; null when not drilled in. */
   breadcrumb?: ReactNode;
@@ -21,7 +21,7 @@ type MapShellProps = {
   detailsKey?: string | null;
   zoomControls: ReactNode;
   layers: ReactNode;
-  /** The layers menu for phones, bottom left, opening up and to the right. */
+  /** The layers menu for phones, top left under the search, opening down. */
   layersMobile?: ReactNode;
   /** War-planning toolbar, top right on desktop while paint mode is on. */
   paintPanel?: ReactNode;
@@ -37,10 +37,12 @@ type MapShellProps = {
  * Maps. Search and the details panel down the left, zoom bottom right,
  * map modes along the bottom, layers bottom left.
  *
- * On a phone the same pieces regroup instead of shrinking: search and mode
- * chips across the top, details in a bottom sheet. Every control is one node
- * placed by responsive classes rather than a mobile and a desktop copy, so
- * nothing the map owns is mounted twice.
+ * On a phone the same pieces regroup instead of shrinking: one slim search
+ * row across the top with layers (and the breadcrumb) under it, the mode
+ * chips along the bottom, details in a bottom sheet, and no zoom buttons
+ * (pinch zooms). Every control is one node placed by responsive classes
+ * rather than a mobile and a desktop copy, so nothing the map owns is mounted
+ * twice.
  */
 export default function MapShell({
   children,
@@ -94,8 +96,12 @@ export default function MapShell({
         {/* Above the details panel, so search results drop down over it. */}
         <div className="pointer-events-auto relative z-10 shrink-0">
           {plaque}
-          <div className="mt-2 md:hidden">{modeChips}</div>
-          {breadcrumb ? <div className="mt-2 md:hidden">{breadcrumb}</div> : null}
+          {layersMobile || breadcrumb ? (
+            <div className="mt-2 flex items-start gap-2 md:hidden">
+              {layersMobile ? <div className="shrink-0">{layersMobile}</div> : null}
+              {breadcrumb ? <div className="min-w-0 flex-1">{breadcrumb}</div> : null}
+            </div>
+          ) : null}
         </div>
 
         {details ? (
@@ -134,7 +140,7 @@ export default function MapShell({
       {status ? (
         <div
           role="status"
-          className="map-frame pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)] md:bottom-[7rem]"
+          className="map-frame pointer-events-none absolute bottom-16 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)] md:bottom-[7rem]"
         >
           {status}
         </div>
@@ -155,12 +161,11 @@ export default function MapShell({
         <div className="pointer-events-auto">{zoomControls}</div>
       </div>
 
-      {/* Phone: layers bottom left, as on desktop, and zoom bottom right,
-          while no sheet is open; with one open, pinch still zooms. */}
+      {/* Phone: the mode chips along the bottom while no sheet is open (a
+          sheet takes the bottom, and changing mode closes it anyway). */}
       {hasDetails ? null : (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex items-end justify-between gap-3 md:hidden">
-          <div className="pointer-events-auto">{layersMobile}</div>
-          <div className="pointer-events-auto">{zoomControls}</div>
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 md:hidden">
+          <div className="pointer-events-auto">{modeChips}</div>
         </div>
       )}
     </div>

@@ -118,7 +118,8 @@ function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
       title="Review the map's history"
     >
       <HistoryIcon size={15} className="text-[var(--tfmc-stone)]" />
-      History
+      {/* The icon alone on a phone, where the top row is the search box's. */}
+      <span className="max-md:sr-only">History</span>
     </Link>
   );
 }
@@ -1535,6 +1536,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           <MapLayersMenu
             toggles={layerToggles}
             align="left"
+            placement="down"
             triggerClassName="h-10 px-3 text-sm"
           />
         ) : null
