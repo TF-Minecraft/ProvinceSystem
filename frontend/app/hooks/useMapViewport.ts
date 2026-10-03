@@ -782,10 +782,18 @@ export function useMapViewport({
     setZoomBase(displayScale);
   }, [restingZoom, displayScale, transition, isPanning, zoomBase]);
 
+  // At rest the position sits on a whole device pixel, so the tiles' snapped
+  // edges (see TileLayer) land on pixel boundaries too; a sub-pixel shift no
+  // one can see.
+  const restingOnZoom = restingZoom && appliedZoom === displayScale;
+  const devicePixelRatio =
+    typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  const onDevicePixel = (value: number) =>
+    restingOnZoom ? Math.round(value * devicePixelRatio) / devicePixelRatio : value;
   const transformStyle = viewportTransformStyle(
     displayScale / appliedZoom,
-    transform.translateX,
-    transform.translateY
+    onDevicePixel(transform.translateX),
+    onDevicePixel(transform.translateY)
   );
   const cursorClassName = isPanning ? "cursor-grabbing" : "cursor-grab";
   const transformTransition = isPanning ? undefined : transition;

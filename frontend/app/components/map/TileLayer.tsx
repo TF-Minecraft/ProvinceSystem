@@ -116,11 +116,24 @@ function TileLayer({
     setLoadedVersion((value) => value + 1);
   };
 
-  const renderTile = (tile: PlacedTile, fadeIn: boolean) => {
+  // Tile edges on whole screen pixels: neighbours then meet exactly, with no
+  // hairline gap between them and no overlap. An overlap used to hide the
+  // gaps, but on a see-through raster (prosperity) its strip was drawn twice
+  // and showed as a darker line.
+  const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
+  const snap = (value: number) =>
+    mapPxPerScreenPx > 0 && Number.isFinite(mapPxPerScreenPx)
+      ? Math.round(value / mapPxPerScreenPx) * mapPxPerScreenPx
+      : value;
+
+  // Once the sharp tiles on screen have all loaded (`currentLoaded`), the
+  // backdrop and held levels under them stand down: on a see-through raster
+  // they would otherwise stack and deepen its colours.
+  const renderTile = (tile: PlacedTile, fadeIn: boolean, hidden = false) => {
     const loaded = loadedRef.current.has(loadedKey(tile));
-    // A sliver of overlap hides the hairline seams sub-pixel positioning
-    // leaves between neighbouring tiles.
-    const overlap = (manifest.width / manifest.levels[tile.level].width) * 0.5;
+    const left = snap(tile.left);
+    const top = snap(tile.top);
     return (
       <img
         key={loadedKey(tile)}
@@ -133,11 +146,12 @@ function TileLayer({
         onError={reportTileError}
         className="absolute max-w-none select-none"
         style={{
-          left: tile.left,
-          top: tile.top,
-          width: tile.width + overlap,
-          height: tile.height + overlap,
+          left,
+          top,
+          width: snap(tile.left + tile.width) - left,
+          height: snap(tile.top + tile.height) - top,
           opacity: !fadeIn || loaded ? 1 : 0,
+          visibility: hidden ? "hidden" : undefined,
           transition: fadeIn ? "opacity 160ms ease-out" : undefined,
         }}
       />
@@ -150,8 +164,8 @@ function TileLayer({
       style={style}
       aria-hidden
     >
-      {backdropTiles.map((tile) => renderTile(tile, false))}
-      {holdTiles.map((tile) => renderTile(tile, false))}
+      {backdropTiles.map((tile) => renderTile(tile, false, currentLoaded))}
+      {holdTiles.map((tile) => renderTile(tile, false, currentLoaded))}
       {currentTiles.map((tile) => renderTile(tile, true))}
     </div>
   );
