@@ -70,9 +70,13 @@ function TileLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifest.version]);
 
+  // Loaded state is per pyramid version: the same level/x/y of another
+  // version is a different picture.
+  const loadedKey = (tile: PlacedTile) => `${manifest.version}/${tile.key}`;
+
   const currentLoaded =
     currentTiles.length > 0 &&
-    currentTiles.every((tile) => loadedRef.current.has(tile.key));
+    currentTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
 
   useEffect(() => {
     if (currentLoaded && settledLevel !== level) setSettledLevel(level);
@@ -80,7 +84,7 @@ function TileLayer({
 
   const backdropLoaded =
     backdropTiles.length > 0 &&
-    backdropTiles.every((tile) => loadedRef.current.has(tile.key));
+    backdropTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
   useEffect(() => {
@@ -103,19 +107,19 @@ function TileLayer({
   };
 
   const renderTile = (tile: PlacedTile, fadeIn: boolean) => {
-    const loaded = loadedRef.current.has(tile.key);
+    const loaded = loadedRef.current.has(loadedKey(tile));
     // A sliver of overlap hides the hairline seams sub-pixel positioning
     // leaves between neighbouring tiles.
     const overlap = (manifest.width / manifest.levels[tile.level].width) * 0.5;
     return (
       <img
-        key={tile.key}
+        key={loadedKey(tile)}
         src={tileUrl(tile.level, tile.x, tile.y)}
         alt=""
         aria-hidden
         draggable={false}
         decoding="async"
-        onLoad={() => markLoaded(tile.key)}
+        onLoad={() => markLoaded(loadedKey(tile))}
         onError={onTileError}
         className="absolute max-w-none select-none"
         style={{

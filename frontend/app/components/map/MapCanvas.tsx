@@ -36,7 +36,11 @@ import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import TileLayer from "./TileLayer";
-import { useTileManifest } from "../../hooks/useTileManifest";
+import {
+  prefetchTileBackdrops,
+  tileUrl,
+  useTileManifest,
+} from "../../hooks/useTileManifest";
 import { overlayLod } from "../../lib/map/tilePyramid";
 import {
   useMapViewport,
@@ -361,6 +365,25 @@ export default function MapCanvas({
   const holdRegionOverlays =
     regionsAtDefault && regionLayer !== null && regionTiles.status === "loading";
 
+  // Once the map has settled, warm every other region mode so switching to
+  // one shows its colour at once.
+  useEffect(() => {
+    if (!tilesAllowed || regionOverlay !== undefined) return;
+    const signal = { cancelled: false };
+    const timer = setTimeout(() => {
+      const others = [...REGION_TILE_MODES]
+        .filter((mode) => mode !== mapType)
+        .map((mode) => `regions-${mode}`);
+      void prefetchTileBackdrops(mapId, others, signal);
+    }, 2500);
+    return () => {
+      signal.cancelled = true;
+      clearTimeout(timer);
+    };
+    // Once per map: the current mode only shapes the first run's order.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapId, tilesAllowed, regionOverlay === undefined]);
+
   // Names wait for the colour under them, so a mode switch does not show
   // floating text over bare terrain for the moment the shapes take to land.
   const [regionTilesReadyKey, setRegionTilesReadyKey] = useState<string | null>(null);
@@ -540,9 +563,7 @@ export default function MapCanvas({
         {baseTiles ? (
           <TileLayer
             manifest={baseTiles}
-            tileUrl={(level, x, y) =>
-              mapApiUrl(`/${mapId}/tiles/base/${baseTiles.version}/${level}/${x}/${y}.webp`)
-            }
+            tileUrl={(level, x, y) => tileUrl(mapId, "base", baseTiles, level, x, y)}
             view={tileView}
             // Past one screen pixel per map pixel, show the map's own pixels
             // sharp rather than smeared.
@@ -568,11 +589,10 @@ export default function MapCanvas({
         {showProvinceOverlay &&
           (liveProvinceRaster && rasterTiles ? (
             <TileLayer
+              key={`${mapType}:${rasterTiles.version}`}
               manifest={rasterTiles}
               tileUrl={(level, x, y) =>
-                mapApiUrl(
-                  `/${mapId}/tiles/mapdata-${mapType}/${rasterTiles.version}/${level}/${x}/${y}.webp`
-                )
+                tileUrl(mapId, `mapdata-${mapType}`, rasterTiles, level, x, y)
               }
               view={tileView}
               className={pixelatedClass(viewport.displayScale)}
@@ -592,11 +612,12 @@ export default function MapCanvas({
           ))}
         {regionOverlay === undefined && useRegionTiles && regionTiles.manifest ? (
           <TileLayer
+            // One instance per mode and version: what was loaded or held for
+            // the last mode says nothing about this one.
+            key={regionTilesKey ?? undefined}
             manifest={regionTiles.manifest}
             tileUrl={(level, x, y) =>
-              mapApiUrl(
-                `/${mapId}/tiles/regions-${mapType}/${regionTiles.manifest!.version}/${level}/${x}/${y}.webp`
-              )
+              tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
             }
             view={tileView}
             style={{ opacity: DRILL_STACK_OVERLAY_OPACITY }}
