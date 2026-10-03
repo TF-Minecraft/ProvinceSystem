@@ -1,5 +1,5 @@
 // hooks/mapHover/useProvinceHover.ts
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type { MapId } from "../components/map/types";
 import { fetchMapJson } from "@/lib/map/api";
@@ -100,6 +100,15 @@ export type ProvinceHoverResult = {
   lines: string[] | null | undefined;
 };
 
+/** Live modes whose hover reads `/compiled_data/provinces`. */
+const PROVINCE_FIGURE_MODES = new Set([
+  "terrain",
+  "fertility",
+  "prosperity",
+  "infestation",
+  "trade",
+]);
+
 export function useProvinceHover({
   mapId,
   mapType,
@@ -108,6 +117,7 @@ export function useProvinceHover({
   sessionToken,
   day = null,
   resolveProvinceId,
+  onDataReady,
 }: {
   mapId: MapId;
   mapType: string;
@@ -130,6 +140,12 @@ export function useProvinceHover({
    * grid not loaded yet) the live path falls back to the server's `/meta`.
    */
   resolveProvinceId?: (x: number, y: number) => number | null;
+  /**
+   * Called once the province figures have arrived, so whatever is under the
+   * pointer can be shown. A mouse would show it on its next move; a tap has
+   * no next move.
+   */
+  onDataReady?: () => void;
 }) {
   const provinceCache = useRef<Record<number, any>>({});
   /** Stored `province_data`, indexed by id, keyed by `mapId:day`. */
@@ -150,6 +166,34 @@ export function useProvinceHover({
     null
   );
   const liveCompiledPendingRef = useRef<string | null>(null);
+
+  const onDataReadyRef = useRef(onDataReady);
+  onDataReadyRef.current = onDataReady;
+
+  /** Fetch the live province figures once per map, then say so. */
+  const loadLiveCompiled = useCallback(() => {
+    if (liveCompiledRef.current?.key === mapId || liveCompiledPendingRef.current === mapId) {
+      return;
+    }
+    liveCompiledPendingRef.current = mapId;
+    void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
+      sessionToken,
+    })
+      .then((all) => {
+        liveCompiledRef.current = { key: mapId, byId: all ?? {} };
+        onDataReadyRef.current?.();
+      })
+      .catch(() => {
+        liveCompiledPendingRef.current = null;
+      });
+  }, [mapId, sessionToken]);
+
+  // Fetched on entering a mode that reads them, not on the first hover, so
+  // the first tap on a phone already has them.
+  useEffect(() => {
+    if (day !== null || !PROVINCE_FIGURE_MODES.has(mapType)) return;
+    loadLiveCompiled();
+  }, [day, mapType, loadLiveCompiled]);
 
   const capitalize = (v: string) => v[0].toUpperCase() + v.slice(1);
 
@@ -251,18 +295,7 @@ export function useProvinceHover({
     if (day === null && mapType !== "province" && resolveProvinceId) {
       const compiled = liveCompiledRef.current;
       if (compiled?.key !== mapId) {
-        if (liveCompiledPendingRef.current !== mapId) {
-          liveCompiledPendingRef.current = mapId;
-          void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
-            sessionToken,
-          })
-            .then((all) => {
-              liveCompiledRef.current = { key: mapId, byId: all ?? {} };
-            })
-            .catch(() => {
-              liveCompiledPendingRef.current = null;
-            });
-        }
+        loadLiveCompiled();
         return { consumed: consumesHover, lines: null };
       }
       const pid = resolveProvinceId(x, y);

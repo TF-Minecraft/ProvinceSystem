@@ -151,6 +151,9 @@ export function useMapHover(props: UseMapHoverProps) {
     return id ? id : null;
   }, []);
 
+  /** Re-runs hover at the last pointer position; set below, once it can. */
+  const replayHoverRef = useRef<() => void>(() => {});
+
   const { handleProvinceHover } = useProvinceHover({
     mapId,
     mapType,
@@ -161,6 +164,8 @@ export function useMapHover(props: UseMapHoverProps) {
     // Only offered once a grid is in memory, so the hover hook knows when it
     // must fall back to asking the server.
     resolveProvinceId: props.chronicleGrid ? resolveProvinceId : undefined,
+    // Show what the pointer (or the last tap) is over once the figures land.
+    onDataReady: () => replayHoverRef.current(),
   });
 
   const { handleRegionHover, resetHoverCache } = useRegionHover({
@@ -348,6 +353,16 @@ export function useMapHover(props: UseMapHoverProps) {
     );
     setIsHoveringClickable(clickable);
   }, []);
+
+  replayHoverRef.current = () => {
+    const pointer = lastPointerRef.current;
+    if (!pointer || propsRef.current.loading) return;
+    resetHoverCacheRef.current();
+    processHover({
+      clientX: pointer.clientX,
+      clientY: pointer.clientY,
+    } as React.MouseEvent<Element>);
+  };
 
   const mapObjectsVisibility = useMemo(
     () => mapObjectsVisibilityKey(mapObjects),
