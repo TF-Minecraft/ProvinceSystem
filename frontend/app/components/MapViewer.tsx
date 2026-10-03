@@ -767,6 +767,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     mapDisplayName: displayName,
     mapObjects,
     markers: mapMarkers,
+    labels: regionLabels,
     forts,
     setHoveredMarkerId,
     day,
@@ -1064,18 +1065,28 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * a closed realm lights its overlord until its layer is opened.
    */
   const focusRealmId = drillStack[drillStack.length - 1]?.regionId ?? null;
+  /**
+   * The region kept lit for the open card. On the trade map a click opens the
+   * card of the guild that dominates the area, and the areas are keyed by
+   * that guild's id, so the guild's card lights its areas.
+   */
+  const litRegionId =
+    selectedId ??
+    (mapType === "trade" && selectedGuildKey
+      ? selectedGuildKey.slice(selectedGuildKey.indexOf("/") + 1)
+      : null);
   const selectedOverlay = useMemo<HoverOverlay | null>(() => {
-    if (chronicle || !selectedId || !regionData?.[selectedId]) return null;
+    if (chronicle || !litRegionId || !regionData?.[litRegionId]) return null;
     // An opened realm is lit by the focus itself; its own crop would cover
     // the subjects it was opened to show.
-    if (selectedId === focusRealmId) return null;
-    const target = getHoverRegion(mapType, mapId, selectedId, regionData);
+    if (litRegionId === focusRealmId) return null;
+    const target = getHoverRegion(mapType, mapId, litRegionId, regionData);
     return target.imagePath
       ? { url: target.imagePath, overlay: target.overlay }
       : null;
     // mapObjects: the visible ancestor changes when layers open and close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chronicle, selectedId, regionData, getHoverRegion, mapType, mapId, mapObjects, focusRealmId]);
+  }, [chronicle, litRegionId, regionData, getHoverRegion, mapType, mapId, mapObjects, focusRealmId]);
 
   /**
    * What the canvas keeps lit. An opened realm: its whole shape, with its own
@@ -1457,7 +1468,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         }
         centroids={centroids}
         hoveredMarkerId={hoveredMarkerId ?? selectedPlaceId}
-        hoveredNationId={hoveredRegionId ?? selectedId}
+        hoveredNationId={hoveredRegionId ?? litRegionId}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleMouseLeave}
         onClick={handleMapClick}

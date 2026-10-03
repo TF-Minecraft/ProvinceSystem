@@ -37,6 +37,7 @@ import {
   type LabelMapObject,
   type ProvinceCentroids,
   type ProvinceNeighbors,
+  pickRegionLabelAt,
 } from "./mapLabels";
 import type { ProvinceLabelGrid } from "./labelBlobGeometry";
 import type { TitleLayers } from "./titleProvinces";
@@ -1025,5 +1026,44 @@ describe("computeVisibleRegionLabels", () => {
     expect(exclaveLabels.every((label) => label.text === "Exclave Guild")).toBe(
       true
     );
+  });
+});
+
+describe("pickRegionLabelAt", () => {
+  // A level name across x 1000..2000 at y 1000: its text is about 350 px
+  // wide, centred at x 1500, with its letters centred on y 1000.
+  const fontSize = 100;
+  const text = "Abcdef";
+  const ext = extendLabelEndpoints(1000, 1000, 2000, 1000);
+  const offset = labelPathCenterOffset(ext.x1, ext.y1, ext.x2, ext.y2, fontSize);
+  const label = {
+    nationId: "Realm",
+    componentIndex: 0,
+    text,
+    scope: "full" as const,
+    x1: 1000,
+    y1: 1000,
+    x2: 2000,
+    y2: 1000,
+    cx: 1500,
+    cy: 1000,
+    angleDeg: 0,
+    segmentPx: 1000,
+    fontSize,
+    pathD: labelArcPathD(ext.x1, ext.y1, ext.x2, ext.y2),
+    pathOffsetX: offset.dx,
+    pathOffsetY: offset.dy,
+  };
+  const scale = 0.2; // 20 px on screen: drawn
+
+  it("names the region under its letters", () => {
+    expect(pickRegionLabelAt([label], 1500, 1000, scale)).toBe("Realm");
+    expect(pickRegionLabelAt([label], 1640, 1010, scale)).toBe("Realm");
+  });
+
+  it("ignores points off the text, and names not drawn at this zoom", () => {
+    expect(pickRegionLabelAt([label], 1500, 1200, scale)).toBeNull();
+    expect(pickRegionLabelAt([label], 1900, 1000, scale)).toBeNull();
+    expect(pickRegionLabelAt([label], 1500, 1000, 0.01)).toBeNull();
   });
 });

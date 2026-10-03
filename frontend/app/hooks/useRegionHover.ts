@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
-import { resolveRegionAtPickPixel } from "./regionPick";
+import { resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
 import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
 
 export function useRegionHover({
@@ -59,18 +59,22 @@ export function useRegionHover({
     y: number,
     screenX: number,
     screenY: number,
-    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
+    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void,
+    /** Hover this region rather than what the pick canvas has at (x, y). */
+    regionIdOverride?: string
   ): boolean => {
-    const picked = resolveRegionAtPickPixel(
-      ctx,
-      x,
-      y,
-      rgbToId,
-      getHoverRegion,
-      mapType,
-      mapId,
-      regionData
-    );
+    const picked = regionIdOverride
+      ? resolveRegionById(regionIdOverride, getHoverRegion, mapType, mapId, regionData)
+      : resolveRegionAtPickPixel(
+          ctx,
+          x,
+          y,
+          rgbToId,
+          getHoverRegion,
+          mapType,
+          mapId,
+          regionData
+        );
 
     if (!picked) {
       clearHover(setCursorTooltip);
@@ -94,10 +98,11 @@ export function useRegionHover({
         ? info.title
         : `${info.title} · ${info.tier}`;
 
-    const hintLines = ["Click for details"];
-    if (canDrillIntoRegion(regionId, regionData!, mapObjects)) {
-      hintLines.push("Ctrl-click to open subjects");
-    }
+    const hintLines = [
+      canDrillIntoRegion(regionId, regionData!, mapObjects)
+        ? "Click for details and subjects"
+        : "Click for details",
+    ];
 
     setCursorTooltip({
       x: screenX,

@@ -31,6 +31,25 @@ export function provinceHoverBlocksRegionPick(mapType: string): boolean {
   );
 }
 
+/** A region named outright (a pointed-at name), resolved as a pick would be. */
+export function resolveRegionById(
+  pickId: string,
+  getHoverRegion: GetHoverRegion,
+  mapType: string,
+  mapId: string,
+  regionData: RegionRecord | null
+): RegionPickResult | null {
+  if (!regionData?.[pickId]) return null;
+  const { regionId, imagePath, overlay, region } = getHoverRegion(
+    mapType,
+    mapId,
+    pickId,
+    regionData
+  );
+  if (!regionId || !region) return null;
+  return { pickId, regionId, region, imagePath, overlay };
+}
+
 export function resolveRegionAtPickPixel(
   ctx: CanvasRenderingContext2D,
   x: number,

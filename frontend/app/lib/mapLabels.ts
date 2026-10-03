@@ -444,6 +444,84 @@ export function labelPathCenterOffset(
   return { dx: -nx * offsetPx, dy: -ny * offsetPx };
 }
 
+/**
+ * The region whose drawn name is under map point (`x`, `y`), or null. The
+ * names ignore the pointer so the land under them stays hoverable, but a
+ * name laid across water or a neighbour's land is still read as its region:
+ * pointing at "The Clockwork" over the sea between its islands means The
+ * Clockwork. Only names drawn at this zoom count.
+ *
+ * Follows the text the way `LabelLayer` draws it: along the arched, extended
+ * baseline (`labelArcPathD`, shifted by `pathOffset`), centred on it, glyph
+ * centres `LABEL_TEXT_CENTER_OFFSET_EM` above it, about as long as
+ * `estimatedLabelWidthPx`.
+ */
+export function pickRegionLabelAt(
+  labels: NationLabelSpec[],
+  x: number,
+  y: number,
+  displayScale: number
+): string | null {
+  const SAMPLES = 48;
+  let best: { id: string; distance: number } | null = null;
+  for (const label of labels) {
+    if (!shouldShowLabelAtScreenSize(label.fontSize, displayScale)) continue;
+    const halfWidth = estimatedLabelWidthPx(label.fontSize, label.text) / 2;
+    const reach = halfWidth + label.fontSize;
+    if (Math.abs(x - label.cx) > reach + label.segmentPx || Math.abs(y - label.cy) > reach + label.segmentPx) {
+      continue;
+    }
+
+    const extended = extendLabelEndpoints(label.x1, label.y1, label.x2, label.y2);
+    const { x1: ax, y1: ay, x2: bx, y2: by } = orientLabelEndpoints(
+      extended.x1,
+      extended.y1,
+      extended.x2,
+      extended.y2
+    );
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len === 0) continue;
+    // Toward the top of the letters, as labelArcPathD bulges.
+    const nx = (by - ay) / len;
+    const ny = -(bx - ax) / len;
+    const bulge = len * LABEL_ARC_BULGE_RATIO;
+    const qx = (ax + bx) / 2 + nx * bulge;
+    const qy = (ay + by) / 2 + ny * bulge;
+    const lift = label.fontSize * LABEL_TEXT_CENTER_OFFSET_EM;
+    const ox = label.pathOffsetX + nx * lift;
+    const oy = label.pathOffsetY + ny * lift;
+
+    let travelled = 0;
+    let prevX = ax + ox;
+    let prevY = ay + oy;
+    let nearest = Infinity;
+    let nearestAt = 0;
+    const along: number[] = [];
+    for (let i = 0; i <= SAMPLES; i += 1) {
+      const t = i / SAMPLES;
+      const u = 1 - t;
+      const px = u * u * ax + 2 * u * t * qx + t * t * bx + ox;
+      const py = u * u * ay + 2 * u * t * qy + t * t * by + oy;
+      if (i > 0) travelled += Math.hypot(px - prevX, py - prevY);
+      along.push(travelled);
+      const distance = Math.hypot(x - px, y - py);
+      if (distance < nearest) {
+        nearest = distance;
+        nearestAt = i;
+      }
+      prevX = px;
+      prevY = py;
+    }
+    const fromMiddle = Math.abs(along[nearestAt] - travelled / 2);
+    // The width is an estimate; a third of a letter's slack catches the ends.
+    if (nearest > label.fontSize * 0.55 || fromMiddle > halfWidth + label.fontSize * 0.35) {
+      continue;
+    }
+    if (!best || nearest < best.distance) best = { id: label.nationId, distance: nearest };
+  }
+  return best?.id ?? null;
+}
+
 function centroidOf(
   provinceId: number,
   centroids: ProvinceCentroids

@@ -9,6 +9,7 @@ import { useRegionHover } from "./useRegionHover";
 import {
   provinceHoverBlocksRegionPick,
   resolveRegionAtPickPixel,
+  resolveRegionById,
 } from "./regionPick";
 import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
@@ -20,6 +21,7 @@ import {
   pickMapMarkerAt,
 } from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
+import { pickRegionLabelAt, type NationLabelSpec } from "../lib/mapLabels";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 
 type UseMapHoverProps = {
@@ -49,6 +51,8 @@ type UseMapHoverProps = {
   mapDisplayName: string;
   mapObjects: MapObject[];
   markers?: MapMarker[];
+  /** The region names drawn on the map: pointing at one is pointing at its region. */
+  labels?: NationLabelSpec[];
   forts?: FortMarker[];
   setHoveredMarkerId?: (id: string | null) => void;
   setHoveredFortZoc?: (overlay: HoverOverlay | null) => void;
@@ -82,6 +86,17 @@ export function mapObjectsVisibilityKey(mapObjects: MapObject[]): string {
   return mapObjects
     .map((obj) => `${obj.id}:${obj.visible ? 1 : 0}`)
     .join("|");
+}
+
+/** The region whose drawn name is under map point (x, y), where names are hoverable. */
+function labelRegionAt(
+  props: UseMapHoverProps,
+  x: number,
+  y: number,
+  displayScale: number
+): string | null {
+  if (!props.labels?.length || provinceHoverBlocksRegionPick(props.mapType)) return null;
+  return pickRegionLabelAt(props.labels, x, y, displayScale);
 }
 
 export function useMapHover(props: UseMapHoverProps) {
@@ -249,6 +264,23 @@ export function useMapHover(props: UseMapHoverProps) {
 
     current.setHoveredFortZoc?.(null);
 
+    // A name drawn across water or a neighbour's land still names its region.
+    const labelRegionId = labelRegionAt(current, coords.x, coords.y, displayScale);
+    if (labelRegionId) {
+      setIsHoveringClickable(
+        handleRegionHoverRef.current(
+          ctx,
+          0,
+          0,
+          coords.screenX,
+          coords.screenY,
+          current.setCursorTooltip,
+          labelRegionId
+        )
+      );
+      return;
+    }
+
     const province = handleProvinceHoverRef.current(
       coords.x,
       coords.y,
@@ -413,6 +445,17 @@ export function useMapHover(props: UseMapHoverProps) {
 
       if (provinceHoverBlocksRegionPick(current.mapType)) {
         return null;
+      }
+
+      const labelRegionId = labelRegionAt(current, coords.x, coords.y, displayScale);
+      if (labelRegionId) {
+        return resolveRegionById(
+          labelRegionId,
+          current.getHoverRegion,
+          current.mapType,
+          current.mapId,
+          current.regionData
+        )?.regionId ?? null;
       }
 
       const pickPixel = mapPixelToPickCanvas(
