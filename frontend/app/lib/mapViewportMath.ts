@@ -58,6 +58,14 @@ export function clampUserScale(scale: number): number {
   return Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, scale));
 }
 
+/**
+ * How far the map may be dragged: until one of its corners reaches the middle
+ * of the screen, and no further. Zoomed in, that lets any edge or corner of
+ * the world be brought to the centre of the view instead of stopping at the
+ * screen edge; at any zoom, at least a quarter of the screen is still map, so
+ * the map can never be lost off-screen. The same rule OpenFront uses
+ * ("up to half of the viewport can be outside the map on each side").
+ */
 export function clampTranslate(
   viewport: Size,
   map: Size,
@@ -68,29 +76,17 @@ export function clampTranslate(
   const displayW = map.w * displayScale;
   const displayH = map.h * displayScale;
 
-  let tx = translateX;
-  let ty = translateY;
+  // The map's left edge may come no further right than the screen's middle,
+  // and its right edge no further left; likewise vertically.
+  const minX = viewport.w / 2 - displayW;
+  const maxX = viewport.w / 2;
+  const minY = viewport.h / 2 - displayH;
+  const maxY = viewport.h / 2;
 
-  // A square map in a non-square (full-bleed) viewport leaves slack on
-  // whichever axis isn't the fit-limiting one — e.g. a wide screen has empty
-  // space left and right of a contain-fit square map. Centering that slack
-  // matches every other map viewer's default view; pinning it to 0 would
-  // shove the map into a corner with dead space beside it.
-  if (displayW <= viewport.w) {
-    tx = (viewport.w - displayW) / 2;
-  } else {
-    const minX = viewport.w - displayW;
-    tx = Math.min(0, Math.max(minX, tx));
-  }
-
-  if (displayH <= viewport.h) {
-    ty = (viewport.h - displayH) / 2;
-  } else {
-    const minY = viewport.h - displayH;
-    ty = Math.min(0, Math.max(minY, ty));
-  }
-
-  return { x: tx, y: ty };
+  return {
+    x: Math.min(maxX, Math.max(minX, translateX)),
+    y: Math.min(maxY, Math.max(minY, translateY)),
+  };
 }
 
 /**
