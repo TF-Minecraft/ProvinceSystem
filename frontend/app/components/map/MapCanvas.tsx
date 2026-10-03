@@ -702,7 +702,9 @@ export default function MapCanvas({
             overlay={selectedOverlay}
             mapW={mapSize.w}
             mapH={mapSize.h}
-            opacity={1}
+            // Same opacity as the colours under it, so terrain still shows
+            // through and the highlight is the brightening, not a flat fill.
+            opacity={DRILL_STACK_OVERLAY_OPACITY}
             alt="Selected region"
             lod={lod}
             ownShape
@@ -719,7 +721,7 @@ export default function MapCanvas({
             mapH={mapSize.h}
             lod={lod}
             ownShape
-            opacity={1}
+            opacity={DRILL_STACK_OVERLAY_OPACITY}
             imageClassName="map-selected-region"
             imageStyle={regionHighlightStyle(viewport.displayScale, 1.25, 0.75)}
           />
