@@ -376,16 +376,23 @@ export function RealmPanelContent(props: RealmPanelProps) {
 
       {profile ? (
         <>
-          {profile.leader ? (
-            <div className="mb-4 flex items-baseline gap-2 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-black/20 px-3 py-2">
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                {profile.rulerTitle ?? "Ruler"}
-              </span>
+          {/* Always there, so the ruler never seems to have gone missing. A
+              realm whose leader SimpleFactions has not yet seen online under
+              a character says so, rather than naming their account. */}
+          <div className="mb-4 flex items-baseline gap-2 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-black/20 px-3 py-2">
+            <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">
+              {profile.rulerTitle ?? "Ruler"}
+            </span>
+            {profile.leader ? (
               <span className="truncate font-[family-name:var(--font-fraunces)] text-base text-[var(--tfmc-cream)]">
                 {profile.leader}
               </span>
-            </div>
-          ) : null}
+            ) : (
+              <span className="truncate text-sm italic text-[var(--tfmc-stone)]">
+                Character not yet known
+              </span>
+            )}
+          </div>
           <RealmBody profile={profile} props={props} />
         </>
       ) : (
