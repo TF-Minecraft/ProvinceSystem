@@ -647,19 +647,46 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         return;
       }
 
+      const paint = (source: CanvasImageSource, width: number, height: number) => {
+        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
+        // only touch the dimensions when the pick image actually changed size.
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(source, 0, 0);
+      };
+
+      // Decoded off the main thread. Drawn straight from an <img>, the 6400 px
+      // pick map was decoded inside drawImage, holding the page for about a
+      // third of a second on every switch to a region mode. Colours exactly as
+      // stored: they are read back as region ids.
+      try {
+        const res = await fetch(src, { credentials: "omit" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const bitmap = await createImageBitmap(await res.blob(), {
+          colorSpaceConversion: "none",
+          premultiplyAlpha: "none",
+        });
+        if (cancelled) {
+          bitmap.close();
+          return;
+        }
+        paint(bitmap, bitmap.width, bitmap.height);
+        bitmap.close();
+        return;
+      } catch {
+        if (cancelled) return;
+        // Fall through to the plain image path below.
+      }
+
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
-        // only touch the dimensions when the pick image actually changed size.
-        if (canvas.width !== img.width || canvas.height !== img.height) {
-          canvas.width = img.width;
-          canvas.height = img.height;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        paint(img, img.width, img.height);
       };
       img.onerror = () => {
         console.error("Failed to load pick map image:", src);
