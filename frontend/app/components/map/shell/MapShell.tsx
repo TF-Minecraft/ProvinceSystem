@@ -21,7 +21,7 @@ type MapShellProps = {
   detailsKey?: string | null;
   zoomControls: ReactNode;
   layers: ReactNode;
-  /** The layers menu for phones, opening up and to the left. */
+  /** The layers menu for phones, bottom left, opening up and to the right. */
   layersMobile?: ReactNode;
   /** War-planning toolbar, top right on desktop while paint mode is on. */
   paintPanel?: ReactNode;
@@ -143,11 +143,11 @@ export default function MapShell({
         <div className="pointer-events-auto">{zoomControls}</div>
       </div>
 
-      {/* Phone: layers and zoom tuck into the bottom-right corner while no
-          sheet is open; with one open, pinch still zooms. */}
+      {/* Phone: layers bottom left, as on desktop, and zoom bottom right,
+          while no sheet is open; with one open, pinch still zooms. */}
       {hasDetails ? null : (
-        <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 md:hidden">
-          {layersMobile ? <div className="pointer-events-auto">{layersMobile}</div> : null}
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex items-end justify-between gap-3 md:hidden">
+          <div className="pointer-events-auto">{layersMobile}</div>
           <div className="pointer-events-auto">{zoomControls}</div>
         </div>
       )}

@@ -1534,7 +1534,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         layerToggles.length > 0 ? (
           <MapLayersMenu
             toggles={layerToggles}
-            align="right"
+            align="left"
             triggerClassName="h-10 px-3 text-sm"
           />
         ) : null
