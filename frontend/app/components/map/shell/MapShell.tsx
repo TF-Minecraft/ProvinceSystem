@@ -1,0 +1,144 @@
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+
+type MapShellProps = {
+  /** The map itself. Rendered exactly once, at every breakpoint. */
+  children: ReactNode;
+  /** Title plaque and search, top left. */
+  plaque: ReactNode;
+  /** Desktop map-mode tray, bottom centre. */
+  modeBar: ReactNode;
+  /** Mobile map-mode chips, under the search box. */
+  modeChips: ReactNode;
+  /** Drill-down breadcrumb, top centre; null when not drilled in. */
+  breadcrumb?: ReactNode;
+  /** The selected region's details; null when nothing is selected. */
+  details?: ReactNode;
+  /** Changes whenever a different region is selected, to reset the sheet. */
+  detailsKey?: string | null;
+  zoomControls: ReactNode;
+  layers: ReactNode;
+  /** The layers menu for phones, opening up and to the left. */
+  layersMobile?: ReactNode;
+  /** War-planning toolbar, top right on desktop while paint mode is on. */
+  paintPanel?: ReactNode;
+  /**
+   * A stored chronicle day. Its date banner is fixed at the top centre of the
+   * screen, so the top-row controls start below it wherever they would meet.
+   */
+  chronicle?: boolean;
+};
+
+/**
+ * Full-bleed map with its controls floating over it: Google Maps' layout in
+ * CK3's frames. Search and the details panel down the left, zoom bottom right,
+ * map modes along the bottom, layers bottom left.
+ *
+ * On a phone the same pieces regroup instead of shrinking: search and mode
+ * chips across the top, details in a bottom sheet. Every control is one node
+ * placed by responsive classes rather than a mobile and a desktop copy, so
+ * nothing the map owns is mounted twice.
+ */
+export default function MapShell({
+  children,
+  plaque,
+  modeBar,
+  modeChips,
+  breadcrumb,
+  details,
+  detailsKey,
+  zoomControls,
+  layers,
+  layersMobile,
+  paintPanel,
+  chronicle = false,
+}: MapShellProps) {
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+
+  // A newly selected region opens the sheet at its peek height again.
+  useEffect(() => {
+    setSheetExpanded(false);
+  }, [detailsKey]);
+
+  const hasDetails = Boolean(details);
+  const chronicleTop = chronicle ? "max-xl:top-[10.75rem]" : "";
+
+  return (
+    <div className="relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)]">
+      <div className="absolute inset-0">{children}</div>
+
+      {/* Left column: plaque on top, details under it on desktop; on mobile
+          the details drop to a bottom sheet via `mt-auto`. The column itself
+          lets clicks through to the map; only its panels take them. */}
+      <div
+        className={`pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-[6.75rem] md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0 ${chronicleTop} ${
+          chronicle ? "max-md:pt-[10.75rem]" : ""
+        }`}
+      >
+        {/* Above the details panel, so search results drop down over it. */}
+        <div className="pointer-events-auto relative z-10 shrink-0">
+          {plaque}
+          <div className="mt-2 md:hidden">{modeChips}</div>
+          {breadcrumb ? <div className="mt-2 md:hidden">{breadcrumb}</div> : null}
+        </div>
+
+        {details ? (
+          <div
+            key={detailsKey ?? undefined}
+            className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[6px] ${
+              sheetExpanded ? "max-h-[82%]" : "max-h-[44%]"
+            } md:max-h-full`}
+          >
+            <button
+              type="button"
+              onClick={() => setSheetExpanded((value) => !value)}
+              aria-label={sheetExpanded ? "Show less" : "Show more"}
+              aria-expanded={sheetExpanded}
+              className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
+            >
+              <span className="h-1 w-10 rounded-full bg-[var(--tfmc-gilt-dim)]" />
+            </button>
+            <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4">
+              {details}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {breadcrumb ? (
+        <div
+          className={`pointer-events-none absolute left-1/2 top-4 z-20 hidden max-w-[min(42rem,calc(100%-52rem))] -translate-x-1/2 md:block ${
+            chronicle ? "top-[10.75rem]" : ""
+          }`}
+        >
+          <div className="pointer-events-auto">{breadcrumb}</div>
+        </div>
+      ) : null}
+
+      {paintPanel ? (
+        <div
+          className={`pointer-events-auto absolute right-4 top-4 z-20 hidden max-h-[calc(100%-9rem)] w-72 overflow-y-auto md:block ${chronicleTop}`}
+        >
+          {paintPanel}
+        </div>
+      ) : null}
+
+      {/* Over the left column, so the Layers popover opens above the panel. */}
+      <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30 hidden items-end justify-between gap-3 md:flex">
+        <div className="pointer-events-auto">{layers}</div>
+        <div className="pointer-events-auto min-w-0 overflow-x-auto">{modeBar}</div>
+        <div className="pointer-events-auto">{zoomControls}</div>
+      </div>
+
+      {/* Phone: layers and zoom tuck into the bottom-right corner while no
+          sheet is open; with one open, pinch still zooms. */}
+      {hasDetails ? null : (
+        <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 md:hidden">
+          {layersMobile ? <div className="pointer-events-auto">{layersMobile}</div> : null}
+          <div className="pointer-events-auto">{zoomControls}</div>
+        </div>
+      )}
+    </div>
+  );
+}

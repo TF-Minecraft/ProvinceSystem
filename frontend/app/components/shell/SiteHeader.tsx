@@ -6,7 +6,7 @@ import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 
 const staticLinks = [
   { href: "/", label: "Home" },
-  { href: "/map/main", label: "Map" },
+  { href: "/map", label: "Map" },
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
   { href: "/profile", label: "Profile" },

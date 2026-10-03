@@ -94,9 +94,9 @@ export function useRegionHover({
         ? info.title
         : `${info.title} · ${info.tier}`;
 
-    const hintLines = ["Click to view"];
+    const hintLines = ["Click for details"];
     if (canDrillIntoRegion(regionId, regionData!, mapObjects)) {
-      hintLines.push("CTRL+Click to see subjects");
+      hintLines.push("Ctrl-click to open subjects");
     }
 
     setCursorTooltip({

@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },
+  // The live main map moved to the bare `/map`. Exact path only: the main
+  // map's chronicle and staff pages stay under `/map/main/...`.
+  async redirects() {
+    return [{ source: "/map/main", destination: "/map", permanent: true }];
+  },
 };
 
 export default nextConfig;

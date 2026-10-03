@@ -10,6 +10,14 @@
   --tfmc-accent: #7a9e6a;
   --tfmc-header-h: 3.5rem;
 
+  /* Map chrome: CK3-style lacquer panels with gilt trim. */
+  --tfmc-gilt: #c9a45c;
+  --tfmc-gilt-bright: #f0d58c;
+  --tfmc-gilt-dim: #7a6236;
+  --tfmc-parchment: #efe3c4;
+  --tfmc-lacquer: #111813;
+  --tfmc-lacquer-raised: #1b2620;
+
   --background: var(--tfmc-forest-deep);
   --foreground: var(--tfmc-cream);
 }
@@ -284,4 +292,224 @@ body {
 
 .char-toast-out {
   animation: char-toast-out 0.28s ease-in both;
+}
+
+/* ------------------------------------------------------------------------
+ * Map chrome
+ *
+ * Every floating control on the world map shares one frame so the page reads
+ * as a single instrument: a dark lacquer panel, a thin gilt rule with an inner
+ * shadow line, and small corner brackets, after Crusader Kings III's windows.
+ * ---------------------------------------------------------------------- */
+
+/* In the components layer so Tailwind utilities on the same element (absolute,
+ * border-0, rounded-none…) still win, as they would over any component class. */
+@layer components {
+  .map-frame {
+    position: relative;
+    border: 1px solid var(--tfmc-gilt-dim);
+    border-radius: 6px;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgb(255 236 190 / 0.05), transparent 60%),
+      linear-gradient(180deg, color-mix(in srgb, var(--tfmc-lacquer-raised) 96%, transparent), color-mix(in srgb, var(--tfmc-lacquer) 97%, transparent));
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.55),
+      inset 0 0 0 2px rgb(201 164 92 / 0.14),
+      0 12px 32px rgb(0 0 0 / 0.5),
+      0 2px 6px rgb(0 0 0 / 0.4);
+    color: var(--tfmc-cream);
+    backdrop-filter: blur(6px);
+  }
+
+  /* Corner brackets: two short gilt strokes meeting at each corner. */
+  .map-frame::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 3px;
+    border-radius: 4px;
+    --c: var(--tfmc-gilt);
+    background:
+      linear-gradient(var(--c), var(--c)) top left / 12px 1px,
+      linear-gradient(var(--c), var(--c)) top left / 1px 12px,
+      linear-gradient(var(--c), var(--c)) top right / 12px 1px,
+      linear-gradient(var(--c), var(--c)) top right / 1px 12px,
+      linear-gradient(var(--c), var(--c)) bottom left / 12px 1px,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px 12px,
+      linear-gradient(var(--c), var(--c)) bottom right / 12px 1px,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px 12px;
+    background-repeat: no-repeat;
+    opacity: 0.75;
+  }
+
+  .map-frame-header {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgb(240 213 140 / 0.1), rgb(240 213 140 / 0.02)),
+      var(--tfmc-lacquer-raised);
+    border-bottom: 1px solid var(--tfmc-gilt-dim);
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+  }
+
+  /* A gilt rule with a lozenge in the middle, for section breaks. */
+  .map-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--tfmc-gilt);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .map-rule::before,
+  .map-rule::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, transparent, var(--tfmc-gilt-dim) 30%, var(--tfmc-gilt-dim) 70%, transparent);
+  }
+
+  .map-tooltip {
+    border: 1px solid var(--tfmc-gilt-dim);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--tfmc-lacquer) 95%, transparent);
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.5),
+      0 6px 18px rgb(0 0 0 / 0.55);
+  }
+
+  /* Round medallion buttons for the map modes, like CK3's map-mode row. */
+  .map-medallion {
+    position: relative;
+    display: inline-flex;
+    height: 2.6rem;
+    width: 2.6rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--tfmc-gilt-dim);
+    background: radial-gradient(circle at 50% 30%, #2a3a31, #101712 75%);
+    color: var(--tfmc-stone);
+    box-shadow:
+      inset 0 0 0 2px rgb(0 0 0 / 0.55),
+      inset 0 1px 0 3px rgb(201 164 92 / 0.08),
+      0 2px 4px rgb(0 0 0 / 0.5);
+    transition:
+      color 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease,
+      transform 120ms ease;
+  }
+
+  .map-medallion:hover {
+    color: var(--tfmc-parchment);
+    border-color: var(--tfmc-gilt);
+  }
+
+  .map-medallion:focus-visible,
+  .map-control:focus-visible {
+    outline: 2px solid var(--tfmc-gilt-bright);
+    outline-offset: 2px;
+  }
+
+  .map-medallion[aria-pressed="true"] {
+    color: #1a1408;
+    border-color: var(--tfmc-gilt-bright);
+    background: radial-gradient(circle at 50% 30%, #f6e2a4, #c9a45c 60%, #8a6a32);
+    box-shadow:
+      inset 0 0 0 2px rgb(255 245 210 / 0.35),
+      0 0 0 2px rgb(0 0 0 / 0.6),
+      0 0 14px rgb(240 213 140 / 0.45);
+  }
+
+  /* Square-ish controls: zoom, layers, panel buttons. */
+  .map-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid var(--tfmc-gilt-dim);
+    border-radius: 4px;
+    background: linear-gradient(180deg, #223028, #121a15);
+    color: var(--tfmc-stone);
+    box-shadow:
+      inset 0 1px 0 rgb(255 236 190 / 0.06),
+      0 2px 5px rgb(0 0 0 / 0.45);
+    transition:
+      color 120ms ease,
+      border-color 120ms ease,
+      background 120ms ease;
+  }
+
+  .map-control:hover:not(:disabled) {
+    color: var(--tfmc-parchment);
+    border-color: var(--tfmc-gilt);
+    background: linear-gradient(180deg, #2b3c32, #16201a);
+  }
+
+  .map-control[aria-pressed="true"],
+  .map-control[aria-expanded="true"] {
+    color: var(--tfmc-parchment);
+    border-color: var(--tfmc-gilt);
+    background: linear-gradient(180deg, #3a3220, #1d190f);
+  }
+
+  .map-control:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  /* The heraldic frame a realm's banner sits in. */
+  .map-banner-frame {
+    border: 2px solid var(--tfmc-gilt);
+    border-radius: 3px 3px 40% 40% / 3px 3px 22% 22%;
+    background: #0b100d;
+    box-shadow:
+      0 0 0 1px #000,
+      0 0 0 3px rgb(201 164 92 / 0.25),
+      0 6px 14px rgb(0 0 0 / 0.6);
+    overflow: hidden;
+  }
+}
+
+@keyframes map-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-sheet-in {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Details rise as a sheet on a phone and slide in from the left on desktop. */
+.map-details-enter {
+  animation: map-sheet-in 200ms ease-out;
+}
+
+@media (min-width: 48rem) {
+  .map-details-enter {
+    animation: map-panel-in 180ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-details-enter {
+    animation: none;
+  }
 }

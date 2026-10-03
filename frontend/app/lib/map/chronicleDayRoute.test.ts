@@ -74,7 +74,7 @@ describe("isValidChronicleDay", () => {
 
 describe("chronicle route hrefs", () => {
   it("maps the dev map id onto its public segment", () => {
-    expect(liveMapHref("main")).toBe("/map/main");
+    expect(liveMapHref("main")).toBe("/map");
     expect(liveMapHref("dev")).toBe("/map/r3b1rth");
     expect(chronicleStudioHref("main")).toBe("/map/main/chronicle");
     expect(chronicleStudioHref("dev")).toBe("/map/r3b1rth/chronicle");

@@ -33,8 +33,11 @@ import WarCampaignLineLayer from "./WarCampaignLineLayer";
 import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
-import { useMapViewport } from "../../hooks/useMapViewport";
-import type { FitMode } from "../../lib/mapViewportMath";
+import {
+  useMapViewport,
+  type MapFocusInset,
+} from "../../hooks/useMapViewport";
+import type { FitMode, MapRect } from "../../lib/mapViewportMath";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
@@ -57,6 +60,16 @@ const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
 const OVERLAY_TRANSITION_CLASS =
   "pointer-events-none absolute transition-[left,top,width,height,opacity] duration-150 ease-out";
 
+/**
+ * Camera controls the map shell drives from outside the canvas: the zoom
+ * buttons, "zoom to realm", and search results.
+ */
+export type MapViewportControls = {
+  zoomBy: (factor: number) => void;
+  reset: () => void;
+  focusMapRect: (rect: MapRect, inset?: MapFocusInset) => void;
+};
+
 function mapInteractionCursor(
   isPanning: boolean,
   isHoveringClickable: boolean
@@ -71,6 +84,27 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
   if (tool === "move") return "cursor-move";
   if (tool === "text") return "cursor-text";
   return "cursor-crosshair";
+}
+
+/**
+ * A gilt rim around the selected region. The overlay sits inside the scaled
+ * map, so the glow is sized in map pixels divided by the current scale to stay
+ * a constant couple of screen pixels at every zoom.
+ */
+function selectedOutlineStyle(displayScale: number): React.CSSProperties {
+  const px = displayScale > 0 ? 2 / displayScale : 0;
+  const gilt = "#f5d27a";
+  // Four unblurred offsets trace a crisp rim; the last, blurred and dark,
+  // lifts it off light terrain.
+  return {
+    filter: [
+      `drop-shadow(${px}px 0 0 ${gilt})`,
+      `drop-shadow(-${px}px 0 0 ${gilt})`,
+      `drop-shadow(0 ${px}px 0 ${gilt})`,
+      `drop-shadow(0 -${px}px 0 ${gilt})`,
+      `drop-shadow(0 0 ${px * 1.5}px rgb(0 0 0 / 0.8))`,
+    ].join(" "),
+  };
 }
 
 function applyNaturalMapSize(
@@ -95,6 +129,7 @@ function HoverOverlayImage({
   opacity = HOVER_OVERLAY_OPACITY,
   alt = "Hovered region",
   imageClassName = "",
+  imageStyle,
 }: {
   mapId: MapId;
   sessionToken?: string | null;
@@ -104,6 +139,7 @@ function HoverOverlayImage({
   opacity?: number;
   alt?: string;
   imageClassName?: string;
+  imageStyle?: React.CSSProperties;
 }) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const path = mapApiPathFromUrl(overlay.url);
@@ -138,6 +174,7 @@ function HoverOverlayImage({
       className={`${OVERLAY_TRANSITION_CLASS} z-10 ${imageClassName}`.trim()}
       style={{
         ...positioned,
+        ...imageStyle,
         opacity: imageOpacity,
       }}
       onLoad={markLoaded}
@@ -155,6 +192,12 @@ type MapCanvasProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   mapObjects: MapObject[];
   hoveredOverlay: HoverOverlay | null;
+  /**
+   * The region whose details panel is open, kept lit after the pointer moves
+   * on. Live map only: like `hoveredOverlay` it is a server PNG of today's
+   * borders, so a stored day must not pass one.
+   */
+  selectedOverlay?: HoverOverlay | null;
   hoveredFortZoc?: HoverOverlay | null;
   cursorTooltip: CursorTooltip | null;
   labels?: NationLabelSpec[];
@@ -169,6 +212,8 @@ type MapCanvasProps = {
   onMouseLeave: () => void;
   onClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   isHoveringClickable?: boolean;
+  /** Filled with the camera controls once the viewport is mounted. */
+  controlsRef?: MutableRefObject<MapViewportControls | null>;
   /** Full-bleed mode: fills its container instead of sizing to the map itself
    * as a bordered card. See `MapViewport`'s `fill` prop. */
   fill?: boolean;
@@ -209,6 +254,7 @@ export default function MapCanvas({
   canvasRef,
   mapObjects,
   hoveredOverlay,
+  selectedOverlay = null,
   hoveredFortZoc = null,
   cursorTooltip,
   labels = [],
@@ -223,6 +269,7 @@ export default function MapCanvas({
   onMouseLeave,
   onClick,
   isHoveringClickable = false,
+  controlsRef,
   fill = false,
   fitMode = "cover",
   paint,
@@ -235,7 +282,23 @@ export default function MapCanvas({
     h: mapFallbackSize(mapId),
   });
 
-  const viewport = useMapViewport({ mapSize, fitMode });
+  const paintEnabled = paint?.enabled ?? false;
+  // Paint mode owns the left button and single-finger drags; middle-drag and
+  // the wheel still move the map underneath the brush.
+  const viewport = useMapViewport({
+    mapSize,
+    fitMode,
+    dragPan: !paintEnabled,
+    keyboard: true,
+  });
+
+  if (controlsRef) {
+    controlsRef.current = {
+      zoomBy: viewport.zoomBy,
+      reset: () => viewport.resetViewport({ animated: true }),
+      focusMapRect: viewport.focusMapRect,
+    };
+  }
   const appliedNaturalSizeRef = useRef<{ w: number; h: number } | null>(null);
 
   const syncNaturalMapSize = (img: HTMLImageElement) => {
@@ -291,7 +354,6 @@ export default function MapCanvas({
     ? overlayPathFromHoverUrl(hoveredOverlay.url)
     : null;
 
-  const paintEnabled = paint?.enabled ?? false;
   const interactionCursor =
     paintEnabled && !viewport.isPanning
       ? paintToolCursor(paint!.tool)
@@ -305,15 +367,15 @@ export default function MapCanvas({
           : `relative max-w-full overflow-hidden ${panelClass}`
       }
     >
-      {cursorTooltip?.text && (
+      {cursorTooltip?.text && !viewport.isPanning && (
         <div
-          className="pointer-events-none fixed z-50 rounded-md bg-[var(--tfmc-forest-deep)] px-3 py-1.5 shadow-lg"
+          className="map-tooltip pointer-events-none fixed z-50 max-w-xs px-3 py-1.5"
           style={{
-            left: cursorTooltip.x + 12,
-            top: cursorTooltip.y + 12,
+            left: cursorTooltip.x + 14,
+            top: cursorTooltip.y + 14,
           }}
         >
-          <p className="whitespace-pre-line text-sm text-[var(--tfmc-cream)]">
+          <p className="whitespace-pre-line font-[family-name:var(--font-fraunces)] text-sm text-[var(--tfmc-parchment)]">
             {cursorTooltip.text}
           </p>
           {cursorTooltip.hint && (
@@ -331,6 +393,7 @@ export default function MapCanvas({
         cursorClassName={interactionCursor}
         isPanning={viewport.isPanning}
         fill={fill}
+        capturesTouch
       >
         <MapAuthImage
           mapId={mapId}
@@ -402,6 +465,18 @@ export default function MapCanvas({
             alt="Fort zone of control"
           />
         )}
+        {regionOverlay === undefined && selectedOverlay && (
+          <HoverOverlayImage
+            mapId={mapId}
+            sessionToken={sessionToken}
+            overlay={selectedOverlay}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+            opacity={0.8}
+            alt="Selected region"
+            imageStyle={selectedOutlineStyle(viewport.displayScale)}
+          />
+        )}
         {regionOverlay === undefined && hoveredOverlay && (
           <HoverOverlayImage
             mapId={mapId}
@@ -458,7 +533,10 @@ export default function MapCanvas({
           } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
           onMouseMove={onMouseMove}
           onMouseLeave={onMouseLeave}
-          onClick={onClick}
+          onClick={(event) => {
+            if (viewport.consumeDragClick()) return;
+            onClick(event);
+          }}
         />
         {paint ? (
           <PaintLayer

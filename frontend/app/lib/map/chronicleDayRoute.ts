@@ -54,14 +54,24 @@ export function mapRouteSegment(mapId: MapId): string {
   return mapId === "dev" ? DEV_PUBLIC_SEGMENT : mapId;
 }
 
-/** `/map/main` or `/map/r3b1rth` — the live map. */
-export function liveMapHref(mapId: MapId): string {
+/**
+ * The map's own path, `/map/{segment}`. Pages nested under a map (chronicle,
+ * staff console) build on this rather than on `liveMapHref`, because `main`'s
+ * live map lives at the bare `/map` and `/map/chronicle` would read as a map
+ * called "chronicle".
+ */
+export function mapBaseHref(mapId: MapId): string {
   return `/map/${mapRouteSegment(mapId)}`;
+}
+
+/** `/map` for `main`, `/map/r3b1rth` or `/map/{archive}` — the live map. */
+export function liveMapHref(mapId: MapId): string {
+  return mapId === "main" ? "/map" : mapBaseHref(mapId);
 }
 
 /** `/map/{map}/chronicle` — the timelapse studio. */
 export function chronicleStudioHref(mapId: MapId): string {
-  return `${liveMapHref(mapId)}/chronicle`;
+  return `${mapBaseHref(mapId)}/chronicle`;
 }
 
 /**

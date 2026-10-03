@@ -1,5 +1,10 @@
 export const MAP_ZOOM_MIN = 1;
-export const MAP_ZOOM_MAX = 4.5;
+/**
+ * Deep enough that settlement names and province borders are readable on a
+ * phone: at 8x a contain-fit 6400 px map shows roughly one map pixel per
+ * screen pixel on a 900 px tall viewport.
+ */
+export const MAP_ZOOM_MAX = 8;
 export const MAP_ZOOM_WHEEL_FACTOR = 1.1;
 
 export type Size = {
@@ -169,30 +174,108 @@ export function zoomAtPoint(
     return transform;
   }
 
+  const zoomFactor =
+    wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
+  return zoomToScaleAtPoint(
+    viewport,
+    map,
+    transform,
+    cursor,
+    transform.userScale * zoomFactor,
+    mode
+  );
+}
+
+/**
+ * Zoom to `userScale` while keeping the map point under `anchor` (viewport
+ * pixels) fixed on screen. Shared by the wheel, the zoom buttons, double-click
+ * and pinch, which differ only in where the anchor is and how far they go.
+ */
+export function zoomToScaleAtPoint(
+  viewport: Size,
+  map: Size,
+  transform: ViewportTransform,
+  anchor: ViewportPoint,
+  userScale: number,
+  mode: FitMode = "cover"
+): ViewportTransform {
+  if (!Number.isFinite(userScale)) return transform;
+
   const fitScale = computeFitScale(viewport, map, mode);
   const displayScale = computeDisplayScale(fitScale, transform.userScale);
   const translate = { x: transform.translateX, y: transform.translateY };
+  const mapPoint = screenToMap(anchor.x, anchor.y, displayScale, translate);
 
-  const mapPoint = screenToMap(cursor.x, cursor.y, displayScale, translate);
-
-  const zoomFactor =
-    wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
-  const nextUserScale = clampUserScale(transform.userScale * zoomFactor);
+  const nextUserScale = clampUserScale(userScale);
   const nextDisplayScale = computeDisplayScale(fitScale, nextUserScale);
-
-  let nextTranslateX = cursor.x - mapPoint.x * nextDisplayScale;
-  let nextTranslateY = cursor.y - mapPoint.y * nextDisplayScale;
-
   const clamped = clampTranslate(
     viewport,
     map,
     nextDisplayScale,
-    nextTranslateX,
-    nextTranslateY
+    anchor.x - mapPoint.x * nextDisplayScale,
+    anchor.y - mapPoint.y * nextDisplayScale
   );
 
   return {
     userScale: nextUserScale,
+    translateX: clamped.x,
+    translateY: clamped.y,
+  };
+}
+
+/** A rectangle in map pixels, e.g. a region's overlay crop box. */
+export type MapRect = { x: number; y: number; w: number; h: number };
+
+/**
+ * The transform that centres `rect` and zooms until it fills `fill` of the
+ * viewport on its tighter axis. `inset` shifts the target centre away from
+ * screen furniture (a side panel on the left, a bottom sheet below), so the
+ * framed region lands in the part of the map the reader can actually see.
+ */
+export function transformForMapRect(
+  viewport: Size,
+  map: Size,
+  rect: MapRect,
+  mode: FitMode = "cover",
+  options: {
+    fill?: number;
+    maxUserScale?: number;
+    inset?: { left?: number; right?: number; top?: number; bottom?: number };
+  } = {}
+): ViewportTransform {
+  const fill = options.fill ?? 0.6;
+  const inset = options.inset ?? {};
+  const left = inset.left ?? 0;
+  const right = inset.right ?? 0;
+  const top = inset.top ?? 0;
+  const bottom = inset.bottom ?? 0;
+  const usableW = Math.max(1, viewport.w - left - right);
+  const usableH = Math.max(1, viewport.h - top - bottom);
+
+  const fitScale = computeFitScale(viewport, map, mode);
+  const rectW = Math.max(1, rect.w);
+  const rectH = Math.max(1, rect.h);
+  const wanted = Math.min(
+    (usableW * fill) / (rectW * fitScale),
+    (usableH * fill) / (rectH * fitScale)
+  );
+  const userScale = clampUserScale(
+    Math.min(wanted, options.maxUserScale ?? MAP_ZOOM_MAX)
+  );
+  const displayScale = computeDisplayScale(fitScale, userScale);
+
+  const centreX = left + usableW / 2;
+  const centreY = top + usableH / 2;
+  const clamped = clampTranslate(
+    viewport,
+    map,
+    displayScale,
+    centreX - (rect.x + rect.w / 2) * displayScale,
+    centreY - (rect.y + rect.h / 2) * displayScale
+  );
+
+  return {
+    userScale,
     translateX: clamped.x,
     translateY: clamped.y,
   };
