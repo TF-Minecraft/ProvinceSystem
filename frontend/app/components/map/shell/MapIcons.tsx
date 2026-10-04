@@ -235,6 +235,97 @@ export const ChevronIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const BackIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </Icon>
+);
+
+/* Timelapse layers: the ones the realm, trade and prosperity icons do not cover. */
+
+export const BordersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 6.5 9.5 4l5 2.5L20 4v13.5L14.5 20l-5-2.5L4 20V6.5Z" strokeDasharray="2.6 2" />
+  </Icon>
+);
+
+export const OccupationIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 21V3M6 4h11l-2.5 3.5L17 11H6" />
+  </Icon>
+);
+
+export const NamesIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3.5 18 8 6l4.5 12M5.2 13.5h5.6M15 9.5h5.5M15 14h4M15 18.5h5.5" />
+  </Icon>
+);
+
+export const NameChipIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="6" r="2.5" />
+    <rect x="4" y="12" width="16" height="7" rx="1.5" />
+    <path d="M8 15.5h8" />
+  </Icon>
+);
+
+export const HatchIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M4 11 11 4M4 18 18 4M10 20l10-10M17 20l3-3" />
+  </Icon>
+);
+
+export const SwordsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 4l10.5 10.5M4 4h3.5L17 13.5M4 4v3.5L13.5 17M12.5 18.5l6-6M15 20l5-5M17.5 17.5 20.5 20.5" />
+  </Icon>
+);
+
+/* Timelapse playback. */
+
+export const PlayIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />
+  </Icon>
+);
+
+export const PauseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M8 5.5v13M16 5.5v13" strokeWidth={3} />
+  </Icon>
+);
+
+export const StepBackIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 6v12M18 6.5v11L9.5 12 18 6.5Z" />
+  </Icon>
+);
+
+export const StepForwardIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M18 6v12M6 6.5v11l8.5-5.5L6 6.5Z" />
+  </Icon>
+);
+
+export const LoopIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19M16 3l3 3-3 3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5M8 21l-3-3 3-3" />
+  </Icon>
+);
+
+export const DownloadIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
+  </Icon>
+);
+
+export const ChartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 4v16h16M8 15l3.5-4 3 2.5L19 8" />
+  </Icon>
+);
+
 export const MAP_MODE_ICONS: Record<MapMode, (props: IconProps) => ReactNode> = {
   nation: RealmIcon,
   county: CountyIcon,

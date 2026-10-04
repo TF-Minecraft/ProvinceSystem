@@ -19,9 +19,18 @@ type MapShellProps = {
   detailsKey?: string | null;
   /** Clears the selection: the phone sheet was pulled down and closed. */
   onDetailsClose?: () => void;
+  /** Pinned under the details' scrolling content: the panel's main action. */
+  detailsFooter?: ReactNode;
   zoomControls: ReactNode;
   /** The layers button (map types and overlays), top right. */
-  layers: ReactNode;
+  layers?: ReactNode;
+  /**
+   * A bar along the foot of the map between the left column and the zoom
+   * buttons, on desktop only: the timelapse's player.
+   */
+  footer?: ReactNode;
+  /** A panel down the right-hand side, on desktop only: the timelapse's charts. */
+  aside?: ReactNode;
   /** War-planning toolbar, top right under the layers button while paint mode is on. */
   paintPanel?: ReactNode;
   /**
@@ -49,9 +58,12 @@ export default function MapShell({
   details,
   detailsKey,
   onDetailsClose,
+  detailsFooter,
   status,
   zoomControls,
   layers,
+  footer,
+  aside,
   paintPanel,
   chronicle = false,
 }: MapShellProps) {
@@ -88,15 +100,17 @@ export default function MapShell({
           {/* Breadcrumb left, layers right, as Google Maps' phone app puts
               its layers button under the search bar. The gap between them
               lets clicks through to the map. */}
-          <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
-            <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
-            <div className="pointer-events-auto ml-auto shrink-0">{layers}</div>
-          </div>
+          {breadcrumb || layers ? (
+            <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
+              <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
+              {layers ? <div className="pointer-events-auto ml-auto shrink-0">{layers}</div> : null}
+            </div>
+          ) : null}
         </div>
 
         {details ? (
           // Keyed, so a newly selected region opens at the peek height again.
-          <DetailsSheet key={detailsKey ?? undefined} onClose={onDetailsClose}>
+          <DetailsSheet key={detailsKey ?? undefined} onClose={onDetailsClose} footer={detailsFooter}>
             {details}
           </DetailsSheet>
         ) : null}
@@ -133,9 +147,24 @@ export default function MapShell({
       ) : null}
 
       {/* Over the paint toolbar and zoom, so the layers panel drops down across them. */}
-      <div className={`absolute right-4 top-4 z-40 hidden md:block ${chronicleTop}`}>
-        {layers}
-      </div>
+      {layers ? (
+        <div className={`absolute right-4 top-4 z-40 hidden md:block ${chronicleTop}`}>
+          {layers}
+        </div>
+      ) : null}
+
+      {aside ? (
+        <div className="pointer-events-auto absolute bottom-[9.5rem] right-4 top-4 z-20 hidden w-80 overflow-y-auto md:block">
+          {aside}
+        </div>
+      ) : null}
+
+      {footer ? (
+        // Clear of the left column (23rem from 1rem in) and the zoom buttons.
+        <div className="pointer-events-none absolute bottom-4 left-[25rem] right-[4.5rem] z-20 hidden justify-center md:flex">
+          <div className="pointer-events-auto w-full max-w-3xl">{footer}</div>
+        </div>
+      ) : null}
 
       <div className="absolute bottom-4 right-4 z-30 hidden md:block">{zoomControls}</div>
     </div>
@@ -155,9 +184,11 @@ const FULL_SHEET_GAP_PX = 12;
 function DetailsSheet({
   children,
   onClose,
+  footer,
 }: {
   children: ReactNode;
   onClose?: () => void;
+  footer?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -192,6 +223,11 @@ function DetailsSheet({
       >
         {children}
       </div>
+      {footer ? (
+        <div className="shrink-0 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:pb-3">
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

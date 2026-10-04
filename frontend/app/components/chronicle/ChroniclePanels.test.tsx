@@ -1,22 +1,23 @@
 /**
  * @vitest-environment jsdom
  *
- * Mount smoke for the studio's step panels.
- *
- * This is the file that would have caught the break this session: a lost
- * `export` here left `ChronicleStudio` importing `undefined` and the build
- * failed, while every (node-env, `.test.ts`-only) test stayed green. Mounting
- * each panel through its public export is the cheapest thing that fails.
+ * The studio's panels, mounted through their public exports. A lost `export`
+ * here once left `ChronicleStudio` importing `undefined` and broke the build
+ * while every node-env test stayed green; mounting each panel is the cheapest
+ * thing that fails. Past that, each panel's controls are checked to report
+ * what the reader chose.
  */
 
-import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   CHRONICLE_SPEEDS,
   ChronicleBuildPanel,
   ChroniclePlaybackPanel,
+  ChroniclePlayer,
   ChronicleRangePanel,
+  ChronicleSteps,
   ChronicleTogglePanel,
   SectionHeading,
   chroniclePanelClass,
@@ -29,6 +30,23 @@ import { CHRONICLE_TOGGLES_OFF } from "./chronicleLayers";
 afterEach(cleanup);
 
 const noop = () => {};
+
+const DAYS = Array.from({ length: 40 }, (_, index) => {
+  const date = new Date(Date.UTC(2026, 7, 1 + index));
+  return date.toISOString().slice(0, 10);
+});
+
+const ESTIMATE = {
+  dayCount: 2,
+  bytesPerFrame: 1,
+  memoryBytes: 2,
+  fetchMs: 1,
+  cpuMs: 1,
+  totalMs: 2,
+  measured: false,
+  staleSample: false,
+  overCeiling: false,
+};
 
 describe("ChroniclePanels exports", () => {
   it("still exports every class token the studio imports by name", () => {
@@ -45,106 +63,187 @@ describe("ChroniclePanels exports", () => {
   });
 });
 
+describe("ChronicleSteps", () => {
+  it("goes back to a step reached, but not on to one that is not", () => {
+    const onSelect = vi.fn();
+    render(
+      <ChronicleSteps
+        current="dates"
+        reachable={{ layers: true, dates: true, watch: false }}
+        onSelect={onSelect}
+      />
+    );
+    expect(screen.getByRole("button", { name: /Dates/ }).getAttribute("aria-current")).toBe(
+      "step"
+    );
+    expect(screen.getByRole("button", { name: /Watch/ }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /Layers/ }));
+    expect(onSelect).toHaveBeenCalledWith("layers");
+  });
+});
+
 describe("ChronicleTogglePanel", () => {
-  it("mounts", () => {
-    const { container } = render(
+  it("switches a layer from its tile, and says why one cannot be", () => {
+    const onToggle = vi.fn();
+    render(
       <ChronicleTogglePanel
-        toggles={CHRONICLE_TOGGLES_OFF}
-        onToggle={noop}
-        disabledReasons={{}}
-        busy={false}
-        blockReason={null}
+        toggles={{ ...CHRONICLE_TOGGLES_OFF, nationFill: true }}
+        onToggle={onToggle}
+        disabledReasons={{ nationNames: "No geometry." }}
         notice={null}
         focusOptions={[]}
         focusNationId=""
         onFocusChange={noop}
         focusDisabledReason={null}
-        onNext={noop}
       />
     );
-    expect(container.textContent).toContain("Compose");
+    expect(screen.getByRole("switch", { name: "Nation fill" }).getAttribute("aria-checked")).toBe(
+      "true"
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "Wars" }));
+    expect(onToggle).toHaveBeenCalledWith("wars");
+    expect(screen.getByRole("switch", { name: "Nation names" }).hasAttribute("disabled")).toBe(
+      true
+    );
+    expect(screen.getByText(/Nation names: No geometry\./)).toBeDefined();
   });
 });
 
 describe("ChronicleRangePanel", () => {
-  it("mounts", () => {
-    const { container } = render(
+  function renderRange(overrides: { start?: string; end?: string } = {}) {
+    const onStartChange = vi.fn();
+    const onEndChange = vi.fn();
+    render(
       <ChronicleRangePanel
-        days={["2026-08-01", "2026-08-02"]}
-        incompleteDays={new Set<string>()}
-        start="2026-08-01"
-        end="2026-08-02"
-        onStartChange={noop}
-        onEndChange={noop}
-        selection={{ days: ["2026-08-01", "2026-08-02"], incompleteDays: [], error: null }}
-        estimate={{
-          dayCount: 2,
-          bytesPerFrame: 1,
-          memoryBytes: 2,
-          fetchMs: 1,
-          cpuMs: 1,
-          totalMs: 2,
-          measured: false,
-          staleSample: false,
-          overCeiling: false,
-        }}
-        renderSize={512}
+        days={DAYS}
+        incompleteDays={new Set<string>([DAYS[3]!])}
+        start={overrides.start ?? DAYS[33]!}
+        end={overrides.end ?? DAYS[39]!}
+        onStartChange={onStartChange}
+        onEndChange={onEndChange}
+        selection={{ days: DAYS.slice(33), incompleteDays: [], error: null }}
+        estimate={ESTIMATE}
+        renderSize={900}
         onRenderSizeChange={noop}
         blockReason={null}
-        onBack={noop}
-        onBuild={noop}
       />
     );
-    expect(container.textContent).toContain("Range");
+    return { onStartChange, onEndChange };
+  }
+
+  it("shows the span a preset matches, and sets another from the latest day", () => {
+    const { onStartChange, onEndChange } = renderRange();
+    expect(
+      screen.getByRole("button", { name: "Last 7 days" }).getAttribute("aria-pressed")
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
+    expect(onStartChange).toHaveBeenCalledWith(DAYS[10]);
+    expect(onEndChange).toHaveBeenCalledWith(DAYS[39]);
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(onStartChange).toHaveBeenLastCalledWith(DAYS[0]);
+  });
+
+  it("names the days as a reader would", () => {
+    renderRange();
+    expect(screen.getAllByRole("option", { name: "1 Aug 2026" }).length).toBe(2);
+    expect(screen.getAllByRole("option", { name: "4 Aug 2026 (incomplete)" }).length).toBe(2);
   });
 });
 
 describe("ChronicleBuildPanel", () => {
-  it("mounts", () => {
-    const { container } = render(
-      <ChronicleBuildPanel progress={null} error={null} onCancel={noop} onBack={noop} />
+  it("shows how far the build has got", () => {
+    render(
+      <ChronicleBuildPanel
+        progress={{ completed: 5, total: 20, day: "2026-08-05", painted: 4, reused: 1, skipped: 0 }}
+        error={null}
+      />
     );
-    expect(container.textContent).toContain("Build");
+    expect(screen.getByText("25%")).toBeDefined();
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("5");
+  });
+});
+
+describe("ChroniclePlayer", () => {
+  function renderPlayer(activeIndex: number, speed = 4) {
+    const props = {
+      onScrub: vi.fn(),
+      onTogglePlay: vi.fn(),
+      onSpeedChange: vi.fn(),
+      onLoopChange: vi.fn(),
+    };
+    render(
+      <ChroniclePlayer
+        variant="bar"
+        days={DAYS.slice(0, 3)}
+        activeIndex={activeIndex}
+        playing={false}
+        speed={speed}
+        loop
+        incomplete={false}
+        {...props}
+      />
+    );
+    return props;
+  }
+
+  it("shows the day on screen and steps either way", () => {
+    const { onScrub } = renderPlayer(1);
+    expect(screen.getByText("2 Aug 2026")).toBeDefined();
+    expect(screen.getByText("Day 2 of 3")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Next day" }));
+    expect(onScrub).toHaveBeenCalledWith(2);
+    fireEvent.click(screen.getByRole("button", { name: "Previous day" }));
+    expect(onScrub).toHaveBeenCalledWith(0);
+  });
+
+  it("cannot step past either end", () => {
+    renderPlayer(0);
+    expect(screen.getByRole("button", { name: "Previous day" }).hasAttribute("disabled")).toBe(
+      true
+    );
+  });
+
+  it("cycles the speed and wraps back to the slowest", () => {
+    const { onSpeedChange } = renderPlayer(0, 16);
+    fireEvent.click(screen.getByRole("button", { name: /Speed/ }));
+    expect(onSpeedChange).toHaveBeenCalledWith(1);
+  });
+
+  it("plays and toggles looping", () => {
+    const { onTogglePlay, onLoopChange } = renderPlayer(0);
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(onTogglePlay).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Loop" }));
+    expect(onLoopChange).toHaveBeenCalledWith(false);
   });
 });
 
 describe("ChroniclePlaybackPanel", () => {
-  it("mounts", () => {
-    const { container } = render(
+  it("offers the export options and reports a switch", () => {
+    const onGifWatermarkChange = vi.fn();
+    render(
       <ChroniclePlaybackPanel
-        days={["2026-08-01"]}
-        activeIndex={0}
-        onScrub={noop}
-        playing={false}
-        onTogglePlay={noop}
-        speed={1}
-        onSpeedChange={noop}
-        loop={false}
-        onLoopChange={noop}
-        incomplete={false}
         skippedDays={[]}
         exploreHref={null}
         chartsOpen={false}
         onToggleCharts={noop}
-        gifSize={256}
+        gifSize={720}
         onGifSizeChange={noop}
         gifStampDay={false}
         onGifStampDayChange={noop}
         gifWatermark
-        onGifWatermarkChange={noop}
+        onGifWatermarkChange={onGifWatermarkChange}
         gifDiscordLink
         onGifDiscordLinkChange={noop}
-        onExportGif={noop}
         gifStatus={null}
         gifError={null}
         gifNotice={null}
-        onDiscard={noop}
       />
     );
-    expect(container.textContent).toContain("2026-08-01");
-    expect(container.textContent).toContain("Watermark");
-    expect(container.textContent).toContain("Discord link");
-    expect(container.textContent).toContain("Stamp the date");
+    expect(screen.getByRole("switch", { name: "Discord link" })).toBeDefined();
+    expect(screen.getByRole("switch", { name: "Stamp the date" })).toBeDefined();
+    fireEvent.click(screen.getByRole("switch", { name: "Watermark" }));
+    expect(onGifWatermarkChange).toHaveBeenCalledWith(false);
   });
 });
 
