@@ -1527,6 +1527,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             ? `place:${selectedPlaceId}`
             : selectedId
       }
+      onDetailsClose={clearSelection}
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
       layers={

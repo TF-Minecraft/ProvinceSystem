@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useSheetDragToClose } from "@/app/hooks/useSheetDragToClose";
+import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 import { tileUrl, useTileManifest } from "@/app/hooks/useTileManifest";
 import type { TileManifest } from "@/app/lib/map/tilePyramid";
 
@@ -197,7 +197,7 @@ function LayersPanel({
   const sectionGap = "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
   const phoneToggles = toggles.some((toggle) => !toggle.desktopOnly);
   const sheetRef = useRef<HTMLDivElement>(null);
-  useSheetDragToClose(sheetRef, onClose);
+  useBottomSheetDrag(sheetRef, { onClose });
 
   return (
     <div

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
 type MapShellProps = {
   /** The map itself. Rendered exactly once, at every breakpoint. */
@@ -15,6 +17,8 @@ type MapShellProps = {
   details?: ReactNode;
   /** Changes whenever a different region is selected, to reset the sheet. */
   detailsKey?: string | null;
+  /** Clears the selection: the phone sheet was pulled down and closed. */
+  onDetailsClose?: () => void;
   zoomControls: ReactNode;
   /** The layers button (map types and overlays), top right. */
   layers: ReactNode;
@@ -44,19 +48,13 @@ export default function MapShell({
   breadcrumb,
   details,
   detailsKey,
+  onDetailsClose,
   status,
   zoomControls,
   layers,
   paintPanel,
   chronicle = false,
 }: MapShellProps) {
-  const [sheetExpanded, setSheetExpanded] = useState(false);
-
-  // A newly selected region opens the sheet at its peek height again.
-  useEffect(() => {
-    setSheetExpanded(false);
-  }, [detailsKey]);
-
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
   // scrolled or rubber-banded it, sliding them under the header. Scrolling
@@ -96,25 +94,10 @@ export default function MapShell({
         </div>
 
         {details ? (
-          <div
-            key={detailsKey ?? undefined}
-            className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[10px] ${
-              sheetExpanded ? "max-h-[82%]" : "max-h-[44%]"
-            } md:max-h-full`}
-          >
-            <button
-              type="button"
-              onClick={() => setSheetExpanded((value) => !value)}
-              aria-label={sheetExpanded ? "Show less" : "Show more"}
-              aria-expanded={sheetExpanded}
-              className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
-            >
-              <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
-            </button>
-            <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4">
-              {details}
-            </div>
-          </div>
+          // Keyed, so a newly selected region opens at the peek height again.
+          <DetailsSheet key={detailsKey ?? undefined} onClose={onDetailsClose}>
+            {details}
+          </DetailsSheet>
         ) : null}
       </div>
 
@@ -154,6 +137,59 @@ export default function MapShell({
       </div>
 
       <div className="absolute bottom-4 right-4 z-30 hidden md:block">{zoomControls}</div>
+    </div>
+  );
+}
+
+/** The share of the column a full-height phone sheet takes (`max-h-[82%]`). */
+const FULL_SHEET_SHARE = 0.82;
+
+/**
+ * The selection's details: a side panel on desktop, and on a phone a bottom
+ * sheet with Google Maps' two sizes. It opens at a peek height; dragging it
+ * up (or tapping the handle) grows it, and dragging down shrinks it again or,
+ * from the peek height, closes it.
+ */
+function DetailsSheet({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useBottomSheetDrag(sheetRef, {
+    onClose: () => onClose?.(),
+    expanded,
+    onExpandedChange: setExpanded,
+    scrollerRef,
+    fullHeight: () => (sheetRef.current?.parentElement?.clientHeight ?? 0) * FULL_SHEET_SHARE,
+  });
+
+  return (
+    <div
+      ref={sheetRef}
+      className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[10px] ${
+        expanded ? "max-h-[82%]" : "max-h-[44%]"
+      } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-label={expanded ? "Show less" : "Show more"}
+        aria-expanded={expanded}
+        className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
+      >
+        <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
+      </button>
+      <div
+        ref={scrollerRef}
+        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4"
+      >
+        {children}
+      </div>
     </div>
   );
 }
