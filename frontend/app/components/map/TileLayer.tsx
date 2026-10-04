@@ -125,6 +125,19 @@ function TileLayer({
     setLoadedVersion((value) => value + 1);
   };
 
+  // A tile counts as loaded once it is decoded too, so the paint that shows
+  // it (and stands down what is under it) never has to decode it first.
+  const handleLoad = (image: HTMLImageElement, key: string) => {
+    if (typeof image.decode !== "function") {
+      markLoaded(key);
+      return;
+    }
+    image.decode().then(
+      () => markLoaded(key),
+      () => markLoaded(key)
+    );
+  };
+
   // Tile edges on whole screen pixels: neighbours then meet exactly, with no
   // hairline gap between them and no overlap. An overlap used to hide the
   // gaps, but on a see-through raster (prosperity) its strip was drawn twice
@@ -156,8 +169,13 @@ function TileLayer({
         alt=""
         aria-hidden
         draggable={false}
-        decoding="async"
-        onLoad={() => markLoaded(loadedKey(tile))}
+        // Not async: WebKit decodes an async image only at the size it is
+        // drawn, and when a settled zoom draws it at a size that copy cannot
+        // serve it paints nothing until a new decode is done. Every tile at
+        // once did that, and the map blanked for a frame after a zoom. A
+        // sync decode is at full size and serves every zoom; tiles are small.
+        decoding="sync"
+        onLoad={(event) => handleLoad(event.currentTarget, loadedKey(tile))}
         onError={reportTileError}
         className="absolute max-w-none select-none"
         style={{
