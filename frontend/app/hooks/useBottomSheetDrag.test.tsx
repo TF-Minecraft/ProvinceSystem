@@ -116,3 +116,60 @@ describe("useBottomSheetDrag with two sizes", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
+
+describe("useBottomSheetDrag hand-off", () => {
+  it("turns a scroll back up into a pull once the content reaches the top", () => {
+    const onClose = vi.fn();
+    render(<Sheet onClose={onClose} startExpanded />);
+    const sheet = screen.getByTestId("sheet");
+    const scroller = screen.getByTestId("scroller");
+    const touch = (clientY: number) => ({ touches: [{ clientY }] });
+    scroller.scrollTop = 60;
+    fireEvent.touchStart(sheet, touch(300));
+    // Scrolling back up: the content moves, not the sheet.
+    for (const y of [320, 340, 360]) {
+      vi.advanceTimersByTime(100);
+      fireEvent.touchMove(sheet, touch(y));
+    }
+    expect(sheet.style.maxHeight).toBe("");
+    // The content is at the top now; the same swipe carries on as a pull.
+    scroller.scrollTop = 0;
+    for (const y of [380, 430, 480, 530]) {
+      vi.advanceTimersByTime(100);
+      fireEvent.touchMove(sheet, touch(y));
+    }
+    expect(sheet.style.maxHeight).not.toBe("");
+    fireEvent.touchEnd(sheet, { touches: [] });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(sheet.dataset.expanded).toBe("false");
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes the one-size layers sheet the same way", () => {
+    const onClose = vi.fn();
+    function OneSize() {
+      const ref = useRef<HTMLDivElement>(null);
+      useBottomSheetDrag(ref, { onClose });
+      return <div ref={ref} data-testid="one" />;
+    }
+    render(<OneSize />);
+    const sheet = screen.getByTestId("one");
+    const touch = (clientY: number) => ({ touches: [{ clientY }] });
+    sheet.scrollTop = 40;
+    fireEvent.touchStart(sheet, touch(300));
+    vi.advanceTimersByTime(100);
+    fireEvent.touchMove(sheet, touch(320));
+    sheet.scrollTop = 0;
+    for (const y of [360, 420, 480]) {
+      vi.advanceTimersByTime(100);
+      fireEvent.touchMove(sheet, touch(y));
+    }
+    fireEvent.touchEnd(sheet, { touches: [] });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});

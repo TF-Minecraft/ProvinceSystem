@@ -40,7 +40,10 @@ type Gesture = "dismiss" | "resize" | "native";
  *   than scrolling, provided there is more content to show.
  *
  * Letting go past 96 px, or with a flick, completes the step; a shorter drag
- * springs back. Any other gesture scrolls the content as usual.
+ * springs back. Any other gesture scrolls the content as usual, and a scroll
+ * back up that reaches the top turns into a pull on the sheet mid-swipe.
+ * Sheets using this set `overscroll-behavior: none`, so their content never
+ * rubber-bands into a blank gap at the top.
  *
  * Touch events rather than pointer events: the move listener has to be
  * non-passive to stop iOS scrolling or rubber-banding the content, and
@@ -65,6 +68,9 @@ export function useBottomSheetDrag(
     let startHeight = 0;
     /** Null until the gesture's first move decides what it is. */
     let gesture: Gesture | null = null;
+    /** One finger on the phone sheet: a scroll may still become a drag. */
+    let eligible = false;
+    let lastY = 0;
     let travel = 0;
     /** Recent finger positions, for the speed at release. */
     let samples: { y: number; t: number }[] = [];
@@ -92,11 +98,12 @@ export function useBottomSheetDrag(
     }
 
     function onTouchStart(event: TouchEvent) {
-      if (event.touches.length !== 1 || !isSheet()) {
+      eligible = event.touches.length === 1 && isSheet();
+      if (!eligible) {
         gesture = "native";
         return;
       }
-      startY = event.touches[0].clientY;
+      startY = lastY = event.touches[0].clientY;
       samples = [{ y: startY, t: event.timeStamp }];
       gesture = null;
       travel = 0;
@@ -113,13 +120,26 @@ export function useBottomSheetDrag(
     }
 
     function onTouchMove(event: TouchEvent) {
-      if (gesture === "native" || event.touches.length !== 1) return;
+      if (!eligible || event.touches.length !== 1) return;
       const y = event.touches[0].clientY;
+      const movingDown = y > lastY;
+      lastY = y;
+      if (gesture === "native") {
+        // Google Maps' hand-off: a scroll back up that reaches the top of the
+        // content carries on as a pull on the sheet, from where it is now,
+        // rather than stopping (or bouncing) at the top.
+        if (!movingDown || scroller().scrollTop > 0 || !event.cancelable) return;
+        gesture = decide(1);
+        if (gesture === "native") return;
+        startY = y;
+        samples = [{ y, t: event.timeStamp }];
+        startHeight = node.getBoundingClientRect().height;
+      }
       const dy = y - startY;
       if (gesture === null) {
         if (dy === 0) return;
-        // Decided on the very first move: iOS commits to a native scroll
-        // straight after it, and then the gesture can no longer be taken over.
+        // Decided on the very first move, before iOS commits to a native
+        // scroll. A scroll can still hand over to a pull at the top, above.
         gesture = decide(dy);
         if (gesture === "native") return;
         startHeight = node.getBoundingClientRect().height;
@@ -142,6 +162,7 @@ export function useBottomSheetDrag(
     function onTouchEnd(event: TouchEvent) {
       const done = gesture;
       gesture = null;
+      eligible = false;
       if (done === null || done === "native") return;
       const first = samples[0];
       const last = samples[samples.length - 1];
