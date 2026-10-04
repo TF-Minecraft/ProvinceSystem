@@ -90,3 +90,21 @@ describe("MapLayersMenu", () => {
     expect(sheet.style.transform).toBe("");
   });
 });
+
+describe("MapLayersMenu pull that stops before lifting", () => {
+  it("is not a flick", () => {
+    const sheet = renderMenu();
+    const touch = (clientY: number) => ({ touches: [{ clientY }] });
+    fireEvent.touchStart(sheet, touch(300));
+    for (let i = 1; i <= 6; i++) {
+      vi.advanceTimersByTime(8);
+      fireEvent.touchMove(sheet, touch(300 + i * 10));
+    }
+    vi.advanceTimersByTime(400);
+    fireEvent.touchEnd(sheet, { touches: [] });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.getByRole("dialog")).toBe(sheet);
+  });
+});

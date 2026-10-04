@@ -6,6 +6,8 @@ import { useEffect, useRef, type RefObject } from "react";
 const CLOSE_DISTANCE_PX = 96;
 /** Or flicked down at least this fast (px per ms) at the end of the pull. */
 const CLOSE_VELOCITY = 0.5;
+/** How far back the flick speed is measured: one touch sample is too noisy. */
+const VELOCITY_WINDOW_MS = 100;
 const SETTLE_MS = 180;
 
 /**
@@ -37,9 +39,8 @@ export function useSheetDragToClose(
     /** Null until the gesture's first move decides what it is. */
     let dragging: boolean | null = null;
     let offset = 0;
-    let lastY = 0;
-    let lastTime = 0;
-    let velocity = 0;
+    /** Recent finger positions, for the speed at release. */
+    let samples: { y: number; t: number }[] = [];
     let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
     function isSheet(): boolean {
@@ -56,11 +57,10 @@ export function useSheetDragToClose(
         dragging = false;
         return;
       }
-      startY = lastY = event.touches[0].clientY;
-      lastTime = event.timeStamp;
+      startY = event.touches[0].clientY;
+      samples = [{ y: startY, t: event.timeStamp }];
       dragging = null;
       offset = 0;
-      velocity = 0;
     }
 
     function onTouchMove(event: TouchEvent) {
@@ -75,20 +75,24 @@ export function useSheetDragToClose(
         if (!dragging) return;
       }
       if (event.cancelable) event.preventDefault();
-      const elapsed = event.timeStamp - lastTime;
-      if (elapsed > 0) velocity = (y - lastY) / elapsed;
-      lastY = y;
-      lastTime = event.timeStamp;
+      samples.push({ y, t: event.timeStamp });
+      samples = samples.filter((sample) => event.timeStamp - sample.t <= VELOCITY_WINDOW_MS);
       offset = Math.max(0, dy);
       place(offset, false);
     }
 
-    function onTouchEnd() {
+    function onTouchEnd(event: TouchEvent) {
       if (!dragging) {
         dragging = null;
         return;
       }
       dragging = null;
+      const first = samples[0];
+      const last = samples[samples.length - 1];
+      // A finger that came to rest before lifting is not a flick.
+      const rested = event.timeStamp - last.t > VELOCITY_WINDOW_MS;
+      const velocity =
+        !rested && last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
       if (offset >= CLOSE_DISTANCE_PX || (offset > 0 && velocity >= CLOSE_VELOCITY)) {
         place(node.offsetHeight, true);
         closeTimer = setTimeout(() => onCloseRef.current(), SETTLE_MS);
