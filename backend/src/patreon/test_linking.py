@@ -389,16 +389,6 @@ def test_profile_name_falls_back_to_session_uuid(api, monkeypatch):
     assert subject["target_name"] == player() and subject["target_kind"] == "minecraft"
 
 
-def test_migration_adds_state_display_columns_and_expires_legacy_states(database):
-    with database.connect() as conn:
-        conn.execute("DROP TABLE patreon_oauth_states")
-        conn.execute("CREATE TABLE patreon_oauth_states(state_hash TEXT PRIMARY KEY,discord_user_id TEXT,player_uuid TEXT,expires_at TEXT NOT NULL,used_at TEXT)")
-        conn.execute("INSERT INTO patreon_oauth_states(state_hash,discord_user_id,expires_at) VALUES (?,?,?)", (hashlib.sha256(b"legacy").hexdigest(), "111", iso(utcnow() + timedelta(minutes=5))))
-    database.migrate()
-    database.migrate()
-    assert linking.consume_state("legacy") is None
-
-
 def test_simultaneous_confirmation_consumes_token_once(api, monkeypatch):
     sync([patron(discord=None)])
     monkeypatch.setattr(linking, "build_client", lambda config=None: Stub())

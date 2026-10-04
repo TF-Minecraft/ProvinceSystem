@@ -161,19 +161,6 @@ def get_stored_max_alive(player_uuid: str) -> int | None:
     return get_player_meta(player_uuid)["max_alive_characters"]
 
 
-def get_name_colour_stops(player_uuid: str) -> int:
-    """Resolved colour-stop entitlement (0 = no colour)."""
-    return int(get_player_meta(player_uuid).get("name_colour_stops") or 0)
-
-
-def get_wardrobe_skin_slots(player_uuid: str) -> int:
-    """Swappable wardrobe skins (1–3). Defaults to 1 when unset."""
-    try:
-        return max(1, min(3, int(get_player_meta(player_uuid).get("wardrobe_skin_slots") or 1)))
-    except (TypeError, ValueError):
-        return 1
-
-
 def get_max_alive(
     player_uuid: str,
     slot_limits: dict[str, Any] | None = None,
@@ -183,10 +170,6 @@ def get_max_alive(
     if stored is not None:
         return stored
     return catalog_default_max_alive(slot_limits)
-
-
-def is_real_age_set(player_uuid: str) -> bool:
-    return bool(get_player_meta(player_uuid)["real_age_set"])
 
 
 def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:

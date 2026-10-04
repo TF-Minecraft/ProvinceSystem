@@ -74,28 +74,6 @@ def normalize_realm_id(realm_id: str | None) -> str:
     return raw
 
 
-def _row_realm_id(row) -> str:
-    try:
-        value = row["realm_id"]
-    except (KeyError, IndexError, TypeError):
-        return DEFAULT_REALM_ID
-    if value is None:
-        return DEFAULT_REALM_ID
-    text = str(value).strip().lower()
-    return text if text else DEFAULT_REALM_ID
-
-
-def _row_scope(row) -> str:
-    try:
-        value = row["scope"]
-    except (KeyError, IndexError):
-        return "skin"
-    if value is None:
-        return "skin"
-    text = str(value).strip().lower()
-    return text if text else "skin"
-
-
 def _is_staff_scope(scope: str) -> bool:
     return (scope or "").strip().lower() == "skin_staff"
 
@@ -176,7 +154,7 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
 
 
 def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
-    """Drop stale sessions; clear legacy redeemed_at when no submission exists."""
+    """Replace sessions and clear the redemption time before reusing a code."""
     conn.execute("DELETE FROM sessions WHERE code_id = ?", (code_id,))
     conn.execute(
         "UPDATE codes SET redeemed_at = NULL WHERE id = ?",
@@ -350,7 +328,7 @@ def list_active_codes() -> list[dict]:
         {
             "code": row["code"],
             "player_uuid": row["player_uuid"],
-            "scope": _row_scope(row),
+            "scope": str(row["scope"]).strip().lower(),
             "minecraft_name": row["minecraft_name"],
             "created_at": row["created_at"],
             "expires_at": row["expires_at"],
@@ -393,7 +371,7 @@ def revoke_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has already been revoked")
-        scope = _row_scope(row)
+        scope = str(row["scope"]).strip().lower()
         if _code_is_consumed(conn, row["id"], scope):
             raise CodeError("Code has already been redeemed")
         if _parse_iso(row["expires_at"]) < now:
@@ -440,8 +418,8 @@ def inspect_code(plaintext: str) -> dict:
         if row is None:
             return {"valid": False, "error": "Invalid code"}
 
-        scope = _row_scope(row)
-        realm_id = _row_realm_id(row)
+        scope = str(row["scope"]).strip().lower()
+        realm_id = str(row["realm_id"]).strip().lower()
         player_uuid = str(row["player_uuid"] or "").strip().lower()
         revoked = bool(row["revoked"])
         expired = _parse_iso(row["expires_at"]) < now
@@ -530,7 +508,7 @@ def redeem_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has been revoked")
-        scope = _row_scope(row)
+        scope = str(row["scope"]).strip().lower()
         if _code_is_consumed(conn, row["id"], scope):
             raise CodeError("Code has already been used")
         if _parse_iso(row["expires_at"]) < now:
@@ -567,7 +545,7 @@ def redeem_code(plaintext: str) -> dict:
     entitlements = resolve_web_entitlements(
         row["player_uuid"],
         staff=_is_staff_scope(scope),
-        realm_id=_row_realm_id(row),
+        realm_id=str(row["realm_id"]).strip().lower(),
     )
     return {
         "session_token": session_token,
@@ -575,7 +553,7 @@ def redeem_code(plaintext: str) -> dict:
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
-        "realm_id": _row_realm_id(row),
+        "realm_id": str(row["realm_id"]).strip().lower(),
         "staff": _is_staff_scope(scope),
         "name_colour_stops": entitlements["name_colour_stops"],
         "max_3d_pair_bytes": entitlements["max_3d_pair_bytes"],
@@ -610,7 +588,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
             raise CodeError("Code has already been redeemed")
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
-        scope = _row_scope(row)
+        scope = str(row["scope"]).strip().lower()
         if scope != "profile":
             raise CodeError("This code is for skins, not profile login")
 
@@ -647,7 +625,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
-        "realm_id": _row_realm_id(row),
+        "realm_id": str(row["realm_id"]).strip().lower(),
         "remember_me": remember,
     }
 
@@ -673,7 +651,7 @@ def redeem_drink_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has been revoked")
-        scope = _row_scope(row)
+        scope = str(row["scope"]).strip().lower()
         if scope != "drink":
             if scope in REDEEMABLE_SKIN_SCOPES:
                 raise CodeError("This code is for skins, not drinks")
@@ -709,7 +687,7 @@ def redeem_drink_code(plaintext: str) -> dict:
 
     entitlements = resolve_web_entitlements(
         str(row["player_uuid"]),
-        realm_id=_row_realm_id(row),
+        realm_id=str(row["realm_id"]).strip().lower(),
     )
     return {
         "session_token": session_token,
@@ -717,7 +695,7 @@ def redeem_drink_code(plaintext: str) -> dict:
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
-        "realm_id": _row_realm_id(row),
+        "realm_id": str(row["realm_id"]).strip().lower(),
         "allow_drink_texture": entitlements["allow_drink_texture"],
         "allow_drink_message": entitlements["allow_drink_message"],
         "name_colour_stops": entitlements["name_colour_stops"],
@@ -771,7 +749,7 @@ def get_session(token: str) -> dict | None:
         return None
     if _parse_iso(row["expires_at"]) < now:
         return None
-    scope = _row_scope(row)
+    scope = str(row["scope"]).strip().lower()
     return {
         "id": row["id"],
         "token_hash": row["token_hash"],
@@ -780,7 +758,7 @@ def get_session(token: str) -> dict | None:
         "expires_at": row["expires_at"],
         "created_at": row["created_at"],
         "scope": scope,
-        "realm_id": _row_realm_id(row),
+        "realm_id": str(row["realm_id"]).strip().lower(),
         "staff": _is_staff_scope(scope),
     }
 
@@ -866,7 +844,7 @@ def _self_test() -> None:
     except CodeError as e:
         assert "scope" in str(e).lower()
 
-    # default scope (ArmourShop back-compat)
+    # Skin codes are the default scope.
     defaulted = issue_code(uuid)
     assert defaulted["scope"] == "skin"
 

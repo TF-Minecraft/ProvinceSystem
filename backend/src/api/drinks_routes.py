@@ -43,7 +43,6 @@ from src.skins.drinks import (
     resolve_drink_submission_file,
     revoke_drink_submission,
     save_drink_asset,
-    upsert_drink_player_meta,
 )
 
 logger = logging.getLogger("drinks.routes")
@@ -57,12 +56,6 @@ class RedeemBody(BaseModel):
 
 class DenyBody(BaseModel):
     reason: str = Field(..., min_length=1)
-
-
-class DrinkMetaBody(BaseModel):
-    player_uuid: str = Field(..., min_length=1)
-    allow_drink_texture: bool = False
-    name_colour_stops: int = 0
 
 
 class TextureCmdBody(BaseModel):
@@ -317,24 +310,6 @@ def plugin_put_catalog(
         return {**get_drink_catalog(), "ignored": True}
     try:
         return replace_drink_catalog(body)
-    except DrinkError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-
-@drinks_router.put("/plugin/player-meta")
-def plugin_put_meta(
-    body: DrinkMetaBody,
-    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
-):
-    """Deprecated: prefer TFMCWeb PUT /characters/plugin/rpc-player-meta."""
-    import logging
-
-    logging.getLogger("uvicorn.error").warning(
-        "DEPRECATED PUT /drinks/plugin/player-meta: use TFMCWeb rpc-player-meta"
-    )
-    _require_plugin(x_plugin_key)
-    try:
-        return upsert_drink_player_meta(body.model_dump())
     except DrinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

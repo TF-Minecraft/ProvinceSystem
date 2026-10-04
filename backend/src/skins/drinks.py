@@ -12,7 +12,6 @@ from typing import Any
 
 from src.name_colours import (
     NameColourError,
-    effective_colour_cap,
     validate_name_colours,
 )
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
@@ -42,12 +41,6 @@ def _iso_now() -> str:
 
 def _submissions_root() -> Path:
     path = db.DRINKS_DIR / "submissions"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def _textures_root() -> Path:
-    path = db.DRINKS_DIR / "textures"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -86,89 +79,6 @@ def resolve_drink_asset(filename: str) -> Path | None:
     if path.is_file() and path.stat().st_size > 0:
         return path
     return None
-
-
-# --- player meta ---
-
-
-def get_allow_drink_texture(player_uuid: str) -> bool:
-    uuid = (player_uuid or "").strip().lower()
-    if not uuid:
-        return False
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT allow_drink_texture FROM drink_player_meta
-            WHERE LOWER(player_uuid) = ?
-            """,
-            (uuid,),
-        ).fetchone()
-    if row is None:
-        return False
-    try:
-        return bool(int(row["allow_drink_texture"] or 0))
-    except (TypeError, ValueError):
-        return False
-
-
-def get_drink_name_colour_stops(player_uuid: str) -> int:
-    uuid = (player_uuid or "").strip().lower()
-    if not uuid:
-        return 0
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT name_colour_stops FROM drink_player_meta
-            WHERE LOWER(player_uuid) = ?
-            """,
-            (uuid,),
-        ).fetchone()
-    if row is None:
-        return 0
-    try:
-        return effective_colour_cap(int(row["name_colour_stops"] or 0))
-    except (TypeError, ValueError, KeyError):
-        return 0
-
-
-def upsert_drink_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise DrinkError("body must be a JSON object")
-    uuid = str(raw.get("player_uuid") or "").strip().lower()
-    if not uuid:
-        raise DrinkError("player_uuid is required")
-    allow = bool(raw.get("allow_drink_texture", False))
-    if isinstance(raw.get("allow_drink_texture"), (int, str)):
-        try:
-            allow = bool(int(raw.get("allow_drink_texture")))
-        except (TypeError, ValueError):
-            allow = bool(raw.get("allow_drink_texture"))
-    try:
-        stops = effective_colour_cap(int(raw.get("name_colour_stops") or 0))
-    except (TypeError, ValueError):
-        stops = 0
-    updated_at = _iso_now()
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO drink_player_meta (
-                player_uuid, allow_drink_texture, name_colour_stops, updated_at
-            )
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(player_uuid) DO UPDATE SET
-                allow_drink_texture = excluded.allow_drink_texture,
-                name_colour_stops = excluded.name_colour_stops,
-                updated_at = excluded.updated_at
-            """,
-            (uuid, 1 if allow else 0, stops, updated_at),
-        )
-        conn.commit()
-    return {
-        "player_uuid": uuid,
-        "allow_drink_texture": allow,
-        "name_colour_stops": stops,
-        "updated_at": updated_at,
-    }
 
 
 # --- catalog ---
@@ -565,7 +475,7 @@ def _validate_recipe(
     name_good_colours = _parse_colours(
         raw, "name_good_colours", colour_cap=colour_cap
     )
-    # One colour set applies to all qualities unless legacy per-quality lists are set.
+    # Per-quality colour lists override the shared colour set.
     if not name_bad_colours:
         name_bad_colours = list(name_colours)
     if not name_good_colours:

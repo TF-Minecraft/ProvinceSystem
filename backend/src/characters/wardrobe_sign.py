@@ -167,7 +167,7 @@ def _extract_texture(payload: dict) -> tuple[str, str] | None:
         return None
     data = texture.get("data")
     if not isinstance(data, dict):
-        # legacy-ish
+        # The texture may carry value and signature directly.
         value = texture.get("value")
         signature = texture.get("signature")
         if isinstance(value, str) and isinstance(signature, str) and value and signature:

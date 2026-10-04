@@ -27,8 +27,6 @@ COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 _OVERLAY_NAME = "potion_overlay.png"
 _BOTTLE_NAME = "glass_bottle.png"
-_LEGACY_BASE_NAME = "drink_base_potion.png"
-_PKG_ASSETS = Path(__file__).resolve().parent / "assets"
 
 
 class DrinkReviewSheetError(ValueError):
@@ -68,17 +66,15 @@ def _assets_dir() -> Path:
 
 
 def _load_rgba(name: str) -> Image.Image | None:
-    for root in (_assets_dir(), _PKG_ASSETS):
-        path = root / name
-        if not path.is_file():
-            continue
-        try:
-            img = Image.open(path)
-            img.load()
-            return img.convert("RGBA")
-        except OSError as e:
-            raise DrinkReviewSheetError(f"Cannot read asset: {name}") from e
-    return None
+    path = _assets_dir() / name
+    if not path.is_file():
+        return None
+    try:
+        img = Image.open(path)
+        img.load()
+        return img.convert("RGBA")
+    except OSError as e:
+        raise DrinkReviewSheetError(f"Cannot read asset: {name}") from e
 
 
 def _procedural_overlay() -> Image.Image:
@@ -128,12 +124,6 @@ def _compose_colored_potion(color: str) -> Image.Image:
     """Tint overlay (liquid), composite glass bottle on top."""
     overlay = _load_rgba(_OVERLAY_NAME)
     bottle = _load_rgba(_BOTTLE_NAME)
-    if overlay is None and bottle is None:
-        legacy = _load_rgba(_LEGACY_BASE_NAME)
-        if legacy is not None:
-            return _tint_overlay(legacy, color)
-        overlay = _procedural_overlay()
-        bottle = _procedural_bottle()
     if overlay is None:
         overlay = _procedural_overlay()
     if bottle is None:

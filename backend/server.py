@@ -76,16 +76,7 @@ app.add_middleware(
 # ------------------------------------------------
 # GZip (JSON only - never re-compress binary bodies)
 # ------------------------------------------------
-# The geometry/metadata JSON this API serves is large and highly compressible;
-# the PNG/WebP/gzip bodies are already compressed, so re-deflating them burns
-# CPU for nothing (and would undo the WebP savings).
-#
-# Least invasive option: no wrapper class and no router split - Starlette's own
-# GZipMiddleware already skips any response whose content-type is in
-# exclude_content_types. Passing the tuple explicitly rather than leaning on the
-# library default also means an unpinned Starlette that predates the option
-# fails loudly at startup (TypeError on the unknown kwarg) instead of silently
-# re-compressing images.
+# Compress large geometry and metadata JSON; skip compressed binary formats.
 EXCLUDED_FROM_GZIP = (
     "application/gzip",
     "application/x-gzip",

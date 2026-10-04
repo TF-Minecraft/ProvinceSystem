@@ -40,8 +40,6 @@ body; the token is the credential, with no browser session required:
 Unknown, used or expired tokens return `expired` (`{"status": "expired"}`
 for pending/cancel, with an empty `tier` for confirm). Responses and callback
 redirects disable caching. Logs contain fixed messages/status codes only.
-Existing OAuth states without display metadata are treated as expired after
-migration, requiring callers to start again.
 
 The website removes the fragment from the address bar, loads the pending
 names as text, and asks the person to confirm that the target is theirs.

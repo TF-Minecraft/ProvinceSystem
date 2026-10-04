@@ -8,7 +8,7 @@ from typing import Any
 
 from src.name_colours import MAX_NAME_COLOURS, effective_colour_cap
 
-# Mirrors skins.entitlements._STAFF_SKIN_KINDS / submissions.ALLOWED_KINDS.
+# Mirrors submissions.ALLOWED_KINDS.
 _STAFF_SKIN_KINDS = (
     "armor_set",
     "handheld",
@@ -388,63 +388,6 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _legacy_fallback(player_uuid: str, *, realm_id: str = "main") -> dict[str, Any]:
-    """Merge drink / armourshop / character meta when rpc_player_meta is empty."""
-    from src.characters.roster import get_player_meta as get_character_meta
-    from src.skins.drinks import get_allow_drink_texture, get_drink_name_colour_stops
-    from src.skins.entitlements import get_player_meta as get_armourshop_meta
-
-    out = _empty_entitlements(realm_id=realm_id)
-    stops = 0
-
-    try:
-        stops = max(stops, int(get_drink_name_colour_stops(player_uuid) or 0))
-    except Exception:
-        pass
-    try:
-        out["allow_drink_texture"] = bool(get_allow_drink_texture(player_uuid))
-    except Exception:
-        pass
-
-    as_meta = None
-    try:
-        as_meta = get_armourshop_meta(player_uuid)
-    except Exception:
-        as_meta = None
-    if as_meta:
-        stops = max(stops, int(as_meta.get("name_colour_stops") or 0))
-        out["max_3d_pair_bytes"] = max(
-            0, int(as_meta.get("max_3d_pair_bytes") or 0)
-        ) or EMERGENCY_MAX_3D_PAIR_BYTES
-        out["skin_token_cooldown_days"] = int(
-            as_meta.get("skin_token_cooldown_days", DEFAULT_SKIN_TOKEN_COOLDOWN_DAYS)
-        )
-        out["skin_kinds"] = list(as_meta.get("skin_kinds") or [])
-        out["allow_armor_3d_helmet"] = bool(as_meta.get("allow_armor_3d_helmet"))
-
-    char_meta = get_character_meta(player_uuid)
-    stops = max(stops, int(char_meta.get("name_colour_stops") or 0))
-    if char_meta.get("max_alive_characters") is not None:
-        try:
-            out["max_alive_characters"] = max(
-                1, int(char_meta["max_alive_characters"])
-            )
-        except (TypeError, ValueError):
-            pass
-    try:
-        out["wardrobe_skin_slots"] = max(
-            1, min(3, int(char_meta.get("wardrobe_skin_slots") or 1))
-        )
-    except (TypeError, ValueError):
-        out["wardrobe_skin_slots"] = 1
-
-    out["name_colour_stops"] = effective_colour_cap(stops)
-    if out["max_3d_pair_bytes"] <= 0:
-        out["max_3d_pair_bytes"] = EMERGENCY_MAX_3D_PAIR_BYTES
-    out["meta_synced"] = False
-    return out
-
-
 def resolve_web_entitlements(
     player_uuid: str,
     *,
@@ -453,8 +396,7 @@ def resolve_web_entitlements(
 ) -> dict[str, Any]:
     """
     Primary reader for website gates.
-    Prefer rpc_player_meta for (uuid, realm); legacy merge only for main when
-    the row is missing. Staff overrides skin caps/kinds.
+    Read rpc_player_meta for (uuid, realm). Staff overrides skin caps/kinds.
     """
     uuid = (player_uuid or "").strip().lower()
     try:
@@ -481,8 +423,6 @@ def resolve_web_entitlements(
                 "donator_tier": int(row.get("donator_tier") or 0),
                 "realm_id": realm,
             }
-        elif realm == "main":
-            out = _legacy_fallback(uuid, realm_id=realm)
         else:
             out = _empty_entitlements(realm_id=realm)
 

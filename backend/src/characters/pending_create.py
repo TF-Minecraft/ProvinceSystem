@@ -15,22 +15,6 @@ class PendingCreateError(ValueError):
         self.status_code = status_code
 
 
-def is_pending_create_id(character_id: str) -> bool:
-    """True when character_id is a row in character_creates with status pending."""
-    cid = (character_id or "").strip()
-    if not cid:
-        return False
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT 1 FROM character_creates
-            WHERE id = ? AND LOWER(COALESCE(status, '')) = 'pending'
-            """,
-            (cid,),
-        ).fetchone()
-    return row is not None
-
-
 def fetch_owned_pending_create(
     player_uuid: str, create_id: str
 ) -> dict[str, Any] | None:
@@ -52,12 +36,7 @@ def fetch_owned_pending_create(
         ).fetchone()
     if row is None:
         return None
-    out = dict(row)
-    try:
-        out["wardrobe_active_slot"] = row["wardrobe_active_slot"]
-    except (KeyError, IndexError):
-        out["wardrobe_active_slot"] = None
-    return out
+    return dict(row)
 
 
 def resolve_player_character(

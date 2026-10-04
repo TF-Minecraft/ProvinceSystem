@@ -39,13 +39,6 @@ def parse_grip_preset(raw: str | None) -> float:
     if raw is None or not str(raw).strip():
         raise ValueError("grip_preset is required")
     text = str(raw).strip()
-    lower = text.lower()
-    if lower == "bottom":
-        return 2.5
-    if lower == "middle":
-        return float(load_constants()["large_handheld"]["grip_y_default"])
-    if lower == "top":
-        return 5.5
     try:
         value = float(text)
     except ValueError as e:

@@ -1,6 +1,5 @@
 from dataclasses import replace
 from datetime import timedelta
-import json
 import uuid
 import pytest
 from src.patreon import service as s
@@ -396,23 +395,13 @@ def test_suppress_dms_hides_outgoing_dm_and_ack_consumes_it(database, monkeypatc
     assert changes(config=revealed) == []
 
 
-def test_schema_migration_idempotent_and_upgrades_desired_history(database):
-    with database.connect() as conn:
-        conn.execute("DROP TABLE patreon_desired")
-        conn.execute("CREATE TABLE patreon_desired(target TEXT,subject TEXT,tier_key TEXT,grace_until TEXT,dm TEXT,generation INTEGER,PRIMARY KEY(target,subject))")
-    database.migrate()
-    database.migrate()
+def test_schema_initialisation_preserves_entitlement_history(database):
     sync([member()])
+    before = snapshot(database)
+    database.migrate()
+    database.migrate()
+    assert snapshot(database) == before
     assert changes()[0]["add_tier"] == "noble"
-
-
-def test_dm_suppressed_column_migrates(database):
-    with database.connect() as conn:
-        conn.execute("DROP TABLE patreon_changes")
-        conn.execute("CREATE TABLE patreon_changes(id INTEGER PRIMARY KEY AUTOINCREMENT, target TEXT NOT NULL, subject TEXT NOT NULL, add_tier TEXT, remove_json TEXT NOT NULL, dm TEXT, grace_until TEXT, generation INTEGER NOT NULL, created_at TEXT NOT NULL, dispatched_at TEXT, acked_at TEXT, cancelled_at TEXT)")
-    database.migrate()
-    sync([member()])
-    assert changes()[0]["dm"] == "tier_granted"
 
 
 def test_import_conflicts_simulated_sequentially_and_invalid_grants_rollback(database):
