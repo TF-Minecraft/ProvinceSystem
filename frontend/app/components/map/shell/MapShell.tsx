@@ -182,7 +182,7 @@ function DetailsSheet({
         onClick={() => setExpanded((value) => !value)}
         aria-label={expanded ? "Show less" : "Show more"}
         aria-expanded={expanded}
-        className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
+        className="flex shrink-0 justify-center pt-2 md:hidden"
       >
         <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
       </button>

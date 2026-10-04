@@ -84,7 +84,7 @@ export default function PanelHeader({
           leaves a gap above it) when it starts to stick. */}
       <div className="sticky top-0 z-10 h-0">
         <div
-          className={`absolute -inset-x-4 top-0 flex h-12 items-center gap-2 border-b pl-4 pr-2 transition-colors duration-150 md:rounded-t-[9px] ${
+          className={`absolute -inset-x-4 top-0 flex h-12 items-center gap-2 border-b px-4 transition-colors duration-150 md:rounded-t-[9px] ${
             compact
               ? // The upward shadow seals the hairline iOS can leave above it.
                 "pointer-events-auto border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[var(--tfmc-forest-deep)] shadow-[0_-4px_0_var(--tfmc-forest-deep)]"
