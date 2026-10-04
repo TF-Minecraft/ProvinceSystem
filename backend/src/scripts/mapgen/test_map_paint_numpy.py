@@ -5,7 +5,6 @@ import numpy as np
 from .map_paint_numpy import (
     pack_rgb,
     paint_from_rgb_lut,
-    unpack_rgb_key,
 )
 
 
@@ -14,7 +13,6 @@ def _paint_slow(
     rgb_to_color: dict[tuple[int, int, int], tuple[int, ...]],
     *,
     skip_black: bool = True,
-    color_overrides: dict[tuple[int, int, int], tuple[int, int, int]] | None = None,
 ) -> np.ndarray:
     height, width = provinces_rgba.shape[:2]
     out = np.zeros((height, width, 4), dtype=np.uint8)
@@ -25,9 +23,6 @@ def _paint_slow(
             color = rgb_to_color.get(rgb)
             if color is None:
                 continue
-
-            if color_overrides is not None:
-                color = color_overrides.get(color[:3], color[:3])
 
             if len(color) == 4:
                 rgba = tuple(int(v) for v in color)
@@ -59,10 +54,10 @@ class TestMapPaintNumpy(unittest.TestCase):
             (70, 80, 90): (200, 210, 220, 128),
         }
 
-    def test_pack_rgb_round_trip(self):
+    def test_pack_rgb_channel_positions(self):
         packed = pack_rgb(self.provinces[:, :, :3])
-        self.assertEqual(unpack_rgb_key(int(packed[0, 0])), (10, 20, 30))
-        self.assertEqual(unpack_rgb_key(int(packed[0, 1])), (40, 50, 60))
+        self.assertEqual(int(packed[0, 0]), 0x0A141E)
+        self.assertEqual(int(packed[0, 1]), 0x28323C)
 
     def test_paint_matches_slow_reference(self):
         fast = paint_from_rgb_lut(self.provinces, self.rgb_lut, skip_black=True)
@@ -76,22 +71,6 @@ class TestMapPaintNumpy(unittest.TestCase):
     def test_rgba_values_keep_alpha(self):
         result = paint_from_rgb_lut(self.provinces, self.rgb_lut, skip_black=True)
         self.assertEqual(tuple(result[0, 3]), (200, 210, 220, 128))
-
-    def test_color_overrides(self):
-        overrides = {(100, 110, 120): (5, 6, 7)}
-        fast = paint_from_rgb_lut(
-            self.provinces,
-            self.rgb_lut,
-            skip_black=True,
-            color_overrides=overrides,
-        )
-        slow = _paint_slow(
-            self.provinces,
-            self.rgb_lut,
-            skip_black=True,
-            color_overrides=overrides,
-        )
-        np.testing.assert_array_equal(fast, slow)
 
 
 if __name__ == "__main__":

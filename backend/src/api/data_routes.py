@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 import json, logging, os, time
@@ -7,7 +7,6 @@ from .http_headers import (
     add_no_cache,
     conditional_file_response,
     conditional_json_response,
-    make_etag,
     map_asset_cache,
     PRIVATE_CACHE,
 )
@@ -78,12 +77,6 @@ def _map_dir(path_builder, map_name: str) -> str:
 
 def clear_province_cache(map_name: str) -> None:
     _province_cache.pop(map_name, None)
-
-def add_cors(response: Response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    return response;
 
 def compute_trade_shares(trade: dict):
     total = sum(v.get("trade", 0) for v in trade.values())

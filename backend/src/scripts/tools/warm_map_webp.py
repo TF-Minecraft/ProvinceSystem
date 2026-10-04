@@ -15,7 +15,7 @@ import os
 import sys
 import time
 
-from ..util.dirs import INPUT_DIR, input_file, parchment_image
+from ..util.dirs import INPUT_DIR, input_file
 
 try:
     # Imported as part of the `src` package (server / regeneration).
@@ -27,8 +27,7 @@ except ImportError:
 
 def webp_warm_sources(map_name: str) -> list[str]:
     """Base images this map warms. Public so regeneration can stamp them."""
-    """The base map images the API can serve as WebP."""
-    candidates = [input_file(map_name, "map.png"), parchment_image(map_name)]
+    candidates = [input_file(map_name, "map.png")]
     return [path for path in candidates if os.path.isfile(path)]
 
 

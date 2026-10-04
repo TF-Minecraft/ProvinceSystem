@@ -154,13 +154,7 @@ class TestWriteScaledGrid(unittest.TestCase):
 
 
 class TestWriteGridIsAtomic(unittest.TestCase):
-    """Finding 1: a GET during regen must never see a truncated gzip.
-
-    `write_province_id_grid_file` used to `gzip.open(out_path, "wb")` directly
-    against the served path, so a reader mid-write (or `geometry_version`
-    hashing the file) could observe a partial file. It now compresses in
-    memory and lands the whole thing with one atomic rename.
-    """
+    """Readers must see complete gzip files throughout regeneration."""
 
     def test_no_temp_sibling_survives_a_successful_write(self):
         width, height, ids = _grid([[1, 2, 0], [0, 3, 4]])
@@ -327,7 +321,7 @@ class TestLostProvinceIds(unittest.TestCase):
 
 
 class TestCliReportsProvinceLoss(unittest.TestCase):
-    """The CLI used to print nonzero_pixels and a success message regardless."""
+    """The CLI reports province IDs lost during decimation."""
 
     def _run_main(self, ids, scale, dest):
         from unittest.mock import patch

@@ -37,7 +37,7 @@ def run_mode(map_name: str, mode: str, full_regions: bool) -> dict:
         steps[f"{mode}.prosperity"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    create_map(map_name, mode, f"{mode}_map", False, cache=cache)
+    create_map(map_name, mode, f"{mode}_map", cache=cache)
     steps[f"{mode}.map"] = time.perf_counter() - t0
     print(f"🗺️ [{map_name}] Map generated for {mode}")
 

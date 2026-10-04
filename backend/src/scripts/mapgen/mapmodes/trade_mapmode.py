@@ -15,7 +15,7 @@ def main() -> None:
     args = parser.parse_args()
 
     validate_map(args.map)
-    create_map(args.map, "trade", "trade_map", False)
+    create_map(args.map, "trade", "trade_map")
     generate_regions(args.map, "trade", borders=False)
 
 

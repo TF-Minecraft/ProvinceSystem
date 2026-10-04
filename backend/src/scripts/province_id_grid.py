@@ -232,10 +232,8 @@ def write_province_id_grid_file(
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     payload = serialize_province_id_grid(width, height, ids)
-    # Write straight to a `gzip.open(out_path, "wb")` handle used to leave a
-    # truncated gzip visible mid-write: a GET during regen streams it and
-    # `chronicle.store.geometry_version` hashes it half-written. Compress in
-    # memory and land the whole file with one atomic rename instead.
+    # Publish the compressed grid atomically so requests and geometry hashes
+    # always read a complete file during regeneration.
     _write_atomic(out_path, gzip.compress(payload), prefix=".province-id-grid-")
 
     return out_path

@@ -1,10 +1,8 @@
 import unittest
 
 import numpy as np
-from PIL import Image
 
-from ..util.overlay_metadata import crop_to_content
-from .regiongen_numpy import RegionBuffer, _finalize_buffer_layer, _stage_on_full_canvas
+from .regiongen import RegionBuffer, _finalize_buffer_layer, _stage_on_window
 
 
 class TestRegiongenNumpy(unittest.TestCase):
@@ -93,10 +91,14 @@ class TestRegiongenNumpy(unittest.TestCase):
         mask[40:60, 30:50] = True
         buf.paint_flat(mask, (10, 20, 30), (40, 50, 60))
 
+        window, origin = _stage_on_window(
+            buf, (buf.x0, buf.y0, buf.x1, buf.y1), 3, height, width, "base"
+        )
         _finalize_buffer_layer(
             buf,
             "base",
-            _stage_on_full_canvas(buf, height, width, "base"),
+            window,
+            origin=origin,
             store_overlay_meta=True,
         )
 

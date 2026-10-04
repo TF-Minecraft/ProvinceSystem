@@ -20,9 +20,5 @@ def manifest_path(label: str) -> str:
     return os.path.join(MANIFESTS_DIR, f"{label}.json")
 
 
-def timings_path(label: str) -> str:
-    return os.path.join(TIMINGS_DIR, f"{label}.json")
-
-
 def snapshot_dir(label: str) -> str:
     return os.path.join(SNAPSHOTS_DIR, label)

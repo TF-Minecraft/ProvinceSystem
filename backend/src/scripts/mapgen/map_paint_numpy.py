@@ -16,10 +16,6 @@ def pack_rgb(rgb: np.ndarray) -> np.ndarray:
     return (channels[:, :, 0] << 16) | (channels[:, :, 1] << 8) | channels[:, :, 2]
 
 
-def unpack_rgb_key(key: int) -> tuple[int, int, int]:
-    return (key >> 16) & 0xFF, (key >> 8) & 0xFF, key & 0xFF
-
-
 def _pack_key(rgb: Sequence[int]) -> int:
     return (int(rgb[0]) << 16) | (int(rgb[1]) << 8) | int(rgb[2])
 
@@ -46,7 +42,6 @@ def paint_from_rgb_lut(
     rgb_to_color: Mapping[tuple[int, int, int], ColorTuple],
     *,
     skip_black: bool = True,
-    color_overrides: Mapping[tuple[int, int, int], tuple[int, int, int]] | None = None,
 ) -> np.ndarray:
     """
     Paint provinces using a prebuilt RGB -> color LUT.
@@ -54,16 +49,11 @@ def paint_from_rgb_lut(
     Missing keys remain transparent. Values may be RGB (alpha 255) or RGBA.
     """
     # Index every possible packed RGB straight into a palette whose entry 0 is
-    # transparent. Sorting the map's pixels to find its distinct colours
-    # (np.unique) cost seconds per call on a 6400 px map; this is one gather.
+    # transparent. One gather paints all pixels without sorting them.
     palette = [(0, 0, 0, 0)]
     index_dtype = np.uint16 if len(rgb_to_color) < 0xFFFF else np.uint32
     palette_index = np.zeros(1 << 24, dtype=index_dtype)
     for rgb, mapped in rgb_to_color.items():
-        if color_overrides is not None:
-            mapped_rgb = mapped[:3]
-            mapped = color_overrides.get(mapped_rgb, mapped_rgb)
-
         rgba = _resolve_rgba(mapped, skip_black=skip_black)
         if rgba is not None:
             palette_index[_pack_key(rgb)] = len(palette)
@@ -79,7 +69,6 @@ def _build_mode_lut(
     rgb_to_color: Mapping[tuple[int, int, int], ColorTuple],
     *,
     skip_black: bool,
-    color_overrides: Mapping[tuple[int, int, int], tuple[int, int, int]] | None,
 ) -> np.ndarray:
     max_id = int(province_id_map.max())
     mode_lut = np.zeros((max_id + 1, 4), dtype=np.uint8)
@@ -88,10 +77,6 @@ def _build_mode_lut(
         province_id = rgb_to_id.get(rgb)
         if province_id is None:
             continue
-
-        if color_overrides is not None:
-            mapped_rgb = mapped[:3]
-            mapped = color_overrides.get(mapped_rgb, mapped_rgb)
 
         rgba = _resolve_rgba(mapped, skip_black=skip_black)
         if rgba is not None:
@@ -106,7 +91,6 @@ def paint_from_province_id_lut(
     rgb_to_color: Mapping[tuple[int, int, int], ColorTuple],
     *,
     skip_black: bool = True,
-    color_overrides: Mapping[tuple[int, int, int], tuple[int, int, int]] | None = None,
 ) -> np.ndarray:
     """Paint using a prebuilt province-id map (no per-call np.unique)."""
     mode_lut = _build_mode_lut(
@@ -114,7 +98,6 @@ def paint_from_province_id_lut(
         rgb_to_id,
         rgb_to_color,
         skip_black=skip_black,
-        color_overrides=color_overrides,
     )
     return mode_lut[province_id_map]
 

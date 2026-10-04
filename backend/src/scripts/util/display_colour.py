@@ -1,6 +1,6 @@
 import colorsys
 
-# Step 39.03 revision — faithful hue + parchment wash (tune in visual pass if needed).
+# Preserve region hues while applying a parchment wash.
 PAPER_HIGH = (240, 230, 210)
 WARM_HUE_CENTER = 40 / 360.0
 GREEN_HUE_MIN = 80 / 360.0

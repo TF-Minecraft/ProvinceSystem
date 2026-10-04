@@ -1,1 +1,1 @@
-"""Map regeneration benchmark harness (Step 51)."""
+"""Map regeneration benchmark harness."""

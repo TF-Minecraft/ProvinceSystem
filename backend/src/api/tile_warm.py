@@ -1,11 +1,7 @@
-"""Start a map's tile builds as soon as a regeneration has redrawn it.
+"""Queue tile builds after map regeneration.
 
-`tile_cache` and `region_composite` build a pyramid when one is first asked
-for, so the first reader after every regeneration waited on the build (or, for
-a map that had never been tiled, got the full-size image). Prosperity follows
-every trade update, every few minutes on the live map, so that was most
-readers. Starting the builds here instead has them ready, or under way, by
-the time anyone opens the mode; anything already current returns at once.
+Warming starts each source's pyramid and region composite before a viewer
+requests it. Current sources return immediately without rebuilding.
 """
 
 from __future__ import annotations
@@ -24,7 +20,6 @@ RASTER_MODES = ("terrain", "fertility", "prosperity", "infestation")
 def warm_map_tiles(map_name: str) -> None:
     """Queue background builds for every tiled layer of `map_name` that is
     out of date. Returns at once; the builds run one at a time."""
-    # Include satellite input: it used to stay cold until the first visitor.
     # Queue without hashing on the caller; even the source check can decode a
     # full raster after a rewrite, and regeneration also calls this from CLI.
     base = Path(input_file(map_name, "map.png"))
