@@ -1,15 +1,12 @@
 """Tile pyramids for full-map images, cached on disk.
 
-The map page used to draw each full-map raster (the 6400x6400 satellite base,
-the terrain/fertility/... mode maps) as one image. A browser has to decode the
-whole thing — 41 megapixels — and decode it again at every new zoom scale,
-even when the reader can see a twentieth of it. That decode is what made
-zooming stutter.
+Drawing the 6400x6400 raster as one image makes the browser decode all
+41 megapixels again at every zoom scale, even when only a small part is
+visible. That decoding work makes zooming stutter.
 
-This is what Google Maps does instead: cut the image into 256 px tiles at a
-ladder of resolutions, each level half the size of the one above, so a client
-only ever fetches and decodes the handful of tiles on screen, at the level
-that matches its zoom.
+Images are divided into 256 px tiles at a ladder of resolutions, each level
+half the size of the one above. The client fetches and decodes only the tiles
+on screen at the level matching its zoom.
 
 Building a pyramid takes a few seconds, so it is never done inside a request.
 A request finds a ready pyramid for the source's current pixels or, while a
@@ -197,7 +194,7 @@ def _version_of(source: Path) -> str | None:
 
 
 def valid_version(version: str) -> bool:
-    # Numeric generations remain readable across the first content-hash build.
+    # Persisted numeric generations must remain readable until retired.
     return version.isascii() and (
         version.isdigit()
         or (len(version) == 64 and all(c in "0123456789abcdef" for c in version))

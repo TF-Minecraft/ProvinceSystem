@@ -148,7 +148,7 @@ def load_map_registry(*, force: bool = False) -> dict[str, MapEntry]:
     if len(live) > 1:
         raise MapRegistryError(f"Only one map can be live, found: {', '.join(live)}")
     if not live and DEFAULT_LIVE_MAP_ID in entries:
-        # Registries written before `live` existed: `main` is the live map.
+        # Default to the main map when no live map is explicitly selected.
         default = entries[DEFAULT_LIVE_MAP_ID]
         if not default.archived:
             entries[DEFAULT_LIVE_MAP_ID] = replace(default, live=True)

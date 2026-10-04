@@ -5,14 +5,11 @@ import os, time
 from .http_headers import conditional_file_response, map_asset_cache
 from .webp_cache import webp_variant
 from .map_access import ensure_map_access
-from ..scripts.util.dirs import input_file, parchment_image
-from ..scripts.mapgen.parchmentgen import map_preview_path
+from ..scripts.util.dirs import input_file
+from ..scripts.mapgen.previewgen import map_preview_path
 from ..scripts.util.imagechecker import find_province
 
 map_router = APIRouter()
-
-# province_meta_cache.py
-import time
 
 _CACHE_TTL_SECONDS = 300  # 5 minutes
 
@@ -35,17 +32,8 @@ def get_province_meta_cached(map_name: str) -> dict[int, dict]:
 
     return _PROVINCE_META_CACHE[map_name]["data"]
 
-def _resolve_base_map_path(map_name: str, base: str) -> str | None:
-    use_satellite = base.lower() in ("satellite", "colour", "color")
-    if use_satellite:
-        path = input_file(map_name, "map.png")
-    else:
-        parchment_path = parchment_image(map_name)
-        path = (
-            parchment_path
-            if os.path.exists(parchment_path)
-            else input_file(map_name, "map.png")
-        )
+def _resolve_base_map_path(map_name: str) -> str | None:
+    path = input_file(map_name, "map.png")
     return path if os.path.exists(path) else None
 
 def _base_map_response(
@@ -76,22 +64,6 @@ def _base_map_response(
     return response
 
 
-@map_router.get("/{map_name}/map/parchment")
-async def get_parchment_map(
-    map_name: str,
-    authorization: str | None = Header(default=None),
-    accept: str | None = Header(default=None),
-    if_none_match: str | None = Header(default=None),
-    if_modified_since: str | None = Header(default=None),
-):
-    map_name = ensure_map_access(map_name, authorization).id
-    path = _resolve_base_map_path(map_name, "parchment")
-    if not path:
-        return JSONResponse({"error": "Map not found"}, 404)
-    return _base_map_response(
-        path, "parchment", accept, if_none_match, if_modified_since
-    )
-
 @map_router.get("/{map_name}/map/preview")
 async def get_map_preview(
     map_name: str,
@@ -118,18 +90,6 @@ async def get_map_preview(
         if_modified_since=if_modified_since,
     )
 
-@map_router.get("/{map_name}/map/original")
-async def get_original_map(
-    map_name: str,
-    authorization: str | None = Header(default=None),
-    accept: str | None = Header(default=None),
-    if_none_match: str | None = Header(default=None),
-    if_modified_since: str | None = Header(default=None),
-):
-    return await get_base_map(
-        map_name, authorization, accept, if_none_match, if_modified_since
-    )
-
 @map_router.get("/{map_name}/map")
 async def get_base_map(
     map_name: str,
@@ -139,7 +99,7 @@ async def get_base_map(
     if_modified_since: str | None = Header(default=None),
 ):
     map_name = ensure_map_access(map_name, authorization).id
-    path = _resolve_base_map_path(map_name, "satellite")
+    path = _resolve_base_map_path(map_name)
     if not path:
         return JSONResponse({"error": "Map not found"}, 404)
     return _base_map_response(

@@ -52,7 +52,6 @@ def _parse_provinces_file(map_name: str) -> list[tuple[int, tuple[int, int, int]
 def load_provinces(map_name: str) -> dict[tuple[int, int, int], int]:
     """
     Loads province RGB -> province_id mappings for a given map.
-    Backward-compatible with old and new provinces.txt formats.
     """
     provinces: dict[tuple[int, int, int], int] = {}
     for province_id, rgb, _terrain, _fertility in _parse_provinces_file(map_name):

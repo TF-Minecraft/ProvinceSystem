@@ -133,11 +133,10 @@ def _finite_int(value) -> int | None:
         # happily parse out of an upload.
         return None
     if not math.isfinite(number):
-        # json accepts the bare Infinity/NaN literals, so a bad coordinate from
-        # the game plugin arrives here as a real float, and round() answers it
-        # with OverflowError - not a ValueError, so it used to escape. A
-        # captured chronicle day is immutable by design, so one such value would
-        # 500 that day's public markers route permanently.
+        # json accepts bare Infinity/NaN literals from plugin uploads as real
+        # floats. Reject them before round(), which raises OverflowError for
+        # infinity and ValueError for NaN. A captured chronicle day is immutable,
+        # so one bad coordinate would permanently 500 its public markers route.
         return None
     return int(round(number))
 
@@ -601,8 +600,8 @@ def build_markers_response_from(
     Separate from build_markers_response so the same enrichment can run against
     a stored chronicle day's files instead of the live input/ + defines/ ones.
     """
-    # The only guard used to be load_raw_markers, which this path skips: map_name
-    # still becomes both a filesystem path (zoc_image) and a response URL
+    # Validate here because this path skips load_raw_markers and its guard:
+    # map_name becomes both a filesystem path (zoc_image) and a response URL
     # (/{map_name}/zoc/...) inside enrich_forts.
     validate_map(map_name)
     name_index = build_province_name_index(

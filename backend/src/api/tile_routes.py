@@ -31,7 +31,7 @@ def _region_mode(layer: str) -> str | None:
 
 def _tile_source(map_name: str, layer: str) -> Path | None:
     if layer == "base":
-        path = map_routes._resolve_base_map_path(map_name, "satellite")
+        path = map_routes._resolve_base_map_path(map_name)
         return Path(path) if path else None
     if layer.startswith(_MAPDATA_PREFIX):
         return file_routes.resolve_mapdata_path(map_name, layer[len(_MAPDATA_PREFIX):])

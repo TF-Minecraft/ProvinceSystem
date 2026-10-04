@@ -72,7 +72,7 @@ def compile_queue(map_name: str):
                 print(f"⚠️ No region found with RGB: {rgb}")
 
         # Convert back to RGBs for the compiled queue
-        from ..mapgen.regiongen import sanitize_filename  # Adjust the import path as needed
+        from ..mapgen.regiongen import sanitize_filename
 
         compiled_queue[mode] = [
             sanitize_filename(tuple(map(int, region_data[rid]["rgb"].split(","))))

@@ -1,45 +1,53 @@
-from PIL import Image
+"""Numpy mask/crop pipeline for region generation."""
+
+from __future__ import annotations
+
 import os
 import sys
 import time
+from typing import Mapping
+
+import numpy as np
+from PIL import Image
 
 from ..util.border_paint import (
-    apply_occupation_seam_dashes,
-    apply_opaque_union_borders,
-    border_color_for_fill,
+    apply_occupation_seam_dashes_array,
+    INK_DARK,
     border_thickness as default_border_thickness,
+    stroke_opaque_union_array,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
 from ..util.overlay_metadata import (
+    crop_to_content,
     rgb_tuple_to_str,
-    save_cropped,
     write_overlay_metadata,
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map
 from .geometry_cache import MapGeometryCache
 
+OwnerColor = tuple[int, int, int]
 
-def log_progress(message: str):
+
+def log_progress(message: str) -> None:
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
 
-def sanitize_filename(color):
+def sanitize_filename(color: OwnerColor) -> str:
     return "_".join(map(str, color))
 
 
-def build_overlord_chains(overrides):
+def _build_overlord_chains(overrides: Mapping[OwnerColor, OwnerColor]) -> dict:
+    """Expand vassal -> direct overlord into vassal -> all ancestors, so each
+    overlord's overlay includes the territory of its indirect vassals too.
     """
-    overrides: vassal_rgb -> direct_overlord_rgb
-    returns:   vassal_rgb -> [overlord, grand_overlord, ...]
-    """
-    chains = {}
+    chains: dict[OwnerColor, list[OwnerColor]] = {}
     for vassal in overrides:
         cur = vassal
         seen = {vassal}
-        chain = []
+        chain: list[OwnerColor] = []
 
         while cur in overrides:
             nxt = overrides[cur]
@@ -54,41 +62,168 @@ def build_overlord_chains(overrides):
     return chains
 
 
+class RegionBuffer:
+    """Bbox-cropped RGBA buffers for one political owner color."""
+
+    def __init__(self, with_nested: bool) -> None:
+        self.with_nested = with_nested
+        self.x0 = self.y0 = 0
+        self.x1 = self.y1 = 0
+        self.base: np.ndarray | None = None
+        self.hover: np.ndarray | None = None
+        self.nested: np.ndarray | None = None
+        self.nested_hover: np.ndarray | None = None
+        self.overlay_meta: dict[str, int] | None = None
+        self.overlay_nested_meta: dict[str, int] | None = None
+        self._initialized = False
+
+    def _expand(self, new_x0: int, new_y0: int, new_x1: int, new_y1: int) -> None:
+        if not self._initialized:
+            self.x0, self.y0, self.x1, self.y1 = new_x0, new_y0, new_x1, new_y1
+            height = new_y1 - new_y0
+            width = new_x1 - new_x0
+            self.base = np.zeros((height, width, 4), dtype=np.uint8)
+            self.hover = np.zeros((height, width, 4), dtype=np.uint8)
+            if self.with_nested:
+                self.nested = np.zeros((height, width, 4), dtype=np.uint8)
+                self.nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
+            self._initialized = True
+            return
+
+        nx0 = min(self.x0, new_x0)
+        ny0 = min(self.y0, new_y0)
+        nx1 = max(self.x1, new_x1)
+        ny1 = max(self.y1, new_y1)
+        if (nx0, ny0, nx1, ny1) == (self.x0, self.y0, self.x1, self.y1):
+            return
+
+        new_h, new_w = ny1 - ny0, nx1 - nx0
+        new_base = np.zeros((new_h, new_w, 4), dtype=np.uint8)
+        new_hover = np.zeros((new_h, new_w, 4), dtype=np.uint8)
+        new_nested = new_nested_hover = None
+        if self.with_nested:
+            new_nested = np.zeros((new_h, new_w, 4), dtype=np.uint8)
+            new_nested_hover = np.zeros((new_h, new_w, 4), dtype=np.uint8)
+
+        sy, sx = self.y0 - ny0, self.x0 - nx0
+        eh, ew = self.y1 - self.y0, self.x1 - self.x0
+        new_base[sy : sy + eh, sx : sx + ew] = self.base
+        new_hover[sy : sy + eh, sx : sx + ew] = self.hover
+        if self.with_nested and self.nested is not None:
+            new_nested[sy : sy + eh, sx : sx + ew] = self.nested
+            new_nested_hover[sy : sy + eh, sx : sx + ew] = self.nested_hover
+
+        self.x0, self.y0, self.x1, self.y1 = nx0, ny0, nx1, ny1
+        self.base = new_base
+        self.hover = new_hover
+        self.nested = new_nested
+        self.nested_hover = new_nested_hover
+
+    def paint_flat(
+        self,
+        mask: np.ndarray,
+        base_rgb: OwnerColor,
+        hover_rgb: OwnerColor,
+        *,
+        nested: bool = False,
+        origin: tuple[int, int] = (0, 0),
+    ) -> None:
+        """Paint `mask`, whose top-left pixel sits at map `origin` (x, y)."""
+        ys, xs = np.where(mask)
+        if ys.size == 0:
+            return
+        xs = xs + origin[0]
+        ys = ys + origin[1]
+
+        self._expand(int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
+        ly = ys - self.y0
+        lx = xs - self.x0
+
+        base_rgba = np.array((*base_rgb, 255), dtype=np.uint8)
+        hover_rgba = np.array((*hover_rgb, 255), dtype=np.uint8)
+        self.base[ly, lx] = base_rgba
+        self.hover[ly, lx] = hover_rgba
+        if nested and self.with_nested and self.nested is not None:
+            self.nested[ly, lx] = base_rgba
+            self.nested_hover[ly, lx] = hover_rgba
+
+def _finalize_layer_from_full(
+    full: np.ndarray,
+) -> tuple[np.ndarray, dict[str, int] | None]:
+    cropped, meta = crop_to_content(Image.fromarray(full, mode="RGBA"))
+    return np.array(cropped, dtype=np.uint8), meta
+
+
+def _save_layer_array(arr: np.ndarray, path: str) -> None:
+    Image.fromarray(np.array(arr, dtype=np.uint8, copy=True), mode="RGBA").save(path, "PNG")
+
+
+def _stage_on_window(
+    buf: RegionBuffer,
+    box: tuple[int, int, int, int],
+    margin: int,
+    height: int,
+    width: int,
+    layer: str,
+) -> tuple[np.ndarray, tuple[int, int]]:
+    """The layer on its box grown by `margin`, clipped to the map, and the
+    window's map origin.
+
+    Stands in for the full map canvas: everything outside the box is
+    transparent, so with room for the stroke and the crop padding the window
+    gives the same pixels for a fraction of the work.
+    """
+    x0, y0, x1, y1 = box
+    wx0, wy0 = max(0, x0 - margin), max(0, y0 - margin)
+    wx1, wy1 = min(width, x1 + margin), min(height, y1 + margin)
+    window = np.zeros((wy1 - wy0, wx1 - wx0, 4), dtype=np.uint8)
+    window[y0 - wy0 : y1 - wy0, x0 - wx0 : x1 - wx0] = getattr(buf, layer)
+    return window, (wx0, wy0)
+
+
+def _finalize_buffer_layer(
+    buf: RegionBuffer,
+    layer: str,
+    full: np.ndarray,
+    *,
+    store_overlay_meta: bool = False,
+    store_nested_overlay_meta: bool = False,
+    origin: tuple[int, int] = (0, 0),
+) -> None:
+    """Crop `full` (a canvas whose top-left sits at map `origin`) to content."""
+    cropped, meta = _finalize_layer_from_full(full)
+    if meta is not None:
+        meta = {**meta, "x": meta["x"] + origin[0], "y": meta["y"] + origin[1]}
+    setattr(buf, layer, cropped)
+    if store_overlay_meta and meta is not None:
+        buf.overlay_meta = meta
+    if store_nested_overlay_meta and meta is not None:
+        buf.overlay_nested_meta = meta
+    buf._initialized = True
+    buf.x0 = buf.y0 = 0
+    buf.x1 = cropped.shape[1]
+    buf.y1 = cropped.shape[0]
+
+
+# crop_to_content's default padding. A region's window leaves room for it
+# beyond the stroke, so the crop matches the one taken from the full map.
+_CROP_PAD = 2
+
+
 def generate_regions(
     map_name: str,
     mode: str,
     borders: bool,
     queued_regen: bool = False,
     border_thickness: int = default_border_thickness,
-    border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
     cache: MapGeometryCache | None = None,
-):
-    if cache is not None:
-        from .regiongen_numpy import generate_regions_numpy
-
-        return generate_regions_numpy(
-            map_name,
-            mode,
-            borders,
-            cache,
-            queued_regen=queued_regen,
-            border_thickness=border_thickness,
-            border_color=border_color,
-        )
-
+) -> None:
     start_time = time.perf_counter()
     validate_map(map_name)
 
-    img_path = input_file(map_name, "provinces.png")
-    if cache is not None:
-        provinces_rgba = cache.provinces_rgba
-        width, height = cache.width, cache.height
-    else:
-        src_img = Image.open(img_path).convert("RGBA")
-        provinces_rgba = None
-        src = src_img.load()
-        width, height = src_img.size
-
+    if cache is None:
+        cache = MapGeometryCache.load(map_name)
+    width, height = cache.width, cache.height
     province_to_color = build_color_mapping(map_name, mode)
     if not province_to_color:
         print(f"No mapping for mode '{mode}', skipping.")
@@ -96,33 +231,34 @@ def generate_regions(
 
     overrides = get_color_overrides(map_name, mode)
     has_nesting = bool(overrides)
-    overlord_chains = build_overlord_chains(overrides)
+    overlord_chains = _build_overlord_chains(overrides)
     overlord_colors = set(overrides.values())
-
     trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
     occupation_provinces = getattr(build_color_mapping, "occupation_provinces", None) or set()
 
+    img_path = input_file(map_name, "provinces.png")
     output_dir = os.path.abspath(
         os.path.join(
             os.path.dirname(img_path),
-            "..", "..", "output", map_name, "regions", mode
+            "..",
+            "..",
+            "output",
+            map_name,
+            "regions",
+            mode,
         )
     )
     os.makedirs(output_dir, exist_ok=True)
 
-    # ------------------------------------------------------------
-    # Queue handling
-    # ------------------------------------------------------------
     queued = None
     if queued_regen:
         compile_queue(map_name)
         queued = set(load_queue(map_name, mode))
-
         for fn in os.listdir(output_dir):
             base = (
                 fn.replace("_hover", "")
-                  .replace("_nested", "")
-                  .replace(".png", "")
+                .replace("_nested", "")
+                .replace(".png", "")
             )
             if base in queued:
                 os.remove(os.path.join(output_dir, fn))
@@ -130,174 +266,102 @@ def generate_regions(
         for fn in os.listdir(output_dir):
             os.remove(os.path.join(output_dir, fn))
 
-    # ------------------------------------------------------------
-    # Scan province pixels
-    # ------------------------------------------------------------
-    province_pixels = {}
-    total_pixels = width * height
-    processed = 0
-    last_update = time.time()
+    regions: dict[OwnerColor, RegionBuffer] = {}
 
-    for y in range(height):
-        for x in range(width):
-            if cache is not None:
-                rgb = tuple(int(v) for v in provinces_rgba[y, x, :3])
-            else:
-                rgb = src[x, y][:3]
-            if rgb in province_to_color:
-                province_pixels.setdefault(rgb, []).append((x, y))
+    def ensure_region(color: OwnerColor) -> RegionBuffer:
+        if color not in regions:
+            regions[color] = RegionBuffer(with_nested=color in overlord_colors)
+        return regions[color]
 
-            processed += 1
-            if time.time() - last_update > 0.1:
-                log_progress(
-                    f"Scanning pixels: {processed:,}/{total_pixels:,} "
-                    f"({processed / total_pixels * 100:5.1f}%)"
-                )
-                last_update = time.time()
-
-    print()
-
-    # ------------------------------------------------------------
-    # Region buffers
-    # ------------------------------------------------------------
-    region_imgs = {}
-    region_px = {}
-    light_cache = {}
-
-    def ensure_region(color):
-        if color in region_imgs:
-            return
-
-        base = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-
-        nested = nested_hover = None
-        if color in overlord_colors:
-            nested = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-            nested_hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-
-        region_imgs[color] = (base, hover, nested, nested_hover)
-        region_px[color] = (
-            base.load(),
-            hover.load(),
-            nested.load() if nested else None,
-            nested_hover.load() if nested_hover else None,
-        )
-
-    # ------------------------------------------------------------
-    # Paint regions
-    # ------------------------------------------------------------
-    total_regions = len(province_pixels)
+    province_count = len(province_to_color)
     current = 0
-
-    for prov_rgb, pixels in province_pixels.items():
-        owner = province_to_color[prov_rgb]
+    for prov_rgb, owner in province_to_color.items():
         name = sanitize_filename(owner)
-
         if queued and name not in queued:
             continue
 
+        pid = cache.rgb_to_id.get(prov_rgb)
+        if pid is None:
+            continue
+
+        box = cache.province_box(pid)
+        if box is None:
+            continue
+        px0, py0, px1, py1 = box
+        mask = cache.province_id_map[py0:py1, px0:px1] == pid
+
         current += 1
         log_progress(
-            f"Building regions: {current}/{total_regions} "
-            f"({current / total_regions * 100:5.1f}%) → {name}"
+            f"Building regions: {current}/{province_count} "
+            f"({current / max(province_count, 1) * 100:5.1f}%) → {name}"
         )
 
-        ensure_region(owner)
-
-        if owner not in light_cache:
-            light_cache[owner] = hover_rgb(owner)
-
         if occupation_provinces and prov_rgb in occupation_provinces:
-            pr, pg, pb = occupation_display_rgb(owner)
+            base = occupation_display_rgb(owner)
         else:
             paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
-            pr, pg, pb = display_rgb(paint_rgb)
-        lr, lg, lb = light_cache[owner]
+            base = display_rgb(paint_rgb)
+        hover = hover_rgb(owner)
 
-        base_px, hover_px, nested_px, nested_hover_px = region_px[owner]
+        ensure_region(owner).paint_flat(
+            mask,
+            base,
+            hover,
+            nested=owner in overlord_colors,
+            origin=(px0, py0),
+        )
 
-        for x, y in pixels:
-            base_px[x, y] = (pr, pg, pb, 255)
-            hover_px[x, y] = (lr, lg, lb, 255)
-            if nested_px:
-                nested_px[x, y] = (pr, pg, pb, 255)
-                nested_hover_px[x, y] = (lr, lg, lb, 255)
-
-        # Paint into all ancestors
         for anc in overlord_chains.get(owner, []):
-            ensure_region(anc)
-            if anc not in light_cache:
-                light_cache[anc] = hover_rgb(anc)
-
-            ar, ag, ab = display_rgb(anc)
-            alr, alg, alb = light_cache[anc]
-            anc_base, anc_hover, _, _ = region_px[anc]
-
-            for x, y in pixels:
-                anc_base[x, y] = (ar, ag, ab, 255)
-                anc_hover[x, y] = (alr, alg, alb, 255)
+            ensure_region(anc).paint_flat(
+                mask, display_rgb(anc), hover_rgb(anc), origin=(px0, py0)
+            )
 
     print()
 
-    # ------------------------------------------------------------
-    # Borders
-    # ------------------------------------------------------------
-    if borders and region_imgs:
-
-        total = len(region_imgs)
-        for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
-            kind = "nested" if has_nesting else "fast"
-            log_progress(
-                f"Painting borders ({kind}): {i}/{total} "
-                f"({i / total * 100:5.1f}%)"
-            )
-
+    if regions:
+        total_regions = len(regions)
+        kind = "nested" if has_nesting else "fast"
+        margin = (border_thickness if borders else 0) + _CROP_PAD + 1
+        for i, (color, buf) in enumerate(regions.items(), start=1):
+            if borders:
+                log_progress(
+                    f"Painting borders ({kind}): {i}/{total_regions} "
+                    f"({i / max(total_regions, 1) * 100:5.1f}%)"
+                )
             display_color = display_rgb(color)
-            base_stroke = border_color_for_fill(display_color)
-            hover_stroke = border_color_for_fill(hover_rgb(color))
-            apply_opaque_union_borders(
-                base.load(), width, height, base_stroke, border_thickness
-            )
-            apply_opaque_union_borders(
-                hover.load(), width, height, hover_stroke, border_thickness
-            )
-            if occupation_provinces:
-                occ_color = occupation_display_rgb(color)
-                apply_occupation_seam_dashes(
-                    base.load(),
-                    [base.load(), hover.load()],
-                    width,
-                    height,
-                    display_color,
-                    occ_color,
+            box = (buf.x0, buf.y0, buf.x1, buf.y1)
+            layers = [("base", "hover", "overlay")]
+            if buf.with_nested and buf.nested is not None and buf.nested_hover is not None:
+                layers.append(("nested", "nested_hover", "nested_overlay"))
+
+            for fill_layer, hover_layer, meta_kind in layers:
+                fill, origin = _stage_on_window(buf, box, margin, height, width, fill_layer)
+                hover, _ = _stage_on_window(buf, box, margin, height, width, hover_layer)
+                if borders:
+                    stroke_opaque_union_array(fill, INK_DARK, border_thickness)
+                    stroke_opaque_union_array(hover, INK_DARK, border_thickness)
+                    if occupation_provinces:
+                        apply_occupation_seam_dashes_array(
+                            fill,
+                            [fill, hover],
+                            display_color,
+                            occupation_display_rgb(color),
+                        )
+                _finalize_buffer_layer(
+                    buf,
+                    fill_layer,
+                    fill,
+                    store_overlay_meta=meta_kind == "overlay",
+                    store_nested_overlay_meta=meta_kind == "nested_overlay",
+                    origin=origin,
                 )
-            if nested:
-                apply_opaque_union_borders(
-                    nested.load(), width, height, base_stroke, border_thickness
-                )
-                apply_opaque_union_borders(
-                    nested_hover.load(), width, height, hover_stroke, border_thickness
-                )
-                if occupation_provinces:
-                    occ_color = occupation_display_rgb(color)
-                    apply_occupation_seam_dashes(
-                        nested.load(),
-                        [nested.load(), nested_hover.load()],
-                        width,
-                        height,
-                        display_color,
-                        occ_color,
-                    )
+                _finalize_buffer_layer(buf, hover_layer, hover, origin=origin)
 
     print()
 
-    # ------------------------------------------------------------
-    # Save outputs (cropped) + collect bbox metadata
-    # ------------------------------------------------------------
     metadata_by_rgb: dict[str, dict] = {}
-    total_outputs = len(region_imgs)
-    for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+    total_outputs = len(regions)
+    for i, (color, buf) in enumerate(regions.items(), start=1):
         name = sanitize_filename(color)
         if queued and name not in queued:
             continue
@@ -307,32 +371,27 @@ def generate_regions(
             f"({i / total_outputs * 100:5.1f}%) → {name}"
         )
 
-        overlay_meta = save_cropped(base, os.path.join(output_dir, f"{name}.png"))
-        save_cropped(hover, os.path.join(output_dir, f"{name}_hover.png"))
+        if buf.base is None or buf.hover is None:
+            continue
+
+        _save_layer_array(buf.base, os.path.join(output_dir, f"{name}.png"))
+        _save_layer_array(buf.hover, os.path.join(output_dir, f"{name}_hover.png"))
 
         region_meta: dict = {}
-        if overlay_meta:
-            region_meta["overlay"] = overlay_meta
+        if buf.overlay_meta:
+            region_meta["overlay"] = buf.overlay_meta
 
-        if nested:
-            nested_meta = save_cropped(
-                nested, os.path.join(output_dir, f"{name}_nested.png")
-            )
-            save_cropped(
-                nested_hover,
+        if buf.with_nested and buf.nested is not None and buf.nested_hover is not None:
+            _save_layer_array(buf.nested, os.path.join(output_dir, f"{name}_nested.png"))
+            _save_layer_array(
+                buf.nested_hover,
                 os.path.join(output_dir, f"{name}_nested_hover.png"),
             )
-            if nested_meta:
-                region_meta["overlay_nested"] = nested_meta
+            if buf.overlay_nested_meta:
+                region_meta["overlay_nested"] = buf.overlay_nested_meta
 
         if region_meta:
             metadata_by_rgb[rgb_tuple_to_str(color)] = region_meta
-
-        base.close()
-        hover.close()
-        if nested:
-            nested.close()
-            nested_hover.close()
 
     print()
 
@@ -345,5 +404,5 @@ def generate_regions(
     print(
         f"Region generation for mode '{mode}' "
         f"took {elapsed:.2f} seconds "
-        f"(nesting={'yes' if has_nesting else 'no'})"
+        f"(nesting={'yes' if has_nesting else 'no'}, numpy)"
     )

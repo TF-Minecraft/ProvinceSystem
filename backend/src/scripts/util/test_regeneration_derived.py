@@ -262,12 +262,8 @@ class TestRunDerivedArtifacts(_DerivedTestCase):
 
 
 class TestWarmWebpCache(_DerivedTestCase):
-    """The warm is stamp-gated like the other derived artifacts.
-
-    create_parchment_base rewrites parchment_base.png on every regen, so the
-    mtime freshness webp_cache uses internally is always stale. Without the
-    content stamp this would re-encode byte-identical input (~26s per image)
-    synchronously while holding the map lock.
+    """Content stamps prevent an identical source rewrite from triggering a
+    ~26 s WebP encode synchronously while regeneration holds the map lock.
     """
 
     def setUp(self) -> None:

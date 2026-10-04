@@ -54,7 +54,7 @@ class TestNationRenderFreshness(_DerivedTestCase):
     def run_regen(self, kind, *, fail=False, queue=None):
         from contextlib import ExitStack
         with ExitStack() as stack:
-            for name in ("validate_map", "process_nations", "compile_queue", "print_queues", "create_parchment_base", "generate_zoc_overlays", "create_infestation_map", "run_derived_artifacts", "warm_webp_cache"):
+            for name in ("validate_map", "process_nations", "compile_queue", "print_queues", "generate_zoc_overlays", "create_infestation_map", "run_derived_artifacts", "warm_webp_cache"):
                 stack.enter_context(patch.object(regeneration, name))
             stack.enter_context(patch.object(regeneration, "load_queue", return_value=queue or []))
             stack.enter_context(patch.object(regeneration.MapGeometryCache, "load"))

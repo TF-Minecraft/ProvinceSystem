@@ -39,12 +39,6 @@ def region_overlay_file(map_name: str, map_type: str) -> str:
 def banner_image(map_name: str, mode: str, filename: str) -> str:
     return os.path.join(OUTPUT_DIR, map_name, "banners", mode, filename)
 
-def parchment_image(map_name: str) -> str:
-    return os.path.join(OUTPUT_DIR, map_name, "maps", "parchment_base.png")
-
-def paper_texture_asset() -> str:
-    return os.path.join(BASE_DIR, "assets", "map", "paper_texture.png")
-
 def zoc_hatch_asset() -> str:
     return os.path.join(BASE_DIR, "assets", "map", "zoc_hatch.png")
 

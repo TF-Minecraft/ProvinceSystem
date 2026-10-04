@@ -14,9 +14,8 @@ from ..compile.nation_compiler import process_nations
 from ..compile.trade_compiler import process_trade
 from ..mapgen.geometry_cache import MapGeometryCache
 from ..mapgen.mapgen import create_map
-from ..mapgen.parchmentgen import (
+from ..mapgen.previewgen import (
     create_map_preview,
-    create_parchment_base,
     map_preview_path,
 )
 from ..mapgen.infestationgen import create_infestation_map
@@ -176,7 +175,7 @@ def _run_mode_serial(
             create_prosperity_map(map_name, "prosperity_map", cache=cache)
 
     with timings.timed(f"{mode}.map"):
-        create_map(map_name, mode, f"{mode}_map", False, cache=cache)
+        create_map(map_name, mode, f"{mode}_map", cache=cache)
     print(f"🗺️ [{map_name}] Map generated for {mode}")
 
     with timings.timed(f"{mode}.regions"):
@@ -478,11 +477,11 @@ def warm_webp_cache(map_name: str, timings: _RegenTimings) -> None:
     """Pre-encode the WebP copies so the first visitor after a regen is not
     served the full-size PNG while the background encode runs.
 
-    Gated on the same content stamp as the other derived artifacts rather than
-    on webp_cache's own mtime check. create_parchment_base rewrites
-    parchment_base.png every regen, so mtime freshness is always false and this
-    would otherwise spend ~26s per image re-encoding byte-identical input,
-    synchronously, while holding the map lock.
+    The only warm source is input/<map>/map.png; regeneration reads it without
+    rewriting it. The content stamp still protects against maintenance that
+    replaces or touches this source without changing its bytes. webp_cache's
+    mtime check alone would treat it as stale and spend ~26 s per image
+    re-encoding byte-identical input synchronously while holding the map lock.
     """
     sources = webp_warm_sources(map_name)
     if not sources:
@@ -550,9 +549,6 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
     # 3. Generate maps + regions
     if not spec.is_textonly:
-        with timings.timed("map.parchment"):
-            create_parchment_base(map_name)
-
         nation_fingerprint = None
         stale_nation = False
         if spec.modes is None or "nation" in spec.modes:
