@@ -23,8 +23,6 @@ export type PlaceProfile = {
   population: number | null;
   /** Provinces the settlement spans. */
   provinces: number[];
-  hubs: number | null;
-  hubSlots: number | null;
   mapX: number;
   mapY: number;
   /** Free text for kinds with nothing structured (battles). */
@@ -64,8 +62,6 @@ export function buildPlaceProfile(
     ownerId: null,
     population: null,
     provinces: [],
-    hubs: null,
-    hubSlots: null,
     mapX: marker.mapX,
     mapY: marker.mapY,
     note: null,
@@ -83,8 +79,6 @@ export function buildPlaceProfile(
       ownerId: known(installation.faction_id),
       provinces:
         typeof installation.province_id === "number" ? [installation.province_id] : [],
-      hubs: (installation.hub_slots ?? 0) > 0 ? installation.hubs ?? 0 : null,
-      hubSlots: (installation.hub_slots ?? 0) > 0 ? installation.hub_slots ?? 0 : null,
     };
   }
 

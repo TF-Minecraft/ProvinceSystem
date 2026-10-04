@@ -14,14 +14,13 @@ const ALL_MODES: MapMode[] = [
   "fertility",
   "trade",
   "prosperity",
-  "infrastructure",
   "infestation",
 ];
 
 describe("mapModeOptions", () => {
   it("offers every map mode, including extras that used to be main/dev only", () => {
     const values = mapModeOptions().map((opt) => opt.value);
-    expect(values).toHaveLength(12);
+    expect(values).toHaveLength(11);
     expect(values).toEqual(ALL_MODES);
   });
 

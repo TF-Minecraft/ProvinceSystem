@@ -81,7 +81,7 @@ export const EmpireIcon = (props: IconProps) => (
 /*
  * The world modes: each a thing the mode is about, not a chart. Provinces is
  * land cut into territories, trade a merchant's cog, prosperity a full purse,
- * infrastructure a bridge, infestation the monsters' skull.
+ * infestation the monsters' skull.
  */
 export const ProvinceIcon = (props: IconProps) => (
   <Icon {...props}>
@@ -119,14 +119,6 @@ export const ProsperityIcon = (props: IconProps) => (
     <path d="M9 8h6c3.2 2.4 5 5.4 5 8.3 0 2.9-2.7 4.4-8 4.4s-8-1.5-8-4.4C4 13.4 5.8 10.4 9 8Z" />
     <path d="M9 8 7.4 4.6c1.6.6 3 .4 4.6-.6 1.6 1 3 1.2 4.6.6L15 8" />
     <circle cx="12" cy="15.2" r="2.4" />
-  </Icon>
-);
-
-export const InfrastructureIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M2.5 9.5h19" />
-    <path d="M4.5 20v-5.5a7.5 7.5 0 0 1 15 0V20" />
-    <path d="M2.5 20h19M8 9.5V7M12 9.5V7M16 9.5V7" />
   </Icon>
 );
 
@@ -218,14 +210,6 @@ export const FortIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M4 21V8h3v2h2.5V8h5v2H17V8h3v13H4Z" />
     <path d="M10 21v-4a2 2 0 0 1 4 0v4M12 8V3l3.5 1.5L12 6" />
-  </Icon>
-);
-
-export const RouteIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <circle cx="5.5" cy="18" r="2.2" />
-    <circle cx="18.5" cy="6" r="2.2" />
-    <path d="M7.5 17c3-1 2.5-5 5-6.5s3.5-1 4.5-2.8" strokeDasharray="2 2.4" />
   </Icon>
 );
 
@@ -337,6 +321,5 @@ export const MAP_MODE_ICONS: Record<MapMode, (props: IconProps) => ReactNode> = 
   fertility: FertilityIcon,
   trade: TradeIcon,
   prosperity: ProsperityIcon,
-  infrastructure: InfrastructureIcon,
   infestation: InfestationIcon,
 };

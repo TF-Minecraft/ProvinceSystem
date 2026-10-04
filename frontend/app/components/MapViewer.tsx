@@ -13,11 +13,6 @@ import { isMarkerMapMode } from "../lib/mapMarkers";
 import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
-import { addInstallationLinkDetails } from "../lib/supplyLinks";
-import {
-  buildTradeEdgeGeometry,
-  EMPTY_TRADE_EDGE_GEOMETRY,
-} from "../lib/tradeEdges";
 import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
 import {
   settlementToMapMarker,
@@ -62,7 +57,7 @@ import {
   guildSeat,
 } from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
-import { BrushIcon, FortIcon, HistoryIcon, RouteIcon } from "./map/shell/MapIcons";
+import { BrushIcon, FortIcon, HistoryIcon } from "./map/shell/MapIcons";
 import type {
   CursorTooltip,
   HoverOverlay,
@@ -197,7 +192,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   /*
    * A stored day offers the *same* mode list as the live map, with no
    * filtering. Every mode now has an honest day answer: the day-varying ones
-   * (`nation`, `trade`, `empire`, `prosperity`, `infrastructure`, `infestation`) come out of that
+   * (`nation`, `trade`, `empire`, `prosperity`, `infestation`) come out of that
    * day's capture, and the static ones (`terrain`, `fertility`, `province`)
    * are province geometry that does not change day to day, so their live
    * source *is* their historical answer. Title modes (`county`, `duchy`,
@@ -224,7 +219,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const [mapType, setMapType] = useState<MapMode>("nation");
   const fitMode = useResponsiveFitMode();
   const [installationsVisible, setInstallationsVisible] = useState(true);
-  const [supplyLinksVisible, setSupplyLinksVisible] = useState(true);
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
     null
   );
@@ -363,7 +357,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         : null;
 
   /**
-   * `prosperity`, `infrastructure` and `infestation` under a stored day. These are drawn on the
+   * `prosperity` and `infestation` under a stored day. These are drawn on the
    * live map as `/{mapId}/mapdata/{mode}`, a raster regenerated from today's
    * data with no per-day variant, so the day page paints them itself from that
    * day's captured file — see `ChronicleProvincePaintLayer`.
@@ -393,9 +387,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     installations,
     forts,
     wars,
-    hubLinks,
-    tradeNetworks,
-    tradeEdges,
   } = useMapMarkers(mapId, authToken, markersEnabled, day);
 
   const mapMarkers = useMemo(() => {
@@ -432,13 +423,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         } as const;
       }),
       ...(installationsVisible
-        ? installations.map((installation) =>
-            addInstallationLinkDetails(
-              installationToMapMarker(installation),
-              installation,
-              hubLinks
-            )
-          )
+        ? installations.map((installation) => installationToMapMarker(installation))
         : []),
       ...battleMarkers,
     ];
@@ -446,25 +431,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     settlements,
     installations,
     wars,
-    hubLinks,
     installationsVisible,
     mapType,
     mapObjects,
     regionData,
   ]);
-
-  // Same gate as the hub-link layer: the live map, installations on, and the
-  // supply-links toggle on. Only the nation map draws them. The polyline and
-  // the hover grid are built once per payload, not per frame.
-  const supplyRoutesShown =
-    day === null && installationsVisible && supplyLinksVisible;
-  const tradeGeometry = useMemo(
-    () =>
-      supplyRoutesShown && isMarkerMapMode(mapType)
-        ? buildTradeEdgeGeometry(tradeEdges, tradeNetworks)
-        : EMPTY_TRADE_EDGE_GEOMETRY,
-    [supplyRoutesShown, mapType, tradeEdges, tradeNetworks]
-  );
 
   /**
    * What the current mode's names are laid out from, and the content key a
@@ -833,7 +804,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     markers: mapMarkers,
     labels: regionLabels,
     forts,
-    tradeGeometry,
     setHoveredMarkerId,
     day,
     chronicleGrid: hoverProvinceGrid,
@@ -1290,7 +1260,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    */
   /**
    * Either the region source for this mode is missing from the day, or (for
-   * `prosperity`/`infrastructure`/`infestation`) the raster source is. `main` has no
+   * `prosperity`/`infestation`) the raster source is. `main` has no
    * `infestation_data.json` at all, so that mode lands here on every day —
    * which is the honest answer, not an error.
    */
@@ -1328,14 +1298,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         icon: FortIcon,
         checked: installationsVisible,
         onChange: setInstallationsVisible,
-      },
-      {
-        id: "supply-links",
-        label: "Supply links",
-        hint: "Trade routes between supply hubs",
-        icon: RouteIcon,
-        checked: supplyLinksVisible,
-        onChange: setSupplyLinksVisible,
       }
     );
   }
@@ -1511,8 +1473,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         labels={regionLabels}
         markers={mapMarkers}
         wars={wars}
-        hubLinks={supplyRoutesShown ? hubLinks : []}
-        tradeGeometry={tradeGeometry}
         centroids={centroids}
         hoveredMarkerId={hoveredMarkerId ?? selectedPlaceId}
         hoveredNationId={hoveredRegionId ?? litRegionId}
