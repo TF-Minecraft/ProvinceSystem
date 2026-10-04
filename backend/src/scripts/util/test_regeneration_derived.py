@@ -262,7 +262,9 @@ class TestRunDerivedArtifacts(_DerivedTestCase):
 
 
 class TestWarmWebpCache(_DerivedTestCase):
-    """Content stamps prevent re-encoding unchanged map images."""
+    """Content stamps prevent an identical source rewrite from triggering a
+    ~26 s WebP encode synchronously while regeneration holds the map lock.
+    """
 
     def setUp(self) -> None:
         super().setUp()

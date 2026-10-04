@@ -40,6 +40,9 @@ def sanitize_filename(color: OwnerColor) -> str:
 
 
 def _build_overlord_chains(overrides: Mapping[OwnerColor, OwnerColor]) -> dict:
+    """Expand vassal -> direct overlord into vassal -> all ancestors, so each
+    overlord's overlay includes the territory of its indirect vassals too.
+    """
     chains: dict[OwnerColor, list[OwnerColor]] = {}
     for vassal in overrides:
         cur = vassal

@@ -1,8 +1,12 @@
 """Tile pyramids for full-map images, cached on disk.
 
+Drawing the 6400x6400 raster as one image makes the browser decode all
+41 megapixels again at every zoom scale, even when only a small part is
+visible. That decoding work makes zooming stutter.
+
 Images are divided into 256 px tiles at a ladder of resolutions, each level
-half the size of the one above. The client fetches the visible tiles at the
-level matching its zoom, bounding image downloads and decoding work.
+half the size of the one above. The client fetches and decodes only the tiles
+on screen at the level matching its zoom.
 
 Building a pyramid takes a few seconds, so it is never done inside a request.
 A request finds a ready pyramid for the source's current pixels or, while a

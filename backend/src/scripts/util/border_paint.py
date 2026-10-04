@@ -1,7 +1,13 @@
+"""Whole-array border operations avoid seconds of per-pixel Python work on
+6400 px maps.
+"""
+
 import numpy as np
 
 border_thickness = 5  # Adjustable thickness
 
+# Use uniform dark ink: per-fill cream/dark strokes clash at shared nation
+# edges because the parchment wash normalises fills to a mid-luminance band.
 INK_DARK = (42, 31, 20, 255)
 
 OCCUPATION_DASH_COLOR = (150, 72, 66, 210)
@@ -102,7 +108,8 @@ def dilate_square(mask: np.ndarray, radius: int) -> np.ndarray:
 def stroke_opaque_union_array(
     img: np.ndarray, color: tuple[int, int, int, int], thickness: int
 ) -> None:
-    """Outline the union of opaque pixels, ignoring RGB differences.
+    """Outline the union of opaque pixels, ignoring RGB differences so home
+    wash and occupation grey share one outer stroke.
 
     The array's edge counts as transparent, as the map's edge does, so pass the
     whole map or a window that only meets the map's edge where the map ends.

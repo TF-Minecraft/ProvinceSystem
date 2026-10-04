@@ -14,7 +14,7 @@ import {
  * Client-side port of the server's border painter
  * (`backend/src/scripts/util/border_paint.py`), reproducing its four rules:
  *
- * 1. `compute_opaque_union_borders` runs **once per owner**, on a buffer that
+ * 1. `stroke_opaque_union_array` runs **once per owner**, on a buffer that
  *    holds only that owner's pixels: a pixel is a border pixel when it is
  *    opaque and any 4-neighbour is transparent. It keys on alpha, never RGB —
  *    colour differences *inside* one owner draw nothing, and a pixel of a
@@ -24,8 +24,8 @@ import {
  * 3. Border pixels are dilated with a square stamp, `thickness` out and in.
  *    A nation-to-nation seam is struck twice — once from each side — so its
  *    dilated band is one pixel wider than a coastline's. That is the look.
- * 4. One unconditional ink, `INK_DARK` (`border_color_for_fill` discards the
- *    fill it is handed).
+ * 4. One unconditional ink, `INK_DARK`, so adjacent washed fills share the
+ *    same stroke colour.
  *
  * The whole day is 1-bit information — border or not, in a single ink — so a
  * day is stored as a packed bitmask: 1600x1600 / 8 = 320,000 bytes, 32x

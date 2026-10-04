@@ -49,7 +49,8 @@ def paint_from_rgb_lut(
     Missing keys remain transparent. Values may be RGB (alpha 255) or RGBA.
     """
     # Index every possible packed RGB straight into a palette whose entry 0 is
-    # transparent. One gather paints all pixels without sorting them.
+    # transparent. Sorting pixels with np.unique costs seconds per call on a
+    # 6400 px map; one gather avoids that cost.
     palette = [(0, 0, 0, 0)]
     index_dtype = np.uint16 if len(rgb_to_color) < 0xFFFF else np.uint32
     palette_index = np.zeros(1 << 24, dtype=index_dtype)

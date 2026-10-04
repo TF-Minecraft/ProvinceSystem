@@ -20,8 +20,10 @@ def create_map(
 ):
     """Paint a pick map with each region's raw RGB.
 
-    Vassals retain their own colours so picking can distinguish them from
-    overlords. Display washes and borders belong to the region overlays.
+    Never apply display_colour.display_rgb or overlord colour overrides here:
+    picking needs each region's raw RGB, and replacing vassal colours with an
+    overlord's makes those vassals unpickable. Display washes and borders
+    belong to the region overlays in regiongen.py.
     """
     start_time = time.perf_counter()
     validate_map(map_name)

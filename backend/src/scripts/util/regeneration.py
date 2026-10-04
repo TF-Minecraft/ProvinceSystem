@@ -477,7 +477,11 @@ def warm_webp_cache(map_name: str, timings: _RegenTimings) -> None:
     """Pre-encode the WebP copies so the first visitor after a regen is not
     served the full-size PNG while the background encode runs.
 
-    Content stamps avoid re-encoding unchanged images after an mtime change.
+    The only warm source is input/<map>/map.png; regeneration reads it without
+    rewriting it. The content stamp still protects against maintenance that
+    replaces or touches this source without changing its bytes. webp_cache's
+    mtime check alone would treat it as stale and spend ~26 s per image
+    re-encoding byte-identical input synchronously while holding the map lock.
     """
     sources = webp_warm_sources(map_name)
     if not sources:
