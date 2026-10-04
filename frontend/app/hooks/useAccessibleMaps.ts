@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   fetchAccessibleMaps,
@@ -18,6 +18,33 @@ type AccessibleMapsState = {
   error: string | null;
 };
 
+// Images, navigation and the viewer all need the same access list. Keep one
+// answer for the current auth context, including while its request is pending.
+// Changing accounts drops the old answer rather than retaining private lists.
+let shared: {
+  token: string | null;
+  request: ReturnType<typeof fetchAccessibleMaps>;
+} | null = null;
+
+const listeners = new Set<() => void>();
+
+/** A newly created archive must appear without a full page reload. */
+export function invalidateAccessibleMaps(): void {
+  shared = null;
+  for (const reload of listeners) reload();
+}
+
+function loadMaps(token: string | null) {
+  if (shared?.token === token) return shared.request;
+  const request = fetchAccessibleMaps(token);
+  shared = { token, request };
+  void request.catch(() => {
+    // A later mount can retry a failed request without an automatic retry loop.
+    if (shared?.request === request) shared = null;
+  });
+  return request;
+}
+
 export function useAccessibleMaps(): AccessibleMapsState {
   const [state, setState] = useState<AccessibleMapsState>({
     maps: [],
@@ -25,35 +52,49 @@ export function useAccessibleMaps(): AccessibleMapsState {
     error: null,
   });
 
-  const load = useCallback(async () => {
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-    try {
+  useEffect(() => {
+    let generation = 0;
+    const load = async () => {
+      const current = ++generation;
       const token = isCharacterUiDev()
         ? UI_DEV_SESSION_TOKEN
         : (() => {
             const session = getSession();
-            return isSessionValid(session) ? session?.session_token : null;
+            return isSessionValid(session) ? session?.session_token ?? null : null;
           })();
-      const data = await fetchAccessibleMaps(token);
-      setState({ maps: data.maps, loading: false, error: null });
-    } catch {
-      setState({ maps: [], loading: false, error: "Failed to load maps" });
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
+      setState({ maps: [], loading: true, error: null });
+      try {
+        const data = await loadMaps(token);
+        if (generation === current) {
+          setState({ maps: data.maps, loading: false, error: null });
+        }
+      } catch {
+        if (generation === current) {
+          setState({ maps: [], loading: false, error: "Failed to load maps" });
+        }
+      }
+    };
+    const reload = () => { void load(); };
+    listeners.add(reload);
+    reload();
     const onStorage = (event: StorageEvent) => {
-      if (event.key === "tfmc_character_session") {
+      // A cleared store or a keyless session notification must also discard
+      // the previous account's access list.
+      if (
+        !event.key ||
+        event.key === "tfmc_profile_session" ||
+        event.key === "tfmc_character_session"
+      ) {
         void load();
       }
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [load]);
+    return () => {
+      generation += 1;
+      listeners.delete(reload);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   return state;
 }

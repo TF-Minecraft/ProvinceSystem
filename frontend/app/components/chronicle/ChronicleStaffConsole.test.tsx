@@ -11,11 +11,18 @@
  * result line reads as a file name rather than a server path.
  */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ChronicleStaffConsole from "./ChronicleStaffConsole";
 import { backupFileName } from "../../lib/map/chronicleStaff";
+
+let ChronicleStaffConsole: typeof import("./ChronicleStaffConsole").default;
+
+beforeEach(async () => {
+  // Each fixture is a fresh page view; accessible maps are shared within one.
+  vi.resetModules();
+  ({ default: ChronicleStaffConsole } = await import("./ChronicleStaffConsole"));
+});
 
 afterEach(() => {
   cleanup();
@@ -74,6 +81,38 @@ describe("ChronicleStaffConsole", () => {
     expect(screen.getByText(/Wipe the main chronicle/)).toBeDefined();
     await waitFor(() => expect(screen.getByText("season reset")).toBeDefined());
     expect(screen.getByText("Archive as…")).toBeDefined();
+  });
+
+  it("refreshes the shared map list after a successful archive", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CHARACTER_UI_DEV", "1");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
+    let archived = false;
+    let accessibleRequests = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      const path = String(url);
+      let body: unknown = { backups: [] };
+      if (path.endsWith("/maps/accessible")) {
+        accessibleRequests += 1;
+        body = { maps: [
+          { id: "main", display_name: "Main", public: true, archived: false },
+          ...(archived ? [{ id: "chapter", display_name: "Chapter", public: true, archived: true }] : []),
+        ] };
+      } else if (options?.method === "POST" && path.endsWith("/archive")) {
+        archived = true;
+        body = { ok: true, dest: "chapter", days: [] };
+      }
+      return { ok: true, status: 200, json: async () => body };
+    }));
+    render(<ChronicleStaffConsole mapId="main" />);
+    await waitFor(() => expect(screen.getByText("Backups")).toBeDefined());
+    fireEvent.change(screen.getByLabelText("Dest id"), { target: { value: "chapter" } });
+    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Chapter" } });
+    fireEvent.change(screen.getByLabelText("Type the dest id to confirm"), { target: { value: "chapter" } });
+    fireEvent.change(screen.getByPlaceholderText("why this live map is being copied to a frozen id"), { target: { value: "Archive fixture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Archive as chapter" }));
+    await waitFor(() => expect(screen.getByText("Copied main → chapter.")).toBeDefined());
+    await waitFor(() => expect(screen.getByLabelText("Dest already exists — replace that chapter")).toBeDefined());
+    expect(accessibleRequests).toBe(2);
   });
 
   it("hides Archive as on an archived map", async () => {

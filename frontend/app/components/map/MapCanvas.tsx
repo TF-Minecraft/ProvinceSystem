@@ -43,7 +43,6 @@ import MapViewport from "./MapViewport";
 import { provinceHoverBlocksRegionPick } from "../../hooks/regionPick";
 import TileLayer from "./TileLayer";
 import {
-  prefetchTileBackdrops,
   tileUrl,
   useTileManifest,
 } from "../../hooks/useTileManifest";
@@ -425,10 +424,11 @@ export default function MapCanvas({
    * Tiles for the base map and the raster modes, Google Maps style: only the
    * tiles on screen, at the level the zoom needs. Public maps only — a staff
    * map's assets need a bearer token per request, so it keeps the single
-   * images. Until a pyramid is ready the single image is drawn as before.
+   * images. Wait for the manifest before deciding a full image is needed.
    */
   const tilesAllowed = !sessionToken;
-  const baseTiles = useTileManifest(mapId, "base", tilesAllowed).manifest;
+  const baseTileState = useTileManifest(mapId, "base", tilesAllowed);
+  const baseTiles = baseTileState.manifest;
   const rasterLayer =
     PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day)
       ? `mapdata-${mapType}`
@@ -452,29 +452,8 @@ export default function MapCanvas({
   // dozens of overlay downloads that the tiles make pointless.
   const holdRegionOverlays = regionLayer !== null && regionTiles.status === "loading";
 
-  // Once the map has settled, warm every other region mode so switching to
-  // one shows its colour at once.
-  useEffect(() => {
-    if (!tilesAllowed || regionOverlay !== undefined) return;
-    const signal = { cancelled: false };
-    const timer = setTimeout(() => {
-      const others = [
-        ...[...REGION_TILE_MODES]
-          .filter((mode) => mode !== mapType)
-          .map((mode) => `regions-${mode}`),
-        ...[...PROVINCE_RASTER_MODES]
-          .filter((mode) => mode !== mapType && showsLiveProvinceRaster(mode, day))
-          .map((mode) => `mapdata-${mode}`),
-      ];
-      void prefetchTileBackdrops(mapId, others, signal);
-    }, 2500);
-    return () => {
-      signal.cancelled = true;
-      clearTimeout(timer);
-    };
-    // Once per map: the current mode only shapes the first run's order.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapId, tilesAllowed, regionOverlay === undefined]);
+  // The layers panel requests previews when opened. Warming unopened modes
+  // here would compete with the visible map, even if the reader never switches.
 
   // Names wait for the colour under them, so a mode switch does not show
   // floating text over bare terrain for the moment the shapes take to land.
@@ -698,6 +677,12 @@ export default function MapCanvas({
             // sharp rather than smeared.
             className={pixelatedClass(viewport.displayScale)}
           />
+        ) : baseTileState.status === "loading" ? (
+          <img
+            src={mapApiUrl(`/${mapId}/map/preview`)}
+            alt="Map preview"
+            className="pointer-events-none block h-full w-full"
+          />
         ) : (
           <MapAuthImage
             mapId={mapId}
@@ -730,7 +715,7 @@ export default function MapCanvas({
               // server hands out the last finished one while it builds).
               onTileError={rasterTileState.refresh}
             />
-          ) : liveProvinceRaster ? (
+          ) : liveProvinceRaster && rasterTileState.status === "loading" ? null : liveProvinceRaster ? (
             <MapAuthImage
               mapId={mapId}
               path={`/${mapId}/mapdata/${mapType}`}

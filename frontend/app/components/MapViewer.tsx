@@ -213,7 +213,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(
     null
   );
-  const [accessChecked, setAccessChecked] = useState(mapId === "main");
+  const accessKey = JSON.stringify([mapId, authToken]);
+  const [checkedAccessKey, setCheckedAccessKey] = useState<string | null>(
+    () => mapId === "main" ? accessKey : null
+  );
+  const accessChecked = checkedAccessKey === accessKey;
 
   const [mapType, setMapType] = useState<MapMode>("nation");
   const fitMode = useResponsiveFitMode();
@@ -263,12 +267,12 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   useEffect(() => {
     if (!mapRequiresAuth(mapId, maps)) {
       setGateReason(null);
-      setAccessChecked(true);
+      setCheckedAccessKey(accessKey);
       return;
     }
 
     let cancelled = false;
-    setAccessChecked(false);
+    setCheckedAccessKey(null);
     setGateReason(null);
 
     void fetchMapJson(`/${mapId}/data/nation`, { sessionToken: authToken })
@@ -282,13 +286,13 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         }
       })
       .finally(() => {
-        if (!cancelled) setAccessChecked(true);
+        if (!cancelled) setCheckedAccessKey(accessKey);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [mapId, authToken, maps]);
+  }, [mapId, authToken, maps, accessKey]);
 
   const guildNameCacheRef = useGuildCache(mapId, authToken, day);
   const paint = useMapPaint({ mapId, viewportCoordsRef });
@@ -380,7 +384,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     labelNeighbors,
     centroids,
     labelGrid,
-    ready: geometryReady,
   } = useMapGeometry(mapId, authToken);
   const markersEnabled = accessChecked && gateReason === null;
   const {
@@ -573,9 +576,16 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    * Only fetched for a stored day. The live map still gets its borders and its
    * pick image as server-rendered PNGs and must not pay ~95 KB for this.
    */
-  const [chronicleGrid, setChronicleGrid] = useState<ProvinceIdGrid | null>(
-    null
-  );
+  const [chronicleGridState, setChronicleGrid] = useState<{
+    key: string;
+    grid: ProvinceIdGrid;
+  } | null>(null);
+  // A map or account switch can finish its metadata before the new grid.
+  // Never paint the new ownership onto pixels retained from the old view.
+  const chronicleGrid =
+    day !== null && chronicleGridState?.key === accessKey
+      ? chronicleGridState.grid
+      : null;
 
   useEffect(() => {
     if (day === null) {
@@ -588,7 +598,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
     void fetchProvinceIdGridQ4(mapId, authToken, controller.signal)
       .then((grid) => {
-        if (!cancelled) setChronicleGrid(grid);
+        if (!cancelled) setChronicleGrid({ key: accessKey, grid });
       })
       .catch((err) => {
         if (cancelled || controller.signal.aborted) return;
@@ -600,7 +610,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       controller.abort();
     };
     // `day` only gates the fetch: the grid is geometry, shared by every day.
-  }, [mapId, authToken, day]);
+  }, [mapId, authToken, day, accessKey]);
 
   /**
    * The same quarter-scale province grid on the live map, for the modes whose
@@ -629,29 +639,20 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const hoverProvinceGrid =
     chronicleGrid ?? (liveProvinceGrid?.mapId === mapId ? liveProvinceGrid.grid : null);
 
-  const mapCanvasMounted =
-    !loading && geometryReady;
+  // Terrain does not depend on geometry or region metadata. Let its manifest
+  // start as soon as access is established; names arrive with their geometry.
+  const mapCanvasMounted = accessChecked && !gateReason;
+  const pickKey = JSON.stringify([mapId, mapType, day, authToken]);
+  const [pickReadyFor, setPickReadyFor] = useState<string | null>(null);
 
-  /**
-   * Once a map has been shown it stays on screen. Switching mode only swaps
-   * its overlays: `useMapModeData` empties the region data while the next
-   * mode loads, so nothing stale is drawn meanwhile, and the camera keeps its
-   * place. Only the first load of a map waits behind "Loading map…".
-   */
-  const [mapShownFor, setMapShownFor] = useState<MapId | null>(null);
-  useEffect(() => {
-    if (mapCanvasMounted) setMapShownFor(mapId);
-  }, [mapCanvasMounted, mapId]);
-  const mapShown = mapCanvasMounted || mapShownFor === mapId;
-
-  // Pick pixels are read from the hidden canvas inside MapCanvas. That node
-  // does not exist until loading/geometry finish, so this effect must wait
-  // for mapCanvasMounted or it draws once into a null ref and never retries.
+  // A new mode must not read the previous mode's pixels, nor a half-painted
+  // image while the copy yields between bands.
   useEffect(() => {
     if (!accessChecked || gateReason || !mapCanvasMounted) {
       return;
     }
 
+    setPickReadyFor(null);
     let blobUrl: string | null = null;
     let cancelled = false;
     let retryId = 0;
@@ -685,7 +686,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       const pickScale = prefersSmallPickMap() ? 1 : 0;
       const path = `/${mapId}/mapdata/${mapType}${pickScale ? `?scale=${pickScale}` : ""}`;
       let src = mapApiUrl(path);
-      if (mapRequiresAuth(mapId, maps) && authToken) {
+      if (authToken) {
         try {
           src = await fetchMapBlobUrl(path, authToken);
           blobUrl = src;
@@ -718,6 +719,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           ctx.drawImage(source, 0, y, width, rows, 0, y, width, rows);
           await new Promise((resolve) => requestAnimationFrame(resolve));
         }
+        if (!cancelled) setPickReadyFor(pickKey);
       };
 
       // Decoded off the main thread. Drawn straight from an <img>, the 6400 px
@@ -778,9 +780,9 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     accessChecked,
     gateReason,
     authToken,
-    maps,
     mapCanvasMounted,
     day,
+    pickKey,
   ]);
 
   /**
@@ -800,6 +802,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    */
   useEffect(() => {
     if (day === null) return;
+    setPickReadyFor(null);
     if (!accessChecked || gateReason || !mapCanvasMounted) return;
     if (!chronicleGrid || !regionData) return;
 
@@ -840,6 +843,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         buildNationColorLut(directOwnership(regionData))
       );
       ctx.putImageData(imageData, 0, 0);
+      setPickReadyFor(pickKey);
     };
 
     paintPickCanvas();
@@ -855,6 +859,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     mapCanvasMounted,
     chronicleGrid,
     regionData,
+    pickKey,
   ]);
 
   const {
@@ -866,7 +871,8 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   } = useMapHover({
     mapId,
     mapType,
-    loading,
+    loading:
+      loading || (!provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
     regionData,
     canvasRef,
     viewportCoordsRef,
@@ -1366,23 +1372,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     );
   }
 
-  // Do not render the map until region data is first in hand. Mounting
-  // MapCanvas early (to start the base-map download sooner) meant the region
-  // overlays rendered before regionData settled, and a failed overlay request
-  // is made permanent by MapCanvas's onError handler setting display:none —
-  // borders then stay invisible until something forces a remount. Later mode
-  // changes are safe: overlays are keyed by mode, and the list is empty until
-  // the new mode's data lands.
-  if (!mapShown) {
-    return (
-      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-          Loading map…
-        </p>
-      </div>
-    );
-  }
-
   const archived = isArchivedMap(mapId, maps);
   const markerLayers = day === null && isMarkerMapMode(mapType);
   const layerToggles: MapLayerToggle[] = [];
@@ -1571,7 +1560,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         canvasRef={canvasRef}
         viewportCoordsRef={viewportCoordsRef}
         controlsRef={viewportControlsRef}
-        mapObjects={mapObjects}
+        mapObjects={loading ? [] : mapObjects}
         hoveredOverlay={hoveredOverlay}
         selectedOverlay={selectedOverlay}
         hoveredFortZoc={hoveredFortZoc}

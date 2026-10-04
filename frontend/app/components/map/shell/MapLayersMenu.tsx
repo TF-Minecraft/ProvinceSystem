@@ -87,12 +87,14 @@ function ModePreview({
         src={wholeMapUrl(mapId, "base", base)}
         alt=""
         decoding="async"
+        fetchPriority="low"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <img
         src={wholeMapUrl(mapId, layer, overlay)}
         alt=""
         decoding="async"
+        fetchPriority="low"
         className="absolute inset-0 h-full w-full object-cover"
         style={{
           opacity: REGION_TILE_MODES.has(mode)
