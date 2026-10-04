@@ -12,7 +12,9 @@ import type { FitMode } from "../lib/mapViewportMath";
 export function useResponsiveFitMode(): FitMode {
   const [fitMode, setFitMode] = useState<FitMode>("contain");
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 47.99rem)");
+    const query = window.matchMedia?.("(max-width: 47.99rem)");
+    // No media queries (a test DOM): stay on the desktop fit.
+    if (!query) return;
     const apply = () => setFitMode(query.matches ? "cover" : "contain");
     apply();
     query.addEventListener("change", apply);
