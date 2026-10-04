@@ -1,6 +1,14 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 import {
   allTiles,
@@ -119,6 +127,20 @@ function TileLayer({
     [manifest, settledLevel, level, backdrop, view]
   );
 
+  // Loaded means this layer's <img> for the tile has loaded, not that the
+  // tile once did. Zooming back to a level seen before mounts new elements
+  // for its tiles; counted as loaded already, they stood the held level and
+  // the backdrop down at once and the map was black until each new element
+  // had painted, square by square. So a tile whose element is gone forgets.
+  useLayoutEffect(() => {
+    const rendered = new Set(
+      [...backdropTiles, ...holdTiles, ...currentTiles].map((tile) => loadedKey(tile))
+    );
+    for (const key of loadedRef.current) {
+      if (!rendered.has(key)) loadedRef.current.delete(key);
+    }
+  });
+
   const markLoaded = (key: string) => {
     if (loadedRef.current.has(key)) return;
     loadedRef.current.add(key);
@@ -132,10 +154,12 @@ function TileLayer({
       markLoaded(key);
       return;
     }
-    image.decode().then(
-      () => markLoaded(key),
-      () => markLoaded(key)
-    );
+    // Only for the element still on the page: a newer one for the same tile
+    // answers for itself.
+    const settle = () => {
+      if (image.isConnected) markLoaded(key);
+    };
+    image.decode().then(settle, settle);
   };
 
   // Tile edges on whole screen pixels: neighbours then meet exactly, with no

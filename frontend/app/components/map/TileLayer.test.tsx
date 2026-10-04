@@ -189,4 +189,51 @@ describe("TileLayer", () => {
     expect(sameBackdrop()).toBe(true);
     expect(clip()).toBe("");
   });
+  it("waits for new elements when zooming back to a level seen before", () => {
+    // 4096 px map: backdrop level 0 (4x4 tiles), then levels 1 and 2.
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 4096,
+      height: 4096,
+      tile_size: 256,
+      max_level: 2,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+        { width: 4096, height: 4096 },
+      ],
+    };
+    const at = (displayScale: number): TileView => ({
+      displayScale,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 200,
+      viewportH: 200,
+    });
+    const imgs = (level: number) => [
+      ...container.querySelectorAll<HTMLImageElement>(`img[src^="/t/${level}/"]`),
+    ];
+    const { container, rerender } = render(
+      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
+    );
+    loadAll(container);
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
+    loadAll(container);
+    // Level 2 settled; level 1 is no longer held.
+    expect(imgs(1)).toHaveLength(0);
+
+    // Back to level 1: its tiles loaded once, but these are new elements, so
+    // level 2 stays up under them and the backdrop is not cut away yet.
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
+    expect(imgs(1).length).toBeGreaterThan(0);
+    expect(imgs(1).every((img) => img.style.opacity === "0")).toBe(true);
+    expect(imgs(2).length).toBeGreaterThan(0);
+    expect(imgs(2).some((img) => img.style.visibility === "hidden")).toBe(false);
+    expect(imgs(0)[0].parentElement!.style.clipPath).toBe("");
+
+    loadAll(container);
+    expect(imgs(1).every((img) => img.style.opacity === "1")).toBe(true);
+    expect(imgs(0)[0].parentElement!.style.clipPath).not.toBe("");
+  });
 });
