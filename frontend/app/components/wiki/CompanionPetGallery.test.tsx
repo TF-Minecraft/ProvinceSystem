@@ -17,10 +17,18 @@ it("lets readers choose any companion while mounting only its preview", () => {
     "Black cat", "Funny cat", "Orange cat", "Fox", "Frog",
   ]);
   expect(screen.getByText("Beagle Companion Egg")).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Beagle" })
+    .getAttribute("data-model-url")).toBe("/wiki/models/companion-pets/beagle.json");
+  expect(screen.getByText("Beagle Companion Egg").parentElement?.querySelector("img")
+    ?.getAttribute("src")).toBe("/wiki/textures/vanilla/wolf_spawn_egg.png");
   for (const [id, name, egg] of [
+    ["chihuahua", "Chihuahua", "Chihuahua Companion Egg"],
+    ["corgi", "Corgi", "Corgi Companion Egg"],
     ["husky", "Husky", "Husky Companion Egg"],
     ["golden", "Golden Retriever", "Golden Companion Egg"],
     ["catblack", "Black cat", "Catblack Companion Egg"],
+    ["catfunny", "Funny cat", "Catfunny Companion Egg"],
+    ["catorange", "Orange cat", "Catorange Companion Egg"],
     ["mainecoon", "Maine Coon", "Maine Coon Companion Egg"],
     ["fox", "Fox", "Fox Companion Egg"],
     ["frog", "Frog", "Frog Companion Egg"],
@@ -31,7 +39,7 @@ it("lets readers choose any companion while mounting only its preview", () => {
       .getAttribute("data-model-url")).toBe(`/wiki/models/companion-pets/${id}.json`);
     expect(screen.getByText(egg)).toBeTruthy();
     const eggIcon = screen.getByText(egg).parentElement?.querySelector("img");
-    const family = ["catblack", "mainecoon"].includes(id) ? "cat" : id === "frog" ? "frog" : id === "fox" ? "fox" : "wolf";
+    const family = ["catblack", "catfunny", "catorange", "mainecoon"].includes(id) ? "cat" : id === "frog" ? "frog" : id === "fox" ? "fox" : "wolf";
     expect(eggIcon?.getAttribute("src")).toBe(`/wiki/textures/vanilla/${family}_spawn_egg.png`);
     expect(screen.queryByText("Beagle Companion Egg")).toBeNull();
   }
