@@ -93,4 +93,55 @@ describe("TileLayer", () => {
     loadAll(container);
     expect(onReady).toHaveBeenCalled();
   });
+
+  it("keeps the backdrop up outside the sharp tiles once they load", () => {
+    // 2048 px map: backdrop level 0 (4x4 tiles), sharp level 1 (8x8 tiles).
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 2048,
+      height: 2048,
+      tile_size: 256,
+      max_level: 1,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+      ],
+    };
+    // One sharp tile on screen; with the margin, the sharp tiles cover the
+    // top-left 512 px square, which is backdrop tile 0/0.
+    const zoomedIn: TileView = {
+      displayScale: 1,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 200,
+      viewportH: 200,
+    };
+    const { container } = render(
+      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} />
+    );
+    const backdrop = () =>
+      [...container.querySelectorAll<HTMLImageElement>('img[src^="/t/0/"]')].filter(
+        (img) => img.style.visibility !== "hidden"
+      );
+    expect(backdrop()).toHaveLength(16);
+
+    loadAll(container);
+
+    // A gesture scales the layer without a render: past the sharp tiles the
+    // backdrop must still be there, and only there.
+    const shown = backdrop();
+    expect(shown.map((img) => img.getAttribute("src"))).not.toContain("/t/0/0/0.webp");
+    expect(shown).toHaveLength(15);
+    const bands = [...new Set(shown.map((img) => img.parentElement!))].map((band) => [
+      band.style.left,
+      band.style.top,
+      band.style.width,
+      band.style.height,
+    ]);
+    expect(bands).toEqual([
+      ["0px", "512px", "2048px", "1536px"],
+      ["512px", "0px", "1536px", "512px"],
+    ]);
+  });
 });

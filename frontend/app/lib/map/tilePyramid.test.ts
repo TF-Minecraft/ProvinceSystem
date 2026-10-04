@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   allTiles,
+  backdropBands,
   backdropLevel,
   isTileManifest,
   overlayLod,
@@ -117,6 +118,33 @@ describe("tiles", () => {
         viewportH: 0,
       })
     ).toEqual([]);
+  });
+});
+
+describe("backdropBands", () => {
+  const map = { left: 0, top: 0, right: 100, bottom: 100 };
+
+  it("covers the map less the hole, with no overlap", () => {
+    expect(backdropBands(map, { left: 20, top: 30, right: 60, bottom: 70 })).toEqual([
+      { key: "top", left: 0, top: 0, right: 100, bottom: 30 },
+      { key: "bottom", left: 0, top: 70, right: 100, bottom: 100 },
+      { key: "left", left: 0, top: 30, right: 20, bottom: 70 },
+      { key: "right", left: 60, top: 30, right: 100, bottom: 70 },
+    ]);
+  });
+
+  it("drops the bands a hole at the edge leaves empty", () => {
+    expect(backdropBands(map, { left: 0, top: 0, right: 60, bottom: 100 })).toEqual([
+      { key: "right", left: 60, top: 0, right: 100, bottom: 100 },
+    ]);
+    expect(backdropBands(map, map)).toEqual([]);
+  });
+
+  it("clamps a hole that reaches past the map", () => {
+    expect(backdropBands(map, { left: -10, top: 90, right: 50, bottom: 140 })).toEqual([
+      { key: "top", left: 0, top: 0, right: 100, bottom: 90 },
+      { key: "right", left: 50, top: 90, right: 100, bottom: 100 },
+    ]);
   });
 });
 
