@@ -38,7 +38,7 @@ beforeEach(() => {
   props.mapId = `test-map-${++mapNumber}`;
   vi.useFakeTimers();
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function images(container: HTMLElement) {
   return [...container.querySelectorAll("img")].map((image) => image.getAttribute("src"));
 }
@@ -88,6 +88,7 @@ describe("MapCanvas selection", () => {
     crossOrigin = "";
     src = "";
     onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
     constructor() { FakeImage.made.push(this); }
   }
   beforeEach(() => {
@@ -107,8 +108,10 @@ describe("MapCanvas selection", () => {
       />
     );
   }
-  function loadShape(src: string) {
-    act(() => FakeImage.made.filter((image) => image.src === src).forEach((image) => image.onload?.()));
+  function loadShape(src: string, failed = false) {
+    act(() => FakeImage.made
+      .filter((image) => image.src === src)
+      .forEach((image) => (failed ? image.onerror : image.onload)?.()));
   }
   // The realm colours under the selection: muted once its highlight is ready.
   const colours = (container: HTMLElement) => container.querySelector<HTMLElement>("div.duration-200")!.style.opacity;
@@ -138,5 +141,39 @@ describe("MapCanvas selection", () => {
     expect(colours(container)).toBe("0.88");
     loadShape(`/${props.mapId}/regions/nation/other?lod=1`);
     expect(colours(container)).toBe("0.3");
+  });
+
+  it("waits again for a realm selected anew, even one loaded before", async () => {
+    const { container, rerender } = render(view("realm"));
+    await act(async () => {});
+    loadShape(`/${props.mapId}/regions/nation/realm`);
+    fireEvent.load(selected(container));
+    expect(colours(container)).toBe("0.3");
+
+    rerender(view("other"));
+    rerender(view("realm"));
+    expect(colours(container)).toBe("0.88");
+    expect(selected(container).style.opacity).not.toBe("0.88");
+  });
+
+  it("brings the colours back when the next reduction fails to load", async () => {
+    const { container, rerender } = render(view("realm"));
+    await act(async () => {});
+    loadShape(`/${props.mapId}/regions/nation/realm`);
+    fireEvent.load(selected(container));
+
+    mocks.displayScale = 0.5;
+    rerender(view("realm"));
+    loadShape(`/${props.mapId}/regions/nation/realm?lod=1`, true);
+    fireEvent.error(selected(container));
+    expect(colours(container)).toBe("0.88");
+  });
+
+  it("settles when the highlight is already loaded from the cache", async () => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(256);
+    const { container } = render(view("realm"));
+    await act(async () => {});
+    expect(selected(container).style.opacity).toBe("0.88");
   });
 });
