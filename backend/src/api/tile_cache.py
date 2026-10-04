@@ -227,13 +227,17 @@ def cleanup_pyramids(source: Path, current: str) -> None:
             marker.touch()
         retired.append((marker.stat().st_mtime, directory))
     total = 0
+    over_budget = False
     for index, (stamp, directory) in enumerate(sorted(retired, reverse=True)):
-        if index >= RETAIN_GENERATIONS or now - stamp > RETAIN_SECONDS:
+        if over_budget or index >= RETAIN_GENERATIONS or now - stamp > RETAIN_SECONDS:
             shutil.rmtree(directory, ignore_errors=True)
             continue
-        # Only kept generations count against the byte budget.
+        # Only kept generations count against the byte budget. Newest first:
+        # once one does not fit, it and every older one go, so an open page's
+        # more recent manifest never loses its tiles to an older generation.
         size = sum(p.stat().st_size for p in directory.rglob("*") if p.is_file())
         if total + size > RETAIN_BYTES:
+            over_budget = True
             shutil.rmtree(directory, ignore_errors=True)
             continue
         total += size

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import sys
 import tempfile
 import unittest
@@ -217,6 +218,24 @@ class PyramidTest(unittest.TestCase):
         with patch.object(tile_cache, "RETAIN_BYTES", 0):
             tile_cache.cleanup_pyramids(self.source, versions[-1])
         self.assertEqual([p.name for p in parent.iterdir() if p.is_dir()], [versions[-1]])
+
+    def test_budget_overflow_never_keeps_an_older_generation(self) -> None:
+        current = tile_cache.pyramid_dir(self.source, "3" * 64)
+        newer = tile_cache.pyramid_dir(self.source, "2" * 64)
+        older = tile_cache.pyramid_dir(self.source, "1" * 64)
+        for directory, size, stamp in ((current, 1, 3), (newer, 100, 2), (older, 10, 1)):
+            directory.mkdir(parents=True)
+            (directory / "tile.webp").write_bytes(b"x" * size)
+            if directory is not current:
+                (directory / ".retired").touch()
+                os.utime(directory / ".retired", (time.time() - 10 + stamp,) * 2)
+        # The newer retired generation alone is over budget: the older, smaller
+        # one must not outlive it.
+        with patch.object(tile_cache, "RETAIN_BYTES", 50):
+            tile_cache.cleanup_pyramids(self.source, current.name)
+        self.assertTrue(current.exists())
+        self.assertFalse(newer.exists())
+        self.assertFalse(older.exists())
 
     def test_legacy_generation_gets_grace_from_replacement_time(self) -> None:
         legacy = tile_cache.pyramid_dir(self.source, "123456")
