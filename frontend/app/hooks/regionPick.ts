@@ -1,4 +1,5 @@
 import type { HoverOverlay, RegionRecord } from "../components/map/types";
+import type { PickSurface } from "../lib/map/pickSurface";
 
 export type GetHoverRegion = (
   mapType: string,
@@ -52,7 +53,7 @@ export function resolveRegionById(
 }
 
 export function resolveRegionAtPickPixel(
-  ctx: CanvasRenderingContext2D,
+  surface: PickSurface,
   x: number,
   y: number,
   rgbToId: Record<string, string>,
@@ -63,17 +64,8 @@ export function resolveRegionAtPickPixel(
 ): RegionPickResult | null {
   if (!regionData) return null;
 
-  let pixel: Uint8ClampedArray;
-  try {
-    if (x < 0 || y < 0 || x >= ctx.canvas.width || y >= ctx.canvas.height) {
-      return null;
-    }
-    pixel = ctx.getImageData(x, y, 1, 1).data;
-  } catch {
-    return null;
-  }
-
-  const rgb = `${pixel[0]},${pixel[1]},${pixel[2]}`;
+  const rgb = surface.rgbAt(x, y);
+  if (rgb === null) return null;
   const pickId = rgbToId[rgb];
   if (!pickId) return null;
 

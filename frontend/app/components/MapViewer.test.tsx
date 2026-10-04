@@ -1,9 +1,7 @@
 /** @vitest-environment jsdom */
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useLayoutEffect, type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapEngineProvider } from "../core/MapEngineContext";
-import type MapCanvas from "./map/MapCanvas";
 import MapViewer from "./MapViewer";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 
@@ -31,11 +29,7 @@ vi.mock("../hooks/useMapHover", () => ({
   },
 }));
 vi.mock("./map/MapCanvas", () => ({
-  default: function Canvas({ canvasRef }: ComponentProps<typeof MapCanvas>) {
-    useLayoutEffect(() => {
-      canvasRef.current = document.createElement("canvas");
-      return () => { canvasRef.current = null; };
-    }, [canvasRef]);
+  default: function Canvas() {
     return <div data-testid="terrain" />;
   },
 }));
@@ -45,7 +39,11 @@ beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} });
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener() {}, removeEventListener() {} })));
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ clearRect: vi.fn(), drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    getImageData: (_x: number, _y: number, w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+  } as unknown as CanvasRenderingContext2D);
   mocks.mode = { loading: true, regionData: null };
   mocks.hover.mockClear();
   mocks.grid.mockReset();
@@ -87,15 +85,18 @@ describe("MapViewer terrain and picking readiness", () => {
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
     await act(async () => finishFetch(new Response()));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    // Two 256-row bands, each yielding before the canvas can be read.
+    // Two 256-row bands, each yielding before the pick map can be read.
     await act(async () => frames.shift()!(0));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
     await act(async () => frames.shift()!(16));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 512, height: 512 });
     expect(bitmap.close).toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole("button", { name: /Layers/ })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Counties" }));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
+    // The last mode's regions are gone, not merely gated.
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
   });
 });
 
@@ -106,27 +107,22 @@ describe("chronicle pick grids", () => {
     mocks.maps = [{ id: "main", display_name: "Main", public: false }, { id: "dev", display_name: "Dev", public: false }];
     mocks.token = "first-token";
     vi.mocked(fetch).mockImplementation(async () => new Response("{}", { headers: { "Content-Type": "application/json" } }));
-    const putImageData = vi.fn();
-    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue({
-      createImageData: () => ({ width: 1, height: 1, data: new Uint8ClampedArray(4) }),
-      putImageData,
-    } as unknown as CanvasRenderingContext2D);
     const oldGrid: ProvinceIdGrid = { width: 1, height: 1, ids: new Uint16Array([1]) };
     let rejectGrid!: (error: Error) => void;
     mocks.grid.mockResolvedValueOnce(oldGrid).mockReturnValueOnce(new Promise((_, reject) => { rejectGrid = reject; }));
     const { rerender } = render(viewer("main", "2026-10-01"));
     await act(async () => {});
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
-    expect(putImageData).toHaveBeenCalledTimes(1);
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 1, height: 1 });
     if (change === "token") mocks.token = "second-token";
     rerender(viewer(change === "map" ? "dev" : "main", "2026-10-01"));
     await act(async () => {});
     expect(mocks.hover.mock.lastCall?.[0].chronicleGrid).toBeNull();
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    expect(putImageData).toHaveBeenCalledTimes(1);
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
     vi.spyOn(console, "error").mockImplementation(() => {});
     await act(async () => rejectGrid(new Error("offline")));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    expect(putImageData).toHaveBeenCalledTimes(1);
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
   });
 });
