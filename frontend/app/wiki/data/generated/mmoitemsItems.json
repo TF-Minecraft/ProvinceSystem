@@ -779,12 +779,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_111.png"
   },
   "FISH_TREAT": {
+    "name": "Fish Treat",
     "material": "RABBIT_FOOT",
-    "name": "Fish Meal",
     "customModelData": 4,
-    "texture": "companion-pets/items/fish_meal.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/fish_meal.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/fish_meal.png"
+    "texture": "mmoitems/fish_treat.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/fishtreat.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/fishtreat.png"
   },
   "FISHING_ROD": {
     "name": "Iron Rod",
@@ -1258,12 +1258,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/maplewood.png"
   },
   "MEAT_TREAT": {
+    "name": "Meat Treat",
     "material": "RABBIT_FOOT",
-    "name": "Meat Meal",
     "customModelData": 3,
-    "texture": "companion-pets/items/meat_meal.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/meat_meal.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/meat_meal.png"
+    "texture": "mmoitems/meat_treat.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/meattreat.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/meattreat.png"
   },
   "MINOR_ARMOR_RUNESTONE": {
     "name": "Minor Armor Runestone",
@@ -2239,77 +2239,5 @@
   },
   "WRITABLE_BOOK": {
     "material": "WRITABLE_BOOK"
-  },
-  "PET_BRUSH": {
-    "material": "RABBIT_FOOT",
-    "name": "Pet Brush",
-    "customModelData": 18,
-    "texture": "companion-pets/items/pet_brush.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_brush.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_brush.png"
-  },
-  "PET_BALL": {
-    "material": "RABBIT_FOOT",
-    "name": "Pet Ball",
-    "customModelData": 11,
-    "texture": "companion-pets/items/pet_ball.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_ball.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_ball.png"
-  },
-  "PET_CHEW_BONE": {
-    "material": "RABBIT_FOOT",
-    "name": "Chew Bone",
-    "customModelData": 12,
-    "texture": "companion-pets/items/pet_chew_bone.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_chew_bone.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_chew_bone.png"
-  },
-  "PET_TUG_ROPE": {
-    "material": "RABBIT_FOOT",
-    "name": "Tug Rope",
-    "customModelData": 13,
-    "texture": "companion-pets/items/pet_tug_rope.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_tug_rope.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_tug_rope.png"
-  },
-  "PET_MOUSE_PLUSH": {
-    "material": "RABBIT_FOOT",
-    "name": "Mouse Plush",
-    "customModelData": 14,
-    "texture": "companion-pets/items/pet_mouse_plush.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_mouse_plush.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_mouse_plush.png"
-  },
-  "PET_TEDDY_PLUSH": {
-    "material": "RABBIT_FOOT",
-    "name": "Teddy Bear Plush",
-    "customModelData": 15,
-    "texture": "companion-pets/items/pet_teddy_plush.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_teddy_plush.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_teddy_plush.png"
-  },
-  "FISH_SNACK": {
-    "material": "RABBIT_FOOT",
-    "name": "Fish Snack",
-    "customModelData": 16,
-    "texture": "companion-pets/items/fish_snack.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/fish_snack.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/fish_snack.png"
-  },
-  "BISCUIT_TREAT": {
-    "material": "RABBIT_FOOT",
-    "name": "Biscuit Treat",
-    "customModelData": 17,
-    "texture": "companion-pets/items/biscuit_treat.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/biscuit_treat.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/biscuit_treat.png"
-  },
-  "PET_MEDICINE": {
-    "material": "RABBIT_FOOT",
-    "name": "Pet Medicine",
-    "customModelData": 19,
-    "texture": "companion-pets/items/pet_medicine.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_medicine.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_medicine.png"
   }
 }

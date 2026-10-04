@@ -39,7 +39,7 @@ export default function CompanionPetsPage() {
         They keep their name, preferences and learned tricks as you spend time together.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Get the egg for the companion you want at the <AnimalStation />.
+        Unlock the Pet Master perk in the Forager profession to craft companion eggs at the <AnimalStation />.
         Right-click with it and follow the
         naming prompts in chat to welcome your new pet. Once it is beside you,
         sneak-right-click it with an empty hand to open its care sheet. This is where you
