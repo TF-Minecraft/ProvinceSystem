@@ -711,8 +711,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           bitmap.close();
           return;
         }
-        await read(bitmap, bitmap.width, bitmap.height);
-        bitmap.close();
+        try {
+          await read(bitmap, bitmap.width, bitmap.height);
+        } finally {
+          bitmap.close();
+        }
         return;
       } catch {
         if (cancelled) return;
