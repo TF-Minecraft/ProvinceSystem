@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from . import file_routes, map_routes, region_composite
 from .http_headers import add_cors, conditional_json_response
 from .map_access import ensure_map_access
-from .tile_cache import ready_manifest, tile_file
+from .tile_cache import ready_manifest, tile_file, valid_version, run_manifest
 from ..scripts.util.regen_types import MODES as REGION_MODES
 
 tile_router = APIRouter()
@@ -65,7 +65,7 @@ async def get_tile_manifest(
     if mode is not None:
         if not region_composite.has_inputs(map_name, mode):
             raise HTTPException(status_code=404, detail="Layer not found")
-        manifest = region_composite.latest_manifest(map_name, mode)
+        manifest = await run_manifest(region_composite.latest_manifest, map_name, mode)
         if manifest is None:
             return _not_ready()
         return conditional_json_response(
@@ -76,7 +76,7 @@ async def get_tile_manifest(
     if source is None:
         raise HTTPException(status_code=404, detail="Layer not found")
 
-    manifest = ready_manifest(source)
+    manifest = await run_manifest(ready_manifest, source)
     if manifest is None:
         return _not_ready()
     return conditional_json_response(
@@ -96,7 +96,7 @@ async def get_tile(
 ):
     entry = ensure_map_access(map_name, authorization)
     source = _tile_source(entry.id, layer)
-    if source is None or not version.isdigit() or min(level, x, y) < 0:
+    if source is None or not valid_version(version) or min(level, x, y) < 0:
         raise HTTPException(status_code=404, detail="Tile not found")
 
     path = tile_file(source, version, level, x, y)
@@ -104,9 +104,10 @@ async def get_tile(
         raise HTTPException(status_code=404, detail="Tile not found")
 
     response = FileResponse(path, media_type="image/webp")
-    # The version is part of the URL and a stale one is refused above, so a
+    # The version identifies the rendered pixels and is part of the URL, so a
     # tile URL never changes meaning: cache it for good. Staff maps stay out
     # of shared caches.
-    scope = "public" if entry.public else "private"
+    authenticated = isinstance(authorization, str) and bool(authorization.strip())
+    scope = "public" if entry.public and not authenticated else "private"
     response.headers["Cache-Control"] = f"{scope}, max-age=31536000, immutable"
     return add_cors(response)

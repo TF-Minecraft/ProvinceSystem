@@ -693,6 +693,7 @@ export default function MapCanvas({
         {baseTiles ? (
           <TileLayer
             manifest={baseTiles}
+            onTileError={baseTileState.refresh}
             tileUrl={(level, x, y) => tileUrl(mapId, "base", baseTiles, level, x, y)}
             view={tileView}
             // Past one screen pixel per map pixel, show the map's own pixels

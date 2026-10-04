@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from .data_routes import clear_province_cache
-from .http_headers import conditional_file_response
+from .http_headers import add_revalidate, conditional_file_response
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from .map_access import ensure_map_staff_write
 from .regen_routes import _regen_start_message
@@ -111,7 +111,7 @@ async def get_editor_provinces(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return JSONResponse({"provinces": provinces})
+    return add_revalidate(JSONResponse({"provinces": provinces}))
 
 
 @editor_router.get("/{map_name}/editor/pick/provinces")

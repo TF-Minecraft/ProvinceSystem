@@ -5,7 +5,7 @@ from .http_headers import conditional_file_response
 from .map_access import ensure_map_access
 from .path_safety import is_safe_segment, resolve_within
 from .webp_cache import webp_variant
-from .tile_cache import MAX_LOD, MAX_PICK_SCALE, lod_variant, pick_variant
+from .tile_cache import MAX_LOD, MAX_PICK_SCALE, lod_variant, pick_variant, run_derivative
 from ..scripts.util import dirs
 from ..scripts.util.dirs import (
     map_image,
@@ -94,7 +94,8 @@ async def get_map_file(
     if_modified_since: str | None = Header(default=None),
     scale: int = Query(default=0, ge=0, le=MAX_PICK_SCALE),
 ):
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     file_path = resolve_mapdata_path(map_name, map_type)
     if file_path is None:
         raise HTTPException(status_code=404, detail="Map not found")
@@ -102,13 +103,14 @@ async def get_map_file(
     # iOS Safari will hold (see tile_cache.pick_variant). Called directly
     # (not through FastAPI) the parameter is still its Query default.
     if isinstance(scale, int) and scale > 0:
-        file_path = pick_variant(file_path, scale)
+        file_path = await run_derivative(pick_variant, file_path, scale)
         if file_path is None:
             raise HTTPException(status_code=404, detail="Map not found")
 
     # Deliberately NOT routed through webp_variant: this is the pick map. The
     # client draws it to an offscreen canvas and reads exact RGB values back to
     # resolve province/county ids, and lossy WebP would corrupt those lookups.
+    # Revalidate on every use so these colours agree with the live region data.
     return conditional_file_response(
         file_path,
         media_type="image/png",
@@ -128,7 +130,8 @@ async def get_region_file(
     if_modified_since: str | None = Header(default=None),
     lod: int = Query(default=0, ge=0, le=MAX_LOD),
 ):
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     # Ensure .png extension
     stem = file_name[:-4] if file_name.endswith(".png") else file_name
     if not is_safe_segment(map_type) or not is_safe_segment(stem):
@@ -144,8 +147,9 @@ async def get_region_file(
     # A zoomed-out client asks for a reduced copy rather than decoding the
     # full crop only to draw it a few pixels across.
     if isinstance(lod, int) and lod > 0:
-        reduced = lod_variant(file_path, lod)
+        reduced = await run_derivative(lod_variant, file_path, lod)
         if reduced is not None:
+            # Dimensions and colours must revalidate with the live overlay metadata.
             return conditional_file_response(
                 reduced,
                 media_type="image/webp",

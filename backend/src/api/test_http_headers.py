@@ -20,7 +20,7 @@ from unittest.mock import patch
 # (a raw path segment like "/%20MaIn/..." passes the gate as "main"), so a stub
 # gate has to hand back something with an .id or the routes key their caches
 # and paths on a mock object.
-_GATE = {"return_value": SimpleNamespace(id="main")}
+_GATE = {"return_value": SimpleNamespace(id="main", public=False)}
 
 from fastapi import Response
 

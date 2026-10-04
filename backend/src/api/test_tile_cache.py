@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import sys
 import tempfile
 import unittest
@@ -79,7 +80,7 @@ class PyramidTest(unittest.TestCase):
             self.assertIn("A", image.getbands())
 
     def test_not_ready_until_built_then_ready(self) -> None:
-        with patch.object(tile_cache, "_build_in_background") as background:
+        with patch.object(tile_cache, "warm_source") as background:
             self.assertIsNone(tile_cache.ready_manifest(self.source))
             background.assert_called_once()
 
@@ -101,11 +102,11 @@ class PyramidTest(unittest.TestCase):
         new = tile_cache.build_pyramid(self.source)
         assert new is not None
         self.assertNotEqual(new["version"], old["version"])
-        # ...and is gone once the new one replaces it.
-        self.assertIsNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+        # ...and survives replacement for open pages holding its manifest.
+        self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
         self.assertEqual(tile_cache.existing_manifest(self.source), new)
-        siblings = [p.name for p in tile_cache.pyramid_dir(self.source, "x").parent.iterdir()]
-        self.assertEqual(siblings, [new["version"]])
+        siblings = [p.name for p in tile_cache.pyramid_dir(self.source, "x").parent.iterdir() if p.is_dir()]
+        self.assertCountEqual(siblings, [old["version"], new["version"]])
 
     def test_previous_version_serves_while_the_new_one_builds(self) -> None:
         old = tile_cache.build_pyramid(self.source)
@@ -114,20 +115,155 @@ class PyramidTest(unittest.TestCase):
         stat = self.source.stat()
         os.utime(self.source, ns=(stat.st_atime_ns, stat.st_mtime_ns + 10_000_000))
 
-        with patch.object(tile_cache, "_build_in_background") as background:
+        with patch.object(tile_cache, "warm_source") as background:
             self.assertEqual(tile_cache.ready_manifest(self.source), old)
             background.assert_called_once()
         self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
 
-    def test_an_older_build_finishing_last_keeps_the_newer_pyramid(self) -> None:
-        newer = tile_cache.build_pyramid(self.source)
-        assert newer is not None
-        # A build of an earlier version of the source, landing after it.
-        earlier = str(int(newer["version"]) - 1)
-        with patch.object(tile_cache, "_version_of", return_value=earlier):
-            self.assertIsNotNone(tile_cache.build_pyramid(self.source))
-        self.assertEqual(tile_cache.existing_manifest(self.source), newer)
-        self.assertIsNotNone(tile_cache.tile_file(self.source, newer["version"], 0, 0, 0))
+    def test_rewrite_with_identical_pixels_skips_encoding(self) -> None:
+        first = tile_cache.build_pyramid(self.source)
+        # A different PNG compression and timestamp must not evict live tiles.
+        with Image.open(self.source) as image:
+            image.save(self.source, "PNG", compress_level=0)
+        with patch.object(tile_cache, "_encode_level") as encode:
+            self.assertEqual(tile_cache.build_pyramid(self.source), first)
+        encode.assert_not_called()
+
+    def test_renderer_version_invalidates_even_with_unchanged_stat(self) -> None:
+        before = tile_cache._version_of(self.source)
+        tile_cache._versions.clear()
+        with patch.object(tile_cache, "_RENDERER_VERSION", "next-renderer"):
+            self.assertNotEqual(tile_cache._version_of(self.source), before)
+
+    def test_restart_reuses_persisted_fingerprint_without_decoding(self) -> None:
+        built = tile_cache.build_pyramid(self.source)
+        tile_cache._versions.clear()
+        with patch.object(tile_cache, "_read_source", side_effect=AssertionError("decoded")), patch.object(
+            tile_cache, "warm_source"
+        ) as warm:
+            self.assertEqual(tile_cache._source_snapshot(self.source), (None, built["version"]))
+            self.assertEqual(tile_cache.ready_manifest(self.source), built)
+        warm.assert_not_called()
+
+    def test_persisted_fingerprint_rejects_changed_pixels_with_restored_mtime(self) -> None:
+        before = tile_cache.build_pyramid(self.source)
+        stat = self.source.stat()
+        Image.new("RGB", (600, 300), (200, 200, 0)).save(self.source)
+        os.utime(self.source, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+        tile_cache._versions.clear()
+        self.assertIsNone(tile_cache.existing_manifest(self.source))
+        after = tile_cache.build_pyramid(self.source)
+        self.assertNotEqual(after["version"], before["version"])
+        self.assertIsNotNone(tile_cache.tile_file(self.source, before["version"], 0, 0, 0))
+
+    def test_bad_memo_falls_back_to_background_verification(self) -> None:
+        built = tile_cache.build_pyramid(self.source)
+        memo = tile_cache._memo_path(self.source)
+        for contents in ("{", "[]", '{}', '{"version":42}'):
+            with self.subTest(contents=contents):
+                memo.write_text(contents)
+                tile_cache._versions.clear()
+                with patch.object(tile_cache, "_read_source", side_effect=AssertionError("decoded")), patch.object(
+                    tile_cache, "warm_source"
+                ) as warm:
+                    self.assertEqual(tile_cache.ready_manifest(self.source), built)
+                warm.assert_called_once_with(self.source)
+        tile_cache.build_pyramid(self.source)
+        tile_cache._versions.clear()
+        with patch.object(tile_cache, "_read_source", side_effect=AssertionError("decoded")):
+            self.assertEqual(tile_cache.existing_manifest(self.source), built)
+
+    def test_failed_memo_publication_keeps_previous_complete_memo(self) -> None:
+        tile_cache._version_of(self.source)
+        memo = tile_cache._memo_path(self.source)
+        before = memo.read_bytes()
+        with patch.object(tile_cache.os, "replace", side_effect=OSError("read-only")):
+            tile_cache._persist_version(self.source, ("changed",), "a" * 64)
+        self.assertEqual(memo.read_bytes(), before)
+        self.assertEqual(list(memo.parent.glob(".source-*")), [])
+
+    def test_replacement_during_build_keeps_snapshot_version(self) -> None:
+        original_version = tile_cache._version_of(self.source)
+        encode = tile_cache._encode_level
+        changed = False
+
+        def replace_then_encode(image, directory):
+            nonlocal changed
+            if not changed:
+                Image.new("RGB", (600, 300), (255, 0, 0)).save(self.source)
+                changed = True
+            encode(image, directory)
+
+        with patch.object(tile_cache, "_encode_level", side_effect=replace_then_encode):
+            old = tile_cache.build_pyramid(self.source)
+        self.assertEqual(old["version"], original_version)
+        self.assertNotEqual(tile_cache._version_of(self.source), original_version)
+        new = tile_cache.build_pyramid(self.source)
+        self.assertIsNotNone(tile_cache.tile_file(self.source, old["version"], 0, 0, 0))
+        self.assertEqual(tile_cache.existing_manifest(self.source), new)
+
+    def test_retention_count_age_and_bytes_are_bounded(self) -> None:
+        versions = []
+        for red in range(5):
+            Image.new("RGB", (40, 40), (red, 0, 0)).save(self.source)
+            versions.append(tile_cache.build_pyramid(self.source)["version"])
+        parent = tile_cache.pyramid_dir(self.source, versions[-1]).parent
+        self.assertEqual(len([p for p in parent.iterdir() if p.is_dir()]), 3)
+        self.assertIsNone(tile_cache.tile_file(self.source, versions[0], 0, 0, 0))
+        old_dir = tile_cache.pyramid_dir(self.source, versions[-2])
+        marker = old_dir / ".retired"
+        os.utime(marker, (1, 1))
+        tile_cache.cleanup_pyramids(self.source, versions[-1])
+        self.assertFalse(old_dir.exists())
+        with patch.object(tile_cache, "RETAIN_BYTES", 0):
+            tile_cache.cleanup_pyramids(self.source, versions[-1])
+        self.assertEqual([p.name for p in parent.iterdir() if p.is_dir()], [versions[-1]])
+
+    def test_budget_overflow_never_keeps_an_older_generation(self) -> None:
+        current = tile_cache.pyramid_dir(self.source, "3" * 64)
+        newer = tile_cache.pyramid_dir(self.source, "2" * 64)
+        older = tile_cache.pyramid_dir(self.source, "1" * 64)
+        for directory, size, stamp in ((current, 1, 3), (newer, 100, 2), (older, 10, 1)):
+            directory.mkdir(parents=True)
+            (directory / "tile.webp").write_bytes(b"x" * size)
+            if directory is not current:
+                (directory / ".retired").touch()
+                os.utime(directory / ".retired", (time.time() - 10 + stamp,) * 2)
+        # The newer retired generation alone is over budget: the older, smaller
+        # one must not outlive it.
+        with patch.object(tile_cache, "RETAIN_BYTES", 50):
+            tile_cache.cleanup_pyramids(self.source, current.name)
+        self.assertTrue(current.exists())
+        self.assertFalse(newer.exists())
+        self.assertFalse(older.exists())
+
+    def test_legacy_generation_gets_grace_from_replacement_time(self) -> None:
+        legacy = tile_cache.pyramid_dir(self.source, "123456")
+        legacy.mkdir(parents=True)
+        (legacy / "manifest.json").write_text('{"version":"123456"}')
+        os.utime(legacy, (1, 1))
+        current = tile_cache.build_pyramid(self.source)
+        self.assertTrue(legacy.exists())
+        self.assertGreater((legacy / ".retired").stat().st_mtime, 1)
+        self.assertEqual(tile_cache.latest_manifest(self.source), current)
+
+    def test_late_old_build_does_not_retire_current_generation(self) -> None:
+        old_image, old_version = tile_cache._read_source(self.source)
+        Image.new("RGB", (600, 300), (255, 20, 30)).save(self.source)
+        current = tile_cache.build_pyramid(self.source)
+        snapshot = tile_cache._source_snapshot
+        calls = 0
+
+        def delayed_snapshot(source):
+            nonlocal calls
+            calls += 1
+            return (old_image, old_version) if calls == 1 else snapshot(source)
+
+        with patch.object(tile_cache, "_source_snapshot", side_effect=delayed_snapshot):
+            tile_cache.build_pyramid(self.source)
+        self.assertEqual(tile_cache.existing_manifest(self.source), current)
+        self.assertFalse((tile_cache.pyramid_dir(self.source, current["version"]) / ".retired").exists())
+        self.assertIsNotNone(tile_cache.tile_file(self.source, old_version, 0, 0, 0))
 
     def test_manifest_is_written_last(self) -> None:
         manifest = tile_cache.build_pyramid(self.source)
@@ -174,6 +310,26 @@ class PickVariantTest(unittest.TestCase):
             reduced_colours = {colour for _, colour in image.getcolors(4096)}
         self.assertLessEqual(reduced_colours, source_colours)
         self.assertEqual(tile_cache.pick_variant(self.source, 1), reduced)
+
+    def test_identical_pixels_reuse_pick_variant_and_old_files_are_bounded(self) -> None:
+        first = tile_cache.pick_variant(self.source, 1)
+        with Image.open(self.source) as image:
+            image.save(self.source, "PNG", compress_level=0)
+        self.assertEqual(tile_cache.pick_variant(self.source, 1), first)
+        for red in range(5):
+            Image.new("RGBA", (64, 32), (red, 0, 0, 255)).save(self.source)
+            tile_cache.pick_variant(self.source, 1)
+        self.assertEqual(len(list((self.tmp / "pick").glob("*.png"))), 3)
+
+    def test_background_warming_builds_phone_pick_before_tiles(self) -> None:
+        from types import SimpleNamespace
+
+        calls = []
+        with patch.object(tile_cache.threading, "Thread", side_effect=lambda **kw: SimpleNamespace(start=kw["target"])), patch.object(
+            tile_cache, "pick_variant", side_effect=lambda *args: calls.append(("pick", args))
+        ), patch.object(tile_cache, "build_pyramid", side_effect=lambda *args: calls.append(("tiles", args))):
+            tile_cache.warm_source(self.source, warm_pick=True)
+        self.assertEqual(calls, [("pick", (self.source, 1)), ("tiles", (self.source,))])
 
     def test_caps_the_scale(self) -> None:
         capped = tile_cache.pick_variant(self.source, 9)

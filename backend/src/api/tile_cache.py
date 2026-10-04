@@ -12,10 +12,10 @@ only ever fetches and decodes the handful of tiles on screen, at the level
 that matches its zoom.
 
 Building a pyramid takes a few seconds, so it is never done inside a request.
-A request finds a ready pyramid for the source's current mtime or, while a
+A request finds a ready pyramid for the source's current pixels or, while a
 background thread builds that one, the previous version's; only a source that
 has never been tiled answers "not ready" (the client then uses the single
-image). Each build lives in a directory named after the source's mtime, so a
+image). Each build lives in a directory named after its pixel fingerprint, so a
 regenerated map invalidates itself and a reader never sees a half-written
 level. Regeneration starts the builds itself (`tile_warm`) rather than
 leaving them to the first visitor.
@@ -33,7 +33,12 @@ import os
 import shutil
 import tempfile
 import threading
+import time
+from collections import OrderedDict
 from pathlib import Path
+
+from anyio import CapacityLimiter, to_thread
+from PIL import __version__ as PILLOW_VERSION, features
 
 TILE_SIZE = 256
 _QUALITY = 80
@@ -57,11 +62,185 @@ def _source_key(source: Path) -> str:
     ).hexdigest()
 
 
-def _version_of(source: Path) -> str | None:
+# Include encoder inputs so an algorithm or Pillow upgrade cannot change an
+# immutable URL's meaning. File timestamps only memoise the expensive hash.
+_RENDERER_VERSION = (
+    f"tiles-v2:{TILE_SIZE}:{_QUALITY}:{_METHOD}:lod-lossless-2:pick-nearest-6:"
+    f"{PILLOW_VERSION}:{features.version('webp')}"
+)
+_versions: OrderedDict[Path, tuple[tuple, str]] = OrderedDict()
+_versions_lock = threading.Lock()
+_DERIVATIVE_LIMITER = CapacityLimiter(2)
+_MANIFEST_LIMITER = CapacityLimiter(4)
+
+# Keep the current pyramid plus at most two retired generations. The retired
+# byte budget is per source; the current generation is always allowed to live.
+RETAIN_SECONDS = 3600
+RETAIN_GENERATIONS = 2
+RETAIN_BYTES = 256 * 1024 * 1024
+
+
+async def run_derivative(function, *args):
+    """Bound image work separately from the API's ordinary request workers.
+
+    The entire call, including its blocking locks and fingerprint reads, runs
+    in the worker. A cold phone request must not pause unrelated API traffic.
+    """
+    return await to_thread.run_sync(function, *args, limiter=_DERIVATIVE_LIMITER)
+
+
+async def run_manifest(function, *args):
+    """Read metadata without queuing behind image decodes or build locks."""
+    return await to_thread.run_sync(function, *args, limiter=_MANIFEST_LIMITER)
+
+
+def _signature(stat) -> tuple:
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, _RENDERER_VERSION)
+
+
+def _memo_path(source: Path) -> Path:
+    return _CACHE_DIR / _source_key(source) / "source.json"
+
+
+def _remember_version(source: Path, signature: tuple, version: str) -> None:
+    with _versions_lock:
+        _versions[source] = (signature, version)
+        _versions.move_to_end(source)
+        while len(_versions) > 256:
+            _versions.popitem(last=False)
+
+
+def _persist_version(source: Path, signature: tuple, version: str) -> None:
+    # Keep the pixel hash across restarts. The stat signature (including the
+    # renderer) only validates this memo; it never becomes a tile URL.
+    target = _memo_path(source)
+    tmp = None
     try:
-        return str(source.stat().st_mtime_ns)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, name = tempfile.mkstemp(dir=target.parent, prefix=".source-")
+        tmp = Path(name)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump({"signature": signature, "version": version}, stream)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, target)
     except OSError:
+        # A read-only cache must still be able to serve finished generations.
+        pass
+    finally:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+
+
+def _cached_version(source: Path) -> str | None:
+    """Look up a verified fingerprint without decoding or hashing pixels."""
+    try:
+        signature = _signature(source.stat())
+        with _versions_lock:
+            cached = _versions.get(source)
+            if cached is not None and cached[0] == signature:
+                return cached[1]
+        memo = json.loads(_memo_path(source).read_text(encoding="utf-8"))
+        if not isinstance(memo, dict) or memo.get("signature") != list(signature):
+            return None
+        version = memo.get("version")
+        if not isinstance(version, str) or len(version) != 64 or not valid_version(version):
+            return None
+        _remember_version(source, signature, version)
+        return version
+    except (OSError, ValueError):
         return None
+
+
+def _read_source(source: Path):
+    from PIL import Image
+
+    # Read and hash the very image we render. A replacement during an encode
+    # can then only publish an older, internally consistent generation.
+    with source.open("rb") as stream:
+        before = _signature(os.fstat(stream.fileno()))
+        with Image.open(stream) as opened:
+            image = opened.convert("RGBA")
+        if _signature(os.fstat(stream.fileno())) != before:
+            image.close()
+            raise OSError(f"Map changed while reading {source}")
+    digest = hashlib.sha256(f"{_RENDERER_VERSION}:{image.size}:RGBA".encode())
+    # Avoid another full-map byte buffer alongside Pillow's decoded image.
+    for y in range(0, image.height, 64):
+        digest.update(image.crop((0, y, image.width, min(y + 64, image.height))).tobytes())
+    version = digest.hexdigest()
+    if _signature(source.stat()) == before:
+        _remember_version(source, before, version)
+        _persist_version(source, before, version)
+    return image, version
+
+
+def _source_snapshot(source: Path):
+    """Return a memoised version, or keep the newly decoded pixels for a build.
+
+    Hashing and then reopening a cold 6400 px PNG doubles its decode cost. The
+    caller can reuse this snapshot if its derivative has not been built yet.
+    """
+    try:
+        version = _cached_version(source)
+        if version is not None:
+            return None, version
+        return _read_source(source)
+    except OSError:
+        return None, None
+
+
+def _version_of(source: Path) -> str | None:
+    image, version = _source_snapshot(source)
+    if image is not None:
+        image.close()
+    return version
+
+
+def valid_version(version: str) -> bool:
+    # Numeric generations remain readable across the first content-hash build.
+    return version.isascii() and (
+        version.isdigit()
+        or (len(version) == 64 and all(c in "0123456789abcdef" for c in version))
+    )
+
+
+def cleanup_pyramids(source: Path, current: str) -> None:
+    """Retire old generations, with age, count and byte ceilings.
+
+    Age starts when a generation is superseded, not when it was built: a map
+    unchanged for months still deserves a grace period for its open pages.
+    Cleanup runs on warming/builds, including unchanged-content cache hits.
+    """
+    parent = pyramid_dir(source, current).parent
+    if not parent.is_dir():
+        return
+    retired = []
+    now = time.time()
+    for directory in parent.iterdir():
+        if not valid_version(directory.name) or not directory.is_dir():
+            continue
+        marker = directory / ".retired"
+        if directory.name == current:
+            marker.unlink(missing_ok=True)
+            continue
+        if not marker.exists():
+            marker.touch()
+        retired.append((marker.stat().st_mtime, directory))
+    total = 0
+    over_budget = False
+    for index, (stamp, directory) in enumerate(sorted(retired, reverse=True)):
+        if over_budget or index >= RETAIN_GENERATIONS or now - stamp > RETAIN_SECONDS:
+            shutil.rmtree(directory, ignore_errors=True)
+            continue
+        # Only kept generations count against the byte budget. Newest first:
+        # once one does not fit, it and every older one go, so an open page's
+        # more recent manifest never loses its tiles to an older generation.
+        size = sum(p.stat().st_size for p in directory.rglob("*") if p.is_file())
+        if total + size > RETAIN_BYTES:
+            over_budget = True
+            shutil.rmtree(directory, ignore_errors=True)
+            continue
+        total += size
 
 
 def pyramid_dir(source: os.PathLike[str] | str, version: str) -> Path:
@@ -100,18 +279,23 @@ def build_pyramid(source: os.PathLike[str] | str) -> dict | None:
     """Build every level for `source` and return its manifest.
 
     Built into a temporary directory and renamed into place, so a reader only
-    ever finds a complete pyramid. Older versions of the same source are
-    removed once the new one is in place.
+    ever finds a complete pyramid. Retired versions have a bounded grace period
+    so an open page can finish loading its existing manifest.
     """
-    from PIL import Image
-
     source_path = Path(source)
-    version = _version_of(source_path)
+    image, version = _source_snapshot(source_path)
     if version is None:
         return None
     final = pyramid_dir(source_path, version)
     if (final / "manifest.json").is_file():
+        if image is not None:
+            image.close()
+        cleanup_pyramids(source_path, version)
         return read_manifest(final)
+
+    if image is None:
+        image, version = _read_source(source_path)
+    final = pyramid_dir(source_path, version)
 
     parent = final.parent
     parent.mkdir(parents=True, exist_ok=True)
@@ -120,11 +304,6 @@ def build_pyramid(source: os.PathLike[str] | str) -> dict | None:
     # ordinary readable cache like the rest of output/.
     os.chmod(staging, 0o755)
     try:
-        with Image.open(source_path) as opened:
-            opened.load()
-            mode = "RGBA" if "A" in opened.getbands() or "transparency" in opened.info else "RGB"
-            image = opened.convert(mode)
-
         width, height = image.size
         top = max_level_for(width, height)
         levels: list[dict] = [{}] * (top + 1)
@@ -149,17 +328,26 @@ def build_pyramid(source: os.PathLike[str] | str) -> dict | None:
         try:
             os.replace(staging, final)
         except OSError:
-            # Another build of the same version won the race; theirs is as good.
+            # Only a complete competing publication can excuse a failed rename.
+            if read_manifest(final) is None:
+                raise
             shutil.rmtree(staging, ignore_errors=True)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+    finally:
+        image.close()
+        current.close()
 
-    # Only versions older than this one: a build of an earlier source that
-    # finishes last must not delete the newer pyramid clients are now served.
-    for sibling in parent.iterdir():
-        if sibling.name.isdigit() and int(sibling.name) < int(version):
-            shutil.rmtree(sibling, ignore_errors=True)
+    # A source may have changed during this build. Preserve its already-built
+    # current generation even when an older worker happens to finish last.
+    current_version = _version_of(source_path)
+    kept_version = (
+        current_version
+        if current_version and read_manifest(pyramid_dir(source_path, current_version))
+        else version
+    )
+    cleanup_pyramids(source_path, kept_version)
     return read_manifest(final)
 
 
@@ -170,8 +358,9 @@ def read_manifest(directory: Path) -> dict | None:
         return None
 
 
-def _build_in_background(source: Path) -> None:
-    key = str(source.resolve())
+def warm_source(source: Path, *, warm_pick: bool = False, tiles: bool = True) -> None:
+    """Queue source verification and derivative builds, with duplicate suppression."""
+    key = f"{source.resolve()}:{warm_pick}:{tiles}"
     with _building_lock:
         if key in _building:
             return
@@ -180,7 +369,12 @@ def _build_in_background(source: Path) -> None:
     def run() -> None:
         try:
             with BUILD_LOCK:
-                build_pyramid(source)
+                # The phone pick image is small and needed before interaction;
+                # prepare it before spending seconds on all the display tiles.
+                if warm_pick:
+                    pick_variant(source, 1)
+                if tiles:
+                    build_pyramid(source)
         except Exception as exc:  # pragma: no cover - background best effort
             print(f"[tiles] build failed for {source}: {exc}")
         finally:
@@ -201,30 +395,36 @@ def ready_manifest(
     image. None only when nothing has been built yet.
     """
     source_path = Path(source)
-    version = _version_of(source_path)
-    if version is None:
+    if not source_path.is_file():
         return None
-    manifest = read_manifest(pyramid_dir(source_path, version))
+    if not background:
+        return build_pyramid(source_path)
+    manifest = existing_manifest(source_path)
     if manifest is not None:
         return manifest
-    if background:
-        _build_in_background(source_path)
-        return latest_manifest(source_path)
-    return build_pyramid(source_path)
+    # Restarts without a memo and rewritten PNGs both need verification, but
+    # the first paint can use finished tiles while the worker checks pixels.
+    warm_source(source_path)
+    return latest_manifest(source_path)
 
 
 def latest_manifest(source: os.PathLike[str] | str) -> dict | None:
     """The newest finished pyramid of `source`, whatever its version.
 
-    Its tiles stay on disk until a newer build replaces them, so it can be
+    Its tiles stay on disk through the bounded retention window, so it can be
     served while that build runs (`tile_file` keeps answering for it).
     """
     parent = _CACHE_DIR / _source_key(Path(source))
     try:
-        versions = [entry for entry in parent.iterdir() if entry.name.isdigit()]
+        versions = [
+            entry for entry in parent.iterdir()
+            if valid_version(entry.name) and (entry / "manifest.json").is_file()
+        ]
     except OSError:
         return None
-    for directory in sorted(versions, key=lambda entry: int(entry.name), reverse=True):
+    for directory in sorted(
+        versions, key=lambda entry: (entry / "manifest.json").stat().st_mtime_ns, reverse=True
+    ):
         manifest = read_manifest(directory)
         if manifest is not None:
             return manifest
@@ -232,8 +432,8 @@ def latest_manifest(source: os.PathLike[str] | str) -> dict | None:
 
 
 def existing_manifest(source: os.PathLike[str] | str) -> dict | None:
-    """The manifest for `source`'s current version if built; never builds."""
-    version = _version_of(Path(source))
+    """The current manifest if its fingerprint is cached; never decodes or builds."""
+    version = _cached_version(Path(source))
     if version is None:
         return None
     return read_manifest(pyramid_dir(source, version))
@@ -245,11 +445,11 @@ def tile_file(
     """A tile of `version`, while that version's pyramid is still on disk.
 
     Versions live in separate directories, so a URL can never answer with
-    different pixels; an older version keeps serving until the next build
-    replaces it, which lets a client holding the previous manifest finish
+    different pixels; an older version keeps serving through a bounded
+    grace period, which lets a client holding the previous manifest finish
     loading rather than 404 the moment the source changes.
     """
-    if not version.isdigit():
+    if not valid_version(version):
         return None
     path = pyramid_dir(Path(source), version) / str(level) / f"{x}_{y}.webp"
     return path if path.is_file() else None
@@ -274,42 +474,48 @@ _lod_lock = threading.Lock()
 def lod_variant(source: os.PathLike[str] | str, lod: int) -> Path | None:
     """`source` reduced by 2**lod, cached next to other derived images.
 
-    Built synchronously: overlays are small enough that one reduce and encode
-    takes a few milliseconds, and a request for a reduced copy has nothing
-    better to fall back to. Lossless WebP keeps the overlay's hard alpha edges.
+    Call through run_derivative in async routes, including lock acquisition.
+    Lossless WebP keeps the overlay's hard alpha edges.
     """
-    from PIL import Image
-
     if lod <= 0:
         return Path(source)
     lod = min(lod, MAX_LOD)
     source_path = Path(source)
-    version = _version_of(source_path)
+    image, version = _source_snapshot(source_path)
     if version is None:
         return None
     target = _LOD_DIR / f"{_source_key(source_path)}_{version}_{lod}.webp"
     if target.is_file():
+        if image is not None:
+            image.close()
         return target
 
     with _lod_lock:
         if target.is_file():
+            if image is not None:
+                image.close()
             return target
+        if image is None:
+            image, version = _read_source(source_path)
+        target = _LOD_DIR / f"{_source_key(source_path)}_{version}_{lod}.webp"
         target.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_name = tempfile.mkstemp(dir=target.parent, suffix=".tmp")
         os.close(fd)
         tmp = Path(tmp_name)
         try:
-            with Image.open(source_path) as opened:
-                opened.load()
-                image = opened.convert("RGBA")
             image.reduce(2**lod).save(tmp, "WEBP", lossless=True, method=2)
             os.replace(tmp, target)
         except BaseException:
             tmp.unlink(missing_ok=True)
             raise
-        for stale in target.parent.glob(f"{_source_key(source_path)}_*_{lod}.webp"):
-            if stale != target:
-                stale.unlink(missing_ok=True)
+        finally:
+            image.close()
+        previous = sorted(
+            (p for p in target.parent.glob(f"{_source_key(source_path)}_*_{lod}.webp") if p != target),
+            key=lambda p: p.stat().st_mtime_ns, reverse=True,
+        )
+        for stale in previous[RETAIN_GENERATIONS:]:
+            stale.unlink(missing_ok=True)
     return target
 
 
@@ -338,34 +544,44 @@ def pick_variant(source: os.PathLike[str] | str, scale: int) -> Path | None:
         return Path(source)
     scale = min(scale, MAX_PICK_SCALE)
     source_path = Path(source)
-    version = _version_of(source_path)
+    image, version = _source_snapshot(source_path)
     if version is None:
         return None
     target = _PICK_DIR / f"{_source_key(source_path)}_{version}_{scale}.png"
     if target.is_file():
+        if image is not None:
+            image.close()
         return target
 
     with _pick_lock:
         if target.is_file():
+            if image is not None:
+                image.close()
             return target
+        if image is None:
+            image, version = _read_source(source_path)
+        target = _PICK_DIR / f"{_source_key(source_path)}_{version}_{scale}.png"
         target.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_name = tempfile.mkstemp(dir=target.parent, suffix=".tmp")
         os.close(fd)
         tmp = Path(tmp_name)
         try:
-            with Image.open(source_path) as opened:
-                opened.load()
-                factor = 2**scale
-                size = (max(1, opened.width // factor), max(1, opened.height // factor))
-                reduced = opened.resize(size, Image.Resampling.NEAREST)
+            factor = 2**scale
+            size = (max(1, image.width // factor), max(1, image.height // factor))
+            reduced = image.resize(size, Image.Resampling.NEAREST)
             reduced.save(tmp, "PNG", compress_level=6)
             os.chmod(tmp, 0o644)
             os.replace(tmp, target)
         except BaseException:
             tmp.unlink(missing_ok=True)
             raise
-        for stale in target.parent.glob(f"{_source_key(source_path)}_*_{scale}.png"):
-            if stale != target:
-                stale.unlink(missing_ok=True)
+        finally:
+            image.close()
+        previous = sorted(
+            (p for p in target.parent.glob(f"{_source_key(source_path)}_*_{scale}.png") if p != target),
+            key=lambda p: p.stat().st_mtime_ns, reverse=True,
+        )
+        for stale in previous[RETAIN_GENERATIONS:]:
+            stale.unlink(missing_ok=True)
     return target
 

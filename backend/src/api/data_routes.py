@@ -9,6 +9,8 @@ from .http_headers import (
     conditional_file_response,
     conditional_json_response,
     make_etag,
+    map_asset_cache,
+    PRIVATE_CACHE,
 )
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
@@ -49,6 +51,10 @@ from ..scripts.mapgen.zocgen import generate_zoc_overlays
 logger = logging.getLogger(__name__)
 
 data_router = APIRouter()
+
+PUBLIC_GEOMETRY = {
+    "province_centroids", "province_neighbors", "province_label_neighbors", "province_label_grid",
+}
 
 CACHE_TTL = 300
 _province_cache = {}
@@ -193,7 +199,8 @@ async def get_province_label_grid_bin(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     path = defines_file(map_name, "province_label_grid.bin.gz")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
@@ -201,6 +208,7 @@ async def get_province_label_grid_bin(
         return conditional_file_response(
             path,
             media_type="application/gzip",
+            cache_control=map_asset_cache(entry, authorization),
             if_none_match=if_none_match,
             if_modified_since=if_modified_since,
         )
@@ -236,6 +244,7 @@ def _gzip_artifact_response(
     *,
     if_none_match: str | None,
     if_modified_since: str | None,
+    cache_control: str = PRIVATE_CACHE,
 ):
     """Serve a defines artifact as its on-disk gzip bytes, or a plain 404.
 
@@ -253,6 +262,7 @@ def _gzip_artifact_response(
         return conditional_file_response(
             path,
             media_type="application/gzip",
+            cache_control=cache_control,
             if_none_match=if_none_match,
             if_modified_since=if_modified_since,
         )
@@ -276,10 +286,12 @@ async def get_province_id_runs(
     staff gate because it is reached from the write-side tooling — the two are
     intentionally separate, not a duplication to fold together.
     """
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     return _gzip_artifact_response(
         map_name,
         "province_id_runs.bin.gz",
+        cache_control=map_asset_cache(entry, authorization),
         if_none_match=if_none_match,
         if_modified_since=if_modified_since,
     )
@@ -296,10 +308,12 @@ async def get_province_id_grid_q4(
     Optional artifact: a map whose grid has not been rebuilt with --scale simply
     404s, and the client falls back to the full-resolution runs.
     """
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     return _gzip_artifact_response(
         map_name,
         "province_id_grid_q4.bin.gz",
+        cache_control=map_asset_cache(entry, authorization),
         if_none_match=if_none_match,
         if_modified_since=if_modified_since,
     )
@@ -352,7 +366,8 @@ async def get_map_name_data(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     if not is_safe_segment(file):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
     path = resolve_within(
@@ -380,6 +395,9 @@ async def get_map_name_data(
         return conditional_file_response(
             path,
             media_type="application/json",
+            cache_control=(
+                map_asset_cache(entry, authorization) if file in PUBLIC_GEOMETRY else PRIVATE_CACHE
+            ),
             if_none_match=if_none_match,
             if_modified_since=if_modified_since,
         )
@@ -580,6 +598,8 @@ async def upload_region_data(
         background_tasks.add_task(generate_zoc_overlays, map_name)
     if mode_norm == "infestation_data":
         background_tasks.add_task(create_infestation_map, map_name)
+        from .tile_warm import warm_map_tiles
+        background_tasks.add_task(warm_map_tiles, map_name)
 
     # ORDER MATTERS - keep capture_if_due last. BackgroundTasks run in the order
     # they were added, and the chronicle snapshots defines/{map}/zoc_overlays.json
