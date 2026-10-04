@@ -6,6 +6,8 @@ import type {
   InstallationMarker,
   MapId,
   SettlementMarker,
+  TradeEdge,
+  TradeNetwork,
   WarExport,
 } from "../components/map/types";
 import { filterPlacedInstallations } from "../lib/installationMarkers";
@@ -53,6 +55,8 @@ type MapMarkersState = {
   forts: FortMarker[];
   wars: WarExport[];
   hubLinks: HubLink[];
+  tradeNetworks: TradeNetwork[];
+  tradeEdges: TradeEdge[];
   loading: boolean;
   error: string | null;
 };
@@ -74,6 +78,8 @@ export function useMapMarkers(
     forts: [],
     wars: [],
     hubLinks: [],
+    tradeNetworks: [],
+    tradeEdges: [],
     loading: enabled,
     error: null,
   });
@@ -86,6 +92,8 @@ export function useMapMarkers(
         forts: [],
         wars: [],
         hubLinks: [],
+        tradeNetworks: [],
+        tradeEdges: [],
         loading: false,
         error: null,
       });
@@ -135,6 +143,16 @@ export function useMapMarkers(
             "supply links",
             warned
           ),
+          tradeNetworks: capMarkers(
+            Array.isArray(data.trade_networks) ? data.trade_networks : [],
+            "trade networks",
+            warned
+          ),
+          tradeEdges: capMarkers(
+            Array.isArray(data.trade_edges) ? data.trade_edges : [],
+            "trade edges",
+            warned
+          ),
           loading: false,
           error: null,
         });
@@ -149,6 +167,8 @@ export function useMapMarkers(
             forts: [],
             wars: [],
             hubLinks: [],
+            tradeNetworks: [],
+            tradeEdges: [],
             loading: false,
             error: null,
           });
@@ -163,6 +183,8 @@ export function useMapMarkers(
           forts: [],
           wars: [],
           hubLinks: [],
+          tradeNetworks: [],
+          tradeEdges: [],
           loading: false,
           error: message,
         });

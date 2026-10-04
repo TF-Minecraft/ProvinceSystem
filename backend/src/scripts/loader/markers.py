@@ -22,6 +22,8 @@ def _empty_payload(map_name: str) -> dict:
         "settlements": [],
         "installations": [],
         "hub_links": [],
+        "trade_networks": [],
+        "trade_edges": [],
         "forts": [],
         "wars": [],
     }
@@ -49,6 +51,14 @@ def normalize_raw_markers(data: object, map_name: str) -> dict:
     if not isinstance(hub_links, list):
         hub_links = []
 
+    trade_networks = data.get("trade_networks")
+    if not isinstance(trade_networks, list):
+        trade_networks = []
+
+    trade_edges = data.get("trade_edges")
+    if not isinstance(trade_edges, list):
+        trade_edges = []
+
     forts = data.get("forts")
     if not isinstance(forts, list):
         forts = []
@@ -66,6 +76,8 @@ def normalize_raw_markers(data: object, map_name: str) -> dict:
         "settlements": settlements,
         "installations": installations,
         "hub_links": hub_links,
+        "trade_networks": trade_networks,
+        "trade_edges": trade_edges,
         "forts": forts,
         "wars": wars,
     }
@@ -556,6 +568,108 @@ def enrich_hub_links(links: list, centroids: dict) -> list[dict]:
     return enriched
 
 
+def _trade_end_key(end: object) -> tuple[str, str] | None:
+    if not isinstance(end, dict):
+        return None
+    installation_id = end.get("installation_id")
+    owner = end.get("owner")
+    if not isinstance(installation_id, str) or not isinstance(owner, str):
+        return None
+    if not installation_id or not owner:
+        return None
+    return installation_id.casefold(), owner.casefold()
+
+
+def _trade_stop_index(networks: list) -> dict[tuple[str, str], tuple[object, str]]:
+    """Map an installation and its owner to the stop's province and network.
+
+    An edge end names the installation and the faction that owns it, not a
+    province. The province id lives on the network node. Both ids are matched
+    case-insensitively, and the first node wins: a stop belongs to one network.
+    """
+    index: dict[tuple[str, str], tuple[object, str]] = {}
+    if not isinstance(networks, list):
+        return index
+    for network in networks:
+        if not isinstance(network, dict):
+            continue
+        name = network.get("name")
+        if not isinstance(name, str):
+            name = ""
+        nodes = network.get("nodes")
+        if not isinstance(nodes, list):
+            continue
+        for node in nodes:
+            key = _trade_end_key(node)
+            if key is None or key in index:
+                continue
+            province_id = node.get("province_id")
+            if province_id is None:
+                continue
+            index[key] = (province_id, name)
+    return index
+
+
+def _placed_trade_end(
+    end: object,
+    stops: dict,
+    centroids: dict,
+) -> tuple[dict, str] | None:
+    if not isinstance(end, dict):
+        return None
+    key = _trade_end_key(end)
+    if key is None:
+        return None
+    found = stops.get(key)
+    if found is None:
+        return None
+    province_id, network_name = found
+    map_xy = resolve_marker_map_xy({"province_id": province_id}, centroids)
+    if map_xy is None:
+        return None
+    return {**end, "map_x": map_xy[0], "map_y": map_xy[1]}, network_name
+
+
+def _trade_edge_path(provinces: object, centroids: dict) -> list[list[int]]:
+    if not isinstance(provinces, list):
+        return []
+    points: list[list[int]] = []
+    for province_id in provinces:
+        map_xy = resolve_marker_map_xy({"province_id": province_id}, centroids)
+        if map_xy is None:
+            continue
+        points.append([map_xy[0], map_xy[1]])
+    return points
+
+
+def enrich_trade_edges(edges: list, networks: list, centroids: dict) -> list[dict]:
+    if not isinstance(edges, list):
+        return []
+    stops = _trade_stop_index(networks)
+    enriched: list[dict] = []
+    for entry in edges:
+        if not isinstance(entry, dict):
+            continue
+        placed_from = _placed_trade_end(entry.get("from"), stops, centroids)
+        if placed_from is None:
+            continue
+        placed_to = _placed_trade_end(entry.get("to"), stops, centroids)
+        if placed_to is None:
+            continue
+        from_end, network_name = placed_from
+        to_end, _to_network = placed_to
+        row = dict(entry)
+        row["from"] = from_end
+        row["to"] = to_end
+        # Ordered centroids of the provinces between the ends. A province with
+        # no centroid is left out; air sends an empty list and stays a straight
+        # line. The network is the one that owns the `from` stop.
+        row["path"] = _trade_edge_path(entry.get("provinces"), centroids)
+        row["network"] = network_name
+        enriched.append(row)
+    return enriched
+
+
 def load_zoc_overlays(map_name: str) -> dict:
     validate_map(map_name)
     path = zoc_overlays_file(map_name)
@@ -620,6 +734,12 @@ def build_markers_response_from(
         raw["settlements"],
         raw["installations"],
     )
+    trade_networks = raw.get("trade_networks")
+    if not isinstance(trade_networks, list):
+        trade_networks = []
+    trade_edges = raw.get("trade_edges")
+    if not isinstance(trade_edges, list):
+        trade_edges = []
     return {
         "map_id": raw["map_id"],
         "exported_at": raw["exported_at"],
@@ -629,6 +749,8 @@ def build_markers_response_from(
         "settlements": enrich_settlements(raw["settlements"], centroids),
         "installations": enrich_installations(raw["installations"], centroids),
         "hub_links": enrich_hub_links(raw.get("hub_links") or [], centroids),
+        "trade_networks": trade_networks,
+        "trade_edges": enrich_trade_edges(trade_edges, trade_networks, centroids),
         "forts": enrich_forts(raw["forts"], centroids, overlays, map_name),
         "wars": enrich_wars(
             raw.get("wars") or [],

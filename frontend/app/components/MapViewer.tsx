@@ -15,6 +15,10 @@ import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
 import { addInstallationLinkDetails } from "../lib/supplyLinks";
+import {
+  buildTradeEdgeGeometry,
+  EMPTY_TRADE_EDGE_GEOMETRY,
+} from "../lib/tradeEdges";
 import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
 import {
   settlementToMapMarker,
@@ -398,6 +402,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     forts,
     wars,
     hubLinks,
+    tradeNetworks,
+    tradeEdges,
   } = useMapMarkers(mapId, authToken, markersEnabled, day);
 
   const mapMarkers = useMemo(() => {
@@ -454,6 +460,19 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     mapObjects,
     regionData,
   ]);
+
+  // Same gate as the hub-link layer: the live map, installations on, and the
+  // supply-links toggle on. Only the nation map draws them. The polyline and
+  // the hover grid are built once per payload, not per frame.
+  const supplyRoutesShown =
+    day === null && installationsVisible && supplyLinksVisible;
+  const tradeGeometry = useMemo(
+    () =>
+      supplyRoutesShown && isMarkerMapMode(mapType)
+        ? buildTradeEdgeGeometry(tradeEdges, tradeNetworks)
+        : EMPTY_TRADE_EDGE_GEOMETRY,
+    [supplyRoutesShown, mapType, tradeEdges, tradeNetworks]
+  );
 
   /**
    * What the current mode's names are laid out from, and the content key a
@@ -877,6 +896,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     markers: mapMarkers,
     labels: regionLabels,
     forts,
+    tradeGeometry,
     setHoveredMarkerId,
     day,
     chronicleGrid: hoverProvinceGrid,
@@ -1572,11 +1592,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         labels={regionLabels}
         markers={mapMarkers}
         wars={wars}
-        hubLinks={
-          day === null && installationsVisible && supplyLinksVisible
-            ? hubLinks
-            : []
-        }
+        hubLinks={supplyRoutesShown ? hubLinks : []}
+        tradeGeometry={tradeGeometry}
         centroids={centroids}
         hoveredMarkerId={hoveredMarkerId ?? selectedPlaceId}
         hoveredNationId={hoveredRegionId ?? litRegionId}

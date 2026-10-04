@@ -19,6 +19,8 @@ import type {
   WarExport,
   HubLink,
 } from "./types";
+import type { TradeEdgeGeometry } from "../../lib/tradeEdges";
+import { EMPTY_TRADE_EDGE_GEOMETRY } from "../../lib/tradeEdges";
 import { mapFallbackSize } from "./types";
 import { REGION_TILE_MODES } from "./mapModes";
 import type { MapMarker } from "../../lib/mapMarkers";
@@ -34,6 +36,7 @@ import PaintLayer from "./PaintLayer";
 import PaintTextEditor from "./PaintTextEditor";
 import type { UseMapPaintResult } from "../../hooks/useMapPaint";
 import WarCampaignLineLayer from "./WarCampaignLineLayer";
+import TradeEdgeLayer from "./TradeEdgeLayer";
 import SupplyLinkLayer from "./SupplyLinkLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
@@ -306,6 +309,11 @@ type MapCanvasProps = {
   markers?: MapMarker[];
   wars?: WarExport[];
   hubLinks?: HubLink[];
+  /**
+   * Province-path trade routes. Drawn under `hubLinks`, and only passed in
+   * when hub links themselves would be shown.
+   */
+  tradeGeometry?: TradeEdgeGeometry;
   centroids?: ProvinceCentroids | null;
   hoveredMarkerId?: string | null;
   hoveredNationId?: string | null;
@@ -369,6 +377,7 @@ export default function MapCanvas({
   markers = [],
   wars = [],
   hubLinks = [],
+  tradeGeometry = EMPTY_TRADE_EDGE_GEOMETRY,
   centroids = null,
   hoveredMarkerId = null,
   hoveredNationId = null,
@@ -874,6 +883,13 @@ export default function MapCanvas({
           <WarCampaignLineLayer
             wars={wars}
             centroids={centroids}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+          />
+        )}
+        {isMarkerMapMode(mapType) && tradeGeometry.strokes.length > 0 && (
+          <TradeEdgeLayer
+            strokes={tradeGeometry.strokes}
             mapW={mapSize.w}
             mapH={mapSize.h}
           />

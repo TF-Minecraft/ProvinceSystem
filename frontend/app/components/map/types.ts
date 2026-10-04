@@ -141,6 +141,38 @@ export type HubLink = {
   to: HubLinkEnd;
 };
 
+export type TradeNetworkNode = {
+  installation_id: string;
+  owner: string;
+  province_id: number;
+};
+
+export type TradeNetwork = {
+  name: string;
+  global?: boolean;
+  nodes: TradeNetworkNode[];
+};
+
+export type TradeEdgeEnd = {
+  installation_id: string;
+  owner: string;
+  map_x?: number;
+  map_y?: number;
+};
+
+export type TradeEdgeMode = "rail" | "sea" | "air";
+
+export type TradeEdge = {
+  from: TradeEdgeEnd;
+  to: TradeEdgeEnd;
+  mode: TradeEdgeMode;
+  provinces?: number[];
+  /** Centroids of `provinces`, in order, skipping provinces that have none. */
+  path?: number[][];
+  /** Name of the network the `from` stop belongs to. */
+  network?: string;
+};
+
 export type FortMarker = {
   id: string;
   name?: string;
@@ -220,6 +252,8 @@ export type MapMarkersResponse = {
   settlements: SettlementMarker[];
   installations: InstallationMarker[];
   hub_links?: HubLink[];
+  trade_networks?: TradeNetwork[];
+  trade_edges?: TradeEdge[];
   forts: FortMarker[];
   wars?: WarExport[];
 };
