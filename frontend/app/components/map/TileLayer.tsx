@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "
 
 import {
   allTiles,
-  backdropBands,
+  backdropClipPath,
   backdropLevel,
   pickTileLevel,
   tilePixelRatio,
@@ -140,18 +140,18 @@ function TileLayer({
   // held level under them stands down, and so does the backdrop where they
   // cover it: on a see-through raster they would otherwise stack and deepen
   // its colours.
-  const renderTile = (
-    tile: PlacedTile,
-    fadeIn: boolean,
-    hidden = false,
-    origin = { left: 0, top: 0, key: "" }
-  ) => {
+  //
+  // Every `<img>` keeps its element for as long as its tile is wanted. On iOS
+  // a new `<img>` paints nothing until it has decoded, so remounting the
+  // backdrop and the old sharp level as a zoom settled blanked the whole map
+  // for a frame or two.
+  const renderTile = (tile: PlacedTile, fadeIn: boolean, hidden = false) => {
     const loaded = loadedRef.current.has(loadedKey(tile));
     const left = snap(tile.left);
     const top = snap(tile.top);
     return (
       <img
-        key={`${origin.key}${loadedKey(tile)}`}
+        key={loadedKey(tile)}
         src={tileUrl(tile.level, tile.x, tile.y)}
         alt=""
         aria-hidden
@@ -161,8 +161,8 @@ function TileLayer({
         onError={reportTileError}
         className="absolute max-w-none select-none"
         style={{
-          left: left - origin.left,
-          top: top - origin.top,
+          left,
+          top,
           width: snap(tile.left + tile.width) - left,
           height: snap(tile.top + tile.height) - top,
           opacity: !fadeIn || loaded ? 1 : 0,
@@ -179,39 +179,28 @@ function TileLayer({
       style={style}
       aria-hidden
     >
-      {currentLoaded
-        ? backdropBands(
-            { left: 0, top: 0, right: snap(manifest.width), bottom: snap(manifest.height) },
-            coverage(currentTiles, snap)
-          ).map((band) => (
-            // Outside the sharp tiles the backdrop stays up. A pinch out or a
-            // fast pan scales and moves this layer without a render, and a
-            // hidden backdrop left only the tiles that were on screen, a small
-            // island of map on black until the gesture settled.
-            <div
-              key={band.key}
-              className="absolute overflow-hidden"
-              style={{
-                left: band.left,
-                top: band.top,
-                width: band.right - band.left,
-                height: band.bottom - band.top,
-              }}
-            >
-              {backdropTiles
-                .filter((tile) => overlaps(tile, band, snap))
-                .map((tile) =>
-                  renderTile(tile, false, false, {
-                    left: band.left,
-                    top: band.top,
-                    key: `${band.key}:`,
-                  })
-                )}
-            </div>
-          ))
-        : backdropTiles.map((tile) => renderTile(tile, false))}
-      {holdTiles.map((tile) => renderTile(tile, false, currentLoaded))}
-      {currentTiles.map((tile) => renderTile(tile, true))}
+      <div
+        className="absolute left-0 top-0"
+        style={{
+          width: manifest.width,
+          height: manifest.height,
+          // Outside the sharp tiles the backdrop stays up. A pinch out or a
+          // fast pan scales and moves this layer without a render, and a
+          // hidden backdrop left only the tiles that were on screen, a small
+          // island of map on black until the gesture settled.
+          clipPath: currentLoaded
+            ? backdropClipPath(manifest.width, manifest.height, coverage(currentTiles, snap))
+            : undefined,
+        }}
+      >
+        {backdropTiles.map((tile) => renderTile(tile, false))}
+      </div>
+      {/* One list, so a tile that turns from current into held as the level
+          changes keeps its element (the levels' keys never collide). */}
+      {[
+        ...holdTiles.map((tile) => renderTile(tile, false, currentLoaded)),
+        ...currentTiles.map((tile) => renderTile(tile, true)),
+      ]}
     </div>
   );
 }
@@ -224,15 +213,6 @@ function coverage(tiles: PlacedTile[], snap: (value: number) => number): Rect {
     right: snap(Math.max(...tiles.map((tile) => tile.left + tile.width))),
     bottom: snap(Math.max(...tiles.map((tile) => tile.top + tile.height))),
   };
-}
-
-function overlaps(tile: PlacedTile, band: Rect, snap: (value: number) => number): boolean {
-  return (
-    snap(tile.left) < band.right &&
-    snap(tile.left + tile.width) > band.left &&
-    snap(tile.top) < band.bottom &&
-    snap(tile.top + tile.height) > band.top
-  );
 }
 
 export default memo(TileLayer);

@@ -113,21 +113,23 @@ function placeTile(manifest: TileManifest, level: number, x: number, y: number):
 export type Rect = { left: number; top: number; right: number; bottom: number };
 
 /**
- * `outer` less `hole`, as up to four rectangles: full-width bands above and
- * below the hole and the strips either side of it.
+ * A `clip-path` showing a `width` x `height` box less `hole`, all in map
+ * pixels, as percentages of the box.
+ *
+ * One path, outer edge then the hole, joined by a zero-width seam that
+ * `evenodd` leaves out. Clipping hides the backdrop under the sharp tiles
+ * without moving its `<img>`s anywhere: an `<img>` React has to create again
+ * paints nothing on iOS until it has decoded, and a whole backdrop doing that
+ * at once blanked the map for a frame or two after a zoom.
  */
-export function backdropBands(outer: Rect, hole: Rect): (Rect & { key: string })[] {
-  const top = Math.max(outer.top, Math.min(hole.top, outer.bottom));
-  const bottom = Math.min(outer.bottom, Math.max(hole.bottom, top));
-  const left = Math.max(outer.left, Math.min(hole.left, outer.right));
-  const right = Math.min(outer.right, Math.max(hole.right, left));
-  const bands = [
-    { key: "top", left: outer.left, top: outer.top, right: outer.right, bottom: top },
-    { key: "bottom", left: outer.left, top: bottom, right: outer.right, bottom: outer.bottom },
-    { key: "left", left: outer.left, top, right: left, bottom },
-    { key: "right", left: right, top, right: outer.right, bottom },
-  ];
-  return bands.filter((band) => band.right > band.left && band.bottom > band.top);
+export function backdropClipPath(width: number, height: number, hole: Rect): string {
+  const x = (value: number) => `${(Math.max(0, Math.min(value, width)) / width) * 100}%`;
+  const y = (value: number) => `${(Math.max(0, Math.min(value, height)) / height) * 100}%`;
+  const [l, t, r, b] = [x(hole.left), y(hole.top), x(hole.right), y(hole.bottom)];
+  return (
+    "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
+    `${l} ${t}, ${l} ${b}, ${r} ${b}, ${r} ${t}, ${l} ${t}, 0% 0%)`
+  );
 }
 
 /** Every tile of a level. */
