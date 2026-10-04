@@ -188,7 +188,8 @@ describe("visibleOwnership", () => {
 
   /**
    * Day-file keys are player-set names, so `Foo_nested` must remain distinct
-   * from the synthetic drill entry for `Foo`.
+   * from the synthetic drill entry for `Foo`. Confusing them erases the real
+   * region and demotes `Foo` to own-provinces-only.
    */
   it("does not confuse a real region named X_nested with X's nested entry", () => {
     const collision: RegionRecord = {

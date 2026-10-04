@@ -306,7 +306,9 @@ describe("chronicleRegionData against a hostile day file", () => {
 });
 
 describe("marker layers against malformed day payloads", () => {
-  // Non-array values must be treated as missing data before filtering pins.
+  // `?? []` only handles null and undefined: `"settlements": {}` can still
+  // reach `.filter` inside a render-time `useMemo`. There is no error boundary
+  // to contain that throw, so non-arrays must become missing data first.
   const malformed = {
     map_id: "main",
     exported_at: null,

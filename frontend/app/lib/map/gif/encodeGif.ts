@@ -1,9 +1,23 @@
 /**
  * GIF89a animation encoder for the map timelapse studio.
  *
- * Pure typed-array work, independent of canvases, the DOM and timers.
- * `encodeGifSteps` yields after each frame; the browser caller awaits between
- * steps to repaint progress and process cancellation. `encodeGif` drains the
+ * Hand-written and dependency-free because the studio already holds every
+ * frame as `ImageData`; this narrow encoder avoids shipping a general-purpose
+ * GIF library. Pure typed-array work, independent of canvases, the DOM and
+ * timers, also lets the tests call it directly under Node.
+ *
+ * The browser runs this on the main thread because Turbopack (see
+ * `next.config.ts`) does not bundle `new Worker(new URL(..., import.meta.url))`
+ * in the verified Next 16.0.10 production build. Its output is raw source under
+ * `.next/static/media/`, not a compiled worker chunk, and the browser rejects
+ * the raw TypeScript with a SyntaxError. The build evidence covers `.ts`, `.js`
+ * and `.mjs` files, with and without `{ type: "module" }`: all four tested
+ * variants emit raw source. Turbopack's documented worker support covers
+ * `node:worker_threads` and `navigator.serviceWorker.register`, not `new Worker`.
+ *
+ * Chunking through `encodeGifSteps` supplies responsiveness without a Worker:
+ * it yields after each frame, and `chronicleGifExport.ts` awaits between steps
+ * so progress repaints and cancellation is processed. `encodeGif` drains the
  * same generator synchronously for callers that do not need those yields.
  */
 
@@ -87,8 +101,7 @@ function validate(options: EncodeGifOptions): void {
  * `CHRONICLE_MEMORY_CEILING_BYTES` refusal in `chronicleGifExport.ts` is what
  * keeps that bounded. Everything after the palette is per-frame, and that
  * per-frame work (nearest-colour mapping plus LZW over `width*height` pixels)
- * is the longest synchronous step, which is what the yields
- * are for.
+ * can block the tab across many frames without those yields.
  *
  * `validate` runs on the first `next()`, not at call time — generators do not
  * execute their body until then. Both drivers below step immediately, so a bad

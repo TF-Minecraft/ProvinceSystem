@@ -162,7 +162,9 @@ describe("paintChronicleFrameToImageData", () => {
 
 describe("buildNationColorLut against an unvalidated day file", () => {
   it("clamps the LUT to the largest id a Uint16 grid can name", () => {
-    // Unvalidated ids must not allocate beyond the province grid's range.
+    // One unvalidated id can size this LUT and the matching array allocated
+    // and walked by `paintChronicleFrame` on every frame at 8 GB each, wedging
+    // the main thread. Bound both to ids the Uint16 province grid can name.
     const lut = buildNationColorLut({
       Bomb: { rgb: "1,2,3", provinces: [2_000_000_000] },
     });

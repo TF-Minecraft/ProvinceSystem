@@ -91,7 +91,11 @@ export type NationRegionInput = {
 export type LabelMapObject = {
   id: string;
   visible: boolean;
-  /** Structural metadata supplied by the live map and chronicle builders. */
+  /**
+   * Supplied by the live map and chronicle builders. Player-set region names
+   * can end in `_nested`, so suffix parsing cannot distinguish a real nation
+   * named `Foo_nested` from the synthetic drill entry for `Foo`.
+   */
   nested: boolean;
   baseId: string;
 };

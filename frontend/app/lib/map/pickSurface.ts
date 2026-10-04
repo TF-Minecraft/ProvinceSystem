@@ -1,9 +1,11 @@
 /**
  * The live map's pick map, kept as runs of one colour per row.
  *
- * Hover and click read one pixel at a time. A 6400 px map typically needs
- * 70–120 thousand runs, well under 1 MB. Colours match canvas readback,
- * including transparent pixels (0,0,0), for lookup through `rgbToId`.
+ * Hover and click read one pixel at a time, so retaining a canvas is wasteful:
+ * a 6400 × 6400 pick canvas holds 164 MB for the life of the page, while its
+ * realms typically need 70–120 thousand runs, well under 1 MB. Colours match
+ * canvas readback, including transparent pixels (0,0,0), so `rgbToId` lookups
+ * preserve the same picks.
  */
 export type PickSurface = {
   readonly width: number;

@@ -18,17 +18,17 @@ import {
 
 /**
  * Saved browser plans may contain named stroke widths. Normalise them to
- * slider values before validating each shape.
+ * slider values so shape validation preserves those drawings.
  */
-const LEGACY_WIDTHS: Record<string, number> = { thin: 2, medium: 4, thick: 7 };
+const NAMED_WIDTHS: Record<string, number> = { thin: 2, medium: 4, thick: 7 };
 
-function migrateLegacyWidth(entry: unknown): unknown {
+function normaliseNamedWidth(entry: unknown): unknown {
   const shape = entry as { width?: unknown } | null;
   if (!shape || typeof shape !== "object" || typeof shape.width !== "string") {
     return entry;
   }
-  const width = LEGACY_WIDTHS[shape.width];
-  // Clamp named presets to the slider's supported range.
+  const width = NAMED_WIDTHS[shape.width];
+  // "thick" maps to 7, beyond the slider's ceiling, so clamp to its range.
   return width === undefined ? entry : { ...shape, width: clampPaintWidth(width) };
 }
 
@@ -80,7 +80,7 @@ export function parsePaintDocument(raw: string | null | undefined): PaintShape[]
 
   const shapes: PaintShape[] = [];
   for (const raw of doc.shapes) {
-    const entry = migrateLegacyWidth(raw);
+    const entry = normaliseNamedWidth(raw);
     if (!isPaintShape(entry)) continue;
     shapes.push(
       entry.type === "brush" && entry.points.length > PAINT_MAX_BRUSH_POINTS

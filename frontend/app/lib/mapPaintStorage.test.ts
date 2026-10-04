@@ -85,7 +85,7 @@ describe("parsePaintDocument", () => {
     expect(parsePaintDocument(raw)).toEqual([stamp]);
   });
 
-  it("normalises saved named stroke widths to slider numbers", () => {
+  it("normalises named stroke widths to slider numbers and clamps to its range", () => {
     const raw = JSON.stringify({
       version: PAINT_STORAGE_VERSION,
       mapId: "main",
@@ -96,7 +96,7 @@ describe("parsePaintDocument", () => {
         { ...brush, id: "b3", width: "thick" },
       ],
     });
-    // "thick" was 7, above the slider's current ceiling, so it clamps.
+    // "thick" maps to 7, above the slider's ceiling, so it clamps.
     expect(parsePaintDocument(raw).map((s) => (s as PaintBrushShape).width)).toEqual([
       2,
       4,

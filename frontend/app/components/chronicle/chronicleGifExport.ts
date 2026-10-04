@@ -34,10 +34,29 @@ import {
 } from "./chronicleRenderTarget";
 
 /**
- * Flattens the studio's layers into square GIF frames for the whole map.
- * Rendering and encoding yield between frames so progress can repaint and
- * cancellation stays responsive. The raw frame budget is checked before any
- * canvas is allocated; callers surface failures through their export state.
+ * Flattens the studio's layer stack into one square raster per day. The GIF
+ * always shows the whole map, never the pan/zoom viewport: an on-screen reading
+ * position must not crop a shared timelapse. Only `chronicleGifTransform`
+ * applies here; nothing reads `useMapViewport`.
+ *
+ * Export must not wedge the tab. Fourteen days at 1080² move 65 MB through
+ * `getImageData` before encoding starts. Both frame-processing loops yield
+ * between frames so progress repaints and Cancel stays clickable throughout
+ * rendering and encoding. `encodeGifSteps` yields once per written frame, and
+ * its caller awaits between steps to hand control back to the browser.
+ *
+ * This runs on the main thread, not a Worker, because the production Turbopack
+ * build emits raw worker source; see `encodeGif.ts` for the build evidence.
+ * Without per-frame transfers to a Worker, `sourceFrames` holds all RGBA frames
+ * locally until encoding finishes. Before allocating any export canvas,
+ * `size * size * 4 * frames.length` is checked against the studio's
+ * `CHRONICLE_MEMORY_CEILING_BYTES`, just as `estimate.overCeiling` guards a
+ * build. That bounds the array's pixel storage and rejects oversized requests
+ * before a render pass can exhaust browser memory.
+ *
+ * There is no error boundary under `app/` to contain a page failure. Guard
+ * day-file data, and require callers to catch the whole export and put errors
+ * in export state so a failed button action cannot blank the page.
  */
 
 export type ChronicleGifExportFrame = {
@@ -554,7 +573,8 @@ export async function exportChronicleGif(
 
   if (!frames.length) throw new Error("There are no built frames to export.");
 
-  // Apply the build's raw frame budget before allocating export canvases.
+  // Bound the RGBA array retained through encoding before allocating canvases:
+  // reject an oversized request up front, not midway through rendering.
   const sourceBytes = size * size * 4 * frames.length;
   if (sourceBytes > CHRONICLE_MEMORY_CEILING_BYTES) {
     const mb = (bytes: number) => `${Math.ceil(bytes / (1024 * 1024))} MB`;

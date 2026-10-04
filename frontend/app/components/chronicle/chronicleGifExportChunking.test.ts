@@ -1,9 +1,12 @@
 /**
  * @vitest-environment jsdom
  *
- * Checks that rendering and encoding yield between frames, cancellation is
- * processed during encoding, and the memory ceiling is enforced before any
- * frame allocation.
+ * Checks main-thread export chunking: Turbopack cannot bundle the browser
+ * Worker (see `encodeGif.ts` for build evidence), so both frame loops must
+ * yield to repaint progress and process cancellation during encoding too.
+ * Frames stay in a local array until encoding finishes, making the memory
+ * ceiling essential before any pixel allocation; it is asserted here as well
+ * as in `chronicleGifExport.test.ts`.
  *
  * jsdom has no 2D context, so `getContext` is stubbed with a proxy that
  * no-ops everything except `getImageData` (real, correctly-sized pixels) and

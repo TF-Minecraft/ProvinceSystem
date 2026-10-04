@@ -1213,7 +1213,13 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     );
   }
 
-  /** A stored day cannot answer a mode that has no static or captured source. */
+  /**
+   * Every mode is offered on a stored day, so an unclassified mode needs this
+   * answer when it has neither a static source nor a `CHRONICLE_MODE_SOURCE`.
+   * `notCapturedForDay` only comes from `MapModeNotCapturedError`, which
+   * `mapModeDataSource` throws only for a non-null day; live maps cannot reach
+   * this branch.
+   */
   if (notCapturedForDay) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
