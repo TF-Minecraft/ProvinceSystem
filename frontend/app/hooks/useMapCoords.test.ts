@@ -52,7 +52,7 @@ function mockViewportElement(rect: {
   } as HTMLDivElement;
 }
 
-describe("getMapCoords legacy path", () => {
+describe("getMapCoords canvas path", () => {
   it("maps cursor position with uniform rect scaling", () => {
     const canvas = mockCanvas({ left: 100, top: 50, width: 1000, height: 1000 });
 
@@ -104,10 +104,10 @@ describe("getMapCoords viewport path", () => {
     };
   }
 
-  it("matches legacy mapping at fit-to-width scale", () => {
+  it("matches canvas mapping at fit-to-width scale", () => {
     const canvas = mockCanvas({ left: 100, top: 50, width: 1000, height: 1000 });
 
-    const legacy = getMapCoords(mockMouseEvent(600, 550), canvas, "main");
+    const canvasCoords = getMapCoords(mockMouseEvent(600, 550), canvas, "main");
     const transformed = getMapCoords(
       mockMouseEvent(600, 550),
       canvas,
@@ -115,7 +115,7 @@ describe("getMapCoords viewport path", () => {
       viewport({ displayScale: 0.5 })
     );
 
-    expect(transformed).toEqual(legacy);
+    expect(transformed).toEqual(canvasCoords);
   });
 
   it("maps zoomed viewport coordinates via screenToMap", () => {
@@ -167,10 +167,10 @@ describe("getMapCoords viewport path", () => {
     ).toBeNull();
   });
 
-  it("falls back to legacy when viewport element is missing", () => {
+  it("falls back to canvas mapping when viewport element is missing", () => {
     const canvas = mockCanvas({ left: 100, top: 50, width: 1000, height: 1000 });
 
-    const legacy = getMapCoords(mockMouseEvent(600, 550), canvas, "main");
+    const canvasCoords = getMapCoords(mockMouseEvent(600, 550), canvas, "main");
     const coords = getMapCoords(
       mockMouseEvent(600, 550),
       canvas,
@@ -178,7 +178,7 @@ describe("getMapCoords viewport path", () => {
       viewport({ viewportElement: null })
     );
 
-    expect(coords).toEqual(legacy);
+    expect(coords).toEqual(canvasCoords);
   });
 });
 

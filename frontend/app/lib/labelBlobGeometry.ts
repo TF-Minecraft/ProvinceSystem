@@ -420,7 +420,7 @@ function collectCandidates(
   minClearance: number,
   rect?: GridSubRect
 ): CandidatePoint[] {
-  const { gridWidth, gridHeight, scaleX, scaleY } = grid;
+  const { gridWidth, scaleX, scaleY } = grid;
   const points: CandidatePoint[] = [];
   const r = rect ?? fullGridRect(grid);
 
@@ -561,7 +561,7 @@ export function findLabelAnchor(
   let bestIdx = -1;
   let bestClearance = -1;
 
-  const { gridWidth, gridHeight } = grid;
+  const { gridWidth } = grid;
   const r = rect ?? fullGridRect(grid);
 
   for (let gy = r.y0; gy <= r.y1; gy += 1) {

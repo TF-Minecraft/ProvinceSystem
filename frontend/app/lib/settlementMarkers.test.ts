@@ -58,8 +58,8 @@ describe("settlementMarkers", () => {
 
   it("visibleSettlementKind hides capital star for hidden vassals", () => {
     const overview = [
-      { id: "gaba_gaba", visible: true },
-      { id: "invaders", visible: false },
+      { id: "gaba_gaba", visible: true, nested: false, baseId: "gaba_gaba" },
+      { id: "invaders", visible: false, nested: false, baseId: "invaders" },
     ];
     expect(
       visibleSettlementKind("faction_capital", "invaders", overview)
@@ -69,7 +69,7 @@ describe("settlementMarkers", () => {
     ).toBe("faction_capital");
     expect(
       visibleSettlementKind("faction_capital", "invaders", [
-        { id: "invaders", visible: true },
+        { id: "invaders", visible: true, nested: false, baseId: "invaders" },
       ])
     ).toBe("faction_capital");
   });

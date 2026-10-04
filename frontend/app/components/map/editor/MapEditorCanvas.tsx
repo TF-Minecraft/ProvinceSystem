@@ -178,7 +178,7 @@ export default function MapEditorCanvas({
   // The flat pixel index walks all 40.96M pixels and buckets them into
   // per-province arrays - a large transient allocation. When the index came
   // from the run-length artifact the run spans serve the same queries, so we
-  // skip building it entirely. Flat indexes keep the original behaviour.
+  // skip building the flat pixel buckets.
   const pixelIndex = useMemo(
     () => (index && !index.runs ? buildProvincePixelIndex(index.provinceMap) : null),
     [index]

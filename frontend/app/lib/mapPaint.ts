@@ -214,7 +214,7 @@ export const PAINT_INK_BACKING = "#0a1512";
 
 /**
  * Label text is sized off the same slider as stroke width, so one control
- * covers "how big is this annotation". The ratio keeps the old default pairing
+ * covers "how big is this annotation". The ratio pairs
  * (a 4px stroke alongside 16px text).
  */
 export const PAINT_TEXT_SIZE_RATIO = 4;

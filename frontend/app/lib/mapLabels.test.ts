@@ -576,20 +576,31 @@ const empireRegionData = {
 };
 
 const overviewMapObjects: LabelMapObject[] = [
-  { id: "imperium", visible: true },
-  { id: "imperium_nested", visible: false },
-  { id: "vassalA", visible: false },
-  { id: "independent", visible: true },
+  { id: "imperium", visible: true, nested: false, baseId: "imperium" },
+  { id: "imperium_nested", visible: false, nested: true, baseId: "imperium" },
+  { id: "vassalA", visible: false, nested: false, baseId: "vassalA" },
+  { id: "independent", visible: true, nested: false, baseId: "independent" },
 ];
 
 const drilledMapObjects: LabelMapObject[] = [
-  { id: "imperium", visible: false },
-  { id: "imperium_nested", visible: true },
-  { id: "vassalA", visible: true },
-  { id: "independent", visible: true },
+  { id: "imperium", visible: false, nested: false, baseId: "imperium" },
+  { id: "imperium_nested", visible: true, nested: true, baseId: "imperium" },
+  { id: "vassalA", visible: true, nested: false, baseId: "vassalA" },
+  { id: "independent", visible: true, nested: false, baseId: "independent" },
 ];
 
 describe("label visibility helpers", () => {
+  it("keeps a real region ending in _nested distinct from a drill overlay", () => {
+    const objects: LabelMapObject[] = [
+      { id: "Foo", visible: false, nested: false, baseId: "Foo" },
+      { id: "Foo_nested", visible: false, nested: true, baseId: "Foo" },
+      { id: "Foo_nested", visible: true, nested: false, baseId: "Foo_nested" },
+    ];
+    expect(isNationLabelVisible("Foo", objects)).toBe(false);
+    expect(isNationLabelVisible("Foo_nested", objects)).toBe(true);
+    expect(isDrilledSuzerainView("Foo", objects)).toBe(false);
+  });
+
   it("detects visible nations from main or nested overlays", () => {
     expect(isNationLabelVisible("imperium", overviewMapObjects)).toBe(true);
     expect(isNationLabelVisible("vassalA", overviewMapObjects)).toBe(false);
@@ -649,8 +660,8 @@ describe("label visibility helpers", () => {
       },
     };
     const overview: LabelMapObject[] = [
-      { id: "loyalists", visible: true },
-      { id: "rebels", visible: true },
+      { id: "loyalists", visible: true, nested: false, baseId: "loyalists" },
+      { id: "rebels", visible: true, nested: false, baseId: "rebels" },
     ];
     expect(labelControlProvinces("loyalists", occupiedData, [1, 2, 3])).toEqual([
       1, 2,
@@ -732,10 +743,10 @@ describe("computeVisibleNationLabels", () => {
 
   it("returns no labels when nothing is visible", () => {
     const hiddenObjects: LabelMapObject[] = [
-      { id: "imperium", visible: false },
-      { id: "imperium_nested", visible: false },
-      { id: "vassalA", visible: false },
-      { id: "independent", visible: false },
+      { id: "imperium", visible: false, nested: false, baseId: "imperium" },
+      { id: "imperium_nested", visible: false, nested: true, baseId: "imperium" },
+      { id: "vassalA", visible: false, nested: false, baseId: "vassalA" },
+      { id: "independent", visible: false, nested: false, baseId: "independent" },
     ];
 
     expect(

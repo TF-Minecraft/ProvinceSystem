@@ -11,7 +11,7 @@ import {
   resolveRegionAtPickPixel,
   resolveRegionById,
 } from "./regionPick";
-import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
+import type { MapId, MapMode, MapObject, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
 import {
@@ -37,7 +37,6 @@ type UseMapHoverProps = {
   sessionToken?: string | null;
   setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void;
   setHoveredOverlay: (overlay: HoverOverlay | null) => void;
-  setRegionInfo: (info: RegionInfo | null) => void;
   setSelectedRegionId: (id: string | null) => void;
   getHoverRegion: (
     mapType: string,
@@ -103,7 +102,6 @@ function labelRegionAt(
 
 export function useMapHover(props: UseMapHoverProps) {
   const {
-    viewportCoordsRef,
     mapId,
     mapType,
     loading,

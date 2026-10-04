@@ -173,8 +173,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
 
     expect(ctx.putCalls).toHaveLength(1);
     const first = ctx.putCalls[0]!;
-    // nationA occupies (0,0)-(1,1): a 2x2 dirty rect, nowhere near the full
-    // 4x4 grid this used to repaint in full.
+    // nationA occupies (0,0)-(1,1): only that 2x2 rectangle needs repainting.
     expect(first).toMatchObject({ dirtyX: 0, dirtyY: 0, dirtyWidth: 2, dirtyHeight: 2 });
 
     expect(pixelAt(first.data, 4, 0, 0)).toEqual([120, 126, 131, 255]);

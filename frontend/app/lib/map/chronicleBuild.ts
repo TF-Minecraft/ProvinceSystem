@@ -475,10 +475,8 @@ export async function runChronicleBuild<
           if (image != null) painted += 1;
         }
 
-        // Pushed *before* the cancellation check on purpose: a bitmap that
-        // exists but belongs to no frame yet is invisible to the catch below,
-        // and `renderDay` can await (the `createImageBitmap` fallback), so a
-        // cancel landing in that gap used to leak one full frame every time.
+        // Register the bitmap before checking cancellation so the catch below
+        // can dispose it even when an abort arrives during `renderDay`.
         frames.push({
           day,
           image,

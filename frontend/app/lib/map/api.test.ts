@@ -10,7 +10,6 @@ import {
   fetchMapMarkers,
   isAbortError,
   mapRequiresAuth,
-  postEditorTitles,
   staffMapAccessReason,
 } from "@/lib/map/api";
 
@@ -178,32 +177,6 @@ describe("map api", () => {
     expect(
       staffMapAccessReason(new MapAccessError("Other", 404, "Map not found"))
     ).toBe("unknown");
-  });
-
-  it("postEditorTitles sends Bearer and JSON body", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, tier: "county", count: 1 }), {
-        status: 200,
-      })
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const body = {
-      COUNTY_1: { name: "Test", provinces: [1], rgb: "10,20,30" },
-    };
-    await postEditorTitles("main", "county", body, "staff-token");
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://api.test/main/editor/titles/county",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer staff-token",
-        },
-      })
-    );
   });
 
   it("mapRequiresAuth uses public from the accessible list when present", () => {

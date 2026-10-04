@@ -263,10 +263,8 @@ export function chronicleLabelMapObjects(
 }
 
 /**
- * Every array below comes off the wire. `?? []` only covers null and undefined,
- * so a day whose `settlements` is an object (or a string, or a number) used to
- * reach `.filter` inside a `useMemo` and take the whole page down mid-render.
- * A malformed source is a hole in one day, not a dead studio.
+ * Array fields come off the wire and can be malformed. Treat non-arrays as
+ * missing data so one bad day cannot interrupt the studio.
  */
 function asArray<T>(value: T[] | undefined | null | unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];

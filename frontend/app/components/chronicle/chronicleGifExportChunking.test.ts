@@ -1,21 +1,9 @@
 /**
  * @vitest-environment jsdom
  *
- * Coverage for the export's main-thread, chunked encode — the replacement for
- * the Worker that Turbopack cannot bundle (see `encodeGif.ts`'s module doc for
- * the build evidence). The three properties the Worker used to give for free,
- * and that the chunked loop now has to earn, are:
- *
- *  - the thread is handed back between every frame, in the encode phase as
- *    well as the render phase, so the progress bar repaints instead of the tab
- *    freezing for the whole encode;
- *  - an abort lands *during* the encode, not only during the render;
- *  - an over-ceiling request is still refused before a single pixel is
- *    allocated, since the frames are now held on this thread until the encode
- *    finishes.
- *
- * The last of those matters more without the Worker than it did with it, which
- * is why it is asserted here as well as in `chronicleGifExport.test.ts`.
+ * Checks that rendering and encoding yield between frames, cancellation is
+ * processed during encoding, and the memory ceiling is enforced before any
+ * frame allocation.
  *
  * jsdom has no 2D context, so `getContext` is stubbed with a proxy that
  * no-ops everything except `getImageData` (real, correctly-sized pixels) and

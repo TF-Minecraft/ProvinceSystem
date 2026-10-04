@@ -40,29 +40,21 @@ export function buildProvincePixelIndex(
   return result;
 }
 
-function packRgb(r: number, g: number, b: number): number {
-  return (r << 16) | (g << 8) | b;
-}
-
 function buildCatalogRgbMaps(provinces: EditorProvinceRow[]): {
   rgbToProvinceId: Record<string, number>;
   provinceToRgb: Record<number, string>;
-  packedLookup: Record<number, number>;
 } {
   const rgbToProvinceId: Record<string, number> = {};
   const provinceToRgb: Record<number, string> = {};
-  const packedLookup: Record<number, number> = {};
 
   for (const row of provinces) {
     const parsed = parseRgbString(row.rgb);
     if (!parsed) continue;
-    const [r, g, b] = parsed;
     rgbToProvinceId[row.rgb] = row.id;
     provinceToRgb[row.id] = row.rgb;
-    packedLookup[packRgb(r, g, b)] = row.id;
   }
 
-  return { rgbToProvinceId, provinceToRgb, packedLookup };
+  return { rgbToProvinceId, provinceToRgb };
 }
 
 export function deserializeProvinceIdGrid(bytes: ArrayBuffer): {
@@ -108,36 +100,6 @@ export function buildProvinceIndexFromGrid(
   }
 
   const { rgbToProvinceId, provinceToRgb } = buildCatalogRgbMaps(provinces);
-
-  return {
-    rgbToProvinceId,
-    provinceToRgb,
-    provinceMap,
-    width,
-    height,
-  };
-}
-
-export function buildProvinceIndexFromImageData(
-  provinces: EditorProvinceRow[],
-  imageData: ImageData
-): ProvinceIndex {
-  const { width, height, data } = imageData;
-  const pixelCount = width * height;
-  const provinceMap = new Int32Array(pixelCount);
-  provinceMap.fill(-1);
-
-  const { rgbToProvinceId, provinceToRgb, packedLookup } =
-    buildCatalogRgbMaps(provinces);
-
-  for (let i = 0; i < pixelCount; i++) {
-    const offset = i * 4;
-    const packed = packRgb(data[offset]!, data[offset + 1]!, data[offset + 2]!);
-    const pid = packedLookup[packed];
-    if (pid !== undefined) {
-      provinceMap[i] = pid;
-    }
-  }
 
   return {
     rgbToProvinceId,

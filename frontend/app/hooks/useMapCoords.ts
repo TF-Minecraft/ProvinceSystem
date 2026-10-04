@@ -39,7 +39,7 @@ export function mapPixelToPickCanvas(
   return { x, y };
 }
 
-function getLegacyMapCoords(
+function getCanvasMapCoords(
   event: React.MouseEvent,
   canvas: HTMLCanvasElement,
   mapId: MapId
@@ -124,8 +124,8 @@ function getViewportMapCoords(
 }
 
 /**
- * `canvas` is only for the legacy path, a canvas drawn at the map's size on
- * screen (the editor's). The live map has no such canvas and passes null.
+ * `canvas` is the editor's coordinate fallback, drawn at the map's size on
+ * screen. The live map has no such canvas and passes null.
  */
 export function getMapCoords(
   event: React.MouseEvent,
@@ -137,5 +137,5 @@ export function getMapCoords(
     return getViewportMapCoords(event, viewport);
   }
 
-  return canvas ? getLegacyMapCoords(event, canvas, mapId) : null;
+  return canvas ? getCanvasMapCoords(event, canvas, mapId) : null;
 }

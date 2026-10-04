@@ -79,12 +79,6 @@ export type EditorProvincesResponse = {
   provinces: EditorProvinceRow[];
 };
 
-export type EditorTitlesResponse = {
-  ok: true;
-  tier: string;
-  count: number;
-};
-
 export type EditorRegenResponse = {
   ok: true;
   regen_type: string;
@@ -268,10 +262,6 @@ export async function fetchEditorProvinces(
   });
 }
 
-export function editorProvincePickPath(mapId: MapId): string {
-  return `/${mapId}/editor/pick/provinces`;
-}
-
 export function editorProvinceIndexPath(mapId: MapId): string {
   return `/${mapId}/editor/province-index`;
 }
@@ -293,20 +283,6 @@ export async function fetchEditorProvinceIndex(
     );
   }
   return await res.arrayBuffer();
-}
-
-export async function postEditorTitles(
-  mapId: MapId,
-  tier: EditorTier,
-  body: EditorTitleDraft,
-  sessionToken: string
-): Promise<EditorTitlesResponse> {
-  return fetchMapJson<EditorTitlesResponse>(`/${mapId}/editor/titles/${tier}`, {
-    method: "POST",
-    sessionToken,
-    body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 export async function postEditorRegen(

@@ -3,7 +3,7 @@ import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
 import { resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
 import type { PickSurface } from "../lib/map/pickSurface";
-import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
+import type { HoverOverlay, MapMode, MapObject, RegionRecord } from "../components/map/types";
 
 export function useRegionHover({
   mapId,
@@ -12,7 +12,6 @@ export function useRegionHover({
   rgbToId,
   getHoverRegion,
   setHoveredOverlay,
-  setRegionInfo,
   setSelectedRegionId,
   mapDisplayName,
   mapObjects,
@@ -33,7 +32,6 @@ export function useRegionHover({
     overlay?: HoverOverlay["overlay"];
   };
   setHoveredOverlay: (overlay: HoverOverlay | null) => void;
-  setRegionInfo: (info: RegionInfo | null) => void;
   setSelectedRegionId: (id: string | null) => void;
   mapDisplayName: string;
   mapObjects: MapObject[];
@@ -49,7 +47,6 @@ export function useRegionHover({
   ) => {
     lastHoverKeyRef.current = null;
     setHoveredOverlay(null);
-    setRegionInfo(null);
     setSelectedRegionId(null);
     setCursorTooltip(null);
   };
@@ -116,7 +113,6 @@ export function useRegionHover({
     if (hoverKey !== lastHoverKeyRef.current) {
       lastHoverKeyRef.current = hoverKey;
       setHoveredOverlay(imagePath ? { url: imagePath, overlay } : null);
-      setRegionInfo(info);
     }
 
     return true;

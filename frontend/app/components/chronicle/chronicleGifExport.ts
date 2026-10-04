@@ -27,57 +27,18 @@ import {
 } from "../../lib/warCampaignLine";
 import type { WarExport } from "../map/types";
 import type { ChronicleFrameLayers } from "./chronicleLayers";
+import {
+  createChronicleCanvas,
+  type AnyCanvas,
+  type AnyCanvasContext,
+} from "./chronicleRenderTarget";
 
 /**
- * The canvas half of the GIF export: it flattens the studio's layer *stack* —
- * an `<img>`, a fill canvas, three mask canvases, three SVG/DOM overlays, each
- * positioned by CSS and the viewport transform — into one square raster per
- * day, then hands the pile to the encoder.
- *
- * Two things drive every decision in here.
- *
- * The GIF is always the whole map square, never the pan/zoom viewport. What
- * the user framed on screen is a reading aid; a shared timelapse that starts
- * half-scrolled is a bug report. So nothing in this module reads
- * `useMapViewport` — the only transform is `chronicleGifTransform`.
- *
- * And it must not wedge the tab. Fourteen days at 1080² is 65 MB of pixels
- * moved through `getImageData` before the encoder has even started, and the
- * render loop runs on the main thread; without a yield between days the
- * progress text never repaints and the studio looks hung for the entire run.
- * Every loop below yields.
- *
- * Two more things follow from that same memory budget. `sourceBytes` below is
- * checked against `CHRONICLE_MEMORY_CEILING_BYTES` — the studio's own build
- * ceiling — before a single frame is rendered, the same up-front refusal
- * `estimate.overCeiling` gives the build step, so a request that would hold
- * hundreds of megabytes of raw pixels fails with a clear message instead of
- * quietly trying. And the encode itself runs here, on this thread, chunked:
- * `encodeGifSteps` is a generator that yields after each frame it writes, and
- * the loop below `await`s between those steps exactly the way the render loop
- * does, so the progress bar repaints and Cancel stays clickable through the
- * whole encode.
- *
- * Not a Worker, deliberately and reluctantly: Turbopack does not bundle
- * `new Worker(new URL(..., import.meta.url))` in a production `next build` —
- * it emits the worker file as a raw static asset the browser then rejects, so
- * a worker-based export is dead on deploy while looking fine in review. The
- * evidence and the variants tried are in `encodeGif.ts`'s module doc. The one
- * thing lost with the worker is the per-frame buffer transfer, so the frames
- * *are* held in a local array until the encode finishes — which is precisely
- * what the ceiling above is sized for (it is computed from the same
- * `size * size * 4 * frames.length` this array holds).
- *
- * There is no error boundary anywhere under `app/`, so a throw here would blank
- * the page rather than fail the button. Everything that touches day-file data
- * is guarded, and the caller is expected to keep the whole call in a try/catch
- * that lands in state.
+ * Flattens the studio's layers into square GIF frames for the whole map.
+ * Rendering and encoding yield between frames so progress can repaint and
+ * cancellation stays responsive. The raw frame budget is checked before any
+ * canvas is allocated; callers surface failures through their export state.
  */
-
-type AnyCanvas = OffscreenCanvas | HTMLCanvasElement;
-type AnyCanvasContext =
-  | OffscreenCanvasRenderingContext2D
-  | CanvasRenderingContext2D;
 
 export type ChronicleGifExportFrame = {
   day: string;
@@ -158,17 +119,6 @@ export class ChronicleGifCancelled extends Error {
 
 export function isChronicleGifCancelled(err: unknown): boolean {
   return err instanceof ChronicleGifCancelled;
-}
-
-/** Same fallback ladder as `chronicleRenderTarget.ts`. */
-function createCanvas(width: number, height: number): AnyCanvas {
-  if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(width, height);
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  return canvas;
 }
 
 function context2d(canvas: AnyCanvas): AnyCanvasContext {
@@ -257,7 +207,7 @@ class MaskScratch {
       this.canvas.width !== mask.width ||
       this.canvas.height !== mask.height
     ) {
-      this.canvas = createCanvas(mask.width, mask.height);
+      this.canvas = createChronicleCanvas(mask.width, mask.height);
       this.ctx = context2d(this.canvas);
       this.imageData = null;
       this.drawn = null;
@@ -550,7 +500,7 @@ function baseMapIsReadable(
   transform: ChronicleGifTransform
 ): boolean {
   try {
-    const probe = createCanvas(1, 1);
+    const probe = createChronicleCanvas(1, 1);
     const ctx = context2d(probe);
     ctx.drawImage(
       baseImage,
@@ -604,11 +554,7 @@ export async function exportChronicleGif(
 
   if (!frames.length) throw new Error("There are no built frames to export.");
 
-  // Checked before anything is rendered, exactly like the build's own
-  // `estimate.overCeiling`: a raster this size times this many days is what
-  // `sourceFrames` used to hold in full before handing it to the encoder, and
-  // refusing up front beats discovering the browser cannot hold it midway
-  // through a render pass.
+  // Apply the build's raw frame budget before allocating export canvases.
   const sourceBytes = size * size * 4 * frames.length;
   if (sourceBytes > CHRONICLE_MEMORY_CEILING_BYTES) {
     const mb = (bytes: number) => `${Math.ceil(bytes / (1024 * 1024))} MB`;
@@ -621,7 +567,7 @@ export async function exportChronicleGif(
 
   const transform = chronicleGifTransform(mapW, mapH, size);
   const edge = transform.size;
-  const canvas = createCanvas(edge, edge);
+  const canvas = createChronicleCanvas(edge, edge);
   const ctx = context2d(canvas);
   ctx.imageSmoothingQuality = "high";
 

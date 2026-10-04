@@ -377,10 +377,8 @@ describe("isChronicleBuildCancelled", () => {
 
 describe("runChronicleBuild cancellation", () => {
   it("disposes a bitmap that renderDay produced just as the cancel landed", async () => {
-    // The gap that leaked: `renderDay` awaits (the `createImageBitmap` fallback
-    // does), so the abort can arrive after the bitmap exists but before any
-    // frame holds it. The catch only disposes `frames`, so the bitmap used to
-    // escape — 3.24 MB per cancel, unbounded across repeated cancels.
+    // An abort can arrive while `renderDay` awaits; its returned bitmap must
+    // still be registered for disposal.
     const controller = new AbortController();
     const disposed: TestImage[] = [];
 

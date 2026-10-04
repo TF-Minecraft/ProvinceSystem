@@ -13,7 +13,6 @@ import { fetchMapApi } from "@/lib/map/api";
 import type { EditorProvinceRow } from "@/lib/map/api";
 
 import {
-  EDITOR_PROVINCE_RUNS_FLAG,
   editorProvinceRunsPath,
   isEditorProvinceRunsEnabled,
   loadProvinceIndexFromRuns,
@@ -72,10 +71,6 @@ function respondWith(body: Buffer, ok = true): void {
 describe("editor province runs feature flag", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
-  });
-
-  it("is named for the public env var", () => {
-    expect(EDITOR_PROVINCE_RUNS_FLAG).toBe("NEXT_PUBLIC_EDITOR_PROVINCE_RUNS");
   });
 
   it("defaults to OFF when unset", () => {

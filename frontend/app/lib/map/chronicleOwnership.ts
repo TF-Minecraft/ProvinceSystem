@@ -14,13 +14,11 @@ import type { NationOwnership } from "./chroniclePaint";
  *   back for one id — see `ChronicleOwnershipLayer`.
  *
  * Everything here treats `regionData` as unvalidated network JSON: a stored day
- * is a file on disk that no schema guards. Two consequences run through the
+ * is a file on disk that no schema guards. Three constraints run through the
  * whole module.
  *
- * 1. Every returned record is built with `Object.create(null)`. A day file
- *    carrying a region literally named `__proto__` has previously poisoned a
- *    plain-object map and made a realm vanish from the labels while its land
- *    was still painted.
+ * 1. Every returned record is built with `Object.create(null)` so region names
+ *    such as `__proto__` remain ordinary keys.
  * 2. Every `subjects`/`overlord` walk carries a visited `Set`. A cycle in the
  *    stored data would otherwise spin forever, and there is no error boundary
  *    anywhere under `app/`, so a hang or a throw takes the whole page down.
@@ -181,10 +179,8 @@ export function directOwnership(
  *
  * Structure is read off the entry (`obj.nested` / `obj.baseId`), never
  * recovered from `obj.id`. Region ids are day-file object keys — player-set
- * names — so a real region named `Foo_nested` is indistinguishable by string
- * from the synthetic entry for `Foo`, and inferring from the suffix used to
- * hand that nation's ownership slot to `Foo` and leave its own land painted
- * transparent while `directOwnership` still made it hoverable.
+ * names — so a real region named `Foo_nested` needs to remain distinct from
+ * the synthetic entry for `Foo`.
  *
  * Conflict rule: entries are applied in `mapObjects` order, and the later entry
  * wins a province id claimed twice. That matches `buildNationColorLut`, which

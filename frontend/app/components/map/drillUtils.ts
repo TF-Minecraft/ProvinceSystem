@@ -92,18 +92,6 @@ export function getNextDrillTarget(
   return resolveNextDrillTarget(regionId, regionData, drilledIds);
 }
 
-export function getNextDrillTargetFromMap(
-  regionId: string,
-  regionData: RegionRecord,
-  mapObjects: MapObject[]
-): string | null {
-  return resolveNextDrillTarget(
-    regionId,
-    regionData,
-    getDrilledRealmIds(mapObjects)
-  );
-}
-
 export function hasLandSubjects(
   regionId: string,
   regionData: RegionRecord

@@ -85,7 +85,7 @@ describe("parsePaintDocument", () => {
     expect(parsePaintDocument(raw)).toEqual([stamp]);
   });
 
-  it("migrates the old named stroke widths to slider numbers", () => {
+  it("normalises saved named stroke widths to slider numbers", () => {
     const raw = JSON.stringify({
       version: PAINT_STORAGE_VERSION,
       mapId: "main",

@@ -1,9 +1,5 @@
 import { parseRgbString } from "@/app/lib/map/titleRgb";
-import {
-  resolveCountyProvinces,
-  type TitleEntity,
-  type TitleLayers,
-} from "@/app/lib/titleProvinces";
+import type { TitleEntity, TitleLayers } from "@/app/lib/titleProvinces";
 
 import type {
   ProvincePixelIndex,
@@ -16,10 +12,8 @@ import {
 import { EDITOR_SELECTION_HIGHLIGHT } from "./editorConstants";
 
 /**
- * Where "which pixels belong to province N" comes from. `Int32Array` is the
- * original flat province map (one entry per pixel); `ProvinceRunIndex` is the
- * run-length index. Both are accepted everywhere so the flat path keeps
- * working byte-for-byte while the runs path can be switched on behind a flag.
+ * Province geometry is either a flat map with one entry per pixel or a
+ * run-length index, selected by the editor's province-runs feature flag.
  */
 export type ProvinceGeometrySource = Int32Array | ProvinceRunIndex;
 
@@ -284,28 +278,6 @@ export function paintSelectionLayerFull(
   }
 }
 
-export function paintSelectionLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  provinceToRgb: Record<number, string>,
-  provinceToCounty: Map<number, string>,
-  countyColors: Record<string, string>
-): void {
-  const { width, height } = ctx.canvas;
-  const imageData = ctx.createImageData(width, height);
-
-  paintSelectionLayerFull(
-    imageData,
-    provinceMap,
-    provinceToRgb,
-    provinceToCounty,
-    countyColors
-  );
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.putImageData(imageData, 0, 0);
-}
-
 export function updateCountySelectionSubset(
   imageData: ImageData,
   pixelIndex: ProvinceRegionIndex,
@@ -346,30 +318,6 @@ export function paintActiveLayerFull(
   }
 }
 
-export function paintActiveLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  activeMembers: readonly number[] | undefined,
-  activeRgb: string | undefined,
-  selectionIds: ReadonlySet<number>,
-  highlightRgb: string = EDITOR_SELECTION_HIGHLIGHT
-): void {
-  const { width, height } = ctx.canvas;
-  const imageData = ctx.createImageData(width, height);
-
-  paintActiveLayerFull(
-    imageData,
-    provinceMap,
-    activeMembers,
-    activeRgb,
-    selectionIds,
-    highlightRgb
-  );
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.putImageData(imageData, 0, 0);
-}
-
 export function updateCountyActiveSubset(
   imageData: ImageData,
   pixelIndex: ProvinceRegionIndex,
@@ -404,28 +352,6 @@ export function paintChildSelectionLayerFull(
     const provinceIds = resolveFn(childId, layers);
     fillProvincePixels(imageData, provinceMap, provinceIds, rgb);
   }
-}
-
-export function paintChildSelectionLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  childDraft: Record<string, ChildPaintEntry>,
-  resolveFn: (childId: string, layers: TitleLayers) => number[],
-  layers: TitleLayers
-): void {
-  const { width, height } = ctx.canvas;
-  const imageData = ctx.createImageData(width, height);
-
-  paintChildSelectionLayerFull(
-    imageData,
-    provinceMap,
-    childDraft,
-    resolveFn,
-    layers
-  );
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.putImageData(imageData, 0, 0);
 }
 
 export function updateChildSelectionSubset(
@@ -465,30 +391,6 @@ export function paintParentActiveLayerFull(
   fillProvincePixels(imageData, provinceMap, provinceIds, activeParsed);
 }
 
-export function paintParentActiveLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  memberChildIds: readonly string[] | undefined,
-  parentRgb: string | undefined,
-  resolveFn: (childId: string, layers: TitleLayers) => number[],
-  layers: TitleLayers
-): void {
-  const { width, height } = ctx.canvas;
-  const imageData = ctx.createImageData(width, height);
-
-  paintParentActiveLayerFull(
-    imageData,
-    provinceMap,
-    memberChildIds,
-    parentRgb,
-    resolveFn,
-    layers
-  );
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.putImageData(imageData, 0, 0);
-}
-
 export function updateParentActiveSubset(
   imageData: ImageData,
   pixelIndex: ProvinceRegionIndex,
@@ -514,43 +416,4 @@ export function updateParentActiveSubset(
       paintRegion(imageData, pixelIndex, pid, parsed);
     }
   }
-}
-
-function countyDraftToTitleLayers(
-  countyDraft: Record<string, TitleEntity>
-): TitleLayers {
-  return { county: countyDraft };
-}
-
-export function paintDuchySelectionLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  countyDraft: Record<string, TitleEntity>
-): void {
-  const layers = countyDraftToTitleLayers(countyDraft);
-  paintChildSelectionLayer(
-    ctx,
-    provinceMap,
-    countyDraft,
-    resolveCountyProvinces,
-    layers
-  );
-}
-
-export function paintDuchyActiveLayer(
-  ctx: CanvasRenderingContext2D,
-  provinceMap: ProvinceGeometrySource,
-  memberCountyIds: readonly string[] | undefined,
-  duchyRgb: string | undefined,
-  countyDraft: Record<string, TitleEntity>
-): void {
-  const layers = countyDraftToTitleLayers(countyDraft);
-  paintParentActiveLayer(
-    ctx,
-    provinceMap,
-    memberCountyIds,
-    duchyRgb,
-    resolveCountyProvinces,
-    layers
-  );
 }

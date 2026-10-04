@@ -112,11 +112,8 @@ describe("LedgerChartsPanel", () => {
   });
 
   it("does not re-splice the faction or rebuild chart geometry on a cursor-only re-render", () => {
-    // The finding this pins: `factionForKey` (-> `spliceLedgerFaction`, an
-    // O(days) walk) and `stackBreakdown` used to run fresh on every render,
-    // and the panel re-renders once per RAF tick during playback purely
-    // because `cursorDay` advances. Neither should fire again when nothing
-    // but the cursor moved.
+    // Cursor updates during playback must reuse the faction series and chart
+    // geometry instead of repeating work proportional to the day count.
     const factionSpy = vi.spyOn(useLedgerSeriesModule, "factionForKey");
     const stackSpy = vi.spyOn(ledgerSeriesModule, "stackBreakdown");
 

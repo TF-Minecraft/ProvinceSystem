@@ -223,7 +223,7 @@ describe("buildAreaPath", () => {
   });
 
   it("also breaks the run on a null baseline even when the top is non-null", () => {
-    // Regression: a stray null baseline used to be silently coerced to 0
+    // A null baseline must remain missing rather than being coerced to 0.
     // (`baselines[i] ?? 0`) and stitched into the surrounding run instead of
     // breaking it — this is the day-is-a-gap case `stackBreakdown` now
     // produces (both top and baseline null together), but the check must be

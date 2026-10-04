@@ -1,30 +1,10 @@
 /**
- * GIF89a animation encoder for the map timelapse studio's export button.
+ * GIF89a animation encoder for the map timelapse studio.
  *
- * Hand-written and dependency-free on purpose: the studio already holds every
- * frame as `ImageData`, and the alternative is shipping a general-purpose GIF
- * library to do one thing this file does in a few hundred lines.
- *
- * Pure over typed arrays — nothing here touches a canvas, `ImageData`, the DOM
- * or any timer — so `encodeGif.test.ts` calls it directly under node and the
- * studio calls it from the browser's main thread.
- *
- * It runs on the main thread and not on a Worker. Turbopack — this project's
- * bundler, see `next.config.ts` — does not bundle a browser `Worker` in a
- * production `next build`: `new Worker(new URL("./x.worker.ts", import.meta.url))`
- * emits the worker file as an *unprocessed static asset* (a raw `.ts` under
- * `.next/static/media/`, which a browser then refuses as a SyntaxError) rather
- * than as a compiled worker chunk. Verified empirically on Next 16.0.10 against
- * `.ts`, `.js` and `.mjs` worker files, with and without `{ type: "module" }`;
- * all four emitted raw source. Turbopack's documented worker bundling covers
- * server-side `node:worker_threads` and `navigator.serviceWorker.register`,
- * not `new Worker`.
- *
- * So the encode is chunked instead of moved: `encodeGifSteps` below is a
- * generator that yields once per written frame, and `chronicleGifExport.ts`
- * drives it with an `await` between frames so the tab repaints its progress
- * bar and can be cancelled. `encodeGif` drains the same generator in one go
- * for callers (the tests) that want the plain synchronous function.
+ * Pure typed-array work, independent of canvases, the DOM and timers.
+ * `encodeGifSteps` yields after each frame; the browser caller awaits between
+ * steps to repaint progress and process cancellation. `encodeGif` drains the
+ * same generator synchronously for callers that do not need those yields.
  */
 
 import { ByteWriter, lzwCompress, writeSubBlocks } from "./gifLzw";
@@ -107,7 +87,7 @@ function validate(options: EncodeGifOptions): void {
  * `CHRONICLE_MEMORY_CEILING_BYTES` refusal in `chronicleGifExport.ts` is what
  * keeps that bounded. Everything after the palette is per-frame, and that
  * per-frame work (nearest-colour mapping plus LZW over `width*height` pixels)
- * is the part that used to block the tab outright, which is what the yields
+ * is the longest synchronous step, which is what the yields
  * are for.
  *
  * `validate` runs on the first `next()`, not at call time — generators do not

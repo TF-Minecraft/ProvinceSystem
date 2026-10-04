@@ -17,9 +17,8 @@ import {
 } from "./mapPaint";
 
 /**
- * Stroke width used to be one of three named presets; it is now a continuous
- * number driven by a slider. Plans saved under the old scheme are rewritten to
- * the equivalent numbers rather than being thrown away by the shape guard.
+ * Saved browser plans may contain named stroke widths. Normalise them to
+ * slider values before validating each shape.
  */
 const LEGACY_WIDTHS: Record<string, number> = { thin: 2, medium: 4, thick: 7 };
 
@@ -29,8 +28,7 @@ function migrateLegacyWidth(entry: unknown): unknown {
     return entry;
   }
   const width = LEGACY_WIDTHS[shape.width];
-  // "thick" predates the slider's range, so clamp rather than import a value
-  // the slider could never produce.
+  // Clamp named presets to the slider's supported range.
   return width === undefined ? entry : { ...shape, width: clampPaintWidth(width) };
 }
 
