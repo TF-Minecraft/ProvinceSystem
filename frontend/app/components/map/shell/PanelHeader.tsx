@@ -49,19 +49,31 @@ export default function PanelHeader({
 
   useEffect(() => {
     const heading = titleRef.current;
-    if (!heading || typeof IntersectionObserver === "undefined") return;
-    const root = scrollParent(heading);
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const top = entry.rootBounds?.top ?? 0;
-        setCompact(!entry.isIntersecting && entry.boundingClientRect.top < top);
-      },
-      // The bar's height is cut off the top, so the name moves into the bar
-      // as soon as the title has gone under it.
-      { root, rootMargin: `-${BAR_HEIGHT_PX}px 0px 0px 0px` }
-    );
-    observer.observe(heading);
-    return () => observer.disconnect();
+    const root = heading ? scrollParent(heading) : null;
+    if (!heading || !root) return;
+    const scroller: HTMLElement = root;
+    let frame = 0;
+    // A scroll listener rather than an IntersectionObserver: WebKit can hold
+    // observer callbacks back until its next paint, leaving the bar a beat
+    // behind the content.
+    function update() {
+      frame = 0;
+      const top = scroller.getBoundingClientRect().top;
+      // The name moves into the bar as soon as the title has gone under it.
+      // Never at rest: on a phone the title's foot sits near the bar's line.
+      setCompact(
+        scroller.scrollTop > 0 && heading!.getBoundingClientRect().bottom <= top + BAR_HEIGHT_PX
+      );
+    }
+    function onScroll() {
+      if (!frame) frame = requestAnimationFrame(update);
+    }
+    update();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      scroller.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   return (
