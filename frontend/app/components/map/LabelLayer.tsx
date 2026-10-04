@@ -82,6 +82,11 @@ function LabelLayer({
                 style={{
                   fontFamily: "var(--font-fraunces), serif",
                   fontWeight: LABEL_FONT_WEIGHT,
+                  // Otherwise the browser re-shapes every name at its new
+                  // size on screen each time the zoom changes, a few tens of
+                  // ms per step. The cost is unhinted outlines, which only
+                  // tell at the smallest sizes a name is shown at.
+                  textRendering: "geometricPrecision",
                 }}
               >
                 <textPath

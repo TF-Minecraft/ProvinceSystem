@@ -18,6 +18,18 @@ export type MapViewportProps = {
   isPanning: boolean;
   children: ReactNode;
   /**
+   * Content laid out at the map's full size and scaled by a transform instead
+   * of `zoom`, above `children` at z-index `unzoomedZIndex`.
+   *
+   * For the realm names. SVG text is laid out again whenever its scale on
+   * screen changes, and under `zoom` every settled zoom step is such a change
+   * (a few tens of ms per step for the names alone). With
+   * `text-rendering: geometricPrecision` a transform's scale is not, so here
+   * zooming only repaints them. Not for WebKit (see `unzoomedLabelsSupported`).
+   */
+  unzoomed?: ReactNode;
+  unzoomedZIndex?: number;
+  /**
    * Full-bleed mode: the container takes its size from CSS layout (flex/grid
    * `h-full`) instead of a square `aspect-ratio` locked to the map's own
    * dimensions. Use this when the map fills an arbitrary rectangle of the
@@ -42,6 +54,8 @@ export default function MapViewport({
   cursorClassName,
   isPanning,
   children,
+  unzoomed,
+  unzoomedZIndex,
   fill = false,
   capturesTouch = false,
 }: MapViewportProps) {
@@ -85,6 +99,20 @@ export default function MapViewport({
         <div className="relative" style={zoomedStyle}>
           {children}
         </div>
+        {unzoomed ? (
+          <div
+            className="pointer-events-none absolute left-0 top-0"
+            style={{
+              width: mapW,
+              height: mapH,
+              transform: `scale(${zoom})`,
+              transformOrigin: "0 0",
+              zIndex: unzoomedZIndex,
+            }}
+          >
+            {unzoomed}
+          </div>
+        ) : null}
       </div>
     </div>
   );

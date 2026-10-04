@@ -47,7 +47,10 @@ import {
   useTileManifest,
 } from "../../hooks/useTileManifest";
 import { overlayLod, tilePixelRatio } from "../../lib/map/tilePyramid";
-import { mapFiltersSupportedHere } from "../../lib/map/mapFilters";
+import {
+  mapFiltersSupportedHere,
+  unzoomedLabelsSupported,
+} from "../../lib/map/mapFilters";
 import {
   useMapViewport,
   type MapFocusInset,
@@ -155,6 +158,9 @@ export type MapFocus = {
  * per cent.
  */
 const FOCUS_MUTED_OPACITY = 0.3;
+
+/** The realm names: over the region overlays (10), under the pins (16, 17). */
+const LABEL_LAYER_Z = 15;
 
 /**
  * Whether `url` has loaded, so the colours fade only once what replaces them
@@ -487,6 +493,13 @@ export default function MapCanvas({
     ]
   );
 
+  // Decided after mount: the server has no user agent, and the first render
+  // must match its HTML.
+  const [labelsUnzoomed, setLabelsUnzoomed] = useState(false);
+  useEffect(() => {
+    setLabelsUnzoomed(unzoomedLabelsSupported(navigator.userAgent));
+  }, []);
+
   const devicePixelRatio = tilePixelRatio();
   // Zoomed out, realm overlays come as reduced copies: decoding a crop at
   // full size only to draw it a few pixels across is what the tiles fix for
@@ -632,6 +645,32 @@ export default function MapCanvas({
     paintEnabled && !viewport.isPanning
       ? paintToolCursor(paint!.tool)
       : mapInteractionCursor(viewport.isPanning, isHoveringClickable);
+  // The viewport's own cursor leaves out hovering: `cursor` is inherited, so
+  // each change on the viewport restyles, and lays out again, everything on
+  // the map, names included. The hit target below carries the pointer.
+  const viewportCursor =
+    paintEnabled && !viewport.isPanning
+      ? paintToolCursor(paint!.tool)
+      : mapInteractionCursor(viewport.isPanning, false);
+
+  const labelLayer = (
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        zIndex: LABEL_LAYER_Z,
+        opacity: labelsShown ? 1 : 0,
+        transition: "opacity 200ms ease-out",
+      }}
+    >
+      <LabelLayer
+        labels={labels}
+        mapW={mapSize.w}
+        mapH={mapSize.h}
+        displayScale={viewport.displayScale}
+        hoveredNationId={hoveredNationId}
+      />
+    </div>
+  );
 
   return (
     <div
@@ -663,8 +702,10 @@ export default function MapCanvas({
         transformStyle={viewport.transformStyle}
         zoom={viewport.zoom}
         transformTransition={viewport.transformTransition}
-        cursorClassName={interactionCursor}
+        cursorClassName={viewportCursor}
         isPanning={viewport.isPanning}
+        unzoomed={labelsUnzoomed ? labelLayer : undefined}
+        unzoomedZIndex={LABEL_LAYER_Z}
         fill={fill}
         capturesTouch
       >
@@ -895,22 +936,7 @@ export default function MapCanvas({
           displayScale={viewport.displayScale}
           layer="base"
         />
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            zIndex: 15,
-            opacity: labelsShown ? 1 : 0,
-            transition: "opacity 200ms ease-out",
-          }}
-        >
-        <LabelLayer
-          labels={labels}
-          mapW={mapSize.w}
-          mapH={mapSize.h}
-          displayScale={viewport.displayScale}
-          hoveredNationId={hoveredNationId}
-        />
-        </div>
+        {labelsUnzoomed ? null : labelLayer}
         <MapMarkerLayer
           markers={markers}
           hoveredMarkerId={hoveredMarkerId}
