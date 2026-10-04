@@ -73,15 +73,22 @@ function TileLayer({
   const [, setLoadedVersion] = useState(0);
   const [settledLevel, setSettledLevel] = useState(backdrop);
 
-  // A new pyramid version is a different image: nothing loaded carries over.
+  // A new pyramid version is a different image: the sharp level settled for
+  // the old one says nothing about the new one. Only on a real change, not on
+  // mount: cached tiles can fire `load` before this layer's effects run, and
+  // WebKit often does, so a reset on mount wiped tiles that had already
+  // loaded. They never load again, and the names waiting on `onReady` (see
+  // MapCanvas) stayed hidden for good.
+  const versionRef = useRef(manifest.version);
   useEffect(() => {
-    loadedRef.current = new Set();
+    if (versionRef.current === manifest.version) return;
+    versionRef.current = manifest.version;
     setSettledLevel(backdrop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifest.version]);
 
   // Loaded state is per pyramid version: the same level/x/y of another
-  // version is a different picture.
+  // version is a different picture, so another version's entries never match.
   const loadedKey = (tile: PlacedTile) => `${manifest.version}/${tile.key}`;
 
   const currentLoaded =

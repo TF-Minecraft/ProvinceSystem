@@ -61,7 +61,17 @@ export default function MapViewport({
     transformOrigin: "0 0",
     transition: transformTransition,
   };
-  const zoomedStyle: CSSProperties = { width: mapW, height: mapH, zoom };
+  // iOS text autosizing resets an element's font size to the size it
+  // specified, dropping `zoom`: settlement names drew at their full map-pixel
+  // size (48-72 px on screen) over a map zoomed out to a tenth. `none` is the
+  // one value that turns the adjustment off (Tailwind's base sets 100%).
+  const zoomedStyle: CSSProperties = {
+    width: mapW,
+    height: mapH,
+    zoom,
+    WebkitTextSizeAdjust: "none",
+    textSizeAdjust: "none",
+  };
 
   return (
     <div
