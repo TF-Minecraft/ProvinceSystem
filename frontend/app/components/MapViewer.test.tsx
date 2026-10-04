@@ -79,16 +79,21 @@ describe("MapViewer terrain and picking readiness", () => {
     const frames: FrameRequestCallback[] = [];
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.push(callback); return frames.length; });
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    let clock = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => (clock += 5));
     const bitmap = { width: 512, height: 512, close: vi.fn() };
     vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(bitmap));
     render(viewer());
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
     await act(async () => finishFetch(new Response()));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    // Two 256-row bands, each yielding before the pick map can be read.
-    await act(async () => frames.shift()!(0));
-    expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    await act(async () => frames.shift()!(16));
+    // 64-row bands, each "taking" 5 ms against an 8 ms frame budget: the
+    // 512-row map is read over four frames and only then can be picked.
+    for (let frame = 0; frame < 3; frame++) {
+      await act(async () => frames.shift()!(frame * 16));
+      expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
+    }
+    await act(async () => frames.shift()!(48));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
     expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 512, height: 512 });
     expect(bitmap.close).toHaveBeenCalled();

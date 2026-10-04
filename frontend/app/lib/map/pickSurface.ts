@@ -113,12 +113,19 @@ export function pickSurfaceFromImageData(image: {
   return builder.finish();
 }
 
-/** Rows read back per band: 6400 x 256 RGBA is 6.5 MB at a time. */
-const PICK_BAND_ROWS = 256;
+/**
+ * Rows read back per band: 6400 x 64 RGBA is 1.6 MB, a few ms to copy and
+ * encode. A 256-row band took up to ~21 ms, longer than a frame.
+ */
+const PICK_BAND_ROWS = 64;
+
+/** Bands are read until this much of a frame has gone, then the page draws. */
+const PICK_FRAME_BUDGET_MS = 8;
 
 /**
  * Read a decoded pick map into a `PickSurface` through a canvas one band high,
- * yielding between bands so the page keeps drawing. Null once `cancelled`.
+ * yielding once a frame's budget is spent so the page keeps drawing (and a pan
+ * while the map loads stays smooth). Null once `cancelled`.
  */
 export async function pickSurfaceFromImage(
   source: CanvasImageSource,
@@ -126,7 +133,8 @@ export async function pickSurfaceFromImage(
   height: number,
   cancelled: () => boolean,
   nextFrame: () => Promise<unknown> = () =>
-    new Promise((resolve) => requestAnimationFrame(resolve))
+    new Promise((resolve) => requestAnimationFrame(resolve)),
+  now: () => number = () => performance.now()
 ): Promise<PickSurface | null> {
   const band = document.createElement("canvas");
   band.width = width;
@@ -136,6 +144,7 @@ export async function pickSurfaceFromImage(
   if (!ctx) return null;
   const builder = new PickSurfaceBuilder(width, height);
   try {
+    let frameStart = now();
     for (let y = 0; y < height; y += PICK_BAND_ROWS) {
       if (cancelled()) return null;
       const rows = Math.min(PICK_BAND_ROWS, height - y);
@@ -143,7 +152,10 @@ export async function pickSurfaceFromImage(
       ctx.clearRect(0, 0, width, rows);
       ctx.drawImage(source, 0, y, width, rows, 0, 0, width, rows);
       builder.addRows(ctx.getImageData(0, 0, width, rows).data, rows);
-      await nextFrame();
+      if (now() - frameStart >= PICK_FRAME_BUDGET_MS) {
+        await nextFrame();
+        frameStart = now();
+      }
     }
     return cancelled() ? null : builder.finish();
   } finally {

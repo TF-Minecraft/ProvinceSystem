@@ -72,11 +72,13 @@ describe("PickSurface", () => {
     const width = 2;
     const draws: number[] = [];
     let bandTop = 0;
+    let clock = 0;
     const ctx = {
       clearRect: () => {},
       drawImage: (_s: unknown, _sx: number, sy: number) => {
         draws.push(sy);
         bandTop = sy;
+        clock += 5;
       },
       getImageData: (_x: number, _y: number, w: number, h: number) => {
         const data = new Uint8ClampedArray(w * h * 4);
@@ -94,8 +96,20 @@ describe("PickSurface", () => {
     };
     document.createElement = createElement as typeof document.createElement;
     try {
-      const surface = await pickSurfaceFromImage({} as CanvasImageSource, width, rows, () => false, async () => {});
-      expect(draws).toEqual([0, 256, 512]);
+      // Each band "takes" 5 ms: two fill the 8 ms budget, then a frame.
+      let yields = 0;
+      const surface = await pickSurfaceFromImage(
+        {} as CanvasImageSource,
+        width,
+        rows,
+        () => false,
+        async () => {
+          yields += 1;
+        },
+        () => clock
+      );
+      expect(draws).toEqual([0, 64, 128, 192, 256, 320, 384, 448, 512, 576]);
+      expect(yields).toBe(5);
       expect(surface?.rgbAt(0, 299)).toBe("10,20,30");
       expect(surface?.rgbAt(1, 300)).toBe("0,0,0");
       expect(surface?.rgbAt(0, 300)).toBe("40,50,60");
@@ -108,7 +122,8 @@ describe("PickSurface", () => {
         () => frames > 0,
         async () => {
           frames += 1;
-        }
+        },
+        () => clock
       );
       expect(stopped).toBeNull();
     } finally {
