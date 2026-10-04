@@ -224,7 +224,7 @@ export function useMapHover(props: UseMapHoverProps) {
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
     if (markerHit) {
       // A pin sits inside a realm: keep that realm lit under the pointer, as
-      // if the pin were not there, and let only the tooltip belong to the pin.
+      // if the pin were not there.
       const markerPickPixel = mapPixelToPickCanvas(
         coords.x,
         coords.y,
@@ -245,12 +245,7 @@ export function useMapHover(props: UseMapHoverProps) {
         current.setSelectedRegionId(null);
         resetHoverCacheRef.current();
       }
-      current.setCursorTooltip(markerHit.hoverText ? {
-        x: coords.screenX,
-        y: coords.screenY,
-        text: markerHit.hoverText,
-        hint: markerHit.hoverHint,
-      } : null);
+      current.setCursorTooltip(null);
       if (isMarkerMapMode(current.mapType)) {
         current.setHoveredFortZoc?.(
           lookupFortZocOverlay(markerHit, current.forts ?? [])

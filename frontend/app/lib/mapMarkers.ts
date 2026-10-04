@@ -84,8 +84,6 @@ export type MapMarker = {
   mapY: number;
   label: string;
   title: string;
-  hoverText?: string;
-  hoverHint?: string;
   /** Installation pins hide their label until hovered. */
   showLabelOnlyOnHover?: boolean;
   /** Optional base scale for highlighted pins (e.g. next campaign battle). */

@@ -44,12 +44,7 @@ def normalize_raw_markers(data: object, map_name: str) -> dict:
     if not isinstance(installations, list):
         installations = []
     else:
-        # Older exports still name hub_slots and hubs on an installation.
-        # Supply hubs are gone; the fields are dropped and the row still loads.
-        installations = [_installation_without_hubs(entry) for entry in installations]
-
-    # Older map_markers.json files still name hub_links, trade_networks and
-    # trade_edges. Those layers are gone; the keys are ignored.
+        installations = [_installation_fields(entry) for entry in installations]
 
     forts = data.get("forts")
     if not isinstance(forts, list):
@@ -528,13 +523,16 @@ def enrich_settlements(
     return enrich_marker_rows(settlements, centroids)
 
 
-def _installation_without_hubs(entry: object) -> object:
+_INSTALLATION_FIELDS = frozenset({
+    "id", "name", "kind", "faction_id", "province_id", "level",
+    "center_x", "center_z", "map_x", "map_y",
+})
+
+
+def _installation_fields(entry: object) -> object:
     if not isinstance(entry, dict):
         return entry
-    row = dict(entry)
-    row.pop("hub_slots", None)
-    row.pop("hubs", None)
-    return row
+    return {key: value for key, value in entry.items() if key in _INSTALLATION_FIELDS}
 
 
 def enrich_installations(
@@ -542,7 +540,7 @@ def enrich_installations(
     centroids: dict,
 ) -> list[dict]:
     return enrich_marker_rows(
-        [_installation_without_hubs(entry) for entry in installations],
+        [_installation_fields(entry) for entry in installations],
         centroids,
     )
 
