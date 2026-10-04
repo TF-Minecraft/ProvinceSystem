@@ -14,7 +14,8 @@ import {
   REGION_TILE_MODES,
 } from "../mapModes";
 import type { MapId, MapMode } from "../types";
-import { CloseIcon, LayersIcon, MAP_MODE_ICONS } from "./MapIcons";
+import { LayersIcon, MAP_MODE_ICONS } from "./MapIcons";
+import SheetCloseButton from "./SheetCloseButton";
 
 export type MapLayerToggle = {
   id: string;
@@ -206,21 +207,18 @@ function LayersPanel({
       aria-label="Map layers"
       className="map-frame map-layers-enter fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-var(--tfmc-header-h)-6rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
     >
-      <div className="flex justify-center pt-2 md:hidden" aria-hidden>
-        <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
-      </div>
-      <section className="px-3 pb-4 pt-2 md:px-4 md:pt-4">
-        <div className="mb-3 flex items-center justify-between gap-2 px-1">
-          <h2 className="text-lg font-semibold text-[var(--tfmc-cream)]">Map type</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close layers"
-            className="-mr-1 rounded-full p-1.5 text-[var(--tfmc-stone)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] hover:text-[var(--tfmc-cream)]"
-          >
-            <CloseIcon size={22} />
-          </button>
+      {/* Pinned, so the close button stays in reach however far the sheet
+          scrolls, as on the details sheet. */}
+      <div className="sticky top-0 z-10 bg-[var(--tfmc-forest-deep)]">
+        <div className="flex justify-center pt-2 md:hidden" aria-hidden>
+          <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
         </div>
+        <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-2 md:px-5 md:pt-4">
+          <h2 className="text-lg font-semibold text-[var(--tfmc-cream)]">Map type</h2>
+          <SheetCloseButton onClick={onClose} label="Close layers" />
+        </div>
+      </div>
+      <section className="px-3 pb-4 md:px-4">
         {/* Twelve modes, three rows of four in the panel's order: realms,
             the title tiers from the top, then the world modes. */}
         <ul className="grid grid-cols-4 gap-x-1 gap-y-3">

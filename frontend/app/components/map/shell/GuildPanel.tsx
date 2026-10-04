@@ -5,7 +5,8 @@ import { cleanRegionName } from "@/app/lib/mapLabels";
 
 import type { RegionRecord, SettlementMarker } from "../types";
 import { Fact, RegionLink, Section } from "./RealmPanel";
-import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
+import { FocusIcon, RealmIcon } from "./MapIcons";
+import { PanelCloseButton } from "./SheetCloseButton";
 
 type GuildPanelProps = {
   guild: GuildProfile;
@@ -38,13 +39,14 @@ export function GuildPanelContent({
 
   return (
     <article aria-label={guild.name}>
+      <PanelCloseButton onClick={onClose} />
       <header className="map-frame-header -mx-4 -mt-4 mb-4 flex items-center gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
         <div
           aria-hidden
           className="map-banner-frame h-16 w-16 shrink-0"
           style={{ backgroundColor: guild.rgb ? `rgb(${guild.rgb})` : "#555" }}
         />
-        <div className="min-w-0 flex-1 pr-7">
+        <div className="min-w-0 flex-1 pr-9">
           <p className="text-xs text-[var(--tfmc-mist)]">
             {guild.typeLabel} of {realmName}
           </p>
@@ -61,15 +63,6 @@ export function GuildPanelContent({
           </p>
         </div>
       </header>
-
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close details"
-        className="map-control absolute right-3 top-3 h-8 w-8"
-      >
-        <CloseIcon size={16} />
-      </button>
 
       <div className="mb-4 flex items-baseline gap-2 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-black/20 px-3 py-2">
         <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">Leader</span>

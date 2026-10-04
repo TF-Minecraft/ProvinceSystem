@@ -15,7 +15,8 @@ import type { MapId, RegionRecord } from "../types";
 import { Fact, RegionLink, Section } from "./RealmPanel";
 import { GuildList } from "./GuildPanel";
 import { guildsInProvince } from "@/app/lib/map/guildProfile";
-import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
+import { FocusIcon, RealmIcon } from "./MapIcons";
+import { PanelCloseButton } from "./SheetCloseButton";
 
 /** Province id -> county name per map, shared by every place panel. */
 const countyNamesByMap = new Map<string, Promise<Map<number, string>>>();
@@ -104,6 +105,7 @@ export function PlacePanelContent({
 
   return (
     <article aria-label={place.name}>
+      <PanelCloseButton onClick={onClose} />
       <header className="map-frame-header -mx-4 -mt-4 mb-4 flex items-center gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
         <div className="map-banner-frame flex h-16 w-16 shrink-0 items-center justify-center bg-black/30">
           <img
@@ -112,7 +114,7 @@ export function PlacePanelContent({
             className="h-12 w-12 object-contain [image-rendering:pixelated]"
           />
         </div>
-        <div className="min-w-0 flex-1 pr-7">
+        <div className="min-w-0 flex-1 pr-9">
           <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
           <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
             {place.name}
@@ -152,15 +154,6 @@ export function PlacePanelContent({
           ) : null}
         </div>
       </header>
-
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close details"
-        className="map-control absolute right-3 top-3 h-8 w-8"
-      >
-        <CloseIcon size={16} />
-      </button>
 
       {place.note ? (
         <p className="mb-4 whitespace-pre-line text-sm text-[var(--tfmc-stone)]">{place.note}</p>

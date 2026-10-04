@@ -74,8 +74,9 @@ export default function MapShell({
       <div className="absolute inset-0">{children}</div>
 
       {/* Left column: plaque on top, details under it on desktop; on mobile
-          the details drop to a bottom sheet via `mt-auto`. The column itself
-          lets clicks through to the map; only its panels take them. */}
+          the details are a bottom sheet pinned to the column's foot, which
+          at full height rises over the search. The column itself lets clicks
+          through to the map; only its panels take them. */}
       <div
         className={`pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0 ${chronicleTop} ${
           chronicle ? "max-md:pt-[10.75rem]" : ""
@@ -141,14 +142,15 @@ export default function MapShell({
   );
 }
 
-/** The share of the column a full-height phone sheet takes (`max-h-[82%]`). */
-const FULL_SHEET_SHARE = 0.82;
+/** The strip of map a full-height phone sheet leaves above it (`0.75rem`). */
+const FULL_SHEET_GAP_PX = 12;
 
 /**
  * The selection's details: a side panel on desktop, and on a phone a bottom
  * sheet with Google Maps' two sizes. It opens at a peek height; dragging it
- * up (or tapping the handle) grows it, and dragging down shrinks it again or,
- * from the peek height, closes it.
+ * up (or tapping the handle) grows it to nearly the whole map, over the
+ * search, and dragging down shrinks it again or, from the peek height,
+ * closes it.
  */
 function DetailsSheet({
   children,
@@ -165,14 +167,14 @@ function DetailsSheet({
     expanded,
     onExpandedChange: setExpanded,
     scrollerRef,
-    fullHeight: () => (sheetRef.current?.parentElement?.clientHeight ?? 0) * FULL_SHEET_SHARE,
+    fullHeight: () => (sheetRef.current?.parentElement?.clientHeight ?? 0) - FULL_SHEET_GAP_PX,
   });
 
   return (
     <div
       ref={sheetRef}
-      className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[10px] ${
-        expanded ? "max-h-[82%]" : "max-h-[44%]"
+      className={`map-frame map-details-enter pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
+        expanded ? "max-h-[calc(100%-0.75rem)]" : "max-h-[44%]"
       } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
     >
       <button

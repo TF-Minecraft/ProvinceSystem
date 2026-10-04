@@ -17,7 +17,8 @@ import { realmGuilds } from "@/app/lib/map/guildProfile";
 import MapAuthImage from "../MapAuthImage";
 import { buildRegionInfo } from "../regionInfo";
 import type { MapId, MapMode, RegionRecord, SettlementMarker } from "../types";
-import { CloseIcon, FocusIcon, SubjectsIcon } from "./MapIcons";
+import { FocusIcon, SubjectsIcon } from "./MapIcons";
+import { PanelCloseButton } from "./SheetCloseButton";
 import { GuildList } from "./GuildPanel";
 
 export type RealmPanelProps = {
@@ -345,6 +346,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
 
   return (
     <article aria-label={name}>
+      <PanelCloseButton onClick={props.onClose} />
       <header className="map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
         <Banner
           mapId={mapId}
@@ -354,7 +356,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
           sessionToken={sessionToken}
           className="h-[5.5rem] w-16 shrink-0"
         />
-        <div className="min-w-0 flex-1 pr-7">
+        <div className="min-w-0 flex-1 pr-9">
           <p className="text-xs text-[var(--tfmc-mist)]">
             {profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier}
           </p>
@@ -375,15 +377,6 @@ export function RealmPanelContent(props: RealmPanelProps) {
           </p>
         </div>
       </header>
-
-      <button
-        type="button"
-        onClick={props.onClose}
-        aria-label="Close details"
-        className="map-control absolute right-3 top-3 h-8 w-8"
-      >
-        <CloseIcon size={16} />
-      </button>
 
       {profile ? (
         <>
