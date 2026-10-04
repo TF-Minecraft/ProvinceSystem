@@ -127,8 +127,11 @@ export function useBottomSheetDrag(
       if (gesture === "native") {
         // Google Maps' hand-off: a scroll back up that reaches the top of the
         // content carries on as a pull on the sheet, from where it is now,
-        // rather than stopping (or bouncing) at the top.
-        if (!movingDown || scroller().scrollTop > 0 || !event.cancelable) return;
+        // rather than stopping (or bouncing) at the top. Browsers will not let
+        // a scroll already under way be cancelled, but they need not be: with
+        // overscroll off, the content cannot move past the top, so only the
+        // sheet follows the finger.
+        if (!movingDown || scroller().scrollTop > 0) return;
         gesture = decide(1);
         if (gesture === "native") return;
         startY = y;
