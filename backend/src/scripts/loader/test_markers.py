@@ -192,19 +192,17 @@ class MarkersLoaderTest(unittest.TestCase):
         self.assertEqual(len(payload["installations"]), 1)
         self.assertEqual(payload["installations"][0]["kind"], "train_station")
 
-    def test_retired_marker_keys_are_ignored(self) -> None:
-        # Older exports still carry supply-hub links and trade routes. They
-        # must load, and they must not come back out.
-        retired = {
-            "hub_links": [{"from": {"province_id": 1}, "to": {"province_id": 2}}],
-            "trade_networks": {"name": "nope"},
-            "trade_edges": "sea",
+    def test_unknown_marker_keys_are_ignored(self) -> None:
+        unknown = {
+            "extra_list": [{"province_id": 1}],
+            "extra_object": {"name": "nope"},
+            "extra_string": "value",
         }
         normalized = normalize_raw_markers(
-            {"installations": [], **retired},
+            {"installations": [], **unknown},
             "main",
         )
-        for key in retired:
+        for key in unknown:
             self.assertNotIn(key, normalized)
 
         payload = build_markers_response_from(
@@ -222,18 +220,18 @@ class MarkersLoaderTest(unittest.TestCase):
                 ],
                 "forts": [],
                 "wars": [],
-                **retired,
+                **unknown,
             },
             {"1": {"x": 10, "y": 20}},
             {},
             "main",
         )
-        for key in retired:
+        for key in unknown:
             self.assertNotIn(key, payload)
         self.assertEqual(payload["installations"][0]["kind"], "port")
         self.assertEqual(payload["installations"][0]["map_x"], 10)
 
-    def test_installation_hub_fields_are_ignored(self) -> None:
+    def test_unknown_installation_fields_are_ignored(self) -> None:
         raw = {
             "map_id": "main",
             "exported_at": None,
@@ -244,8 +242,10 @@ class MarkersLoaderTest(unittest.TestCase):
                     "name": "Lanhold",
                     "kind": "port",
                     "province_id": 1,
-                    "hub_slots": 2,
-                    "hubs": 1,
+                    "faction_id": "Lantan",
+                    "level": 2,
+                    "extra_number": 2,
+                    "extra_object": {"value": 1},
                 }
             ],
             "forts": [],
@@ -253,8 +253,10 @@ class MarkersLoaderTest(unittest.TestCase):
         }
         normalized = normalize_raw_markers(raw, "main")
         self.assertEqual(normalized["installations"][0]["name"], "Lanhold")
-        self.assertNotIn("hub_slots", normalized["installations"][0])
-        self.assertNotIn("hubs", normalized["installations"][0])
+        self.assertEqual(normalized["installations"][0]["level"], 2)
+        self.assertEqual(normalized["installations"][0]["faction_id"], "Lantan")
+        self.assertNotIn("extra_number", normalized["installations"][0])
+        self.assertNotIn("extra_object", normalized["installations"][0])
 
         payload = build_markers_response_from(
             raw,
@@ -264,9 +266,11 @@ class MarkersLoaderTest(unittest.TestCase):
         )
         row = payload["installations"][0]
         self.assertEqual(row["kind"], "port")
+        self.assertEqual(row["level"], 2)
+        self.assertEqual(row["faction_id"], "Lantan")
         self.assertEqual((row["map_x"], row["map_y"]), (10, 21))
-        self.assertNotIn("hub_slots", row)
-        self.assertNotIn("hubs", row)
+        self.assertNotIn("extra_number", row)
+        self.assertNotIn("extra_object", row)
 
     def test_build_markers_response_enriches_installations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

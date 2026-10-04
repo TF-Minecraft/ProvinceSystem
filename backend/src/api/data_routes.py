@@ -100,16 +100,6 @@ def compute_trade_shares(trade: dict):
     return shares, dominant, best / total
 
 
-# provinces.txt is free-form key=value. These used to feed the infrastructure
-# layer; they are not a map mode anymore, so a leftover must not reach the
-# compiled province.
-_DROPPED_PROVINCE_FIELDS = (
-    "terrain_value",
-    "infrastructure",
-    "infrastructure_fill",
-    "effective_terrain",
-)
-
 def build_compiled_provinces(map_name: str):
     meta = load_province_metadata(map_name)
 
@@ -136,8 +126,8 @@ def build_compiled_provinces(map_name: str):
             except (TypeError, ValueError):
                 inf = None
 
-        province = {
-            **{key: value for key, value in m.items() if key not in _DROPPED_PROVINCE_FIELDS},
+        out[pid] = {
+            **m,
             "province_id": pid,
             "prosperity": p.get("prosperity", 0),
             "trade": trade,
@@ -149,8 +139,6 @@ def build_compiled_provinces(map_name: str):
             "infestation_group": inf.get("group") if inf else None,
             "infestation_display": (inf.get("display") or inf.get("group")) if inf else None,
         }
-        out[pid] = province
-
     return out
 
 @data_router.get("/{map_name}/compiled_data/provinces")
