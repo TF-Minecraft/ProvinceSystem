@@ -205,7 +205,7 @@ function LayersPanel({
       ref={sheetRef}
       role="dialog"
       aria-label="Map layers"
-      className="map-frame map-layers-enter fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-var(--tfmc-header-h)-6rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
+      className="map-frame map-layers-enter fixed inset-x-0 bottom-0 z-40 max-md:bg-[var(--tfmc-forest-deep)] max-h-[78dvh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-var(--tfmc-header-h)-6rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
     >
       {/* Pinned, so the close button stays in reach however far the sheet
           scrolls, as on the details sheet. The upward shadow seals the

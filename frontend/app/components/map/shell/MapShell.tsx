@@ -173,7 +173,7 @@ function DetailsSheet({
   return (
     <div
       ref={sheetRef}
-      className={`map-frame map-details-enter pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
+      className={`map-frame map-details-enter pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
         expanded ? "max-h-[calc(100%-0.75rem)]" : "max-h-[44%]"
       } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
     >
