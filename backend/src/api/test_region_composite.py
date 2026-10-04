@@ -214,7 +214,7 @@ class RegionCompositeTest(unittest.TestCase):
         maps.mkdir(parents=True)
         Image.new("RGB", (100, 100), (9, 9, 9)).save(maps / "prosperity_map.png")
 
-        with patch.object(tile_cache, "_build_in_background") as rasters, patch.object(
+        with patch.object(tile_cache, "warm_source") as rasters, patch.object(
             region_composite, "_build_in_background"
         ) as composites:
             tile_warm.warm_map_tiles("main")
@@ -224,6 +224,25 @@ class RegionCompositeTest(unittest.TestCase):
         composites.assert_called_once_with("main", "nation")
         self.assertEqual(rasters.call_args_list[0].kwargs, {})
         self.assertEqual(rasters.call_args_list[1].kwargs, {"warm_pick": True, "tiles": True})
+
+    def test_finished_composite_manifest_never_decodes_or_cleans_up_in_request(self) -> None:
+        target = region_composite.ready_composite("main", "nation", background=False)
+        built = tile_cache.existing_manifest(target)
+        app = FastAPI()
+        app.include_router(tile_router)
+        with TestClient(app) as client:
+            for missing_memo in (False, True):
+                with self.subTest(missing_memo=missing_memo):
+                    tile_cache._versions.clear()
+                    if missing_memo:
+                        tile_cache._memo_path(target).unlink()
+                    with patch.object(tile_cache, "_read_source", side_effect=AssertionError("decoded in request")), patch.object(
+                        tile_cache, "cleanup_pyramids", side_effect=AssertionError("cleaned up in request")
+                    ), patch.object(region_composite, "_build_in_background") as warm:
+                        response = client.get("/main/tiles/regions-nation/manifest")
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.json()["version"], built["version"])
+                    self.assertEqual(warm.call_count, int(missing_memo))
 
 
 if __name__ == "__main__":

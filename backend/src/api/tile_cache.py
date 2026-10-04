@@ -71,6 +71,7 @@ _RENDERER_VERSION = (
 _versions: OrderedDict[Path, tuple[tuple, str]] = OrderedDict()
 _versions_lock = threading.Lock()
 _DERIVATIVE_LIMITER = CapacityLimiter(2)
+_MANIFEST_LIMITER = CapacityLimiter(4)
 
 # Keep the current pyramid plus at most two retired generations. The retired
 # byte budget is per source; the current generation is always allowed to live.
@@ -88,8 +89,66 @@ async def run_derivative(function, *args):
     return await to_thread.run_sync(function, *args, limiter=_DERIVATIVE_LIMITER)
 
 
+async def run_manifest(function, *args):
+    """Read metadata without queuing behind image decodes or build locks."""
+    return await to_thread.run_sync(function, *args, limiter=_MANIFEST_LIMITER)
+
+
 def _signature(stat) -> tuple:
-    return (stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, _RENDERER_VERSION)
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, _RENDERER_VERSION)
+
+
+def _memo_path(source: Path) -> Path:
+    return _CACHE_DIR / _source_key(source) / "source.json"
+
+
+def _remember_version(source: Path, signature: tuple, version: str) -> None:
+    with _versions_lock:
+        _versions[source] = (signature, version)
+        _versions.move_to_end(source)
+        while len(_versions) > 256:
+            _versions.popitem(last=False)
+
+
+def _persist_version(source: Path, signature: tuple, version: str) -> None:
+    # Keep the pixel hash across restarts. The stat signature (including the
+    # renderer) only validates this memo; it never becomes a tile URL.
+    target = _memo_path(source)
+    tmp = None
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, name = tempfile.mkstemp(dir=target.parent, prefix=".source-")
+        tmp = Path(name)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump({"signature": signature, "version": version}, stream)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, target)
+    except OSError:
+        # A read-only cache must still be able to serve finished generations.
+        pass
+    finally:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+
+
+def _cached_version(source: Path) -> str | None:
+    """Look up a verified fingerprint without decoding or hashing pixels."""
+    try:
+        signature = _signature(source.stat())
+        with _versions_lock:
+            cached = _versions.get(source)
+            if cached is not None and cached[0] == signature:
+                return cached[1]
+        memo = json.loads(_memo_path(source).read_text(encoding="utf-8"))
+        if not isinstance(memo, dict) or memo.get("signature") != list(signature):
+            return None
+        version = memo.get("version")
+        if not isinstance(version, str) or len(version) != 64 or not valid_version(version):
+            return None
+        _remember_version(source, signature, version)
+        return version
+    except (OSError, ValueError):
+        return None
 
 
 def _read_source(source: Path):
@@ -110,11 +169,8 @@ def _read_source(source: Path):
         digest.update(image.crop((0, y, image.width, min(y + 64, image.height))).tobytes())
     version = digest.hexdigest()
     if _signature(source.stat()) == before:
-        with _versions_lock:
-            _versions[source] = (before, version)
-            _versions.move_to_end(source)
-            while len(_versions) > 256:
-                _versions.popitem(last=False)
+        _remember_version(source, before, version)
+        _persist_version(source, before, version)
     return image, version
 
 
@@ -125,11 +181,9 @@ def _source_snapshot(source: Path):
     caller can reuse this snapshot if its derivative has not been built yet.
     """
     try:
-        signature = _signature(source.stat())
-        with _versions_lock:
-            cached = _versions.get(source)
-            if cached is not None and cached[0] == signature:
-                return None, cached[1]
+        version = _cached_version(source)
+        if version is not None:
+            return None, version
         return _read_source(source)
     except OSError:
         return None, None
@@ -295,7 +349,8 @@ def read_manifest(directory: Path) -> dict | None:
         return None
 
 
-def _build_in_background(source: Path, *, warm_pick: bool = False, tiles: bool = True) -> None:
+def warm_source(source: Path, *, warm_pick: bool = False, tiles: bool = True) -> None:
+    """Queue source verification and derivative builds, with duplicate suppression."""
     key = f"{source.resolve()}:{warm_pick}:{tiles}"
     with _building_lock:
         if key in _building:
@@ -331,16 +386,17 @@ def ready_manifest(
     image. None only when nothing has been built yet.
     """
     source_path = Path(source)
-    version = _version_of(source_path)
-    if version is None:
+    if not source_path.is_file():
         return None
-    manifest = read_manifest(pyramid_dir(source_path, version))
+    if not background:
+        return build_pyramid(source_path)
+    manifest = existing_manifest(source_path)
     if manifest is not None:
         return manifest
-    if background:
-        _build_in_background(source_path)
-        return latest_manifest(source_path)
-    return build_pyramid(source_path)
+    # Restarts without a memo and rewritten PNGs both need verification, but
+    # the first paint can use finished tiles while the worker checks pixels.
+    warm_source(source_path)
+    return latest_manifest(source_path)
 
 
 def latest_manifest(source: os.PathLike[str] | str) -> dict | None:
@@ -367,8 +423,8 @@ def latest_manifest(source: os.PathLike[str] | str) -> dict | None:
 
 
 def existing_manifest(source: os.PathLike[str] | str) -> dict | None:
-    """The manifest for `source`'s current version if built; never builds."""
-    version = _version_of(Path(source))
+    """The current manifest if its fingerprint is cached; never decodes or builds."""
+    version = _cached_version(Path(source))
     if version is None:
         return None
     return read_manifest(pyramid_dir(source, version))

@@ -29,7 +29,7 @@ def warm_map_tiles(map_name: str) -> None:
     # full raster after a rewrite, and regeneration also calls this from CLI.
     base = Path(input_file(map_name, "map.png"))
     if base.is_file():
-        tile_cache._build_in_background(base)
+        tile_cache.warm_source(base)
     sources = [Path(input_file(map_name, "provinces.png"))]
     sources.extend(Path(map_image(map_name, mode)) for mode in (*REGION_MODES, *RASTER_MODES))
     for source in sources:
@@ -37,7 +37,7 @@ def warm_map_tiles(map_name: str) -> None:
             is_raster = source.name == "provinces.png" or any(
                 source.name == f"{mode}_map.png" for mode in RASTER_MODES
             )
-            tile_cache._build_in_background(source, warm_pick=True, tiles=is_raster)
+            tile_cache.warm_source(source, warm_pick=True, tiles=is_raster)
     for mode in REGION_MODES:
         if region_composite.has_inputs(map_name, mode):
             region_composite.ready_composite(map_name, mode)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException, Query
 from pathlib import Path
 
-from .http_headers import conditional_file_response, map_asset_cache
+from .http_headers import conditional_file_response
 from .map_access import ensure_map_access
 from .path_safety import is_safe_segment, resolve_within
 from .webp_cache import webp_variant
@@ -110,10 +110,10 @@ async def get_map_file(
     # Deliberately NOT routed through webp_variant: this is the pick map. The
     # client draws it to an offscreen canvas and reads exact RGB values back to
     # resolve province/county ids, and lossy WebP would corrupt those lookups.
+    # Revalidate on every use so these colours agree with the live region data.
     return conditional_file_response(
         file_path,
         media_type="image/png",
-        cache_control=map_asset_cache(entry, authorization),
         if_none_match=if_none_match,
         if_modified_since=if_modified_since,
     )
@@ -149,10 +149,10 @@ async def get_region_file(
     if isinstance(lod, int) and lod > 0:
         reduced = await run_derivative(lod_variant, file_path, lod)
         if reduced is not None:
+            # Dimensions and colours must revalidate with the live overlay metadata.
             return conditional_file_response(
                 reduced,
                 media_type="image/webp",
-                cache_control=map_asset_cache(entry, authorization),
                 if_none_match=if_none_match,
                 if_modified_since=if_modified_since,
             )

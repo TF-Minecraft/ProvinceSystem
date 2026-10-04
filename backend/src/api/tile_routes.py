@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from . import file_routes, map_routes, region_composite
 from .http_headers import add_cors, conditional_json_response
 from .map_access import ensure_map_access
-from .tile_cache import ready_manifest, tile_file, valid_version, run_derivative
+from .tile_cache import ready_manifest, tile_file, valid_version, run_manifest
 from ..scripts.util.regen_types import MODES as REGION_MODES
 
 tile_router = APIRouter()
@@ -65,7 +65,7 @@ async def get_tile_manifest(
     if mode is not None:
         if not region_composite.has_inputs(map_name, mode):
             raise HTTPException(status_code=404, detail="Layer not found")
-        manifest = await run_derivative(region_composite.latest_manifest, map_name, mode)
+        manifest = await run_manifest(region_composite.latest_manifest, map_name, mode)
         if manifest is None:
             return _not_ready()
         return conditional_json_response(
@@ -76,7 +76,7 @@ async def get_tile_manifest(
     if source is None:
         raise HTTPException(status_code=404, detail="Layer not found")
 
-    manifest = await run_derivative(ready_manifest, source)
+    manifest = await run_manifest(ready_manifest, source)
     if manifest is None:
         return _not_ready()
     return conditional_json_response(

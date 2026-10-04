@@ -58,7 +58,7 @@ class AssetPolicyTest(unittest.IsolatedAsyncioTestCase):
                         gates.enter_context(patch.object(editor_routes, "ensure_map_staff_write", return_value=entry))
                         headers = {"Authorization": auth} if auth else {}
                         expected = PUBLIC_MAP_CACHE if public and not auth else PRIVATE_CACHE
-                        for path in ("map/preview", "mapdata/nation", "mapdata/nation?scale=1", "regions/nation/region?lod=1",
+                        for path in ("map/preview",
                                      "data/province_centroids", "data/province_neighbors", "data/province_label_neighbors", "data/province_label_grid",
                                      "data/province_label_grid_bin", "data/province_id_runs", "data/province_id_grid_q4"):
                             response = await client.get(f"/main/{path}", headers=headers)
@@ -67,10 +67,15 @@ class AssetPolicyTest(unittest.IsolatedAsyncioTestCase):
                             fresh = await client.get(f"/main/{path}", headers={**headers, "If-None-Match": response.headers["etag"]})
                             self.assertEqual(fresh.status_code, 304, path)
                             self.assertEqual(fresh.headers["cache-control"], expected, path)
-                        for path in ("/main/data/nation", "/main/editor/province-runs", "/main/editor/provinces", "/maps/accessible"):
+                        for path in ("/main/mapdata/nation", "/main/mapdata/nation?scale=1",
+                                     "/main/regions/nation/region?lod=1", "/main/data/nation", "/main/editor/province-runs", "/main/editor/provinces", "/maps/accessible"):
                             response = await client.get(path, headers=headers)
                             self.assertEqual(response.status_code, 200, path)
                             self.assertEqual(response.headers["cache-control"], PRIVATE_CACHE, path)
+                            if path.startswith(("/main/mapdata/", "/main/regions/")):
+                                fresh = await client.get(path, headers={**headers, "If-None-Match": response.headers["etag"]})
+                                self.assertEqual(fresh.status_code, 304, path)
+                                self.assertEqual(fresh.headers["cache-control"], PRIVATE_CACHE, path)
                         tile = await client.get(f"/main/tiles/base/{manifest['version']}/0/0/0.webp", headers=headers)
                         self.assertEqual(tile.status_code, 200)
                         self.assertEqual(tile.headers["cache-control"], f"{'public' if public and not auth else 'private'}, max-age=31536000, immutable")
@@ -175,3 +180,47 @@ class AssetPolicyTest(unittest.IsolatedAsyncioTestCase):
             release.set()
             await asyncio.gather(*jobs)
         self.assertEqual(maximum, 2)
+
+    async def test_manifest_can_answer_while_both_derivative_workers_are_busy(self):
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
+            source = Path(tmp) / "map.png"
+            Image.new("RGB", (32, 32)).save(source)
+            stack.enter_context(patch.object(tile_cache, "_CACHE_DIR", Path(tmp) / "tiles"))
+            stack.enter_context(patch.object(tile_routes, "_tile_source", return_value=source))
+            stack.enter_context(patch.object(tile_routes, "ensure_map_access", return_value=SimpleNamespace(id="main", public=True)))
+            built = tile_cache.build_pyramid(source)
+            tile_cache._versions.clear()
+            app = FastAPI()
+            app.include_router(tile_routes.tile_router)
+            # Occupy both slots without a timing race or a sleeping worker.
+            borrowers = (object(), object())
+            for borrower in borrowers:
+                await tile_cache._DERIVATIVE_LIMITER.acquire_on_behalf_of(borrower)
+            try:
+                async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                    response = await asyncio.wait_for(client.get("/main/tiles/base/manifest"), timeout=1)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.json()["version"], built["version"])
+            finally:
+                for borrower in borrowers:
+                    tile_cache._DERIVATIVE_LIMITER.release_on_behalf_of(borrower)
+
+    async def test_regenerated_pick_maps_revalidate_old_etags_at_both_scales(self):
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
+            source = Path(tmp) / "nation.png"
+            Image.new("RGB", (32, 32), (10, 20, 30)).save(source)
+            stack.enter_context(patch.object(tile_cache, "_CACHE_DIR", Path(tmp) / "tiles"))
+            stack.enter_context(patch.object(tile_cache, "_PICK_DIR", Path(tmp) / "pick"))
+            stack.enter_context(patch.object(file_routes, "resolve_mapdata_path", return_value=source))
+            stack.enter_context(patch.object(file_routes, "ensure_map_access", return_value=SimpleNamespace(id="main", public=True)))
+            app = FastAPI()
+            app.include_router(file_routes.file_router)
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                paths = ("/main/mapdata/nation", "/main/mapdata/nation?scale=1")
+                before = [await client.get(path) for path in paths]
+                Image.new("RGB", (32, 32), (200, 100, 50)).save(source)
+                for path, old in zip(paths, before):
+                    response = await client.get(path, headers={"If-None-Match": old.headers["etag"]})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertNotEqual(response.content, old.content)
+                    self.assertEqual(response.headers["cache-control"], PRIVATE_CACHE)

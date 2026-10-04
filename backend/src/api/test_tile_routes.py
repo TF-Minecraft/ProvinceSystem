@@ -97,7 +97,7 @@ class TileRoutesTest(unittest.TestCase):
         file_routes.OUTPUT_BASE = self._orig_output_base
 
     def _manifest(self, layer: str) -> dict:
-        with patch.object(tile_cache, "_build_in_background") as background:
+        with patch.object(tile_cache, "warm_source") as background:
             pending = self.client.get(f"/main/tiles/{layer}/manifest")
         self.assertEqual(pending.status_code, 202)
         self.assertEqual(pending.json(), {"ready": False})
@@ -131,6 +131,27 @@ class TileRoutesTest(unittest.TestCase):
             f"/main/tiles/mapdata-terrain/{manifest['version']}/0/0/0.webp"
         )
         self.assertEqual(tile.status_code, 200)
+
+    def test_finished_manifest_never_decodes_or_cleans_up_in_request(self) -> None:
+        source = self.input_dir / "main" / "map.png"
+        built = tile_cache.build_pyramid(source)
+        memo = tile_cache._memo_path(source)
+        saved_memo = memo.read_bytes()
+        for state in ("restart", "missing memo", "regenerated"):
+            with self.subTest(state=state):
+                tile_cache._versions.clear()
+                if state == "missing memo":
+                    memo.unlink()
+                elif state == "regenerated":
+                    memo.write_bytes(saved_memo)
+                    Image.new("RGB", (600, 600), (200, 0, 0)).save(source)
+                with patch.object(tile_cache, "_read_source", side_effect=AssertionError("decoded in request")), patch.object(
+                    tile_cache, "cleanup_pyramids", side_effect=AssertionError("cleaned up in request")
+                ), patch.object(tile_cache, "warm_source") as warm:
+                    response = self.client.get("/main/tiles/base/manifest")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["version"], built["version"])
+                self.assertEqual(warm.call_count, 0 if state == "restart" else 1)
 
     def test_reduced_pick_map(self) -> None:
         full = self.client.get("/main/mapdata/terrain")
