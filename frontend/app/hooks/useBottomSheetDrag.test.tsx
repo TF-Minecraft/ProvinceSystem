@@ -173,3 +173,19 @@ describe("useBottomSheetDrag hand-off", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
+
+describe("useBottomSheetDrag dismiss", () => {
+  it("puts the sheet back once closed, for an owner that hides rather than unmounts it", () => {
+    const onClose = vi.fn();
+    function Hidden() {
+      const ref = useRef<HTMLDivElement>(null);
+      useBottomSheetDrag(ref, { onClose });
+      return <div ref={ref} data-testid="kept" />;
+    }
+    render(<Hidden />);
+    const sheet = screen.getByTestId("kept");
+    drag(sheet, 300, 500, 100);
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(sheet.style.transform).toBe("");
+  });
+});

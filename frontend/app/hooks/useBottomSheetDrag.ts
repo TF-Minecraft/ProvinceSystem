@@ -179,7 +179,11 @@ export function useBottomSheetDrag(
       if (done === "dismiss") {
         if (travel >= SNAP_DISTANCE_PX || (travel > 0 && velocity >= SNAP_VELOCITY)) {
           node.style.transform = `translateY(${node.offsetHeight}px)`;
-          settleTimer = setTimeout(() => optionsRef.current.onClose(), SETTLE_MS);
+          settleTimer = setTimeout(() => {
+            optionsRef.current.onClose();
+            // For a sheet its owner hides rather than unmounts.
+            node.style.transform = "";
+          }, SETTLE_MS);
         } else {
           node.style.transform = "";
         }

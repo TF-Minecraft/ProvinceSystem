@@ -301,6 +301,19 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   const guildNameCacheRef = useGuildCache(mapId, authToken, day);
   const paint = useMapPaint({ mapId, viewportCoordsRef });
+  // War planning's switch and toolbar are desktop-only. Crossing to a phone
+  // width turns it off, so the paint layer does not go on taking the map's
+  // touches with no control left to stop it.
+  const setPaintEnabled = paint.setEnabled;
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 47.99rem)");
+    const apply = () => {
+      if (query.matches) setPaintEnabled(false);
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [setPaintEnabled]);
 
   const {
     mapObjects,
@@ -1537,7 +1550,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           toggles={layerToggles}
           footer={archiveFooter}
           mapId={mapId}
-          previews={!authToken}
+          // Live tiles would show today's colours beside a stored day, and a
+          // staff map's images need a token each: both keep the icons.
+          previews={!authToken && day === null}
         />
       }
       paintPanel={!chronicle && paint.enabled ? <PaintToolbar paint={paint} /> : null}
