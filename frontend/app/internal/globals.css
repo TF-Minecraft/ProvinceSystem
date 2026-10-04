@@ -476,8 +476,31 @@ html.map-fullscreen textarea {
   }
 }
 
+/* The layers panel: a sheet rising on a phone, a drop-down on a desktop. */
+@keyframes map-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map-layers-enter {
+  animation: map-sheet-in 200ms ease-out;
+}
+
+@media (min-width: 48rem) {
+  .map-layers-enter {
+    animation: map-popover-in 150ms ease-out;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .map-details-enter {
+  .map-details-enter,
+  .map-layers-enter {
     animation: none;
   }
 }
