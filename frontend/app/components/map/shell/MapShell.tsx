@@ -188,7 +188,7 @@ function DetailsSheet({
       </button>
       <div
         ref={scrollerRef}
-        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4"
+        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
       >
         {children}
       </div>

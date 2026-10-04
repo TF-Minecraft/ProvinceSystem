@@ -208,8 +208,10 @@ function LayersPanel({
       className="map-frame map-layers-enter fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-var(--tfmc-header-h)-6rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
     >
       {/* Pinned, so the close button stays in reach however far the sheet
-          scrolls, as on the details sheet. */}
-      <div className="sticky top-0 z-10 bg-[var(--tfmc-forest-deep)]">
+          scrolls, as on the details sheet. The upward shadow seals the
+          hairline iOS leaves above a sticky bar at a fractional position,
+          which otherwise shows the thumbnails scrolling past. */}
+      <div className="sticky top-0 z-10 bg-[var(--tfmc-forest-deep)] shadow-[0_-4px_0_var(--tfmc-forest-deep)]">
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>
           <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
         </div>

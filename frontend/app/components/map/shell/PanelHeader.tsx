@@ -66,14 +66,16 @@ export default function PanelHeader({
 
   return (
     <>
-      {/* Zero height and pinned at the panel body's top padding, so the bar
-          neither takes room from the header nor moves when it starts to
-          stick. */}
-      <div className="sticky top-1 z-10 h-0 md:top-4">
+      {/* Zero height and pinned at the very top of the panel body, which has
+          no top padding: with none, Safari and Chrome agree where a sticky
+          bar rests, so it neither takes room from the header nor moves (or
+          leaves a gap above it) when it starts to stick. */}
+      <div className="sticky top-0 z-10 h-0">
         <div
-          className={`absolute -inset-x-4 -top-1 flex h-12 md:rounded-t-[9px] items-center gap-2 border-b pl-4 pr-2 transition-colors duration-150 md:-top-4 ${
+          className={`absolute -inset-x-4 top-0 flex h-12 items-center gap-2 border-b pl-4 pr-2 transition-colors duration-150 md:rounded-t-[9px] ${
             compact
-              ? "pointer-events-auto border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[var(--tfmc-forest-deep)]"
+              ? // The upward shadow seals the hairline iOS can leave above it.
+                "pointer-events-auto border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[var(--tfmc-forest-deep)] shadow-[0_-4px_0_var(--tfmc-forest-deep)]"
               : "pointer-events-none border-transparent"
           }`}
         >
@@ -89,7 +91,7 @@ export default function PanelHeader({
         </div>
       </div>
       <header
-        className={`map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-4 ${
+        className={`map-frame-header -mx-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-1 md:pt-4 ${
           centred ? "items-center" : ""
         }`}
       >
