@@ -36,11 +36,11 @@ describe("station registry and source coverage", () => {
 
   it("assigns each recipe source to its correct station detail page", () => {
     const expectedCounts: Record<string, number> = {
-      "alchemy-station": 53, "animal-station": 29, "archeology-station": 12,
+      "alchemy-station": 53, "animal-station": 27, "archeology-station": 12,
       "block-station": 133, "copper-station": 119, "engineer-station": 17,
       "engineering-table": 16, "fishing-station": 25, "forester-station": 117,
       "gunsmithing-station": 21, "ingot-station": 71, "instrument-station": 9,
-      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 41,
+      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 42,
       dockyard: 5, "research-station": 36, "tool-station": 57,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {
