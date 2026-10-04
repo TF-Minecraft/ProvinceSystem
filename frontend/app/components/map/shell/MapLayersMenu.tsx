@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useSheetDragToClose } from "@/app/hooks/useSheetDragToClose";
 import { tileUrl, useTileManifest } from "@/app/hooks/useTileManifest";
 import type { TileManifest } from "@/app/lib/map/tilePyramid";
 
@@ -114,8 +115,9 @@ function ModePreview({
  * Google Maps' layers button and panel, top right: which map to show (realms,
  * the title tiers, the world modes) as a grid of previews, then the overlays
  * that sit on top of any of them. On a phone the panel is a bottom sheet; on
- * a desktop it drops down from the button. Choosing a map type closes it; the
- * overlay switches leave it open, so several can be set in one visit.
+ * a desktop it drops down from the button. Choosing a map type closes it, as
+ * does pulling the sheet down; the overlay switches leave it open, so several
+ * can be set in one visit.
  */
 export default function MapLayersMenu({
   mapType,
@@ -194,9 +196,12 @@ function LayersPanel({
   const options = mapModeOptions();
   const sectionGap = "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
   const phoneToggles = toggles.some((toggle) => !toggle.desktopOnly);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useSheetDragToClose(sheetRef, onClose);
 
   return (
     <div
+      ref={sheetRef}
       role="dialog"
       aria-label="Map layers"
       className="map-frame map-layers-enter fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-var(--tfmc-header-h)-6rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
