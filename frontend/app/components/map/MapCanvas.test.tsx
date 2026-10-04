@@ -1,12 +1,12 @@
 /** @vitest-environment jsdom */
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TileManifest } from "@/app/lib/map/tilePyramid";
 import MapCanvas from "./MapCanvas";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), displayScale: 1 }));
 vi.mock("@/lib/map/api", async (original) => ({
   ...await original<typeof import("@/lib/map/api")>(), fetchMapJson: mocks.fetch,
 }));
@@ -15,7 +15,7 @@ vi.mock("../../hooks/useMapAssetUrl", () => ({
 }));
 vi.mock("../../hooks/useMapViewport", () => ({
   useMapViewport: () => ({
-    displayScale: 1, translateX: 0, translateY: 0, viewportSize: { w: 512, h: 512 },
+    displayScale: mocks.displayScale, translateX: 0, translateY: 0, viewportSize: { w: 512, h: 512 },
     viewportRef: { current: null }, contentRef: { current: null }, zoom: 1,
     resetViewport: vi.fn(),
   }),
@@ -33,11 +33,12 @@ let mapNumber = 0;
 beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_API_URL", "https://map.test");
   mocks.fetch.mockReset();
+  mocks.displayScale = 1;
   // Ready manifests are deliberately cached for a page view.
   props.mapId = `test-map-${++mapNumber}`;
   vi.useFakeTimers();
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllEnvs(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 function images(container: HTMLElement) {
   return [...container.querySelectorAll("img")].map((image) => image.getAttribute("src"));
 }
@@ -78,5 +79,64 @@ describe("MapCanvas tile loading", () => {
     expect(mocks.fetch.mock.calls.map(([path]) => path)).toEqual([
       `/${props.mapId}/tiles/base/manifest`, `/${props.mapId}/tiles/mapdata-terrain/manifest`,
     ]);
+  });
+});
+describe("MapCanvas selection", () => {
+  /** The loads `useImageLoaded` starts, finished by hand. */
+  class FakeImage {
+    static made: FakeImage[] = [];
+    crossOrigin = "";
+    src = "";
+    onload: (() => void) | null = null;
+    constructor() { FakeImage.made.push(this); }
+  }
+  beforeEach(() => {
+    FakeImage.made = [];
+    vi.stubGlobal("Image", FakeImage);
+    mocks.fetch.mockResolvedValue(manifest);
+  });
+  const bbox = { x: 0, y: 0, w: 256, h: 256 };
+  function view(realm: string) {
+    const shape = `/${props.mapId}/regions/nation/${realm}`;
+    return (
+      <MapCanvas
+        {...props}
+        mapType="nation"
+        selectedOverlay={{ url: `${shape}_hover`, overlay: bbox }}
+        focus={{ shapePath: shape, overlay: bbox, objects: [], lit: true }}
+      />
+    );
+  }
+  function loadShape(src: string) {
+    act(() => FakeImage.made.filter((image) => image.src === src).forEach((image) => image.onload?.()));
+  }
+  // The realm colours under the selection: muted once its highlight is ready.
+  const colours = (container: HTMLElement) => container.querySelector<HTMLElement>("div.duration-200")!.style.opacity;
+  const selected = (container: HTMLElement) => container.querySelector<HTMLImageElement>('img[alt="Selected region"]')!;
+
+  it("keeps the selection lit and the rest muted while a zoom loads another copy", async () => {
+    const { container, rerender } = render(view("realm"));
+    await act(async () => {});
+    const shape = `/${props.mapId}/regions/nation/realm`;
+    loadShape(shape);
+    fireEvent.load(selected(container));
+    expect(colours(container)).toBe("0.3");
+    const lit = selected(container);
+    expect(lit.style.opacity).toBe("0.88");
+
+    // Zoomed out to the next reduction, whose copy has not loaded yet.
+    mocks.displayScale = 0.5;
+    rerender(view("realm"));
+    expect(selected(container)).toBe(lit);
+    expect(lit.getAttribute("src")).toBe(`${shape}?lod=1`);
+    expect(lit.style.opacity).toBe("0.88");
+    expect(colours(container)).toBe("0.3");
+
+    // Another realm still waits for its own copy.
+    rerender(view("other"));
+    expect(selected(container)).not.toBe(lit);
+    expect(colours(container)).toBe("0.88");
+    loadShape(`/${props.mapId}/regions/nation/other?lod=1`);
+    expect(colours(container)).toBe("0.3");
   });
 });
