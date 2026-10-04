@@ -10,7 +10,11 @@ import {
   type ChronicleRangeSelection,
 } from "../../lib/map/chronicleBuild";
 import { formatChronicleDay } from "../../lib/map/chronicleDayLabel";
-import { CHRONICLE_GIF_SIZES } from "../../lib/map/chronicleGifFrame";
+import {
+  CHRONICLE_GIF_SIZES,
+  CHRONICLE_WATERMARK_CORNERS,
+  type ChronicleWatermarkCorner,
+} from "../../lib/map/chronicleGifFrame";
 import {
   CHRONICLE_FOCUS_NONE,
   type ChronicleFocusOption,
@@ -802,6 +806,66 @@ function ExportSwitch({
   );
 }
 
+/**
+ * Where the watermark goes: a little frame with a spot in each corner, the
+ * chosen one filled, as the logo and link will sit in the GIF.
+ */
+function WatermarkCornerPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: ChronicleWatermarkCorner;
+  onChange: (corner: ChronicleWatermarkCorner) => void;
+  disabled: boolean;
+}) {
+  const label = CHRONICLE_WATERMARK_CORNERS.find((corner) => corner.value === value)?.label;
+  return (
+    <div className="mt-4 flex items-center gap-4">
+      <div
+        role="radiogroup"
+        aria-label="Watermark position"
+        className="grid h-20 w-28 shrink-0 grid-cols-2 grid-rows-2 gap-1 rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_5%,transparent)] p-1.5"
+      >
+        {CHRONICLE_WATERMARK_CORNERS.map((corner) => {
+          const active = corner.value === value;
+          const [vertical, horizontal] = corner.value.split("-");
+          return (
+            <button
+              key={corner.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={corner.label}
+              title={corner.label}
+              disabled={disabled}
+              onClick={() => onChange(corner.value)}
+              className={`group flex rounded focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)] disabled:cursor-not-allowed ${
+                vertical === "top" ? "items-start" : "items-end"
+              } ${horizontal === "left" ? "justify-start" : "justify-end"}`}
+            >
+              <span
+                aria-hidden
+                className={`h-3 w-7 rounded-sm transition ${
+                  active
+                    ? "bg-[var(--tfmc-accent)]"
+                    : "bg-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] group-hover:group-enabled:bg-[color-mix(in_srgb,var(--tfmc-cream)_32%,transparent)]"
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+      <div className="min-w-0 text-sm">
+        <p className="text-[var(--tfmc-cream)]">Watermark</p>
+        <p className="text-xs text-[var(--tfmc-stone)]">
+          {label}. The TFMC logo and Discord link go on every GIF.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function ChroniclePlaybackPanel({
   player,
   skippedDays,
@@ -813,10 +877,8 @@ export function ChroniclePlaybackPanel({
   onGifSizeChange,
   gifStampDay,
   onGifStampDayChange,
-  gifWatermark,
-  onGifWatermarkChange,
-  gifDiscordLink,
-  onGifDiscordLinkChange,
+  gifCorner,
+  onGifCornerChange,
   gifStatus,
   gifError,
   gifNotice,
@@ -844,12 +906,9 @@ export function ChroniclePlaybackPanel({
    */
   gifStampDay: boolean;
   onGifStampDayChange: (stamp: boolean) => void;
-  /** The TFMC logo in the corner of the file. Independent of the Discord line. */
-  gifWatermark: boolean;
-  onGifWatermarkChange: (watermark: boolean) => void;
-  /** The discord.gg/tfmc line. Independent of the logo. */
-  gifDiscordLink: boolean;
-  onGifDiscordLinkChange: (discordLink: boolean) => void;
+  /** The corner the TFMC logo and discord.gg/tfmc line sit in. Always drawn. */
+  gifCorner: ChronicleWatermarkCorner;
+  onGifCornerChange: (corner: ChronicleWatermarkCorner) => void;
   /**
    * What the export is doing right now, or null when idle. Non-null also
    * disables the export options, so they cannot change under a running export.
@@ -901,19 +960,12 @@ export function ChroniclePlaybackPanel({
             disabled={exporting}
           />
         </div>
+        <WatermarkCornerPicker
+          value={gifCorner}
+          onChange={onGifCornerChange}
+          disabled={exporting}
+        />
         <div className="mt-2">
-          <ExportSwitch
-            label="Watermark"
-            checked={gifWatermark}
-            disabled={exporting}
-            onChange={onGifWatermarkChange}
-          />
-          <ExportSwitch
-            label="Discord link"
-            checked={gifDiscordLink}
-            disabled={exporting}
-            onChange={onGifDiscordLinkChange}
-          />
           <ExportSwitch
             label="Stamp the date"
             checked={gifStampDay}

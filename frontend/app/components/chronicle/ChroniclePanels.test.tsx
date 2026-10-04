@@ -219,8 +219,8 @@ describe("ChroniclePlayer", () => {
 });
 
 describe("ChroniclePlaybackPanel", () => {
-  it("offers the export options and reports a switch", () => {
-    const onGifWatermarkChange = vi.fn();
+  it("puts the watermark in a chosen corner, with no way to leave it off", () => {
+    const onGifCornerChange = vi.fn();
     render(
       <ChroniclePlaybackPanel
         skippedDays={[]}
@@ -231,19 +231,23 @@ describe("ChroniclePlaybackPanel", () => {
         onGifSizeChange={noop}
         gifStampDay={false}
         onGifStampDayChange={noop}
-        gifWatermark
-        onGifWatermarkChange={onGifWatermarkChange}
-        gifDiscordLink
-        onGifDiscordLinkChange={noop}
+        gifCorner="bottom-left"
+        onGifCornerChange={onGifCornerChange}
         gifStatus={null}
         gifError={null}
         gifNotice={null}
       />
     );
-    expect(screen.getByRole("switch", { name: "Discord link" })).toBeDefined();
+    const corners = screen.getByRole("radiogroup", { name: "Watermark position" });
+    expect(corners.querySelectorAll('[role="radio"]').length).toBe(4);
+    expect(screen.getByRole("radio", { name: "Bottom left" }).getAttribute("aria-checked")).toBe(
+      "true"
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Top right" }));
+    expect(onGifCornerChange).toHaveBeenCalledWith("top-right");
+    expect(screen.queryByRole("switch", { name: "Watermark" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Discord link" })).toBeNull();
     expect(screen.getByRole("switch", { name: "Stamp the date" })).toBeDefined();
-    fireEvent.click(screen.getByRole("switch", { name: "Watermark" }));
-    expect(onGifWatermarkChange).toHaveBeenCalledWith(false);
   });
 });
 
