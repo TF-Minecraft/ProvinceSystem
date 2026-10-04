@@ -14,7 +14,7 @@ import {
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
 import { mapDisplayName, type MapId } from "../map/types";
 import { isArchivedMap } from "@/app/lib/map/archiveMaps";
-import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
+import { invalidateAccessibleMaps, useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { chronicleStudioHref } from "../../lib/map/chronicleDayRoute";
 import {
   CHRONICLE_WIPE_REASON_MAX_LENGTH,
@@ -314,6 +314,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         }),
         sessionToken
       );
+      invalidateAccessibleMaps();
       setArchiveResult(result);
       setArchiveConfirm("");
       setArchiveReason("");

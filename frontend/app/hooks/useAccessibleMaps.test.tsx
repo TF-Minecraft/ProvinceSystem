@@ -63,6 +63,25 @@ describe("useAccessibleMaps", () => {
     await act(async () => signedOut.resolve({ maps: [{ id: "main" }] }));
     expect(first.result.current.maps).toEqual([{ id: "main" }]);
   });
+  it("refreshes all consumers once after an archive and ignores the old pending answer", async () => {
+    const stale = deferred();
+    const fresh = deferred();
+    mocks.fetch.mockReturnValueOnce(stale.promise).mockReturnValueOnce(fresh.promise);
+    const { useAccessibleMaps, invalidateAccessibleMaps } = await import("./useAccessibleMaps");
+    const first = renderHook(useAccessibleMaps);
+    const second = renderHook(useAccessibleMaps);
+    act(() => invalidateAccessibleMaps());
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    await act(async () => fresh.resolve({ maps: [{ id: "main" }, { id: "archive" }] }));
+    await act(async () => stale.resolve({ maps: [{ id: "main" }] }));
+    const later = renderHook(useAccessibleMaps);
+    await act(async () => {});
+    for (const hook of [first, second, later]) {
+      expect(hook.result.current.maps).toEqual([{ id: "main" }, { id: "archive" }]);
+    }
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("allows a later mount to retry a failed request", async () => {
     mocks.fetch.mockRejectedValueOnce(new Error("offline"));
     const { useAccessibleMaps } = await import("./useAccessibleMaps");

@@ -576,9 +576,16 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    * Only fetched for a stored day. The live map still gets its borders and its
    * pick image as server-rendered PNGs and must not pay ~95 KB for this.
    */
-  const [chronicleGrid, setChronicleGrid] = useState<ProvinceIdGrid | null>(
-    null
-  );
+  const [chronicleGridState, setChronicleGrid] = useState<{
+    key: string;
+    grid: ProvinceIdGrid;
+  } | null>(null);
+  // A map or account switch can finish its metadata before the new grid.
+  // Never paint the new ownership onto pixels retained from the old view.
+  const chronicleGrid =
+    day !== null && chronicleGridState?.key === accessKey
+      ? chronicleGridState.grid
+      : null;
 
   useEffect(() => {
     if (day === null) {
@@ -591,7 +598,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
     void fetchProvinceIdGridQ4(mapId, authToken, controller.signal)
       .then((grid) => {
-        if (!cancelled) setChronicleGrid(grid);
+        if (!cancelled) setChronicleGrid({ key: accessKey, grid });
       })
       .catch((err) => {
         if (cancelled || controller.signal.aborted) return;
@@ -603,7 +610,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       controller.abort();
     };
     // `day` only gates the fetch: the grid is geometry, shared by every day.
-  }, [mapId, authToken, day]);
+  }, [mapId, authToken, day, accessKey]);
 
   /**
    * The same quarter-scale province grid on the live map, for the modes whose

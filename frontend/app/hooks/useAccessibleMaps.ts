@@ -26,6 +26,14 @@ let shared: {
   request: ReturnType<typeof fetchAccessibleMaps>;
 } | null = null;
 
+const listeners = new Set<() => void>();
+
+/** A newly created archive must appear without a full page reload. */
+export function invalidateAccessibleMaps(): void {
+  shared = null;
+  for (const reload of listeners) reload();
+}
+
 function loadMaps(token: string | null) {
   if (shared?.token === token) return shared.request;
   const request = fetchAccessibleMaps(token);
@@ -66,7 +74,9 @@ export function useAccessibleMaps(): AccessibleMapsState {
         }
       }
     };
-    void load();
+    const reload = () => { void load(); };
+    listeners.add(reload);
+    reload();
     const onStorage = (event: StorageEvent) => {
       // A cleared store or a keyless session notification must also discard
       // the previous account's access list.
@@ -81,6 +91,7 @@ export function useAccessibleMaps(): AccessibleMapsState {
     window.addEventListener("storage", onStorage);
     return () => {
       generation += 1;
+      listeners.delete(reload);
       window.removeEventListener("storage", onStorage);
     };
   }, []);
