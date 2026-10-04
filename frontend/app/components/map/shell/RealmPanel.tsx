@@ -18,7 +18,7 @@ import MapAuthImage from "../MapAuthImage";
 import { buildRegionInfo } from "../regionInfo";
 import type { MapId, MapMode, RegionRecord, SettlementMarker } from "../types";
 import { FocusIcon, SubjectsIcon } from "./MapIcons";
-import { PanelCloseButton } from "./SheetCloseButton";
+import PanelHeader from "./PanelHeader";
 import { GuildList } from "./GuildPanel";
 
 export type RealmPanelProps = {
@@ -346,23 +346,23 @@ export function RealmPanelContent(props: RealmPanelProps) {
 
   return (
     <article aria-label={name}>
-      <PanelCloseButton onClick={props.onClose} />
-      <header className="map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
-        <Banner
-          mapId={mapId}
-          mapType={mapType}
-          banner={profile?.banner ?? info.banner}
-          name={name}
-          sessionToken={sessionToken}
-          className="h-[5.5rem] w-16 shrink-0"
-        />
-        <div className="min-w-0 flex-1 pr-9">
-          <p className="text-xs text-[var(--tfmc-mist)]">
-            {profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier}
-          </p>
-          <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
-            {name}
-          </h2>
+      <PanelHeader
+        onClose={props.onClose}
+        title={name}
+        eyebrow={
+          profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier
+        }
+        visual={
+          <Banner
+            mapId={mapId}
+            mapType={mapType}
+            banner={profile?.banner ?? info.banner}
+            name={name}
+            sessionToken={sessionToken}
+            className="h-[5.5rem] w-16 shrink-0"
+          />
+        }
+        subtitle={
           <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
             {overlordId ? (
               <>
@@ -375,8 +375,8 @@ export function RealmPanelContent(props: RealmPanelProps) {
               info.description
             )}
           </p>
-        </div>
-      </header>
+        }
+      />
 
       {profile ? (
         <>

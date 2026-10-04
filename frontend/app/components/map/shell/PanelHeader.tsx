@@ -1,0 +1,110 @@
+"use client";
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+import SheetCloseButton from "./SheetCloseButton";
+
+type PanelHeaderProps = {
+  /** Banner, colour swatch or marker, left of the title. */
+  visual: ReactNode;
+  eyebrow: ReactNode;
+  title: string;
+  /** Owner, overlord or description under the title. */
+  subtitle?: ReactNode;
+  /** Centre the visual against the text rather than top-aligning it. */
+  centred?: boolean;
+  onClose: () => void;
+};
+
+/** Height of the pinned bar (`h-12`). */
+const BAR_HEIGHT_PX = 48;
+
+/** The nearest ancestor that scrolls: the panel's own body. */
+function scrollParent(node: HTMLElement): HTMLElement | null {
+  for (let el = node.parentElement; el; el = el.parentElement) {
+    const { overflowY } = getComputedStyle(el);
+    if (overflowY === "auto" || overflowY === "scroll") return el;
+  }
+  return null;
+}
+
+/**
+ * A details panel's header, laid out like Google Maps' place sheet. The close
+ * button sits in a bar pinned to the top of the panel. While the full header
+ * is in view the bar is see-through, so the button simply sits in the
+ * header's corner; once the title scrolls under it, the bar fills in and shows
+ * the name, so the button stays part of a header rather than floating over
+ * the content.
+ */
+export default function PanelHeader({
+  visual,
+  eyebrow,
+  title,
+  subtitle,
+  centred = false,
+  onClose,
+}: PanelHeaderProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const heading = titleRef.current;
+    if (!heading || typeof IntersectionObserver === "undefined") return;
+    const root = scrollParent(heading);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const top = entry.rootBounds?.top ?? 0;
+        setCompact(!entry.isIntersecting && entry.boundingClientRect.top < top);
+      },
+      // The bar's height is cut off the top, so the name moves into the bar
+      // as soon as the title has gone under it.
+      { root, rootMargin: `-${BAR_HEIGHT_PX}px 0px 0px 0px` }
+    );
+    observer.observe(heading);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <>
+      {/* Zero height and pinned at the panel body's top padding, so the bar
+          neither takes room from the header nor moves when it starts to
+          stick. */}
+      <div className="sticky top-1 z-10 h-0 md:top-4">
+        <div
+          className={`absolute -inset-x-4 -top-1 flex h-12 md:rounded-t-[9px] items-center gap-2 border-b pl-4 pr-2 transition-colors duration-150 md:-top-4 ${
+            compact
+              ? "pointer-events-auto border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[var(--tfmc-forest-deep)]"
+              : "pointer-events-none border-transparent"
+          }`}
+        >
+          <p
+            aria-hidden
+            className={`min-w-0 flex-1 truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)] transition-opacity duration-150 ${
+              compact ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {title}
+          </p>
+          <SheetCloseButton onClick={onClose} label="Close details" />
+        </div>
+      </div>
+      <header
+        className={`map-frame-header -mx-4 -mt-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-4 ${
+          centred ? "items-center" : ""
+        }`}
+      >
+        {visual}
+        <div className="min-w-0 flex-1 pr-9">
+          <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
+          <h2
+            ref={titleRef}
+            className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]"
+          >
+            {title}
+          </h2>
+          {subtitle}
+        </div>
+      </header>
+    </>
+  );
+}
