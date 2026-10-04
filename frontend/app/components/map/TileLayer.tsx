@@ -23,6 +23,14 @@ import {
   type TileView,
 } from "@/app/lib/map/tilePyramid";
 
+/** How long a newly loaded sharp tile takes to fade in. */
+const FADE_MS = 160;
+/**
+ * When a faded-in tile counts as fully on screen: the fade plus a frame or
+ * two, as a timer can fire just before the transition's last frame.
+ */
+const SHOWN_MS = FADE_MS + 40;
+
 type TileLayerProps = {
   manifest: TileManifest;
   /** URL of one tile. */
@@ -80,6 +88,14 @@ function TileLayer({
   );
 
   const loadedRef = useRef(new Set<string>());
+  /** Loaded tiles whose fade-in has finished. */
+  const shownRef = useRef(new Set<string>());
+  /** Each loaded tile's pending fade timer, by key. */
+  const fadeTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const timers = fadeTimersRef.current;
+    return () => timers.forEach((timer) => clearTimeout(timer));
+  }, []);
   const [, setLoadedVersion] = useState(0);
   const [settledLevel, setSettledLevel] = useState(backdrop);
 
@@ -101,13 +117,17 @@ function TileLayer({
   // version is a different picture, so another version's entries never match.
   const loadedKey = (tile: PlacedTile) => `${manifest.version}/${tile.key}`;
 
-  const currentLoaded =
+  // What is under the sharp tiles stands down once they are all fully on
+  // screen, not merely loaded: loaded is when they start fading in, and
+  // standing down then left them see-through over black, the last one to
+  // load a dark square, for a few frames after every zoom.
+  const currentShown =
     currentTiles.length > 0 &&
-    currentTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
+    currentTiles.every((tile) => shownRef.current.has(loadedKey(tile)));
 
   useEffect(() => {
-    if (currentLoaded && settledLevel !== level) setSettledLevel(level);
-  }, [currentLoaded, level, settledLevel]);
+    if (currentShown && settledLevel !== level) setSettledLevel(level);
+  }, [currentShown, level, settledLevel]);
 
   const backdropLoaded =
     backdropTiles.length > 0 &&
@@ -136,8 +156,17 @@ function TileLayer({
     const rendered = new Set(
       [...backdropTiles, ...holdTiles, ...currentTiles].map((tile) => loadedKey(tile))
     );
-    for (const key of loadedRef.current) {
-      if (!rendered.has(key)) loadedRef.current.delete(key);
+    for (const set of [loadedRef.current, shownRef.current]) {
+      for (const key of set) {
+        if (!rendered.has(key)) set.delete(key);
+      }
+    }
+    // A timer started for a gone element must not mark a newer one shown
+    // before its own fade has run.
+    for (const [key, timer] of fadeTimersRef.current) {
+      if (rendered.has(key)) continue;
+      clearTimeout(timer);
+      fadeTimersRef.current.delete(key);
     }
   });
 
@@ -145,6 +174,14 @@ function TileLayer({
     if (loadedRef.current.has(key)) return;
     loadedRef.current.add(key);
     setLoadedVersion((value) => value + 1);
+    const timer = setTimeout(() => {
+      fadeTimersRef.current.delete(key);
+      // Its element left the page meanwhile (see the pruning above).
+      if (!loadedRef.current.has(key)) return;
+      shownRef.current.add(key);
+      setLoadedVersion((value) => value + 1);
+    }, SHOWN_MS);
+    fadeTimersRef.current.set(key, timer);
   };
 
   // A tile counts as loaded once it is decoded too, so the paint that shows
@@ -173,7 +210,7 @@ function TileLayer({
       ? Math.round(value / mapPxPerScreenPx) * mapPxPerScreenPx
       : value;
 
-  // Once the sharp tiles on screen have all loaded (`currentLoaded`), the
+  // Once the sharp tiles on screen have all faded in (`currentShown`), the
   // held level under them stands down, and so does the backdrop where they
   // cover it: on a see-through raster they would otherwise stack and deepen
   // its colours.
@@ -209,7 +246,7 @@ function TileLayer({
           height: snap(tile.top + tile.height) - top,
           opacity: !fadeIn || loaded ? 1 : 0,
           visibility: hidden ? "hidden" : undefined,
-          transition: fadeIn ? "opacity 160ms ease-out" : undefined,
+          transition: fadeIn ? `opacity ${FADE_MS}ms ease-out` : undefined,
         }}
       />
     );
@@ -230,7 +267,7 @@ function TileLayer({
           // fast pan scales and moves this layer without a render, and a
           // hidden backdrop left only the tiles that were on screen, a small
           // island of map on black until the gesture settled.
-          clipPath: currentLoaded
+          clipPath: currentShown
             ? backdropClipPath(manifest.width, manifest.height, coverage(currentTiles, snap))
             : undefined,
         }}
@@ -240,7 +277,7 @@ function TileLayer({
       {/* One list, so a tile that turns from current into held as the level
           changes keeps its element (the levels' keys never collide). */}
       {[
-        ...holdTiles.map((tile) => renderTile(tile, false, currentLoaded)),
+        ...holdTiles.map((tile) => renderTile(tile, false, currentShown)),
         ...currentTiles.map((tile) => renderTile(tile, true)),
       ]}
     </div>

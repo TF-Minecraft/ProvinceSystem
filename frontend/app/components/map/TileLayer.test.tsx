@@ -10,7 +10,10 @@ import type { TileManifest, TileView } from "@/app/lib/map/tilePyramid";
 
 import TileLayer from "./TileLayer";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 /** One 512 px level of four 256 px tiles: the backdrop is the whole pyramid. */
 function manifest(version: string): TileManifest {
@@ -37,6 +40,13 @@ const tileUrl = (level: number, x: number, y: number) => `/t/${level}/${x}/${y}.
 
 function loadAll(container: HTMLElement) {
   container.querySelectorAll("img").forEach((img) => fireEvent.load(img));
+}
+
+/** Let loaded sharp tiles finish fading in (needs fake timers). */
+function fadeIn() {
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
 }
 
 /**
@@ -127,6 +137,7 @@ describe("TileLayer", () => {
   });
 
   it("keeps the backdrop up outside the sharp tiles once they load", () => {
+    vi.useFakeTimers();
     // 2048 px map: backdrop level 0 (4x4 tiles), sharp level 1 (8x8 tiles).
     const pyramid: TileManifest = {
       ready: true,
@@ -165,6 +176,10 @@ describe("TileLayer", () => {
     expect(clip()).toBe("");
 
     loadAll(container);
+    // Loaded, the sharp tiles start fading in: until they have, nothing under
+    // them may go, or they show see-through over black.
+    expect(clip()).toBe("");
+    fadeIn();
 
     // A gesture scales the layer without a render: past the sharp tiles the
     // backdrop must still be there, and only there. It is clipped, not
@@ -190,6 +205,7 @@ describe("TileLayer", () => {
     expect(clip()).toBe("");
   });
   it("waits for new elements when zooming back to a level seen before", () => {
+    vi.useFakeTimers();
     // 4096 px map: backdrop level 0 (4x4 tiles), then levels 1 and 2.
     const pyramid: TileManifest = {
       ready: true,
@@ -218,8 +234,10 @@ describe("TileLayer", () => {
       <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
     );
     loadAll(container);
+    fadeIn();
     rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
     loadAll(container);
+    fadeIn();
     // Level 2 settled; level 1 is no longer held.
     expect(imgs(1)).toHaveLength(0);
 
@@ -234,6 +252,56 @@ describe("TileLayer", () => {
 
     loadAll(container);
     expect(imgs(1).every((img) => img.style.opacity === "1")).toBe(true);
+    // Fading in: level 2 and the backdrop stay up under them until it is done.
+    expect(imgs(2).some((img) => img.style.visibility === "hidden")).toBe(false);
+    expect(imgs(0)[0].parentElement!.style.clipPath).toBe("");
+    fadeIn();
     expect(imgs(0)[0].parentElement!.style.clipPath).not.toBe("");
+  });
+  it("does not let a gone tile's fade timer mark its newer element shown", () => {
+    vi.useFakeTimers();
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 4096,
+      height: 4096,
+      tile_size: 256,
+      max_level: 2,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+        { width: 4096, height: 4096 },
+      ],
+    };
+    const at = (displayScale: number): TileView => ({
+      displayScale,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 200,
+      viewportH: 200,
+    });
+    const { container, rerender } = render(
+      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
+    );
+    const clip = () =>
+      container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!.parentElement!.style
+        .clipPath;
+    const advance = (ms: number) =>
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+
+    // Level 1 loads and starts fading in, then leaves before it has finished.
+    loadAll(container);
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
+    advance(100);
+    // Back to level 1, on new elements, which load and start their own fade.
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
+    loadAll(container);
+    // Past when the first elements' fade would have ended, but not this one's.
+    advance(120);
+    expect(clip()).toBe("");
+    advance(100);
+    expect(clip()).not.toBe("");
   });
 });
