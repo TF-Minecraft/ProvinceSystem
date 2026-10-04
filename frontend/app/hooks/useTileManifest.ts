@@ -5,16 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 import type { MapId } from "@/app/components/map/types";
 import { fetchMapJson, mapApiUrl } from "@/lib/map/api";
 import {
-  allTiles,
-  backdropLevel,
   isTileManifest,
   type TileManifest,
 } from "@/app/lib/map/tilePyramid";
 
 /**
  * Manifests already fetched this page view, by `mapId/layer`. Switching back
- * to a mode, or to one `prefetchTileBackdrops` warmed, then needs no round
- * trip before its tiles can start.
+ * to a mode whose preview the layers panel loaded needs no round trip
+ * before its tiles can start.
  */
 const manifestCache = new Map<string, TileManifest>();
 
@@ -42,40 +40,6 @@ export function tileUrl(
   return mapApiUrl(
     `/${mapId}/tiles/${encodeURIComponent(layer)}/${manifest.version}/${level}/${x}/${y}.webp`
   );
-}
-
-/**
- * Warm the layers a reader is likely to open next: their manifests and the
- * few backdrop tiles each, so switching to one shows colour at once while its
- * sharper tiles load. Runs one layer at a time, after the map has settled.
- */
-export async function prefetchTileBackdrops(
-  mapId: MapId,
-  layers: string[],
-  signal: { cancelled: boolean }
-): Promise<void> {
-  for (const layer of layers) {
-    if (signal.cancelled) return;
-    try {
-      const manifest =
-        manifestCache.get(cacheKey(mapId, layer)) ?? (await fetchManifest(mapId, layer));
-      if (!manifest || signal.cancelled) continue;
-      const level = backdropLevel(manifest);
-      await Promise.all(
-        allTiles(manifest, level).map(
-          (tile) =>
-            new Promise<void>((resolve) => {
-              const image = new Image();
-              image.decoding = "async";
-              image.onload = image.onerror = () => resolve();
-              image.src = tileUrl(mapId, layer, manifest, level, tile.x, tile.y);
-            })
-        )
-      );
-    } catch {
-      // Best effort: a layer that cannot be warmed loads normally when opened.
-    }
-  }
 }
 
 /** How long to wait before asking again while the backend builds the pyramid. */
@@ -175,8 +139,8 @@ export function useTileManifest(
   // one until the effect runs. Answer for the new layer straight away, from
   // the cache when it can, so nobody builds the new layer's tile URLs out of
   // the old layer's version.
+  if (!key) return { manifest: null, status: "unavailable", refresh };
   if (stateKey !== key) {
-    if (!key) return { manifest: null, status: "unavailable", refresh };
     const cached = manifestCache.get(key);
     return { manifest: cached ?? null, status: cached ? "ready" : "loading", refresh };
   }

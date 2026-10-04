@@ -14,8 +14,15 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ChronicleStaffConsole from "./ChronicleStaffConsole";
 import { backupFileName } from "../../lib/map/chronicleStaff";
+
+let ChronicleStaffConsole: typeof import("./ChronicleStaffConsole").default;
+
+beforeEach(async () => {
+  // Each fixture is a fresh page view; accessible maps are shared within one.
+  vi.resetModules();
+  ({ default: ChronicleStaffConsole } = await import("./ChronicleStaffConsole"));
+});
 
 afterEach(() => {
   cleanup();

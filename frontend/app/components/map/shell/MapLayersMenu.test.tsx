@@ -7,13 +7,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MapLayersMenu from "./MapLayersMenu";
 
+const fetchManifest = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/map/api", async (original) => ({
+  ...await original<typeof import("@/lib/map/api")>(),
+  fetchMapJson: fetchManifest,
+}));
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 beforeEach(() => {
   vi.useFakeTimers();
+  fetchManifest.mockReset();
 });
 
 function renderMenu(onMapTypeChange = vi.fn()) {
@@ -106,5 +114,27 @@ describe("MapLayersMenu pull that stops before lifting", () => {
       vi.advanceTimersByTime(300);
     });
     expect(screen.getByRole("dialog")).toBe(sheet);
+  });
+});
+
+
+describe("MapLayersMenu intent loading", () => {
+  it("requests previews only once the panel is opened, with low image priority", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://map.test");
+    fetchManifest.mockResolvedValue({
+      ready: true, version: "v1", width: 512, height: 512, tile_size: 256,
+      max_level: 0, levels: [{ width: 512, height: 512 }],
+    });
+    const { container } = render(
+      <MapLayersMenu mapType="nation" onMapTypeChange={vi.fn()} toggles={[]} mapId="main" previews />
+    );
+    await act(async () => vi.advanceTimersByTime(10000));
+    expect(fetchManifest).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /Layers/ }));
+    await act(async () => {});
+    expect(fetchManifest).toHaveBeenCalledWith("/main/tiles/regions-county/manifest");
+    const images = container.querySelectorAll("img");
+    expect(images.length).toBeGreaterThan(0);
+    for (const image of images) expect(image.getAttribute("fetchpriority")).toBe("low");
   });
 });
