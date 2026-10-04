@@ -114,8 +114,8 @@ function ModePreview({
  * Google Maps' layers button and panel, top right: which map to show (realms,
  * the title tiers, the world modes) as a grid of previews, then the overlays
  * that sit on top of any of them. On a phone the panel is a bottom sheet; on
- * a desktop it drops down from the button. It stays open after a choice, so
- * the modes can be flicked through with the map changing behind it.
+ * a desktop it drops down from the button. Choosing a map type closes it; the
+ * overlay switches leave it open, so several can be set in one visit.
  */
 export default function MapLayersMenu({
   mapType,
@@ -226,7 +226,10 @@ function LayersPanel({
                 <button
                   type="button"
                   aria-pressed={active}
-                  onClick={() => onMapTypeChange(option.value)}
+                  onClick={() => {
+                    onMapTypeChange(option.value);
+                    onClose();
+                  }}
                   className="group flex w-full flex-col items-center gap-1.5 rounded-lg px-0.5 py-1 text-center focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
                 >
                   <span className={`${tileFrameClass} ${tileRingClass(active)}`}>
