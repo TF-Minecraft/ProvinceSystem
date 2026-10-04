@@ -117,31 +117,44 @@ describe("TileLayer", () => {
       viewportW: 200,
       viewportH: 200,
     };
-    const { container } = render(
+    const { container, rerender } = render(
       <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} />
     );
     const backdrop = () =>
       [...container.querySelectorAll<HTMLImageElement>('img[src^="/t/0/"]')].filter(
         (img) => img.style.visibility !== "hidden"
       );
-    expect(backdrop()).toHaveLength(16);
+    const before = backdrop();
+    expect(before).toHaveLength(16);
+    const clip = () => before[0].parentElement!.style.clipPath;
+    // The same elements, not equal-looking new ones.
+    const sameBackdrop = () =>
+      backdrop().length === before.length && backdrop().every((img, i) => img === before[i]);
+    expect(clip()).toBe("");
 
     loadAll(container);
 
     // A gesture scales the layer without a render: past the sharp tiles the
-    // backdrop must still be there, and only there.
-    const shown = backdrop();
-    expect(shown.map((img) => img.getAttribute("src"))).not.toContain("/t/0/0/0.webp");
-    expect(shown).toHaveLength(15);
-    const bands = [...new Set(shown.map((img) => img.parentElement!))].map((band) => [
-      band.style.left,
-      band.style.top,
-      band.style.width,
-      band.style.height,
-    ]);
-    expect(bands).toEqual([
-      ["0px", "512px", "2048px", "1536px"],
-      ["512px", "0px", "1536px", "512px"],
-    ]);
+    // backdrop must still be there, and only there. It is clipped, not
+    // remounted: a new <img> paints nothing on iOS until it has decoded.
+    expect(sameBackdrop()).toBe(true);
+    expect(clip()).toBe(
+      "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
+        "0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%, 0% 0%)"
+    );
+
+    // Zooming out to the backdrop level holds the sharp tiles until it has
+    // loaded, on the same elements.
+    const sharp = container.querySelector('img[src="/t/1/0/0.webp"]');
+    rerender(
+      <TileLayer
+        manifest={pyramid}
+        tileUrl={tileUrl}
+        view={{ ...zoomedIn, displayScale: 0.25 }}
+      />
+    );
+    expect(container.querySelector('img[src="/t/1/0/0.webp"]')).toBe(sharp);
+    expect(sameBackdrop()).toBe(true);
+    expect(clip()).toBe("");
   });
 });
