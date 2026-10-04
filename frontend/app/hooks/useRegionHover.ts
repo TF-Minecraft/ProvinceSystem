@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
 import { resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
+import type { PickSurface } from "../lib/map/pickSurface";
 import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
 
 export function useRegionHover({
@@ -54,7 +55,7 @@ export function useRegionHover({
   };
 
   const handleRegionHover = (
-    ctx: CanvasRenderingContext2D,
+    surface: PickSurface,
     x: number,
     y: number,
     screenX: number,
@@ -66,7 +67,7 @@ export function useRegionHover({
     const picked = regionIdOverride
       ? resolveRegionById(regionIdOverride, getHoverRegion, mapType, mapId, regionData)
       : resolveRegionAtPickPixel(
-          ctx,
+          surface,
           x,
           y,
           rgbToId,

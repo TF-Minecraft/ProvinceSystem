@@ -123,9 +123,13 @@ function getViewportMapCoords(
   };
 }
 
+/**
+ * `canvas` is only for the legacy path, a canvas drawn at the map's size on
+ * screen (the editor's). The live map has no such canvas and passes null.
+ */
 export function getMapCoords(
   event: React.MouseEvent,
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | null,
   mapId: MapId,
   viewport?: MapPickViewport | null
 ): MapCoords | null {
@@ -133,5 +137,5 @@ export function getMapCoords(
     return getViewportMapCoords(event, viewport);
   }
 
-  return getLegacyMapCoords(event, canvas, mapId);
+  return canvas ? getLegacyMapCoords(event, canvas, mapId) : null;
 }

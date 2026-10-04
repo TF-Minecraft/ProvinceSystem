@@ -299,7 +299,6 @@ type MapCanvasProps = {
   mapId: MapId;
   mapType: MapMode;
   sessionToken?: string | null;
-  canvasRef: RefObject<HTMLCanvasElement | null>;
   mapObjects: MapObject[];
   hoveredOverlay: HoverOverlay | null;
   /**
@@ -372,7 +371,6 @@ export default function MapCanvas({
   mapId,
   mapType,
   sessionToken,
-  canvasRef,
   mapObjects,
   hoveredOverlay,
   selectedOverlay = null,
@@ -546,23 +544,6 @@ export default function MapCanvas({
       ? focusLoaded.key === focusObjectsKey &&
         focusObjects.every((obj) => focusLoaded.ids.has(obj.id))
       : focusShapeLoaded;
-
-  /**
-   * The pick canvas is read with `getImageData`, never seen. It used to sit
-   * in the map layer at full map size (6400 px square, transparent), where
-   * the browser still had to composite it at every zoom step. Detached, it is
-   * just memory; a plain div takes its pointer events.
-   */
-  useLayoutEffect(() => {
-    const canvas = document.createElement("canvas");
-    (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = canvas;
-    return () => {
-      const ref = canvasRef as React.MutableRefObject<HTMLCanvasElement | null>;
-      if (ref.current === canvas) ref.current = null;
-      canvas.width = 0;
-      canvas.height = 0;
-    };
-  }, [canvasRef]);
 
   if (controlsRef) {
     controlsRef.current = {

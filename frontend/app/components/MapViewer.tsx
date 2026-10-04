@@ -73,6 +73,11 @@ import type {
 } from "./map/types";
 import { mapFallbackSize, mapDisplayName } from "./map/types";
 import { buildMapSearchIndex, type MapSearchEntry } from "@/app/lib/map/mapSearch";
+import {
+  pickSurfaceFromImage,
+  pickSurfaceFromImageData,
+  type PickSurface,
+} from "@/app/lib/map/pickSurface";
 import type { MapFocusInset } from "../hooks/useMapViewport";
 import type { MapRect } from "../lib/mapViewportMath";
 import { isTypingTarget } from "../lib/mapGestures";
@@ -183,9 +188,6 @@ const LABEL_LAYOUT_SLICE_MS = 8;
  * where the half-size pick map's 2 px steps do not show, and they are the
  * devices short of memory.
  */
-/** Rows of the pick map copied into its canvas per frame. */
-const PICK_COPY_BAND = 256;
-
 function prefersSmallPickMap(): boolean {
   return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 }
@@ -257,7 +259,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   );
   const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pickSurfaceRef = useRef<PickSurface | null>(null);
   const viewportControlsRef = useRef<MapViewportControls | null>(null);
   const viewportCoordsRef = useRef<MapPickViewport | null>(null);
   const lastProvinceIdRef = useRef<number | null>(null);
@@ -653,36 +655,20 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     }
 
     setPickReadyFor(null);
+    // Nothing (a pin's realm lookup) may read the last mode's regions.
+    pickSurfaceRef.current = null;
     let blobUrl: string | null = null;
     let cancelled = false;
-    let retryId = 0;
-    let retries = 0;
 
     const drawImage = async () => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        if (retries++ > 60) return;
-        retryId = requestAnimationFrame(() => {
-          if (!cancelled) void drawImage();
-        });
-        return;
-      }
-      // getImageData runs per hover frame; keep the backing store CPU-side.
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
       // The raster modes (prosperity, terrain, ...) hover provinces from the
       // province grid and never pick a region, so their full-size image would
-      // be downloaded and decoded only to sit unread. Clear the last mode's
-      // instead, so nothing (a pin's realm lookup) reads a stale region.
-      if (provinceHoverBlocksRegionPick(mapType)) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return;
-      }
+      // be downloaded and decoded only to sit unread.
+      if (provinceHoverBlocksRegionPick(mapType)) return;
 
-      // Phones get a half-size pick map: the full one is a 6400 px canvas,
-      // over iOS Safari's canvas limit and enough, with the map, for Safari to
-      // run out of memory and reload the page over and over.
+      // Phones get a half-size pick map: decoding the full one, with the map,
+      // was enough for iOS Safari to run out of memory and reload the page
+      // over and over.
       const pickScale = prefersSmallPickMap() ? 1 : 0;
       const path = `/${mapId}/mapdata/${mapType}${pickScale ? `?scale=${pickScale}` : ""}`;
       let src = mapApiUrl(path);
@@ -701,25 +687,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         return;
       }
 
-      const paint = async (source: CanvasImageSource, width: number, height: number) => {
-        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
-        // only touch the dimensions when the pick image actually changed size.
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        // A band of rows per frame, each cleared just before it is drawn (the
-        // map's transparent pixels must not keep the last mode's ids): the
-        // whole 6400 px map cleared and drawn at once held the page for
-        // ~200 ms; a 256-row band takes a few.
-        for (let y = 0; y < height; y += PICK_COPY_BAND) {
-          if (cancelled) return;
-          const rows = Math.min(PICK_COPY_BAND, height - y);
-          ctx.clearRect(0, y, width, rows);
-          ctx.drawImage(source, 0, y, width, rows, 0, y, width, rows);
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-        }
-        if (!cancelled) setPickReadyFor(pickKey);
+      const read = async (source: CanvasImageSource, width: number, height: number) => {
+        const surface = await pickSurfaceFromImage(source, width, height, () => cancelled);
+        if (!surface || cancelled) return;
+        pickSurfaceRef.current = surface;
+        setPickReadyFor(pickKey);
       };
 
       // Decoded off the main thread. Drawn straight from an <img>, the 6400 px
@@ -729,9 +701,9 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       try {
         const res = await fetch(src, { credentials: "omit" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        // Premultiplied, as the canvas stores it anyway (pick pixels are fully
+        // Premultiplied, as a canvas stores it anyway (pick pixels are fully
         // opaque or fully transparent, so no region's colour changes): left
-        // unpremultiplied, the copy into the canvas took nearly three times as long.
+        // unpremultiplied, the copy into a canvas took nearly three times as long.
         const bitmap = await createImageBitmap(await res.blob(), {
           colorSpaceConversion: "none",
         });
@@ -739,8 +711,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           bitmap.close();
           return;
         }
-        await paint(bitmap, bitmap.width, bitmap.height);
-        bitmap.close();
+        try {
+          await read(bitmap, bitmap.width, bitmap.height);
+        } finally {
+          bitmap.close();
+        }
         return;
       } catch {
         if (cancelled) return;
@@ -752,7 +727,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        void paint(img, img.width, img.height);
+        void read(img, img.width, img.height);
       };
       img.onerror = () => {
         console.error("Failed to load pick map image:", src);
@@ -771,7 +746,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(retryId);
       revokeMapBlobUrl(blobUrl);
     };
   }, [
@@ -786,7 +760,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   ]);
 
   /**
-   * Chronicle mode's pick canvas.
+   * Chronicle mode's pick map.
    *
    * Painted from `directOwnership` — every region in its *own* colour over its
    * *own* provinces — because that is what `/mapdata/{mode}` is: coloured by
@@ -795,7 +769,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    * the same day's `regionData`, this makes hover, click, nation details and
    * drill-down day-correct with no change to any hover code.
    *
-   * The canvas is 1600x1600 here rather than the live 6400x6400, so a pick can
+   * It is 1600x1600 here rather than the live 6400x6400, so a pick can
    * disagree with the drawn border by up to 4 map pixels at the very edge of a
    * nation. That is the same 16x memory trade `ChronicleOwnershipLayer` makes,
    * and the two layers agree with each other because they read the same grid.
@@ -803,55 +777,25 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   useEffect(() => {
     if (day === null) return;
     setPickReadyFor(null);
+    pickSurfaceRef.current = null;
     if (!accessChecked || gateReason || !mapCanvasMounted) return;
     if (!chronicleGrid || !regionData) return;
 
-    let cancelled = false;
-    let retryId = 0;
-    let retries = 0;
-
-    const paintPickCanvas = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        // Same wait as the live path: the node lives inside MapCanvas and is
-        // not attached on this effect's first run.
-        if (retries++ > 60) return;
-        retryId = requestAnimationFrame(() => {
-          if (!cancelled) paintPickCanvas();
-        });
-        return;
-      }
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      if (
-        canvas.width !== chronicleGrid.width ||
-        canvas.height !== chronicleGrid.height
-      ) {
-        canvas.width = chronicleGrid.width;
-        canvas.height = chronicleGrid.height;
-      }
-
-      const imageData = ctx.createImageData(
-        chronicleGrid.width,
-        chronicleGrid.height
-      );
-      paintChronicleFrameToImageData(
-        imageData,
-        chronicleGrid,
-        buildNationColorLut(directOwnership(regionData))
-      );
-      ctx.putImageData(imageData, 0, 0);
-      setPickReadyFor(pickKey);
-    };
-
-    paintPickCanvas();
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(retryId);
-    };
+    const width = chronicleGrid.width;
+    const height = chronicleGrid.height;
+    const imageData = {
+      data: new Uint8ClampedArray(width * height * 4),
+      width,
+      height,
+      colorSpace: "srgb",
+    } as ImageData;
+    paintChronicleFrameToImageData(
+      imageData,
+      chronicleGrid,
+      buildNationColorLut(directOwnership(regionData))
+    );
+    pickSurfaceRef.current = pickSurfaceFromImageData(imageData);
+    setPickReadyFor(pickKey);
   }, [
     day,
     accessChecked,
@@ -874,7 +818,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     loading:
       loading || (!provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
     regionData,
-    canvasRef,
+    pickSurfaceRef,
     viewportCoordsRef,
     guildNameCacheRef,
     sessionToken: authToken,
@@ -1557,7 +1501,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         mapId={mapId}
         mapType={mapType}
         sessionToken={authToken}
-        canvasRef={canvasRef}
         viewportCoordsRef={viewportCoordsRef}
         controlsRef={viewportControlsRef}
         mapObjects={loading ? [] : mapObjects}

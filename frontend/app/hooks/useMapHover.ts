@@ -24,13 +24,15 @@ import { lookupFortZocOverlay } from "../lib/fortZoc";
 import { pickRegionLabelAt, type NationLabelSpec } from "../lib/mapLabels";
 import { pickTradeEdgeAt, type TradeEdgeGeometry } from "../lib/tradeEdges";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
+import { EMPTY_PICK_SURFACE, type PickSurface } from "../lib/map/pickSurface";
 
 type UseMapHoverProps = {
   mapId: MapId;
   mapType: MapMode;
   loading: boolean;
   regionData: RegionRecord | null;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  /** The pick map; see `PickSurface`. */
+  pickSurfaceRef: React.RefObject<PickSurface | null>;
   viewportCoordsRef: React.MutableRefObject<MapPickViewport | null>;
   guildNameCacheRef: React.MutableRefObject<Record<string, string>> | null;
   sessionToken?: string | null;
@@ -107,7 +109,6 @@ function labelRegionAt(
 
 export function useMapHover(props: UseMapHoverProps) {
   const {
-    canvasRef,
     viewportCoordsRef,
     mapId,
     mapType,
@@ -197,17 +198,11 @@ export function useMapHover(props: UseMapHoverProps) {
     const current = propsRef.current;
     if (current.loading) return;
 
-    const canvas = current.canvasRef.current;
-    if (!canvas) return;
-
-    // Must match the pick canvas' own getContext options; this path calls
-    // getImageData once per hover frame.
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
+    const surface = current.pickSurfaceRef.current ?? EMPTY_PICK_SURFACE;
 
     const coords = getMapCoords(
       event,
-      canvas,
+      null,
       current.mapId,
       current.viewportCoordsRef.current
     );
@@ -241,11 +236,11 @@ export function useMapHover(props: UseMapHoverProps) {
         coords.x,
         coords.y,
         current.viewportCoordsRef.current?.mapSize,
-        canvas
+        surface
       );
       if (markerPickPixel) {
         handleRegionHoverRef.current(
-          ctx,
+          surface,
           markerPickPixel.x,
           markerPickPixel.y,
           coords.screenX,
@@ -281,7 +276,7 @@ export function useMapHover(props: UseMapHoverProps) {
     if (labelRegionId) {
       setIsHoveringClickable(
         handleRegionHoverRef.current(
-          ctx,
+          surface,
           0,
           0,
           coords.screenX,
@@ -311,11 +306,11 @@ export function useMapHover(props: UseMapHoverProps) {
         coords.x,
         coords.y,
         current.viewportCoordsRef.current?.mapSize,
-        canvas
+        surface
       );
       if (edgePickPixel) {
         handleRegionHoverRef.current(
-          ctx,
+          surface,
           edgePickPixel.x,
           edgePickPixel.y,
           coords.screenX,
@@ -383,7 +378,7 @@ export function useMapHover(props: UseMapHoverProps) {
       coords.x,
       coords.y,
       current.viewportCoordsRef.current?.mapSize,
-      canvas
+      surface
     );
     if (!pickPixel) {
       current.setCursorTooltip(null);
@@ -394,7 +389,7 @@ export function useMapHover(props: UseMapHoverProps) {
     }
 
     const clickable = handleRegionHoverRef.current(
-      ctx,
+      surface,
       pickPixel.x,
       pickPixel.y,
       coords.screenX,
@@ -484,15 +479,11 @@ export function useMapHover(props: UseMapHoverProps) {
       const current = propsRef.current;
       if (current.loading || !current.regionData) return null;
 
-      const canvas = current.canvasRef.current;
-      if (!canvas) return null;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return null;
+      const surface = current.pickSurfaceRef.current ?? EMPTY_PICK_SURFACE;
 
       const coords = getMapCoords(
         event,
-        canvas,
+        null,
         current.mapId,
         current.viewportCoordsRef.current
       );
@@ -534,12 +525,12 @@ export function useMapHover(props: UseMapHoverProps) {
         coords.x,
         coords.y,
         current.viewportCoordsRef.current?.mapSize,
-        canvas
+        surface
       );
       if (!pickPixel) return null;
 
       const picked = resolveRegionAtPickPixel(
-        ctx,
+        surface,
         pickPixel.x,
         pickPixel.y,
         rgbToId,
@@ -557,11 +548,10 @@ export function useMapHover(props: UseMapHoverProps) {
   const pickMarkerAtEvent = useCallback(
     (event: React.MouseEvent<Element>): MapMarker | null => {
       const current = propsRef.current;
-      const canvas = current.canvasRef.current;
-      if (!canvas || !current.markers?.length) return null;
+      if (!current.markers?.length) return null;
       const coords = getMapCoords(
         event,
-        canvas,
+        null,
         current.mapId,
         current.viewportCoordsRef.current
       );

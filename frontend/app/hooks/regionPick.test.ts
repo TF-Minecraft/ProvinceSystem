@@ -1,30 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import { resolveRegionAtPickPixel } from "./regionPick";
+import { pickSurfaceFromImageData, type PickSurface } from "../lib/map/pickSurface";
 import type { RegionRecord } from "../components/map/types";
 
-function mockCtx(
+function mockSurface(
   width: number,
   height: number,
   pixelAt: (x: number, y: number) => [number, number, number, number]
-): CanvasRenderingContext2D {
-  return {
-    canvas: { width, height },
-    getImageData: (x: number, y: number, w: number, h: number) => {
-      const data = new Uint8ClampedArray(w * h * 4);
-      for (let dy = 0; dy < h; dy++) {
-        for (let dx = 0; dx < w; dx++) {
-          const [r, g, b, a] = pixelAt(x + dx, y + dy);
-          const i = (dy * w + dx) * 4;
-          data[i] = r;
-          data[i + 1] = g;
-          data[i + 2] = b;
-          data[i + 3] = a;
-        }
-      }
-      return { data, width: w, height: h };
-    },
-  } as CanvasRenderingContext2D;
+): PickSurface {
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      data.set(pixelAt(x, y), (y * width + x) * 4);
+    }
+  }
+  return pickSurfaceFromImageData({ data, width, height });
 }
 
 const regionData: RegionRecord = {
@@ -34,12 +25,12 @@ const regionData: RegionRecord = {
 
 describe("resolveRegionAtPickPixel", () => {
   it("maps a pick pixel to the resolved visible region", () => {
-    const ctx = mockCtx(4, 4, (x, y) =>
+    const surface = mockSurface(4, 4, (x, y) =>
       x === 1 && y === 2 ? [10, 20, 30, 255] : [0, 0, 0, 0]
     );
     const rgbToId = { "10,20,30": "Vassal" };
     const picked = resolveRegionAtPickPixel(
-      ctx,
+      surface,
       1,
       2,
       rgbToId,
@@ -63,9 +54,9 @@ describe("resolveRegionAtPickPixel", () => {
   });
 
   it("returns null for an unknown rgb", () => {
-    const ctx = mockCtx(2, 2, () => [99, 88, 77, 255]);
+    const surface = mockSurface(2, 2, () => [99, 88, 77, 255]);
     const picked = resolveRegionAtPickPixel(
-      ctx,
+      surface,
       0,
       0,
       { "10,20,30": "Vassal" },
@@ -82,9 +73,9 @@ describe("resolveRegionAtPickPixel", () => {
   });
 
   it("returns null when getHoverRegion finds no visible ancestor", () => {
-    const ctx = mockCtx(2, 2, () => [10, 20, 30, 255]);
+    const surface = mockSurface(2, 2, () => [10, 20, 30, 255]);
     const picked = resolveRegionAtPickPixel(
-      ctx,
+      surface,
       0,
       0,
       { "10,20,30": "Vassal" },
@@ -101,9 +92,9 @@ describe("resolveRegionAtPickPixel", () => {
   });
 
   it("returns null for out-of-bounds pixels", () => {
-    const ctx = mockCtx(2, 2, () => [10, 20, 30, 255]);
+    const surface = mockSurface(2, 2, () => [10, 20, 30, 255]);
     const picked = resolveRegionAtPickPixel(
-      ctx,
+      surface,
       5,
       5,
       { "10,20,30": "Vassal" },
