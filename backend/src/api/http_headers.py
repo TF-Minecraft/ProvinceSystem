@@ -11,6 +11,20 @@ from fastapi import Response
 from fastapi.responses import FileResponse, JSONResponse
 
 
+PRIVATE_CACHE = "private, no-cache, must-revalidate"
+PUBLIC_MAP_CACHE = "public, max-age=60, stale-while-revalidate=300"
+
+
+def map_asset_cache(entry, authorization: object = None) -> str:
+    """Only anonymous, non-personalised map artefacts may enter shared caches.
+
+    Unversioned URLs have a short lifetime. A query string supplied by a client
+    is not proof of content identity and must never earn an immutable policy.
+    """
+    authenticated = isinstance(authorization, str) and bool(authorization.strip())
+    return PUBLIC_MAP_CACHE if entry.public and not authenticated else PRIVATE_CACHE
+
+
 def add_cors(response: Response) -> Response:
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
@@ -36,7 +50,7 @@ def add_revalidate(response: Response) -> Response:
     `private` keeps these authenticated responses out of shared proxy caches
     such as the public nginx in front of the API.
     """
-    response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
+    response.headers["Cache-Control"] = PRIVATE_CACHE
     return response
 
 
@@ -67,6 +81,7 @@ def conditional_file_response(
     media_type: str,
     if_none_match: str | None = None,
     if_modified_since: str | None = None,
+    cache_control: str = PRIVATE_CACHE,
 ) -> Response:
     """CORS-enabled `FileResponse` that answers 304 when the client is current.
 
@@ -79,7 +94,8 @@ def conditional_file_response(
 
     stat_result = os.stat(path)
     response = FileResponse(path, media_type=media_type, stat_result=stat_result)
-    add_revalidate(add_cors(response))
+    add_cors(response)
+    response.headers["Cache-Control"] = cache_control
 
     etag = response.headers.get("etag", "")
     last_modified = response.headers.get("last-modified", "")
@@ -97,7 +113,8 @@ def conditional_file_response(
     not_modified = Response(status_code=304)
     not_modified.headers["ETag"] = etag
     not_modified.headers["Last-Modified"] = last_modified
-    return add_revalidate(add_cors(not_modified))
+    not_modified.headers["Cache-Control"] = cache_control
+    return add_cors(not_modified)
 
 
 def make_etag(*parts: object) -> str:

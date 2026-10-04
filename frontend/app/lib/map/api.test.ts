@@ -41,6 +41,34 @@ describe("map api", () => {
     );
   });
 
+  it.each([
+    "/main/data/province_centroids",
+    "/main/data/province_id_runs",
+    "/main/data/province_id_grid_q4",
+    "/main/map/preview",
+    "/main/mapdata/nation?scale=1",
+    "/main/tiles/base/version/0/0/0.webp",
+  ])("lets server freshness apply to %s", async (path) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchMapApi(path);
+    expect(fetchMock.mock.calls[0][1].cache).toBe("default");
+    await fetchMapApi(path, { cache: "reload" });
+    expect(fetchMock.mock.calls[1][1].cache).toBe("reload");
+  });
+
+  it.each([
+    "/maps/accessible",
+    "/main/editor/province-runs",
+    "/main/data/nation",
+    "/main/tiles/base/manifest",
+  ])("continues to revalidate %s", async (path) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchMapApi(path);
+    expect(fetchMock.mock.calls[0][1].cache).toBe("no-cache");
+  });
+
   it("fetchMapApi re-throws an abort instead of masking it as a failure", async () => {
     // A user who pressed Cancel was being shown "Request failed. Please try
     // again." The chronicle build compensated by re-checking `signal.aborted`;

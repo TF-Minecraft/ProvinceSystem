@@ -24,11 +24,20 @@ RASTER_MODES = ("terrain", "fertility", "prosperity", "infrastructure", "infesta
 def warm_map_tiles(map_name: str) -> None:
     """Queue background builds for every tiled layer of `map_name` that is
     out of date. Returns at once; the builds run one at a time."""
-    sources = [Path(map_image(map_name, mode)) for mode in RASTER_MODES]
-    sources.append(Path(input_file(map_name, "provinces.png")))
+    # Include satellite input: it used to stay cold until the first visitor.
+    # Queue without hashing on the caller; even the source check can decode a
+    # full raster after a rewrite, and regeneration also calls this from CLI.
+    base = Path(input_file(map_name, "map.png"))
+    if base.is_file():
+        tile_cache._build_in_background(base)
+    sources = [Path(input_file(map_name, "provinces.png"))]
+    sources.extend(Path(map_image(map_name, mode)) for mode in (*REGION_MODES, *RASTER_MODES))
     for source in sources:
         if source.is_file():
-            tile_cache.ready_manifest(source)
+            is_raster = source.name == "provinces.png" or any(
+                source.name == f"{mode}_map.png" for mode in RASTER_MODES
+            )
+            tile_cache._build_in_background(source, warm_pick=True, tiles=is_raster)
     for mode in REGION_MODES:
         if region_composite.has_inputs(map_name, mode):
             region_composite.ready_composite(map_name, mode)

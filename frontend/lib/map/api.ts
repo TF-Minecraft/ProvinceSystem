@@ -110,6 +110,15 @@ function mergeHeaders(
   return { ...extra, ...auth };
 }
 
+function isMapAssetPath(path: string): boolean {
+  const pathname = path.split("?", 1)[0];
+  return [
+    /^\/[^/]+\/(?:map\/preview|mapdata\/[^/]+)$/,
+    /^\/[^/]+\/data\/(?:province_centroids|province_neighbors|province_label_neighbors|province_label_grid|province_label_grid_bin|province_id_runs|province_id_grid_q4)$/,
+    /^\/[^/]+\/tiles\/[^/]+\/[^/]+\/\d+\/\d+\/\d+\.webp$/,
+  ].some((pattern) => pattern.test(pathname));
+}
+
 export async function fetchMapApi(
   path: string,
   options: FetchMapApiOptions = {}
@@ -122,10 +131,9 @@ export async function fetchMapApi(
       headers,
       body: options.body,
       signal: options.signal,
-      // "no-cache" revalidates on every request but reuses the stored body on a
-      // 304, so an unchanged 34 MB base map costs a header round-trip instead of
-      // a full re-download. "no-store" would refetch the bytes every time.
-      cache: options.cache ?? "no-cache",
+      // Let public artefacts use their server freshness policy. Catalogue,
+      // editor and live data requests still revalidate on every use.
+      cache: options.cache ?? (isMapAssetPath(normalized) ? "default" : "no-cache"),
     });
   } catch (err) {
     // A caller that aborted on purpose is not a failed request, and reporting it

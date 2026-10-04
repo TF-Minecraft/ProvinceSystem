@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Header
+from fastapi.responses import JSONResponse
+
+from .http_headers import add_revalidate
 
 from .map_access import list_accessible_maps
 from ..scripts.chronicle.chapter_identity import overlay_live_chapter
@@ -25,9 +28,9 @@ def _with_chronicle_day_flag(public: dict) -> dict:
 async def get_accessible_maps(
     authorization: str | None = Header(default=None),
 ):
-    return {
+    return add_revalidate(JSONResponse({
         "maps": [
             _with_chronicle_day_flag(entry.to_public_dict())
             for entry in list_accessible_maps(authorization)
         ]
-    }
+    }))

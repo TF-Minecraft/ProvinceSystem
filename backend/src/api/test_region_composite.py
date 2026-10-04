@@ -219,9 +219,11 @@ class RegionCompositeTest(unittest.TestCase):
         ) as composites:
             tile_warm.warm_map_tiles("main")
         self.assertEqual(
-            [call.args[0].name for call in rasters.call_args_list], ["prosperity_map.png"]
+            [call.args[0].name for call in rasters.call_args_list], ["map.png", "prosperity_map.png"]
         )
         composites.assert_called_once_with("main", "nation")
+        self.assertEqual(rasters.call_args_list[0].kwargs, {})
+        self.assertEqual(rasters.call_args_list[1].kwargs, {"warm_pick": True, "tiles": True})
 
 
 if __name__ == "__main__":

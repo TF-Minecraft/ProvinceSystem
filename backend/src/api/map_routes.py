@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import JSONResponse
 import os, time
 
-from .http_headers import conditional_file_response
+from .http_headers import conditional_file_response, map_asset_cache
 from .webp_cache import webp_variant
 from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, parchment_image
@@ -105,13 +105,15 @@ async def get_map_preview(
     already WebP and must be served whatever the Accept header says, since its
     whole purpose is to render before the real map arrives.
     """
-    map_name = ensure_map_access(map_name, authorization).id
+    entry = ensure_map_access(map_name, authorization)
+    map_name = entry.id
     path = map_preview_path(map_name)
     if not os.path.exists(path):
         return JSONResponse({"error": "Map not found"}, 404)
     return conditional_file_response(
         path,
         media_type="image/webp",
+        cache_control=map_asset_cache(entry, authorization),
         if_none_match=if_none_match,
         if_modified_since=if_modified_since,
     )
