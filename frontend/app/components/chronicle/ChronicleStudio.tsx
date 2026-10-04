@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
 import { useMapGeometry, chronicleNamesSupported } from "../../hooks/useMapGeometry";
 import { useMapViewport } from "../../hooks/useMapViewport";
+import { useResponsiveFitMode } from "../../hooks/useResponsiveFitMode";
 import { computeVisibleNationLabels } from "../../lib/mapLabels";
 import type { NationLabelSpec } from "../../lib/mapLabels";
 import {
@@ -86,6 +86,8 @@ import {
 import { chronicleDayHref, liveMapHref } from "../../lib/map/chronicleDayRoute";
 import {
   DEFAULT_CHRONICLE_GIF_SIZE,
+  DEFAULT_CHRONICLE_WATERMARK_CORNER,
+  type ChronicleWatermarkCorner,
   chronicleGifDelayMs,
   chronicleGifFilename,
 } from "../../lib/map/chronicleGifFrame";
@@ -94,18 +96,31 @@ import {
   exportChronicleGif,
   isChronicleGifCancelled,
 } from "./chronicleGifExport";
+import { formatChronicleDay } from "../../lib/map/chronicleDayLabel";
+import { DownloadIcon } from "../map/shell/MapIcons";
+import MapShell from "../map/shell/MapShell";
+import MapZoomControls from "../map/shell/MapZoomControls";
 import {
   ChronicleBuildPanel,
+  ChronicleNotice,
+  ChroniclePlaque,
   ChroniclePlaybackPanel,
+  ChroniclePlayer,
   ChronicleRangePanel,
+  ChronicleSheetSummary,
+  ChronicleSteps,
   ChronicleTogglePanel,
-  chroniclePanelClass,
+  primaryButtonClass,
+  quietButtonClass,
+  type ChronicleStep,
 } from "./ChroniclePanels";
 import LedgerChartsPanel from "./LedgerChartsPanel";
 import { useLedgerSeries } from "./useLedgerSeries";
 import {
   CHRONICLE_TOGGLES_OFF,
+  CHRONICLE_TOGGLE_ORDER,
   EMPTY_CHRONICLE_LAYERS,
+  anyChronicleToggleOn,
   buildChronicleLayers,
   chronicleLabelMapObjects,
   chronicleRegionData,
@@ -237,6 +252,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // The ledger charts rail. Play-stage only, and off by default — most builds
   // never focus a nation, and the fetch behind it is gated on this anyway.
   const [chartsOpen, setChartsOpen] = useState(false);
+  // The phone sheet pulled down to one row, leaving the map the whole screen.
+  const [sheetMin, setSheetMin] = useState(false);
 
   const [gifSize, setGifSize] = useState<number>(DEFAULT_CHRONICLE_GIF_SIZE);
   /**
@@ -245,9 +262,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * dates are carried unless the user deliberately strips them.
    */
   const [gifStampDay, setGifStampDay] = useState(true);
-  /** Logo and Discord line both travel with the file unless the user strips them. */
-  const [gifWatermark, setGifWatermark] = useState(true);
-  const [gifDiscordLink, setGifDiscordLink] = useState(true);
+  /** Where the logo and Discord line sit: always on, so only the corner is chosen. */
+  const [gifCorner, setGifCorner] = useState<ChronicleWatermarkCorner>(
+    DEFAULT_CHRONICLE_WATERMARK_CORNER
+  );
   const [gifStatus, setGifStatus] = useState<string | null>(null);
   const [gifError, setGifError] = useState<string | null>(null);
   const [gifNotice, setGifNotice] = useState<string | null>(null);
@@ -338,7 +356,16 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // Bumped whenever `framesRef` is replaced, so the render reads the new array.
   const [framesVersion, setFramesVersion] = useState(0);
 
-  const viewport = useMapViewport({ mapSize, fitMode: "contain" });
+  const fitMode = useResponsiveFitMode();
+  const viewport = useMapViewport({
+    mapSize,
+    fitMode,
+    dragPan: true,
+    keyboard: true,
+    // Safari would otherwise back the scaled-down map with a full-size layer
+    // and run out of memory (see restingZoom).
+    restingZoom: true,
+  });
   const geometry = useMapGeometry(mapId, authToken);
   // Names need neighbor + centroid files. Missing files leave names off rather
   // than drawing an empty layer; loading still reports supported so the build
@@ -679,6 +706,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     provinceData: false,
     grid: false,
   });
+  /** Compose-preview loads still running: two toggles can overlap them. */
+  const previewLoadsRef = useRef(0);
   const clearAttempts = useCallback(() => {
     attemptedRef.current = {
       nation: false,
@@ -716,8 +745,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       return;
     }
 
-    let cancelled = false;
+    // No per-run cancellation. Every source is fetched once and marked as
+    // attempted the moment it starts, so a load must land whatever happens to
+    // the effect meanwhile: switching on a second layer while the first was
+    // still loading re-ran this effect, and dropping the first load's result
+    // then left that layer never fetched and the panel loading for good.
+    // Unmounting aborts the shared signal, which is the one real cancel.
     const signal = previewAbortSignal();
+    previewLoadsRef.current += 1;
     setLayersLoading(true);
     setLayerError(null);
 
@@ -732,27 +767,27 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         if (fetchNation) {
           attemptedRef.current.nation = true;
           const file = await loadNationFile(previewDay, signal);
-          if (!cancelled) setPreviewNation(file.value);
+          setPreviewNation(file.value);
         }
         if (fetchMarkers) {
           attemptedRef.current.markers = true;
           const file = await loadMarkersFile(previewDay, signal);
-          if (!cancelled) setPreviewMarkers(file?.value ?? null);
+          setPreviewMarkers(file?.value ?? null);
         }
         if (fetchTrade) {
           attemptedRef.current.trade = true;
           const file = await loadTradeFile(previewDay, signal);
-          if (!cancelled) setPreviewTrade(file?.value ?? null);
+          setPreviewTrade(file?.value ?? null);
         }
         if (fetchProvinceData) {
           attemptedRef.current.provinceData = true;
           const file = await loadProvinceDataFile(previewDay, signal);
-          if (!cancelled) setPreviewProvinceData(file?.value ?? null);
+          setPreviewProvinceData(file?.value ?? null);
         }
       } catch (err) {
         // Our own abort, or a grid fetch some other caller cancelled — neither
         // is something to put in front of the user.
-        if (cancelled || isAbortError(err)) return;
+        if (signal.aborted || isAbortError(err)) return;
         clearAttempts();
         setLayerError(
           err instanceof Error
@@ -760,14 +795,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
             : `Failed to load ${previewDay}'s layers.`
         );
       } finally {
-        if (!cancelled) setLayersLoading(false);
+        previewLoadsRef.current -= 1;
+        // Loading until the last of the overlapping loads is in.
+        if (previewLoadsRef.current === 0) setLayersLoading(false);
       }
     };
 
     void load();
-    return () => {
-      cancelled = true;
-    };
   }, [
     previewDay,
     wantNation,
@@ -1615,8 +1649,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         loop,
         centroids: geometry.centroids,
         stampDay: gifStampDay,
-        watermark: gifWatermark,
-        discordLink: gifDiscordLink,
+        watermarkCorner: gifCorner,
         signal: controller.signal,
         onProgress: (progress) => {
           setGifStatus(
@@ -1653,8 +1686,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, [
     gifSize,
     gifStampDay,
-    gifWatermark,
-    gifDiscordLink,
+    gifCorner,
     mapSize,
     speed,
     loop,
@@ -1672,6 +1704,22 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     setToggles((current) => ({ ...current, [key]: !current[key] }));
   }, []);
 
+
+  // Space plays and pauses, as in a video player, unless a control has focus:
+  // there Space already means "press this".
+  useEffect(() => {
+    if (stage !== "play") return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== " " || event.repeat || event.metaKey || event.ctrlKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button, a, input, select, textarea, [contenteditable]")) return;
+      event.preventDefault();
+      setPlaying((current) => !current);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [stage]);
+
   if (gateReason) {
     return <MapAccessGate reason={gateReason} mapDisplayName={displayName} />;
   }
@@ -1682,275 +1730,345 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       : { nationNames: "Unavailable — label geometry only exists for the live map." };
 
   const emptyChronicle = !indexLoading && !indexError && days.length === 0;
+  const layersOn = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).length;
+  const composeReady =
+    anyChronicleToggleOn(toggles) && !composeBlockReason && !layersLoading && !indexLoading;
+
+  const step: ChronicleStep =
+    stage === "compose" ? "layers" : stage === "play" ? "watch" : "dates";
+  const reachable: Record<ChronicleStep, boolean> = {
+    layers: !building,
+    dates: !building && (composeReady || stage !== "compose"),
+    watch: !building && frames.length > 0,
+  };
+  const goToStep = (next: ChronicleStep) => {
+    if (next === step) return;
+    setNotice(null);
+    setPlaying(false);
+    setStage(next === "layers" ? "compose" : next === "dates" ? "range" : "play");
+  };
+
+  const player = (variant: "bar" | "sheet") => (
+    <ChroniclePlayer
+      variant={variant}
+      days={frameDays}
+      activeIndex={playIndex}
+      onScrub={(next) => {
+        setPlaying(false);
+        setPlayIndex(Math.max(0, Math.min(frameDays.length - 1, next)));
+      }}
+      playing={playing}
+      onTogglePlay={() => setPlaying((current) => !current)}
+      speed={speed}
+      onSpeedChange={setSpeed}
+      loop={loop}
+      onLoopChange={setLoop}
+      incomplete={Boolean(activeFrame?.incomplete)}
+    />
+  );
+
+  const charts =
+    stage === "play" && chartsOpen ? (
+      <LedgerChartsPanel result={ledgerCharts} cursorDay={activeFrame?.day ?? null} />
+    ) : null;
+
+  const exploreHref = activeFrame
+    ? chronicleDayHref(
+        mapId,
+        activeFrame.day,
+        // The span of the timelapse as it was actually built, not the range
+        // inputs: skipped days move the ends, and the day page's previous/next
+        // must walk what the reader watched.
+        frames.length
+          ? { start: frames[0].day, end: frames[frames.length - 1].day }
+          : null
+      )
+    : null;
+
+  // What the pulled-down phone sheet says, so the step is never out of mind.
+  const sheetSummary =
+    stage === "compose"
+      ? layersOn
+        ? `${layersOn} layer${layersOn === 1 ? "" : "s"} on`
+        : "No layers on yet"
+      : stage === "range"
+        ? rangeStart && rangeEnd
+          ? `${formatChronicleDay(rangeStart)} – ${formatChronicleDay(rangeEnd)}`
+          : "Pick the days"
+        : stage === "build"
+          ? `Building · ${buildProgress?.completed ?? 0} of ${buildProgress?.total ?? 0} days`
+          : activeFrame
+            ? formatChronicleDay(activeFrame.day)
+            : "";
+
+  const indexNotices = (
+    <>
+      {indexError ? <ChronicleNotice>{indexError}</ChronicleNotice> : null}
+      {emptyChronicle ? (
+        <ChronicleNotice tone="quiet">
+          No days have been captured for this map yet. The timelapse starts once the
+          first daily snapshot lands.
+        </ChronicleNotice>
+      ) : null}
+      {layerError ? <ChronicleNotice>{layerError}</ChronicleNotice> : null}
+    </>
+  );
+
+  const stepBody =
+    emptyChronicle || (indexError && !index) ? null : stage === "compose" ? (
+      <ChronicleTogglePanel
+        toggles={toggles}
+        onToggle={toggleLayer}
+        disabledReasons={disabledReasons}
+        notice={notice}
+        focusOptions={focusOptions}
+        focusNationId={focusNationId}
+        onFocusChange={(next) => {
+          setNotice(null);
+          setFocusNationId(next);
+        }}
+        focusDisabledReason={
+          needsNationFile(toggles)
+            ? focusOptions.length
+              ? null
+              : "Waiting on the latest day's realms…"
+            : "Switch on a nation layer to pick a nation."
+        }
+      />
+    ) : stage === "range" ? (
+      <ChronicleRangePanel
+        days={days}
+        incompleteDays={incompleteSet}
+        start={rangeStart}
+        end={rangeEnd}
+        onStartChange={setRangeStart}
+        onEndChange={setRangeEnd}
+        selection={selection}
+        estimate={estimate}
+        renderSize={renderSize}
+        onRenderSizeChange={setRenderSize}
+        blockReason={buildBlockReason}
+        notice={notice ?? buildError}
+      />
+    ) : stage === "build" ? (
+      <ChronicleBuildPanel progress={buildProgress} error={buildError} />
+    ) : (
+      <ChroniclePlaybackPanel
+        player={player("sheet")}
+        skippedDays={skippedDays}
+        exploreHref={exploreHref}
+        chartsOpen={chartsOpen}
+        onToggleCharts={() => setChartsOpen((current) => !current)}
+        charts={charts}
+        gifSize={gifSize}
+        onGifSizeChange={setGifSize}
+        gifStampDay={gifStampDay}
+        onGifStampDayChange={setGifStampDay}
+        gifCorner={gifCorner}
+        onGifCornerChange={setGifCorner}
+        gifStatus={gifStatus}
+        gifError={gifError}
+        gifNotice={gifNotice}
+      />
+    );
+
+  const stepFooter =
+    emptyChronicle || (indexError && !index) ? null : stage === "compose" ? (
+      <button
+        type="button"
+        className={`${primaryButtonClass} w-full`}
+        onClick={() => goToStep("dates")}
+        disabled={!composeReady}
+      >
+        {layersLoading || indexLoading
+          ? "Loading layers…"
+          : composeBlockReason
+            ? "Waiting on label geometry…"
+            : anyChronicleToggleOn(toggles)
+              ? "Next: choose the days"
+              : "Switch on a layer first"}
+      </button>
+    ) : stage === "range" ? (
+      <div className="flex gap-2">
+        <button type="button" className={quietButtonClass} onClick={() => goToStep("layers")}>
+          Back
+        </button>
+        <button
+          type="button"
+          className={`${primaryButtonClass} flex-1`}
+          onClick={() => void startBuild()}
+          disabled={Boolean(buildBlockReason)}
+        >
+          Build {selection.days.length || ""} frames
+        </button>
+      </div>
+    ) : stage === "build" ? (
+      buildError ? (
+        <button
+          type="button"
+          className={`${quietButtonClass} w-full`}
+          onClick={() => setStage("range")}
+        >
+          Back to the days
+        </button>
+      ) : (
+        <button type="button" className={`${quietButtonClass} w-full`} onClick={cancelBuild}>
+          Cancel build
+        </button>
+      )
+    ) : (
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={quietButtonClass}
+          onClick={() => {
+            discardFrames();
+            setStage("compose");
+            setNotice(null);
+          }}
+        >
+          Start over
+        </button>
+        <button
+          type="button"
+          className={`${primaryButtonClass} flex-1`}
+          onClick={() => void exportGif()}
+          disabled={gifStatus != null}
+        >
+          <DownloadIcon size={17} />
+          {gifStatus ?? "Export GIF"}
+        </button>
+      </div>
+    );
+
+  const panel = sheetMin ? (
+    <ChronicleSheetSummary step={step} summary={sheetSummary} onOpen={() => setSheetMin(false)} />
+  ) : (
+    <>
+      <ChronicleSteps current={step} reachable={reachable} onSelect={goToStep} />
+      <div className="space-y-5">
+        {indexNotices}
+        {stepBody}
+      </div>
+    </>
+  );
 
   return (
-    <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col bg-[var(--tfmc-forest-deep)] text-[var(--tfmc-cream)] md:h-[calc(100dvh-var(--tfmc-header-h))] md:overflow-hidden">
-      <div className="relative aspect-square w-full min-h-0 md:aspect-auto md:w-auto md:flex-1">
-        <div className="relative h-full w-full overflow-hidden">
-          <MapViewport
-            mapSize={mapSize}
-            viewportRef={viewport.viewportRef}
-            transformStyle={viewport.transformStyle}
-            transformTransition={viewport.transformTransition}
-            cursorClassName={viewport.isPanning ? "cursor-grabbing" : "cursor-grab"}
-            isPanning={viewport.isPanning}
-            fill
-          >
-            <MapAuthImage
-              mapId={mapId}
-              path={`/${mapId}/map`}
-              sessionToken={authToken}
-              alt={`${displayName} base map`}
-              className="pointer-events-none block h-full w-full"
-              // The GIF export composites this exact decoded image, and a
-              // canvas it taints can never be read back. Asking for it with
-              // CORS costs nothing when the header is there — it is the same
-              // request, so the ~34 MB asset is not fetched twice — and the
-              // `onError` swap below covers the case where it is not.
-              crossOrigin={baseCorsFailed ? undefined : "anonymous"}
-              onError={() => {
-                // Idempotent on purpose: the bare retry this triggers can fail
-                // again (a genuinely missing asset), and React bails out of a
-                // set to the value already held, so there is no render loop.
-                setBaseCorsFailed(true);
-              }}
-              imgRef={(node) => {
-                baseImageRef.current = node;
-              }}
-              onLoad={(event) => {
-                const img = event.currentTarget;
-                if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-                  setMapSize((current) =>
-                    current.w === img.naturalWidth &&
-                    current.h === img.naturalHeight
-                      ? current
-                      : { w: img.naturalWidth, h: img.naturalHeight }
-                  );
-                }
-              }}
-            />
-            <canvas
-              ref={canvasRef}
-              className="pointer-events-none absolute inset-0 z-[12] h-full w-full"
-              style={{ opacity: CHRONICLE_FILL_OPACITY }}
-            />
-            {/*
-              All three share z-13 and stack by document order: the fort hatch
-              under the borders it runs beneath, the occupation seam over them,
-              which is the order the GIF export composites them in too.
-            */}
-            <ChronicleBorderCanvas
-              mask={layers.fortControl}
-              ink={CHRONICLE_ZOC_HATCH_RGBA}
-            />
-            <ChronicleBorderCanvas
-              mask={layers.borders}
-              ink={CHRONICLE_BORDER_INK_RGBA}
-            />
-            <ChronicleBorderCanvas
-              mask={layers.occupationSeam}
-              ink={CHRONICLE_OCCUPATION_SEAM_RGBA}
-            />
-            {layers.wars.length ? (
-              <WarCampaignLineLayer
-                wars={layers.wars}
-                centroids={geometry.centroids}
-                mapW={mapSize.w}
-                mapH={mapSize.h}
-              />
-            ) : null}
-            {/*
-              `alwaysVisible` on both: every layer here is one the user ticked
-              on in Compose, so the live map's zoom-size gate would hide the
-              thing they asked for. Crowding is theirs to judge — the toggle
-              that switched the layer on switches it back off.
-            */}
-            <MapMarkerLayer
-              markers={layers.markers}
-              mapW={mapSize.w}
-              mapH={mapSize.h}
-              mapType="nation"
-              displayScale={viewport.displayScale}
-              layer="base"
-              alwaysVisible
-            />
-            <LabelLayer
-              labels={layers.labels}
-              mapW={mapSize.w}
-              mapH={mapSize.h}
-              displayScale={viewport.displayScale}
-              alwaysVisible
-            />
-          </MapViewport>
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 z-10 p-4">
-          <div className="pointer-events-auto absolute left-4 top-4 w-72 max-h-[calc(100%-2rem)] space-y-3 overflow-y-auto">
-            <div className={`${chroniclePanelClass} p-3`}>
-              <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-                Map chronicle
-              </p>
-              <h1 className="font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
-                {displayName} timelapse
-              </h1>
-              <Link
-                href={liveMapHref(mapId)}
-                className="mt-2 inline-flex text-xs text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)]"
-              >
-                Back to the live map
-              </Link>
-              {indexLoading ? (
-                <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-                  Loading the chronicle index…
-                </p>
-              ) : null}
-              {indexError ? (
-                <p className="mt-2 text-xs text-[var(--tfmc-accent)]">
-                  {indexError}
-                </p>
-              ) : null}
-              {emptyChronicle ? (
-                <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-                  No days have been captured for this map yet. The timelapse
-                  starts once the first daily snapshot lands.
-                </p>
-              ) : null}
-              {index && index.incomplete_day_count > 0 ? (
-                <p className="mt-2 text-xs text-[var(--tfmc-accent)]">
-                  {index.incomplete_day_count} stored day
-                  {index.incomplete_day_count === 1 ? "" : "s"} were captured
-                  with missing sources.
-                </p>
-              ) : null}
-              {layerError ? (
-                <p className="mt-2 text-xs text-[var(--tfmc-accent)]">
-                  {layerError}
-                </p>
-              ) : null}
-            </div>
-
-            {!emptyChronicle && stage === "compose" ? (
-              <ChronicleTogglePanel
-                toggles={toggles}
-                onToggle={toggleLayer}
-                disabledReasons={disabledReasons}
-                busy={layersLoading || indexLoading}
-                blockReason={composeBlockReason}
-                notice={notice}
-                focusOptions={focusOptions}
-                focusNationId={focusNationId}
-                onFocusChange={(next) => {
-                  setNotice(null);
-                  setFocusNationId(next);
-                }}
-                focusDisabledReason={
-                  needsNationFile(toggles)
-                    ? focusOptions.length
-                      ? null
-                      : "Waiting on the latest day's realms…"
-                    : "Switch on a nation layer to pick a nation."
-                }
-                onNext={() => setStage("range")}
-              />
-            ) : null}
-
-            {stage === "range" ? (
-              <ChronicleRangePanel
-                days={days}
-                incompleteDays={incompleteSet}
-                start={rangeStart}
-                end={rangeEnd}
-                onStartChange={setRangeStart}
-                onEndChange={setRangeEnd}
-                selection={selection}
-                estimate={estimate}
-                renderSize={renderSize}
-                onRenderSizeChange={setRenderSize}
-                blockReason={buildBlockReason}
-                onBack={() => setStage("compose")}
-                onBuild={() => void startBuild()}
-              />
-            ) : null}
-
-            {stage === "build" ? (
-              <ChronicleBuildPanel
-                progress={buildProgress}
-                error={buildError}
-                onCancel={cancelBuild}
-                onBack={() => {
-                  cancelBuild();
-                  setStage("range");
-                }}
-              />
-            ) : null}
-
-            {stage === "play" ? (
-              <ChroniclePlaybackPanel
-                days={frameDays}
-                activeIndex={playIndex}
-                onScrub={(next) => {
-                  setPlaying(false);
-                  setPlayIndex(next);
-                }}
-                playing={playing}
-                onTogglePlay={() => setPlaying((current) => !current)}
-                speed={speed}
-                onSpeedChange={setSpeed}
-                loop={loop}
-                onLoopChange={setLoop}
-                incomplete={Boolean(activeFrame?.incomplete)}
-                exploreHref={
-                  activeFrame
-                    ? chronicleDayHref(
-                        mapId,
-                        activeFrame.day,
-                        // The span of the timelapse as it was actually built,
-                        // not the range inputs: skipped days move the ends, and
-                        // the day page's previous/next must walk what the
-                        // reader watched.
-                        frames.length
-                          ? {
-                              start: frames[0].day,
-                              end: frames[frames.length - 1].day,
-                            }
-                          : null
-                      )
-                    : null
-                }
-                skippedDays={skippedDays}
-                chartsOpen={chartsOpen}
-                onToggleCharts={() => setChartsOpen((current) => !current)}
-                gifSize={gifSize}
-                onGifSizeChange={setGifSize}
-                gifStampDay={gifStampDay}
-                onGifStampDayChange={setGifStampDay}
-                gifWatermark={gifWatermark}
-                onGifWatermarkChange={setGifWatermark}
-                gifDiscordLink={gifDiscordLink}
-                onGifDiscordLinkChange={setGifDiscordLink}
-                onExportGif={() => void exportGif()}
-                gifStatus={gifStatus}
-                gifError={gifError}
-                gifNotice={gifNotice}
-                onDiscard={() => {
-                  discardFrames();
-                  setStage("compose");
-                  setNotice(null);
-                }}
-              />
-            ) : null}
-          </div>
-
-          {stage === "play" && chartsOpen ? (
-            <div className="pointer-events-auto absolute right-4 top-4 w-72 max-h-[calc(100%-2rem)] space-y-3 overflow-y-auto">
-              <LedgerChartsPanel
-                result={ledgerCharts}
-                cursorDay={activeFrame?.day ?? null}
-              />
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    <MapShell
+      plaque={<ChroniclePlaque displayName={displayName} liveHref={liveMapHref(mapId)} />}
+      details={panel}
+      // A fresh sheet, at its smaller size, when it is pulled down or put back,
+      // and when playback starts, so the player is what shows.
+      detailsKey={sheetMin ? "summary" : stage === "play" ? "watch" : "steps"}
+      onDetailsClose={() => setSheetMin(true)}
+      detailsFooter={sheetMin ? null : stepFooter}
+      status={
+        indexLoading
+          ? "Loading the timelapse…"
+          : stage === "compose" && layersLoading
+            ? "Loading layers…"
+            : null
+      }
+      zoomControls={
+        <MapZoomControls
+          onZoom={viewport.zoomBy}
+          onReset={() => viewport.resetViewport({ animated: true })}
+        />
+      }
+      footer={stage === "play" && frameDays.length ? player("bar") : null}
+      aside={charts ? <div className="space-y-3">{charts}</div> : null}
+    >
+      <MapViewport
+        mapSize={mapSize}
+        viewportRef={viewport.viewportRef}
+        contentRef={viewport.contentRef}
+        transformStyle={viewport.transformStyle}
+        zoom={viewport.zoom}
+        transformTransition={viewport.transformTransition}
+        cursorClassName={viewport.cursorClassName}
+        isPanning={viewport.isPanning}
+        fill
+        capturesTouch
+      >
+        <MapAuthImage
+          mapId={mapId}
+          path={`/${mapId}/map`}
+          sessionToken={authToken}
+          alt={`${displayName} base map`}
+          className="pointer-events-none block h-full w-full"
+          // The GIF export composites this exact decoded image, and a
+          // canvas it taints can never be read back. Asking for it with
+          // CORS costs nothing when the header is there — it is the same
+          // request, so the ~34 MB asset is not fetched twice — and the
+          // `onError` swap below covers the case where it is not.
+          crossOrigin={baseCorsFailed ? undefined : "anonymous"}
+          onError={() => {
+            // Idempotent on purpose: the bare retry this triggers can fail
+            // again (a genuinely missing asset), and React bails out of a
+            // set to the value already held, so there is no render loop.
+            setBaseCorsFailed(true);
+          }}
+          imgRef={(node) => {
+            baseImageRef.current = node;
+          }}
+          onLoad={(event) => {
+            const img = event.currentTarget;
+            if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+              setMapSize((current) =>
+                current.w === img.naturalWidth && current.h === img.naturalHeight
+                  ? current
+                  : { w: img.naturalWidth, h: img.naturalHeight }
+              );
+            }
+          }}
+        />
+        <canvas
+          ref={canvasRef}
+          className="pointer-events-none absolute inset-0 z-[12] h-full w-full"
+          style={{ opacity: CHRONICLE_FILL_OPACITY }}
+        />
+        {/*
+          All three share z-13 and stack by document order: the fort hatch
+          under the borders it runs beneath, the occupation seam over them,
+          which is the order the GIF export composites them in too.
+        */}
+        <ChronicleBorderCanvas mask={layers.fortControl} ink={CHRONICLE_ZOC_HATCH_RGBA} />
+        <ChronicleBorderCanvas mask={layers.borders} ink={CHRONICLE_BORDER_INK_RGBA} />
+        <ChronicleBorderCanvas
+          mask={layers.occupationSeam}
+          ink={CHRONICLE_OCCUPATION_SEAM_RGBA}
+        />
+        {layers.wars.length ? (
+          <WarCampaignLineLayer
+            wars={layers.wars}
+            centroids={geometry.centroids}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+          />
+        ) : null}
+        {/*
+          `alwaysVisible` on both: every layer here is one the user ticked
+          on in Compose, so the live map's zoom-size gate would hide the
+          thing they asked for. Crowding is theirs to judge — the toggle
+          that switched the layer on switches it back off.
+        */}
+        <MapMarkerLayer
+          markers={layers.markers}
+          mapW={mapSize.w}
+          mapH={mapSize.h}
+          mapType="nation"
+          displayScale={viewport.displayScale}
+          layer="base"
+          alwaysVisible
+        />
+        <LabelLayer
+          labels={layers.labels}
+          mapW={mapSize.w}
+          mapH={mapSize.h}
+          displayScale={viewport.displayScale}
+          alwaysVisible
+        />
+      </MapViewport>
+    </MapShell>
   );
 }

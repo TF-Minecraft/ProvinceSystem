@@ -250,13 +250,21 @@ export type ChronicleWatermarkLayout = {
 
 export const CHRONICLE_WATERMARK_TEXT = "discord.gg/tfmc";
 
-/** Which pieces of the corner mark to reserve space for. Omitted means shown. */
-export type ChronicleWatermarkParts = {
-  /** The TFMC logo. */
-  logo?: boolean;
-  /** The discord.gg/tfmc line. */
-  link?: boolean;
-};
+/** Which corner of the export the TFMC mark sits in. */
+export type ChronicleWatermarkCorner =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
+export const CHRONICLE_WATERMARK_CORNERS: { value: ChronicleWatermarkCorner; label: string }[] = [
+  { value: "top-left", label: "Top left" },
+  { value: "top-right", label: "Top right" },
+  { value: "bottom-left", label: "Bottom left" },
+  { value: "bottom-right", label: "Bottom right" },
+];
+
+export const DEFAULT_CHRONICLE_WATERMARK_CORNER: ChronicleWatermarkCorner = "bottom-left";
 
 /**
  * The TFMC mark, bottom-left, sized as a fraction of the export edge so it
@@ -277,31 +285,52 @@ export type ChronicleWatermarkParts = {
  * bottom still sits `margin` above the edge, the same anchor the link-only box
  * uses — and add a second, smaller line below the link sharing its left edge.
  *
- * `parts` drops the logo, the Discord line, or both. A dropped piece takes no
- * column, so the scrim closes around whatever remains (including a date on its
- * own). Omitting `parts` is the full mark.
+ * The logo and the Discord line are always drawn: every GIF that leaves the
+ * studio carries where it came from. `corner` only moves the whole mark, laid
+ * out bottom-left and then shifted so it keeps the same margin from the two
+ * edges of the corner it is moved to. The logo stays left of the text in
+ * every corner, so the mark reads the same wherever it sits.
  */
 export function chronicleWatermarkLayout(
   size: number,
   textWidth: number,
   dateWidth?: number | null,
-  parts?: ChronicleWatermarkParts
+  corner: ChronicleWatermarkCorner = DEFAULT_CHRONICLE_WATERMARK_CORNER
 ): ChronicleWatermarkLayout {
-  const showLogo = parts?.logo !== false;
-  const showLink = parts?.link !== false;
-  if (showLogo && showLink) {
-    return chronicleFullWatermarkLayout(size, textWidth, dateWidth);
-  }
-  return chronicleReducedWatermarkLayout(
-    size,
-    textWidth,
-    dateWidth,
-    showLogo,
-    showLink
-  );
+  const layout = chronicleBottomLeftWatermarkLayout(size, textWidth, dateWidth);
+  const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
+  const { scrim } = layout;
+  // Mirrored margins: as far from the right edge as it was from the left,
+  // and from the top as it was from the bottom.
+  const dx = corner.endsWith("right") ? edge - scrim.width - 2 * scrim.x : 0;
+  const dy = corner.startsWith("top") ? edge - scrim.height - 2 * scrim.y : 0;
+  return shiftWatermarkLayout(layout, dx, dy);
 }
 
-function chronicleFullWatermarkLayout(
+function shiftWatermarkLayout(
+  layout: ChronicleWatermarkLayout,
+  dx: number,
+  dy: number
+): ChronicleWatermarkLayout {
+  if (dx === 0 && dy === 0) return layout;
+  return {
+    ...layout,
+    logoX: layout.logoX + dx,
+    logoY: layout.logoY + dy,
+    textX: layout.textX + dx,
+    textBaselineY: layout.textBaselineY + dy,
+    scrim: { ...layout.scrim, x: layout.scrim.x + dx, y: layout.scrim.y + dy },
+    date: layout.date
+      ? {
+          ...layout.date,
+          textX: layout.date.textX + dx,
+          textBaselineY: layout.date.textBaselineY + dy,
+        }
+      : null,
+  };
+}
+
+function chronicleBottomLeftWatermarkLayout(
   size: number,
   textWidth: number,
   dateWidth?: number | null
@@ -376,122 +405,6 @@ function chronicleFullWatermarkLayout(
       width: Math.max(0, scrimRight - scrimX),
       height: Math.max(0, scrimBottom - scrimY),
       radius: Math.round(logoSize * 0.16),
-    },
-    date: hasDate
-      ? {
-          fontSize: dateFontSize,
-          textX,
-          textBaselineY: dateTextBaselineY,
-          haloWidth: Math.max(1.5, dateFontSize * 0.3),
-        }
-      : null,
-  };
-}
-
-/**
- * The same corner, with the logo, the Discord line, or both left out.
- *
- * A missing column is not an empty gap: the text starts at the margin when
- * there is no logo, and the scrim hugs the logo when there is no text. The
- * date, when stamped, stays the second line under a remaining Discord link
- * and becomes the only text line when that link is gone.
- */
-function chronicleReducedWatermarkLayout(
-  size: number,
-  textWidth: number,
-  dateWidth: number | null | undefined,
-  showLogo: boolean,
-  showLink: boolean
-): ChronicleWatermarkLayout {
-  const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
-  const margin = Math.round(clamp(edge * 0.028, 10, 32));
-  const fontSize = Math.round(clamp(edge * 0.034, 13, 32));
-  const hasDate = dateWidth != null;
-  const empty: ChronicleWatermarkLayout = {
-    logoX: margin,
-    logoY: edge - margin,
-    logoSize: 0,
-    fontSize,
-    textX: margin,
-    textBaselineY: edge - margin,
-    haloWidth: Math.max(2, fontSize * 0.3),
-    scrim: { x: 0, y: 0, width: 0, height: 0, radius: 0 },
-    date: null,
-  };
-  if (!showLogo && !showLink && !hasDate) return empty;
-
-  const dateFontSize = hasDate ? Math.max(11, Math.round(fontSize * 0.68)) : 0;
-  const lineGap =
-    showLink && hasDate ? Math.round(clamp(fontSize * 0.28, 3, 10)) : 0;
-  const fullLogo = Math.round(clamp(edge * 0.1, 40, 100));
-  const logoSize = showLogo ? fullLogo : 0;
-  const hasText = showLink || hasDate;
-  const gap =
-    showLogo && hasText ? Math.round(clamp(edge * 0.018, 6, 18)) : 0;
-
-  const logoX = margin;
-  const blockBottom = edge - margin;
-  const linkLine = showLink ? fontSize : 0;
-  const textStackHeight = linkLine + lineGap + dateFontSize;
-  const rowHeight = Math.max(logoSize, textStackHeight);
-  const rowTop = blockBottom - rowHeight;
-  const logoY = showLogo ? rowTop + (rowHeight - logoSize) / 2 : rowTop;
-  const textX = logoX + (showLogo ? logoSize + gap : 0);
-  const stackTop = rowTop + (rowHeight - textStackHeight) / 2;
-
-  let textBaselineY: number;
-  let dateTextBaselineY = 0;
-  if (showLink && hasDate) {
-    textBaselineY = stackTop + fontSize;
-    dateTextBaselineY = textBaselineY + lineGap + dateFontSize;
-  } else if (showLink && showLogo) {
-    textBaselineY = logoY + logoSize / 2 + fontSize * 0.36;
-  } else if (showLink) {
-    textBaselineY = stackTop + fontSize * 0.8;
-  } else if (hasDate && showLogo) {
-    dateTextBaselineY = logoY + logoSize / 2 + dateFontSize * 0.36;
-    textBaselineY = dateTextBaselineY;
-  } else {
-    dateTextBaselineY = stackTop + dateFontSize * 0.8;
-    textBaselineY = dateTextBaselineY;
-  }
-
-  const measured = showLink ? Math.max(0, finite(textWidth, 0)) : 0;
-  const dateMeasured = hasDate ? Math.max(0, finite(dateWidth, 0)) : 0;
-  const pad = Math.round(fontSize * 0.5);
-  const contentTop = showLogo
-    ? hasText
-      ? Math.min(logoY, stackTop)
-      : logoY
-    : stackTop;
-  const contentRight =
-    hasText
-      ? textX + Math.max(measured, dateMeasured)
-      : logoX + logoSize;
-  const contentBottom = Math.max(
-    showLogo ? logoY + logoSize : 0,
-    showLink ? textBaselineY + fontSize * 0.25 : 0,
-    hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0
-  );
-  const scrimX = Math.max(0, (showLogo ? logoX : textX) - pad);
-  const scrimY = Math.max(0, contentTop - pad);
-  const scrimRight = Math.min(edge, contentRight + pad);
-  const scrimBottom = Math.min(edge, contentBottom + pad);
-
-  return {
-    logoX,
-    logoY,
-    logoSize,
-    fontSize,
-    textX,
-    textBaselineY,
-    haloWidth: Math.max(2, fontSize * 0.3),
-    scrim: {
-      x: scrimX,
-      y: scrimY,
-      width: Math.max(0, scrimRight - scrimX),
-      height: Math.max(0, scrimBottom - scrimY),
-      radius: Math.round((logoSize || fontSize) * 0.16),
     },
     date: hasDate
       ? {

@@ -49,6 +49,9 @@ describe("ChronicleStudio", () => {
     );
 
     render(<ChronicleStudio mapId="main" />);
-    await waitFor(() => expect(screen.getByText("Compose")).toBeDefined());
+    await waitFor(() =>
+      expect(screen.getByRole("navigation", { name: "Timelapse steps" })).toBeDefined()
+    );
+    expect(screen.getByRole("switch", { name: "Nation fill" })).toBeDefined();
   });
 });

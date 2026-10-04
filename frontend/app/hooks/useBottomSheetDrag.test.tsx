@@ -175,6 +175,24 @@ describe("useBottomSheetDrag hand-off", () => {
 });
 
 describe("useBottomSheetDrag dismiss", () => {
+  it("is gone before it could be put back, for an owner that unmounts it", () => {
+    function Owner() {
+      const [open, setOpen] = useState(true);
+      return open ? <Unmounted onClose={() => setOpen(false)} /> : null;
+    }
+    function Unmounted({ onClose }: { onClose: () => void }) {
+      const ref = useRef<HTMLDivElement>(null);
+      useBottomSheetDrag(ref, { onClose });
+      return <div ref={ref} data-testid="gone" />;
+    }
+    render(<Owner />);
+    const sheet = screen.getByTestId("gone");
+    drag(sheet, 300, 500, 100);
+    expect(sheet.isConnected).toBe(false);
+    // Still slid out: it was never moved back into view while on the page.
+    expect(sheet.style.transform).toMatch(/^translateY/);
+  });
+
   it("puts the sheet back once closed, for an owner that hides rather than unmounts it", () => {
     const onClose = vi.fn();
     function Hidden() {

@@ -14,6 +14,13 @@ import {
   REGION_TILE_MODES,
 } from "../mapModes";
 import type { MapId, MapMode } from "../types";
+import {
+  layerTileButtonClass,
+  layerTileFrameClass,
+  layerTileIconClass,
+  layerTileLabelClass,
+  layerTileRingClass,
+} from "./layerTiles";
 import { LayersIcon, MAP_MODE_ICONS } from "./MapIcons";
 import SheetCloseButton from "./SheetCloseButton";
 
@@ -41,21 +48,6 @@ type MapLayersMenuProps = {
    */
   previews: boolean;
 };
-
-const tileFrameClass =
-  "relative block aspect-square w-full max-w-[4.25rem] overflow-hidden rounded-xl transition-shadow";
-
-function tileRingClass(active: boolean): string {
-  return active
-    ? "ring-[3px] ring-[var(--tfmc-accent)] ring-offset-2 ring-offset-[var(--tfmc-forest-deep)]"
-    : "ring-1 ring-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] group-hover:ring-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]";
-}
-
-function tileLabelClass(active: boolean): string {
-  return `block text-xs leading-tight hyphens-auto ${
-    active ? "font-semibold text-[var(--tfmc-accent)]" : "text-[var(--tfmc-stone)]"
-  }`;
-}
 
 /** The whole world in one tile: level 0 of a pyramid. */
 function wholeMapUrl(mapId: MapId, layer: string, manifest: TileManifest): string {
@@ -235,9 +227,9 @@ function LayersPanel({
                     onMapTypeChange(option.value);
                     onClose();
                   }}
-                  className="group flex w-full flex-col items-center gap-1.5 rounded-lg px-0.5 py-1 text-center focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
+                  className={layerTileButtonClass}
                 >
-                  <span className={`${tileFrameClass} ${tileRingClass(active)}`}>
+                  <span className={`${layerTileFrameClass} ${layerTileRingClass(active)}`}>
                     <ModePreview
                       mapId={mapId}
                       mode={option.value}
@@ -245,7 +237,7 @@ function LayersPanel({
                       enabled={previews}
                     />
                   </span>
-                  <span lang="en" className={tileLabelClass(active)}>
+                  <span lang="en" className={layerTileLabelClass(active)}>
                     {option.label}
                   </span>
                 </button>
@@ -269,18 +261,14 @@ function LayersPanel({
                     aria-checked={toggle.checked}
                     title={toggle.hint}
                     onClick={() => toggle.onChange(!toggle.checked)}
-                    className="group flex w-full flex-col items-center gap-1.5 rounded-lg px-0.5 py-1 text-center focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
+                    className={layerTileButtonClass}
                   >
                     <span
-                      className={`${tileFrameClass} ${tileRingClass(toggle.checked)} flex items-center justify-center ${
-                        toggle.checked
-                          ? "bg-[color-mix(in_srgb,var(--tfmc-accent)_28%,var(--tfmc-forest-deep))] text-[var(--tfmc-cream)]"
-                          : "bg-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)] text-[var(--tfmc-mist)]"
-                      }`}
+                      className={`${layerTileFrameClass} ${layerTileRingClass(toggle.checked)} ${layerTileIconClass(toggle.checked)}`}
                     >
                       <Glyph size={28} />
                     </span>
-                    <span lang="en" className={tileLabelClass(toggle.checked)}>
+                    <span lang="en" className={layerTileLabelClass(toggle.checked)}>
                       {toggle.label}
                     </span>
                   </button>

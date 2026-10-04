@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
+import { flushSync } from "react-dom";
 
 /** Dragged this far, a released sheet changes size or closes. */
 const SNAP_DISTANCE_PX = 96;
@@ -180,9 +181,12 @@ export function useBottomSheetDrag(
         if (travel >= SNAP_DISTANCE_PX || (travel > 0 && velocity >= SNAP_VELOCITY)) {
           node.style.transform = `translateY(${node.offsetHeight}px)`;
           settleTimer = setTimeout(() => {
-            optionsRef.current.onClose();
-            // For a sheet its owner hides rather than unmounts.
-            node.style.transform = "";
+            // Closed and rendered at once, before the sheet is put back. Reset
+            // first, with the owner's update still pending, and the whole
+            // sheet flashed back on screen for a frame before it went.
+            flushSync(() => optionsRef.current.onClose());
+            // Still here: an owner that hides the sheet rather than unmounting it.
+            if (node.isConnected) node.style.transform = "";
           }, SETTLE_MS);
         } else {
           node.style.transform = "";
