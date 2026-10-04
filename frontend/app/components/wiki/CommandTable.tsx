@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CommandAccess, CommandRow } from "@/app/wiki/data";
+import type { CommandRow } from "@/app/wiki/data";
 import DataTable from "./DataTable";
 import { WikiItemText } from "./WikiItemLink";
 

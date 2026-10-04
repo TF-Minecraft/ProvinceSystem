@@ -24,7 +24,6 @@ export const gatheringSection: WikiSection = {
     label: "Gathering",
     category: "professions",
     blurb: "Hidden herb spots in the wild: walk close, notice them, right-click to harvest.",
-    draft: true,
   },
   commands: gatheringCommands,
 };

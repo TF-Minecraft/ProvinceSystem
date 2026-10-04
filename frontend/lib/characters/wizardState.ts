@@ -232,13 +232,6 @@ export function webifyPrompt(text: string): string {
   return s;
 }
 
-/** Strip Minecraft-style title()/subtitle() wrappers for web display. */
-export function stripInfoLine(raw: string): string {
-  const { text } = unwrapMinecraftLine(raw);
-  if (isInGameOnlyLine(text)) return "";
-  return webifyPrompt(text);
-}
-
 export function parseStageCopy(stage: CatalogStage): StageCopy {
   const webMessages = Array.isArray(stage.web_messages)
     ? stage.web_messages

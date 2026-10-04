@@ -503,14 +503,6 @@
     32,
     25
   ],
-  "/wiki/textures/furniture/bucket.png": [
-    64,
-    64,
-    2,
-    4,
-    59,
-    59
-  ],
   "/wiki/textures/furniture/butter_churn.png": [
     32,
     32,
@@ -2823,14 +2815,6 @@
     14,
     15
   ],
-  "/wiki/textures/stations/alchemy-station.png": [
-    64,
-    64,
-    0,
-    0,
-    33,
-    33
-  ],
   "/wiki/textures/stations/alloy-forge.png": [
     64,
     512,
@@ -2854,38 +2838,6 @@
     0,
     48,
     48
-  ],
-  "/wiki/textures/stations/engineer-station.png": [
-    64,
-    64,
-    0,
-    0,
-    44,
-    44
-  ],
-  "/wiki/textures/stations/grindstone/pivot.png": [
-    16,
-    16,
-    0,
-    0,
-    10,
-    6
-  ],
-  "/wiki/textures/stations/grindstone/round.png": [
-    16,
-    16,
-    0,
-    0,
-    8,
-    12
-  ],
-  "/wiki/textures/stations/grindstone/side.png": [
-    16,
-    16,
-    0,
-    0,
-    12,
-    12
   ],
   "/wiki/textures/stations/gunsmithing-station/bullet.png": [
     16,
@@ -2943,21 +2895,13 @@
     64,
     41
   ],
-  "/wiki/textures/stations/medicine-garbage-reference.png": [
-    256,
-    256,
-    0,
-    0,
-    143,
-    99
-  ],
   "/wiki/textures/stations/medicine-station.png": [
     64,
     64,
     0,
     0,
     64,
-   25
+    25
   ],
   "/wiki/textures/stations/recycling-station.png": [
     64,

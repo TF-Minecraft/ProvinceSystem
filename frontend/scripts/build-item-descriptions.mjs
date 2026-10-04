@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { stripColours } from "./build-station-recipes.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-// The supplied archaeology gameplay guide supersedes these older item tooltips.
+// Archaeology descriptions come from the gameplay guide, not item tooltips.
 const supersededLore = new Set(["HAND_PICK", "POINTING_TROWEL", "MATTOCK", "GRAFTING_SPADE", "BREAKER_PICK", "SPOIL_SHOVEL", "ARCHAEO_TRACKER", "ARCHAEO_PROSPECT", "ARCHAEO_ESTABLISH", "ARCHAEO_PENCIL"]);
 export function parseItemDescriptions(text, type, used) {
   const descriptions = {};

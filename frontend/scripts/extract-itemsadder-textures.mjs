@@ -479,9 +479,8 @@ function resolveMmoItemTexture(contentsDir, item) {
 // dedicated handheld models whose layer0 is the authoritative inventory icon.
 // Keep this explicit: an arbitrary filename match must never replace a custom
 // model selected by CMD, and the model path proves which sprite Minecraft uses.
-// Items that do configure CMD or `model:` must not be listed here: the
-// artisan tools and enchanted charges once were, and kept showing stale art
-// after the server moved them to other sprites.
+// Items configured with CMD or `model:` must not be listed here: resolving
+// through those definitions keeps their icons in sync with the configured art.
 const NAMED_MMOITEM_MODELS = new Map([
   "ABYSSALITE_AXE", "ABYSSALITE_HOE", "ABYSSALITE_PICKAXE", "ABYSSALITE_SHOVEL",
   "MYTHRIL_AXE", "MYTHRIL_HOE", "MYTHRIL_PICKAXE", "MYTHRIL_SHOVEL",

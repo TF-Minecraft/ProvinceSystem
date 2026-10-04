@@ -39,7 +39,7 @@ export function itemIdentity(slot: Pick<Slot, "name" | "sourceId">): string | un
   if (slot.sourceId) return slot.sourceId;
   const ids = byName.get(slot.name);
   if (ids?.size === 1) return [...ids][0];
-  if (ids?.size) return undefined; // Ambiguous legacy names require explicit provenance.
+  if (ids?.size) return undefined; // Ambiguous item names require explicit provenance.
   if (recipeObjects[slot.name]) return recipeObjects[slot.name];
   if (materialNames.has(slot.name)) return `material:${slot.name}`;
   return undefined;

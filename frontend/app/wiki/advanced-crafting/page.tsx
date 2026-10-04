@@ -81,17 +81,6 @@ const smithingTools = [
   { name: "Sewing Needle", image: "/wiki/textures/smithing-tools/sewing-needle.png", detail: "Artisan tool · Performs a sewing hit." },
 ];
 
-const permissionTiers = [
-  ["Iron_Smith", "professions.iron_smith_<tier>", "Iron Ingot, Refined Barkwood"],
-  ["Steel_Smith", "professions.steel_smith_<tier>", "Steel Ingot, Refined Maplewood"],
-  [
-    "Abyssalite_Smith",
-    "professions.abyssalite_smith_<tier>",
-    "Bronze Ingot, Abyssalite Ingot, Refined Elderwood",
-  ],
-  ["Mythril_Smith", "professions.mythril_smith_<tier>", "Mythril Ingot, Refined Demonwood"],
-];
-
 const baseMetalsAndWoods = [
   ["Iron Ingot", "Metal", 1, 2, "Hit ×4, Small Hit ×1"],
   ["Steel Ingot", "Metal", 2, 4, "Hit ×5, Small Hit ×2"],

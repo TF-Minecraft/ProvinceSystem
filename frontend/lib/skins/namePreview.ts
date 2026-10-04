@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { LoreRun } from "../characters/lorePreview";
 
 /** Approximate TLibs / Minecraft name colour preview for the upload form. */
@@ -133,19 +132,4 @@ export function previewColourStopRuns(
     underline: underline || undefined,
     strike: strike || undefined,
   }));
-}
-
-export function previewStyleCss(styles: string[]): CSSProperties {
-  const set = new Set(styles.map((s) => s.toLowerCase()));
-  const deco = [
-    set.has("underline") || set.has("underlined") ? "underline" : "",
-    set.has("strikethrough") || set.has("strike") ? "line-through" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return {
-    fontWeight: set.has("bold") ? 700 : 400,
-    fontStyle: set.has("italic") ? "italic" : "normal",
-    textDecoration: deco || "none",
-  };
 }

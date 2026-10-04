@@ -1,14 +1,6 @@
+import { getApiBase, detailMessage, parseJson } from "../site/api";
 import { getSession } from "@/lib/characters/session";
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "@/lib/characters/uiDev";
-
-/** API base for precedent routes (no trailing slash). */
-export function getApiBase(): string {
-  const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
-  if (!base) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set");
-  }
-  return base;
-}
 
 export class PrecedentApiError extends Error {
   status: number;
@@ -49,31 +41,6 @@ export type CaseInput = {
   ruling: string;
   punishment: string;
 };
-
-function detailMessage(data: unknown, fallback: string): string {
-  if (data && typeof data === "object" && "detail" in data) {
-    const detail = (data as { detail: unknown }).detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) =>
-          typeof item === "object" && item && "msg" in item
-            ? String((item as { msg: unknown }).msg)
-            : String(item)
-        )
-        .join("; ");
-    }
-  }
-  return fallback;
-}
-
-async function parseJson(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
 
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {

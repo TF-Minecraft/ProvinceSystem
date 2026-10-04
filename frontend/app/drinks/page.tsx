@@ -11,7 +11,7 @@ import {
   isSessionValid,
   type DrinksSession,
 } from "../../lib/drinks/session";
-import { formatExpiresIn, formatLocal } from "../../lib/drinks/formatTime";
+import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
 
 export default function DrinksPage() {
   const router = useRouter();

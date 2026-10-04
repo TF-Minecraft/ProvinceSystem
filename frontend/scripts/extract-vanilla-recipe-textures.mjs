@@ -45,9 +45,6 @@ function collectVanillaTypes(stationsDir, itemDir) {
       }
     }
   }
-  // Four stale research recipes reference generic runestone ids removed from
-  // MMOItems. Installed tiered runestones all use this same carrier material.
-  addType("echo_shard");
   if (existsSync(ITEMSADDER_MANIFEST)) {
     const manifest = JSON.parse(readFileSync(ITEMSADDER_MANIFEST, "utf8"));
     for (const item of Object.values(manifest)) addType(item?.material);

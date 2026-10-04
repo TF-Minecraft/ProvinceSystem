@@ -9,7 +9,6 @@ import {
   getCommandsForHref,
   getNavItemByHref,
   getRecipesForStation,
-  isDraftHref,
   navItems,
   overviewNavItem,
   populatedCategories,
@@ -74,15 +73,6 @@ describe("recipe index derivation", () => {
     const withRecipes = allRecipes[0];
     expect(getRecipesForStation(withRecipes.station)).toContain(withRecipes);
     expect(getRecipesForStation("No Such Station")).toEqual([]);
-  });
-});
-
-describe("draft flag", () => {
-  it("reports draft status per route and defaults to false", () => {
-    for (const item of navItems) {
-      expect(isDraftHref(item.href)).toBe(item.draft === true);
-    }
-    expect(isDraftHref("/wiki/not-a-page")).toBe(false);
   });
 });
 

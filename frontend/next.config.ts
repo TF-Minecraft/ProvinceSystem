@@ -13,12 +13,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // next@16.3's build-time type check now defaults to running the project's
-  // own `tsc` CLI (experimental.useTypeScriptCli), which type-checks every
-  // file matched by tsconfig's `include` — unlike the previous checker, it
-  // does not skip *.test.ts(x)/__tests__ files. Point production builds at
-  // a narrower tsconfig so shipped app code is still fully type-checked
-  // without requiring test files to type-check cleanly for `next build`.
+  // Next 16.3's build-time check runs the project's own `tsc` CLI, which checks
+  // every file included by tsconfig, including tests. Use tsconfig.build.json
+  // to fully type-check shipped application code without requiring test files
+  // to type-check for `next build`.
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },

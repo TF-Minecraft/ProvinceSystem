@@ -55,7 +55,6 @@ import {
   traitPlaytimeBlocked,
   traitPlaytimeReason,
   traitPointsRemaining,
-  traitPointsSpent,
   traitsForStage,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
@@ -414,7 +413,6 @@ function StageBody({
     const min = Number(stage.min_select ?? 0);
     const budget = Number(stage.points ?? 0);
     const hasBudget = budget > 0;
-    const spent = traitPointsSpent(draft, catalog, key);
     const remaining = hasBudget
       ? traitPointsRemaining(draft, catalog, key, budget)
       : 0;

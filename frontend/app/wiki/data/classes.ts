@@ -79,27 +79,6 @@ export const classes: ClassInfo[] = [
   },
 ];
 
-export type ClassBaseStats = {
-  id: string;
-  maxHealth: number;
-  healthPerLevel: number;
-  maxMana: number;
-  manaPerLevel: number;
-  physicalDamage: number;
-  projectileDamage: number;
-};
-
-/** `base` / `per-level` stats from each class file. Every class also starts with attack speed 4 and move speed 0.1. */
-export const classBaseStats: ClassBaseStats[] = [
-  { id: "archer", maxHealth: 20, healthPerLevel: 0.25, maxMana: 10, manaPerLevel: 0.5, physicalDamage: 0, projectileDamage: 25 },
-  { id: "bard", maxHealth: 20, healthPerLevel: 0.3, maxMana: 10, manaPerLevel: 0.6, physicalDamage: 0, projectileDamage: 0 },
-  { id: "guardian", maxHealth: 20, healthPerLevel: 0.3, maxMana: 10, manaPerLevel: 0.5, physicalDamage: -10, projectileDamage: 0 },
-  { id: "mage", maxHealth: 20, healthPerLevel: 0.3, maxMana: 10, manaPerLevel: 0.6, physicalDamage: 10, projectileDamage: 5 },
-  { id: "musketeer", maxHealth: 20, healthPerLevel: 0.3, maxMana: 10, manaPerLevel: 0.5, physicalDamage: 0, projectileDamage: 5 },
-  { id: "paladin", maxHealth: 20, healthPerLevel: 0.3, maxMana: 10, manaPerLevel: 0.5, physicalDamage: 15, projectileDamage: 0 },
-  { id: "warrior", maxHealth: 20, healthPerLevel: 0.25, maxMana: 10, manaPerLevel: 0.6, physicalDamage: 15, projectileDamage: 0 },
-];
-
 export type ClassSkill = {
   id: string;
   displayName?: string;

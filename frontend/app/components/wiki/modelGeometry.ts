@@ -30,7 +30,7 @@ export type ModelElementRotation = {
    * elements on two axes at once and the vanilla form cannot express that.
    */
   euler?: [number, number, number];
-  /** Blockbench free models use ZYX; legacy callers retain XYZ. */
+  /** Blockbench free models use ZYX; other models default to XYZ. */
   order?: "XYZ" | "ZYX";
 };
 

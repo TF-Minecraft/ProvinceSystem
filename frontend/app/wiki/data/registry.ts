@@ -48,16 +48,11 @@ import type {
 } from "./types";
 
 /**
- * THE registration point for the wiki.
- *
- * A content module becomes part of the wiki by having its `WikiSection` added to
- * this array, and that single act wires up *everything*: the sidebar entry, the
- * overview card, the section's recipes in the global recipe index, and its
- * commands in the global command index at `/wiki/commands`. There is
- * no second list to keep in sync, so a section's recipes can no longer go missing
- * from station pages or from materials' "used in" lists while the page itself
- * still renders: if you forget to register, the page is absent from the sidebar
- * and the overview, which is immediately visible.
+ * The single registration point for wiki content. Adding a `WikiSection` wires
+ * up its sidebar entry, overview card, recipes and commands at `/wiki/commands`.
+ * Deriving these from one list keeps station pages and materials' "used in"
+ * lists in sync with navigation. Missing registration is visible as an absent
+ * sidebar entry and overview card, even if the section's page renders directly.
  */
 export const wikiSections: readonly WikiSection[] = [
   gettingStartedSection,

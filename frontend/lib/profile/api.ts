@@ -1,4 +1,4 @@
-import { authHeaders, getApiBase } from "../characters/api";
+import { authHeaders, getApiBase, parseJson } from "../site/api";
 import type { CharacterListItem } from "../characters/api";
 
 export class ProfileApiError extends Error {
@@ -17,14 +17,6 @@ function detailMessage(data: unknown, fallback: string): string {
     if (typeof detail === "string") return detail;
   }
   return fallback;
-}
-
-async function parseJson(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
 }
 
 export type ProfileSkinSubmission = {

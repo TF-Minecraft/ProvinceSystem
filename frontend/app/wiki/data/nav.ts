@@ -95,8 +95,3 @@ export function getNavItemByHref(href: string): WikiNavItem | undefined {
   if (href === overviewNavItem.href) return overviewNavItem;
   return navItems.find((item) => item.href === href);
 }
-
-/** True when the given route is flagged as unverified draft content. */
-export function isDraftHref(href: string): boolean {
-  return getNavItemByHref(href)?.draft === true;
-}

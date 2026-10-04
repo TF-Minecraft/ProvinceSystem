@@ -1,7 +1,6 @@
 import {
   Callout,
   CommandTable,
-  DataTable,
   SeeAlso,
   WikiPage,
   WikiSectionHeading,

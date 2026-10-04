@@ -15,8 +15,6 @@ export interface WikiPageProps {
    * override use the maintained wiki-wide revision date below.
    */
   lastModified?: string;
-  /** @deprecated Use `lastModified`. Kept while existing pages migrate. */
-  lastVerified?: string;
   /** Optional visual shown beside the title, such as an item icon. */
   titleVisual?: ReactNode;
   /** Optional navigation or context shown immediately before the title. */
@@ -53,15 +51,13 @@ export default function WikiPage({
   title,
   intro,
   lastModified,
-  lastVerified,
   titleVisual,
   beforeTitle,
   width = "md",
   children,
 }: WikiPageProps) {
-  const requestedDate = lastModified ?? lastVerified;
-  const modifiedDate = requestedDate && isIsoCalendarDate(requestedDate)
-    ? requestedDate
+  const modifiedDate = lastModified && isIsoCalendarDate(lastModified)
+    ? lastModified
     : WIKI_LAST_MODIFIED;
 
   return (

@@ -74,7 +74,7 @@ describe("WikiSearch", () => {
     await waitFor(() => expect(screen.getByText("Search is unavailable right now.")).toBeTruthy());
   });
 
-  it("renders repeated legacy hrefs without duplicate React key warnings", async () => {
+  it("renders repeated hrefs without duplicate React key warnings", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     successfulFetch([
       { href: "/wiki/materials/steel-ingot", pageTitle: "Steel Ingot", sectionTitle: "How to acquire", text: "Steel recipe" },

@@ -55,16 +55,8 @@ for (const item of byIdentity.values()) {
 
 /** Only items occurring in the site's recipe data create detail routes. */
 export const itemDetails = [...byIdentity.values()].filter(item => item.href.startsWith("/wiki/items/"));
-/** Old `/wiki/items/<slug>` addresses of station items, kept so existing links redirect. */
-export const stationItemRedirects: Record<string, string> = Object.fromEntries(
-  [...byIdentity.values()].filter(item => item.href.startsWith("/wiki/stations/")).map(item => [item.slug, item.href]),
-);
-export const itemSlugAliases: Record<string, string> = {
-  "weapon-station": "forging-station",
-};
 export function getItemBySlug(slug: string): ItemDetail | undefined {
-  const canonicalSlug = itemSlugAliases[slug] ?? slug;
-  return itemDetails.find(item => item.slug === canonicalSlug);
+  return itemDetails.find(item => item.slug === slug);
 }
 export function getRecipeItemHref(slot: Slot): string | undefined {
   const vehicle = slot.model && vehicles.find(candidate => candidate.skins.some(skin => skin.modelUrl === slot.model?.url));
