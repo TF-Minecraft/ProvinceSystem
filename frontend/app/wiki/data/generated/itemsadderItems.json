@@ -297,5 +297,12 @@
   "watering_can": {
     "name": "Watering Can",
     "material": "GOLDEN_HORSE_ARMOR"
+  },
+  "pet_house": {
+    "name": "Pet House",
+    "material": "PAPER",
+    "texture": "../thumbnails/companion-pets/pet-house.webp",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/furniture/pet_house.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/furniture/pet_house.png"
   }
 }

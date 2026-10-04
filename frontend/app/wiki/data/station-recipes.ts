@@ -62,6 +62,10 @@ const FURNITURE_MODELS: Record<string, NonNullable<Slot["model"]>> = {
   "itemsadder:marauder_goldbars": furnitureModel("marauder_goldbars", "marauder/marauder_goldbars"),
   "itemsadder:marauder_goldbag": furnitureModel("marauder_goldbag", "marauder/marauder_goldbag"),
   "itemsadder:archeology_cabinet": { url: "/wiki/models/archeology-cabinet.json", texture: "/wiki/textures/stations/archeology-cabinet.png" },
+  "itemsadder:pet_house": {
+    url: "/wiki/models/companion-pets/pethouse.json",
+    textures: { "0": "/wiki/textures/companion-pets/pethouse/0.png" },
+  },
 };
 
 /**

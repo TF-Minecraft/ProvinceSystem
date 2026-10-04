@@ -32,7 +32,7 @@ export const companionPetItems = {
 };
 
 // Configured eggs retain their vanilla material appearance: no pack overrides.
-// Husky/Maine Coon follow the owner's requested roster and corresponding family.
+// All eleven companions, including Husky and Maine Coon, are registered in TF Dev.
 const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
   beagle: "wolf", chihuahua: "wolf", corgi: "wolf", golden: "wolf", husky: "wolf",
   mainecoon: "cat", catblack: "cat", catfunny: "cat", catorange: "cat",

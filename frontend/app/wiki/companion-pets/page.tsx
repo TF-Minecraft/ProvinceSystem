@@ -90,8 +90,8 @@ export default function CompanionPetsPage() {
         your companion too.
       </p>
 
-      <WikiSectionHeading id="play" intro="Make room for the small moments that give your companion its character.">
-        Playing and spending time together
+      <WikiSectionHeading id="play">
+        Playing
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         Choose a <PetItem id="ball" />, <PetItem id="bone" />, <PetItem id="rope" />,
@@ -99,14 +99,6 @@ export default function CompanionPetsPage() {
         <AnimalStation /> and throw it for your pet to fetch.
         It chases the toy and brings it
         back to you. Play cheers it up, but a tired or sick companion needs a rest first.
-        Between games, an empty-hand pet is a simple way to give it affection. Some pets
-        roll onto their back for belly rubs; keep petting them to enjoy the moment together.
-      </p>
-      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        While you linger in one place, a following pet may explore nearby, watch the people
-        around you or get curious about another companion. Pets can sniff each other, play
-        chase and sometimes dig up a little gift for their owner. If a protective pet starts
-        barking, soothe it with a few empty-hand right-clicks.
       </p>
 
       <WikiSectionHeading id="training" intro="Learning takes patience, encouragement and treats.">
@@ -145,11 +137,6 @@ export default function CompanionPetsPage() {
       <div className="my-5">
         <WikiModelViewer {...petHousePreview} label="Pet House" height="sm" />
       </div>
-      <p className="text-sm text-[var(--tfmc-mist)]">
-        From a pet&apos;s care sheet you can bring it out, call it to your side,
-        send it back to the shelter or give it a new name. You can have several companions
-        with you and choose who joins each outing.
-      </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Sheltered pets keep their needs as they are, ready for your next visit. Their needs
         also pause while you are offline. When you are playing, companions left outside
