@@ -109,6 +109,27 @@ function placeTile(manifest: TileManifest, level: number, x: number, y: number):
   };
 }
 
+/** A rectangle in map pixels. */
+export type Rect = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * `outer` less `hole`, as up to four rectangles: full-width bands above and
+ * below the hole and the strips either side of it.
+ */
+export function backdropBands(outer: Rect, hole: Rect): (Rect & { key: string })[] {
+  const top = Math.max(outer.top, Math.min(hole.top, outer.bottom));
+  const bottom = Math.min(outer.bottom, Math.max(hole.bottom, top));
+  const left = Math.max(outer.left, Math.min(hole.left, outer.right));
+  const right = Math.min(outer.right, Math.max(hole.right, left));
+  const bands = [
+    { key: "top", left: outer.left, top: outer.top, right: outer.right, bottom: top },
+    { key: "bottom", left: outer.left, top: bottom, right: outer.right, bottom: outer.bottom },
+    { key: "left", left: outer.left, top, right: left, bottom },
+    { key: "right", left: right, top, right: outer.right, bottom },
+  ];
+  return bands.filter((band) => band.right > band.left && band.bottom > band.top);
+}
+
 /** Every tile of a level. */
 export function allTiles(manifest: TileManifest, level: number): PlacedTile[] {
   const { width, height } = manifest.levels[level];
