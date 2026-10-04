@@ -92,33 +92,13 @@ export type LabelMapObject = {
   id: string;
   visible: boolean;
   /**
-   * Set by `buildMapObjectsFromRegionData`. Optional here because the chronicle
-   * studio synthesises its own label objects, which have no synthetic `_nested`
-   * entries at all; `labelEntryIsNested` falls back to the old string test for
-   * those, which is exact when only real region ids are present.
+   * Supplied by the live map and chronicle builders. Player-set region names
+   * can end in `_nested`, so suffix parsing cannot distinguish a real nation
+   * named `Foo_nested` from the synthetic drill entry for `Foo`.
    */
-  nested?: boolean;
-  baseId?: string;
+  nested: boolean;
+  baseId: string;
 };
-
-const NESTED_SUFFIX = "_nested";
-
-/**
- * Structure comes from the flag when the builder set one. Region ids are
- * day-file object keys — player-set names — so a real nation named `Foo_nested`
- * is indistinguishable by string from the synthetic entry for `Foo`, and the
- * suffix test silently swapped the two.
- */
-function labelEntryIsNested(obj: LabelMapObject): boolean {
-  return obj.nested ?? obj.id.endsWith(NESTED_SUFFIX);
-}
-
-function labelEntryBaseId(obj: LabelMapObject): string {
-  if (typeof obj.baseId === "string") return obj.baseId;
-  return obj.id.endsWith(NESTED_SUFFIX)
-    ? obj.id.slice(0, -NESTED_SUFFIX.length)
-    : obj.id;
-}
 
 function findLabelEntry(
   mapObjects: LabelMapObject[],
@@ -126,7 +106,7 @@ function findLabelEntry(
   nested: boolean
 ): LabelMapObject | undefined {
   return mapObjects.find(
-    (obj) => labelEntryIsNested(obj) === nested && labelEntryBaseId(obj) === nationId
+    (obj) => obj.nested === nested && obj.baseId === nationId
   );
 }
 

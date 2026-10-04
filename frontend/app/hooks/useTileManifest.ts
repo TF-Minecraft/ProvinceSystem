@@ -64,7 +64,7 @@ export type TileManifestState = {
 /**
  * The tile pyramid for one of a map's tiled layers (`base`, `mapdata-{mode}`,
  * `regions-{mode}`). Every failure degrades to the caller's single-image
- * fallback, which is how the map worked before tiles.
+ * fallback.
  *
  * Only for maps a plain `<img>` can load. Staff maps need a bearer token per
  * request, and fetching hundreds of tiles as blobs would cost more than the
@@ -123,7 +123,7 @@ export function useTileManifest(
           }
         })
         .catch(() => {
-          // No tiles for this layer (or an older backend): the fallback stays.
+          // No usable manifest: keep the single-image fallback.
           if (!cancelled) setStatus("unavailable");
         });
     };

@@ -104,7 +104,7 @@ describe("toggle data needs", () => {
 
 describe("marker names", () => {
   const labels = [] as never[];
-  const labelObjects = [{ id: "suzerain", visible: true }];
+  const labelObjects = [{ id: "suzerain", visible: true, nested: false, baseId: "suzerain" }];
   const withMarkers = (markerNames: boolean) =>
     buildChronicleLayers({
       toggles: {
@@ -196,7 +196,7 @@ describe("chronicleToggleSignature", () => {
 
 describe("buildChronicleLayers", () => {
   const labels = [{ nationId: "suzerain" }] as never[];
-  const labelObjects = [{ id: "suzerain", visible: true }];
+  const labelObjects = [{ id: "suzerain", visible: true, nested: false, baseId: "suzerain" }];
 
   it("renders nothing while every toggle is off", () => {
     const layers = buildChronicleLayers({
@@ -306,9 +306,9 @@ describe("chronicleRegionData against a hostile day file", () => {
 });
 
 describe("marker layers against malformed day payloads", () => {
-  // `?? []` only fires for null and undefined. A server that answers
-  // `"settlements": {}` used to reach `.filter` inside a `useMemo` and take the
-  // whole page down mid-render — there is no error boundary to catch it.
+  // `?? []` only handles null and undefined: `"settlements": {}` can still
+  // reach `.filter` inside a render-time `useMemo`. There is no error boundary
+  // to contain that throw, so non-arrays must become missing data first.
   const malformed = {
     map_id: "main",
     exported_at: null,
@@ -589,7 +589,7 @@ describe("buildChronicleLayers under a focus", () => {
     { nationId: "suzerain" },
     { nationId: "vassal" },
   ] as never[];
-  const labelObjects = [{ id: "suzerain", visible: true }];
+  const labelObjects = [{ id: "suzerain", visible: true, nested: false, baseId: "suzerain" }];
 
   it("keeps only the focused realm's names and pins", () => {
     const layers = buildChronicleLayers({

@@ -1,30 +1,24 @@
 /**
- * GIF89a animation encoder for the map timelapse studio's export button.
+ * GIF89a animation encoder for the map timelapse studio.
  *
- * Hand-written and dependency-free on purpose: the studio already holds every
- * frame as `ImageData`, and the alternative is shipping a general-purpose GIF
- * library to do one thing this file does in a few hundred lines.
+ * Hand-written and dependency-free because the studio already holds every
+ * frame as `ImageData`; this narrow encoder avoids shipping a general-purpose
+ * GIF library. Pure typed-array work, independent of canvases, the DOM and
+ * timers, also lets the tests call it directly under Node.
  *
- * Pure over typed arrays — nothing here touches a canvas, `ImageData`, the DOM
- * or any timer — so `encodeGif.test.ts` calls it directly under node and the
- * studio calls it from the browser's main thread.
+ * The browser runs this on the main thread because Turbopack (see
+ * `next.config.ts`) does not bundle `new Worker(new URL(..., import.meta.url))`
+ * in the verified Next 16.0.10 production build. Its output is raw source under
+ * `.next/static/media/`, not a compiled worker chunk, and the browser rejects
+ * the raw TypeScript with a SyntaxError. The build evidence covers `.ts`, `.js`
+ * and `.mjs` files, with and without `{ type: "module" }`: all four tested
+ * variants emit raw source. Turbopack's documented worker support covers
+ * `node:worker_threads` and `navigator.serviceWorker.register`, not `new Worker`.
  *
- * It runs on the main thread and not on a Worker. Turbopack — this project's
- * bundler, see `next.config.ts` — does not bundle a browser `Worker` in a
- * production `next build`: `new Worker(new URL("./x.worker.ts", import.meta.url))`
- * emits the worker file as an *unprocessed static asset* (a raw `.ts` under
- * `.next/static/media/`, which a browser then refuses as a SyntaxError) rather
- * than as a compiled worker chunk. Verified empirically on Next 16.0.10 against
- * `.ts`, `.js` and `.mjs` worker files, with and without `{ type: "module" }`;
- * all four emitted raw source. Turbopack's documented worker bundling covers
- * server-side `node:worker_threads` and `navigator.serviceWorker.register`,
- * not `new Worker`.
- *
- * So the encode is chunked instead of moved: `encodeGifSteps` below is a
- * generator that yields once per written frame, and `chronicleGifExport.ts`
- * drives it with an `await` between frames so the tab repaints its progress
- * bar and can be cancelled. `encodeGif` drains the same generator in one go
- * for callers (the tests) that want the plain synchronous function.
+ * Chunking through `encodeGifSteps` supplies responsiveness without a Worker:
+ * it yields after each frame, and `chronicleGifExport.ts` awaits between steps
+ * so progress repaints and cancellation is processed. `encodeGif` drains the
+ * same generator synchronously for callers that do not need those yields.
  */
 
 import { ByteWriter, lzwCompress, writeSubBlocks } from "./gifLzw";
@@ -107,8 +101,7 @@ function validate(options: EncodeGifOptions): void {
  * `CHRONICLE_MEMORY_CEILING_BYTES` refusal in `chronicleGifExport.ts` is what
  * keeps that bounded. Everything after the palette is per-frame, and that
  * per-frame work (nearest-colour mapping plus LZW over `width*height` pixels)
- * is the part that used to block the tab outright, which is what the yields
- * are for.
+ * can block the tab across many frames without those yields.
  *
  * `validate` runs on the first `next()`, not at call time — generators do not
  * execute their body until then. Both drivers below step immediately, so a bad

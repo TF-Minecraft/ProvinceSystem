@@ -199,10 +199,8 @@ function TileLayer({
     image.decode().then(settle, settle);
   };
 
-  // Tile edges on whole screen pixels: neighbours then meet exactly, with no
-  // hairline gap between them and no overlap. An overlap used to hide the
-  // gaps, but on a see-through raster (prosperity) its strip was drawn twice
-  // and showed as a darker line.
+  // Snap tile edges to whole screen pixels so neighbours meet without gaps
+  // or overlaps, which would darken see-through rasters such as prosperity.
   const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
   const snap = (value: number) =>
@@ -215,10 +213,8 @@ function TileLayer({
   // cover it: on a see-through raster they would otherwise stack and deepen
   // its colours.
   //
-  // Every `<img>` keeps its element for as long as its tile is wanted. On iOS
-  // a new `<img>` paints nothing until it has decoded, so remounting the
-  // backdrop and the old sharp level as a zoom settled blanked the whole map
-  // for a frame or two.
+  // Keep each tile's `<img>` mounted while it is wanted: on iOS a new element
+  // paints nothing until decoding completes.
   const renderTile = (tile: PlacedTile, fadeIn: boolean, hidden = false) => {
     const loaded = loadedRef.current.has(loadedKey(tile));
     const left = snap(tile.left);

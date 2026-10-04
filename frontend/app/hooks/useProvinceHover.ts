@@ -445,10 +445,8 @@ export function useProvinceHover({
       return { consumed: consumesHover, lines: undefined };
     }
 
-    // Trade shares its tooltip with region hover. An answer that lands a
-    // moment later would replace the region tooltip and then be replaced back
-    // on the next move — the flicker this path used to cause — so without the
-    // grid, trade just shows the region.
+    // Without the grid, trade shows the region tooltip alone so delayed
+    // province replies cannot alternate with region hover.
     if (!consumesHover) return { consumed: false, lines: null };
 
     void fetchMapJson<{ province_id?: number }>(

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { TitleLayers } from "@/app/lib/titleProvinces";
 import {
+  resolveCountyProvinces,
   resolveDuchyProvinces,
   resolveKingdomProvinces,
 } from "@/app/lib/titleProvinces";
@@ -14,8 +15,7 @@ import {
 } from "./editorPaintSnapshot";
 import {
   fillProvincePixels,
-  paintDuchyActiveLayer,
-  paintParentActiveLayer,
+  paintParentActiveLayerFull,
   paintPixelIndices,
   paintSelectionLayerFull,
   updateCountyActiveSubset,
@@ -154,55 +154,36 @@ describe("paintTitleLayers", () => {
     expect(imageData.data[12]).toBe(0);
   });
 
-  it("paintDuchyActiveLayer paints member county provinces with duchy rgb", () => {
+  it("paintParentActiveLayerFull paints member county provinces with duchy rgb", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted = null as ImageData | null;
-    const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
-    const ctx = {
-      canvas,
-      createImageData: (w: number, h: number) => makeImageData(w, h),
-      clearRect: () => {},
-      putImageData: (data: ImageData) => {
-        painted = data;
-      },
-    } as unknown as CanvasRenderingContext2D;
+    const painted = makeImageData(2, 2);
 
     const countyDraft = {
       COUNTY_1: { rgb: "58,132,60", provinces: [1, 2] },
       COUNTY_2: { rgb: "40,123,42", provinces: [3] },
     };
 
-    paintDuchyActiveLayer(
-      ctx,
+    paintParentActiveLayerFull(
+      painted,
       provinceMap,
       ["COUNTY_1"],
       "180,80,80",
-      countyDraft
+      resolveCountyProvinces,
+      { county: countyDraft }
     );
 
-    expect(painted).not.toBeNull();
-    if (!painted) return;
     expect(painted.data[0]).toBe(180);
     expect(painted.data[1]).toBe(80);
     expect(painted.data[2]).toBe(80);
     expect(painted.data[12]).toBe(0);
   });
 
-  it("paintParentActiveLayer paints kingdom members via resolveDuchyProvinces", () => {
+  it("paintParentActiveLayerFull paints kingdom members via resolveDuchyProvinces", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted = null as ImageData | null;
-    const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
-    const ctx = {
-      canvas,
-      createImageData: (w: number, h: number) => makeImageData(w, h),
-      clearRect: () => {},
-      putImageData: (data: ImageData) => {
-        painted = data;
-      },
-    } as unknown as CanvasRenderingContext2D;
+    const painted = makeImageData(2, 2);
 
-    paintParentActiveLayer(
-      ctx,
+    paintParentActiveLayerFull(
+      painted,
       provinceMap,
       ["DUCHY_1"],
       "200,100,50",
@@ -210,8 +191,6 @@ describe("paintTitleLayers", () => {
       fixtureLayers
     );
 
-    expect(painted).not.toBeNull();
-    if (!painted) return;
     expect(painted.data[0]).toBe(200);
     expect(painted.data[1]).toBe(100);
     expect(painted.data[2]).toBe(50);
@@ -219,21 +198,12 @@ describe("paintTitleLayers", () => {
     expect(painted.data[12]).toBe(0);
   });
 
-  it("paintParentActiveLayer unions multiple kingdom members for empire", () => {
+  it("paintParentActiveLayerFull unions multiple kingdom members for empire", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
-    let painted = null as ImageData | null;
-    const canvas = { width: 2, height: 2 } as HTMLCanvasElement;
-    const ctx = {
-      canvas,
-      createImageData: (w: number, h: number) => makeImageData(w, h),
-      clearRect: () => {},
-      putImageData: (data: ImageData) => {
-        painted = data;
-      },
-    } as unknown as CanvasRenderingContext2D;
+    const painted = makeImageData(2, 2);
 
-    paintParentActiveLayer(
-      ctx,
+    paintParentActiveLayerFull(
+      painted,
       provinceMap,
       ["KINGDOM_1", "KINGDOM_2"],
       "90,60,120",
@@ -241,8 +211,6 @@ describe("paintTitleLayers", () => {
       fixtureLayers
     );
 
-    expect(painted).not.toBeNull();
-    if (!painted) return;
     expect(painted.data[0]).toBe(90);
     expect(painted.data[4]).toBe(90);
     expect(painted.data[8]).toBe(90);

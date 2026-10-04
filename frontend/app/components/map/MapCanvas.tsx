@@ -1,14 +1,13 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { RefObject, MutableRefObject } from "react";
+import type { MutableRefObject } from "react";
 import type {
   CursorTooltip,
   HoverOverlay,
@@ -369,8 +368,7 @@ type MapCanvasProps = {
    * data and have no per-day variant, so a historical day has to paint its own
    * borders client-side or it would show today's under a past date.
    *
-   * Undefined on the live map, where the two blocks below render exactly as
-   * they always have.
+   * Undefined on the live map, which renders the server overlays.
    */
   regionOverlay?: React.ReactNode;
   /**

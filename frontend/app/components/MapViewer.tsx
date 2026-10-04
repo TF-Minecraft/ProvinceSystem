@@ -63,7 +63,6 @@ import type {
   HoverOverlay,
   MapId,
   MapMode,
-  RegionInfo,
   RegionRecord,
 } from "./map/types";
 import { mapFallbackSize, mapDisplayName } from "./map/types";
@@ -90,7 +89,7 @@ import {
   staffMapAccessReason,
 } from "@/lib/map/api";
 import { editorUrl } from "@/lib/map/editorAccess";
-import { chronicleStudioHref, liveMapHref } from "@/app/lib/map/chronicleDayRoute";
+import { chronicleStudioHref } from "@/app/lib/map/chronicleDayRoute";
 import { useResponsiveFitMode } from "@/app/hooks/useResponsiveFitMode";
 import { isArchivedMap, showReviewHistory } from "@/app/lib/map/archiveMaps";
 import MapArchiveMenu from "./map/MapArchiveMenu";
@@ -147,9 +146,6 @@ function focusInset(): MapFocusInset {
   return { top: 150, bottom: Math.round(window.innerHeight * 0.45) };
 }
 
-/** Hover feeds a details card that no longer exists; selection replaced it. */
-const ignoreHoverRegionInfo = (_info: RegionInfo | null) => {};
-
 type MapViewerProps = {
   mapId: MapId;
   /**
@@ -191,7 +187,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const chronicle = day !== null;
   /*
    * A stored day offers the *same* mode list as the live map, with no
-   * filtering. Every mode now has an honest day answer: the day-varying ones
+   * filtering. Every mode has a day source: the day-varying ones
    * (`nation`, `trade`, `empire`, `prosperity`, `infestation`) come out of that
    * day's capture, and the static ones (`terrain`, `fertility`, `province`)
    * are province geometry that does not change day to day, so their live
@@ -406,8 +402,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           settlement.faction_id,
           mapObjects
         );
-        // Sized by what the place is, not how many live there: a big
-        // village no longer outshouts a small capital.
+        // Capitals retain larger markers than villages regardless of population.
         const markerSize =
           kind === "faction_capital"
             ? "large"
@@ -796,7 +791,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     setCursorTooltip,
     setHoveredOverlay,
     setHoveredFortZoc,
-    setRegionInfo: ignoreHoverRegionInfo,
     setSelectedRegionId: setHoveredRegionId,
     getHoverRegion,
     mapDisplayName: displayName,
@@ -1220,13 +1214,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   }
 
   /**
-   * The toolbar now offers every mode on a stored day, so this is no longer a
-   * belt-and-braces guard for an unreachable option: it is the answer for any
-   * mode that is neither classified as static nor present in
-   * `CHRONICLE_MODE_SOURCE` — a future mode nobody has classified yet, or a
-   * bookmarked URL from before one was. `notCapturedForDay` is only ever set
-   * from `MapModeNotCapturedError`, which `mapModeDataSource` only throws for
-   * a non-null day, so this branch is unreachable on the live map.
+   * Every mode is offered on a stored day, so an unclassified mode needs this
+   * answer when it has neither a static source nor a `CHRONICLE_MODE_SOURCE`.
+   * `notCapturedForDay` only comes from `MapModeNotCapturedError`, which
+   * `mapModeDataSource` throws only for a non-null day; live maps cannot reach
+   * this branch.
    */
   if (notCapturedForDay) {
     return (

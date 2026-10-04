@@ -223,10 +223,9 @@ describe("buildAreaPath", () => {
   });
 
   it("also breaks the run on a null baseline even when the top is non-null", () => {
-    // Regression: a stray null baseline used to be silently coerced to 0
-    // (`baselines[i] ?? 0`) and stitched into the surrounding run instead of
-    // breaking it — this is the day-is-a-gap case `stackBreakdown` now
-    // produces (both top and baseline null together), but the check must be
+    // Coercing a null baseline to 0 (`baselines[i] ?? 0`) stitches a missing
+    // day into the surrounding run instead of breaking it. `stackBreakdown`
+    // produces gaps with both top and baseline null, but the check must be
     // symmetric so a null in either array ends the run.
     const d = buildAreaPath([50, 60, 70], [0, null, 0], xScale, yScale);
     expect(d.match(/Z/g)?.length).toBe(2);

@@ -37,8 +37,6 @@ async function gunzipProvinceIndexGrid(buffer: ArrayBuffer): Promise<ArrayBuffer
  * stale or corrupt artifact, or any decoder failure falls back to the flat
  * path rather than failing the editor.
  */
-export const EDITOR_PROVINCE_RUNS_FLAG = "NEXT_PUBLIC_EDITOR_PROVINCE_RUNS";
-
 export function isEditorProvinceRunsEnabled(): boolean {
   return process.env.NEXT_PUBLIC_EDITOR_PROVINCE_RUNS === "1";
 }
@@ -149,8 +147,7 @@ export function useEditorProvinceIndex(
         }
 
         if (!built) {
-          // Flat path: the original behaviour, and the fallback whenever the
-          // runs artifact is absent, stale or undecodable.
+          // Use the flat grid when runs are disabled, absent, stale or undecodable.
           const gridBytes = await (gridPromise ??
             fetchEditorProvinceIndex(mapId, sessionToken));
           if (cancelled) return;

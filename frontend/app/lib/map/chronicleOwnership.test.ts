@@ -187,9 +187,9 @@ describe("visibleOwnership", () => {
   });
 
   /**
-   * Defect 3. `Foo_nested` is a legal region id — day-file keys are player-set
-   * names — and used to be read as the synthetic drill entry of `Foo`, which
-   * both erased it from the map and demoted `Foo` to own-provinces-only.
+   * Day-file keys are player-set names, so `Foo_nested` must remain distinct
+   * from the synthetic drill entry for `Foo`. Confusing them erases the real
+   * region and demotes `Foo` to own-provinces-only.
    */
   it("does not confuse a real region named X_nested with X's nested entry", () => {
     const collision: RegionRecord = {

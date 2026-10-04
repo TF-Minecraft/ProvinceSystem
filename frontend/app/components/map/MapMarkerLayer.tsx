@@ -10,7 +10,6 @@ import {
   MARKER_LAYER_Z_HOVERED,
   MARKER_VISIBILITY_TRANSITION,
   isMarkerMapMode,
-  markerDimensions,
   markerLabelTextStyle,
   markerLayout,
   markerZoomScale,

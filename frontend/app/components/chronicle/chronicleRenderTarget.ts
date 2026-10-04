@@ -12,8 +12,8 @@ import {
  * canvas, and only the small canvas is handed out as an `ImageBitmap`.
  */
 
-type AnyCanvas = OffscreenCanvas | HTMLCanvasElement;
-type AnyCanvasContext =
+export type AnyCanvas = OffscreenCanvas | HTMLCanvasElement;
+export type AnyCanvasContext =
   | OffscreenCanvasRenderingContext2D
   | CanvasRenderingContext2D;
 
@@ -30,7 +30,7 @@ export type ChronicleRenderTarget = {
   transferable: boolean;
 };
 
-function createCanvas(width: number, height: number): AnyCanvas {
+export function createChronicleCanvas(width: number, height: number): AnyCanvas {
   if (typeof OffscreenCanvas !== "undefined") {
     return new OffscreenCanvas(width, height);
   }
@@ -51,9 +51,9 @@ export function createChronicleRenderTarget(
   renderWidth: number,
   renderHeight: number
 ): ChronicleRenderTarget {
-  const scratch = createCanvas(grid.width, grid.height);
+  const scratch = createChronicleCanvas(grid.width, grid.height);
   const scratchCtx = context2d(scratch);
-  const output = createCanvas(renderWidth, renderHeight);
+  const output = createChronicleCanvas(renderWidth, renderHeight);
   const outputCtx = context2d(output);
   outputCtx.imageSmoothingQuality = "high";
 

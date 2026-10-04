@@ -18,7 +18,7 @@ const ALL_MODES: MapMode[] = [
 ];
 
 describe("mapModeOptions", () => {
-  it("offers every map mode, including extras that used to be main/dev only", () => {
+  it("offers every map mode for each map", () => {
     const values = mapModeOptions().map((opt) => opt.value);
     expect(values).toHaveLength(11);
     expect(values).toEqual(ALL_MODES);

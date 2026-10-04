@@ -71,7 +71,7 @@ describe("MapCanvas tile loading", () => {
     expect(images(container)).toContain(`/${props.mapId}/map`);
     expect(images(container)).toContain(`/${props.mapId}/mapdata/terrain`);
   });
-  it("does not fetch unopened modes after the old prefetch delay", async () => {
+  it("does not prefetch unopened modes while idle", async () => {
     mocks.fetch.mockResolvedValue(manifest);
     render(<MapCanvas {...props} />);
     await act(async () => {});
