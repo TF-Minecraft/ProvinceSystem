@@ -15,7 +15,8 @@ import type { MapId, RegionRecord } from "../types";
 import { Fact, RegionLink, Section } from "./RealmPanel";
 import { GuildList } from "./GuildPanel";
 import { guildsInProvince } from "@/app/lib/map/guildProfile";
-import { CloseIcon, FocusIcon, RealmIcon } from "./MapIcons";
+import { FocusIcon, RealmIcon } from "./MapIcons";
+import PanelHeader from "./PanelHeader";
 
 /** Province id -> county name per map, shared by every place panel. */
 const countyNamesByMap = new Map<string, Promise<Map<number, string>>>();
@@ -104,20 +105,22 @@ export function PlacePanelContent({
 
   return (
     <article aria-label={place.name}>
-      <header className="map-frame-header -mx-4 -mt-4 mb-4 flex items-center gap-4 rounded-t-[9px] px-4 pb-4 pt-4">
-        <div className="map-banner-frame flex h-16 w-16 shrink-0 items-center justify-center bg-black/30">
-          <img
-            src={resolveMarkerImageSrc(marker.kind, marker.markerSize)}
-            alt=""
-            className="h-12 w-12 object-contain [image-rendering:pixelated]"
-          />
-        </div>
-        <div className="min-w-0 flex-1 pr-7">
-          <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
-          <h2 className="font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
-            {place.name}
-          </h2>
-          {onlyGuild && place.kindLabel === "Guild capital" ? (
+      <PanelHeader
+        onClose={onClose}
+        centred
+        title={place.name}
+        eyebrow={eyebrow}
+        visual={
+          <div className="map-banner-frame flex h-16 w-16 shrink-0 items-center justify-center bg-black/30">
+            <img
+              src={resolveMarkerImageSrc(marker.kind, marker.markerSize)}
+              alt=""
+              className="h-12 w-12 object-contain [image-rendering:pixelated]"
+            />
+          </div>
+        }
+        subtitle={
+          onlyGuild && place.kindLabel === "Guild capital" ? (
             <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
               <span
                 aria-hidden
@@ -149,18 +152,9 @@ export function PlacePanelContent({
             </p>
           ) : place.kindLabel !== "Battle" ? (
             <p className="mt-1 text-sm text-[var(--tfmc-stone)]">No realm</p>
-          ) : null}
-        </div>
-      </header>
-
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close details"
-        className="map-control absolute right-3 top-3 h-8 w-8"
-      >
-        <CloseIcon size={16} />
-      </button>
+          ) : null
+        }
+      />
 
       {place.note ? (
         <p className="mb-4 whitespace-pre-line text-sm text-[var(--tfmc-stone)]">{place.note}</p>

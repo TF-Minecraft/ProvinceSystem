@@ -46,7 +46,6 @@ import { mapModeLabel } from "./map/mapModes";
 import MapShell from "./map/shell/MapShell";
 import MapPlaque from "./map/shell/MapPlaque";
 import MapSearch from "./map/shell/MapSearch";
-import { MapModeBar, MapModeChips } from "./map/shell/MapModeBar";
 import MapZoomControls from "./map/shell/MapZoomControls";
 import MapLayersMenu, { type MapLayerToggle } from "./map/shell/MapLayersMenu";
 import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
@@ -60,7 +59,7 @@ import {
   guildSeat,
 } from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
-import { HistoryIcon } from "./map/shell/MapIcons";
+import { BrushIcon, FortIcon, HistoryIcon, RouteIcon } from "./map/shell/MapIcons";
 import type {
   CursorTooltip,
   HoverOverlay,
@@ -151,13 +150,13 @@ function useResponsiveFitMode(): FitMode {
   return fitMode;
 }
 
-/** Room the desktop details panel and mode tray take from a "zoom to". */
-const DESKTOP_FOCUS_INSET: MapFocusInset = { left: 400, bottom: 110, top: 16, right: 80 };
+/** Room the desktop details panel, layers button and zoom take from a "zoom to". */
+const DESKTOP_FOCUS_INSET: MapFocusInset = { left: 400, bottom: 24, top: 64, right: 80 };
 
 function focusInset(): MapFocusInset {
   if (typeof window === "undefined") return {};
   if (window.matchMedia("(min-width: 48rem)").matches) return DESKTOP_FOCUS_INSET;
-  // Phone: search and chips above, the details sheet below.
+  // Phone: search and the layers row above, the details sheet below.
   return { top: 150, bottom: Math.round(window.innerHeight * 0.45) };
 }
 
@@ -302,6 +301,19 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   const guildNameCacheRef = useGuildCache(mapId, authToken, day);
   const paint = useMapPaint({ mapId, viewportCoordsRef });
+  // War planning's switch and toolbar are desktop-only. Crossing to a phone
+  // width turns it off, so the paint layer does not go on taking the map's
+  // touches with no control left to stop it.
+  const setPaintEnabled = paint.setEnabled;
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 47.99rem)");
+    const apply = () => {
+      if (query.matches) setPaintEnabled(false);
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [setPaintEnabled]);
 
   const {
     mapObjects,
@@ -1373,6 +1385,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         id: "installations",
         label: "Installations",
         hint: "Forts, ports, airfields and stations",
+        icon: FortIcon,
         checked: installationsVisible,
         onChange: setInstallationsVisible,
       },
@@ -1380,23 +1393,24 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         id: "supply-links",
         label: "Supply links",
         hint: "Trade routes between supply hubs",
+        icon: RouteIcon,
         checked: supplyLinksVisible,
         onChange: setSupplyLinksVisible,
       }
     );
   }
-  const desktopLayerToggles: MapLayerToggle[] = chronicle
-    ? layerToggles
-    : [
-        ...layerToggles,
-        {
-          id: "paint",
-          label: "War planning",
-          hint: "Draw arrows, labels and objects over the map",
-          checked: paint.enabled,
-          onChange: paint.setEnabled,
-        },
-      ];
+  if (!chronicle) {
+    layerToggles.push({
+      id: "paint",
+      label: "War planning",
+      hint: "Draw arrows, labels and objects over the map",
+      icon: BrushIcon,
+      // Its toolbar is desktop-only.
+      desktopOnly: true,
+      checked: paint.enabled,
+      onChange: paint.setEnabled,
+    });
+  }
 
   const plaqueActions = chronicle ? null : (
     <>
@@ -1508,8 +1522,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           }
         />
       }
-      modeBar={<MapModeBar mapType={mapType} onMapTypeChange={handleMapTypeChange} />}
-      modeChips={<MapModeChips mapType={mapType} onMapTypeChange={handleMapTypeChange} />}
       breadcrumb={
         drillStack.length > 0 ? (
           <MapDrillBreadcrumb
@@ -1528,19 +1540,20 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             ? `place:${selectedPlaceId}`
             : selectedId
       }
+      onDetailsClose={clearSelection}
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
-      layers={<MapLayersMenu toggles={desktopLayerToggles} footer={archiveFooter} />}
-      layersMobile={
-        layerToggles.length > 0 ? (
-          <MapLayersMenu
-            toggles={layerToggles}
-            align="left"
-            placement="down"
-            iconOnly
-            triggerClassName="h-10 w-10 rounded-full"
-          />
-        ) : null
+      layers={
+        <MapLayersMenu
+          mapType={mapType}
+          onMapTypeChange={handleMapTypeChange}
+          toggles={layerToggles}
+          footer={archiveFooter}
+          mapId={mapId}
+          // Live tiles would show today's colours beside a stored day, and a
+          // staff map's images need a token each: both keep the icons.
+          previews={!authToken && day === null}
+        />
       }
       paintPanel={!chronicle && paint.enabled ? <PaintToolbar paint={paint} /> : null}
     >

@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
 type MapShellProps = {
   /** The map itself. Rendered exactly once, at every breakpoint. */
   children: ReactNode;
   /** Title plaque and search, top left. */
   plaque: ReactNode;
-  /** Desktop map-mode tray, bottom centre. */
-  modeBar: ReactNode;
-  /** Mobile map-mode chips, along the bottom while no sheet is open. */
-  modeChips: ReactNode;
   /** Drill-down breadcrumb, top centre; null when not drilled in. */
   breadcrumb?: ReactNode;
   /** A short note while a map mode loads; null when idle. */
@@ -19,11 +17,12 @@ type MapShellProps = {
   details?: ReactNode;
   /** Changes whenever a different region is selected, to reset the sheet. */
   detailsKey?: string | null;
+  /** Clears the selection: the phone sheet was pulled down and closed. */
+  onDetailsClose?: () => void;
   zoomControls: ReactNode;
+  /** The layers button (map types and overlays), top right. */
   layers: ReactNode;
-  /** The layers menu for phones, top left under the search, opening down. */
-  layersMobile?: ReactNode;
-  /** War-planning toolbar, top right on desktop while paint mode is on. */
+  /** War-planning toolbar, top right under the layers button while paint mode is on. */
   paintPanel?: ReactNode;
   /**
    * A stored chronicle day. Its date banner is fixed at the top centre of the
@@ -34,38 +33,28 @@ type MapShellProps = {
 
 /**
  * Full-bleed map with its controls floating over it, laid out like Google
- * Maps. Search and the details panel down the left, zoom bottom right,
- * map modes along the bottom, layers bottom left.
+ * Maps. Search and the details panel down the left, layers top right (the map
+ * modes live in its panel), zoom bottom right.
  *
  * On a phone the same pieces regroup instead of shrinking: one slim search
- * row across the top with layers (and the breadcrumb) under it, the mode
- * chips along the bottom, details in a bottom sheet, and no zoom buttons
- * (pinch zooms). Every control is one node placed by responsive classes
- * rather than a mobile and a desktop copy, so nothing the map owns is mounted
- * twice.
+ * row across the top with the breadcrumb and layers under it, details in a
+ * bottom sheet, and no zoom buttons (pinch zooms). The map and the panels are
+ * one node each, placed by responsive classes; only the small top-row
+ * controls (breadcrumb, layers) have a phone and a desktop copy.
  */
 export default function MapShell({
   children,
   plaque,
-  modeBar,
-  modeChips,
   breadcrumb,
   details,
   detailsKey,
+  onDetailsClose,
   status,
   zoomControls,
   layers,
-  layersMobile,
   paintPanel,
   chronicle = false,
 }: MapShellProps) {
-  const [sheetExpanded, setSheetExpanded] = useState(false);
-
-  // A newly selected region opens the sheet at its peek height again.
-  useEffect(() => {
-    setSheetExpanded(false);
-  }, [detailsKey]);
-
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
   // scrolled or rubber-banded it, sliding them under the header. Scrolling
@@ -76,7 +65,6 @@ export default function MapShell({
     return () => root.classList.remove("map-fullscreen");
   }, []);
 
-  const hasDetails = Boolean(details);
   const chronicleTop = chronicle ? "max-xl:top-[10.75rem]" : "";
 
   return (
@@ -86,44 +74,31 @@ export default function MapShell({
       <div className="absolute inset-0">{children}</div>
 
       {/* Left column: plaque on top, details under it on desktop; on mobile
-          the details drop to a bottom sheet via `mt-auto`. The column itself
-          lets clicks through to the map; only its panels take them. */}
+          the details are a bottom sheet pinned to the column's foot, which
+          at full height rises over the search. The column itself lets clicks
+          through to the map; only its panels take them. */}
       <div
-        className={`pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-[6.75rem] md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0 ${chronicleTop} ${
+        className={`pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0 ${chronicleTop} ${
           chronicle ? "max-md:pt-[10.75rem]" : ""
         }`}
       >
         {/* Above the details panel, so search results drop down over it. */}
         <div className="pointer-events-auto relative z-10 shrink-0">
           {plaque}
-          {layersMobile || breadcrumb ? (
-            <div className="mt-2 flex items-start gap-2 md:hidden">
-              {layersMobile ? <div className="shrink-0">{layersMobile}</div> : null}
-              {breadcrumb ? <div className="min-w-0 flex-1">{breadcrumb}</div> : null}
-            </div>
-          ) : null}
+          {/* Breadcrumb left, layers right, as Google Maps' phone app puts
+              its layers button under the search bar. The gap between them
+              lets clicks through to the map. */}
+          <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
+            <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
+            <div className="pointer-events-auto ml-auto shrink-0">{layers}</div>
+          </div>
         </div>
 
         {details ? (
-          <div
-            key={detailsKey ?? undefined}
-            className={`map-frame map-details-enter pointer-events-auto -mx-3 -mb-3 mt-auto flex min-h-0 flex-col rounded-b-none md:mx-0 md:mb-0 md:mt-0 md:rounded-b-[10px] ${
-              sheetExpanded ? "max-h-[82%]" : "max-h-[44%]"
-            } md:max-h-full`}
-          >
-            <button
-              type="button"
-              onClick={() => setSheetExpanded((value) => !value)}
-              aria-label={sheetExpanded ? "Show less" : "Show more"}
-              aria-expanded={sheetExpanded}
-              className="flex shrink-0 justify-center pb-1 pt-2 md:hidden"
-            >
-              <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
-            </button>
-            <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pt-1 md:pt-4">
-              {details}
-            </div>
-          </div>
+          // Keyed, so a newly selected region opens at the peek height again.
+          <DetailsSheet key={detailsKey ?? undefined} onClose={onDetailsClose}>
+            {details}
+          </DetailsSheet>
         ) : null}
       </div>
 
@@ -137,10 +112,11 @@ export default function MapShell({
         </div>
       ) : null}
 
+      {/* Under the panels, so the layers sheet covers it while a mode loads. */}
       {status ? (
         <div
           role="status"
-          className="map-frame pointer-events-none absolute bottom-16 left-1/2 z-30 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)] md:bottom-[7rem]"
+          className="map-frame pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)]"
         >
           {status}
         </div>
@@ -148,26 +124,74 @@ export default function MapShell({
 
       {paintPanel ? (
         <div
-          className={`pointer-events-auto absolute right-4 top-4 z-20 hidden max-h-[calc(100%-9rem)] w-72 overflow-y-auto md:block ${chronicleTop}`}
+          className={`pointer-events-auto absolute right-4 top-[4.25rem] z-20 hidden max-h-[calc(100%-12.25rem)] w-72 overflow-y-auto md:block ${
+            chronicle ? "max-xl:top-[14.25rem]" : ""
+          }`}
         >
           {paintPanel}
         </div>
       ) : null}
 
-      {/* Over the left column, so the Layers popover opens above the panel. */}
-      <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30 hidden items-end justify-between gap-3 md:flex">
-        <div className="pointer-events-auto">{layers}</div>
-        <div className="pointer-events-auto min-w-0 overflow-x-auto">{modeBar}</div>
-        <div className="pointer-events-auto">{zoomControls}</div>
+      {/* Over the paint toolbar and zoom, so the layers panel drops down across them. */}
+      <div className={`absolute right-4 top-4 z-40 hidden md:block ${chronicleTop}`}>
+        {layers}
       </div>
 
-      {/* Phone: the mode chips along the bottom while no sheet is open (a
-          sheet takes the bottom, and changing mode closes it anyway). */}
-      {hasDetails ? null : (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 md:hidden">
-          <div className="pointer-events-auto">{modeChips}</div>
-        </div>
-      )}
+      <div className="absolute bottom-4 right-4 z-30 hidden md:block">{zoomControls}</div>
+    </div>
+  );
+}
+
+/** The strip of map a full-height phone sheet leaves above it (`0.75rem`). */
+const FULL_SHEET_GAP_PX = 12;
+
+/**
+ * The selection's details: a side panel on desktop, and on a phone a bottom
+ * sheet with Google Maps' two sizes. It opens at a peek height; dragging it
+ * up (or tapping the handle) grows it to nearly the whole map, over the
+ * search, and dragging down shrinks it again or, from the peek height,
+ * closes it.
+ */
+function DetailsSheet({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useBottomSheetDrag(sheetRef, {
+    onClose: () => onClose?.(),
+    expanded,
+    onExpandedChange: setExpanded,
+    scrollerRef,
+    fullHeight: () => (sheetRef.current?.parentElement?.clientHeight ?? 0) - FULL_SHEET_GAP_PX,
+  });
+
+  return (
+    <div
+      ref={sheetRef}
+      className={`map-frame map-details-enter pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
+        expanded ? "max-h-[calc(100%-0.75rem)]" : "max-h-[44%]"
+      } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-label={expanded ? "Show less" : "Show more"}
+        aria-expanded={expanded}
+        className="flex shrink-0 justify-center pt-2 md:hidden"
+      >
+        <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
+      </button>
+      <div
+        ref={scrollerRef}
+        className="relative min-h-0 flex-1 overflow-y-auto overscroll-none px-4 pb-4"
+      >
+        {children}
+      </div>
     </div>
   );
 }

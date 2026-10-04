@@ -212,6 +212,23 @@ export const BrushIcon = (props: IconProps) => (
   </Icon>
 );
 
+/* Map details: the overlays the layers panel switches on and off. */
+
+export const FortIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 21V8h3v2h2.5V8h5v2H17V8h3v13H4Z" />
+    <path d="M10 21v-4a2 2 0 0 1 4 0v4M12 8V3l3.5 1.5L12 6" />
+  </Icon>
+);
+
+export const RouteIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="5.5" cy="18" r="2.2" />
+    <circle cx="18.5" cy="6" r="2.2" />
+    <path d="M7.5 17c3-1 2.5-5 5-6.5s3.5-1 4.5-2.8" strokeDasharray="2 2.4" />
+  </Icon>
+);
+
 export const ChevronIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m9 6 6 6-6 6" />

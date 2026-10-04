@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mapModeLabel, mapModeOptions } from "./mapModes";
+import { mapModeLabel, mapModeOptions, mapModeTileLayer } from "./mapModes";
 import type { MapMode } from "./types";
 
 const ALL_MODES: MapMode[] = [
@@ -37,5 +37,15 @@ describe("mapModeLabel", () => {
   it("names the nation map Realms", () => {
     expect(mapModeLabel("nation")).toBe("Realms");
     expect(mapModeLabel("infestation")).toBe("Infestation");
+  });
+});
+
+describe("mapModeTileLayer", () => {
+  it("gives every mode the pyramid the live map colours it from", () => {
+    expect(mapModeTileLayer("nation")).toBe("regions-nation");
+    expect(mapModeTileLayer("trade")).toBe("regions-trade");
+    expect(mapModeTileLayer("terrain")).toBe("mapdata-terrain");
+    expect(mapModeTileLayer("province")).toBe("mapdata-province");
+    for (const mode of ALL_MODES) expect(mapModeTileLayer(mode)).not.toBeNull();
   });
 });

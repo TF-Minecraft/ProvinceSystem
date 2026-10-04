@@ -20,6 +20,7 @@ import type {
   HubLink,
 } from "./types";
 import { mapFallbackSize } from "./types";
+import { REGION_TILE_MODES } from "./mapModes";
 import type { MapMarker } from "../../lib/mapMarkers";
 import { isMarkerMapMode } from "../../lib/mapMarkers";
 import {
@@ -68,7 +69,7 @@ const panelClass =
  */
 export const HOVER_OVERLAY_OPACITY = 0.72;
 export const DRILL_STACK_OVERLAY_OPACITY = 0.88;
-const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
+export const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
 const OVERLAY_TRANSITION_CLASS =
   "pointer-events-none absolute transition-[left,top,width,height,opacity] duration-150 ease-out";
 
@@ -189,16 +190,6 @@ function tooltipPosition(x: number, y: number): React.CSSProperties {
     ...(y + gap + 110 > height ? { bottom: Math.max(8, height - y + gap) } : { top: y + gap }),
   };
 }
-
-/** Region modes the backend can flatten and tile (`regions-{mode}`). */
-const REGION_TILE_MODES = new Set<MapMode>([
-  "nation",
-  "county",
-  "duchy",
-  "kingdom",
-  "empire",
-  "trade",
-]);
 
 function pixelatedClass(displayScale: number): string {
   return displayScale >= 1 ? "[image-rendering:pixelated]" : "";
