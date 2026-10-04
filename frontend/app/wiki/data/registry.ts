@@ -47,7 +47,13 @@ import type {
   WikiSection,
 } from "./types";
 
-/** Sections supplying the navigation, overview, recipe index and command index. */
+/**
+ * The single registration point for wiki content. Adding a `WikiSection` wires
+ * up its sidebar entry, overview card, recipes and commands at `/wiki/commands`.
+ * Deriving these from one list keeps station pages and materials' "used in"
+ * lists in sync with navigation. Missing registration is visible as an absent
+ * sidebar entry and overview card, even if the section's page renders directly.
+ */
 export const wikiSections: readonly WikiSection[] = [
   gettingStartedSection,
   charactersSection,

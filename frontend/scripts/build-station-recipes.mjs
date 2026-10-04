@@ -623,7 +623,8 @@ export function build({
   };
 
   // Texture precedence: a sprite named after the item id, then -- for MMOItems
-  // items only -- the sprite of the vanilla item it is built on -- and
+  // items only -- the sprite of the vanilla item it is built on, matching what
+  // players see in their inventory rather than guessing a texture -- and
   // finally, the wiki's own display-name -> texture catalogue (see
   // `buildMaterialNameTextureIndex`), for the common case where a custom
   // item's id has no matching sprite filename but its display name is already

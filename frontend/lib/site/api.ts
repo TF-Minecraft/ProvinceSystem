@@ -1,3 +1,4 @@
+/** Shared API base with no trailing slash, for appending route paths. */
 export function getApiBase(): string {
   const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
   if (!base) {

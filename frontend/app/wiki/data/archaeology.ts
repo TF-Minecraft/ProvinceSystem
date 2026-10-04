@@ -9,7 +9,12 @@ const item = (name: string, texture: string, qty = 1): Slot => ({ name, qty, tex
 /** Crafted at a vanilla Crafting Table, not at a station: it has no server-config counterpart. */
 export const archeologyTableRecipe: Recipe = { key:"archeology-table", title:"Archeology Table", station:"Crafting Table", ingredients:[item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Bone","bone.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png")], output:{name:"Archeology Table",qty:1,sourceId:"itemsadder:archeology_station",model:{url:"/wiki/models/archeology-station.json",texture:"/wiki/textures/stations/archeology-station.png"}}};
 
-/** The crafting-table recipe plus workshop recipes registered by `stationsSection`. */
+/**
+ * The crafting-table recipe plus twelve workshop recipes from the authoritative
+ * server `archeology-station.yml`, via `data/generated/stationRecipes.ts`.
+ * Only the table is hand-written and registered by this section; the workshop
+ * recipes are registered by `stationsSection` to avoid duplicate index entries.
+ */
 export const archaeologyRecipes: Recipe[] = [
   archeologyTableRecipe,
   ...[

@@ -13,7 +13,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Type-check shipped application code with the production build configuration.
+  // Next 16.3's build-time check runs the project's own `tsc` CLI, which checks
+  // every file included by tsconfig, including tests. Use tsconfig.build.json
+  // to fully type-check shipped application code without requiring test files
+  // to type-check for `next build`.
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },

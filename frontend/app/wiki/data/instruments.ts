@@ -4,7 +4,12 @@ import type { InstrumentInfo, InstrumentKey, Recipe, WikiCommandSet, WikiSection
 
 // ---------- Musical Instruments ----------
 
-/** Playable instruments from the server recipes, registered by `stationsSection`. */
+/**
+ * The nine playable instruments in documentation order, from the authoritative
+ * server `instrument-station.yml`, via `data/generated/stationRecipes.ts`.
+ * Sharing these recipes keeps this page and the Instrument Station page in sync;
+ * registration happens once in `stationsSection`.
+ */
 export const instrumentRecipes: Recipe[] = [
   "flute",
   "lute",

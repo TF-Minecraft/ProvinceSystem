@@ -82,7 +82,11 @@ const withFurnitureModel = (slot: Slot): Slot => {
   return model && !slot.model ? { ...slot, model } : slot;
 };
 
-/** Server station recipes with curated notes and model previews, selected by key. */
+/**
+ * The shared list of server station recipes with curated notes and model
+ * previews. Pages select from this list by key instead of maintaining separate
+ * copies, so the same recipe cannot have conflicting ingredient lists.
+ */
 export const stationRecipes: Recipe[] = generatedStationRecipes.map((recipe) => ({
   ...recipe,
   ...(CURATED_NOTES[recipe.key] ? { note: CURATED_NOTES[recipe.key] } : {}),

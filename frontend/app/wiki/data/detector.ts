@@ -3,7 +3,11 @@ import type { Recipe, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Arcane Trace Detector ("Geiger Counter") ----------
 
-/** Engineer Station recipes, registered once by `stationsSection`. */
+/**
+ * Recipes from the authoritative server `engineer-station.yml`, via
+ * `data/generated/stationRecipes.ts`, so this page and the Engineer Station
+ * page share the same ingredients. Registered once by `stationsSection`.
+ */
 export const detectorRecipes: Recipe[] = [
   stationRecipe("gen-engineer-station-dead_geiger_counter"),
   stationRecipe("gen-engineer-station-fuel"),
