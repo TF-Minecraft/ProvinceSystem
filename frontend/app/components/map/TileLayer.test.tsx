@@ -92,7 +92,10 @@ describe("TileLayer", () => {
       expect(decode).toHaveBeenCalledTimes(4);
       expect(onReady).not.toHaveBeenCalled();
 
-      await act(async () => pending.forEach((resolve) => resolve()));
+      // Ready with the last decode, not before it.
+      await act(async () => pending.slice(0, -1).forEach((resolve) => resolve()));
+      expect(onReady).not.toHaveBeenCalled();
+      await act(async () => pending.at(-1)!());
       expect(onReady).toHaveBeenCalled();
     } finally {
       delete (HTMLImageElement.prototype as { decode?: unknown }).decode;
