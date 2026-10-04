@@ -258,4 +258,50 @@ describe("TileLayer", () => {
     fadeIn();
     expect(imgs(0)[0].parentElement!.style.clipPath).not.toBe("");
   });
+  it("does not let a gone tile's fade timer mark its newer element shown", () => {
+    vi.useFakeTimers();
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 4096,
+      height: 4096,
+      tile_size: 256,
+      max_level: 2,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+        { width: 4096, height: 4096 },
+      ],
+    };
+    const at = (displayScale: number): TileView => ({
+      displayScale,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 200,
+      viewportH: 200,
+    });
+    const { container, rerender } = render(
+      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
+    );
+    const clip = () =>
+      container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!.parentElement!.style
+        .clipPath;
+    const advance = (ms: number) =>
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+
+    // Level 1 loads and starts fading in, then leaves before it has finished.
+    loadAll(container);
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
+    advance(100);
+    // Back to level 1, on new elements, which load and start their own fade.
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
+    loadAll(container);
+    // Past when the first elements' fade would have ended, but not this one's.
+    advance(120);
+    expect(clip()).toBe("");
+    advance(100);
+    expect(clip()).not.toBe("");
+  });
 });

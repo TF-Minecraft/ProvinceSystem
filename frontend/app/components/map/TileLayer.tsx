@@ -90,7 +90,8 @@ function TileLayer({
   const loadedRef = useRef(new Set<string>());
   /** Loaded tiles whose fade-in has finished. */
   const shownRef = useRef(new Set<string>());
-  const fadeTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+  /** Each loaded tile's pending fade timer, by key. */
+  const fadeTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
     const timers = fadeTimersRef.current;
     return () => timers.forEach((timer) => clearTimeout(timer));
@@ -160,6 +161,13 @@ function TileLayer({
         if (!rendered.has(key)) set.delete(key);
       }
     }
+    // A timer started for a gone element must not mark a newer one shown
+    // before its own fade has run.
+    for (const [key, timer] of fadeTimersRef.current) {
+      if (rendered.has(key)) continue;
+      clearTimeout(timer);
+      fadeTimersRef.current.delete(key);
+    }
   });
 
   const markLoaded = (key: string) => {
@@ -167,13 +175,13 @@ function TileLayer({
     loadedRef.current.add(key);
     setLoadedVersion((value) => value + 1);
     const timer = setTimeout(() => {
-      fadeTimersRef.current.delete(timer);
+      fadeTimersRef.current.delete(key);
       // Its element left the page meanwhile (see the pruning above).
       if (!loadedRef.current.has(key)) return;
       shownRef.current.add(key);
       setLoadedVersion((value) => value + 1);
     }, SHOWN_MS);
-    fadeTimersRef.current.add(timer);
+    fadeTimersRef.current.set(key, timer);
   };
 
   // A tile counts as loaded once it is decoded too, so the paint that shows
