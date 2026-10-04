@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Cache the renderer's packages, Chromium and system libraries before copying code.
+# The renderer's packages, Chromium and system libraries change rarely. Install
+# them before copying code so code changes do not trigger downloads and reinstalls.
 # --ignore-scripts skips the postinstall build until its sources are available.
 WORKDIR /app/render
 COPY backend/render/package.json backend/render/package-lock.json ./

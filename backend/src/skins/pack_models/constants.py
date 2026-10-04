@@ -22,5 +22,9 @@ def load_constants() -> dict[str, Any]:
 
 
 def namespace() -> str:
-    """ItemsAdder namespace for generated pack models."""
+    """ItemsAdder namespace for generated pack models.
+
+    All realms use the shared main namespace (tfmc_submissions); generated
+    texture paths do not select a separate namespace by realm.
+    """
     return str(load_constants()["namespace"])

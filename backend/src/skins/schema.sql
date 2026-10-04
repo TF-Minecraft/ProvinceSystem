@@ -587,6 +587,7 @@ CREATE TABLE IF NOT EXISTS character_roster (
 
 CREATE TABLE IF NOT EXISTS character_player_meta (
     player_uuid TEXT PRIMARY KEY,
+    -- Age-only upserts need to leave the character limit unset.
     max_alive_characters INTEGER,
     eighteen INTEGER,
     real_age_set INTEGER NOT NULL DEFAULT 0,

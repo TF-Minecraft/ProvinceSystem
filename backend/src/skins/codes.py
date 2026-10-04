@@ -154,7 +154,11 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
 
 
 def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
-    """Replace sessions and clear the redemption time before reusing a code."""
+    """Replace sessions and clear redemption time for a code with no submission.
+
+    Skin and drink codes remain reusable until a submission consumes them;
+    callers must check consumption before resetting the session here.
+    """
     conn.execute("DELETE FROM sessions WHERE code_id = ?", (code_id,))
     conn.execute(
         "UPDATE codes SET redeemed_at = NULL WHERE id = ?",

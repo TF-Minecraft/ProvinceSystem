@@ -8,7 +8,7 @@ from typing import Any
 
 from src.name_colours import MAX_NAME_COLOURS, effective_colour_cap
 
-# Mirrors submissions.ALLOWED_KINDS.
+# Mirrors submissions.ALLOWED_KINDS; keep in sync for the staff redeem UI.
 _STAFF_SKIN_KINDS = (
     "armor_set",
     "handheld",
@@ -24,6 +24,7 @@ _STAFF_SKIN_KINDS = (
     "book",
 )
 
+# Keep a bounded 3D upload budget when the entitlement sync supplies no limit.
 EMERGENCY_MAX_3D_PAIR_BYTES = 30720
 DEFAULT_SKIN_TOKEN_COOLDOWN_DAYS = -1
 

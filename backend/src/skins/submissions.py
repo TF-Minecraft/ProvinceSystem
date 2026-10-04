@@ -1498,7 +1498,7 @@ def resolve_submission_file(submission_id: str, filename: str) -> Path | None:
         return None
 
     if not candidate.is_file() and name == "review_sheet.png":
-        # Compose the review sheet on demand.
+        # Submission creation can omit the review sheet, so compose it on demand.
         try:
             from .review_sheet import ReviewSheetError, write_review_sheet
 
