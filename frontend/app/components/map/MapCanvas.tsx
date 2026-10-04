@@ -158,25 +158,57 @@ const FOCUS_MUTED_OPACITY = 0.3;
 const LABEL_LAYER_Z = 15;
 
 /**
- * Whether `url` has loaded, so the colours fade only once what replaces them
- * is ready to draw.
+ * A map image's URL without the reduction it asks for (`?lod=`): the same
+ * shape at any zoom.
+ */
+function shapeOfUrl(url: string): string {
+  return url.replace(/[?&]lod=\d+$/, "");
+}
+
+/**
+ * Whether a copy of the shape at `url` has loaded since the shape was last
+ * switched to. Another reduction of it (a zoom) keeps it ready: the copy on
+ * screen stays up until the new one has loaded. `mark` records a copy's
+ * load, or its failure, which leaves nothing drawn.
+ */
+function useShapeLoaded(
+  url: string | null
+): [boolean, (url: string, loaded: boolean) => void] {
+  const shape = url ? shapeOfUrl(url) : null;
+  const [state, setState] = useState({ shape, loaded: false });
+  if (state.shape !== shape) setState({ shape, loaded: false });
+  const mark = useCallback((copy: string, loaded: boolean) => {
+    const copyShape = shapeOfUrl(copy);
+    setState((current) =>
+      current.shape === copyShape && current.loaded !== loaded ? { shape: copyShape, loaded } : current
+    );
+  }, []);
+  return [shape !== null && state.shape === shape && state.loaded, mark];
+}
+
+/**
+ * Whether the shape at `url` is ready to draw, so the colours fade only once
+ * what replaces them is (see `useShapeLoaded`).
  */
 function useImageLoaded(url: string | null): boolean {
-  const [loaded, setLoaded] = useState<string | null>(null);
+  const [loaded, mark] = useShapeLoaded(url);
   useEffect(() => {
     if (!url) return;
     let cancelled = false;
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.onload = () => {
-      if (!cancelled) setLoaded(url);
+      if (!cancelled) mark(url, true);
+    };
+    image.onerror = () => {
+      if (!cancelled) mark(url, false);
     };
     image.src = url;
     return () => {
       cancelled = true;
     };
-  }, [url]);
-  return url !== null && loaded === url;
+  }, [url, mark]);
+  return loaded;
 }
 
 /**
@@ -242,7 +274,6 @@ function HoverOverlayImage({
    */
   ownShape?: boolean;
 }) {
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const hoverPath = mapApiPathFromUrl(overlay.url);
   const basePath =
     ownShape && hoverPath.endsWith("_hover") ? hoverPath.slice(0, -"_hover".length) : hoverPath;
@@ -250,15 +281,15 @@ function HoverOverlayImage({
     lod > 0 && basePath.includes("/regions/") ? `${basePath}?lod=${lod}` : basePath;
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
-  useEffect(() => {
-    setLoadedUrl(null);
-  }, [url]);
+  // Another reduction of the same shape (a zoom) swaps the source on the same
+  // element, and the old copy stays up, lit, until the new one has loaded
+  // rather than dimming and growing again.
+  const shape = url ? shapeOfUrl(url) : null;
+  const [ready, mark] = useShapeLoaded(url);
 
   const markLoaded = useCallback(() => {
-    if (url) setLoadedUrl(url);
-  }, [url]);
-
-  const ready = Boolean(url) && loadedUrl === url;
+    if (url) mark(url, true);
+  }, [url, mark]);
   const positioned = overlayStyle(overlay.overlay, mapW, mapH, {
     expand: ready ? HOVER_OVERLAY_EXPAND : 0,
   });
@@ -270,7 +301,7 @@ function HoverOverlayImage({
 
   return (
     <img
-      key={url}
+      key={shape}
       src={url}
       alt={alt}
       ref={(node) => {
@@ -284,7 +315,7 @@ function HoverOverlayImage({
       }}
       onLoad={markLoaded}
       onError={() => {
-        setLoadedUrl(null);
+        if (url) mark(url, false);
       }}
     />
   );
