@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { useLayoutEffect, useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -68,6 +68,38 @@ describe("TileLayer", () => {
     loadAll(container);
 
     expect(onReady).toHaveBeenCalled();
+  });
+
+  it("counts a tile as loaded once it has decoded, at full size", async () => {
+    const pending: (() => void)[] = [];
+    const decode = vi.fn(() => new Promise<void>((resolve) => pending.push(resolve)));
+    Object.defineProperty(HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value: decode,
+    });
+    try {
+      const onReady = vi.fn();
+      const { container } = render(
+        <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />
+      );
+      // An async image is decoded only at the size it is drawn; WebKit drew
+      // nothing while a settled zoom needed it at another size.
+      container
+        .querySelectorAll("img")
+        .forEach((img) => expect(img.getAttribute("decoding")).toBe("sync"));
+
+      loadAll(container);
+      expect(decode).toHaveBeenCalledTimes(4);
+      expect(onReady).not.toHaveBeenCalled();
+
+      // Ready with the last decode, not before it.
+      await act(async () => pending.slice(0, -1).forEach((resolve) => resolve()));
+      expect(onReady).not.toHaveBeenCalled();
+      await act(async () => pending.at(-1)!());
+      expect(onReady).toHaveBeenCalled();
+    } finally {
+      delete (HTMLImageElement.prototype as { decode?: unknown }).decode;
+    }
   });
 
   it("counts tiles that loaded before its effects ran", () => {
