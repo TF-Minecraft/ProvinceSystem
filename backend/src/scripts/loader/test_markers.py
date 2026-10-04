@@ -192,190 +192,81 @@ class MarkersLoaderTest(unittest.TestCase):
         self.assertEqual(len(payload["installations"]), 1)
         self.assertEqual(payload["installations"][0]["kind"], "train_station")
 
-    def test_load_raw_markers_without_hub_links_returns_empty_list(self) -> None:
-        payload = normalize_raw_markers({"installations": []}, "main")
-        self.assertEqual(payload["hub_links"], [])
+    def test_retired_marker_keys_are_ignored(self) -> None:
+        # Older exports still carry supply-hub links and trade routes. They
+        # must load, and they must not come back out.
+        retired = {
+            "hub_links": [{"from": {"province_id": 1}, "to": {"province_id": 2}}],
+            "trade_networks": {"name": "nope"},
+            "trade_edges": "sea",
+        }
+        normalized = normalize_raw_markers(
+            {"installations": [], **retired},
+            "main",
+        )
+        for key in retired:
+            self.assertNotIn(key, normalized)
 
-    def test_build_markers_response_enriches_and_drops_unplaced_hub_links(self) -> None:
+        payload = build_markers_response_from(
+            {
+                "map_id": "main",
+                "exported_at": None,
+                "settlements": [],
+                "installations": [
+                    {
+                        "id": "lanhold",
+                        "name": "Lanhold",
+                        "kind": "port",
+                        "province_id": 1,
+                    }
+                ],
+                "forts": [],
+                "wars": [],
+                **retired,
+            },
+            {"1": {"x": 10, "y": 20}},
+            {},
+            "main",
+        )
+        for key in retired:
+            self.assertNotIn(key, payload)
+        self.assertEqual(payload["installations"][0]["kind"], "port")
+        self.assertEqual(payload["installations"][0]["map_x"], 10)
+
+    def test_installation_hub_fields_are_ignored(self) -> None:
         raw = {
             "map_id": "main",
             "exported_at": None,
             "settlements": [],
-            "installations": [],
+            "installations": [
+                {
+                    "id": "lanhold",
+                    "name": "Lanhold",
+                    "kind": "port",
+                    "province_id": 1,
+                    "hub_slots": 2,
+                    "hubs": 1,
+                }
+            ],
             "forts": [],
             "wars": [],
-            "hub_links": [
-                {
-                    "guild_id": "guild",
-                    "mode": "rail",
-                    "from": {"installation_id": "a", "province_id": 1},
-                    "to": {"installation_id": "b", "center_x": 30, "center_z": 40},
-                },
-                {
-                    "guild_id": "missing",
-                    "mode": "sea",
-                    "from": {"province_id": 2},
-                    "to": {"province_id": 3},
-                },
-            ],
         }
+        normalized = normalize_raw_markers(raw, "main")
+        self.assertEqual(normalized["installations"][0]["name"], "Lanhold")
+        self.assertNotIn("hub_slots", normalized["installations"][0])
+        self.assertNotIn("hubs", normalized["installations"][0])
+
         payload = build_markers_response_from(
             raw,
             {"1": {"x": 10.4, "y": 20.6}},
             {},
             "main",
         )
-        self.assertEqual(len(payload["hub_links"]), 1)
-        link = payload["hub_links"][0]
-        self.assertEqual((link["from"]["map_x"], link["from"]["map_y"]), (10, 21))
-        self.assertEqual((link["to"]["map_x"], link["to"]["map_y"]), (30, 40))
-
-    def test_normalize_raw_markers_trade_arrays_default_and_reject_wrong_types(
-        self,
-    ) -> None:
-        missing = normalize_raw_markers({"installations": []}, "main")
-        self.assertEqual(missing["trade_networks"], [])
-        self.assertEqual(missing["trade_edges"], [])
-
-        bad = normalize_raw_markers(
-            {"trade_networks": {"name": "nope"}, "trade_edges": "sea"},
-            "main",
-        )
-        self.assertEqual(bad["trade_networks"], [])
-        self.assertEqual(bad["trade_edges"], [])
-
-    def test_build_markers_response_without_trade_arrays_returns_empty_lists(
-        self,
-    ) -> None:
-        payload = build_markers_response_from(
-            {
-                "map_id": "main",
-                "exported_at": None,
-                "settlements": [],
-                "installations": [],
-                "forts": [],
-                "wars": [],
-                "trade_networks": {"name": "nope"},
-                "trade_edges": "sea",
-            },
-            {},
-            {},
-            "main",
-        )
-        self.assertEqual(payload["trade_networks"], [])
-        self.assertEqual(payload["trade_edges"], [])
-
-    def test_build_markers_response_enriches_and_drops_unplaced_trade_edges(
-        self,
-    ) -> None:
-        raw = {
-            "map_id": "main",
-            "exported_at": None,
-            "settlements": [],
-            "installations": [],
-            "forts": [],
-            "wars": [],
-            "trade_networks": [
-                {
-                    "name": "The Vardera Network",
-                    "global": True,
-                    "nodes": [
-                        {
-                            "installation_id": "Abrar_Station",
-                            "owner": "Khazabrar",
-                            "province_id": 658,
-                        },
-                        {
-                            "installation_id": "Dunir_Port",
-                            "owner": "Lantan",
-                            "province_id": 12,
-                        },
-                    ],
-                },
-                {
-                    "name": "Local",
-                    "global": False,
-                    "nodes": [
-                        {
-                            "installation_id": "Hill_Stop",
-                            "owner": "Bog",
-                            "province_id": 3,
-                        },
-                        # Same stop as the global network. The first node wins,
-                        # so this province is not the one the edge is placed on.
-                        {
-                            "installation_id": "Abrar_Station",
-                            "owner": "Khazabrar",
-                            "province_id": 3,
-                        },
-                    ],
-                },
-            ],
-            "trade_edges": [
-                {
-                    "from": {
-                        "installation_id": "abrar_station",
-                        "owner": "khazabrar",
-                    },
-                    "to": {"installation_id": "DUNIR_PORT", "owner": "lantan"},
-                    "mode": "sea",
-                    "provinces": [20, 21, 99],
-                },
-                {
-                    "from": {
-                        "installation_id": "abrar_station",
-                        "owner": "someone_else",
-                    },
-                    "to": {"installation_id": "Dunir_Port", "owner": "Lantan"},
-                    "mode": "sea",
-                    "provinces": [],
-                },
-                {
-                    "from": {
-                        "installation_id": "abrar_station",
-                        "owner": "khazabrar",
-                    },
-                    "to": {"installation_id": "hill_stop", "owner": "BOG"},
-                    "mode": "air",
-                    "provinces": None,
-                },
-                {
-                    "from": {
-                        "installation_id": "ghost",
-                        "owner": "khazabrar",
-                    },
-                    "to": {"installation_id": "Dunir_Port", "owner": "Lantan"},
-                    "mode": "rail",
-                    "provinces": [20],
-                },
-                "not-an-edge",
-            ],
-        }
-        payload = build_markers_response_from(
-            raw,
-            {
-                "658": {"x": 10.4, "y": 20.6},
-                "12": {"x": 30, "y": 40},
-                "20": {"x": 15, "y": 25},
-                "21": {"x": 18.2, "y": 28.8},
-                "3": {"x": 50, "y": 60},
-            },
-            {},
-            "main",
-        )
-        self.assertEqual(payload["trade_networks"], raw["trade_networks"])
-        self.assertEqual(len(payload["trade_edges"]), 2)
-        sea = payload["trade_edges"][0]
-        self.assertEqual(sea["network"], "The Vardera Network")
-        self.assertEqual(sea["from"]["installation_id"], "abrar_station")
-        self.assertEqual((sea["from"]["map_x"], sea["from"]["map_y"]), (10, 21))
-        self.assertEqual((sea["to"]["map_x"], sea["to"]["map_y"]), (30, 40))
-        self.assertEqual(sea["path"], [[15, 25], [18, 29]])
-        air = payload["trade_edges"][1]
-        self.assertEqual(air["mode"], "air")
-        self.assertEqual(air["network"], "The Vardera Network")
-        self.assertEqual(air["path"], [])
-        self.assertEqual((air["to"]["map_x"], air["to"]["map_y"]), (50, 60))
+        row = payload["installations"][0]
+        self.assertEqual(row["kind"], "port")
+        self.assertEqual((row["map_x"], row["map_y"]), (10, 21))
+        self.assertNotIn("hub_slots", row)
+        self.assertNotIn("hubs", row)
 
     def test_build_markers_response_enriches_installations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

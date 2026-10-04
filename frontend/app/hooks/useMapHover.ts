@@ -22,7 +22,6 @@ import {
 } from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
 import { pickRegionLabelAt, type NationLabelSpec } from "../lib/mapLabels";
-import { pickTradeEdgeAt, type TradeEdgeGeometry } from "../lib/tradeEdges";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 import { EMPTY_PICK_SURFACE, type PickSurface } from "../lib/map/pickSurface";
 
@@ -57,11 +56,6 @@ type UseMapHoverProps = {
   /** The region names drawn on the map: pointing at one is pointing at its region. */
   labels?: NationLabelSpec[];
   forts?: FortMarker[];
-  /**
-   * Memoised trade-route strokes. Empty unless hub links would be drawn.
-   * Hover reads the grid inside; it does not rebuild it.
-   */
-  tradeGeometry?: TradeEdgeGeometry;
   setHoveredMarkerId?: (id: string | null) => void;
   setHoveredFortZoc?: (overlay: HoverOverlay | null) => void;
   /**
@@ -119,7 +113,6 @@ export function useMapHover(props: UseMapHoverProps) {
     mapObjects,
     markers,
     forts,
-    tradeGeometry,
   } = props;
 
   const propsRef = useRef(props);
@@ -288,49 +281,6 @@ export function useMapHover(props: UseMapHoverProps) {
       return;
     }
 
-    // Trade routes are painted under nation names, so a name keeps the pointer.
-    // The geometry is a grid built with the strokes: this looks up the cell
-    // under the cursor rather than walking every edge. A sea network is
-    // hundreds of them, and this runs once a frame.
-    const edgeHit =
-      isMarkerMapMode(current.mapType) && current.tradeGeometry
-        ? pickTradeEdgeAt(
-            current.tradeGeometry,
-            coords.x,
-            coords.y,
-            displayScale
-          )
-        : null;
-    if (edgeHit) {
-      const edgePickPixel = mapPixelToPickCanvas(
-        coords.x,
-        coords.y,
-        current.viewportCoordsRef.current?.mapSize,
-        surface
-      );
-      if (edgePickPixel) {
-        handleRegionHoverRef.current(
-          surface,
-          edgePickPixel.x,
-          edgePickPixel.y,
-          coords.screenX,
-          coords.screenY,
-          () => {}
-        );
-      } else {
-        current.setHoveredOverlay(null);
-        current.setSelectedRegionId(null);
-        resetHoverCacheRef.current();
-      }
-      current.setCursorTooltip({
-        x: coords.screenX,
-        y: coords.screenY,
-        text: edgeHit.label,
-      });
-      setIsHoveringClickable(false);
-      return;
-    }
-
     const province = handleProvinceHoverRef.current(
       coords.x,
       coords.y,
@@ -435,7 +385,6 @@ export function useMapHover(props: UseMapHoverProps) {
     mapObjectsVisibility,
     fortsKey,
     markers?.length,
-    tradeGeometry,
     processHover,
   ]);
 

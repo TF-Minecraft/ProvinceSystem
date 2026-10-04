@@ -4,7 +4,6 @@ import type { ChronicleFileName } from "./chronicleData";
 import type { NationColorLut } from "./chroniclePaint";
 import { buildInfestationColorLut } from "./chronicleInfestation";
 import { buildProsperityColorLut } from "./chronicleProsperity";
-import { buildInfrastructureColorLut } from "./chronicleInfrastructure";
 
 /**
  * How each map mode answers the question "what did this look like on day D?".
@@ -56,7 +55,6 @@ export const PROVINCE_RASTER_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
   "fertility",
   "province",
   "prosperity",
-  "infrastructure",
   "infestation",
 ]);
 
@@ -67,7 +65,7 @@ export const PROVINCE_RASTER_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
  * "region records keyed by id, each with an `rgb`", which is the shape
  * `fetchMapModeRegionData` returns and `filterMapModeRegions` filters. Neither
  * file here is that shape: `province_data.json` is a *list* of
- * `{ id, prosperity, trade, effective_terrain, ... }` and `infestation_data.json` is a list of
+ * `{ id, prosperity, trade, ... }` and `infestation_data.json` is a list of
  * `{ id, severity }`. Both answer per-province quantities that need a ramp or a
  * palette to become colour, and that policy lives in `chronicleProsperity` and
  * `chronicleInfestation`. Routing them through the region-record map would mean
@@ -77,7 +75,6 @@ export const CHRONICLE_PROVINCE_PAINT_SOURCE: Partial<
   Record<MapMode, ChronicleFileName>
 > = {
   prosperity: "province_data",
-  infrastructure: "province_data",
   infestation: "infestation_data",
 };
 
@@ -141,7 +138,6 @@ export function chronicleProvincePaintLut(
   payload: unknown
 ): NationColorLut {
   if (mapType === "prosperity") return buildProsperityColorLut(payload);
-  if (mapType === "infrastructure") return buildInfrastructureColorLut(payload);
   if (mapType === "infestation") return buildInfestationColorLut(payload);
   return new Uint32Array(0);
 }

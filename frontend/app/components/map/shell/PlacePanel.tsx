@@ -162,11 +162,6 @@ export function PlacePanelContent({
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         {place.population !== null ? <Fact label="Population">{place.population}</Fact> : null}
-        {place.hubSlots !== null ? (
-          <Fact label="Supply hubs">
-            {place.hubs ?? 0} of {place.hubSlots}
-          </Fact>
-        ) : null}
         {county ? <Fact label="County">{county}</Fact> : null}
         {place.provinces.length > 1 ? (
           <Fact label="Provinces">{place.provinces.length}</Fact>

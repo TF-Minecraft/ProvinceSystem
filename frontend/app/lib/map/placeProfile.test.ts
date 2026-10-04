@@ -25,8 +25,6 @@ const installations = [
     kind: "port" as const,
     faction_id: "Gone",
     province_id: 12,
-    hub_slots: 3,
-    hubs: 1,
     map_x: 5,
     map_y: 6,
   },
@@ -52,11 +50,10 @@ describe("buildPlaceProfile", () => {
       ownerId: "Huoyaoguo",
       population: 8,
       provinces: [696, 697],
-      hubs: null,
     });
   });
 
-  it("describes an installation's hubs, and drops an owner the map does not know", () => {
+  it("describes an installation, and drops an owner the map does not know", () => {
     expect(
       buildPlaceProfile(marker("installation:harbour", "port"), [], installations, regionData)
     ).toMatchObject({
@@ -64,8 +61,6 @@ describe("buildPlaceProfile", () => {
       kindLabel: "Port",
       ownerId: null,
       provinces: [12],
-      hubs: 1,
-      hubSlots: 3,
     });
   });
 

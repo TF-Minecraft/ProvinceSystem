@@ -30,15 +30,14 @@ export type InstallationInfo = {
   upkeepPerDay: number;
   buildTime: string;
   slots: string;
-  hubSlots: string;
 };
 
 /** Level-1 figures from `installations.yml`. Later train-station levels are noted on the page. */
 export const installations: InstallationInfo[] = [
-  { type: "Fort", radius: 80, upkeepPerDay: 30, buildTime: "5 days", slots: "8 static emplacement + 2 land vehicle", hubSlots: "None" },
-  { type: "Port", radius: 80, upkeepPerDay: 15, buildTime: "3 days", slots: "8 ship", hubSlots: "2" },
-  { type: "Airport", radius: 80, upkeepPerDay: 20, buildTime: "3 days", slots: "10 aircraft", hubSlots: "1" },
-  { type: "Train station", radius: 80, upkeepPerDay: 5, buildTime: "3 days", slots: "2 static emplacement", hubSlots: "1" },
+  { type: "Fort", radius: 80, upkeepPerDay: 30, buildTime: "5 days", slots: "8 static emplacement + 2 land vehicle" },
+  { type: "Port", radius: 80, upkeepPerDay: 15, buildTime: "3 days", slots: "8 ship" },
+  { type: "Airport", radius: 80, upkeepPerDay: 20, buildTime: "3 days", slots: "10 aircraft" },
+  { type: "Train station", radius: 80, upkeepPerDay: 5, buildTime: "3 days", slots: "2 static emplacement" },
 ];
 
 /**
@@ -65,7 +64,7 @@ export const factionsCommands: WikiCommandSet = {
     { command: "/faction setcapital <name>", description: "Founds or moves the capital in your current province.", notes: "Faction leader only." },
     { command: "/faction claim", description: "Claims the province you're standing in.", notes: "Faction leader only. Needs a capital first; blocked during a civil war and past the 5-province untitled cap." },
     { command: "/faction unclaim", description: "Releases the province you're standing in.", notes: "Faction leader only. Cannot unclaim the capital." },
-    { command: "/faction construct <fort|port|airport|train_station> <name>", description: "Starts building an installation in the current province.", notes: "Faction leader only. Province must be owned and non-water; one build at a time. Confirm before the build starts. The confirmation shows the infrastructure this adds here, about how much that is worth to your realm each day, and the daily upkeep." },
+    { command: "/faction construct <fort|port|airport|train_station> <name>", description: "Builds an installation in the current province.", notes: "Faction leader only. Province must be owned and non-water; one build at a time. The build starts immediately. There is no confirmation screen." },
     { command: "/faction deconstruct <id>", description: "Demolishes an installation.", notes: "Faction leader only." },
     { command: "/faction installation", description: "Opens the installations view.", notes: "Any faction member." },
     { command: "/faction vehicle transfer <installation id>", aliases: ["/faction transfervehicle <id>"], description: "Berths one of your vehicles at that installation.", notes: "Faction leader only; the vehicle's owner must be online and consent." },

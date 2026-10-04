@@ -60,7 +60,6 @@ export function useMapModeData({
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
-      mapType === "infrastructure" ||
       mapType === "infestation" ||
       mapType === "province"
     ) {

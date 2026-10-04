@@ -19,27 +19,7 @@ export type TooltipProvince = {
   prosperity: number;
   trade_shares: Record<string, number>;
   terrain?: string;
-  terrain_value?: number;
-  infrastructure?: number;
-  infrastructure_fill?: number;
-  effective_terrain?: number;
 };
-
-export function infrastructureHoverText(data: Partial<TooltipProvince>): string {
-  const terrain = typeof data.terrain === "string" ? data.terrain : "";
-  const terrainLabel = terrain ? terrain[0]!.toUpperCase() + terrain.slice(1) : "";
-  const terrainValue = Number.isFinite(data.terrain_value)
-    ? ` ${(data.terrain_value as number).toFixed(2)}`
-    : "";
-  let detail = `${terrainLabel}${terrainValue}`;
-  if (
-    Number.isFinite(data.infrastructure_fill) &&
-    Number.isFinite(data.effective_terrain)
-  ) {
-    detail += `${detail ? ", " : ""}infrastructure ${Math.round((data.infrastructure_fill as number) * 100)}%, counts as ${(data.effective_terrain as number).toFixed(2)}`;
-  }
-  return detail;
-}
 
 /**
  * Normalises a stored day's per-guild trade into the same ratio map the live
@@ -102,10 +82,6 @@ export function indexStoredProvinceData(
       trade_shares: storedTradeShares(row.trade),
     };
     if (typeof row.terrain === "string") province.terrain = row.terrain;
-    for (const field of ["terrain_value", "infrastructure", "infrastructure_fill", "effective_terrain"] as const) {
-      const number = row[field];
-      if (typeof number === "number" && Number.isFinite(number)) province[field] = number;
-    }
     byId[id] = province;
   }
 
@@ -132,7 +108,6 @@ const PROVINCE_FIGURE_MODES = new Set([
   "terrain",
   "fertility",
   "prosperity",
-  "infrastructure",
   "infestation",
   "trade",
 ]);
@@ -154,7 +129,7 @@ export function useProvinceHover({
   sessionToken?: string | null;
   /**
    * A chronicle day, or `null` for the live map. Non-null switches the
-   * prosperity/infrastructure/trade/infestation path off `/compiled_data/provinces` and
+   * prosperity/trade/infestation path off `/compiled_data/provinces` and
    * `/province/{x},{y}/meta`, which are recomputed from today's state.
    * `province` mode is the exception: `/meta` reads provinces.png and
    * provinces.txt (static input), and `/data/county` is de jure structure,
@@ -235,7 +210,6 @@ export function useProvinceHover({
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
-      mapType === "infrastructure" ||
       mapType === "infestation" ||
       mapType === "trade" ||
       mapType === "province";
@@ -244,7 +218,6 @@ export function useProvinceHover({
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
-      mapType === "infrastructure" ||
       mapType === "infestation" ||
       mapType === "province";
 
@@ -261,10 +234,6 @@ export function useProvinceHover({
       if (mapType === "fertility") lines.push(`Fertility: ${data.fertility}`);
       if (mapType === "prosperity")
         lines.push(`Prosperity: ${data.prosperity ?? 0}`);
-      if (mapType === "infrastructure") {
-        const detail = infrastructureHoverText(data);
-        if (detail) lines.push(detail);
-      }
       if (mapType === "infestation") {
         const severity = data.infestation_severity;
         const group = data.infestation_display || data.infestation_group;

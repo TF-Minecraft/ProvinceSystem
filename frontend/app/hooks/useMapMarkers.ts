@@ -2,12 +2,9 @@ import { useEffect, useState } from "react";
 
 import type {
   FortMarker,
-  HubLink,
   InstallationMarker,
   MapId,
   SettlementMarker,
-  TradeEdge,
-  TradeNetwork,
   WarExport,
 } from "../components/map/types";
 import { filterPlacedInstallations } from "../lib/installationMarkers";
@@ -54,9 +51,6 @@ type MapMarkersState = {
   installations: InstallationMarker[];
   forts: FortMarker[];
   wars: WarExport[];
-  hubLinks: HubLink[];
-  tradeNetworks: TradeNetwork[];
-  tradeEdges: TradeEdge[];
   loading: boolean;
   error: string | null;
 };
@@ -77,9 +71,6 @@ export function useMapMarkers(
     installations: [],
     forts: [],
     wars: [],
-    hubLinks: [],
-    tradeNetworks: [],
-    tradeEdges: [],
     loading: enabled,
     error: null,
   });
@@ -91,9 +82,6 @@ export function useMapMarkers(
         installations: [],
         forts: [],
         wars: [],
-        hubLinks: [],
-        tradeNetworks: [],
-        tradeEdges: [],
         loading: false,
         error: null,
       });
@@ -138,21 +126,6 @@ export function useMapMarkers(
             "wars",
             warned
           ),
-          hubLinks: capMarkers(
-            Array.isArray(data.hub_links) ? data.hub_links : [],
-            "supply links",
-            warned
-          ),
-          tradeNetworks: capMarkers(
-            Array.isArray(data.trade_networks) ? data.trade_networks : [],
-            "trade networks",
-            warned
-          ),
-          tradeEdges: capMarkers(
-            Array.isArray(data.trade_edges) ? data.trade_edges : [],
-            "trade edges",
-            warned
-          ),
           loading: false,
           error: null,
         });
@@ -166,9 +139,6 @@ export function useMapMarkers(
             installations: [],
             forts: [],
             wars: [],
-            hubLinks: [],
-            tradeNetworks: [],
-            tradeEdges: [],
             loading: false,
             error: null,
           });
@@ -182,9 +152,6 @@ export function useMapMarkers(
           installations: [],
           forts: [],
           wars: [],
-          hubLinks: [],
-          tradeNetworks: [],
-          tradeEdges: [],
           loading: false,
           error: message,
         });

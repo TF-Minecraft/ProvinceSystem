@@ -31,8 +31,6 @@ const MODE_OPTIONS: MapModeOption[] = [
   // opens that guild's card. Trade influence, not territory: guilds own none.
   { value: "trade", label: "Trade", group: "world" },
   { value: "prosperity", label: "Prosperity", group: "world" },
-  // What each province counts as once its infrastructure is built.
-  { value: "infrastructure", label: "Infrastructure", group: "world" },
   { value: "infestation", label: "Infestation", group: "world" },
 ];
 
