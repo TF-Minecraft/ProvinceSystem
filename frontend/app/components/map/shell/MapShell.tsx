@@ -89,7 +89,7 @@ export default function MapShell({
               its layers button under the search bar. The gap between them
               lets clicks through to the map. */}
           <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
-            <div className="pointer-events-auto min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
+            <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
             <div className="pointer-events-auto ml-auto shrink-0">{layers}</div>
           </div>
         </div>

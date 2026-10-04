@@ -28,7 +28,7 @@ export default function MapDrillBreadcrumb({
   return (
     <nav
       aria-label="Open subject layers"
-      className="map-frame flex items-center gap-1 overflow-x-auto py-1 pl-2 pr-1 text-sm [scrollbar-width:none]"
+      className="map-frame pointer-events-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto py-1 pl-2 pr-1 text-sm [scrollbar-width:none]"
     >
       <button
         type="button"
