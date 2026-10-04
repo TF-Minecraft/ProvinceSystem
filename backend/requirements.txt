@@ -4,7 +4,6 @@ starlette>=1.5
 uvicorn
 numpy
 pillow
-svgwrite
 python-multipart
 python-dotenv
 pyyaml

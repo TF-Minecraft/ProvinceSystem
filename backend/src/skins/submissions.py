@@ -23,7 +23,6 @@ from .naming import (
     build_staff_submission_id,
     build_submission_id,
     build_submission_id_for_realm,
-    sanitize_ign,
     slugify_display_name,
 )
 from .notifications import enqueue_submitted
@@ -100,8 +99,6 @@ MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d", "mask"})
 GUN_FIELDS = ("texture",) + GUN_MODEL_FIELDS
 GRIP_Y_MIN = 0.0
 GRIP_Y_MAX = 16.0
-# Legacy preset ids still accepted and mapped to Y.
-_GRIP_PRESET_Y = {"bottom": 2.5, "middle": 4.0, "top": 5.5}
 MAX_DISPLAY_NAME = 24
 
 
@@ -120,9 +117,6 @@ def parse_grip_y(raw: str | None) -> float | None:
     text = str(raw).strip()
     if not text:
         return None
-    legacy = _GRIP_PRESET_Y.get(text.lower())
-    if legacy is not None:
-        return legacy
     try:
         value = float(text)
     except ValueError as exc:
@@ -758,7 +752,7 @@ def create_submission(
     minecraft_name = link.get("minecraft_name")
     if not minecraft_name:
         raise SubmissionError(
-            "Minecraft name missing - re-link Discord or wait for API migrate"
+            "Minecraft name missing - re-link Discord"
         )
 
     try:
@@ -1147,9 +1141,6 @@ def _get_row(submission_id: str) -> sqlite3.Row | None:
 
 def _list_asset_files(submission_id: str) -> list[str]:
     """PNG + model JSON for plugin download (excludes meta.json)."""
-    from .pack_models.regen import ensure_pack_models
-
-    ensure_pack_models(submission_id)
     out_dir = SKINS_DIR / submission_id
     if not out_dir.is_dir():
         return []
@@ -1171,11 +1162,6 @@ def _list_asset_files(submission_id: str) -> list[str]:
             preferred.append(key)
             names = [n for n in names if n != key]
     return preferred + names
-
-
-def _list_png_files(submission_id: str) -> list[str]:
-    """Back-compat alias — includes JSON model files for apply."""
-    return _list_asset_files(submission_id)
 
 
 def approve_submission(submission_id: str) -> dict:
@@ -1501,10 +1487,6 @@ def resolve_submission_file(submission_id: str, filename: str) -> Path | None:
     if ".." in name:
         return None
 
-    from .pack_models.regen import ensure_pack_models
-
-    ensure_pack_models(submission_id)
-
     base = (SKINS_DIR / submission_id).resolve()
     if not base.is_dir():
         return None
@@ -1516,7 +1498,7 @@ def resolve_submission_file(submission_id: str, filename: str) -> Path | None:
         return None
 
     if not candidate.is_file() and name == "review_sheet.png":
-        # Compose on demand — create no longer always writes this file.
+        # Submission creation can omit the review sheet, so compose it on demand.
         try:
             from .review_sheet import ReviewSheetError, write_review_sheet
 

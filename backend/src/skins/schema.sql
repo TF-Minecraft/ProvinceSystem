@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     base_set TEXT,
     tiers TEXT,
     tier_aliases TEXT,
+    helmet_3d_tiers TEXT,
+    texture_hash TEXT,
     add_name INTEGER NOT NULL DEFAULT 0,
     name_colours TEXT,
     name_styles TEXT,
@@ -152,20 +154,13 @@ CREATE TABLE IF NOT EXISTS armourshop_catalog (
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS armourshop_player_meta (
-    player_uuid TEXT PRIMARY KEY,
-    name_colour_stops INTEGER NOT NULL DEFAULT 0,
-    max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
-    skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
-    skin_kinds_json TEXT NOT NULL DEFAULT '[]',
-    allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS lore_item_customisations (
     player_uuid TEXT NOT NULL,
     character_id TEXT NOT NULL,
     kit_key TEXT NOT NULL,
+    kit_id TEXT,
+    name_colours TEXT,
+    name_styles TEXT,
     display_name TEXT NOT NULL DEFAULT '',
     lore_json TEXT NOT NULL DEFAULT '[]',
     existing_skin_id TEXT,
@@ -242,18 +237,13 @@ CREATE TABLE IF NOT EXISTS drink_catalog (
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS drink_player_meta (
-    player_uuid TEXT PRIMARY KEY,
-    allow_drink_texture INTEGER NOT NULL DEFAULT 0,
-    name_colour_stops INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS rpc_player_meta (
     player_uuid TEXT NOT NULL,
     realm_id TEXT NOT NULL DEFAULT 'main',
     name_colour_stops INTEGER NOT NULL DEFAULT 0,
     allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+    allow_drink_message INTEGER NOT NULL DEFAULT 0,
+    donator_tier INTEGER NOT NULL DEFAULT 0,
     max_alive_characters INTEGER,
     wardrobe_skin_slots INTEGER NOT NULL DEFAULT 1,
     max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
@@ -557,3 +547,86 @@ CREATE TABLE IF NOT EXISTS patreon_webhook_members (
     member_id TEXT PRIMARY KEY,
     recorded_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS creation_catalog (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS character_creates (
+    id TEXT PRIMARY KEY,
+    player_uuid TEXT NOT NULL,
+    client_request_id TEXT,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL,
+    character_id TEXT,
+    error TEXT,
+    created_at TEXT NOT NULL,
+    applied_at TEXT,
+    realm_id TEXT NOT NULL DEFAULT 'main',
+    wardrobe_active_slot TEXT
+);
+
+CREATE TABLE IF NOT EXISTS character_roster (
+    player_uuid TEXT NOT NULL,
+    realm_id TEXT NOT NULL DEFAULT 'main',
+    character_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    race TEXT,
+    class TEXT,
+    created_at TEXT,
+    updated_at TEXT NOT NULL,
+    kit_status TEXT,
+    kit_statuses_json TEXT,
+    sheet_json TEXT,
+    wardrobe_active_slot TEXT,
+    PRIMARY KEY (player_uuid, realm_id, character_id)
+);
+
+CREATE TABLE IF NOT EXISTS character_player_meta (
+    player_uuid TEXT PRIMARY KEY,
+    -- Age-only upserts need to leave the character limit unset.
+    max_alive_characters INTEGER,
+    eighteen INTEGER,
+    real_age_set INTEGER NOT NULL DEFAULT 0,
+    account_created_at_epoch INTEGER,
+    name_colour_stops INTEGER,
+    updated_at TEXT NOT NULL,
+    kit_cooldown_seconds_remaining INTEGER,
+    kit_cooldown_hours INTEGER,
+    kit_cooldowns_json TEXT,
+    wardrobe_skin_slots INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_discord_links_grace
+    ON discord_links(grace_until);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_texture_hash
+    ON submissions(player_uuid, texture_hash);
+
+CREATE INDEX IF NOT EXISTS idx_character_creates_realm_status
+    ON character_creates(realm_id, status);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_character_creates_client_req
+    ON character_creates(player_uuid, client_request_id)
+    WHERE client_request_id IS NOT NULL AND TRIM(client_request_id) != '';
+
+CREATE INDEX IF NOT EXISTS idx_character_creates_pending
+    ON character_creates(status, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_character_roster_player
+    ON character_roster(player_uuid);
+
+CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
+    ON character_roster(player_uuid, realm_id);
+
+CREATE INDEX IF NOT EXISTS idx_lore_item_customisations_realm_state
+    ON lore_item_customisations(realm_id, state);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_realm_apply
+    ON submissions(realm_id, status, applied_at);
+
+CREATE INDEX IF NOT EXISTS idx_drink_submissions_realm_apply
+    ON drink_submissions(realm_id, status, applied_at);

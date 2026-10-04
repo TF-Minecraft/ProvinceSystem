@@ -19,7 +19,7 @@ sys.modules["skins.db"] = db
 
 @pytest.fixture(scope="session", autouse=True)
 def sandbox_event_loop_wakeup():
-    # Same fallback as test_patchnotes_routes.py; only blocked sockets need it.
+    # Keep threaded ASGI tests responsive when socket wakeups are blocked.
     original = asyncio.DefaultEventLoopPolicy.new_event_loop
 
     def new_event_loop(policy):

@@ -201,19 +201,10 @@ class RpcPlayerMetaTest(unittest.TestCase):
             )
         )
 
-    def test_resolve_prefers_rpc_over_legacy(self) -> None:
+    def test_resolve_uses_synced_entitlements(self) -> None:
         from characters.rpc_player_meta import (
             resolve_web_entitlements,
             upsert_rpc_player_meta,
-        )
-        from skins.drinks import upsert_drink_player_meta
-
-        upsert_drink_player_meta(
-            {
-                "player_uuid": "abc",
-                "allow_drink_texture": False,
-                "name_colour_stops": 1,
-            }
         )
         upsert_rpc_player_meta(
             {
@@ -230,28 +221,19 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertTrue(ent["meta_synced"])
         self.assertEqual(ent["realm_id"], "main")
 
-    def test_resolve_legacy_fallback_main_only(self) -> None:
+    def test_unsynced_entitlements_have_no_grants_in_any_realm(self) -> None:
         from characters.rpc_player_meta import resolve_web_entitlements
-        from skins.drinks import upsert_drink_player_meta
 
-        upsert_drink_player_meta(
-            {
-                "player_uuid": "legacy-1",
-                "allow_drink_texture": True,
-                "name_colour_stops": 2,
-            }
-        )
-        ent = resolve_web_entitlements("legacy-1")
-        self.assertEqual(ent["name_colour_stops"], 2)
-        self.assertTrue(ent["allow_drink_texture"])
-        self.assertFalse(ent["meta_synced"])
-
-        # Non-main realms do not use legacy fallback when row is missing.
-        empty = resolve_web_entitlements("legacy-1", realm_id="dev")
-        self.assertEqual(empty["name_colour_stops"], 0)
-        self.assertFalse(empty["allow_drink_texture"])
-        self.assertFalse(empty["meta_synced"])
-        self.assertEqual(empty["realm_id"], "dev")
+        for realm in ("main", "dev"):
+            with self.subTest(realm=realm):
+                ent = resolve_web_entitlements("unsynced-player", realm_id=realm)
+                self.assertFalse(ent["meta_synced"])
+                self.assertEqual(ent["name_colour_stops"], 0)
+                self.assertFalse(ent["allow_drink_texture"])
+                self.assertFalse(ent["allow_drink_message"])
+                self.assertEqual(ent["skin_kinds"], [])
+                self.assertEqual(ent["permission_flags"], {})
+                self.assertEqual(ent["realm_id"], realm)
 
     def test_resolve_realm_row(self) -> None:
         from characters.rpc_player_meta import (
@@ -303,13 +285,13 @@ class RpcPlayerMetaTest(unittest.TestCase):
         ):
             upsert_rpc_player_meta(
                 {
-                    "player_uuid": "legacy-player",
+                    "player_uuid": "synced-player",
                     "name_colour_stops": 2,
                     "allow_drink_texture": True,
                     "allow_drink_message": True,
                 }
             )
-            issued = issue_code("legacy-player", "drink")
+            issued = issue_code("synced-player", "drink")
             session = redeem_drink_code(issued["code"])
         self.assertEqual(session["name_colour_stops"], 2)
         self.assertTrue(session["allow_drink_texture"])

@@ -96,7 +96,7 @@ def fill_missing_terrain(file_path, default_terrain="plains", default_fertility=
                 new_lines.append(line)
                 continue
 
-            # Match old format: id = r,g,b
+            # Province rows use id = r,g,b.
             match = re.match(r"(\d+)\s*=\s*(\d+,\d+,\d+)", stripped)
             if match:
                 new_line = (

@@ -22,13 +22,9 @@ def load_constants() -> dict[str, Any]:
 
 
 def namespace() -> str:
-    """IA namespace for main-realm pack regen (tfmc_submissions).
+    """ItemsAdder namespace for generated pack models.
 
-    Non-main realms may use separate pack namespaces later; this helper stays
-    on the shared main namespace until realm pack namespaces are wired.
+    All realms use the shared main namespace (tfmc_submissions); generated
+    texture paths do not select a separate namespace by realm.
     """
     return str(load_constants()["namespace"])
-
-
-def constants_path() -> Path:
-    return _CONSTANTS_PATH

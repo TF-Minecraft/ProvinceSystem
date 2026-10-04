@@ -16,6 +16,8 @@ _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+from src.characters.rpc_player_meta import upsert_rpc_player_meta  # noqa: E402
+
 # 1x1 transparent PNG
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -235,12 +237,11 @@ class DrinkApiTest(unittest.TestCase):
         from skins.drinks import (
             DrinkError,
             create_drink_submission,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {
                 "player_uuid": "player-1",
                 "allow_drink_texture": False,
@@ -262,19 +263,15 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("name_colours", str(ctx.exception).lower())
 
     def test_gilded_png_pending(self) -> None:
-        from skins.drinks import create_drink_submission, upsert_drink_player_meta
+        from skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
-        self.assertTrue(
-            __import__("skins.drinks", fromlist=["get_allow_drink_texture"]).get_allow_drink_texture(
-                "player-1"
-            )
-        )
+        self.assertTrue(session["allow_drink_texture"])
 
         out = create_drink_submission(
             session,
@@ -315,12 +312,11 @@ class DrinkApiTest(unittest.TestCase):
         from skins.drinks import (
             approve_drink_submission,
             create_drink_submission,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -360,12 +356,11 @@ class DrinkApiTest(unittest.TestCase):
         from skins.drinks import (
             approve_drink_submission,
             create_drink_submission,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -524,11 +519,11 @@ class DrinkApiTest(unittest.TestCase):
 
     def test_texture_review_sheet(self) -> None:
         from skins.drink_review_sheet import build_drink_review_sheet
-        from skins.drinks import create_drink_submission, upsert_drink_player_meta
+        from skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -595,7 +590,6 @@ class DrinkApiTest(unittest.TestCase):
             create_drink_submission,
             list_drinks_pending_apply,
             mark_drinks_applied,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
@@ -624,7 +618,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(list_drinks_pending_apply(), [])
 
         # Textured drink: pending_pack until CMD assigned + applied
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session2 = self._issue_and_redeem()
@@ -669,12 +663,11 @@ class DrinkApiTest(unittest.TestCase):
             DrinkError,
             create_drink_submission,
             list_player_textures,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -713,12 +706,11 @@ class DrinkApiTest(unittest.TestCase):
             list_player_textures,
             mark_drinks_applied,
             revoke_drink_submission,
-            upsert_drink_player_meta,
         )
 
         self._link_player()
         self._seed_catalog()
-        upsert_drink_player_meta(
+        upsert_rpc_player_meta(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()

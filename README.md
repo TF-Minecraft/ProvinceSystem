@@ -2,7 +2,7 @@
 
 > TF-Minecraft's web home for maps, characters, and custom creations.
 
-ProvinceSystem powers the TFMC website and its connected world services. What began as the province and political-map system now brings together the interactive map, character creation, skin submissions, custom drinks, and player guides.
+ProvinceSystem powers the TFMC website and its connected world services. It brings together the interactive map, character creation, skin submissions, custom drinks, and player guides.
 
 It connects the Minecraft world with a browser experience: players can explore the political landscape, manage character details, and work on creations that return to the game through the companion plugins.
 

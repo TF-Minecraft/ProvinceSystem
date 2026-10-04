@@ -180,14 +180,3 @@ def build_staff_submission_id(
             "Could not build a valid skin set key from the item name. "
             "Use letters/numbers, shorten it, and try again."
         ) from e
-
-
-def display_slug_from_submission_id(submission_id: str, ign: str | None) -> str:
-    """Strip ign_ prefix when present (for conflict matching)."""
-    s = (submission_id or "").strip()
-    key = sanitize_ign(ign) if ign else ""
-    if key:
-        prefix = f"{key}_"
-        if s.startswith(prefix) and len(s) > len(prefix):
-            return s[len(prefix) :]
-    return s

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import hmac
 import json
@@ -54,21 +53,9 @@ def _row(**overrides):
     return row
 
 
-def _test_loop():
-    """Keep TestClient responsive when the sandbox blocks socket wakeups."""
-    loop = asyncio.new_event_loop()
-    try:
-        loop._csock.send(b"\0")
-    except PermissionError:
-        def tick():
-            loop.call_later(0.01, tick)
-        loop.call_soon(tick)
-    return loop
-
-
 class PatchnotesRoutesTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -404,7 +391,7 @@ def _signed_push(message: str, secret: str = "hook-secret") -> tuple[bytes, dict
 
 class GithubWebhookTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -462,7 +449,7 @@ class GithubWebhookTest(unittest.TestCase):
 
 class PreviewRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -513,7 +500,7 @@ class PreviewRouteTest(unittest.TestCase):
 
 class FolderRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -573,7 +560,7 @@ class FolderRouteTest(unittest.TestCase):
 
 class WeekActionRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
@@ -639,7 +626,7 @@ def _job(**overrides):
 
 class ReviewRoutesTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app, backend_options={"loop_factory": _test_loop})
+        self.client = TestClient(app)
         patcher = mock.patch("src.api.patchnotes_routes.migrate")
         self.addCleanup(patcher.stop)
         patcher.start()
