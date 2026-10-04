@@ -34,10 +34,10 @@ type MapShellProps = {
   /** War-planning toolbar, top right under the layers button while paint mode is on. */
   paintPanel?: ReactNode;
   /**
-   * A stored chronicle day. Its date banner is fixed at the top centre of the
-   * screen, so the top-row controls start below it wherever they would meet.
+   * A card over the plaque, in the left column: a stored day's date and the
+   * way to the days either side of it.
    */
-  chronicle?: boolean;
+  banner?: ReactNode;
 };
 
 /**
@@ -65,7 +65,7 @@ export default function MapShell({
   footer,
   aside,
   paintPanel,
-  chronicle = false,
+  banner,
 }: MapShellProps) {
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
@@ -76,8 +76,6 @@ export default function MapShell({
     root.classList.add("map-fullscreen");
     return () => root.classList.remove("map-fullscreen");
   }, []);
-
-  const chronicleTop = chronicle ? "max-xl:top-[10.75rem]" : "";
 
   return (
     // pan-x pan-y: panels still scroll, but a pinch on them cannot zoom the
@@ -90,12 +88,11 @@ export default function MapShell({
           at full height rises over the search. The column itself lets clicks
           through to the map; only its panels take them. */}
       <div
-        className={`pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0 ${chronicleTop} ${
-          chronicle ? "max-md:pt-[10.75rem]" : ""
-        }`}
+        className="pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0"
       >
         {/* Above the details panel, so search results drop down over it. */}
         <div className="pointer-events-auto relative z-10 shrink-0">
+          {banner ? <div className="mb-2 md:mb-3">{banner}</div> : null}
           {plaque}
           {/* Breadcrumb left, layers right, as Google Maps' phone app puts
               its layers button under the search bar. The gap between them
@@ -118,9 +115,7 @@ export default function MapShell({
 
       {breadcrumb ? (
         <div
-          className={`pointer-events-none absolute left-1/2 top-4 z-20 hidden max-w-[min(42rem,calc(100%-52rem))] -translate-x-1/2 md:block ${
-            chronicle ? "top-[10.75rem]" : ""
-          }`}
+          className="pointer-events-none absolute left-1/2 top-4 z-20 hidden max-w-[min(42rem,calc(100%-52rem))] -translate-x-1/2 md:block"
         >
           <div className="pointer-events-auto">{breadcrumb}</div>
         </div>
@@ -138,9 +133,7 @@ export default function MapShell({
 
       {paintPanel ? (
         <div
-          className={`pointer-events-auto absolute right-4 top-[4.25rem] z-20 hidden max-h-[calc(100%-12.25rem)] w-72 overflow-y-auto md:block ${
-            chronicle ? "max-xl:top-[14.25rem]" : ""
-          }`}
+          className="pointer-events-auto absolute right-4 top-[4.25rem] z-20 hidden max-h-[calc(100%-12.25rem)] w-72 overflow-y-auto md:block"
         >
           {paintPanel}
         </div>
@@ -148,7 +141,7 @@ export default function MapShell({
 
       {/* Over the paint toolbar and zoom, so the layers panel drops down across them. */}
       {layers ? (
-        <div className={`absolute right-4 top-4 z-40 hidden md:block ${chronicleTop}`}>
+        <div className="absolute right-4 top-4 z-40 hidden md:block">
           {layers}
         </div>
       ) : null}

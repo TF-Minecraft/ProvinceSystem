@@ -6,6 +6,7 @@ import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
 import { useMapGeometry, chronicleNamesSupported } from "../../hooks/useMapGeometry";
 import { useMapViewport } from "../../hooks/useMapViewport";
+import { useResponsiveFitMode } from "../../hooks/useResponsiveFitMode";
 import { computeVisibleNationLabels } from "../../lib/mapLabels";
 import type { NationLabelSpec } from "../../lib/mapLabels";
 import {
@@ -355,9 +356,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // Bumped whenever `framesRef` is replaced, so the render reads the new array.
   const [framesVersion, setFramesVersion] = useState(0);
 
+  const fitMode = useResponsiveFitMode();
   const viewport = useMapViewport({
     mapSize,
-    fitMode: "contain",
+    fitMode,
     dragPan: true,
     keyboard: true,
     // Safari would otherwise back the scaled-down map with a full-size layer

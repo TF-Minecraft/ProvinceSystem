@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
@@ -10,7 +10,6 @@ import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useMapMarkers } from "../hooks/useMapMarkers";
 import { isMarkerMapMode } from "../lib/mapMarkers";
-import type { FitMode } from "../lib/mapViewportMath";
 import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
@@ -88,6 +87,7 @@ import {
 } from "@/lib/map/api";
 import { editorUrl } from "@/lib/map/editorAccess";
 import { chronicleStudioHref, liveMapHref } from "@/app/lib/map/chronicleDayRoute";
+import { useResponsiveFitMode } from "@/app/hooks/useResponsiveFitMode";
 import { isArchivedMap, showReviewHistory } from "@/app/lib/map/archiveMaps";
 import MapArchiveMenu from "./map/MapArchiveMenu";
 import ChronicleOwnershipLayer from "./chronicle/ChronicleOwnershipLayer";
@@ -133,23 +133,6 @@ const PROVINCE_TOOLTIP_MODES = new Set<MapMode>([
   "province",
 ]);
 
-/**
- * Desktop opens on the whole world. A phone held upright would show that as a
- * small square with the screen empty below it, so there the map fills the
- * screen top to bottom instead and the sides are a drag away.
- */
-function useResponsiveFitMode(): FitMode {
-  const [fitMode, setFitMode] = useState<FitMode>("contain");
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 47.99rem)");
-    const apply = () => setFitMode(query.matches ? "cover" : "contain");
-    apply();
-    query.addEventListener("change", apply);
-    return () => query.removeEventListener("change", apply);
-  }, []);
-  return fitMode;
-}
-
 /** Room the desktop details panel, layers button and zoom take from a "zoom to". */
 const DESKTOP_FOCUS_INSET: MapFocusInset = { left: 400, bottom: 24, top: 64, right: 80 };
 
@@ -176,6 +159,10 @@ type MapViewerProps = {
    * effect and `ChronicleOwnershipLayer`.
    */
   day?: string | null;
+  /** A stored day's date and day-to-day navigation, over the plaque. */
+  dayBar?: ReactNode;
+  /** Beside the search on a stored day: the way back to the live map. */
+  dayActions?: ReactNode;
 };
 
 /**
@@ -199,7 +186,7 @@ function prefersSmallPickMap(): boolean {
   return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 }
 
-const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
+const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) => {
   const chronicle = day !== null;
   /*
    * A stored day offers the *same* mode list as the live map, with no
@@ -1412,7 +1399,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     });
   }
 
-  const plaqueActions = chronicle ? null : (
+  const plaqueActions = chronicle ? (dayActions ?? null) : (
     <>
       {archived ? (
         <Link href="/map" className={actionLinkClass}>
@@ -1507,10 +1494,10 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
   return (
     <MapShell
-      chronicle={chronicle}
+      banner={dayBar}
       plaque={
         <MapPlaque
-          eyebrow={chronicle ? "Stored day" : archived ? "Archived chapter" : "World map"}
+          eyebrow={archived ? "Archived chapter" : "World map"}
           mapDisplayName={displayName}
           actions={plaqueActions}
           search={

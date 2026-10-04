@@ -27,12 +27,12 @@ import {
   type ChronicleDayRange,
 } from "../../lib/map/chronicleDayRoute";
 import { useChronicleDay } from "../../lib/map/chronicleDayContext";
+import { formatChronicleDay } from "../../lib/map/chronicleDayLabel";
+import { BackIcon, ChevronIcon } from "../map/shell/MapIcons";
 import { chroniclePanelClass } from "./ChroniclePanels";
 
 const bannerLinkClass =
   "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
-
-const bannerDisabledClass = "text-xs text-[var(--tfmc-stone)]";
 
 const shellClass =
   "flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center";
@@ -101,17 +101,14 @@ export function describeChronicleDay(
 }
 
 /**
- * The date banner, and the single most important element on this page: a
+ * The day bar, and the single most important element on this page: a
  * screenshot of a stored day must carry its date.
  *
- * Fixed rather than in normal flow because `MapShell` claims the whole
- * viewport below the site header and hides its own overflow — anything
- * stacked above it would push the map into a scroll region, and a banner that
- * can scroll out of frame is a banner that can be missing from the
- * screenshot. Pinned top-centre; `MapShell` starts its top-row controls below
- * it wherever the two would meet.
+ * It sits in the map shell's left column over the search, so it is on screen
+ * at every size and nothing has to make room for it: back to the timelapse,
+ * the day before, the date, the day after.
  */
-function ChronicleDateBanner({
+function ChronicleDayBar({
   mapId,
   day,
   incomplete,
@@ -126,68 +123,70 @@ function ChronicleDateBanner({
   range: ChronicleDayRange | null;
   walk: ReturnType<typeof chronicleDayWalk>;
 }) {
+  const stepClass = "map-control h-10 w-10 shrink-0 rounded-full p-0";
   return (
-    <div className="pointer-events-none fixed left-1/2 top-[calc(var(--tfmc-header-h)+0.5rem)] z-30 w-[min(92vw,32rem)] -translate-x-1/2">
-      <div
-        className={`${chroniclePanelClass} pointer-events-auto px-4 py-2.5 text-center`}
-        role="status"
-      >
-        <p className="text-[0.65rem] font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-          Stored day — not the live map
-        </p>
-        <p className="font-[family-name:var(--font-fraunces)] text-2xl font-medium tracking-tight text-[var(--tfmc-cream)]">
-          {day}
-        </p>
-        {incomplete ? (
-          <p className="mt-0.5 text-xs leading-snug text-[var(--tfmc-accent)]">
-            Some sources were missing when this day was captured, so parts of
-            this map may be blank.
+    <div className={`${chroniclePanelClass} p-2`} role="status">
+      <div className="flex items-center gap-1.5">
+        <Link
+          href={chronicleStudioHref(mapId)}
+          className={stepClass}
+          aria-label="Back to the timelapse"
+          title="Back to the timelapse"
+        >
+          <BackIcon size={18} />
+        </Link>
+        <div className="min-w-0 flex-1 text-center">
+          <p className="truncate text-xs text-[var(--tfmc-mist)]">
+            Stored day
+            {walk.total > 0 && walk.position > 0 ? ` · ${walk.position} of ${walk.total}` : ""}
           </p>
-        ) : null}
-        {staleGeometry ? (
-          <p className="mt-0.5 text-xs leading-snug text-[var(--tfmc-accent)]">
-            The province map has been redrawn since this day was captured, so
-            borders may not line up.
+          <p className="truncate font-[family-name:var(--font-fraunces)] text-xl leading-tight text-[var(--tfmc-cream)]">
+            {formatChronicleDay(day)}
           </p>
-        ) : null}
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          {walk.previous ? (
-            <Link
-              href={chronicleDayHref(mapId, walk.previous, range)}
-              className={bannerLinkClass}
-            >
-              &larr; Previous day
-            </Link>
-          ) : (
-            // Dimmed rather than dropped: removing the control at the ends
-            // reflows the row under the date as the reader steps through days.
-            <span className={bannerDisabledClass}>&larr; Previous day</span>
-          )}
-          {walk.total > 0 && walk.position > 0 ? (
-            <span className="text-[0.65rem] font-medium tracking-widest text-[var(--tfmc-mist)]">
-              {walk.position} / {walk.total}
-            </span>
-          ) : null}
-          {walk.next ? (
-            <Link
-              href={chronicleDayHref(mapId, walk.next, range)}
-              className={bannerLinkClass}
-            >
-              Next day &rarr;
-            </Link>
-          ) : (
-            <span className={bannerDisabledClass}>Next day &rarr;</span>
-          )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <Link href={chronicleStudioHref(mapId)} className={bannerLinkClass}>
-            &larr; Timelapse
+        {/* Dimmed rather than dropped at the ends, so the date does not shift
+            as the reader steps through the days. */}
+        {walk.previous ? (
+          <Link
+            href={chronicleDayHref(mapId, walk.previous, range)}
+            className={stepClass}
+            aria-label="Previous day"
+            title="Previous day"
+          >
+            <ChevronIcon size={18} className="rotate-180" />
           </Link>
-          <Link href={liveMapHref(mapId)} className={bannerLinkClass}>
-            Live map &rarr;
+        ) : (
+          <span className={`${stepClass} opacity-40`} aria-hidden>
+            <ChevronIcon size={18} className="rotate-180" />
+          </span>
+        )}
+        {walk.next ? (
+          <Link
+            href={chronicleDayHref(mapId, walk.next, range)}
+            className={stepClass}
+            aria-label="Next day"
+            title="Next day"
+          >
+            <ChevronIcon size={18} />
           </Link>
-        </div>
+        ) : (
+          <span className={`${stepClass} opacity-40`} aria-hidden>
+            <ChevronIcon size={18} />
+          </span>
+        )}
       </div>
+      {incomplete ? (
+        <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
+          Some sources were missing when this day was captured, so parts of this
+          map may be blank.
+        </p>
+      ) : null}
+      {staleGeometry ? (
+        <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
+          The province map has been redrawn since this day was captured, so
+          borders may not line up.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -340,16 +339,24 @@ export default function ChronicleDayViewer({
   }
 
   return (
-    <>
-      <ChronicleDateBanner
-        mapId={mapId}
-        day={activeDay}
-        incomplete={status.incomplete}
-        staleGeometry={status.staleGeometry}
-        range={range}
-        walk={walk}
-      />
-      <MapViewer mapId={mapId} day={activeDay} />
-    </>
+    <MapViewer
+      mapId={mapId}
+      day={activeDay}
+      dayBar={
+        <ChronicleDayBar
+          mapId={mapId}
+          day={activeDay}
+          incomplete={status.incomplete}
+          staleGeometry={status.staleGeometry}
+          range={range}
+          walk={walk}
+        />
+      }
+      dayActions={
+        <Link href={liveMapHref(mapId)} className="map-control h-9 px-2.5 text-xs no-underline">
+          Live map
+        </Link>
+      }
+    />
   );
 }
