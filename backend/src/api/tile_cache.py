@@ -228,10 +228,15 @@ def cleanup_pyramids(source: Path, current: str) -> None:
         retired.append((marker.stat().st_mtime, directory))
     total = 0
     for index, (stamp, directory) in enumerate(sorted(retired, reverse=True)):
-        size = sum(p.stat().st_size for p in directory.rglob("*") if p.is_file())
-        total += size
-        if index >= RETAIN_GENERATIONS or now - stamp > RETAIN_SECONDS or total > RETAIN_BYTES:
+        if index >= RETAIN_GENERATIONS or now - stamp > RETAIN_SECONDS:
             shutil.rmtree(directory, ignore_errors=True)
+            continue
+        # Only kept generations count against the byte budget.
+        size = sum(p.stat().st_size for p in directory.rglob("*") if p.is_file())
+        if total + size > RETAIN_BYTES:
+            shutil.rmtree(directory, ignore_errors=True)
+            continue
+        total += size
 
 
 def pyramid_dir(source: os.PathLike[str] | str, version: str) -> Path:
