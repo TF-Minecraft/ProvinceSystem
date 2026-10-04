@@ -1,12 +1,4 @@
-/** Characters API client (creation catalog, redeem, list, create). */
-
-export function getApiBase(): string {
-  const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
-  if (!base) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set");
-  }
-  return base;
-}
+import { getApiBase, detailMessage, parseJson, authHeaders } from "../site/api";
 
 export class CharactersApiError extends Error {
   status: number;
@@ -18,44 +10,12 @@ export class CharactersApiError extends Error {
   }
 }
 
-function detailMessage(data: unknown, fallback: string): string {
-  if (data && typeof data === "object" && "detail" in data) {
-    const detail = (data as { detail: unknown }).detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) =>
-          typeof item === "object" && item && "msg" in item
-            ? String((item as { msg: unknown }).msg)
-            : String(item)
-        )
-        .join("; ");
-    }
-  }
-  return fallback;
-}
-
-async function parseJson(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init);
   } catch {
     throw new Error("Request failed. Please try again.");
   }
-}
-
-export function authHeaders(token: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${token}`,
-    Accept: "application/json",
-  };
 }
 
 export type RedeemResult = {
@@ -100,14 +60,6 @@ export async function redeemProfile(
       : {}),
     remember_me: body.remember_me === true || rememberMe,
   };
-}
-
-/** @deprecated Use redeemProfile */
-export async function redeemCharacter(
-  code: string,
-  rememberMe = false
-): Promise<RedeemResult> {
-  return redeemProfile(code, rememberMe);
 }
 
 export async function logoutCharacter(sessionToken: string): Promise<void> {
@@ -321,7 +273,7 @@ export type CharacterListItem = {
   create_id?: string;
   /** Present when status is rejected (e.g. no free character slot). */
   error?: string | null;
-  /** eligible | granted | ineligible when synced from RPC (legacy starter). */
+  /** Starter kit status: eligible | granted | ineligible, synced from RPC. */
   kit_status?: string | null;
   /** Per-kit status map from roster sync. */
   kit_statuses?: Record<string, string> | null;
@@ -1057,29 +1009,6 @@ export async function fetchMaskedTemplateBlob(
     );
   }
   return res.blob();
-}
-
-export async function clearPendingCreateWardrobe(
-  sessionToken: string,
-  createId: string,
-  slot: string
-): Promise<void> {
-  const cid = encodeURIComponent(createId.trim());
-  const s = encodeURIComponent(slot.trim());
-  const res = await apiFetch(
-    `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
-    {
-      method: "DELETE",
-      headers: authHeaders(sessionToken),
-    }
-  );
-  if (!res.ok) {
-    const data = await parseJson(res);
-    throw new CharactersApiError(
-      detailMessage(data, `Clear pending wardrobe failed (${res.status})`),
-      res.status
-    );
-  }
 }
 
 export async function deletePendingCreate(

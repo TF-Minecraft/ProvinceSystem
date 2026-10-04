@@ -1,7 +1,7 @@
 "use client";
 
 import type { DrinkSubmissionPublic } from "../../../lib/drinks/api";
-import { formatLocal } from "../../../lib/drinks/formatTime";
+import { formatLocal } from "../../../lib/skins/formatTime";
 
 function statusMessage(row: DrinkSubmissionPublic): string {
   switch (row.status) {

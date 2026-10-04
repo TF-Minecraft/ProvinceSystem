@@ -1,4 +1,4 @@
-import { getApiBase } from "../characters/api";
+import { getApiBase } from "../site/api";
 
 export type PendingPatreonLink = {
   target_kind: "discord" | "minecraft";

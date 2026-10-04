@@ -18,7 +18,6 @@ import {
   loadSteveTexture,
   setArmorHelmetVisible,
   setSteveOuterLayerVisible,
-  type ArmModel,
   type SteveMannequin,
 } from "../../../lib/skins/steveMannequin";
 
@@ -47,7 +46,6 @@ export default function ArmorPreview({
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
-  const [armModel, setArmModel] = useState<ArmModel>("default");
   const [showOuterLayer, setShowOuterLayer] = useState(true);
   showOuterLayerRef.current = showOuterLayer;
 
@@ -115,7 +113,6 @@ export default function ArmorPreview({
         }
 
         const detected = inferArmModelFromTexture(steveTexture);
-        if (!cancelled) setArmModel(detected);
         steveRoot = createSteveMannequin(steveTexture, detected);
         applySteveArmPose(steveRoot, "idle");
         setSteveOuterLayerVisible(steveRoot, showOuterLayerRef.current);

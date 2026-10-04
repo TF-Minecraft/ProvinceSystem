@@ -15,29 +15,6 @@ export const thieveryKeyCopies: ThieveryKeyCopy[] = [
   { pickUp: "Paper", clickOnto: "a master key or copper copy", result: "Paper Key (single-use, doors only)", message: "Paper key created." },
 ];
 
-export type ThieveryNumber = { label: string; value: string; note?: string };
-
-/** The numbers a player is most likely to run into, from config.yml. */
-export const thieveryNumbers: ThieveryNumber[] = [
-  { label: "Interact cooldown", value: "3 seconds" },
-  { label: "Door lockpick max distance", value: "3 blocks" },
-  { label: "Max success chance (any pick)", value: "95%" },
-  { label: "Failed-pick cooldown", value: "60 seconds" },
-  { label: "Door unlock window after a successful pick", value: "60 minutes", note: "opens for anyone during this window" },
-  { label: "Minimum lockpick-to-lock strength ratio", value: "0.5", note: "a lock more than twice your pick's strength is impossible" },
-  { label: "Lockpick penalty cap", value: "up to 50% reduction" },
-  { label: "Chest probing", value: "100% base success", note: "+10% break chance per slot probed" },
-  { label: "Display furniture lock strength", value: "fixed 0.5" },
-  { label: "Loadout points", value: "30 held", note: "+24 per gain interval" },
-  { label: "Pickpocket budget / cooldown / range", value: "10 points / 1 hour / 4 blocks" },
-  { label: "Robbery budget / cooldown / duration / range", value: "30 points / 3 days / 120 s / 4 blocks" },
-  { label: "Robbery accept timeout", value: "30 seconds" },
-  { label: "Robbery pouch click / shift-click", value: "10 / 100 denar" },
-  { label: "Grave steal budget", value: "10 points" },
-  { label: "Key-to-paper copy cooldown", value: "240 minutes (4 hours)", note: "per player, per key" },
-  { label: "Keychain capacity", value: "5 keys" },
-];
-
 export const thieveryCommands: CommandRow[] = [
   {
     command: "/thievery",
@@ -99,7 +76,6 @@ export const thieverySection: WikiSection = {
     label: "Thievery",
     category: "combat",
     blurb: "Lock your doors and chests, or break into someone else's: lockpicking, pickpocketing, and consensual robbery.",
-    draft: true,
   },
   commands: thieveryCommandSet,
 };

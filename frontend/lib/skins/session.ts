@@ -7,7 +7,7 @@ export type SkinsSession = {
   /** True when code scope is skin_staff. */
   staff?: boolean;
   scope?: string;
-  /** Server realm stamped on the mint code (Plan 2). */
+  /** Server realm stamped on the mint code. */
   realm_id?: string;
   /** Rank colour stops for name picker (clamped by API to web hard cap). */
   name_colour_stops?: number;

@@ -75,8 +75,6 @@ export type WikiNavItem = {
   category: WikiCategoryKey;
   /** One-sentence summary. Used by the sidebar tooltip and the overview cards. */
   blurb: string;
-  /** Unverified content: renders a "Draft: unverified" marker. Never hidden. */
-  draft?: boolean;
 };
 
 /**

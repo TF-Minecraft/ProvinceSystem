@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
 import RecipeItemIcon from "../../../components/wiki/RecipeItemIcon";
 import { WikiItemText, WikiPage } from "@/app/components/wiki";
-import { getItemBySlug, itemDetails, itemSlugAliases, stationItemRedirects } from "../../data/items";
+import { getItemBySlug, itemDetails } from "../../data/items";
 
 export function generateStaticParams() {
-  return [...itemDetails.map(item => ({ slug: item.slug })), ...Object.keys(itemSlugAliases).map(slug => ({ slug }))];
+  return itemDetails.map(item => ({ slug: item.slug }));
 }
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const stationHref = stationItemRedirects[itemSlugAliases[slug] ?? slug];
-  if (stationHref) redirect(stationHref);
   const item = getItemBySlug(slug);
   if (!item) notFound();
   return <WikiPage

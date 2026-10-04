@@ -1,35 +1,6 @@
 import { T } from "./helpers";
 import type { WikiCommandSet, WikiSection } from "./types";
 
-// ---------- Games (table card games) ----------
-
-export const gamesCatalog = [
-  {
-    id: "blackjack",
-    label: "Blackjack",
-    cardSet: "french_52",
-    rules: "min 10 / max 1000 denar, 6 boxes, auto-dealer on, stands on soft 17",
-  },
-  {
-    id: "poker",
-    label: "Tenceur Hold'em",
-    cardSet: "french_52",
-    rules: "small blind 5 / big blind 10 (advisory only), Ace plays as 14",
-  },
-  {
-    id: "draw",
-    label: "Five-Draw",
-    cardSet: "french_52",
-    rules: "no blinds, no ante, Ace plays as 14",
-  },
-  {
-    id: "freeplay",
-    label: "Free play",
-    cardSet: "french_52",
-    rules: "no rules; anyone can sneak-take the pot",
-  },
-];
-
 export const cardSuits = ["Cerrith", "Mitlan", "Oseni", "Seithr"] as const;
 export const cardRankLabels = [
   "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King",
@@ -53,29 +24,6 @@ export const playingCards: PlayingCard[] = cardSuits.flatMap((suit) =>
 );
 
 export const cardBackTexture = T("cards/card_back.png");
-
-/** "Numbers that matter to players", pulled verbatim from the plugin config. */
-export const gamesStats = [
-  { thing: "Leave distance (all four games)", value: "6 blocks" },
-  { thing: "Display render range", value: "48 blocks" },
-  { thing: "Blackjack min / max bet (the one live table)", value: "10 / 1000 denar" },
-  { thing: "Blackjack boxes per table", value: "6" },
-  { thing: "Hands per box after splits", value: "4 (three resplits)" },
-  { thing: "Resplitting aces", value: "Not allowed" },
-  { thing: "Dealer hits soft 17", value: "No" },
-  { thing: "Blackjack betting window", value: "10 seconds" },
-  { thing: "Round-end window", value: "10 seconds" },
-  { thing: "Hold'em blinds (advisory)", value: "small 5 / big 10" },
-  { thing: "Wager vote window", value: "30 seconds" },
-  { thing: "Seconds to place an accepted loot wager", value: "10 seconds" },
-  { thing: "Buy-ins needed for a wager to auto-accept", value: "1" },
-  { thing: "Chip stack height", value: "6 per pile" },
-  { thing: "Card set size", value: "52" },
-  {
-    thing: "Blackjack payouts",
-    value: "Win returns double your stake; natural 21 pays 3:2; push returns your stake",
-  },
-];
 
 /**
  * Three permissions cover every player-facing command, and all three are

@@ -75,28 +75,6 @@ function buildFixtureItem(): LoreItemRow {
   };
 }
 
-/** Optional denied fixture for UI-dev banner checks. */
-export function uiDevDeniedLoreItem(
-  characterId: string = UI_DEV_LORE_CHARACTER_ID
-): LoreItemsResponse {
-  const base = buildFixtureItem();
-  const denied: LoreItemRow = {
-    ...base,
-    state: "denied",
-    draft: {
-      ...base.draft,
-      submission_id: "ui-dev-denied-submission",
-      submission_status: "denied",
-      deny_reason: "Needs a cleaner silhouette",
-      state: "denied",
-      existing_skin_id: null,
-      skin_slug: null,
-    },
-  };
-  uiDevCached = denied;
-  return { character_id: characterId, items: [denied] };
-}
-
 export function uiDevLoreItemsResponse(
   characterId: string = UI_DEV_LORE_CHARACTER_ID
 ): LoreItemsResponse {
@@ -104,31 +82,6 @@ export function uiDevLoreItemsResponse(
     uiDevCached = buildFixtureItem();
   }
   return { character_id: characterId, items: [uiDevCached] };
-}
-
-/** Fixture with no pickable skins — opens editor on upload tab in UI dev. */
-export function uiDevFreshLoreItem(
-  characterId: string = UI_DEV_LORE_CHARACTER_ID
-): LoreItemsResponse {
-  const base = buildFixtureItem();
-  const fresh: LoreItemRow = {
-    ...base,
-    draft: {
-      ...base.draft,
-      display_name: "",
-      lore: [],
-      existing_skin_id: null,
-      submission_id: null,
-      submission_status: null,
-      deny_reason: null,
-      state: "draft",
-      name_colours: [],
-      name_styles: [],
-    },
-    pickable_skins: [],
-  };
-  uiDevCached = fresh;
-  return { character_id: characterId, items: [fresh] };
 }
 
 export function uiDevApplyCustomise(

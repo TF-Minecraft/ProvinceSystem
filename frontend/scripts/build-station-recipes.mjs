@@ -78,23 +78,11 @@ const STATION_NAME_BY_FILE = {
 /** `class{list=Bard}` carries no `display`, so its player-facing label is written here. */
 const CLASS_REQUIREMENT_LABELS = { Bard: "Bard class" };
 
-/** Server-reference aliases/fallbacks whose source configs name a removed or mistyped id. */
+/** Resolve item references from the server configuration to available pack assets. */
 const ITEMSADDER_ID_ALIASES = {
-  // block-station.yml uses singular `marauder_goldbar`; the installed pack declares this plural id.
+  // Dev block-station.yml uses singular `marauder_goldbar`; the pack declares the plural id.
   marauder_goldbar: "marauder_goldbars",
 };
-const MMOITEM_VANILLA_FALLBACKS = {
-  // These four generic research-station ingredient ids no longer exist. Every
-  // installed tiered runestone in MMOItems/item/loot.yml uses ECHO_SHARD.
-  ARMOR_RUNESTONE: "ECHO_SHARD",
-  STAFF_RUNESTONE: "ECHO_SHARD",
-  SWORD_RUNESTONE: "ECHO_SHARD",
-  WAND_RUNESTONE: "ECHO_SHARD",
-  // Newer than the installed MMOItems/item/pets.yml, and the pack ships no sprite for it yet.
-  // The pet-care tools in that file (glove, whistle, feed, reports) are RABBIT_HIDE items.
-  NEUTERING_ITEM: "RABBIT_HIDE",
-};
-
 // ---------------------------------------------------------------------------
 // YAML subset parser
 // ---------------------------------------------------------------------------
@@ -635,9 +623,7 @@ export function build({
   };
 
   // Texture precedence: a sprite named after the item id, then -- for MMOItems
-  // items only -- the sprite of the vanilla item it is actually built on (the
-  // latter is no guess: it is what the player sees in their inventory, and what
-  // the hand-written recipes used before this data was generated) -- and
+  // items only -- the sprite of the vanilla item it is built on -- and
   // finally, the wiki's own display-name -> texture catalogue (see
   // `buildMaterialNameTextureIndex`), for the common case where a custom
   // item's id has no matching sprite filename but its display name is already
@@ -666,7 +652,7 @@ export function build({
     const byName = nameTextureIndex.get(name);
     if (byName) return byName;
     if (ref.kind === "mmoitem") {
-      const material = vanillaTexture(items.get(ref.attrs.id)?.material ?? MMOITEM_VANILLA_FALLBACKS[ref.attrs.id]);
+      const material = vanillaTexture(items.get(ref.attrs.id)?.material);
       if (material) return material;
     }
     return undefined;

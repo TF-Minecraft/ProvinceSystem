@@ -4,15 +4,7 @@ import type { CatalogMaterial, DropOnlyMaterial, Recipe, WikiSection } from "./t
 
 // ---------- Materials ----------
 
-/**
- * Hand-written material recipes: the Magic Station ones, which have no server
- * crafting-station config to generate from.
- *
- * The Ingot, Alchemy, Engineer and Medicine Station material recipes used to
- * live here too. The server YAML is authoritative for those, so they were
- * removed and now come from `data/generated/stationRecipes.ts`; the materials
- * they produce are still catalogued, via `serverCraftedMaterials` below.
- */
+/** Magic Station recipes, which have no server crafting-station configuration. */
 export const materialRecipes: Recipe[] = [
   // Magic Station
   {

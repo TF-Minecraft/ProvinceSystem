@@ -1,6 +1,6 @@
 import type { SkinKind } from "./sizes";
 
-/** Armor tiers (step-11 multi-tier armor). Mirrors backend ARMOR_TIERS. */
+/** Armour tiers. Mirrors backend ARMOR_TIERS. */
 export const ARMOR_TIERS = [
   "iron",
   "steel",
@@ -9,8 +9,6 @@ export const ARMOR_TIERS = [
   "mage",
   "infantry",
 ] as const;
-
-export const MAX_ARMOR_TIERS = ARMOR_TIERS.length;
 
 const HANDHELD = [
   "swords",
@@ -31,7 +29,7 @@ const LARGE_HANDHELD = [
   "staffs",
 ] as const;
 
-/** Mirrors backend BASE_SETS (step-8 / step-13). */
+/** Mirrors backend BASE_SETS. */
 export const BASE_SETS: Record<SkinKind, readonly string[]> = {
   armor_set: ["iron", "steel", "abyssalite", "mythril", "mage", "infantry"],
   handheld: HANDHELD,

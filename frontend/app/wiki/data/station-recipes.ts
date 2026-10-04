@@ -82,12 +82,7 @@ const withFurnitureModel = (slot: Slot): Slot => {
   return model && !slot.model ? { ...slot, model } : slot;
 };
 
-/**
- * Every recipe read off the server's crafting-station configs, with curated
- * notes applied. This is THE list of station recipes: pages that used to keep
- * their own hand-written copies now select out of this array by key, so a
- * recipe can never be documented twice with two different sets of ingredients.
- */
+/** Server station recipes with curated notes and model previews, selected by key. */
 export const stationRecipes: Recipe[] = generatedStationRecipes.map((recipe) => ({
   ...recipe,
   ...(CURATED_NOTES[recipe.key] ? { note: CURATED_NOTES[recipe.key] } : {}),

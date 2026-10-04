@@ -3,7 +3,7 @@ import type { Slot } from "./types";
 /** Texture path: T("materials/coke.png") -> "/wiki/textures/materials/coke.png" */
 export const T = (path: string) => `/wiki/textures/${path}`;
 
-/** Block-model JSON path: M("alchemy-station.json") -> "/wiki/models/alchemy-station.json" */
+/** Block-model JSON path: M("magic-station.json") -> "/wiki/models/magic-station.json" */
 export const M = (path: string) => `/wiki/models/${path}`;
 
 /** Vanilla texture shorthand: V("diamond.png") -> "/wiki/textures/vanilla/diamond.png" */

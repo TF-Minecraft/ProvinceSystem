@@ -6,8 +6,8 @@ import ModelPreview from "../skins/ModelPreview";
 import NameColourPicker from "../shared/NameColourPicker";
 import LoreLinesEditor from "../shared/LoreLinesEditor";
 import FormattedMcRuns from "../shared/FormattedMcRuns";
+import { authHeaders } from "../../../lib/site/api";
 import {
-  authHeaders,
   loreItemDefaultTextureUrl,
   loreItemSkinModelUrl,
   loreItemSkinTextureUrl,

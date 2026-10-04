@@ -871,69 +871,6 @@ export const vehicleWeapons: string[][] = [
   ]
 ];
 
-export const vehicleArmour: string[][] = [
-  [
-    "aircraft",
-    "0.0",
-    "0.1",
-    "1.3",
-    "5.0",
-    "5.0",
-    "N/A",
-    "5.0"
-  ],
-  [
-    "airship",
-    "0.0",
-    "0.1",
-    "2.0",
-    "10.0",
-    "1.8",
-    "7.0",
-    "2.0"
-  ],
-  [
-    "armored",
-    "0.0",
-    "0.1",
-    "1.5",
-    "6.0",
-    "1.3",
-    "5.0",
-    "N/A"
-  ],
-  [
-    "wooden",
-    "0.0",
-    "0.1",
-    "2.0",
-    "10.0",
-    "1.8",
-    "7.0",
-    "N/A"
-  ],
-  [
-    "wagon",
-    "0.0",
-    "0.1",
-    "1.5",
-    "3.0",
-    "1.3",
-    "N/A",
-    "N/A"
-  ],
-  [
-    "emplacement",
-    "N/A",
-    "0.1",
-    "1.3",
-    "3.0",
-    "2.0",
-    "0.2",
-    "N/A"
-  ]
-];
-
 export const vehicleTrackItems: string[][] = [
   [
     "Track Small",

@@ -153,7 +153,7 @@ export function setArmorHelmetVisible(
   });
 }
 
-/** Remove previously attached armor overlay meshes from the mannequin. */
+/** Remove armour overlay meshes from the mannequin. */
 export function clearSteveArmorOverlay(root: THREE.Object3D): void {
   const toRemove: THREE.Object3D[] = [];
   const materials = new Set<THREE.Material>();
@@ -644,7 +644,7 @@ export function applySteveArmPose(
     return;
   }
   if (pose === "crossbow_hold") {
-    // CrossbowPosing.hold — aimed / charged (user: this is correct).
+    // CrossbowPosing.hold — aimed / charged.
     rightArm.rotation.set(-Math.PI / 2 + 0.1, 0, 0.3);
     leftArm.rotation.set(-1.5, 0, -0.6);
     return;
@@ -655,7 +655,7 @@ export function applySteveArmPose(
     return;
   }
   if (pose === "crossbow_charge") {
-    // Reload: arms angled down. Left (pull) arm: out → mid (old full) → stronger in.
+    // Reload: arms angled down. Left (pull) arm: out → mid → stronger in.
     const holdPitch = -0.7;
     const holdZ = 0.35;
     // Keyframes: pull_0 / pull_1 / pull_2 (g = 0 / 0.5 / 1)

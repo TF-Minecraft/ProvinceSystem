@@ -3,12 +3,7 @@ import type { Recipe, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Arcane Trace Detector ("Geiger Counter") ----------
 
-/**
- * These three used to be hand-written here. They are now taken straight from
- * the server's `engineer-station.yml` (see `data/generated/stationRecipes.ts`),
- * which is authoritative, so the page and the Engineer Station page can never
- * disagree. They are registered by `stationsSection`, not by this section.
- */
+/** Engineer Station recipes, registered once by `stationsSection`. */
 export const detectorRecipes: Recipe[] = [
   stationRecipe("gen-engineer-station-dead_geiger_counter"),
   stationRecipe("gen-engineer-station-fuel"),
@@ -24,29 +19,6 @@ export const signalTable = [
   { signal: "Turning white", meaning: "Under 200 blocks: the whiter, the closer." },
   { signal: "Slow clicking (~1 every 2s)", meaning: "Outer limit of the signal." },
   { signal: "Rapid clicking (a stream)", meaning: "Almost at the source." },
-];
-
-export const lootTable = [
-  {
-    rarity: "Common",
-    chance: "65%",
-    rewards: "2x Ignitium, Common Item Skin Scroll, Weak Repair Kit, Tool Repair Kit, Lost Knowledge Scrap, or 8x Raw Iron Block",
-  },
-  {
-    rarity: "Rare",
-    chance: "25%",
-    rewards: "4x Ignitium, Rare Item Skin Scroll, Trial Key, Medium Repair Kit, 2x Tool Repair Kit, or 16x Raw Iron Block",
-  },
-  {
-    rarity: "Epic",
-    chance: "7%",
-    rewards: "8x Ignitium, Rare Item Skin Scroll, Strong Repair Kit, 4x Tool Repair Kit, or 32x Raw Iron Block",
-  },
-  {
-    rarity: "Legendary",
-    chance: "3%",
-    rewards: "16x Ignitium, Rare Item Skin Scroll, 2x Strong Repair Kit, Magical Repair Kit, 64x Raw Iron Block, or 8x Raw Gold Block",
-  },
 ];
 
 /** geiger_counter 1.1.2 exposes only an op-default admin command. */

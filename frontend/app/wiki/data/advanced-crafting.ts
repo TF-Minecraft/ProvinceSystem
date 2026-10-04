@@ -233,13 +233,3 @@ export const armorRecipeTemplates: StationRecipeTemplate[] = [
   { id: "mage_leggings", name: "Mage %material% Leggings", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
   { id: "mage_boots", name: "Mage %material% Boots", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
 ];
-
-/**
- * All 35 Forging Station recipes, in the order the in-game category menu lists
- * them (`recipe-categories.yml`: armor, weapons, bows).
- */
-export const weaponStationTemplates: StationRecipeTemplate[] = [
-  ...armorRecipeTemplates,
-  ...weaponRecipeTemplates,
-  ...bowRecipeTemplates,
-];

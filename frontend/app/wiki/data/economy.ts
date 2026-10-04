@@ -21,24 +21,6 @@ export const denarCoins: DenarCoin[] = [
   { item: "Gold Ingot", displayName: "Gold Ingot (vanilla)", value: 1, withdrawable: false },
 ];
 
-export type DenarBlockDrop = {
-  block: string;
-  chance: string;
-  denars: string;
-};
-
-/** `drops.yml`: blocks with a chance to drop coins directly on break. */
-export const denarBlockDrops: DenarBlockDrop[] = [
-  { block: "Stone", chance: "3%", denars: "0.5 – 1.0" },
-  { block: "Deepslate", chance: "10%", denars: "0.5 – 1.0" },
-  {
-    block: "Oak / Spruce / Birch / Jungle / Acacia / Dark Oak / Mangrove / Cherry Log",
-    chance: "8% each",
-    denars: "0.2 – 0.4",
-  },
-  { block: "Wheat / Carrot / Potato / Beetroot", chance: "4% each", denars: "1.0 – 1.5" },
-];
-
 /**
  * DenarEconomy 0.1.8 ships with no admin command and no permission node at all :
  * every `/deco` and `/pouch` subcommand is open to every player, and balance

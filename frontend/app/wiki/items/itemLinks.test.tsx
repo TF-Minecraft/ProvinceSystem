@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { getItemBySlug, getRecipeItemHref, itemDetails, itemRecipes, itemSlugAliases, stationItemRedirects } from "../data/items";
+import { getItemBySlug, getRecipeItemHref, itemDetails, itemRecipes } from "../data/items";
 import { customItemIdentity, itemIdentity } from "../data/item-identity";
 import ItemDetailPage, { generateStaticParams } from "./[slug]/page";
 
@@ -73,18 +73,16 @@ describe("custom recipe item links", () => {
 describe("generated item detail routes", () => {
   it("has one static route for every generated item and no duplicate params", () => {
     const params = generateStaticParams();
-    expect(params).toHaveLength(itemDetails.length + Object.keys(itemSlugAliases).length);
+    expect(params).toHaveLength(itemDetails.length);
     expect(new Set(params.map(({ slug }) => slug)).size).toBe(params.length);
-    // An alias may point at a station item, which redirects to its station page instead of rendering.
-    expect(params.every(({ slug }) => getItemBySlug(slug) || stationItemRedirects[itemSlugAliases[slug] ?? slug])).toBe(true);
+    expect(params.every(({ slug }) => getItemBySlug(slug))).toBe(true);
   });
 
-  it("sends station items, including the former Weapon Station slug, to their station page", () => {
-    expect(itemSlugAliases["weapon-station"]).toBe("forging-station");
-    expect(stationItemRedirects["forging-station"]).toBe("/wiki/stations/weapon-station");
-    expect(stationItemRedirects["rune-station"]).toBe("/wiki/stations/rune-station");
+  it("links station items directly to their station pages", () => {
+    expect(getRecipeItemHref(recipeWithOutput("Forging Station").output)).toBe("/wiki/stations/weapon-station");
+    expect(getRecipeItemHref(recipeWithOutput("Rune Station").output)).toBe("/wiki/stations/rune-station");
     expect(getItemBySlug("rune-station")).toBeUndefined();
-    expect(generateStaticParams()).toContainEqual({ slug: "weapon-station" });
+    expect(generateStaticParams()).not.toContainEqual({ slug: "weapon-station" });
   });
 
   it.each(["abyssalite-pickaxe", "demonwood-log"])(

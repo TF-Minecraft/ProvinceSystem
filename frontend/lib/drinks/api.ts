@@ -1,10 +1,4 @@
-export function getApiBase(): string {
-  const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
-  if (!base) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set");
-  }
-  return base;
-}
+import { getApiBase, detailMessage, parseJson } from "../site/api";
 
 export class DrinksApiError extends Error {
   status: number;
@@ -13,31 +7,6 @@ export class DrinksApiError extends Error {
     super(message);
     this.name = "DrinksApiError";
     this.status = status;
-  }
-}
-
-function detailMessage(data: unknown, fallback: string): string {
-  if (data && typeof data === "object" && "detail" in data) {
-    const detail = (data as { detail: unknown }).detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) =>
-          typeof item === "object" && item && "msg" in item
-            ? String((item as { msg: unknown }).msg)
-            : String(item)
-        )
-        .join("; ");
-    }
-  }
-  return fallback;
-}
-
-async function parseJson(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    return null;
   }
 }
 

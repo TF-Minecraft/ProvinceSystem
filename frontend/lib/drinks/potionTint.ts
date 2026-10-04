@@ -1,6 +1,6 @@
 /** Compose tinted potion_overlay + untinted glass_bottle (vanilla layer tint). */
 
-import { getApiBase } from "./api";
+import { getApiBase } from "../site/api";
 
 export type DrinkAssetImages = {
   overlay: HTMLImageElement;
@@ -86,21 +86,4 @@ export function composeTintedPotionCanvas(
   ctx.putImageData(imageData, 0, 0);
   ctx.drawImage(bottle, 0, 0, width, height);
   return canvas;
-}
-
-export async function composeTintedPotionFile(
-  color: string
-): Promise<File | null> {
-  try {
-    const assets = await loadDrinkAssetImages();
-    const canvas = composeTintedPotionCanvas(color, assets);
-    if (!canvas) return null;
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/png")
-    );
-    if (!blob) return null;
-    return new File([blob], "potion-preview.png", { type: "image/png" });
-  } catch {
-    return null;
-  }
 }

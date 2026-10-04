@@ -33,9 +33,6 @@ export const ARMOR_FIELDS = [
   ...ARMOR_LAYER_FIELDS,
 ] as const;
 
-/** Armor fields when helmet is flat 16×16. */
-export const ARMOR_FIELDS_FLAT = ARMOR_FIELDS;
-
 /** Armor body fields always required (helmet handled separately). */
 export const ARMOR_BODY_FIELDS = [
   "chestplate",

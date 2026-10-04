@@ -1,4 +1,4 @@
-import { authHeaders, getApiBase } from "../characters/api";
+import { authHeaders, getApiBase } from "../site/api";
 
 export type PatreonStatus = {
   linked: boolean;
