@@ -152,6 +152,8 @@ export type MapFocus = {
  * per cent.
  */
 const FOCUS_MUTED_OPACITY = 0.3;
+/** The colours' fade as a focus comes and goes: the tile layer's `duration-200`. */
+const FOCUS_FADE_MS = 200;
 
 /** The realm names: over the region overlays (10), under the pins (16, 17). */
 const LABEL_LAYER_Z = 15;
@@ -183,6 +185,34 @@ function useShapeLoaded(
     );
   }, []);
   return [shape !== null && state.shape === shape && state.loaded, mark];
+}
+
+/**
+ * `value`, or for `ms` after it is cleared, the value it had last. A closed
+ * selection's highlight stays up while the colours under it fade back in:
+ * gone at once, the realm dropped to the muted colour and came back up with
+ * the rest, a flash on every close. Held in the same render the value goes,
+ * so its elements are never unmounted and remounted.
+ */
+function useHeldAfterClear<T>(value: T | null, ms: number): T | null {
+  const [state, setState] = useState<{ value: T | null; held: T | null }>({
+    value,
+    held: null,
+  });
+  let held = state.held;
+  if (state.value !== value) {
+    held = value === null ? state.value : null;
+    setState({ value, held });
+  }
+  useEffect(() => {
+    if (held === null) return;
+    const timer = setTimeout(
+      () => setState((current) => (current.held === held ? { ...current, held: null } : current)),
+      ms
+    );
+    return () => clearTimeout(timer);
+  }, [held, ms]);
+  return value ?? held;
 }
 
 /**
@@ -560,6 +590,11 @@ export default function MapCanvas({
       ? focusLoaded.key === focusObjectsKey &&
         focusObjects.every((obj) => focusLoaded.ids.has(obj.id))
       : focusShapeLoaded;
+  // What stays lit while the colours fade back in after a close.
+  const shownSelectedOverlay = useHeldAfterClear(selectedOverlay, FOCUS_FADE_MS);
+  const shownFocus = useHeldAfterClear(focus, FOCUS_FADE_MS);
+  const shownFocusObjects = useRegionTiles && shownFocus ? shownFocus.objects : [];
+  const shownFocusReady = focus ? focusReady : shownFocus !== null;
 
   if (controlsRef) {
     controlsRef.current = {
@@ -823,21 +858,21 @@ export default function MapCanvas({
                 />
               ))
           : regionOverlay}
-        {focusObjects.length > 0 && (
+        {shownFocusObjects.length > 0 && (
           // One group, so the rim follows the realm's outer edge rather than
           // every subject's, and the opacity applies once over the lot.
           <div
             className="map-selected-region pointer-events-none absolute inset-0"
             style={{
               opacity: DRILL_STACK_OVERLAY_OPACITY,
-              ...(focusReady
-                ? focus?.lit
+              ...(shownFocusReady
+                ? shownFocus?.lit
                   ? regionHighlightStyle(viewport.displayScale, 2.5, 0.95)
                   : regionHighlightStyle(viewport.displayScale, 1.25, 0.6)
                 : {}),
             }}
           >
-            {focusObjects.map((obj) => (
+            {shownFocusObjects.map((obj) => (
               <MapAuthImage
                 key={`focus:${mapType}:${obj.id}`}
                 mapId={mapId}
@@ -872,11 +907,11 @@ export default function MapCanvas({
             alt="Fort zone of control"
           />
         )}
-        {regionOverlay === undefined && selectedOverlay && (
+        {regionOverlay === undefined && shownSelectedOverlay && (
           <HoverOverlayImage
             mapId={mapId}
             sessionToken={sessionToken}
-            overlay={selectedOverlay}
+            overlay={shownSelectedOverlay}
             mapW={mapSize.w}
             mapH={mapSize.h}
             // Same opacity as the colours under it, so terrain still shows
