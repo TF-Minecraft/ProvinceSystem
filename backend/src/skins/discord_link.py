@@ -208,6 +208,40 @@ def remember_discord_usernames(
     return {"updated": updated}
 
 
+def _usable_code_row(conn, code: str, now: datetime):
+    plaintext = (code or "").strip()
+    if not plaintext:
+        raise LinkError("code is required")
+    row = conn.execute(
+        "SELECT * FROM discord_link_codes WHERE code_hash = ?",
+        (hash_secret(plaintext),),
+    ).fetchone()
+    if row is None:
+        raise LinkError("Invalid link code")
+    if row["used_at"]:
+        raise LinkError("Link code has already been used")
+    if _parse_iso(row["expires_at"]) < now:
+        raise LinkError("Link code has expired")
+    return row
+
+
+def preview_link(code: str) -> dict:
+    """Name the Minecraft account a code would link, without using the code."""
+    with connect() as conn:
+        row = _usable_code_row(conn, code, _utcnow())
+        linked = conn.execute(
+            "SELECT 1 FROM discord_links WHERE player_uuid = ?",
+            (row["player_uuid"],),
+        ).fetchone()
+    if linked is not None:
+        raise LinkError("This Minecraft account is already linked to a Discord account")
+    return {
+        "player_uuid": str(row["player_uuid"]),
+        "minecraft_name": row["minecraft_name"],
+        "expires_at": row["expires_at"],
+    }
+
+
 def complete_link(
     code: str,
     discord_user_id: str,
@@ -218,32 +252,25 @@ def complete_link(
     The snowflake is the identity. A Discord account username is stored only
     so staff lookup can show it. Nicks and display names are ignored, and a
     link still succeeds when the supplied name is not a username.
+
+    Validation and the write share one immediate transaction, so two
+    redemptions of the same code cannot both succeed. A link never replaces
+    another: an older code minted before the player linked is refused, and
+    linking spends every other outstanding code for that player.
     """
-    plaintext = (code or "").strip()
     discord_id = (discord_user_id or "").strip()
-    if not plaintext:
+    if not (code or "").strip():
         raise LinkError("code is required")
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
     username = _sanitize_discord_username(discord_username)
-    code_hash = hash_secret(plaintext)
     now = _utcnow()
     linked_at = _iso(now)
 
     with connect() as conn:
-        row = conn.execute(
-            "SELECT * FROM discord_link_codes WHERE code_hash = ?",
-            (code_hash,),
-        ).fetchone()
-
-        if row is None:
-            raise LinkError("Invalid link code")
-        if row["used_at"]:
-            raise LinkError("Link code has already been used")
-        if _parse_iso(row["expires_at"]) < now:
-            raise LinkError("Link code has expired")
-
+        conn.execute("BEGIN IMMEDIATE")
+        row = _usable_code_row(conn, code, now)
         player_uuid = row["player_uuid"]
         minecraft_name = row["minecraft_name"]
 
@@ -255,23 +282,45 @@ def complete_link(
             raise LinkError(
                 "This Discord account is already linked to a different Minecraft player"
             )
-
-        conn.execute(
-            "DELETE FROM discord_links WHERE player_uuid = ?",
+        if existing is None and conn.execute(
+            "SELECT 1 FROM discord_links WHERE player_uuid = ?",
             (player_uuid,),
-        )
+        ).fetchone() is not None:
+            raise LinkError(
+                "This Minecraft account is already linked to a different Discord account"
+            )
+
+        if existing is None:
+            conn.execute(
+                """
+                INSERT INTO discord_links (
+                    player_uuid, discord_user_id, minecraft_name,
+                    discord_username, linked_at, left_guild_at, grace_until
+                ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
+                """,
+                (player_uuid, discord_id, minecraft_name, username, linked_at),
+            )
+        else:
+            # Same pair again: refresh names, keep the original link and grace.
+            conn.execute(
+                """
+                UPDATE discord_links
+                SET minecraft_name = COALESCE(?, minecraft_name),
+                    discord_username = COALESCE(?, discord_username)
+                WHERE player_uuid = ?
+                """,
+                (minecraft_name, username, player_uuid),
+            )
+            linked_at = conn.execute(
+                "SELECT linked_at FROM discord_links WHERE player_uuid = ?",
+                (player_uuid,),
+            ).fetchone()["linked_at"]
         conn.execute(
             """
-            INSERT INTO discord_links (
-                player_uuid, discord_user_id, minecraft_name,
-                discord_username, linked_at, left_guild_at, grace_until
-            ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
+            UPDATE discord_link_codes SET used_at = ?
+            WHERE player_uuid = ? AND used_at IS NULL
             """,
-            (player_uuid, discord_id, minecraft_name, username, linked_at),
-        )
-        conn.execute(
-            "UPDATE discord_link_codes SET used_at = ? WHERE id = ?",
-            (linked_at, row["id"]),
+            (_iso(now), player_uuid),
         )
         enqueue_link_success(
             player_uuid,
@@ -321,6 +370,22 @@ def get_link_for_uuid(player_uuid: str) -> dict | None:
     if row is None:
         return None
     return _row_to_link(row)
+
+
+def get_link_for_discord_id(discord_user_id: str) -> dict | None:
+    """Discord link for a Discord account, after expiring due graces."""
+    discord_id = (discord_user_id or "").strip()
+    if not discord_id:
+        return None
+    expire_due_graces()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    return _status_from_row(row)
 
 
 def record_guild_left(discord_user_id: str) -> dict:

@@ -630,3 +630,43 @@ CREATE INDEX IF NOT EXISTS idx_submissions_realm_apply
 
 CREATE INDEX IF NOT EXISTS idx_drink_submissions_realm_apply
     ON drink_submissions(realm_id, status, applied_at);
+
+-- Website accounts. Discord is the sign-in provider; the Minecraft account is
+-- the discord_links row for the same discord_user_id, so links made through
+-- the Discord bot appear on the website without another step.
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    discord_user_id TEXT NOT NULL UNIQUE,
+    discord_username TEXT,
+    discord_global_name TEXT,
+    discord_avatar TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
+
+-- Cookie sessions for users. Separate from `sessions`, which belong to
+-- in-game codes and carry a scope and realm. guild_member records the TFMC
+-- Discord membership seen at sign-in; linking requires a recent check.
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_hash TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    guild_member INTEGER NOT NULL DEFAULT 0,
+    guild_checked_at TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expiry ON user_sessions(expires_at);
+
+-- Single-use Discord OAuth states. The browser also holds the state in a
+-- cookie, so a callback only completes in the browser that started it.
+CREATE TABLE IF NOT EXISTS discord_oauth_states (
+    state_hash TEXT PRIMARY KEY,
+    return_to TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);

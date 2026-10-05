@@ -27,5 +27,13 @@ def assert_production_safe() -> None:
                      "PATREON_CREATOR_ACCESS_TOKEN", "PATREON_CREATOR_REFRESH_TOKEN"):
             if not os.environ.get(name, "").strip():
                 errors.append(f"{name} is required when Patreon is enabled in production")
+    if os.environ.get("DISCORD_AUTH_ENABLED", "").strip() == "1":
+        from src.auth.config import AuthConfig
+
+        config = AuthConfig.from_env()
+        for name in config.problems():
+            errors.append(f"{name} is required when Discord sign-in is enabled in production")
+        if not config.secure_cookies or not config.redirect_uri.startswith("https://"):
+            errors.append("SITE_PUBLIC_URL and DISCORD_REDIRECT_URI must use https in production")
     if errors:
         raise RuntimeError("Production startup refused: " + "; ".join(errors))

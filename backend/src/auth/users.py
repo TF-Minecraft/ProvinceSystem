@@ -1,0 +1,175 @@
+"""Users, their cookie sessions and Discord OAuth states. Tokens are stored only as hashes."""
+from __future__ import annotations
+
+import secrets
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
+
+from src.skins.codes import hash_secret
+from src.skins.db import connect
+from src.skins.discord_link import remember_discord_usernames
+
+from .config import AuthConfig
+from .discord import SCOPES
+
+STATE_TTL = timedelta(minutes=10)
+SESSION_TTL = timedelta(days=30)
+# Linking trusts a guild check this recent; older sessions sign in again.
+GUILD_CHECK_MAX_AGE = timedelta(minutes=15)
+RETURN_DEFAULT = "/account"
+_RETURN_MAX = 512
+_TOKEN_MAX = 256
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_iso(value: str) -> datetime:
+    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+
+def clean_return_to(value: str | None) -> str:
+    """Only same-site paths: no scheme, host, protocol-relative or backslash forms."""
+    path = (value or "").strip()
+    if (
+        not path.startswith("/")
+        or path.startswith("//")
+        or "\\" in path
+        or len(path) > _RETURN_MAX
+        or any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in path)
+    ):
+        return RETURN_DEFAULT
+    return path
+
+
+def start_sign_in(config: AuthConfig, return_to: str | None) -> tuple[str, str]:
+    """Return (state, Discord authorise URL). The caller stores state in a cookie."""
+    state = secrets.token_urlsafe(32)
+    now = _utcnow()
+    with connect() as conn:
+        conn.execute("DELETE FROM discord_oauth_states WHERE expires_at <= ?", (_iso(now),))
+        conn.execute(
+            "INSERT INTO discord_oauth_states (state_hash, return_to, expires_at) VALUES (?, ?, ?)",
+            (hash_secret(state), clean_return_to(return_to), _iso(now + STATE_TTL)),
+        )
+        conn.commit()
+    query = urlencode([
+        ("response_type", "code"),
+        ("client_id", config.client_id),
+        ("redirect_uri", config.redirect_uri),
+        ("scope", SCOPES),
+        ("state", state),
+        ("prompt", "none"),
+    ])
+    return state, "https://discord.com/oauth2/authorize?" + query
+
+
+def consume_state(state: str | None) -> str | None:
+    """Spend a state once; return its saved path, or None if unknown or expired."""
+    if not state or len(state) > _TOKEN_MAX:
+        return None
+    digest = hash_secret(state)
+    with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT return_to, expires_at FROM discord_oauth_states WHERE state_hash = ?",
+            (digest,),
+        ).fetchone()
+        conn.execute("DELETE FROM discord_oauth_states WHERE state_hash = ?", (digest,))
+        conn.commit()
+    if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
+        return None
+    return row["return_to"]
+
+
+def sign_in(identity: dict, *, guild_member: bool) -> str:
+    """Upsert the user, open a session and return its plaintext token."""
+    token = secrets.token_urlsafe(32)
+    now = _utcnow()
+    stamp = _iso(now)
+    with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            """
+            INSERT INTO users (
+                discord_user_id, discord_username, discord_global_name, discord_avatar,
+                created_at, updated_at, last_login_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(discord_user_id) DO UPDATE SET
+                discord_username = excluded.discord_username,
+                discord_global_name = excluded.discord_global_name,
+                discord_avatar = excluded.discord_avatar,
+                updated_at = excluded.updated_at,
+                last_login_at = excluded.last_login_at
+            """,
+            (
+                identity["discord_user_id"], identity["discord_username"], identity["discord_global_name"],
+                identity["discord_avatar"], stamp, stamp, stamp,
+            ),
+        )
+        user_id = conn.execute(
+            "SELECT id FROM users WHERE discord_user_id = ?", (identity["discord_user_id"],)
+        ).fetchone()["id"]
+        conn.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (stamp,))
+        conn.execute(
+            """
+            INSERT INTO user_sessions (token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (hash_secret(token), user_id, 1 if guild_member else 0, stamp, stamp, _iso(now + SESSION_TTL)),
+        )
+        conn.commit()
+    if identity["discord_username"]:
+        # Keep the staff-facing name on an existing link current.
+        remember_discord_usernames(
+            [{"discord_user_id": identity["discord_user_id"], "discord_username": identity["discord_username"]}],
+            overwrite=True,
+        )
+    return token
+
+
+def session_user(token: str | None) -> dict | None:
+    if not token or len(token) > _TOKEN_MAX:
+        return None
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,
+                   u.id AS user_id, u.discord_user_id, u.discord_username,
+                   u.discord_global_name, u.discord_avatar, u.created_at
+            FROM user_sessions s JOIN users u ON u.id = s.user_id
+            WHERE s.token_hash = ?
+            """,
+            (hash_secret(token),),
+        ).fetchone()
+    if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
+        return None
+    return dict(row)
+
+
+def guild_check_fresh(user: dict) -> bool:
+    checked = user.get("guild_checked_at")
+    if not user.get("guild_member") or not checked:
+        return False
+    return _utcnow() - _parse_iso(checked) <= GUILD_CHECK_MAX_AGE
+
+
+def revoke_session(token: str | None) -> None:
+    if not token or len(token) > _TOKEN_MAX:
+        return
+    with connect() as conn:
+        conn.execute("DELETE FROM user_sessions WHERE token_hash = ?", (hash_secret(token),))
+        conn.commit()
+
+
+def avatar_url(user: dict) -> str:
+    discord_id = user["discord_user_id"]
+    avatar = user.get("discord_avatar")
+    if avatar and avatar.replace("_", "").isalnum():
+        return f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png?size=128"
+    return f"https://cdn.discordapp.com/embed/avatars/{(int(discord_id) >> 22) % 6}.png"
