@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import AccountPanel from "./AccountPanel";
 import {
@@ -149,4 +149,23 @@ it("shows the grace deadline with a time", async () => {
   render(<AccountPanel signin={null} />);
   const text = (await screen.findByText(/You’ve left the TFMC Discord/)).textContent || "";
   expect(text).toMatch(/\d{1,2}:\d{2}/);
+});
+
+it("lists Discord, Minecraft and Patreon as steps with their status", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-09-01T00:00:00Z", in_grace: false, grace_until: null },
+    patreon: { linked: false },
+  }));
+  render(<AccountPanel signin={null} />);
+  const steps = within(await screen.findByRole("list", { name: "Connected accounts" })).getAllByRole("listitem");
+  expect(steps.map((step) => step.getAttribute("aria-label"))).toEqual(["Discord account", "Minecraft account", "Patreon"]);
+  expect(steps[0].textContent).toContain("Signed in");
+  expect(steps[1].textContent).toContain("Mojang account SteveMC");
+  expect(steps[2].textContent).toContain("Not connected");
+});
+
+it("says when Patreon linking is unavailable", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account());
+  render(<AccountPanel signin={null} />);
+  expect((await screen.findByLabelText("Patreon")).textContent).toContain("isn’t available right now");
 });

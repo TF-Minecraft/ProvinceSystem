@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   discordSignInUrl,
   getAccount,
@@ -15,12 +15,12 @@ import {
 import { SITE_DISCORD_URL } from "../../../lib/site/config";
 import MinecraftLinkForm from "./MinecraftLinkForm";
 
-const panelClass =
-  "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
 const buttonClass =
   "inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50";
 const quietButtonClass =
   "text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50";
+const rowClass =
+  "flex gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
 const headingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 
 type Load =
@@ -153,23 +153,13 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
   const { account } = load;
   const { user, guild, minecraft, patreon } = account;
   const displayName = user.discord_global_name || user.discord_username || "Discord user";
+  const discordHandle = user.discord_username ? `@${user.discord_username}` : displayName;
 
   return (
     <>
-      <section className={`${panelClass} flex items-center gap-4`} aria-label="Discord account">
-        {/* Discord's CDN serves the avatar; next/image would need a remote pattern for one small image. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={user.avatar_url} alt="" width={56} height={56} className="rounded-full" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold text-[var(--tfmc-cream)]">{displayName}</p>
-          {user.discord_username ? (
-            <p className="truncate text-sm text-[var(--tfmc-stone)]">@{user.discord_username}</p>
-          ) : null}
-        </div>
-        <button type="button" onClick={() => void onSignOut()} disabled={busy} className={quietButtonClass}>
-          Sign out
-        </button>
-      </section>
+      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+        Your TFMC account brings together Discord, your Minecraft account and Patreon.
+      </p>
 
       {actionError || notice ? (
         <p className="mt-4 text-sm text-[#e8a0a0]" role="alert">
@@ -177,84 +167,110 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
         </p>
       ) : null}
 
-      <section className={panelClass} aria-label="Minecraft account">
-        <h2 className={headingClass}>Minecraft</h2>
-        {minecraft ? (
-          <>
-            <p className="mt-3 text-[var(--tfmc-cream)]">
-              Linked to <strong>{minecraft.minecraft_name || minecraft.player_uuid}</strong>
-              {formatDate(minecraft.linked_at) ? (
-                <span className="text-[var(--tfmc-stone)]"> since {formatDate(minecraft.linked_at)}</span>
+      <ol className="mt-6 flex flex-col gap-4" aria-label="Connected accounts">
+        <ConnectionRow step={1} title="Discord" label="Discord account" connected status="Signed in">
+          <div className="flex items-center gap-3">
+            {/* Discord's CDN serves the avatar; next/image would need a remote pattern for one small image. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={user.avatar_url} alt="" width={40} height={40} className="rounded-full" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-[var(--tfmc-cream)]">{displayName}</p>
+              {user.discord_username ? (
+                <p className="truncate text-sm text-[var(--tfmc-stone)]">@{user.discord_username}</p>
               ) : null}
-            </p>
-            {minecraft.in_grace ? (
-              <p className="mt-2 text-sm text-[#e8c9a0]">
-                You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or this
-                link will be removed.
-              </p>
-            ) : null}
-            {confirmUnlink ? (
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-                <span className="text-sm text-[var(--tfmc-mist)]">Unlink this Minecraft account?</span>
-                <button type="button" onClick={() => void onUnlink()} disabled={busy} className={buttonClass}>
-                  Unlink
-                </button>
-                <button type="button" onClick={() => setConfirmUnlink(false)} disabled={busy} className={quietButtonClass}>
-                  Keep it
-                </button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => setConfirmUnlink(true)} className={`${quietButtonClass} mt-4`}>
-                Unlink Minecraft account
-              </button>
-            )}
-          </>
-        ) : guild.member ? (
-          <MinecraftLinkForm
-            discordName={user.discord_username ? `@${user.discord_username}` : displayName}
-            onLinked={refresh}
-          />
-        ) : (
-          <>
-            <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-              Linking needs you to be in the TFMC Discord server.{" "}
-              <a href={SITE_DISCORD_URL} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
-                Join it
-              </a>
-              , then check again.
-            </p>
-            <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-4`}>
-              I’ve joined, check again
-            </a>
-          </>
-        )}
-      </section>
+            </div>
+            <button type="button" onClick={() => void onSignOut()} disabled={busy} className={quietButtonClass}>
+              Sign out
+            </button>
+          </div>
+        </ConnectionRow>
 
-      {patreon ? (
-        <section className={panelClass} aria-label="Patreon">
-          <h2 className={headingClass}>Patreon</h2>
-          {patreon.linked ? (
-            <p className="mt-3 text-[var(--tfmc-cream)]">
+        <ConnectionRow
+          step={2}
+          title="Minecraft"
+          label="Minecraft account"
+          connected={Boolean(minecraft)}
+          status={minecraft ? (minecraft.in_grace ? "Linked, at risk" : "Linked") : "Not linked"}
+        >
+          {minecraft ? (
+            <>
+              <p className="text-[var(--tfmc-cream)]">
+                Mojang account <strong>{minecraft.minecraft_name || minecraft.player_uuid}</strong>
+                {formatDate(minecraft.linked_at) ? (
+                  <span className="text-[var(--tfmc-stone)]"> · linked {formatDate(minecraft.linked_at)}</span>
+                ) : null}
+              </p>
+              {minecraft.in_grace ? (
+                <p className="mt-2 text-sm text-[#e8c9a0]">
+                  You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or this
+                  link will be removed.
+                </p>
+              ) : null}
+              {confirmUnlink ? (
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  <span className="text-sm text-[var(--tfmc-mist)]">Unlink this Minecraft account?</span>
+                  <button type="button" onClick={() => void onUnlink()} disabled={busy} className={buttonClass}>
+                    Unlink
+                  </button>
+                  <button type="button" onClick={() => setConfirmUnlink(false)} disabled={busy} className={quietButtonClass}>
+                    Keep it
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setConfirmUnlink(true)} className={`${quietButtonClass} mt-3`}>
+                  Unlink Minecraft account
+                </button>
+              )}
+            </>
+          ) : guild.member ? (
+            <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
+          ) : (
+            <>
+              <p className="text-sm text-[var(--tfmc-mist)]">
+                Linking needs you to be in the TFMC Discord server.{" "}
+                <a href={SITE_DISCORD_URL} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+                  Join it
+                </a>
+                , then check again.
+              </p>
+              <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-3`}>
+                I’ve joined, check again
+              </a>
+            </>
+          )}
+        </ConnectionRow>
+
+        <ConnectionRow
+          step={3}
+          title="Patreon"
+          label="Patreon"
+          connected={Boolean(patreon?.linked)}
+          status={patreon ? (patreon.linked ? "Connected" : "Not connected") : "Unavailable"}
+        >
+          {!patreon ? (
+            <p className="text-sm text-[var(--tfmc-mist)]">Patreon linking isn’t available right now.</p>
+          ) : patreon.linked ? (
+            <p className="text-[var(--tfmc-cream)]">
               {patreon.tier_name ? (
                 <>
                   Supporting as <strong>{patreon.tier_name}</strong>. Thank you!
                 </>
               ) : (
-                "Patreon is linked, with no active tier."
+                "Patreon is connected, with no active tier."
               )}
             </p>
           ) : (
             <>
-              <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+              <p className="text-sm text-[var(--tfmc-mist)]">
                 Connect Patreon to receive your supporter perks on Discord and in game.
               </p>
-              <button type="button" onClick={() => void onConnectPatreon()} disabled={busy} className={`${buttonClass} mt-4`}>
+              <button type="button" onClick={() => void onConnectPatreon()} disabled={busy} className={`${buttonClass} mt-3`}>
                 Connect Patreon
               </button>
             </>
           )}
-        </section>
-      ) : null}
+        </ConnectionRow>
+      </ol>
 
       <p className="mt-8 text-sm text-[var(--tfmc-stone)]">
         Characters, skins and drinks still use in-game codes on the{" "}
@@ -264,5 +280,45 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
         page.
       </p>
     </>
+  );
+}
+
+function ConnectionRow({
+  step,
+  title,
+  label,
+  connected,
+  status,
+  children,
+}: {
+  step: number;
+  title: string;
+  label: string;
+  connected: boolean;
+  status: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className={rowClass} aria-label={label}>
+      <span
+        aria-hidden
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+          connected
+            ? "bg-[var(--tfmc-accent)] text-[var(--tfmc-forest-deep)]"
+            : "border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] text-[var(--tfmc-stone)]"
+        }`}
+      >
+        {connected ? "✓" : step}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className={headingClass}>{title}</h2>
+          <span className={`text-xs font-semibold uppercase tracking-wider ${connected ? "text-[var(--tfmc-accent)]" : "text-[var(--tfmc-stone)]"}`}>
+            {status}
+          </span>
+        </div>
+        <div className="mt-3">{children}</div>
+      </div>
+    </li>
   );
 }
