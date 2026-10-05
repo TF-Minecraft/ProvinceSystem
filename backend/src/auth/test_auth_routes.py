@@ -335,6 +335,7 @@ def test_unlink(api, monkeypatch):
 
 @pytest.mark.parametrize("headers,detail", [
     ({}, "bad_origin"),
+    ({"Origin": "https://dev.tfminecraft.net", "Sec-Fetch-Site": "same-site"}, "bad_origin"),
     ({"Origin": "https://evil.example"}, "bad_origin"),
     ({"Origin": "https://tfminecraft.net.evil.example"}, "bad_origin"),
     ({"Origin": SITE, "Sec-Fetch-Site": "cross-site"}, "cross_site_request"),
@@ -366,6 +367,7 @@ def test_logout_revokes_session(api, monkeypatch, env):
 
 def test_plain_http_site_uses_unprefixed_insecure_cookies(env, monkeypatch):
     monkeypatch.setenv("SITE_PUBLIC_URL", "http://localhost:3000")
+    monkeypatch.setenv("DISCORD_REDIRECT_URI", "http://localhost:8000/auth/discord/callback")
     app = FastAPI()
     app.include_router(routes.auth_router)
     client = TestClient(app)
@@ -474,3 +476,43 @@ def test_get_link_for_discord_id_expires_due_graces(env):
         conn.commit()
     assert discord_link.get_link_for_discord_id(DISCORD_ID) is None
     assert discord_link.get_link_for_discord_id("") is None
+
+
+@pytest.mark.parametrize("site,redirect,bad", [
+    ("https://www.tfminecraft.net", None, []),
+    ("https://dev.tfminecraft.net", None, []),
+    ("https://dev.tfminecraft.net", "https://www.tfminecraft.net/api/auth/discord/callback", ["DISCORD_REDIRECT_URI"]),
+    ("not a url", None, ["SITE_PUBLIC_URL", "DISCORD_REDIRECT_URI"]),
+    ("https://www.tfminecraft.net/sub", None, ["SITE_PUBLIC_URL"]),
+    ("http://localhost:3000", "http://localhost:8000/auth/discord/callback", []),
+    ("http://localhost:3000", "http://127.0.0.1:8000/auth/discord/callback", ["DISCORD_REDIRECT_URI"]),
+    ("https://www.tfminecraft.net", "https://evil.example/api/auth/discord/callback", ["DISCORD_REDIRECT_URI"]),
+])
+def test_config_validates_site_and_callback(monkeypatch, site, redirect, bad):
+    from src.auth.config import AuthConfig
+    monkeypatch.setenv("DISCORD_CLIENT_ID", "cid")
+    monkeypatch.setenv("DISCORD_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("DISCORD_GUILD_ID", "999")
+    monkeypatch.setenv("SITE_PUBLIC_URL", site)
+    if redirect is None:
+        monkeypatch.delenv("DISCORD_REDIRECT_URI", raising=False)
+    else:
+        monkeypatch.setenv("DISCORD_REDIRECT_URI", redirect)
+    config = AuthConfig.from_env()
+    assert config.problems() == bad
+    if redirect is None and not bad:
+        assert config.redirect_uri == site + "/api/auth/discord/callback"
+
+
+def test_failed_link_notice_rolls_back_link_and_code(env, monkeypatch):
+    code = link_code()
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("notice failed")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(discord_link, "enqueue_link_success", boom)
+        with pytest.raises(RuntimeError):
+            discord_link.complete_link(code, DISCORD_ID)
+    assert discord_link.get_discord_id_for_uuid(PLAYER) is None
+    assert discord_link.complete_link(code, DISCORD_ID)["player_uuid"] == PLAYER

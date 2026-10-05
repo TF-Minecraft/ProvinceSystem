@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 SITE_DEFAULT = "https://www.tfminecraft.net"
-REDIRECT_DEFAULT = SITE_DEFAULT + "/api/auth/discord/callback"
+CALLBACK_PATH = "/api/auth/discord/callback"
 API_BASE_DEFAULT = "https://discord.com/api/v10"
 SNOWFLAKE_MAX_LEN = 20
 
@@ -31,13 +31,13 @@ class AuthConfig:
     @classmethod
     def from_env(cls) -> AuthConfig:
         site = (os.getenv("SITE_PUBLIC_URL", SITE_DEFAULT).strip() or SITE_DEFAULT).rstrip("/")
-        if _origin(site) is None:
-            site = SITE_DEFAULT
+        # The callback defaults to this site, so a dev site needs only SITE_PUBLIC_URL.
+        redirect = os.getenv("DISCORD_REDIRECT_URI", "").strip() or site + CALLBACK_PATH
         return cls(
             enabled=os.getenv("DISCORD_AUTH_ENABLED", "0").strip() == "1",
             client_id=os.getenv("DISCORD_CLIENT_ID", "").strip(),
             client_secret=os.getenv("DISCORD_CLIENT_SECRET", "").strip(),
-            redirect_uri=os.getenv("DISCORD_REDIRECT_URI", REDIRECT_DEFAULT).strip() or REDIRECT_DEFAULT,
+            redirect_uri=redirect,
             guild_id=os.getenv("DISCORD_GUILD_ID", "").strip(),
             site_url=site,
             api_base=(os.getenv("DISCORD_API_BASE", API_BASE_DEFAULT).strip() or API_BASE_DEFAULT).rstrip("/"),
@@ -45,6 +45,7 @@ class AuthConfig:
 
     @property
     def site_origin(self) -> str:
+        # problems() refuses an invalid site, so routes never see this fallback.
         return _origin(self.site_url) or SITE_DEFAULT
 
     @property
@@ -61,6 +62,24 @@ class AuthConfig:
             errors.append("DISCORD_CLIENT_SECRET")
         if not self.guild_id.isdigit() or len(self.guild_id) > SNOWFLAKE_MAX_LEN:
             errors.append("DISCORD_GUILD_ID")
-        if _origin(self.redirect_uri) is None:
+        site = _origin(self.site_url)
+        if site is None or urlsplit(self.site_url).path not in {"", "/"}:
+            errors.append("SITE_PUBLIC_URL")
+        if not _callback_matches_site(self.redirect_uri, site):
             errors.append("DISCORD_REDIRECT_URI")
         return errors
+
+
+def _callback_matches_site(redirect_uri: str, site: str | None) -> bool:
+    """The session cookie is set on the callback host, so it must be the site's.
+
+    Cookies ignore ports, so a plain-HTTP local site may send its callback to
+    the API on another localhost port.
+    """
+    callback = _origin(redirect_uri)
+    if callback is None or site is None:
+        return False
+    if callback == site:
+        return True
+    a, b = urlsplit(callback), urlsplit(site)
+    return a.scheme == b.scheme == "http" and a.hostname == b.hostname and a.hostname in {"localhost", "127.0.0.1"}

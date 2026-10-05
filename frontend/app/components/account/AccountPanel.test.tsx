@@ -7,6 +7,7 @@ import {
   getAccount,
   linkMinecraft,
   previewMinecraftLink,
+  signOut,
   type Account,
 } from "../../../lib/account/api";
 
@@ -117,4 +118,35 @@ it("offers Patreon when enabled and unlinked", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ patreon: { linked: false } }));
   render(<AccountPanel signin={null} />);
   expect(await screen.findByRole("button", { name: "Connect Patreon" })).toBeTruthy();
+});
+
+it("shows a cancelled re-check notice while still signed in", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account());
+  render(<AccountPanel signin="denied" />);
+  expect((await screen.findByRole("alert")).textContent).toBe("Discord sign-in was cancelled.");
+});
+
+it("explains a failed sign-out that left the session active", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account());
+  vi.mocked(signOut).mockRejectedValue(new Error("offline"));
+  render(<AccountPanel signin={null} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+  expect((await screen.findByRole("alert")).textContent).toBe("We couldn’t sign you out just now. Please try again.");
+});
+
+it("returns to signed out after signing out", async () => {
+  vi.mocked(getAccount).mockResolvedValueOnce(account()).mockResolvedValueOnce(null);
+  vi.mocked(signOut).mockResolvedValue({ ok: true });
+  render(<AccountPanel signin={null} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+  expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
+});
+
+it("shows the grace deadline with a time", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-09-01T00:00:00Z", in_grace: true, grace_until: "2026-10-05T08:30:00Z" },
+  }));
+  render(<AccountPanel signin={null} />);
+  const text = (await screen.findByText(/You’ve left the TFMC Discord/)).textContent || "";
+  expect(text).toMatch(/\d{1,2}:\d{2}/);
 });

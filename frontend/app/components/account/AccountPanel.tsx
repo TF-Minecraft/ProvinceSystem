@@ -36,6 +36,19 @@ function formatDate(value: string | null | undefined): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(date);
 }
 
+/** Grace lasts about an hour, so the deadline needs a time and zone. */
+function formatDeadline(value: string | null | undefined): string {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "the deadline";
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
 export default function AccountPanel({ signin }: { signin: string | null }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
@@ -58,13 +71,27 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
 
   async function onSignOut() {
     setBusy(true);
+    setActionError(null);
+    let failed = false;
     try {
       await signOut();
     } catch {
-      // The cookie may already be gone; reload state either way.
+      failed = true;
+    }
+    // The cookie may already be gone, so reload state either way.
+    let account: Account | null;
+    try {
+      account = await getAccount();
+    } catch {
+      setLoad({ kind: "error" });
+      setBusy(false);
+      return;
+    }
+    setLoad(account ? { kind: "ready", account } : { kind: "signed_out" });
+    if (failed && account) {
+      setActionError("We couldn’t sign you out just now. Please try again.");
     }
     setBusy(false);
-    await refresh();
   }
 
   async function onUnlink() {
@@ -144,9 +171,9 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
         </button>
       </section>
 
-      {actionError ? (
+      {actionError || notice ? (
         <p className="mt-4 text-sm text-[#e8a0a0]" role="alert">
-          {actionError}
+          {actionError || notice}
         </p>
       ) : null}
 
@@ -162,8 +189,8 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
             </p>
             {minecraft.in_grace ? (
               <p className="mt-2 text-sm text-[#e8c9a0]">
-                You’ve left the TFMC Discord. Rejoin before {formatDate(minecraft.grace_until)} or this link
-                will be removed.
+                You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or this
+                link will be removed.
               </p>
             ) : null}
             {confirmUnlink ? (
