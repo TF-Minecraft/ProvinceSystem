@@ -134,19 +134,24 @@ def sign_in(identity: dict, *, guild_member: bool) -> str:
 
 
 def session_user(token: str | None) -> dict | None:
+    with connect() as conn:
+        return session_user_in(conn, token)
+
+
+def session_user_in(conn, token: str | None) -> dict | None:
+    """Session user on the caller's connection, so staff checks can run inside a write."""
     if not token or len(token) > _TOKEN_MAX:
         return None
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,
-                   u.id AS user_id, u.discord_user_id, u.discord_username,
-                   u.discord_global_name, u.discord_avatar, u.created_at
-            FROM user_sessions s JOIN users u ON u.id = s.user_id
-            WHERE s.token_hash = ?
-            """,
-            (hash_secret(token),),
-        ).fetchone()
+    row = conn.execute(
+        """
+        SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,
+               u.id AS user_id, u.discord_user_id, u.discord_username,
+               u.discord_global_name, u.discord_avatar, u.created_at, u.role
+        FROM user_sessions s JOIN users u ON u.id = s.user_id
+        WHERE s.token_hash = ?
+        """,
+        (hash_secret(token),),
+    ).fetchone()
     if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
         return None
     return dict(row)

@@ -236,6 +236,7 @@ def get_account(request: Request, response: Response):
             "discord_username": user["discord_username"],
             "discord_global_name": user["discord_global_name"],
             "avatar_url": users.avatar_url(user),
+            "role": user["role"],
         },
         "guild": {
             "member": bool(user["guild_member"]),

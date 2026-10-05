@@ -25,6 +25,7 @@ export type Account = {
     discord_username: string | null;
     discord_global_name: string | null;
     avatar_url: string;
+    role?: string;
   };
   guild: { member: boolean; checked_at: string | null; fresh: boolean };
   minecraft: AccountMinecraft | null;

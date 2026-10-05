@@ -642,7 +642,10 @@ CREATE TABLE IF NOT EXISTS users (
     discord_avatar TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    last_login_at TEXT NOT NULL
+    last_login_at TEXT NOT NULL,
+    -- Website staff role. Databases created before roles gain this column in
+    -- db.migrate(); index it there, not here.
+    role TEXT NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'mod', 'admin', 'root'))
 );
 
 -- Cookie sessions for users. Separate from `sessions`, which belong to
@@ -670,3 +673,44 @@ CREATE TABLE IF NOT EXISTS discord_oauth_states (
 );
 
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);
+
+-- Append-only record of staff actions on website accounts, including refused
+-- attempts. No foreign keys: rows outlive the accounts they mention, so each
+-- row keeps the names it was written with.
+CREATE TABLE IF NOT EXISTS admin_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    actor_type TEXT NOT NULL CHECK (actor_type IN ('user', 'system')),
+    actor_user_id INTEGER,
+    actor_discord_id TEXT,
+    actor_name TEXT,
+    actor_role TEXT,
+    action TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    target_user_id INTEGER,
+    target_discord_id TEXT,
+    target_name TEXT,
+    reason TEXT,
+    detail_json TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_target ON admin_audit(target_user_id, id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit(actor_user_id, id);
+
+CREATE TRIGGER IF NOT EXISTS admin_audit_no_update BEFORE UPDATE ON admin_audit
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS admin_audit_no_delete BEFORE DELETE ON admin_audit
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;
+
+-- INSERT OR REPLACE on an existing id would otherwise delete the old row
+-- without firing the delete trigger.
+CREATE TRIGGER IF NOT EXISTS admin_audit_no_replace BEFORE INSERT ON admin_audit
+WHEN NEW.id IS NOT NULL AND EXISTS (SELECT 1 FROM admin_audit WHERE id = NEW.id)
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;

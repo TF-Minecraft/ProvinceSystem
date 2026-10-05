@@ -31,3 +31,24 @@ def migrate() -> None:
     with connect() as conn:
         conn.executescript(schema)
         conn.commit()
+        _upgrade(conn)
+
+
+_USERS_ROLE_COLUMN = (
+    "role TEXT NOT NULL DEFAULT 'player' "
+    "CHECK (role IN ('player', 'mod', 'admin', 'root'))"
+)
+
+
+def _upgrade(conn: sqlite3.Connection) -> None:
+    """Add columns that CREATE TABLE IF NOT EXISTS cannot add to old tables."""
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+        if "role" not in columns:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {_USERS_ROLE_COLUMN}")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
