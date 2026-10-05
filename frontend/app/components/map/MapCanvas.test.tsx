@@ -169,6 +169,26 @@ describe("MapCanvas selection", () => {
     expect(colours(container)).toBe("0.88");
   });
 
+  it("keeps a closed selection lit while the colours fade back in", async () => {
+    const { container, rerender } = render(view("realm"));
+    await act(async () => {});
+    loadShape(`/${props.mapId}/regions/nation/realm`);
+    fireEvent.load(selected(container));
+    const lit = selected(container);
+
+    rerender(<MapCanvas {...props} mapType="nation" selectedOverlay={null} focus={null} />);
+    expect(colours(container)).toBe("0.88");
+    // The same element, still at full strength: not dropped to the muted
+    // colour under it while that fades back up.
+    expect(selected(container)).toBe(lit);
+    expect(lit.style.opacity).toBe("0.88");
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(container.querySelector('img[alt="Selected region"]')).toBeNull();
+  });
+
   it("settles when the highlight is already loaded from the cache", async () => {
     vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
     vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(256);
