@@ -39,6 +39,8 @@ export default function AccountActions({
 
   function open(next: Mode) {
     setMode(next);
+    // The account may have changed role since this form last opened.
+    setRole(choices[0] ?? "");
     setReason("");
     setError(null);
   }

@@ -6,8 +6,13 @@ signed-in caller are audited.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request, Response
+import re
+
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.api.auth_routes import _config, _no_store, current_user, require_same_origin, session_cookie
 from src.auth import admin, audit, roles, users
@@ -101,3 +106,46 @@ def post_revoke_sessions(user_id: int, body: ReasonBody, request: Request, respo
     _no_store(response)
     return _write(request, "account.sessions.revoke", user_id,
                   lambda token: admin.revoke_sessions(token, user_id, body.reason))
+
+
+# Request validation runs before the handlers above, so malformed writes are
+# audited here: the action, the target and which fields failed, never values.
+_WRITE_ROUTES = (
+    (re.compile(r"^/admin/accounts/([^/]+)/role$"), "account.role.change"),
+    (re.compile(r"^/admin/accounts/([^/]+)/sessions/revoke$"), "account.sessions.revoke"),
+)
+
+
+def _audit_invalid_write(request: Request, exc: RequestValidationError) -> None:
+    if request.method != "POST":
+        return
+    for pattern, action in _WRITE_ROUTES:
+        match = pattern.match(request.url.path)
+        if match:
+            break
+    else:
+        return
+    try:
+        actor = users.session_user(request.cookies.get(session_cookie(_config())))
+    except HTTPException:
+        return
+    if actor is None:
+        return
+    raw_id = match.group(1)
+    fields = sorted({".".join(str(part) for part in error.get("loc", ())[1:]) for error in exc.errors()})
+    audit.record_refusal(
+        actor=actor, action=action, outcome="invalid",
+        detail={"error": "invalid_request", "fields": fields,
+                "target_user_id": int(raw_id) if raw_id.isdigit() else None},
+    )
+
+
+async def _validation_handler(request: Request, exc: RequestValidationError):
+    await run_in_threadpool(_audit_invalid_write, request, exc)
+    return await request_validation_exception_handler(request, exc)
+
+
+def install(app: FastAPI) -> None:
+    """Mount the staff routes and audit their malformed writes."""
+    app.include_router(admin_router)
+    app.add_exception_handler(RequestValidationError, _validation_handler)

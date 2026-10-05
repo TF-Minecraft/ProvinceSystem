@@ -29,7 +29,7 @@ def env(database, monkeypatch):
 def app(env):
     app = FastAPI()
     app.include_router(auth_routes.auth_router)
-    app.include_router(admin_routes.admin_router)
+    admin_routes.install(app)
     return app
 
 
@@ -366,3 +366,32 @@ def test_cli_grants_and_removes_root(env, capsys):
         admin_cli.main(["grant-root", "--discord-id", rory_discord, "--reason", "x"])
     admin_cli.main(["list-staff"])
     assert "root" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("body,fields", [
+    ({"reason": "Promoted for events"}, ["role"]),
+    ({"role": "mod"}, ["reason"]),
+    ({"role": "mod", "reason": "x" * 1001}, ["reason"]),
+])
+def test_malformed_writes_are_audited_without_values(app, env, body, fields):
+    _, root = account(env, "rory", "root")
+    pat_id, _ = account(env, "pat")
+    response = client(app, root).post(f"/admin/accounts/{pat_id}/role", json=body, headers=ORIGIN)
+    assert response.status_code == 422
+    row = audit_rows(env)[-1]
+    assert (row["action"], row["outcome"], row["actor_role"]) == ("account.role.change", "invalid", "root")
+    assert json.loads(row["detail_json"]) == {"error": "invalid_request", "fields": fields, "target_user_id": pat_id}
+    assert "x" * 50 not in row["detail_json"] and row["reason"] is None
+
+
+def test_malformed_writes_by_strangers_are_not_audited(app, env):
+    assert client(app).post("/admin/accounts/1/role", json={}, headers=ORIGIN).status_code == 422
+    assert client(app).post("/admin/accounts/abc/sessions/revoke", json={}, headers=ORIGIN).status_code == 422
+    assert audit_rows(env) == []
+
+
+def test_non_numeric_target_is_audited_without_an_id(app, env):
+    _, root = account(env, "rory", "root")
+    assert client(app, root).post("/admin/accounts/abc/sessions/revoke", json={"reason": "abc"},
+                                  headers=ORIGIN).status_code == 422
+    assert json.loads(audit_rows(env)[-1]["detail_json"])["target_user_id"] is None

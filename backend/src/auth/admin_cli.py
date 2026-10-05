@@ -73,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.db:
         db.DB_PATH = args.db
         db.DATA_DIR = args.db.parent
+        db.SKINS_DIR = db.DATA_DIR / "skins"
+        db.WARDROBE_DIR = db.DATA_DIR / "wardrobe"
+        db.DRINKS_DIR = db.DATA_DIR / "drinks"
     print(f"Database: {db.DB_PATH}", file=sys.stderr)
     db.migrate()
 

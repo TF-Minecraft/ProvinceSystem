@@ -115,3 +115,48 @@ it("mirrors the rank rule", () => {
   expect(canManage(ADMIN, acct(2, "x", "admin"))).toBe(false);
   expect(canManage(ADMIN, acct(1, "adam", "player"))).toBe(false);
 });
+
+it("offers the account's new choices after a role change", async () => {
+  vi.mocked(getAdminMe).mockResolvedValue(ADMIN);
+  vi.mocked(getStaff).mockResolvedValue([]);
+  vi.mocked(lookupAccounts)
+    .mockResolvedValueOnce([acct(7, "pat", "player")])
+    .mockResolvedValue([acct(7, "pat", "mod")]);
+  vi.mocked(changeRole).mockResolvedValue({ ok: true });
+  render(<AdminPanel />);
+  fireEvent.change(await screen.findByLabelText("Discord username, display name or ID"), { target: { value: "pat" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find" }));
+  let pat = await screen.findByLabelText("pat");
+  fireEvent.click(within(pat).getByRole("button", { name: "Change role" }));
+  fireEvent.change(within(pat).getByLabelText("Reason (recorded)"), { target: { value: "Helps run events" } });
+  fireEvent.click(within(pat).getByRole("button", { name: "Make Moderator" }));
+  await vi.waitFor(() => expect(lookupAccounts).toHaveBeenCalledTimes(2));
+  pat = await screen.findByLabelText("pat");
+  await vi.waitFor(() => expect(pat.textContent).toContain("Moderator"));
+  fireEvent.click(within(pat).getByRole("button", { name: "Change role" }));
+  expect(within(pat).getByRole("button", { name: "Make Player" })).toBeTruthy();
+  fireEvent.change(within(pat).getByLabelText("Reason (recorded)"), { target: { value: "Stepped back" } });
+  fireEvent.click(within(pat).getByRole("button", { name: "Make Player" }));
+  await vi.waitFor(() => expect(changeRole).toHaveBeenLastCalledWith(7, "player", "Stepped back"));
+});
+
+it("tells a failed search apart from no match", async () => {
+  vi.mocked(getAdminMe).mockResolvedValue(ADMIN);
+  vi.mocked(getStaff).mockResolvedValue([]);
+  vi.mocked(lookupAccounts).mockRejectedValue(new Error("offline"));
+  render(<AdminPanel />);
+  fireEvent.change(await screen.findByLabelText("Discord username, display name or ID"), { target: { value: "pat" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find" }));
+  expect((await screen.findByRole("alert")).textContent).toBe("Something went wrong. Please try again.");
+  expect(screen.queryByText("No account matches that.")).toBeNull();
+});
+
+it("returns to the sign-in prompt when the session ends mid-search", async () => {
+  vi.mocked(getAdminMe).mockResolvedValueOnce(ADMIN).mockRejectedValue(new AccountApiError("not_signed_in", 401));
+  vi.mocked(getStaff).mockResolvedValue([]);
+  vi.mocked(lookupAccounts).mockRejectedValue(new AccountApiError("not_signed_in", 401));
+  render(<AdminPanel />);
+  fireEvent.change(await screen.findByLabelText("Discord username, display name or ID"), { target: { value: "pat" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find" }));
+  expect(await screen.findByText("Sign in with Discord")).toBeTruthy();
+});

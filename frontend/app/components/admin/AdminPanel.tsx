@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AccountApiError } from "../../../lib/account/api";
 import {
+  adminErrorMessage,
   canManage,
   getAdminMe,
   getStaff,
@@ -35,6 +36,7 @@ export default function AdminPanel() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AdminAccount[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -59,10 +61,16 @@ export default function AdminPanel() {
     e.preventDefault();
     if (!query.trim()) return;
     setSearching(true);
+    setSearchError(null);
     try {
       setResults(await lookupAccounts(query));
-    } catch {
-      setResults([]);
+    } catch (err) {
+      setResults(null);
+      if (err instanceof AccountApiError && (err.status === 401 || err.status === 403)) {
+        await refresh();
+      } else {
+        setSearchError(adminErrorMessage(err));
+      }
     } finally {
       setSearching(false);
     }
@@ -70,7 +78,13 @@ export default function AdminPanel() {
 
   async function afterChange() {
     await refresh();
-    if (results && query.trim()) setResults(await lookupAccounts(query).catch(() => []));
+    if (results && query.trim()) {
+      try {
+        setResults(await lookupAccounts(query));
+      } catch {
+        setResults(null);
+      }
+    }
   }
 
   if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
@@ -134,6 +148,11 @@ export default function AdminPanel() {
         <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
           Exact matches only. People appear once they have signed in to the website.
         </p>
+        {searchError ? (
+          <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
+            {searchError}
+          </p>
+        ) : null}
         {results ? (
           <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No account matches that." />
         ) : null}
