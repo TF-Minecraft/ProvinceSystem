@@ -162,3 +162,15 @@ def test_a_global_rate_limit_stops_the_whole_refresh(database):
         return httpx.Response(429, json={"retry_after": 600, "global": False})
     assert discord_names.refresh_all(lookup(route_limited)) == 0
     assert len(calls) == 4
+
+
+def test_short_global_limits_that_never_lift_stop_the_refresh(database):
+    link(database, "1")
+    calls = []
+
+    def limited(request):
+        calls.append(1)
+        return httpx.Response(429, json={"retry_after": 0.01, "global": True})
+    with pytest.raises(discord_names.GloballyRateLimited):
+        discord_names.refresh_all(lookup(limited))
+    assert len(calls) == 3

@@ -86,7 +86,8 @@ class NameLookup:
         self.http.close()
 
     def _get(self, path: str) -> httpx.Response | None:
-        for _ in range(3):
+        attempts = 3
+        for attempt in range(attempts):
             if self.halt.is_set():
                 return None
             try:
@@ -105,14 +106,15 @@ class NameLookup:
                 wait = float(body.get("retry_after", 1.0))
             except (AttributeError, ValueError, TypeError):
                 wait = 1.0
+            is_global = (
+                (isinstance(body, dict) and body.get("global") is True)
+                or response.headers.get("X-RateLimit-Global", "").lower() == "true"
+                or response.headers.get("X-RateLimit-Scope", "").lower() == "global"
+            )
+            # A global limit we will not (or can no longer) wait out stops everyone's lookups.
+            if is_global and (wait > self.max_retry_wait or attempt == attempts - 1):
+                raise GloballyRateLimited()
             if wait > self.max_retry_wait:
-                is_global = (
-                    (isinstance(body, dict) and body.get("global") is True)
-                    or response.headers.get("X-RateLimit-Global", "").lower() == "true"
-                    or response.headers.get("X-RateLimit-Scope", "").lower() == "global"
-                )
-                if is_global:
-                    raise GloballyRateLimited()
                 return None
             if self.halt.wait(wait):
                 return None
