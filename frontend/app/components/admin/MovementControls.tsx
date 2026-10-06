@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { MapPin } from "./MovementMap";
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
@@ -53,6 +53,57 @@ export function useMinuteClock(on: boolean): number {
     return () => window.clearInterval(timer);
   }, [on]);
   return now;
+}
+
+/** How long the inspected moment must rest before it is written to the URL. */
+const MOMENT_WRITE_DELAY_MS = 300;
+
+/**
+ * The inspected moment while it is being moved: shown at once, written to the
+ * URL (`at`) only once it rests, so dragging the timeline does not rewrite the
+ * URL on every step. A change of `view` (the session or range shown) or of the
+ * URL's own `at` (back and forward, a link) drops the moment being moved and
+ * any write still pending; `cancel` does the same on demand.
+ */
+export function useLiveMoment(urlAt: number | null, view: string, writeAt: (time: number) => void) {
+  const [live, setLive] = useState<number | null>(null);
+  const [seenUrlAt, setSeenUrlAt] = useState(urlAt);
+  const [seenView, setSeenView] = useState(view);
+  if (seenView !== view) {
+    setSeenView(view);
+    setLive(null);
+  }
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const write = useRef(writeAt);
+  write.current = writeAt;
+  // The URL caught up, or changed for another reason: it is the truth again.
+  if (seenUrlAt !== urlAt) {
+    setSeenUrlAt(urlAt);
+    setLive(null);
+  }
+  const cancel = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    setLive(null);
+  }, []);
+  const move = useCallback((time: number) => {
+    const at = Math.round(time);
+    setLive(at);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      write.current(at);
+    }, MOMENT_WRITE_DELAY_MS);
+  }, []);
+  // Our own write clears the timer before it lands, so a pending timer here means the change came from elsewhere.
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, [urlAt, view]);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  return { at: live ?? urlAt, move, cancel };
 }
 
 export type Range = { from: number; to: number; follow: boolean };

@@ -28,6 +28,7 @@ import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
   CopyButton,
   InspectBar,
+  useLiveMoment,
   PinForm,
   RangeForm,
   Timeline,
@@ -83,7 +84,9 @@ export default function EveryoneMovement() {
   const from = intParam(search.get("from")) ?? opened - 3600;
   const to = intParam(search.get("to")) ?? opened;
   const follow = search.get("follow") === "1";
-  const at = intParam(search.get("at"));
+  // What the inspected moment belongs to: a moment being moved does not carry over to another range.
+  const momentView = `range:${from}:${to}:${follow}`;
+  const urlAt = intParam(search.get("at"));
   const pin = pinParam(search.get("pin"));
   const chosen = useMemo(() => new Set((search.get("players") ?? "").split(",").filter(Boolean)), [search]);
   const onlyChosen = search.get("only") === "1";
@@ -100,6 +103,10 @@ export default function EveryoneMovement() {
       writeUrl(`${pathname}?${next.toString()}`, replace);
     },
     [pathname, search]
+  );
+  // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
+  const { at, move: setMoment, cancel: cancelMoment } = useLiveMoment(urlAt, momentView, (time) =>
+    update({ at: String(time) }, true)
   );
 
   const now = useMinuteClock(follow);
@@ -217,9 +224,10 @@ export default function EveryoneMovement() {
             value={range}
             longest={EVERYONE_WINDOW_SECONDS}
             asOf={data?.as_of ?? null}
-            onApply={(next) =>
-              update({ from: String(next.from), to: String(next.to), follow: next.follow ? "1" : null, at: null })
-            }
+            onApply={(next) => {
+              cancelMoment();
+              update({ from: String(next.from), to: String(next.to), follow: next.follow ? "1" : null, at: null });
+            }}
           />
           <div className="flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
             <input
@@ -312,7 +320,7 @@ export default function EveryoneMovement() {
                 highlight={highlight}
                 pin={pin}
                 fitKey={load.kind === "ready" && load.key === viewKey ? viewKey : null}
-                onInspect={(time) => update({ at: String(time) }, true)}
+                onInspect={setMoment}
                 className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-24rem)]"
               />
             ) : (
@@ -328,9 +336,9 @@ export default function EveryoneMovement() {
                 unknownLabel={completeFrom > since ? "earlier observations omitted" : "before available position observations"}
                 bands={bands}
                 cursor={moment}
-                onCursor={(time) => update({ at: String(time) }, true)}
+                onCursor={setMoment}
               />
-              <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={(time) => update({ at: String(time) }, true)}>
+              <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
                 Inspecting {formatClock(moment, true)} · {seenNow} of {drawn.length} players observed or estimated at this
                 moment. Positions in the list are as of this moment.
               </InspectBar>
