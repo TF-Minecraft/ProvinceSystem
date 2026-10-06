@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import sqlite3
 import threading
 import time
 from dataclasses import dataclass
@@ -65,15 +66,23 @@ class BotTokenRejected(Exception):
 
 
 class NameLookup:
-    def __init__(self, config: BotConfig, http: httpx.Client | None = None, timeout: float = 10.0):
+    """Discord lookups by user id. `max_retry_wait` 0 gives up on a rate limit rather than waiting;
+    `halt`, once set, stops further requests and cuts any wait short (for shutdown)."""
+
+    def __init__(self, config: BotConfig, http: httpx.Client | None = None, timeout: float = 10.0,
+                 max_retry_wait: float = MAX_RETRY_WAIT_SECONDS, halt: threading.Event | None = None):
         self.config = config
         self.http = http or httpx.Client(timeout=timeout)
+        self.max_retry_wait = max_retry_wait
+        self.halt = halt or threading.Event()
 
     def close(self) -> None:
         self.http.close()
 
     def _get(self, path: str) -> httpx.Response | None:
         for _ in range(3):
+            if self.halt.is_set():
+                return None
             try:
                 response = self.http.get(
                     f"{self.config.api_base}{path}",
@@ -89,9 +98,10 @@ class NameLookup:
                 wait = float(response.json().get("retry_after", 1.0))
             except (ValueError, AttributeError, TypeError):
                 wait = 1.0
-            if wait > MAX_RETRY_WAIT_SECONDS:
+            if wait > self.max_retry_wait:
                 return None
-            time.sleep(wait)
+            if self.halt.wait(wait):
+                return None
         return None
 
     def lookup(self, discord_id: str) -> dict | None:
@@ -135,9 +145,15 @@ def refresh_all(lookup: NameLookup) -> int:
         ids = [row["discord_user_id"] for row in conn.execute("SELECT discord_user_id FROM discord_links")]
     answered = 0
     for discord_id in ids:
+        if lookup.halt.is_set():
+            break
         found = lookup.lookup(str(discord_id))
         if found:
-            store(str(discord_id), found)
+            try:
+                store(str(discord_id), found)
+            except sqlite3.Error:
+                logger.exception("Could not store a refreshed Discord name")
+                continue
             answered += 1
     return answered
 
@@ -152,7 +168,8 @@ def refresh_one(discord_id: str) -> bool:
         if now - _RECENT.get(discord_id, -PROFILE_RETRY_SECONDS) < PROFILE_RETRY_SECONDS:
             return False
         _RECENT[discord_id] = now
-    lookup = NameLookup(config, timeout=PROFILE_TIMEOUT_SECONDS)
+    # A profile does not wait out rate limits: it shows what is stored and tries again later.
+    lookup = NameLookup(config, timeout=PROFILE_TIMEOUT_SECONDS, max_retry_wait=0)
     try:
         found = lookup.lookup(discord_id)
     except BotTokenRejected:
@@ -162,15 +179,38 @@ def refresh_one(discord_id: str) -> bool:
         lookup.close()
     if not found:
         return False
-    store(discord_id, found)
+    try:
+        store(discord_id, found)
+    except sqlite3.Error:
+        # The profile still shows what is stored.
+        logger.exception("Could not store a looked-up Discord name")
+        return False
     return True
 
 
 async def refresh_loop(stop: asyncio.Event) -> None:
-    """Refresh every link's names on start and every REFRESH_SECONDS until stopped."""
+    """Refresh every link's names on start and every REFRESH_SECONDS until stopped.
+
+    Stopping also halts a refresh under way (between players, before each request
+    and during rate-limit waits), so shutdown does not wait for it to finish.
+    """
+    halt = threading.Event()
+
+    async def relay() -> None:
+        await stop.wait()
+        halt.set()
+
+    relay_task = asyncio.create_task(relay())
+    try:
+        await _refresh_until(stop, halt)
+    finally:
+        relay_task.cancel()
+
+
+async def _refresh_until(stop: asyncio.Event, halt: threading.Event) -> None:
     while not stop.is_set():
         config = BotConfig.from_env()
-        lookup = NameLookup(config)
+        lookup = NameLookup(config, halt=halt)
         try:
             answered = await asyncio.to_thread(refresh_all, lookup)
             logger.info("Discord names refreshed for %s links", answered)

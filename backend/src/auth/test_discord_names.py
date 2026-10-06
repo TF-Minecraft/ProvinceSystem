@@ -58,14 +58,13 @@ def test_member_gives_handle_and_nickname_user_gives_handle_only(database):
     assert names(database, "3") == ("fresh_name", None)
 
 
-def test_waits_out_rate_limits_and_stops_on_a_bad_token(monkeypatch):
-    monkeypatch.setattr(discord_names.time, "sleep", lambda s: None)
+def test_waits_out_rate_limits_and_stops_on_a_bad_token():
     calls = []
 
     def limited(request):
         calls.append(1)
         if len(calls) == 1:
-            return httpx.Response(429, json={"retry_after": 0.5})
+            return httpx.Response(429, json={"retry_after": 0.01})
         return httpx.Response(200, json={"user": {"username": "after_wait"}, "nick": "N"})
     assert lookup(limited).lookup("1") == {"username": "after_wait", "nickname": "N", "in_server": True}
 
@@ -80,7 +79,8 @@ def test_profile_looks_up_an_unknown_handle_once(database, monkeypatch):
     seen = []
     handler = discord({"42": {"user": {"username": "found_it"}, "nick": "Fi"}}, {}, seen)
     monkeypatch.setattr(discord_names, "NameLookup",
-                        lambda config, timeout: NameLookup(CONFIG, http=httpx.Client(transport=httpx.MockTransport(handler))))
+                        lambda config, timeout, max_retry_wait: NameLookup(
+                            CONFIG, http=httpx.Client(transport=httpx.MockTransport(handler))))
     monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
     assert discord_names.refresh_one("42") is True
     assert names(database, "42") == ("found_it", "Fi")
@@ -91,3 +91,52 @@ def test_profile_looks_up_an_unknown_handle_once(database, monkeypatch):
     monkeypatch.delenv("DISCORD_BOT_TOKEN")
     discord_names.clear_recent()
     assert discord_names.refresh_one("42") is False
+
+
+def test_profile_lookups_do_not_wait_out_rate_limits():
+    calls = []
+
+    def limited(request):
+        calls.append(1)
+        return httpx.Response(429, json={"retry_after": 0.01})
+    quick = NameLookup(CONFIG, http=httpx.Client(transport=httpx.MockTransport(limited)), max_retry_wait=0)
+    assert quick.lookup("1") is None
+    # One try at the member record and one at the user record, no retries.
+    assert len(calls) == 2
+
+
+def test_halting_stops_a_refresh_and_cuts_waits_short(database):
+    import threading
+    import time
+
+    link(database, "1")
+    link(database, "2")
+    halt = threading.Event()
+    calls = []
+
+    def limited(request):
+        calls.append(1)
+        halt.set()
+        return httpx.Response(429, json={"retry_after": 25})
+    stopping = NameLookup(CONFIG, http=httpx.Client(transport=httpx.MockTransport(limited)), halt=halt)
+    started = time.monotonic()
+    assert discord_names.refresh_all(stopping) == 0
+    assert time.monotonic() - started < 2
+    assert len(calls) == 1
+
+
+def test_a_database_error_leaves_the_profile_working(database, monkeypatch):
+    import sqlite3
+
+    discord_names.clear_recent()
+    link(database, "7")
+    handler = discord({"7": {"user": {"username": "seven"}, "nick": None}}, {})
+    monkeypatch.setattr(discord_names, "NameLookup",
+                        lambda config, timeout, max_retry_wait: NameLookup(
+                            CONFIG, http=httpx.Client(transport=httpx.MockTransport(handler))))
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
+
+    def broken(*args, **kwargs):
+        raise sqlite3.OperationalError("database is locked")
+    monkeypatch.setattr(discord_names, "store", broken)
+    assert discord_names.refresh_one("7") is False
