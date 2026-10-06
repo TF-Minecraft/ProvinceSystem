@@ -39,8 +39,8 @@ connection settings for database engines the server does not use.
 
 The database uses a rollback journal, so a reader's lock holds off
 CoreProtect's commits. `reader.py` explains the guards: autocommit, one
-reader per process, a 1.5 s budget per request, and every statement fully
-fetched before the next. The backend runs as one uvicorn process; running
+reader per process, a 1.5 s budget per request (waiting for the lock
+included), and every statement fully fetched before the next. The backend runs as one uvicorn process; running
 more would need the reader limit shared between them. Never open the file
 with `immutable=1`: on Main that read torn pages while CoreProtect wrote.
 
@@ -63,12 +63,21 @@ login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 ```sh
 # Lock hold time per request against a live database (opens it immutable, benchmark only)
 python3 benchmarks/coreprotect_reader.py hold --no-lock /path/to/database.db
-# Writer impact, on a copy (it writes)
-python3 benchmarks/coreprotect_reader.py contend /tmp/copy.db --readers 1
+# A disposable database at Main's size, then writer impact on it (contend writes)
+python3 benchmarks/coreprotect_reader.py synth /tmp/main-synth.db
+python3 benchmarks/coreprotect_reader.py contend /tmp/main-synth.db --readers 1
 ```
 
 Acceptance: `hold` p99 ≤ 100 ms and max ≤ 500 ms; `contend` with no writer
 failures and writer transaction p99/max up by no more than 100/500 ms.
-On 2026-10-06 Main (7.4 GB, 242 players) gave p99 8.6 ms and max 18.5 ms; a
-copy of Dev's database gave writer p99 +15 ms with one reader and +59 ms with
-three readers making back-to-back requests, with no failures.
+
+Results on 2026-10-06:
+
+- `hold` on live Main (7.4 GB, 242 players, 1,455 requests): p99 8.6 ms,
+  max 18.5 ms.
+- `contend` on a 6.5 GB synthetic Main, one reader (as in production):
+  writer p99 +10 ms, max +18 ms, no failures, no reader errors.
+- Three readers making back-to-back requests: writer p99 +18 ms, max
+  +14 ms, throughput −5%, no writer failures; 2% of reader requests gave
+  up as busy or out of budget. The synthetic writer spills its cache on
+  every batch, so this is harsher than CoreProtect.

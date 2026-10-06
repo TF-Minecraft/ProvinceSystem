@@ -12,8 +12,9 @@ queue up. Every read here is therefore kept short and bounded:
 - one reader at a time per process. The backend runs as a single uvicorn
   process; a second process or replica would need its own coordination;
 - one budget per request covering the wait for the reader slot, cache locks
-  and every statement. Each statement's busy timeout is capped by what is
-  left, and a progress handler interrupts a statement that overruns.
+  and every statement. A statement waiting for the lock holds nothing, so
+  it may wait for whatever budget is left; a progress handler interrupts a
+  statement that overruns once it has the lock.
   The progress handler only runs while SQLite executes VM steps, so the
   budget is cooperative: it cannot cut short a stalled disk read;
 - the connection is closed before any decoding, province.db access or
@@ -34,7 +35,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 REQUEST_BUDGET_SECONDS = 1.5
-BUSY_TIMEOUT_MS = 200
 PROGRESS_STEPS = 1000
 
 _GATE = threading.BoundedSemaphore(1)
@@ -150,7 +150,7 @@ class Reader:
             raise Unavailable("error")
         left = self.budget.check()
         try:
-            self._conn.execute(f"PRAGMA busy_timeout = {max(1, min(BUSY_TIMEOUT_MS, int(left * 1000)))}")
+            self._conn.execute(f"PRAGMA busy_timeout = {max(1, int(left * 1000))}")
             cursor = self._conn.execute(sql, params)
             try:
                 return cursor.fetchall()

@@ -59,9 +59,14 @@ def _no_lock() -> None:
 
 
 def _ids(config):
-    with Reader(config, Budget(30)) as r:
-        rows = r.rows("SELECT id FROM co_user WHERE uuid IS NOT NULL")
-    return [row["id"] for row in rows]
+    # Setup only: retry while a writer holds the lock, as a page reload would.
+    for _ in range(100):
+        try:
+            with Reader(config, Budget(30)) as r:
+                return [row["id"] for row in r.rows("SELECT id FROM co_user WHERE uuid IS NOT NULL")]
+        except Unavailable:
+            time.sleep(0.1)
+    raise SystemExit("CoreProtect stayed locked")
 
 
 SYNTH_ROWS = {"co_block": 23_600_000, "co_container": 2_960_000, "co_item": 3_300_000, "co_command": 221_000,
@@ -269,9 +274,9 @@ def contend(args) -> None:
         writer.start()
         for h in hammers:
             h.start()
-        latencies, failures, rows = out.get()
+        latencies, failures, rows = out.get(timeout=args.seconds * 10)
         writer.join()
-        reader_results = [reads.get() for _ in hammers]
+        reader_results = [reads.get(timeout=args.seconds * 10) for _ in hammers]
         for h in hammers:
             h.join()
         print(_summary(f"{phase}: write txn", latencies))
