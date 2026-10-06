@@ -13,6 +13,7 @@ import {
   ACTION_LOGOUT,
   ageColour,
   boundsOf,
+  clipStretches,
   isJump,
   positionAt,
   type Stretch,
@@ -115,12 +116,18 @@ export default function MovementMap({
     [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h]
   );
 
+  // Drawn and framed: only the window. The marker reads the full trails, which
+  // carry the row before the window for where the player was as it opened.
+  const shown = useMemo(
+    () => trails.map((trail) => ({ ...trail, stretches: clipStretches(trail.stretches, since, until) })),
+    [trails, since, until]
+  );
   const paths = useMemo(
-    () => trails.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until) })),
-    [trails, mapWorld, since, until]
+    () => shown.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until) })),
+    [shown, mapWorld, since, until]
   );
   const bounds = useMemo(() => {
-    const boxes = trails.map((t) => boundsOf(t.stretches, mapWorld)).filter((b) => b !== null);
+    const boxes = shown.map((t) => boundsOf(t.stretches, mapWorld)).filter((b) => b !== null);
     if (!boxes.length) return null;
     const x = Math.min(...boxes.map((b) => b.x));
     const y = Math.min(...boxes.map((b) => b.y));
@@ -129,7 +136,7 @@ export default function MovementMap({
     const padW = Math.max(MIN_FRAME, w) - w;
     const padH = Math.max(MIN_FRAME, h) - h;
     return { x: x - padW / 2, y: y - padH / 2, w: w + padW, h: h + padH };
-  }, [trails, mapWorld]);
+  }, [shown, mapWorld]);
 
   // Frame the trails whenever a new answer brings a different box.
   const boundsKey = bounds ? `${bounds.x},${bounds.y},${bounds.w},${bounds.h}` : "none";
@@ -140,7 +147,7 @@ export default function MovementMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boundsKey, ready]);
 
-  const dots = trails.reduce((n, t) => n + t.stretches.reduce((m, s) => m + s.samples.length, 0), 0) <= MAX_DOTS;
+  const dots = shown.reduce((n, t) => n + t.stretches.reduce((m, s) => m + s.samples.length, 0), 0) <= MAX_DOTS;
   const unit = displayScale > 0 ? 1 / displayScale : 1;
 
   return (

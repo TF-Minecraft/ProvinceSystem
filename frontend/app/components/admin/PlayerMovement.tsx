@@ -6,6 +6,8 @@ import { AccountApiError } from "../../../lib/account/api";
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
   PLAYER_PRESETS,
+  clampMoment,
+  clipStretches,
   distanceTravelled,
   gapSeconds,
   getPlayerMovement,
@@ -79,8 +81,13 @@ export default function PlayerMovement({ uuid, name }: { uuid: string; name: str
   const shownSince = data ? data.complete_from : since;
   const shownUntil = data?.until ?? until;
   const hold = gapSeconds(data?.coreprotect.ping_seconds);
-  const at = positionAt(parts, cursor ?? shownUntil, hold);
-  const byWorld = timeByWorld(parts);
+  // A refresh can move the window past the slider's moment.
+  const shownCursor = clampMoment(cursor, shownSince, shownUntil);
+  const moment = shownCursor ?? shownUntil;
+  const at = positionAt(parts, moment, hold);
+  // Totals count only the window, not the row before it.
+  const inWindow = clipStretches(parts, shownSince, shownUntil);
+  const byWorld = timeByWorld(inWindow);
   const elsewhere = [...byWorld].filter(([world, seconds]) => world !== mapWorld && seconds > 0);
   const seen = [...byWorld.values()].reduce((a, b) => a + b, 0);
 
@@ -117,31 +124,31 @@ export default function PlayerMovement({ uuid, name }: { uuid: string; name: str
           trails={trails}
           since={shownSince}
           until={shownUntil}
-          cursor={cursor ?? shownUntil}
+          cursor={moment}
           hold={hold}
           className={expanded ? "min-h-0 flex-1 rounded-sm" : "h-[28rem] rounded-sm"}
         />
       ) : (
         <div className={expanded ? "flex-1" : "h-[28rem]"} />
       )}
-      <TimeSlider since={shownSince} until={shownUntil} cursor={cursor} onChange={setCursor} />
+      <TimeSlider since={shownSince} until={shownUntil} cursor={shownCursor} onChange={setCursor} />
       {data ? (
         <div className={`${mutedClass} flex flex-col gap-1`}>
           <p>
             {at
               ? at.world === mapWorld
                 ? at.lastSeen !== undefined
-                  ? `Last seen at ${at.x}, ${at.z}, ${formatDuration((cursor ?? shownUntil) - at.lastSeen).toLowerCase()} earlier.`
+                  ? `Last seen at ${at.x}, ${at.z}, ${formatDuration(moment - at.lastSeen).toLowerCase()} earlier.`
                   : at.exact
                   ? `Seen at ${Math.round(at.x)}, ${Math.round(at.z)}.`
                   : `Between pings, near ${Math.round(at.x)}, ${Math.round(at.z)} (a straight-line guess).`
                 : `In ${worldLabel(at.world)}.`
               : "Not seen at that moment: offline, or between sightings."}
           </p>
-          {parts.length ? (
+          {inWindow.length ? (
             <p>
               Seen for about {formatDuration(seen)} in this window, about{" "}
-              {Math.round(distanceTravelled(parts)).toLocaleString()} blocks walked or ridden
+              {Math.round(distanceTravelled(inWindow)).toLocaleString()} blocks walked or ridden
               {elsewhere.length
                 ? `; about ${elsewhere.map(([world, seconds]) => `${formatDuration(seconds)} in ${worldLabel(world)}`).join(", ")}`
                 : ""}

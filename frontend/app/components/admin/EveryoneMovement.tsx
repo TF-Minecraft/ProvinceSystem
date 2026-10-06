@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
   EVERYONE_PRESETS,
+  clampMoment,
   gapSeconds,
   getEveryoneMovement,
   playerColour,
@@ -77,7 +78,9 @@ export default function EveryoneMovement() {
   // A window cut short starts where the answer is complete.
   const shownSince = data ? data.complete_from : since;
   const shownUntil = data?.until ?? until;
-  const moment = cursor ?? shownUntil;
+  // A refresh can move the window past the slider's moment.
+  const shownCursor = clampMoment(cursor, shownSince, shownUntil);
+  const moment = shownCursor ?? shownUntil;
   const hold = gapSeconds(data?.coreprotect.ping_seconds);
   const notice = data ? coreProtectMessage(data.coreprotect) : null;
 
@@ -131,7 +134,7 @@ export default function EveryoneMovement() {
           {data && !trails.length ? <li className={mutedClass}>Nobody was online in this window.</li> : null}
         </ul>
       </div>
-      <TimeSlider since={shownSince} until={shownUntil} cursor={cursor} onChange={setCursor} />
+      <TimeSlider since={shownSince} until={shownUntil} cursor={shownCursor} onChange={setCursor} />
       {data ? (
         <div className={`${mutedClass} flex flex-col gap-1`}>
           <p>

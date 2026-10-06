@@ -108,19 +108,24 @@ def fetch_player(reader: Reader, ids: list[int], since: int, until: int, lead: i
 def fetch_everyone(reader: Reader, since: int, until: int, lead: int) -> dict:
     rows = _newest(reader, "time >= ? AND time <= ?", (since, until), EVERYONE_POINT_LIMIT)
     rows, complete_from = _cap(rows, since, EVERYONE_POINT_LIMIT)
-    if complete_from == since:
-        # A couple of ping intervals of everyone's rows: a few dozen on a busy evening.
-        latest: dict[int, object] = {}
-        for row in _newest(reader, "time < ? AND time >= ?", (since, since - lead), EVERYONE_POINT_LIMIT):
-            latest.setdefault(row["user"], row)
-        rows += [r for r in latest.values() if r["action"] != ACTION_LOGOUT]
-    users = sorted({r["user"] for r in rows})
+    # A couple of ping intervals of everyone's rows before the window: a few dozen on a busy evening.
+    before = (_newest(reader, "time < ? AND time >= ?", (since, since - lead), EVERYONE_POINT_LIMIT)
+              if complete_from == since else [])
+    users = sorted({r["user"] for r in rows + before})
     names = {}
     # Chunked to stay under SQLite's bound-parameter limit.
     for start in range(0, len(users), 500):
         chunk = users[start:start + 500]
         names.update({r["id"]: dict(r) for r in reader.rows(
             f"SELECT id, user, uuid FROM co_user WHERE id IN ({','.join('?' * len(chunk))})", tuple(chunk))})
+    # The newest row per player, across all of their co_user ids, unless it is a logout.
+    latest: dict[str, object] = {}
+    for row in before:
+        user = names.get(row["user"])
+        key = _canonical(user["uuid"]) if user else None
+        if key is not None:
+            latest.setdefault(key, row)
+    rows += [r for r in latest.values() if r["action"] != ACTION_LOGOUT]
     return {"rows": rows, "complete_from": complete_from, "users": names, "pings_since": _pings_since(reader)}
 
 

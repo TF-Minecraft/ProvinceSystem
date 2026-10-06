@@ -136,3 +136,12 @@ def test_everyone_starts_from_the_rows_before_the_window(coreprotect):
     at(coreprotect, a, 1_010, PING, 3, 3)
     built = everyone(coreprotect, 1_000, 1_100)
     assert [(p["minecraft_name"], [x[0] for x in p["points"]]) for p in built["players"]] == [("a", [950, 1_010])]
+
+
+def test_everyone_lead_in_is_per_player_not_per_id(coreprotect):
+    old = coreprotect.user("Old", "00000000-0000-0000-0000-00000000000a")
+    new = coreprotect.user("New", "00000000-0000-0000-0000-00000000000A")
+    at(coreprotect, old, 900, PING, 1, 1)
+    at(coreprotect, new, 990, LOGOUT, 2, 2)
+    # Logged out under the newer id: offline when the window opens, whatever the older id said.
+    assert everyone(coreprotect, 1_000, 1_100)["players"] == []

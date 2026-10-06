@@ -5,6 +5,8 @@ import {
   ACTION_LOGOUT,
   ACTION_PING,
   boundsOf,
+  clampMoment,
+  clipStretches,
   distanceTravelled,
   fromLocalInput,
   positionAt,
@@ -72,6 +74,28 @@ describe("positionAt", () => {
 
   it("leaves teleports out of the distance", () => {
     expect(distanceTravelled(out)).toBe(120);
+  });
+});
+
+describe("clipStretches", () => {
+  it("cuts the row before the window to the window's edge", () => {
+    const all = stretches([p(900, 0, 0), p(1010, 110, 0), p(1070, 170, 0)], WORLDS, 60);
+    const clipped = clipStretches(all, 1000, 1100);
+    expect(clipped[0].samples.map((s) => [s.time, s.x])).toEqual([[1000, 100], [1010, 110], [1070, 170]]);
+    expect(timeByWorld(clipped).get("TFMC_Map")).toBe(70);
+    expect(distanceTravelled(clipped)).toBe(70);
+    // The unclipped stretches still say where they were as the window opened.
+    expect(positionAt(all, 1000)?.x).toBe(100);
+  });
+
+  it("drops stretches wholly outside the window", () => {
+    expect(clipStretches(stretches([p(0, 0, 0), p(60, 1, 1)], WORLDS, 60), 100, 200)).toEqual([]);
+  });
+
+  it("keeps the slider inside the window", () => {
+    expect(clampMoment(null, 10, 20)).toBeNull();
+    expect(clampMoment(5, 10, 20)).toBe(10);
+    expect(clampMoment(25, 10, 20)).toBe(20);
   });
 });
 

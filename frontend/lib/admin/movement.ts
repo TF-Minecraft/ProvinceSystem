@@ -124,6 +124,36 @@ export function stretches(
   return out;
 }
 
+/**
+ * The stretches cut to [from, to], for drawing and totals. The row before the
+ * window (kept for `positionAt`) becomes a point on the window's edge, partway
+ * to the next row, unless that step was a jump.
+ */
+export function clipStretches(all: readonly Stretch[], from: number, to: number): Stretch[] {
+  const out: Stretch[] = [];
+  for (const stretch of all) {
+    const s = stretch.samples;
+    const kept: Sample[] = [];
+    for (let i = 0; i < s.length; i += 1) {
+      const b = s[i];
+      if (b.time < from || b.time > to) continue;
+      const a = s[i - 1];
+      if (!kept.length && a && a.time < from && !isJump(a, b)) {
+        const f = (from - a.time) / (b.time - a.time);
+        kept.push({ time: from, x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, z: a.z + (b.z - a.z) * f, action: ACTION_PING });
+      }
+      kept.push(b);
+    }
+    if (kept.length) out.push({ world: stretch.world, samples: kept });
+  }
+  return out;
+}
+
+/** A slider moment kept inside the window shown; null (the newest moment) stays null. */
+export function clampMoment(cursor: number | null, from: number, to: number): number | null {
+  return cursor === null ? null : Math.min(to, Math.max(from, cursor));
+}
+
 export type Position = {
   world: string | null;
   x: number;
