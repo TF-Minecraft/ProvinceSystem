@@ -227,6 +227,7 @@ export type ActivityPage = {
 const COREPROTECT_REASONS: Record<string, string> = {
   not_configured: "CoreProtect isn’t connected to this site.",
   missing: "The CoreProtect database couldn’t be found.",
+  cannot_open: "The CoreProtect database couldn’t be opened.",
   busy: "CoreProtect is busy. Try again in a moment.",
   timeout: "CoreProtect took too long to answer. Try again in a moment.",
   error: "CoreProtect couldn’t be read.",
