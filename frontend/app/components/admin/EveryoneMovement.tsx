@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
@@ -22,6 +22,7 @@ import {
   type Inspection,
 } from "../../../lib/admin/movement";
 import { formatDuration } from "../../../lib/admin/time";
+import { writeUrl } from "../../../lib/admin/urlState";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
@@ -74,7 +75,6 @@ function whereText(found: Inspection, moment: number, mapWorld: string): string 
 
 /** Every player's movement over a range on one map, compared at one inspected moment. */
 export default function EveryoneMovement() {
-  const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
   const mapId = useLiveMapId();
@@ -97,11 +97,9 @@ export default function EveryoneMovement() {
         if (value === null) next.delete(key);
         else next.set(key, value);
       }
-      const url = `${pathname}?${next.toString()}`;
-      if (replace) router.replace(url, { scroll: false });
-      else router.push(url, { scroll: false });
+      writeUrl(`${pathname}?${next.toString()}`, replace);
     },
-    [pathname, router, search]
+    [pathname, search]
   );
 
   const now = useMinuteClock(follow);

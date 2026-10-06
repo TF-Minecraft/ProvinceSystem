@@ -31,9 +31,9 @@ vi.mock("next/navigation", async () => {
       return nav.state.params;
     },
     usePathname: () => "/admin/players/u/movement",
-    useRouter: () => ({ push: nav.go, replace: nav.go }),
   };
 });
+vi.mock("../../../lib/admin/urlState", () => ({ writeUrl: (url: string) => nav.go(url) }));
 vi.mock("../../../lib/admin/movement", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/admin/movement")>()),
   getEveryoneMovement: vi.fn(),

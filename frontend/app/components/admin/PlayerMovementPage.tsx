@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccountApiError } from "../../../lib/account/api";
@@ -27,6 +27,7 @@ import {
   type MovementStatus,
 } from "../../../lib/admin/movement";
 import { formatDuration } from "../../../lib/admin/time";
+import { writeUrl } from "../../../lib/admin/urlState";
 import MovementMap, { type MapPin } from "./MovementMap";
 import {
   CopyButton,
@@ -88,7 +89,6 @@ function pinParam(value: string | null): MapPin | null {
  * picks the view lives in the URL, so a view can be shared as a link.
  */
 export default function PlayerMovementPage({ uuid }: { uuid: string }) {
-  const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
   const mapId = useLiveMapId();
@@ -112,11 +112,9 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
         if (value === null) next.delete(key);
         else next.set(key, value);
       }
-      const url = `${pathname}?${next.toString()}`;
-      if (replace) router.replace(url, { scroll: false });
-      else router.push(url, { scroll: false });
+      writeUrl(`${pathname}?${next.toString()}`, replace);
     },
-    [pathname, router, search]
+    [pathname, search]
   );
 
   const [name, setName] = useState<string | null>(null);
