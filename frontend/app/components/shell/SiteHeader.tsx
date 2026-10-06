@@ -9,7 +9,7 @@ import { getAccount } from "@/lib/account/api";
 import { isStaffRole } from "@/lib/admin/api";
 
 /** public/logo.png downscaled; the 1024 px original is 1 MB. */
-const LOGO_SRC = "/logo-256.png";
+const LOGO_SRC = "/logo-256.webp";
 
 const staticLinks = [
   { href: "/", label: "Home" },
