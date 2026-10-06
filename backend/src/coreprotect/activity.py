@@ -98,14 +98,67 @@ def parse_kinds(text: str | None) -> tuple[str, ...]:
     return chosen
 
 
-def _boundary(source: Source, cursor: Cursor | None) -> tuple[str, tuple]:
+def _upper(source: Source, cursor: Cursor | None) -> tuple | None:
+    """This source's bound below the cursor: ("le", t), ("lt", t) or ("before", t, rowid)."""
     if cursor is None:
-        return "", ()
+        return None
     if source.rank < cursor.rank:
-        return " AND time <= ?", (cursor.time,)
+        return ("le", cursor.time)
     if source.rank > cursor.rank:
-        return " AND time < ?", (cursor.time,)
-    return " AND time <= ? AND NOT (time = ? AND rowid >= ?)", (cursor.time, cursor.time, cursor.rowid)
+        return ("lt", cursor.time)
+    return ("before", cursor.time, cursor.rowid)
+
+
+def _segments(upper: tuple | None, lower: tuple[int, int] | None) -> list[tuple[str, tuple]]:
+    """Disjoint WHERE fragments covering lower <= (time, rowid) < upper, newest first.
+
+    A rowid bound only ever appears with the second pinned by equality, which
+    the (user, time) index seeks. Written as "time <= t AND NOT (time = t AND
+    rowid >= id)", SQLite would walk every row in that second first, and one
+    WorldEdit paste can put hundreds of thousands of rows in one second.
+    """
+    # Each top segment: (fragment, params, pinned second, does a second fall inside it).
+    if upper is None:
+        tops = [("", (), None, lambda t: True)]
+    elif upper[0] == "le":
+        tops = [(" AND time <= ?", (upper[1],), None, lambda t: t <= upper[1])]
+    elif upper[0] == "lt":
+        tops = [(" AND time < ?", (upper[1],), None, lambda t: t < upper[1])]
+    else:
+        tops = [(" AND time = ? AND rowid < ?", (upper[1], upper[2]), upper[1], None),
+                (" AND time < ?", (upper[1],), None, lambda t: t < upper[1])]
+    if lower is None:
+        return [(sql, params) for sql, params, _, _ in tops]
+    low_time, low_rowid = lower
+    out = []
+    for sql, params, pinned, contains in tops:
+        if pinned is None:
+            out.append((f"{sql} AND time > ?", params + (low_time,)))
+            # On its own: next to a time range, SQLite would use the range and sort.
+            if contains(low_time):
+                out.append((" AND time = ? AND rowid >= ?", (low_time, low_rowid)))
+        elif pinned == low_time:
+            out.append((f"{sql} AND rowid >= ?", params + (low_rowid,)))
+        elif pinned > low_time:
+            out.append((sql, params))
+    return out
+
+
+def _edge(reader: Reader, table: str, uid: int, upper: tuple | None):
+    """The SCAN_LIMIT-th row below the bound, read from the index alone, or None if there are fewer."""
+    skip = SCAN_LIMIT - 1
+    segments = _segments(upper, None)
+    for index, (sql, params) in enumerate(segments):
+        found = reader.rows(
+            f"SELECT time, rowid AS rid FROM {table} WHERE user = ?{sql} "
+            "ORDER BY time DESC, rowid DESC LIMIT 1 OFFSET ?", (uid, *params, skip))
+        if found:
+            return dict(found[0])
+        if index + 1 < len(segments):
+            skip -= reader.rows(
+                f"SELECT COUNT(*) AS n FROM (SELECT 1 FROM {table} WHERE user = ?{sql} LIMIT ?)",
+                (uid, *params, skip))[0]["n"]
+    return None
 
 
 def _key(source: Source, row: dict) -> Cursor:
@@ -125,27 +178,23 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         conditions = [cond for kind, cond in source.kinds.items() if kind in kinds]
         if not conditions:
             continue
-        bound, bound_params = _boundary(source, cursor)
-        # The oldest row this page may examine, found from the index alone.
-        edge_sql = (
-            f"SELECT time, rowid AS rid FROM {source.table} WHERE user = ?{bound} "
-            f"ORDER BY time DESC, rowid DESC LIMIT 1 OFFSET {SCAN_LIMIT - 1}"
+        upper = _upper(source, cursor)
+        select = (
+            f"SELECT rowid AS rid, time, wid, x, y, z, {source.columns} FROM {source.table} "
+            f"WHERE user = ? AND ({' OR '.join(conditions)})"
         )
         for uid in ids:
-            edge = reader.rows(edge_sql, (uid, *bound_params))
-            floor, floor_params = "", ()
-            if edge:
-                floor = " AND time >= ? AND NOT (time = ? AND rowid < ?)"
-                floor_params = (edge[0]["time"], edge[0]["time"], edge[0]["rid"])
-            found = [dict(row) for row in reader.rows(
-                f"SELECT rowid AS rid, time, wid, x, y, z, {source.columns} FROM {source.table} "
-                f"WHERE user = ? AND ({' OR '.join(conditions)}){bound}{floor} "
-                "ORDER BY time DESC, rowid DESC LIMIT ?",
-                (uid, *bound_params, *floor_params, limit + 1),
-            )]
+            edge = _edge(reader, source.table, uid, upper)
+            found: list[dict] = []
+            for sql, params in _segments(upper, (edge["time"], edge["rid"]) if edge else None):
+                if len(found) > limit:
+                    break
+                found += [dict(row) for row in reader.rows(
+                    f"{select}{sql} ORDER BY time DESC, rowid DESC LIMIT ?",
+                    (uid, *params, limit + 1 - len(found)))]
             rows += [(source, row) for row in found]
             if edge and len(found) <= limit:
-                reached = _key(source, dict(edge[0]))
+                reached = _key(source, edge)
                 frontier = reached if frontier is None else max(frontier, reached)
     rows.sort(key=lambda item: _key(*item), reverse=True)
     if frontier is not None:
@@ -180,13 +229,14 @@ _ENTITY_VERBS = {0: "clicked", 1: "sheared", 2: "leashed", 3: "unleashed"}
 _SIGN_VERBS = {0: "broke", 1: "placed", 2: "edited"}
 
 
-def _rollback(source: Source, state: int | None) -> str | None:
+# CoreProtect's rolled_back is two flags: 1 the world side, 2 the player's inventory.
+_ROLLBACK = {1: "rolled back", 2: "rolled back (player inventory)", 3: "rolled back (world and inventory)"}
+
+
+def _rollback(state: int | None) -> str | None:
     if not state:
         return None
-    if source.name in {"container", "entity_container", "item"}:
-        return {1: "rolled back", 2: "rolled back (player inventory)", 3: "rolled back (both)"}.get(
-            state, f"rollback state {state}")
-    return "rolled back" if state == 1 else f"rollback state {state}"
+    return _ROLLBACK.get(state, f"rollback state {state}")
 
 
 def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
@@ -198,7 +248,7 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "x": row["x"], "y": row["y"], "z": row["z"],
         "amount": None,
         "victim": None,
-        "rolled_back": _rollback(source, row.get("rolled_back")),
+        "rolled_back": _rollback(row.get("rolled_back")),
     }
     if source.name == "block":
         if action == 3:

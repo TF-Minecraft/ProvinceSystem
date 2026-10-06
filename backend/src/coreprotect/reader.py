@@ -118,6 +118,12 @@ class Reader:
             deadline = self.budget.deadline
             self._conn.set_progress_handler(lambda: int(time.monotonic() > deadline), PROGRESS_STEPS)
             self._statement("PRAGMA query_only = 1", ())
+        except sqlite3.OperationalError as exc:
+            self.close()
+            raise Unavailable(_classify(exc)) from None
+        except sqlite3.Error:
+            self.close()
+            raise Unavailable("error") from None
         except BaseException:
             self.close()
             raise

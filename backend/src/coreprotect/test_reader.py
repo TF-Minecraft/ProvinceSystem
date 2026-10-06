@@ -113,3 +113,23 @@ def test_spent_budget_stops_before_the_next_statement(coreprotect):
     assert exc.value.code == "timeout"
     assert reader_mod._GATE.acquire(timeout=0.1)
     reader_mod._GATE.release()
+
+
+def test_unreadable_or_corrupt_files_are_unavailable(tmp_path):
+    locked = tmp_path / "locked.db"
+    sqlite3.connect(locked).close()
+    locked.chmod(0)
+    try:
+        with pytest.raises(Unavailable) as exc:
+            Reader(config(locked)).__enter__()
+        assert exc.value.code == "missing"
+    finally:
+        locked.chmod(0o644)
+    junk = tmp_path / "junk.db"
+    junk.write_bytes(b"not a database" * 100)
+    with pytest.raises(Unavailable) as exc:
+        with Reader(config(junk)) as r:
+            r.rows("SELECT * FROM co_world")
+    assert exc.value.code == "error"
+    assert reader_mod._GATE.acquire(timeout=0.1)
+    reader_mod._GATE.release()

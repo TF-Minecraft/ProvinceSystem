@@ -8,6 +8,12 @@ hold <database.db>
     counted rather than fatal. The time each request spends in CoreProtect
     is how long a production request would hold its read lock.
 
+synth <new.db>
+    Builds a disposable database with the fork's schema at Main's size on
+    2026-10-06 (23.6M block rows, 3.0M container, 3.3M item, 242 players,
+    skewed so a few builders own most rows, with one-second bursts), for
+    contend. Copying the live file would lock CoreProtect for the whole copy.
+
 contend <copy-of-database.db>
     Runs a CoreProtect-like writer (batched inserts, small cache so pages
     spill mid-transaction, a 3 s busy timeout like sqlite-jdbc) in another
@@ -58,6 +64,73 @@ def _ids(config):
     return [row["id"] for row in rows]
 
 
+SYNTH_ROWS = {"co_block": 23_600_000, "co_container": 2_960_000, "co_item": 3_300_000, "co_command": 221_000,
+              "co_sign": 8_200, "co_entity_interaction": 92_000}
+SYNTH_PLAYERS = 242
+
+
+def synth(args) -> None:
+    schema = (Path(__file__).resolve().parents[1] / "src/coreprotect/testdata/schema.sql").read_text()
+    conn = sqlite3.connect(args.database, isolation_level=None)
+    conn.execute("PRAGMA journal_mode = OFF")
+    conn.execute("PRAGMA synchronous = OFF")
+    conn.executescript(schema)
+    indexes = [row[0] for row in conn.execute("SELECT sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL")]
+    for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL").fetchall():
+        conn.execute(f"DROP INDEX {name}")
+    conn.executemany("INSERT INTO co_user (id, time, user, uuid) VALUES (?, 0, ?, ?)",
+                     [(i, f"Player{i}", f"00000000-0000-4000-8000-{i:012d}") for i in range(1, SYNTH_PLAYERS + 1)])
+    conn.execute("INSERT INTO co_world (id, world) VALUES (1, 'TFMC_Map')")
+    conn.executemany("INSERT INTO co_material_map (id, material) VALUES (?, ?)", [(i, f"minecraft:m{i}") for i in range(1, 1316)])
+    conn.executemany("INSERT INTO co_entity_map (id, entity) VALUES (?, ?)", [(i, f"e{i}") for i in range(1, 36)])
+    # A skewed player (the product of two uniforms favours low ids) and a time that advances with the row,
+    # in bursts of up to 500 rows sharing one second, over 17 days.
+    user = f"1 + CAST({SYNTH_PLAYERS - 1} * (abs(random()) / 9.3e18) * (abs(random()) / 9.3e18) AS INTEGER)"
+    t0 = 1_789_836_708
+
+    def fill(table, columns, values):
+        n = SYNTH_ROWS[table]
+        conn.execute(
+            f"INSERT INTO {table} ({columns}) WITH RECURSIVE c(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM c WHERE i < {n}) "
+            f"SELECT {values} FROM c")
+        print(f"{table}: {n} rows", flush=True)
+
+    when = f"{t0} + (i * 1468800 / {{n}}) - (i * 1468800 / {{n}}) % (1 + abs(random()) % 3)"
+    fill("co_block", "time, user, wid, x, y, z, type, data, meta, blockdata, action, rolled_back",
+         f"{when.format(n=SYNTH_ROWS['co_block'])}, {user}, 1, abs(random()) % 9000, 64, abs(random()) % 9000, "
+         "1 + abs(random()) % 1315, 0, NULL, randomblob(150), "
+         "CASE abs(random()) % 100 WHEN 0 THEN 3 WHEN 1 THEN 13 WHEN 2 THEN 2 ELSE abs(random()) % 2 END, 0")
+    fill("co_container", "time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back",
+         f"{when.format(n=SYNTH_ROWS['co_container'])}, {user}, 1, 1, 64, 1, 1 + abs(random()) % 1315, 0, "
+         "1 + abs(random()) % 64, randomblob(40), abs(random()) % 2, 0")
+    fill("co_item", "time, user, wid, x, y, z, type, data, amount, action, rolled_back",
+         f"{when.format(n=SYNTH_ROWS['co_item'])}, {user}, 1, 1, 64, 1, 1 + abs(random()) % 1315, randomblob(40), "
+         "1 + abs(random()) % 64, abs(random()) % 13, 0")
+    fill("co_command", "time, user, wid, x, y, z, message",
+         f"{when.format(n=SYNTH_ROWS['co_command'])}, {user}, 1, 1, 64, 1, "
+         "CASE abs(random()) % 10 WHEN 0 THEN '[skill] Blink (blink)' ELSE '/home base ' || hex(randomblob(8)) END")
+    fill("co_sign", "time, user, wid, x, y, z, action, color, color_secondary, data, waxed, face, line_1",
+         f"{when.format(n=SYNTH_ROWS['co_sign'])}, {user}, 1, 1, 64, 1, abs(random()) % 3, 0, 0, 0, 0, 0, 'x'")
+    fill("co_entity_interaction", "time, user, entity_spawn_rowid, wid, x, y, z, type, action, metadata, rolled_back",
+         f"{when.format(n=SYNTH_ROWS['co_entity_interaction'])}, {user}, 1, 1, 1, 64, 1, 1 + abs(random()) % 35, "
+         "abs(random()) % 4, NULL, 0")
+    # Sessions: each player logs in, pings once a minute for a while, and logs out (some never do).
+    conn.execute(
+        "INSERT INTO co_session (time, user, wid, x, y, z, action) "
+        "WITH RECURSIVE s(n, u, t) AS (SELECT 1, 1, 0 UNION ALL SELECT n + 1, 1 + n % 242, "
+        f"(n / 242) * 21600 + abs(random()) % 3600 FROM s WHERE n < 16000), "
+        "p(n, u, t, k, len) AS (SELECT n, u, t, 0, 1 + abs(random()) % 90 FROM s UNION ALL "
+        "SELECT n, u, t, k + 1, len FROM p WHERE k <= len) "
+        f"SELECT {t0} + t + k * 60, u, 1, 0, 64, 0, CASE WHEN k = 0 THEN 1 WHEN k > len THEN "
+        "(CASE WHEN n % 7 = 0 THEN 2 ELSE 0 END) ELSE 2 END FROM p")
+    print(f"co_session: {conn.execute('SELECT COUNT(*) FROM co_session').fetchone()[0]} rows", flush=True)
+    for sql in indexes:
+        conn.execute(sql)
+    print("indexes built", flush=True)
+    conn.execute("PRAGMA journal_mode = DELETE")
+    conn.close()
+
+
 def _requests(config, uid):
     """The CoreProtect part of each staff request for one player."""
     def profile(r):
@@ -73,9 +146,25 @@ def _requests(config, uid):
             activity.fetch(r, maps.get(r), [uid], kinds, None, 20)
         return run
 
+    def second_pages(r):
+        first = sessions.fetch(r, [uid], None, 20)
+        if first["next"]:
+            sessions.fetch(r, [uid], first["next"], 20)
+        names = maps.get(r)
+        page = activity.fetch(r, names, [uid], activity.KINDS, None, 20)
+        if page["next"]:
+            activity.fetch(r, names, [uid], activity.KINDS, page["next"], 20)
+
     return [("profile", profile), ("sessions", session_page), ("activity", feed(activity.KINDS)),
             ("activity:skill", feed(("skill",))), ("activity:sign", feed(("sign",))),
-            ("activity:kill", feed(("kill",)))]
+            ("activity:kill", feed(("kill",))), ("second pages", second_pages)]
+
+
+def _directory(r):
+    rows = r.rows("SELECT id FROM co_user WHERE uuid IS NOT NULL")
+    r.rows("SELECT uuid, user FROM co_username_log")
+    for row in rows:
+        sessions.last_event(r, [row["id"]])
 
 
 def _timed(config, work) -> tuple[float, str | None]:
@@ -111,14 +200,8 @@ def hold(args) -> None:
             if error:
                 errors[f"{name}:{error}"] = errors.get(f"{name}:{error}", 0) + 1
 
-    def directory(r):
-        rows = r.rows("SELECT id FROM co_user WHERE uuid IS NOT NULL")
-        r.rows("SELECT uuid, user FROM co_username_log")
-        for row in rows:
-            sessions.last_event(r, [row["id"]])
-
     for _ in range(3):
-        seconds, error = _timed(config, directory)
+        seconds, error = _timed(config, _directory)
         by_kind.setdefault("directory", []).append(seconds)
         if error:
             errors[f"directory:{error}"] = errors.get(f"directory:{error}", 0) + 1
@@ -165,6 +248,8 @@ def _hammer(path, seconds, out):
     config = _config(path)
     ids = _ids(config)
     requests = [work for uid in ids for _, work in _requests(config, uid)]
+    # A directory rebuild every so often, as its cache expires.
+    requests[::50] = [_directory] * len(requests[::50])
     done, errors, i = 0, {}, 0
     stop = time.monotonic() + seconds
     while time.monotonic() < stop:
@@ -202,13 +287,14 @@ def main() -> None:
     h.add_argument("database")
     h.add_argument("--no-lock", action="store_true")
     h.add_argument("--players", type=int, default=0)
+    sub.add_parser("synth").add_argument("database")
     c = sub.add_parser("contend")
     c.add_argument("database")
     c.add_argument("--seconds", type=float, default=20)
     c.add_argument("--batch", type=int, default=500)
     c.add_argument("--readers", type=int, default=1)
     args = parser.parse_args()
-    hold(args) if args.command == "hold" else contend(args)
+    {"hold": hold, "synth": synth, "contend": contend}[args.command](args)
 
 
 if __name__ == "__main__":

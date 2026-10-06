@@ -155,3 +155,72 @@ def test_sparse_filters_scan_a_bounded_window(coreprotect, monkeypatch):
     assert sorted(got) == sorted(kills)
     assert len(got) == len(set(got))
     assert pages > 3
+
+
+def _plans(db, monkeypatch, run):
+    """Run `run` and return the query plan of every statement the reader issued."""
+    from src.coreprotect.reader import Reader as R
+
+    issued = []
+    original = R.rows
+
+    def rows(self, sql, params=()):
+        issued.append((sql, params))
+        return original(self, sql, params)
+
+    monkeypatch.setattr(R, "rows", rows)
+    run()
+    conn = sqlite3.connect(db.path)
+    try:
+        return [(sql, " | ".join(r[3] for r in conn.execute(f"EXPLAIN QUERY PLAN {sql}", params)))
+                for sql, params in issued if sql.lstrip().upper().startswith("SELECT")]
+    finally:
+        conn.close()
+
+
+def test_same_second_bursts_are_seeked_not_scanned(coreprotect, monkeypatch):
+    monkeypatch.setattr(activity, "SCAN_LIMIT", 50)
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    conn = sqlite3.connect(coreprotect.path)
+    conn.executemany(
+        "INSERT INTO co_block (time, user, wid, x, y, z, type, data, action, rolled_back) VALUES (500, ?, 1, ?, 64, 0, 1, 0, 1, 0)",
+        [(me, i) for i in range(3000)])
+    conn.commit()
+    conn.close()
+    kill = coreprotect.block(me, 400, 3, type_id=1)
+
+    # Page through the burst to a cursor deep inside that one second.
+    page = read(coreprotect, [me], kinds=("block",), limit=100)
+    for _ in range(10):
+        page = read(coreprotect, [me], kinds=("block",), before=page["next"], limit=100)
+    deep = page["next"]
+    assert activity.decode_cursor(SCOPE, deep).time == 500
+
+    plans = _plans(coreprotect, monkeypatch, lambda: read(coreprotect, [me], kinds=("kill",), before=deep, limit=20))
+    for sql, plan in plans:
+        if "co_block" in sql:
+            assert "SCAN" not in plan and "TEMP B-TREE" not in plan, (sql, plan)
+            if "rowid <" in sql or "rowid >=" in sql:
+                assert "rowid" in plan, (sql, plan)
+
+    # Every row in the burst and the kill below it come back exactly once.
+    got, before = [], None
+    while True:
+        page = read(coreprotect, [me], kinds=("block", "kill"), before=before, limit=100)
+        got += [e["id"] for e in page["entries"]]
+        before = page["next"]
+        if not before:
+            break
+    assert len(got) == len(set(got)) == 3001
+    assert got[-1] == f"block:{kill}"
+
+
+@pytest.mark.parametrize("state, label", [
+    (0, None), (1, "rolled back"), (2, "rolled back (player inventory)"),
+    (3, "rolled back (world and inventory)"), (7, "rollback state 7"),
+])
+def test_rollback_states(coreprotect, state, label):
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    coreprotect.block(me, 1, 0, rolled_back=state)
+    coreprotect.container(me, 2, 1, rolled_back=state)
+    assert [e["rolled_back"] for e in read(coreprotect, [me])["entries"]] == [label, label]
