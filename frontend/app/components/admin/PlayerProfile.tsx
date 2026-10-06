@@ -18,7 +18,7 @@ import {
 import { formatLocal } from "../../../lib/skins/formatTime";
 import { formatAgo, formatDuration, formatEpoch } from "../../../lib/admin/time";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
-import PlayerMovement from "./PlayerMovement";
+import MovementCard from "./MovementCard";
 
 const panelClass =
   "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
@@ -100,7 +100,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         ) : null}
       </header>
 
-      <PlayerMovement uuid={profile.uuid} name={profile.minecraft_name ?? "Unknown name"} />
+      <MovementCard uuid={profile.uuid} />
 
       <section className={panelClass} aria-label="Discord and website">
         <h3 className={headingClass}>Discord and website</h3>

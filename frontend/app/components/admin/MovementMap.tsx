@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import MapViewport from "../map/MapViewport";
 import TileLayer from "../map/TileLayer";
@@ -14,8 +14,10 @@ import {
   ageColour,
   boundsOf,
   clipStretches,
+  formatClock,
   isJump,
   positionAt,
+  type Sample,
   type Stretch,
 } from "../../../lib/admin/movement";
 
@@ -27,6 +29,12 @@ const MAX_DOTS = 3000;
 const MAX_PIXELS_PER_BLOCK = 12;
 /** Smallest box the camera frames, in blocks, so one spot is not zoomed in to single pixels. */
 const MIN_FRAME = 160;
+/** Screen pixels between direction arrows along a path, and the most drawn at once. */
+const ARROW_GAP_PX = 90;
+const MAX_ARROWS = 400;
+/** The part of a trail after the inspected moment is drawn this faint. */
+const AFTER_OPACITY = 0.3;
+const FOCUS_INSET = { left: 24, right: 24, top: 24, bottom: 24 };
 
 export type MovementTrail = {
   key: string;
@@ -36,6 +44,8 @@ export type MovementTrail = {
   colour?: string;
 };
 
+export type MapPin = { x: number; z: number };
+
 type Props = {
   mapId: MapId;
   /** The CoreProtect world this map shows; rows in other worlds are not drawn. */
@@ -43,26 +53,37 @@ type Props = {
   trails: MovementTrail[];
   since: number;
   until: number;
-  /** The slider's moment: a marker shows where each trail was then. */
+  /** The inspected moment: a marker shows where each trail was then, and later parts are faint. */
   cursor: number;
+  /** How long after their last row a player still counts as there (see `inspect`). */
+  hold: number;
   /** A trail to draw over the others, with the rest dimmed. */
   highlight?: string | null;
-  /** How long after their last row a player still counts as there (see `positionAt`). */
-  hold: number;
+  /** Label where each trail starts and ends (one player's view). */
+  endpoints?: boolean;
+  /** An incident location, independent of any player. */
+  pin?: MapPin | null;
+  /**
+   * The camera frames the trails when this changes (a new session or range),
+   * not when the same view refreshes. Pass null until its data has loaded.
+   */
+  fitKey: string | null;
+  /** A recorded dot was clicked: inspect that moment. */
+  onInspect?: (time: number) => void;
   className?: string;
 };
 
-type Segment = { d: string; colour: string };
+type Band = { d: string; colour: string; after: boolean };
 
 function pt(x: number, z: number): string {
   return `${x + 0.5} ${z + 0.5}`;
 }
 
-/** One path per colour band for the walked steps, and one for the jumps. */
-function trailPaths(trail: MovementTrail, mapWorld: string, since: number, until: number) {
+/** One path per colour band (split at the inspected moment) for walked steps, and the jumps. */
+function trailPaths(trail: MovementTrail, mapWorld: string, since: number, until: number, cursor: number) {
   const span = Math.max(1, until - since);
-  const bands = new Map<string, string[]>();
-  const jumps: string[] = [];
+  const bands = new Map<string, Band>();
+  const jumps = { before: [] as string[], after: [] as string[] };
   for (const stretch of trail.stretches) {
     if (stretch.world !== mapWorld) continue;
     const s = stretch.samples;
@@ -70,19 +91,73 @@ function trailPaths(trail: MovementTrail, mapWorld: string, since: number, until
       const a = s[i - 1];
       const b = s[i];
       const step = `M${pt(a.x, a.z)}L${pt(b.x, b.z)}`;
+      const after = b.time > cursor;
       if (isJump(a, b)) {
-        jumps.push(step);
+        (after ? jumps.after : jumps.before).push(step);
         continue;
       }
       const colour =
         trail.colour ?? ageColour(Math.floor((((a.time + b.time) / 2 - since) / span) * AGE_BANDS) / (AGE_BANDS - 1));
-      const list = bands.get(colour) ?? [];
-      list.push(step);
-      bands.set(colour, list);
+      const id = `${colour}|${after}`;
+      const band = bands.get(id) ?? { d: "", colour, after };
+      band.d += step;
+      bands.set(id, band);
     }
   }
-  const walked: Segment[] = [...bands].map(([colour, steps]) => ({ colour, d: steps.join("") }));
-  return { walked, casing: walked.map((seg) => seg.d).join(""), jumps: jumps.join("") };
+  return { walked: [...bands.values()], jumpsBefore: jumps.before.join(""), jumpsAfter: jumps.after.join("") };
+}
+
+/** Chevrons along walked steps, `gap` blocks apart: x, z and heading in degrees. */
+function arrows(trails: MovementTrail[], mapWorld: string, gap: number) {
+  const out: { x: number; z: number; angle: number }[] = [];
+  for (const trail of trails) {
+    for (const stretch of trail.stretches) {
+      if (stretch.world !== mapWorld) continue;
+      let travelled = gap / 2;
+      const s = stretch.samples;
+      for (let i = 1; i < s.length && out.length < MAX_ARROWS; i += 1) {
+        const a = s[i - 1];
+        const b = s[i];
+        if (isJump(a, b)) continue;
+        const length = Math.hypot(b.x - a.x, b.z - a.z);
+        let at = gap - travelled;
+        while (at <= length && out.length < MAX_ARROWS) {
+          const f = at / length;
+          out.push({
+            x: a.x + (b.x - a.x) * f,
+            z: a.z + (b.z - a.z) * f,
+            angle: (Math.atan2(b.z - a.z, b.x - a.x) * 180) / Math.PI,
+          });
+          at += gap;
+        }
+        travelled = (travelled + length) % gap;
+      }
+    }
+  }
+  return out;
+}
+
+/** The first and last samples shown in the map's world, labelled for what they are. */
+function endpointLabels(trail: MovementTrail, mapWorld: string): { sample: Sample; text: string }[] {
+  const shown = trail.stretches.filter((s) => s.world === mapWorld);
+  if (!shown.length) return [];
+  const first = shown[0].samples[0];
+  const lastStretch = shown[shown.length - 1].samples;
+  const last = lastStretch[lastStretch.length - 1];
+  const start = `${first.action === ACTION_LOGIN ? "Logged in" : "First observation shown"} ${formatClock(first.time)}`;
+  const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "Last observation shown"} ${formatClock(last.time)}`;
+  if (first === last) return [{ sample: first, text: start }];
+  return [
+    { sample: first, text: start },
+    { sample: last, text: end },
+  ];
+}
+
+/** 1, 2 or 5 times a power of ten, at least `wanted`. */
+function niceLength(wanted: number): number {
+  const power = 10 ** Math.floor(Math.log10(Math.max(wanted, 1e-6)));
+  const step = [1, 2, 5, 10].find((m) => m * power >= wanted) ?? 10;
+  return step * power;
 }
 
 export default function MovementMap({
@@ -92,8 +167,12 @@ export default function MovementMap({
   since,
   until,
   cursor,
-  highlight = null,
   hold,
+  highlight = null,
+  endpoints = false,
+  pin = null,
+  fitKey,
+  onInspect,
   className,
 }: Props) {
   const tiles = useTileManifest(mapId, "base", true);
@@ -111,7 +190,7 @@ export default function MovementMap({
     restingZoom: true,
     maxDisplayScale: MAX_PIXELS_PER_BLOCK,
   });
-  const { displayScale, focusMapRect, resetViewport, zoomBy } = viewport;
+  const { displayScale, focusMapRect, resetViewport, zoomBy, consumeDragClick } = viewport;
   const ready = viewport.viewportSize.w > 0;
 
   const tileView = useMemo(
@@ -125,15 +204,20 @@ export default function MovementMap({
     [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h]
   );
 
-  // Drawn and framed: only the window. The marker reads the full trails, which
+  // Drawn and framed: only the window. Markers read the full trails, which
   // carry the row before the window for where the player was as it opened.
   const shown = useMemo(
     () => trails.map((trail) => ({ ...trail, stretches: clipStretches(trail.stretches, since, until) })),
     [trails, since, until]
   );
   const paths = useMemo(
-    () => shown.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until) })),
-    [shown, mapWorld, since, until]
+    () => shown.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until, cursor) })),
+    [shown, mapWorld, since, until, cursor]
+  );
+  const unit = displayScale > 0 ? 1 / displayScale : 1;
+  const chevrons = useMemo(
+    () => (displayScale > 0 ? arrows(shown, mapWorld, ARROW_GAP_PX / displayScale) : []),
+    [shown, mapWorld, displayScale]
   );
   const bounds = useMemo(() => {
     const boxes = shown.map((t) => boundsOf(t.stretches, mapWorld)).filter((b) => b !== null);
@@ -147,17 +231,41 @@ export default function MovementMap({
     return { x: x - padW / 2, y: y - padH / 2, w: w + padW, h: h + padH };
   }, [shown, mapWorld]);
 
-  // Frame the trails whenever a new answer brings a different box.
-  const boundsKey = bounds ? `${bounds.x},${bounds.y},${bounds.w},${bounds.h}` : "none";
+  const fitTrail = () => (bounds ? focusMapRect(bounds, FOCUS_INSET) : resetViewport({ animated: true }));
+  const focusPoint = (x: number, z: number) =>
+    focusMapRect({ x: x - MIN_FRAME / 2, y: z - MIN_FRAME / 2, w: MIN_FRAME, h: MIN_FRAME }, FOCUS_INSET);
+
+  // Frame a new selection once, when its data is in; refreshes keep the camera.
+  const fittedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!ready) return;
-    if (bounds) focusMapRect(bounds, { left: 24, right: 24, top: 24, bottom: 24 });
+    if (!ready || fitKey === null || fittedRef.current === fitKey) return;
+    fittedRef.current = fitKey;
+    if (bounds) focusMapRect(bounds, FOCUS_INSET);
+    else if (pin) focusPoint(pin.x, pin.z);
     else resetViewport({ animated: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boundsKey, ready]);
+  }, [fitKey, ready]);
 
   const dots = shown.reduce((n, t) => n + t.stretches.reduce((m, s) => m + s.samples.length, 0), 0) <= MAX_DOTS;
-  const unit = displayScale > 0 ? 1 / displayScale : 1;
+  const markers = trails.map((trail) => ({ trail, at: positionAt(trail.stretches, cursor, hold) }));
+  const single = trails.length === 1 ? markers[0]?.at : null;
+  const scaleBlocks = displayScale > 0 ? niceLength(100 / displayScale) : 0;
+  const halo = { stroke: "#10160f", strokeWidth: 3 * unit, paintOrder: "stroke" as const };
+
+  const dotTitle = (trail: MovementTrail, s: Sample) =>
+    `${trail.label} — ${formatClock(s.time, true)}${
+      s.action === ACTION_LOGIN ? " (logged in)" : s.action === ACTION_LOGOUT ? " (logged out)" : ""
+    }\n${s.x}, ${s.y}, ${s.z}${onInspect ? "\nClick to inspect this moment" : ""}`;
+
+  const controls = [
+    { label: "+", title: "Zoom in", run: () => zoomBy(1.6) },
+    { label: "−", title: "Zoom out", run: () => zoomBy(1 / 1.6) },
+    { label: "⤢", title: "Fit the trail", run: fitTrail },
+    ...(single && single.world === mapWorld
+      ? [{ label: "◎", title: "Go to the inspected position", run: () => focusPoint(single.x, single.z) }]
+      : []),
+    ...(pin ? [{ label: "⌖", title: "Go to the pin", run: () => focusPoint(pin.x, pin.z) }] : []),
+  ];
 
   return (
     <div className={`relative overflow-hidden bg-[var(--tfmc-forest-deep)] ${className ?? ""}`}>
@@ -194,8 +302,9 @@ export default function MovementMap({
           viewBox={`0 0 ${mapSize.w} ${mapSize.h}`}
           preserveAspectRatio="xMidYMid meet"
         >
-          {paths.map(({ trail, walked, casing, jumps }) => {
+          {paths.map(({ trail, walked, jumpsBefore, jumpsAfter }) => {
             const dim = highlight !== null && highlight !== trail.key;
+            const casing = walked.map((band) => band.d).join("");
             return (
               <g key={trail.key} opacity={dim ? 0.25 : 1}>
                 {/* A dark edge so the line reads over snow, sand and forest alike. */}
@@ -208,36 +317,45 @@ export default function MovementMap({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                {walked.map((seg) => (
+                {walked.map((band) => (
                   <path
-                    key={seg.colour}
-                    d={seg.d}
+                    key={`${band.colour}|${band.after}`}
+                    d={band.d}
                     fill="none"
-                    stroke={seg.colour}
+                    stroke={band.colour}
+                    strokeOpacity={band.after ? AFTER_OPACITY : 1}
                     strokeWidth={3 * unit}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 ))}
-                {jumps ? (
-                  <path
-                    d={jumps}
-                    fill="none"
-                    stroke={trail.colour ?? "#e8e4d9"}
-                    strokeOpacity={0.7}
-                    strokeWidth={1.5 * unit}
-                    strokeDasharray={`${6 * unit} ${5 * unit}`}
-                  >
-                    <title>Unobserved movement: too fast to have walked, perhaps a teleport</title>
-                  </path>
-                ) : null}
+                {[
+                  { d: jumpsBefore, opacity: 0.8 },
+                  { d: jumpsAfter, opacity: AFTER_OPACITY },
+                ].map((jump, i) =>
+                  jump.d ? (
+                    <path
+                      key={i}
+                      d={jump.d}
+                      fill="none"
+                      stroke={trail.colour ?? "#e8e4d9"}
+                      strokeOpacity={jump.opacity}
+                      strokeWidth={1.5 * unit}
+                      strokeDasharray={`${6 * unit} ${5 * unit}`}
+                    />
+                  ) : null
+                )}
                 {trail.stretches.map((stretch) =>
                   stretch.world === mapWorld
                     ? stretch.samples.map((s, i) => {
                         const edge = s.action === ACTION_LOGIN || s.action === ACTION_LOGOUT;
                         if (!edge && !dots) return null;
                         const fill =
-                          s.action === ACTION_LOGIN ? "#7fd18b" : s.action === ACTION_LOGOUT ? "#e8796f" : trail.colour ?? ageColour((s.time - since) / Math.max(1, until - since));
+                          s.action === ACTION_LOGIN
+                            ? "#7fd18b"
+                            : s.action === ACTION_LOGOUT
+                              ? "#e8796f"
+                              : (trail.colour ?? ageColour((s.time - since) / Math.max(1, until - since)));
                         return (
                           <circle
                             key={`${s.time}:${i}`}
@@ -245,15 +363,19 @@ export default function MovementMap({
                             cy={s.z + 0.5}
                             r={(edge ? 5 : 2.5) * unit}
                             fill={fill}
+                            fillOpacity={s.time > cursor ? AFTER_OPACITY : 1}
                             stroke={edge ? "#1b241d" : "none"}
                             strokeWidth={1.5 * unit}
-                            className="pointer-events-auto"
+                            className={onInspect ? "pointer-events-auto cursor-pointer" : "pointer-events-auto"}
+                            onClick={
+                              onInspect
+                                ? () => {
+                                    if (!consumeDragClick()) onInspect(s.time);
+                                  }
+                                : undefined
+                            }
                           >
-                            <title>
-                              {`${trail.label} — ${new Date(s.time * 1000).toLocaleString()}${
-                                s.action === ACTION_LOGIN ? " (logged in)" : s.action === ACTION_LOGOUT ? " (logged out)" : ""
-                              }\n${s.x}, ${s.y}, ${s.z}`}
-                            </title>
+                            <title>{dotTitle(trail, s)}</title>
                           </circle>
                         );
                       })
@@ -262,31 +384,90 @@ export default function MovementMap({
               </g>
             );
           })}
-          {trails.map((trail) => {
-            const at = positionAt(trail.stretches, cursor, hold);
+          {chevrons.map((c, i) => (
+            <path
+              key={i}
+              d="M -3.5 -3 L 1.5 0 L -3.5 3"
+              transform={`translate(${c.x + 0.5} ${c.z + 0.5}) rotate(${c.angle}) scale(${unit})`}
+              fill="none"
+              stroke="#fff"
+              strokeOpacity={0.85}
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          {endpoints
+            ? shown.flatMap((trail) => {
+                const labels = endpointLabels(trail, mapWorld);
+                // Endpoints within a few screen pixels share one label.
+                if (
+                  labels.length === 2 &&
+                  Math.hypot(labels[0].sample.x - labels[1].sample.x, labels[0].sample.z - labels[1].sample.z) < 30 * unit
+                ) {
+                  labels.splice(0, 2, { sample: labels[1].sample, text: `${labels[0].text} · ${labels[1].text}` });
+                }
+                return labels.map((label, i) => (
+                  <text
+                    key={`${trail.key}:label:${i}`}
+                    x={label.sample.x + 0.5 + 9 * unit}
+                    y={label.sample.z + 0.5 - 7 * unit}
+                    fontSize={12 * unit}
+                    fontWeight={600}
+                    fill="#f3efe4"
+                    {...halo}
+                  >
+                    {label.text}
+                  </text>
+                ));
+              })
+            : null}
+          {pin ? (
+            <g>
+              <circle cx={pin.x + 0.5} cy={pin.z + 0.5} r={9 * unit} fill="none" stroke="#ff5a5a" strokeWidth={2.5 * unit} />
+              <path
+                d={`M ${pin.x + 0.5 - 14 * unit} ${pin.z + 0.5} H ${pin.x + 0.5 + 14 * unit} M ${pin.x + 0.5} ${
+                  pin.z + 0.5 - 14 * unit
+                } V ${pin.z + 0.5 + 14 * unit}`}
+                stroke="#ff5a5a"
+                strokeWidth={1.5 * unit}
+              />
+              <text
+                x={pin.x + 0.5 + 12 * unit}
+                y={pin.z + 0.5 + 16 * unit}
+                fontSize={12 * unit}
+                fontWeight={600}
+                fill="#ffd0d0"
+                {...halo}
+              >
+                {`Pin ${pin.x}, ${pin.z}`}
+              </text>
+            </g>
+          ) : null}
+          {markers.map(({ trail, at }) => {
             if (!at || at.world !== mapWorld) return null;
             const dim = highlight !== null && highlight !== trail.key;
+            const colour = trail.colour ?? "#f4c96b";
             return (
               <g key={`cursor:${trail.key}`} opacity={dim ? 0.35 : 1}>
+                {/* Solid: recorded at this second. Hollow: estimated or last seen. */}
                 <circle
                   cx={at.x + 0.5}
                   cy={at.z + 0.5}
                   r={8 * unit}
-                  fill={trail.colour ?? "#f4c96b"}
-                  fillOpacity={at.exact ? 1 : 0.7}
-                  stroke="#fff"
-                  strokeWidth={2.5 * unit}
+                  fill={at.exact ? colour : "rgba(16,22,15,0.35)"}
+                  stroke={at.exact ? "#fff" : colour}
+                  strokeWidth={(at.exact ? 2.5 : 3) * unit}
+                  strokeDasharray={at.lastSeen !== undefined ? `${3 * unit} ${2.5 * unit}` : undefined}
                 />
                 {trails.length > 1 ? (
                   <text
-                    x={at.x + 12 * unit}
-                    y={at.z + 4 * unit}
+                    x={at.x + 0.5 + 12 * unit}
+                    y={at.z + 0.5 + 4 * unit}
                     fontSize={13 * unit}
                     fontWeight={600}
                     fill="#fff"
-                    stroke="#1b241d"
-                    strokeWidth={3 * unit}
-                    paintOrder="stroke"
+                    {...halo}
                   >
                     {trail.label}
                   </text>
@@ -297,27 +478,49 @@ export default function MovementMap({
         </svg>
       </MapViewport>
       <div className="absolute right-3 top-3 z-20 flex flex-col gap-1">
-        {[
-          { label: "+", title: "Zoom in", run: () => zoomBy(1.6) },
-          { label: "−", title: "Zoom out", run: () => zoomBy(1 / 1.6) },
-          {
-            label: "⤢",
-            title: "Fit the path",
-            run: () => (bounds ? focusMapRect(bounds, { left: 24, right: 24, top: 24, bottom: 24 }) : resetViewport({ animated: true })),
-          },
-        ].map((button) => (
+        {controls.map((button) => (
           <button
             key={button.title}
             type="button"
             title={button.title}
             aria-label={button.title}
             onClick={button.run}
-            className="h-8 w-8 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_85%,transparent)] text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)]"
+            className="h-11 w-11 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_85%,transparent)] text-lg text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)] sm:h-9 sm:w-9 sm:text-base"
           >
             {button.label}
           </button>
         ))}
       </div>
+      <div className="pointer-events-none absolute bottom-2 left-2 z-20 flex flex-col gap-1 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--tfmc-cream)]">
+        {trails.length === 1 && !trails[0].colour ? (
+          <span className="flex items-center gap-1.5">
+            older
+            <span
+              className="inline-block h-1.5 w-16 rounded-full"
+              style={{ background: `linear-gradient(to right, ${ageColour(0)}, ${ageColour(0.5)}, ${ageColour(1)})` }}
+            />
+            newer
+          </span>
+        ) : null}
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
+          <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimate or last seen
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> unobserved transition
+          <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7fd18b]" /> logged in
+          <span className="inline-block h-2 w-2 rounded-full bg-[#e8796f]" /> logged out
+        </span>
+      </div>
+      {scaleBlocks ? (
+        <div className="pointer-events-none absolute bottom-2 right-2 z-20 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2 py-1 text-[11px] text-[var(--tfmc-cream)]">
+          <div
+            className="border-x-2 border-b-2 border-[var(--tfmc-cream)]"
+            style={{ width: scaleBlocks * displayScale, height: 5 }}
+          />
+          {scaleBlocks.toLocaleString("en-GB")} {scaleBlocks === 1 ? "block" : "blocks"}
+        </div>
+      ) : null}
     </div>
   );
 }

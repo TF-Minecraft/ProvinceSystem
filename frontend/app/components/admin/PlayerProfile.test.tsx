@@ -18,8 +18,8 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayerActivity: vi.fn(),
 }));
 
-// The movement map has its own tests; here it would need the map engine.
-vi.mock("./PlayerMovement", () => ({ default: () => null }));
+// The movement card asks who is signed in; it has its own tests.
+vi.mock("./MovementCard", () => ({ default: () => null }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
 const NOW = 2_000_000_000;
@@ -55,9 +55,11 @@ beforeEach(() => {
   vi.mocked(getPlayerSessions).mockResolvedValue({
     sessions: [
       { start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 },
-        end: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 }, end_kind: "logout", duration_seconds: 3600 },
+        end: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 }, end_kind: "logout", duration_seconds: 3600,
+        id: "s1", last_observed: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 } },
       { start: { time: NOW - 90000, world: "TFMC_Map", x: 0, y: 64, z: 0 },
-        end: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 }, end_kind: "last_observed", duration_seconds: 1800 },
+        end: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 }, end_kind: "last_observed", duration_seconds: 1800,
+        id: "s2", last_observed: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 } },
     ],
     next: null, first_seen: NOW - 864000, history_start: NOW - 864000, coreprotect: { status: "available" },
   });
@@ -193,7 +195,8 @@ it("retries a failed sessions page from the same cursor", async () => {
   vi.mocked(getPlayerSessions)
     .mockResolvedValueOnce({
       sessions: [{ start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 }, end: null, end_kind: "unknown",
-                   duration_seconds: null }],
+                   duration_seconds: null, id: "s3",
+                   last_observed: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 } }],
       next: "s-1", history_start: NOW - 864000, coreprotect: { status: "available" },
     })
     .mockRejectedValueOnce(new AccountApiError("bad_cursor", 400))

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+// Clock-change cases below are written for London.
+process.env.TZ = "Europe/London";
+
 import {
   ACTION_LOGIN,
   ACTION_LOGOUT,
@@ -7,7 +10,16 @@ import {
   boundsOf,
   clampMoment,
   clipStretches,
-  distanceTravelled,
+  describeSpan,
+  inspect,
+  observationTimes,
+  observedBands,
+  parseLocalInput,
+  sessionEndLabel,
+  sessionSpanLabel,
+  stepObservation,
+  timelineTicks,
+  zoneLabel,
   fromLocalInput,
   positionAt,
   stretches,
@@ -72,8 +84,27 @@ describe("positionAt", () => {
     expect(positionAt(loggedOut, 90, 150)).toBeNull();
   });
 
-  it("leaves teleports out of the distance", () => {
-    expect(distanceTravelled(out)).toBe(120);
+});
+
+describe("inspect", () => {
+  const out = stretches([p(0, 0, 0, ACTION_LOGIN), p(60, 60, 0), p(120, 60, 60), p(180, 5000, 60)], WORLDS, 60);
+
+  it("says how it knows", () => {
+    expect(inspect(out, 60).kind).toBe("observed");
+    expect(inspect(out, 90)).toMatchObject({ kind: "estimated", x: 60, z: 30 });
+    expect(inspect(out, 150)).toMatchObject({ kind: "unobserved", before: { time: 120 }, after: { time: 180 } });
+    expect(inspect(out, 200, 150)).toMatchObject({ kind: "stale", before: { time: 180 } });
+    expect(inspect(out, 400, 150)).toMatchObject({ kind: "none", before: { time: 180 } });
+    expect(inspect(out, -5)).toEqual({ kind: "none", before: null });
+  });
+
+  it("steps between observations and finds the observed bands", () => {
+    const times = observationTimes(out);
+    expect(stepObservation(times, 90, -1)).toBe(60);
+    expect(stepObservation(times, 90, 1)).toBe(120);
+    expect(stepObservation(times, 0, -1)).toBeNull();
+    expect(stepObservation(times, 180, 1)).toBeNull();
+    expect(observedBands(out)).toEqual([[0, 180]]);
   });
 });
 
@@ -83,7 +114,6 @@ describe("clipStretches", () => {
     const clipped = clipStretches(all, 1000, 1100);
     expect(clipped[0].samples.map((s) => [s.time, s.x])).toEqual([[1000, 100], [1010, 110], [1070, 170]]);
     expect(timeByWorld(clipped).get("TFMC_Map")).toBe(70);
-    expect(distanceTravelled(clipped)).toBe(70);
     // The unclipped stretches still say where they were as the window opened.
     expect(positionAt(all, 1000)?.x).toBe(100);
   });
@@ -96,6 +126,30 @@ describe("clipStretches", () => {
     expect(clampMoment(null, 10, 20)).toBeNull();
     expect(clampMoment(5, 10, 20)).toBe(10);
     expect(clampMoment(25, 10, 20)).toBe(20);
+  });
+});
+
+describe("times", () => {
+  it("refuses local times the clocks skip or repeat", () => {
+    expect(parseLocalInput("2026-10-06T12:00").time).toBe(Date.UTC(2026, 9, 6, 11, 0) / 1000);
+    expect(parseLocalInput("2026-03-29T01:30").error).toMatch(/clocks went forward/);
+    expect(parseLocalInput("2026-10-25T01:30").error).toMatch(/clocks went back/);
+    expect(parseLocalInput("").error).toMatch(/Enter/);
+  });
+
+  it("states the zone and the span", () => {
+    const noon = Date.UTC(2026, 9, 6, 11, 0) / 1000;
+    expect(zoneLabel(noon)).toBe("Europe/London (UTC+01:00)");
+    expect(zoneLabel(noon, noon + 30 * 86400)).toBe("Europe/London (UTC+01:00 → UTC+00:00)");
+    expect(describeSpan(noon, noon + 3600)).toBe("Tue 6 Oct 2026, 12:00 → 13:00");
+    expect(describeSpan(noon, noon + 86400)).toBe("Tue 6 Oct 2026, 12:00 → Wed 7 Oct 2026, 12:00");
+  });
+
+  it("puts timeline ticks on round local times", () => {
+    const noon = Date.UTC(2026, 9, 6, 11, 0) / 1000;
+    expect(timelineTicks(noon + 60, noon + 3600 + 60).map((t) => new Date(t * 1000).getMinutes())).toEqual(
+      [10, 20, 30, 40, 50, 0]
+    );
   });
 });
 
@@ -116,5 +170,29 @@ describe("helpers", () => {
     const t = 1_791_293_460;
     expect(fromLocalInput(toLocalInput(t))).toBe(t);
     expect(fromLocalInput("")).toBeNull();
+  });
+});
+
+describe("session labels", () => {
+  const at = (h: number, m: number) => Date.UTC(2026, 9, 6, h - 1, m) / 1000;
+  const point = (time: number) => ({ time, world: "TFMC_Map", x: 0, y: 64, z: 0 });
+  const session = (end_kind: "logout" | "open" | "last_observed" | "unknown", end: number | null, seen: number) => ({
+    id: "s",
+    start: point(at(13, 2)),
+    end: end === null ? null : point(end),
+    end_kind,
+    duration_seconds: null,
+    last_observed: point(seen),
+  });
+
+  it("says only what the record shows", () => {
+    expect(sessionEndLabel(session("logout", at(14, 15), at(14, 15)))).toBe("Logged out 14:15");
+    expect(sessionEndLabel(session("open", null, at(14, 14)))).toBe("Probably online · last observed 14:14");
+    expect(sessionEndLabel(session("last_observed", at(14, 15), at(14, 15)))).toBe(
+      "Last observed 14:15 · logout not recorded"
+    );
+    expect(sessionEndLabel(session("unknown", null, at(13, 2)))).toBe("End unknown");
+    expect(sessionSpanLabel(session("logout", at(14, 15), at(14, 15)))).toBe("13:02 → 14:15");
+    expect(sessionSpanLabel(session("open", null, at(14, 14)))).toBe("13:02 → now");
   });
 });

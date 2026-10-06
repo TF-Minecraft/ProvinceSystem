@@ -57,6 +57,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_origin: "That request was blocked. Reload the page and try again.",
   player_not_found: "No player with that UUID has been seen.",
   bad_uuid: "That isn’t a Minecraft UUID.",
+  bad_session: "That session link isn’t valid.",
+  session_gone: "That session is no longer in CoreProtect’s records.",
   bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
@@ -183,10 +185,14 @@ export type PlayerProfile = {
 export type WorldPoint = { time: number; world: string | null; x: number; y: number; z: number };
 
 export type PlayerSession = {
+  /** Opaque; names this session in /sessions/{id}/movement and in links. */
+  id: string;
   start: WorldPoint;
   end: WorldPoint | null;
   end_kind: "logout" | "last_observed" | "open" | "unknown";
   duration_seconds: number | null;
+  /** The newest row seen in the session: its logout, last ping or login. */
+  last_observed: WorldPoint;
 };
 
 export type SessionPage = {
