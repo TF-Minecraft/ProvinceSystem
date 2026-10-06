@@ -25,6 +25,12 @@ export const chipOff =
 export const inputClass =
   "min-h-11 w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-transparent px-2 py-1 text-sm text-[var(--tfmc-cream)] [color-scheme:dark]";
 export const mutedClass = "text-sm text-[var(--tfmc-mist)]";
+/**
+ * Date and time boxes. Safari draws them at their own width, past a narrow
+ * box, over whatever sits beside them; without its native appearance it
+ * keeps to the width given.
+ */
+export const dateInputClass = `${inputClass} block min-w-0 appearance-none`;
 const errorClass = "text-sm text-[#e8a0a0]";
 
 /** How often a range that follows the clock asks again: about one ping. */
@@ -154,13 +160,13 @@ export function RangeForm({
         </select>
       </label>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
+        <label className="flex min-w-0 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           From
-          <input type="datetime-local" className={inputClass} value={fromText} onChange={(e) => { setFromText(e.target.value); setDirty(true); }} />
+          <input type="datetime-local" className={dateInputClass} value={fromText} onChange={(e) => { setFromText(e.target.value); setDirty(true); }} />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
+        <label className="flex min-w-0 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           To
-          <input type="datetime-local" className={inputClass} value={toText} onChange={(e) => { setToText(e.target.value); setDirty(true); }} />
+          <input type="datetime-local" className={dateInputClass} value={toText} onChange={(e) => { setToText(e.target.value); setDirty(true); }} />
         </label>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -359,23 +365,24 @@ export function InspectBar({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
-          Inspect time
-          <input
-            type="datetime-local"
-            className={`${inputClass} sm:w-56`}
-            value={text}
-            onChange={(event) => {
-              setText(event.target.value);
-              const parsed = parseLocalInput(event.target.value);
-              if (parsed.error) return setError(parsed.error);
-              if (parsed.time! < since || parsed.time! > until) return setError("That time is outside the span shown.");
-              setError(null);
-              onCursor(parsed.time!);
-            }}
-          />
-        </label>
+      {/* The box on its own row, the steps together below it: nothing beside a date box to run into. */}
+      <label className="flex w-full max-w-72 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
+        Inspect time
+        <input
+          type="datetime-local"
+          className={dateInputClass}
+          value={text}
+          onChange={(event) => {
+            setText(event.target.value);
+            const parsed = parseLocalInput(event.target.value);
+            if (parsed.error) return setError(parsed.error);
+            if (parsed.time! < since || parsed.time! > until) return setError("That time is outside the span shown.");
+            setError(null);
+            onCursor(parsed.time!);
+          }}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           className={`${chipClass} ${chipOff}`}
