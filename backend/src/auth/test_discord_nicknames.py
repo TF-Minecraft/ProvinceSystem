@@ -80,9 +80,13 @@ def test_bot_can_send_nicknames(database, monkeypatch):
     result = skins_routes.post_discord_usernames(body, x_staff_key="k")
     assert result == {"updated": 2, "nicknames_updated": 1}
     assert names("1") == ("one_handle", "Lady One")
-    # Not sent: kept. Control characters: dropped.
+    # Not sent: kept. Not a valid nickname: skipped, so the stored one is kept too.
     assert names("2") == ("two_handle", "Kept")
-    remember_discord_nicknames([{"discord_user_id": "2", "discord_nickname": "bad\x07name"}])
+    remember_discord_nicknames([{"discord_user_id": "2", "discord_nickname": "bad\x07name"},
+                                {"discord_user_id": "2", "discord_nickname": "x" * 33}])
+    assert names("2") == ("two_handle", "Kept")
+    # Blank or null: they have no nickname now.
+    remember_discord_nicknames([{"discord_user_id": "2", "discord_nickname": "  "}])
     assert names("2") == ("two_handle", None)
 
 

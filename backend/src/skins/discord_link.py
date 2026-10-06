@@ -173,7 +173,12 @@ def _sanitize_discord_nickname(value: str | None) -> str | None:
 
 
 def remember_discord_nicknames(updates: list[dict]) -> dict:
-    """Store each link's current server nickname; None clears it (no nickname set)."""
+    """Store each link's current server nickname.
+
+    None or blank clears it (they have no nickname). A value that is not a
+    valid nickname (too long, control characters) is skipped, keeping the
+    stored one, rather than taken as a clear.
+    """
     if not isinstance(updates, list):
         raise LinkError("updates must be a list")
     if len(updates) > _USERNAME_UPDATES_MAX:
@@ -186,9 +191,13 @@ def remember_discord_nicknames(updates: list[dict]) -> dict:
             discord_id = str(item.get("discord_user_id") or "").strip()
             if not discord_id:
                 continue
+            raw = item.get("discord_nickname")
+            nickname = _sanitize_discord_nickname(raw)
+            if nickname is None and str(raw or "").strip():
+                continue
             cur = conn.execute(
                 "UPDATE discord_links SET discord_nickname = ? WHERE discord_user_id = ?",
-                (_sanitize_discord_nickname(item.get("discord_nickname")), discord_id),
+                (nickname, discord_id),
             )
             updated += cur.rowcount
         conn.commit()
