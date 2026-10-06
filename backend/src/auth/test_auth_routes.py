@@ -487,6 +487,8 @@ def test_get_link_for_discord_id_expires_due_graces(env):
     ("http://localhost:3000", "http://localhost:8000/auth/discord/callback", []),
     ("http://localhost:3000", "http://127.0.0.1:8000/auth/discord/callback", ["DISCORD_REDIRECT_URI"]),
     ("https://www.tfminecraft.net", "https://evil.example/api/auth/discord/callback", ["DISCORD_REDIRECT_URI"]),
+    ("https://www.tfminecraft.net", "https://www.tfminecraft.net/api/patreon/oauth/callback", ["DISCORD_REDIRECT_URI"]),
+    ("https://www.tfminecraft.net", "https://www.tfminecraft.net/", ["DISCORD_REDIRECT_URI"]),
 ])
 def test_config_validates_site_and_callback(monkeypatch, site, redirect, bad):
     from src.auth.config import AuthConfig

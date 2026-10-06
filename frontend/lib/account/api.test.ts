@@ -6,6 +6,7 @@ import {
   linkMinecraft,
   needsGuildRecheck,
   signInMessage,
+  signOut,
   startAccountPatreonLink,
 } from "./api";
 
@@ -64,8 +65,17 @@ describe("account api", () => {
     expect(needsGuildRecheck(new AccountApiError("not_guild_member", 403))).toBe(false);
   });
 
+  it("refuses an empty success body except on sign-out", async () => {
+    fetchMock.mockReturnValueOnce(Promise.resolve(new Response(null, { status: 200 })));
+    await expect(getAccount()).rejects.toMatchObject({ message: "Unexpected empty response" });
+    fetchMock.mockReturnValueOnce(Promise.resolve(new Response(null, { status: 200 })));
+    await expect(signOut()).resolves.toBeNull();
+  });
+
   it("maps sign-in statuses to messages", () => {
     expect(signInMessage(null)).toBeNull();
+    expect(signInMessage("constructor")).toBe(signInMessage("error"));
+    expect(signInMessage("toString")).toBe(signInMessage("error"));
     expect(signInMessage("denied")).toBe("Discord sign-in was cancelled.");
     expect(signInMessage("weird")).toBe(signInMessage("error"));
   });

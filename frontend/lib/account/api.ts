@@ -38,7 +38,11 @@ export type MinecraftLinkPreview = {
 };
 
 /** The session is an HttpOnly cookie, so every call sends credentials. */
-async function accountRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function accountRequest<T>(
+  path: string,
+  init?: RequestInit,
+  opts?: { allowEmpty?: boolean }
+): Promise<T> {
   const res = await fetch(`${getApiBase()}${path}`, {
     ...init,
     credentials: "include",
@@ -51,6 +55,10 @@ async function accountRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const data = await parseJson(res);
   if (!res.ok) {
     throw new AccountApiError(detailMessage(data, `Request failed (${res.status})`), res.status);
+  }
+  // A missing body would otherwise read as "signed out" or an empty result.
+  if (data === null && !opts?.allowEmpty) {
+    throw new AccountApiError("Unexpected empty response", res.status);
   }
   return data as T;
 }
@@ -70,7 +78,7 @@ export async function getAccount(): Promise<Account | null> {
 }
 
 export function signOut(): Promise<unknown> {
-  return accountRequest("/auth/logout", { method: "POST" });
+  return accountRequest("/auth/logout", { method: "POST" }, { allowEmpty: true });
 }
 
 export function previewMinecraftLink(code: string): Promise<MinecraftLinkPreview> {
@@ -110,7 +118,7 @@ const SIGN_IN_MESSAGES: Record<string, string> = {
 
 export function signInMessage(status: string | null): string | null {
   if (!status) return null;
-  return SIGN_IN_MESSAGES[status] ?? SIGN_IN_MESSAGES.error;
+  return Object.hasOwn(SIGN_IN_MESSAGES, status) ? SIGN_IN_MESSAGES[status] : SIGN_IN_MESSAGES.error;
 }
 
 /** Link refusals that need the person to sign in with Discord again. */

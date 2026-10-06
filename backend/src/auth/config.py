@@ -7,6 +7,9 @@ from urllib.parse import urlsplit
 
 SITE_DEFAULT = "https://www.tfminecraft.net"
 CALLBACK_PATH = "/api/auth/discord/callback"
+# The route the callback must reach. Behind nginx it sits under /api; a local
+# API without the proxy serves it at the root.
+CALLBACK_ROUTE = "/auth/discord/callback"
 API_BASE_DEFAULT = "https://discord.com/api/v10"
 SNOWFLAKE_MAX_LEN = 20
 
@@ -65,7 +68,9 @@ class AuthConfig:
         site = _origin(self.site_url)
         if site is None or urlsplit(self.site_url).path not in {"", "/"}:
             errors.append("SITE_PUBLIC_URL")
-        if not _callback_matches_site(self.redirect_uri, site):
+        if not _callback_matches_site(self.redirect_uri, site) or not urlsplit(self.redirect_uri).path.endswith(
+            CALLBACK_ROUTE
+        ):
             errors.append("DISCORD_REDIRECT_URI")
         return errors
 
