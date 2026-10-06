@@ -105,6 +105,26 @@ def fetch_player(reader: Reader, ids: list[int], since: int, until: int, lead: i
     return {"rows": rows, "complete_from": complete_from, "pings_since": _pings_since(reader)}
 
 
+def fetch_session(reader: Reader, ids: list[int], win: dict) -> dict:
+    """One session's rows: from its login, through its logout or up to the next login (or now, if newest)."""
+    login = win["login"]
+    where = ["time >= ? AND NOT (time = ? AND rowid < ?)"]
+    params: tuple = (login["time"], login["time"], login["rid"])
+    if win["logout"] is not None:
+        end = win["logout"]
+        where.append("time <= ? AND NOT (time = ? AND rowid > ?)")
+        params += (end["time"], end["time"], end["rid"])
+    elif win["next_login"] is not None:
+        cond, args = _before(Key(win["next_login"]["time"], win["next_login"]["rid"]))
+        where.append(cond)
+        params += args
+    rows = []
+    for uid in ids:
+        rows += _newest(reader, " AND ".join(["user = ?", *where]), (uid, *params), PLAYER_POINT_LIMIT)
+    rows, complete_from = _cap(rows, login["time"], PLAYER_POINT_LIMIT)
+    return {"rows": rows, "complete_from": complete_from, "pings_since": _pings_since(reader)}
+
+
 def fetch_everyone(reader: Reader, since: int, until: int, lead: int) -> dict:
     rows = _newest(reader, "time >= ? AND time <= ?", (since, until), EVERYONE_POINT_LIMIT)
     rows, complete_from = _cap(rows, since, EVERYONE_POINT_LIMIT)

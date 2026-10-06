@@ -145,3 +145,38 @@ def test_everyone_lead_in_is_per_player_not_per_id(coreprotect):
     at(coreprotect, new, 990, LOGOUT, 2, 2)
     # Logged out under the newer id: offline when the window opens, whatever the older id said.
     assert everyone(coreprotect, 1_000, 1_100)["players"] == []
+
+
+def session_rows(db, ids, login):
+    from src.coreprotect import sessions
+    with Reader(config(db)) as r:
+        win = sessions.window(r, ids, sessions.Key(*login))
+        return None if win is None else [p[0] for p in movement.build_player(
+            movement.fetch_session(r, ids, win), maps.get(r))["points"]]
+
+
+def test_session_rows_run_from_login_to_logout_or_next_login(coreprotect):
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    other = coreprotect.user("Bob", "00000000-0000-0000-0000-000000000002")
+    at(coreprotect, me, 50, PING, 0, 0)
+    first = coreprotect.execute(
+        "INSERT INTO co_session (time, user, wid, x, y, z, action) VALUES (100, ?, 1, 0, 64, 0, 1)", (me,))
+    at(coreprotect, me, 160, PING, 1, 1)
+    at(coreprotect, other, 170, PING, 9, 9)
+    at(coreprotect, me, 200, LOGOUT, 2, 2)
+    # Logged out, then a stray row before the next login is not part of the session.
+    at(coreprotect, me, 210, PING, 3, 3)
+    second = coreprotect.execute(
+        "INSERT INTO co_session (time, user, wid, x, y, z, action) VALUES (300, ?, 1, 0, 64, 0, 1)", (me,))
+    at(coreprotect, me, 360, PING, 4, 4)
+    # Crashed: no logout before the next login.
+    third = coreprotect.execute(
+        "INSERT INTO co_session (time, user, wid, x, y, z, action) VALUES (500, ?, 1, 0, 64, 0, 1)", (me,))
+    at(coreprotect, me, 560, PING, 5, 5)
+
+    assert session_rows(coreprotect, [me], (100, first)) == [100, 160, 200]
+    assert session_rows(coreprotect, [me], (300, second)) == [300, 360]
+    assert session_rows(coreprotect, [me], (500, third)) == [500, 560]
+    # Someone else's login, or a row that is not a login, is not a session of theirs.
+    assert session_rows(coreprotect, [other], (100, first)) is None
+    assert session_rows(coreprotect, [me], (360, first + 5)) is None

@@ -328,12 +328,19 @@ def player_sessions(config: CoreProtectConfig, text: str, before: str | None, li
     if raw is None:
         return {"sessions": [], "next": None, "coreprotect": _status(None)}
     built = sessions.build(raw, maps, int(time.time()), config.ping_seconds)
+    built["sessions"] = [_session_json(config, key, s) for s in built["sessions"]]
     nxt = raw["next"]
     return {
         **built,
         "next": encode_cursor(config.server, f"sessions:{key}", nxt.time, nxt.rowid) if nxt else None,
         "coreprotect": _status(None),
     }
+
+
+def _session_json(config: CoreProtectConfig, key: str, session: dict) -> dict:
+    """A built session with an opaque id (its login row) in place of the raw key."""
+    login = session.pop("key")
+    return {"id": encode_cursor(config.server, f"session:{key}", login.time, login.rowid), **session}
 
 
 def _audit_messages(viewer: dict, config: CoreProtectConfig, key: str, kinds: tuple[str, ...],
@@ -407,7 +414,7 @@ def _movement_status(config: CoreProtectConfig, error: Unavailable | None) -> di
 
 
 def _audit_movement(viewer: dict, config: CoreProtectConfig, subject: str, since: int, until: int,
-                    body: dict, rows: int) -> None:
+                    body: dict, rows: int, session: str | None = None) -> None:
     """Record that a viewer was shown where players went, before they see it. Never stores positions."""
     detail = {
         "server": config.server,
@@ -417,6 +424,8 @@ def _audit_movement(viewer: dict, config: CoreProtectConfig, subject: str, since
         "complete_from": body["complete_from"],
         "rows": rows,
     }
+    if session is not None:
+        detail["session"] = session
     try:
         with connect() as conn:
             audit.record(conn, actor=viewer, action="player.movement.view", outcome="ok", detail=detail)
@@ -442,7 +451,44 @@ def player_movement(config: CoreProtectConfig, text: str, since: int | None, unt
         return {**empty, "coreprotect": _movement_status(config, exc)}
     body = {**empty, **movement.build_player(raw, maps)} if raw else empty
     _audit_movement(viewer, config, key, since, until, body, len(body["points"]))
-    return {**body, "coreprotect": _movement_status(config, None)}
+    return {**body, "as_of": int(time.time()), "coreprotect": _movement_status(config, None)}
+
+
+def session_movement(config: CoreProtectConfig, text: str, session_id: str, viewer: dict) -> dict:
+    """One session's movement: the session as /sessions describes it, and its rows from login to end. Audited."""
+    key = _require(text)
+    try:
+        values = decode_cursor(config.server, f"session:{key}", session_id, 2)
+    except BadCursor:
+        raise PlayerError(400, "bad_session") from None
+    if values is None:
+        raise PlayerError(400, "bad_session")
+    now = int(time.time())
+    try:
+        with Reader(config, Budget()) as reader:
+            ids = [a["id"] for a in _ids(reader, key)]
+            maps = co_maps.get(reader)
+            win = sessions.window(reader, ids, sessions.Key(*values)) if ids else None
+            raw = movement.fetch_session(reader, ids, win) if win else None
+    except Unavailable as exc:
+        return {"session": None, "worlds": [], "points": [], "complete_from": None, "pings_since": None,
+                "as_of": now, "coreprotect": _movement_status(config, exc)}
+    if win is None:
+        # Never theirs, or no longer there (a purge, or a rebuilt database renumbering rows).
+        raise PlayerError(404, "session_gone")
+    built = sessions.build({"windows": [win], "first_seen": None, "history_start": None}, maps, now,
+                           config.ping_seconds)
+    session = _session_json(config, key, built["sessions"][0])
+    # The span shown: from the login (or, if the session held too many rows, from where the kept rows
+    # are complete) to its logout, its last sighting, or now while it is open. An open session has no end.
+    since = session["start"]["time"]
+    if session["end_kind"] == "open":
+        until = now
+    else:
+        until = (session["end"] or session["last_observed"])["time"]
+    body = {"session": session, "since": since, "until": max(since, until), **movement.build_player(raw, maps)}
+    _audit_movement(viewer, config, key, since, body["until"], body, len(body["points"]), session=session_id)
+    return {**body, "as_of": now, "coreprotect": _movement_status(config, None)}
 
 
 def everyone_movement(config: CoreProtectConfig, since: int | None, until: int | None, viewer: dict) -> dict:
@@ -455,6 +501,6 @@ def everyone_movement(config: CoreProtectConfig, since: int | None, until: int |
     except Unavailable as exc:
         return {"since": since, "until": until, "worlds": [], "players": [], "complete_from": since,
                 "pings_since": None, "coreprotect": _movement_status(config, exc)}
-    body = {"since": since, "until": until, **movement.build_everyone(raw, maps)}
+    body = {"since": since, "until": until, "as_of": int(time.time()), **movement.build_everyone(raw, maps)}
     _audit_movement(viewer, config, "everyone", since, until, body, sum(len(p["points"]) for p in body["players"]))
     return {**body, "coreprotect": _movement_status(config, None)}

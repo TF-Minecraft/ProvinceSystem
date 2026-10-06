@@ -103,6 +103,24 @@ def fetch(reader: Reader, ids: list[int], before: Key | None, limit: int) -> dic
     }
 
 
+def window(reader: Reader, ids: list[int], login: Key) -> dict | None:
+    """One session's window, found by its login row, in the shape fetch() gives; None if that login is not theirs."""
+    found = []
+    for uid in ids:
+        found += reader.rows(
+            f"SELECT {_COLUMNS} FROM co_session WHERE user = ? AND action = ? AND time = ? AND rowid = ?",
+            (uid, ACTION_LOGIN, login.time, login.rowid),
+        )
+    if not found:
+        return None
+    following = _seek(reader, ids, ACTION_LOGIN, [_after(login)], newest=False)
+    bounds = [_after(login)] + ([_before(_key(following))] if following else [])
+    logout = _seek(reader, ids, ACTION_LOGOUT, bounds, newest=False)
+    ping = None if logout else _seek(reader, ids, ACTION_PING, bounds, newest=True)
+    return {"login": found[0], "logout": logout, "ping": ping, "newest": following is None,
+            "next_login": following}
+
+
 def last_event(reader: Reader, ids: list[int]):
     """The newest session row of any kind across a player's ids, or None."""
     rows = []
@@ -145,6 +163,8 @@ def build(raw: dict, maps: Maps, now: int, ping_seconds: int) -> dict:
             duration = max(0, now - login["time"])
         else:
             duration = None
+        # The newest row seen in the session, whatever its end: for an open one, its last sighting.
+        seen = logout or ping or login
         sessions.append({"start": _point(login, maps), "end": end, "end_kind": end_kind,
-                         "duration_seconds": duration})
+                         "duration_seconds": duration, "last_observed": _point(seen, maps), "key": _key(login)})
     return {"sessions": sessions, "first_seen": raw["first_seen"], "history_start": raw["history_start"]}

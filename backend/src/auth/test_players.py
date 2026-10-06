@@ -307,6 +307,34 @@ def test_movement_matches_uuids_in_any_case(app, env, world, coreprotect):
     assert [p[0] for p in body["points"]] == [120]
 
 
+def test_session_movement(app, env, world, coreprotect):
+    coreprotect.session(world["hazel"], 160, 2, x=42)
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    listed = c.get(f"/admin/players/{HAZEL}/sessions").json()["sessions"]
+    assert len(listed) == 1 and listed[0]["id"] and "key" not in listed[0]
+    sid = listed[0]["id"]
+    body = c.get(f"/admin/players/{HAZEL}/sessions/{sid}/movement").json()
+    assert body["session"]["id"] == sid
+    assert body["session"]["end_kind"] == "logout"
+    assert body["session"]["last_observed"]["time"] == 200
+    assert (body["since"], body["until"]) == (100, 200)
+    assert [p[0] for p in body["points"]] == [100, 160, 200]
+    assert body["as_of"] > 0
+    detail = json.loads(movement_audits(env)[-1]["detail_json"])
+    assert detail["session"] == sid and detail["rows"] == 3
+
+    # Another player's session id, a forged one, and a mod are all refused.
+    other = "33333333-3333-3333-3333-333333333333"
+    assert c.get(f"/admin/players/{other}/sessions/{sid}/movement").status_code == 400
+    assert c.get(f"/admin/players/{HAZEL}/sessions/nonsense/movement").status_code == 400
+    from src.coreprotect import cursors
+    forged = cursors.encode("main", f"session:{HAZEL}", 160, 1)
+    gone = c.get(f"/admin/players/{HAZEL}/sessions/{forged}/movement")
+    assert gone.status_code == 404 and gone.json()["detail"] == "session_gone"
+    assert client(app, staff(env, "mod")).get(f"/admin/players/{HAZEL}/sessions/{sid}/movement").status_code == 403
+
+
 def test_movement_is_for_admins(app, env, world):
     c = client(app, staff(env, "mod"))
     assert c.get(f"/admin/players/{HAZEL}/movement").status_code == 403

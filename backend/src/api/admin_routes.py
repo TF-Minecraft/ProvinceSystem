@@ -149,6 +149,13 @@ def get_player_movement(player_uuid: str, request: Request, response: Response,
                     "view_player_movement")
 
 
+@admin_router.get("/players/{player_uuid}/sessions/{session_id}/movement")
+def get_session_movement(player_uuid: str, session_id: str, request: Request, response: Response):
+    return _players(request, response,
+                    lambda config, viewer: players.session_movement(config, player_uuid, session_id, viewer),
+                    "view_player_movement")
+
+
 @admin_router.get("/movement")
 def get_movement(request: Request, response: Response,
                  since: int | None = Query(None, ge=0, le=MAX_TIME),
