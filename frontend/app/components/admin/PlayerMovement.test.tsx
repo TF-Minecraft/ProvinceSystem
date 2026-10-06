@@ -69,6 +69,21 @@ it("asks again for another window and places the marker from the slider", async 
   expect(screen.getByText(/Between pings, near 160, 130/)).toBeTruthy();
 });
 
+it("keeps a fixed window while the ending box is half edited", async () => {
+  render(<PlayerMovement uuid={UUID} name="MrEnzo99" />);
+  await screen.findByText(/Seen for/);
+  const box = screen.getByLabelText("ending");
+  fireEvent.change(box, { target: { value: "2033-05-18T03:00" } });
+  const end = Math.floor(new Date("2033-05-18T03:00").getTime() / 1000);
+  await waitFor(() => expect(getPlayerMovement).toHaveBeenLastCalledWith(UUID, end - 3600, end));
+  const calls = vi.mocked(getPlayerMovement).mock.calls.length;
+  // A browser reports an empty value partway through an edit.
+  fireEvent.change(box, { target: { value: "" } });
+  await new Promise((r) => setTimeout(r, 20));
+  expect(vi.mocked(getPlayerMovement).mock.calls.length).toBe(calls);
+  expect(screen.getByRole("button", { name: "Now" }).getAttribute("aria-pressed")).toBe("false");
+});
+
 it("says when the window is cut short or pings began later", async () => {
   vi.mocked(getPlayerMovement).mockResolvedValue(answer({ complete_from: NOW - 1800, pings_since: NOW - 60, points: [] }));
   render(<PlayerMovement uuid={UUID} name="MrEnzo99" />);

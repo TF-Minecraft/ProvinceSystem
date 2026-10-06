@@ -54,6 +54,17 @@ export function WindowControls({
   onChange: (next: Window) => void;
   busy: boolean;
 }) {
+  // What the ending box shows. A browser may report an empty value partway
+  // through an edit; only a complete date changes the window, and only Now
+  // returns it to the live clock.
+  const committed = win.end === null ? "" : toLocalInput(win.end);
+  const [draft, setDraft] = useState(committed);
+  const [shownCommitted, setShownCommitted] = useState(committed);
+  if (committed !== shownCommitted) {
+    setShownCommitted(committed);
+    setDraft(committed);
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm text-[var(--tfmc-mist)]">Last</span>
@@ -73,8 +84,12 @@ export function WindowControls({
         <input
           type="datetime-local"
           className={inputClass}
-          value={win.end === null ? "" : toLocalInput(win.end)}
-          onChange={(event) => onChange({ ...win, end: fromLocalInput(event.target.value) })}
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            const end = fromLocalInput(event.target.value);
+            if (end !== null) onChange({ ...win, end });
+          }}
         />
       </label>
       <button

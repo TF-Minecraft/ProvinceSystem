@@ -253,8 +253,13 @@ def clear_cache() -> None:
 # --------------------
 
 def _ids(reader: Reader, key: str) -> list[dict]:
-    """A player's co_user rows, oldest first. CoreProtect keeps one per UUID, but nothing enforces it."""
-    return [dict(r) for r in reader.rows("SELECT id, user, time FROM co_user WHERE uuid = ? ORDER BY time, id", (key,))]
+    """A player's co_user rows, oldest first. CoreProtect keeps one per UUID, but nothing enforces it.
+
+    Matched without regard to letter case, as `key` is canonical (lower case) and the stored UUID
+    need not be. That scans co_user, one of the small name tables.
+    """
+    return [dict(r) for r in reader.rows(
+        "SELECT id, user, time FROM co_user WHERE lower(uuid) = ? ORDER BY time, id", (key,))]
 
 
 def _require(text: str) -> str:

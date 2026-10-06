@@ -298,6 +298,15 @@ def test_movement_routes_are_audited(app, env, world, coreprotect, role):
     assert rows[0]["actor_role"] == role
 
 
+def test_movement_matches_uuids_in_any_case(app, env, world, coreprotect):
+    upper = "44444444-AAAA-4BBB-8CCC-DDDDDDDDDDDD"
+    shouty = coreprotect.user("Shouty", upper)
+    coreprotect.session(shouty, 120, 2, x=9)
+    _, token = account(env, "boss", "admin")
+    body = client(app, token).get(f"/admin/players/{upper.lower()}/movement", params={"since": 50, "until": 300}).json()
+    assert [p[0] for p in body["points"]] == [120]
+
+
 def test_movement_is_for_admins(app, env, world):
     c = client(app, staff(env, "mod"))
     assert c.get(f"/admin/players/{HAZEL}/movement").status_code == 403
