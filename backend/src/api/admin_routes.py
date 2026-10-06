@@ -45,10 +45,10 @@ def _capable(request: Request, capability: str) -> dict:
 
 
 def _players(request: Request, response: Response, run):
-    _capable(request, "view_players")
+    viewer = _capable(request, "view_players")
     _no_store(response)
     try:
-        return run(CoreProtectConfig.from_env())
+        return run(CoreProtectConfig.from_env(), viewer)
     except players.PlayerError as exc:
         raise HTTPException(exc.status, detail=exc.code) from None
 
@@ -114,26 +114,27 @@ def lookup_accounts(request: Request, response: Response, q: str = ""):
 @admin_router.get("/players")
 def get_players(request: Request, response: Response, q: str = "", sort: str = "last_seen",
                 page: int = Query(1, ge=1, le=10_000)):
-    return _players(request, response, lambda config: players.directory(config, q, sort, page))
+    return _players(request, response, lambda config, _viewer: players.directory(config, q, sort, page))
 
 
 @admin_router.get("/players/{player_uuid}")
 def get_player(player_uuid: str, request: Request, response: Response):
-    return _players(request, response, lambda config: players.profile(config, player_uuid))
+    return _players(request, response, lambda config, _viewer: players.profile(config, player_uuid))
 
 
 @admin_router.get("/players/{player_uuid}/sessions")
 def get_player_sessions(player_uuid: str, request: Request, response: Response, before: str | None = None,
                         limit: int = Query(20, ge=1, le=100)):
     return _players(request, response,
-                    lambda config: players.player_sessions(config, player_uuid, before, limit))
+                    lambda config, _viewer: players.player_sessions(config, player_uuid, before, limit))
 
 
 @admin_router.get("/players/{player_uuid}/activity")
 def get_player_activity(player_uuid: str, request: Request, response: Response, before: str | None = None,
                         limit: int = Query(20, ge=1, le=100), kinds: str | None = None):
     return _players(request, response,
-                    lambda config: players.player_activity(config, player_uuid, before, limit, kinds))
+                    lambda config, viewer: players.player_activity(config, player_uuid, before, limit, kinds,
+                                                                   viewer))
 
 
 @admin_router.post("/accounts/{user_id}/role")

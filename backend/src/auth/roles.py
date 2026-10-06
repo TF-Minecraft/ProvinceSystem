@@ -8,6 +8,8 @@ _RANK = {role: rank for rank, role in enumerate(ROLES)}
 CAPABILITIES = {
     "view_admin": "mod",
     "view_players": "mod",
+    # Chat and whole commands in a player's activity; every view is audited.
+    "view_player_messages": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
 }

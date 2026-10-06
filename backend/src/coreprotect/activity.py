@@ -7,10 +7,11 @@ other page. The merged
 order is (time, source rank, rowid), all descending; the cursor is the last
 row's key.
 
-Only what staff need to see what happened is selected. Chat is never read.
-Commands are cut to their first word inside SQL, so arguments (messages,
-passwords, link codes) never leave the database. Sign text, item metadata
-and NBT are not selected.
+Only what staff need to see what happened is selected. Unless the caller
+may read messages (full_text), chat is never read and commands are cut to
+their first word inside SQL, so arguments (messages, passwords, link codes)
+never leave the database. Sign text, item metadata and NBT are never
+selected.
 """
 from __future__ import annotations
 
@@ -30,13 +31,15 @@ SCAN_LIMIT = 2000
 
 _SKILL = "substr(message, 1, 7) = '[skill]'"
 _TELEPORT = "instr(message, ' teleported from ')"
+MESSAGE_MAX = 512
+_CAST = f"CASE WHEN {_TELEPORT} > 0 THEN substr(message, 9, {_TELEPORT} - 9) ELSE substr(message, 9) END"
 # The command's first word, or a skill cast's name without teleport coordinates.
 _COMMAND_TEXT = (
-    f"substr(CASE WHEN {_SKILL} THEN "
-    f"  CASE WHEN {_TELEPORT} > 0 THEN substr(message, 9, {_TELEPORT} - 9) ELSE substr(message, 9) END "
+    f"substr(CASE WHEN {_SKILL} THEN {_CAST} "
     "ELSE CASE WHEN instr(message, ' ') > 0 THEN substr(message, 1, instr(message, ' ') - 1) ELSE message END "
     "END, 1, 80)"
 )
+_FULL_COMMAND_TEXT = f"CASE WHEN {_SKILL} THEN substr({_CAST}, 1, 80) ELSE substr(message, 1, {MESSAGE_MAX}) END"
 
 
 @dataclass(frozen=True)
@@ -46,6 +49,10 @@ class Source:
     table: str
     columns: str
     kinds: dict[str, str]
+    # Columns used instead when the caller may read messages.
+    full_columns: str | None = None
+    # Read only when the caller may read messages.
+    sensitive: bool = False
 
 
 SOURCES = (
@@ -61,11 +68,19 @@ SOURCES = (
            {"entity": "action BETWEEN 0 AND 3"}),
     Source(6, "sign", "co_sign", "action", {"sign": "action IN (0, 1, 2)"}),
     Source(7, "command", "co_command",
-           f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_COMMAND_TEXT} AS text",
-           {"skill": _SKILL, "command": f"NOT {_SKILL}"}),
+           f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_COMMAND_TEXT} AS text, 0 AS truncated",
+           {"skill": _SKILL, "command": f"NOT {_SKILL}"},
+           full_columns=(f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_FULL_COMMAND_TEXT} AS text, "
+                         f"NOT {_SKILL} AND length(message) > {MESSAGE_MAX} AS truncated")),
     Source(8, "session", "co_session", "action", {"session": "action IN (0, 1)"}),
+    Source(9, "chat", "co_chat", f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
+           {"chat": "1"}, sensitive=True),
 )
-KINDS = tuple(dict.fromkeys(kind for source in SOURCES for kind in source.kinds))
+# Kinds anyone with view_players may ask for, and the extra ones for view_player_messages.
+KINDS = tuple(dict.fromkeys(kind for source in SOURCES if not source.sensitive for kind in source.kinds))
+FULL_KINDS = tuple(dict.fromkeys(kind for source in SOURCES for kind in source.kinds))
+# Kinds whose rows carry message text when read with full_text.
+MESSAGE_KINDS = frozenset({"chat", "command"})
 _BY_RANK = {source.rank: source for source in SOURCES}
 
 
@@ -89,11 +104,11 @@ def decode_cursor(server: str, token: str | None) -> Cursor | None:
     return Cursor(*values)
 
 
-def parse_kinds(text: str | None) -> tuple[str, ...]:
+def parse_kinds(text: str | None, allowed: tuple[str, ...] = KINDS) -> tuple[str, ...]:
     if not text:
-        return KINDS
+        return allowed
     chosen = tuple(dict.fromkeys(part.strip() for part in text.split(",") if part.strip()))
-    if not chosen or any(kind not in KINDS for kind in chosen):
+    if not chosen or any(kind not in allowed for kind in chosen):
         raise ValueError("bad_kinds")
     return chosen
 
@@ -166,21 +181,22 @@ def _key(source: Source, row: dict) -> Cursor:
 
 
 def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cursor: Cursor | None,
-          limit: int) -> dict:
+          limit: int, full_text: bool = False) -> dict:
     limit = max(1, min(limit, MAX_LIMIT))
     rows = []
     # The newest point a capped scan reached. Rows older than it may sit
     # beside unexamined rows of that source, so this page stops there.
     frontier: Cursor | None = None
     for source in SOURCES:
-        if source.table not in maps.tables:
+        if source.table not in maps.tables or (source.sensitive and not full_text):
             continue
         conditions = [cond for kind, cond in source.kinds.items() if kind in kinds]
         if not conditions:
             continue
         upper = _upper(source, cursor)
         select = (
-            f"SELECT rowid AS rid, time, wid, x, y, z, {source.columns} FROM {source.table} "
+            f"SELECT rowid AS rid, time, wid, x, y, z, "
+            f"{(source.full_columns if full_text else None) or source.columns} FROM {source.table} "
             f"WHERE user = ? AND ({' OR '.join(conditions)})"
         )
         for uid in ids:
@@ -248,6 +264,8 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "x": row["x"], "y": row["y"], "z": row["z"],
         "amount": None,
         "victim": None,
+        "message": None,
+        "truncated": False,
         "rolled_back": _rollback(row.get("rolled_back")),
     }
     if source.name == "block":
@@ -279,7 +297,10 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
             entry.update(kind="skill", verb="teleported with" if row["teleport"] else "cast",
                          target=(row["text"] or "").strip() or "a skill")
         else:
-            entry.update(kind="command", verb="ran", target=row["text"] or "/")
+            entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]))
+    elif source.name == "chat":
+        entry.update(kind="chat", verb="said", target=None, message=row["text"] or "",
+                     truncated=bool(row["truncated"]))
     else:
         entry.update(kind="session", verb="logged in" if action == 1 else "logged out", target=None)
     return entry

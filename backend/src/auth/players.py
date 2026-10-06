@@ -20,7 +20,7 @@ from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode a
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src.skins.db import connect
 
-from . import users
+from . import audit, roles, users
 
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
@@ -331,11 +331,39 @@ def player_sessions(config: CoreProtectConfig, text: str, before: str | None, li
     }
 
 
-def player_activity(config: CoreProtectConfig, text: str, before: str | None, limit: int,
-                    kinds: str | None) -> dict:
-    key = _require(text)
+def _audit_messages(viewer: dict, config: CoreProtectConfig, key: str, kinds: tuple[str, ...],
+                    before: str | None, entries: list[dict]) -> None:
+    """Record that a viewer was shown a player's chat or whole commands, before they see it.
+
+    Never stores the text itself: only which rows were returned.
+    """
+    shown = [e for e in entries if e["kind"] in activity.MESSAGE_KINDS]
+    if not shown:
+        return
+    detail = {
+        "player_uuid": key,
+        "server": config.server,
+        "kinds": sorted(kinds),
+        "paged": before is not None,
+        "rows": len(shown),
+        "newest": {"id": shown[0]["id"], "time": shown[0]["time"]},
+        "oldest": {"id": shown[-1]["id"], "time": shown[-1]["time"]},
+    }
     try:
-        chosen = activity.parse_kinds(kinds)
+        with connect() as conn:
+            audit.record(conn, actor=viewer, action="player.messages.view", outcome="ok", detail=detail)
+            conn.commit()
+    except Exception:
+        raise PlayerError(503, "audit_unavailable") from None
+
+
+def player_activity(config: CoreProtectConfig, text: str, before: str | None, limit: int,
+                    kinds: str | None, viewer: dict | None = None) -> dict:
+    key = _require(text)
+    full = bool(viewer) and roles.can(viewer["role"], "view_player_messages")
+    allowed = activity.FULL_KINDS if full else activity.KINDS
+    try:
+        chosen = activity.parse_kinds(kinds, allowed)
     except ValueError:
         raise PlayerError(400, "bad_kinds") from None
     try:
@@ -346,10 +374,15 @@ def player_activity(config: CoreProtectConfig, text: str, before: str | None, li
         with Reader(config, Budget()) as reader:
             ids = [a["id"] for a in _ids(reader, key)]
             maps = co_maps.get(reader)
-            raw = activity.fetch(reader, maps, ids, chosen, cursor, limit) if ids else None
+            raw = activity.fetch(reader, maps, ids, chosen, cursor, limit, full_text=full) if ids else None
     except Unavailable as exc:
-        return {"entries": [], "next": None, "searched_to": None, "kinds": list(activity.KINDS), "coreprotect": _status(exc)}
+        return {"entries": [], "next": None, "searched_to": None, "kinds": list(allowed),
+                "shows_messages": full, "coreprotect": _status(exc)}
     if raw is None:
-        return {"entries": [], "next": None, "searched_to": None, "kinds": list(activity.KINDS), "coreprotect": _status(None)}
-    return {**activity.build(raw, maps, f"{config.server}:{key}"), "kinds": list(activity.KINDS),
-            "coreprotect": _status(None)}
+        return {"entries": [], "next": None, "searched_to": None, "kinds": list(allowed),
+                "shows_messages": full, "coreprotect": _status(None)}
+    built = activity.build(raw, maps, f"{config.server}:{key}")
+    # CoreProtect is closed by now; the view is on record before the response leaves.
+    if full:
+        _audit_messages(viewer, config, key, chosen, before, built["entries"])
+    return {**built, "kinds": list(allowed), "shows_messages": full, "coreprotect": _status(None)}

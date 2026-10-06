@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from fastapi import FastAPI
 
@@ -189,3 +191,67 @@ def test_unknown_player_sections_are_empty(app, env, world, monkeypatch):
     monkeypatch.setenv("COREPROTECT_DB", str(env.DATA_DIR / "nowhere.db"))
     body = c.get(f"/admin/players/{HAZEL}/activity").json()
     assert body["coreprotect"] == {"status": "unavailable", "reason": "missing"}
+
+
+def message_audits(db):
+    with db.connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM admin_audit WHERE action = 'player.messages.view' ORDER BY id")]
+
+
+def test_mods_never_see_messages(app, env, world, coreprotect):
+    coreprotect.chat(world["hazel"], 170, "a private chat line")
+    c = client(app, staff(env, "mod"))
+    feed = c.get(f"/admin/players/{HAZEL}/activity").json()
+    assert feed["shows_messages"] is False
+    assert "chat" not in feed["kinds"]
+    assert "private" not in str(feed)
+    assert [e["target"] for e in feed["entries"] if e["kind"] == "command"] == ["/msg"]
+    assert c.get(f"/admin/players/{HAZEL}/activity", params={"kinds": "chat"}).status_code == 400
+    assert message_audits(env) == []
+
+
+@pytest.mark.parametrize("role", ["admin", "root"])
+def test_admins_see_chat_and_whole_commands_and_it_is_audited(app, env, world, coreprotect, role):
+    coreprotect.chat(world["hazel"], 170, "meet at the docks")
+    coreprotect.chat(world["hazel"], 180, "x" * 600)
+    _, token = account(env, f"boss-{role}", role)
+    feed = client(app, token).get(f"/admin/players/{HAZEL}/activity").json()
+    assert feed["shows_messages"] is True
+    assert "chat" in feed["kinds"]
+    chats = [e for e in feed["entries"] if e["kind"] == "chat"]
+    assert [(c["verb"], c["message"][:17], c["truncated"]) for c in chats] == [
+        ("said", "x" * 17, True), ("said", "meet at the docks", False)]
+    assert len(chats[0]["message"]) == 512
+    assert [e["target"] for e in feed["entries"] if e["kind"] == "command"] == ["/msg Bob a private thing"]
+
+    rows = message_audits(env)
+    assert len(rows) == 1
+    assert rows[0]["actor_role"] == role
+    assert rows[0]["outcome"] == "ok"
+    assert rows[0]["reason"] is None
+    detail = json.loads(rows[0]["detail_json"])
+    assert detail["player_uuid"] == HAZEL and detail["rows"] == 3 and detail["paged"] is False
+    assert detail["newest"]["time"] == 180 and detail["oldest"]["time"] == 160
+    # The audit records which rows were shown, never what they said.
+    assert "docks" not in rows[0]["detail_json"] and "private" not in rows[0]["detail_json"]
+
+
+def test_pages_without_messages_are_not_audited(app, env, world):
+    _, token = account(env, "boss", "admin")
+    feed = client(app, token).get(f"/admin/players/{HAZEL}/activity", params={"kinds": "block,session"}).json()
+    assert feed["entries"]
+    assert message_audits(env) == []
+
+
+def test_no_audit_no_messages(app, env, world, monkeypatch):
+    _, token = account(env, "boss", "admin")
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(players.audit, "record", broken)
+    response = client(app, token).get(f"/admin/players/{HAZEL}/activity")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "audit_unavailable"
+    assert "private" not in response.text

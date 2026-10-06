@@ -53,8 +53,12 @@ table, so a sparse filter stops early and returns a cursor to continue
 
 ## What is shown
 
-Chat is never read. Commands are cut to their first word inside SQL, and sign
-text, item metadata and NBT are not selected. Sessions are rebuilt from
+For moderators, chat is never read and commands are cut to their first word
+inside SQL. Admins and the owner (`view_player_messages`) also get chat and
+whole commands, each cut to 512 characters; every page that shows any is
+recorded in `admin_audit` as `player.messages.view` (which rows, never the
+text) before it is returned, and the page is refused if that record cannot
+be written. Sign text, item metadata and NBT are never selected. Sessions are rebuilt from
 login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 
 ## Deployment gate
