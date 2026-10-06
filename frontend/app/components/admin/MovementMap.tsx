@@ -144,7 +144,9 @@ function endpointLabels(trail: MovementTrail, mapWorld: string): { sample: Sampl
   const first = shown[0].samples[0];
   const lastStretch = shown[shown.length - 1].samples;
   const last = lastStretch[lastStretch.length - 1];
-  const start = `${first.action === ACTION_LOGIN ? "Logged in" : "First observation shown"} ${formatClock(first.time)}`;
+  const start = first.estimated
+    ? `Shown from ${formatClock(first.time)} (estimated position)`
+    : `${first.action === ACTION_LOGIN ? "Logged in" : "First observation shown"} ${formatClock(first.time)}`;
   const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "Last observation shown"} ${formatClock(last.time)}`;
   if (first === last) return [{ sample: first, text: start }];
   return [
@@ -251,6 +253,12 @@ export default function MovementMap({
   const single = trails.length === 1 ? markers[0]?.at : null;
   const scaleBlocks = displayScale > 0 ? niceLength(100 / displayScale) : 0;
   const halo = { stroke: "#10160f", strokeWidth: 3 * unit, paintOrder: "stroke" as const };
+  /** Text beside a map point, flipped to its left when it would run off the right of the view. */
+  const beside = (x: number, gap: number) => {
+    const screenX = (x + 0.5) * displayScale + viewport.translateX;
+    const flip = screenX > viewport.viewportSize.w - 220;
+    return { x: x + 0.5 + (flip ? -gap : gap) * unit, textAnchor: flip ? ("end" as const) : ("start" as const) };
+  };
 
   const dotTitle = (trail: MovementTrail, s: Sample) =>
     `${trail.label} — ${formatClock(s.time, true)}${
@@ -349,7 +357,8 @@ export default function MovementMap({
                   stretch.world === mapWorld
                     ? stretch.samples.map((s, i) => {
                         const edge = s.action === ACTION_LOGIN || s.action === ACTION_LOGOUT;
-                        if (!edge && !dots) return null;
+                        // A point made up at the range's edge is drawn through, never as a recorded dot.
+                        if (s.estimated || (!edge && !dots)) return null;
                         const fill =
                           s.action === ACTION_LOGIN
                             ? "#7fd18b"
@@ -410,7 +419,7 @@ export default function MovementMap({
                 return labels.map((label, i) => (
                   <text
                     key={`${trail.key}:label:${i}`}
-                    x={label.sample.x + 0.5 + 9 * unit}
+                    {...beside(label.sample.x, 9)}
                     y={label.sample.z + 0.5 - 7 * unit}
                     fontSize={12 * unit}
                     fontWeight={600}
@@ -433,7 +442,7 @@ export default function MovementMap({
                 strokeWidth={1.5 * unit}
               />
               <text
-                x={pin.x + 0.5 + 12 * unit}
+                {...beside(pin.x, 12)}
                 y={pin.z + 0.5 + 16 * unit}
                 fontSize={12 * unit}
                 fontWeight={600}
@@ -462,7 +471,7 @@ export default function MovementMap({
                 />
                 {trails.length > 1 ? (
                   <text
-                    x={at.x + 0.5 + 12 * unit}
+                    {...beside(at.x, 12)}
                     y={at.z + 0.5 + 4 * unit}
                     fontSize={13 * unit}
                     fontWeight={600}
@@ -485,13 +494,13 @@ export default function MovementMap({
             title={button.title}
             aria-label={button.title}
             onClick={button.run}
-            className="h-11 w-11 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_85%,transparent)] text-lg text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)] sm:h-9 sm:w-9 sm:text-base"
+            className="h-11 w-11 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_85%,transparent)] text-lg text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)]"
           >
             {button.label}
           </button>
         ))}
       </div>
-      <div className="pointer-events-none absolute bottom-2 left-2 z-20 flex flex-col gap-1 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--tfmc-cream)]">
+      <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 flex w-fit max-w-[calc(100%-1rem)] flex-col gap-1 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--tfmc-cream)]">
         {trails.length === 1 && !trails[0].colour ? (
           <span className="flex items-center gap-1.5">
             older
@@ -502,18 +511,18 @@ export default function MovementMap({
             newer
           </span>
         ) : null}
-        <span className="flex items-center gap-1.5">
+        <span className="flex flex-wrap items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
           <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimate or last seen
         </span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex flex-wrap items-center gap-1.5">
           <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> unobserved transition
           <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7fd18b]" /> logged in
           <span className="inline-block h-2 w-2 rounded-full bg-[#e8796f]" /> logged out
         </span>
       </div>
       {scaleBlocks ? (
-        <div className="pointer-events-none absolute bottom-2 right-2 z-20 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2 py-1 text-[11px] text-[var(--tfmc-cream)]">
+        <div className="pointer-events-none absolute left-2 top-2 z-20 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2 py-1 text-[11px] text-[var(--tfmc-cream)]">
           <div
             className="border-x-2 border-b-2 border-[var(--tfmc-cream)]"
             style={{ width: scaleBlocks * displayScale, height: 5 }}

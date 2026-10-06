@@ -18,13 +18,12 @@ import {
   zoneLabel,
 } from "../../../lib/admin/movement";
 
-export const chipClass =
-  "min-h-11 rounded-sm border px-3 py-1 text-sm transition-colors disabled:opacity-40 sm:min-h-0";
+export const chipClass = "min-h-11 rounded-sm border px-3 py-1 text-sm transition-colors disabled:opacity-40";
 export const chipOn = "border-[var(--tfmc-accent)] text-[var(--tfmc-cream)]";
 export const chipOff =
   "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]";
 export const inputClass =
-  "min-h-11 w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-transparent px-2 py-1 text-sm text-[var(--tfmc-cream)] [color-scheme:dark] sm:min-h-0";
+  "min-h-11 w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-transparent px-2 py-1 text-sm text-[var(--tfmc-cream)] [color-scheme:dark]";
 export const mutedClass = "text-sm text-[var(--tfmc-mist)]";
 const errorClass = "text-sm text-[#e8a0a0]";
 
@@ -102,10 +101,14 @@ export function RangeForm({
   const [toText, setToText] = useState(toLocalInput(value.to));
   const [seen, setSeen] = useState(value);
   const [error, setError] = useState<string | null>(null);
+  // Typed but not applied: following the clock must not overwrite it.
+  const [dirty, setDirty] = useState(false);
   if (seen.from !== value.from || seen.to !== value.to) {
     setSeen(value);
-    setFromText(toLocalInput(value.from));
-    setToText(toLocalInput(value.to));
+    if (!dirty) {
+      setFromText(toLocalInput(value.from));
+      setToText(toLocalInput(value.to));
+    }
   }
 
   const apply = (follow: boolean) => {
@@ -116,6 +119,7 @@ export function RangeForm({
     if (from.time! >= to.time!) return setError("From must be before To.");
     if (to.time! - from.time! > longest) return setError(`Choose a range of up to ${formatDuration(longest).toLowerCase()}.`);
     setError(null);
+    setDirty(false);
     onApply({ from: from.time!, to: to.time!, follow });
   };
 
@@ -137,6 +141,9 @@ export function RangeForm({
             if (!preset) return;
             const [from, to] = preset.range(Math.floor(Date.now() / 1000));
             setError(null);
+            setDirty(false);
+            setFromText(toLocalInput(from));
+            setToText(toLocalInput(to));
             onApply({ from, to, follow: false });
           }}
         >
@@ -149,11 +156,11 @@ export function RangeForm({
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           From
-          <input type="datetime-local" className={inputClass} value={fromText} onChange={(e) => setFromText(e.target.value)} />
+          <input type="datetime-local" className={inputClass} value={fromText} onChange={(e) => { setFromText(e.target.value); setDirty(true); }} />
         </label>
         <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           To
-          <input type="datetime-local" className={inputClass} value={toText} onChange={(e) => setToText(e.target.value)} />
+          <input type="datetime-local" className={inputClass} value={toText} onChange={(e) => { setToText(e.target.value); setDirty(true); }} />
         </label>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -163,12 +170,15 @@ export function RangeForm({
         <button
           type="button"
           className={`${chipClass} ${chipOff}`}
-          onClick={() => setToText(toLocalInput(Math.floor(Date.now() / 1000)))}
+          onClick={() => {
+            setToText(toLocalInput(Math.floor(Date.now() / 1000)));
+            setDirty(true);
+          }}
         >
           To now
         </button>
       </div>
-      <label className="flex items-center gap-2 text-sm text-[var(--tfmc-cream)]">
+      <label className="flex min-h-11 items-center gap-2 text-sm text-[var(--tfmc-cream)]">
         <input
           type="checkbox"
           className="h-4 w-4 accent-[var(--tfmc-accent)]"
@@ -176,6 +186,9 @@ export function RangeForm({
           onChange={(event) => {
             if (event.target.checked) {
               const now = Math.floor(Date.now() / 1000);
+              setDirty(false);
+              setFromText(toLocalInput(now - (value.to - value.from)));
+              setToText(toLocalInput(now));
               onApply({ from: now - (value.to - value.from), to: now, follow: true });
             } else {
               onApply({ ...value, follow: false });
@@ -270,17 +283,20 @@ export function Timeline({
         {ticks.map((t) => (
           <div key={t} className="absolute bottom-0 h-2 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)]" style={{ left: pct(t) }} />
         ))}
-        <div className="pointer-events-none absolute inset-y-[-3px] w-0.5 bg-white shadow" style={{ left: pct(cursor) }} />
         <input
           type="range"
           aria-label="Inspected moment"
+          aria-valuetext={formatMoment(cursor, true)}
           min={since}
           max={until}
-          step={1}
+          step={60}
           value={Math.min(until, Math.max(since, cursor))}
           onChange={(event) => onCursor(Number(event.target.value))}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
         />
+        {/* The input is invisible, so its keyboard focus is drawn here. */}
+        <div className="pointer-events-none absolute inset-0 rounded-sm peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--tfmc-accent)]" />
+        <div className="pointer-events-none absolute inset-y-[-3px] w-0.5 bg-white shadow" style={{ left: pct(cursor) }} />
       </div>
       <div className="relative h-4 text-[11px] text-[var(--tfmc-mist)]">
         {ticks.map((t) => (

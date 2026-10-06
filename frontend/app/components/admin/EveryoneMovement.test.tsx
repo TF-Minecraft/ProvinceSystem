@@ -88,4 +88,8 @@ it("compares everyone at the inspected moment and carries the view to a player",
 
   fireEvent.click(screen.getByLabelText("Select Bob"));
   expect(nav.state.params.get("players")).toBe(B);
+  // "Only selected" lives in the URL, so a copied link shows the same players.
+  fireEvent.click(await screen.findByLabelText(/Only selected/));
+  expect(nav.state.params.get("only")).toBe("1");
+  await screen.findByText(/1 of 1 players observed/);
 });

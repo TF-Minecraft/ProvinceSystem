@@ -144,3 +144,21 @@ it("tells non-admins the page is not for them", async () => {
   render(<PlayerMovementPage uuid={UUID} />);
   await screen.findByText("Movement is for admins and the owner only.");
 });
+
+it("frames a new session only once its own answer is in", async () => {
+  render(<PlayerMovementPage uuid={UUID} />);
+  await screen.findByText(/recorded at 30, 64, 0/);
+  expect(screen.getByTestId("map").dataset.fit).toBe("session:s1");
+  let answer: (value: unknown) => void = () => undefined;
+  vi.mocked(getSessionMovement).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)) as never);
+  act(() => nav.go("/x?session=s2"));
+  // Still showing s1's answer: the map must not take s2's key against s1's trail.
+  expect(screen.getByTestId("map").dataset.fit).toBe("");
+  await act(async () =>
+    answer({
+      session: { ...SESSION, id: "s2" }, since: T, until: T + 600, worlds: ["TFMC_Map"],
+      points: [[T, 0, 500, 64, 0, 1]], complete_from: T, pings_since: null, as_of: T, coreprotect: status,
+    })
+  );
+  await waitFor(() => expect(screen.getByTestId("map").dataset.fit).toBe("session:s2"));
+});

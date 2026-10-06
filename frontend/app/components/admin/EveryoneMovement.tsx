@@ -44,7 +44,7 @@ type Load =
   | { kind: "loading"; previous: Movement | null }
   | { kind: GateKind }
   | { kind: "failed"; message: string; previous: Movement | null }
-  | { kind: "ready"; data: Movement };
+  | { kind: "ready"; data: Movement; key: string };
 
 function intParam(value: string | null): number | null {
   return value !== null && /^-?\d+$/.test(value) ? Number(value) : null;
@@ -86,7 +86,7 @@ export default function EveryoneMovement() {
   const at = intParam(search.get("at"));
   const pin = pinParam(search.get("pin"));
   const chosen = useMemo(() => new Set((search.get("players") ?? "").split(",").filter(Boolean)), [search]);
-  const [onlyChosen, setOnlyChosen] = useState(false);
+  const onlyChosen = search.get("only") === "1";
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState<string | null>(null);
 
@@ -115,7 +115,7 @@ export default function EveryoneMovement() {
       previous: prev.kind === "ready" ? prev.data : prev.kind === "loading" || prev.kind === "failed" ? prev.previous : null,
     }));
     getEveryoneMovement(range.from, range.to)
-      .then((data) => live && setLoad({ kind: "ready", data }))
+      .then((data) => live && setLoad({ kind: "ready", data, key: viewKey }))
       .catch((err) => {
         if (!live) return;
         const gate = gateKind(err);
@@ -151,8 +151,8 @@ export default function EveryoneMovement() {
   const since = data?.since ?? range.from;
   const until = data?.until ?? range.to;
   const times = useMemo(
-    () => observationTimes(drawn.flatMap((t) => clipStretches(t.stretches, since, until))),
-    [drawn, since, until]
+    () => observationTimes(drawn.flatMap((t) => t.stretches), data?.complete_from ?? since, until),
+    [drawn, data, since, until]
   );
 
   if (load.kind === "forbidden") {
@@ -230,18 +230,18 @@ export default function EveryoneMovement() {
               onChange={(e) => setQuery(e.target.value)}
             />
             <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--tfmc-cream)]">
-              <label className="flex items-center gap-2">
+              <label className="flex min-h-11 items-center gap-2">
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-[var(--tfmc-accent)]"
                   checked={onlyChosen}
                   disabled={!chosen.size}
-                  onChange={(e) => setOnlyChosen(e.target.checked)}
+                  onChange={(e) => update({ only: e.target.checked ? "1" : null }, true)}
                 />
                 Only selected ({chosen.size})
               </label>
               {chosen.size ? (
-                <button type="button" className="text-[var(--tfmc-stone)] underline" onClick={() => update({ players: null }, true)}>
+                <button type="button" className="text-[var(--tfmc-stone)] underline" onClick={() => update({ players: null, only: null }, true)}>
                   Clear selection
                 </button>
               ) : null}
@@ -254,13 +254,16 @@ export default function EveryoneMovement() {
                   onMouseEnter={() => setHighlight(trail.key)}
                   onMouseLeave={() => setHighlight(null)}
                 >
-                  <input
-                    type="checkbox"
-                    aria-label={`Select ${trail.label}`}
-                    className="h-4 w-4 shrink-0 accent-[var(--tfmc-accent)]"
-                    checked={chosen.has(trail.key)}
-                    onChange={() => toggle(trail.key)}
-                  />
+                  {/* A 44 px target around a small box. */}
+                  <label className="-my-1 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${trail.label}`}
+                      className="h-4 w-4 accent-[var(--tfmc-accent)]"
+                      checked={chosen.has(trail.key)}
+                      onChange={() => toggle(trail.key)}
+                    />
+                  </label>
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: trail.colour }} />
                   <Link
                     href={playerHref(trail.key)}
@@ -308,7 +311,7 @@ export default function EveryoneMovement() {
                 hold={hold}
                 highlight={highlight}
                 pin={pin}
-                fitKey={load.kind === "ready" ? viewKey : null}
+                fitKey={load.kind === "ready" && load.key === viewKey ? viewKey : null}
                 onInspect={(time) => update({ at: String(time) }, true)}
                 className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-24rem)]"
               />

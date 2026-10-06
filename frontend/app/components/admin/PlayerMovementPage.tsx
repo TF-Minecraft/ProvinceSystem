@@ -104,6 +104,12 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   const [tab, setTab] = useState<"session" | "range">(mode);
   const [collapsed, setCollapsed] = useState(false);
   const [followSession, setFollowSession] = useState(false);
+  // Following is for one open session: a new selection starts without it.
+  const [followedSession, setFollowedSession] = useState(sessionId);
+  if (followedSession !== sessionId) {
+    setFollowedSession(sessionId);
+    setFollowSession(false);
+  }
 
   const update = useCallback(
     (changes: Record<string, string | null>, replace = false) => {
@@ -186,7 +192,12 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
             session: null,
           }));
     request
-      .then((view) => live && setLoad({ kind: "ready", view }))
+      .then((view) => {
+        if (!live) return;
+        setLoad({ kind: "ready", view });
+        // A logout (or a stale session) ends following; nothing more will come.
+        if (view.session && view.session.end_kind !== "open") setFollowSession(false);
+      })
       .catch((err) => {
         if (!live) return;
         const status = err instanceof AccountApiError ? err.status : 0;
@@ -211,7 +222,10 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     [view]
   );
   const trails = useMemo(() => [{ key: uuid, label: name ?? "Player", stretches: parts }], [uuid, name, parts]);
-  const times = useMemo(() => observationTimes(clipStretches(parts, view?.since ?? 0, view?.until ?? 0)), [parts, view]);
+  const times = useMemo(
+    () => observationTimes(parts, view?.completeFrom ?? view?.since ?? 0, view?.until ?? 0),
+    [parts, view]
+  );
 
   if (gate) return <StaffGateMessage kind={gate} />;
   if (load.kind === "gate") {
@@ -340,7 +354,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                 hold={hold}
                 endpoints
                 pin={pin}
-                fitKey={load.kind === "ready" ? viewKey : null}
+                fitKey={load.kind === "ready" && load.view.key === viewKey ? viewKey : null}
                 onInspect={setCursor}
                 className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-24rem)]"
               />
@@ -429,7 +443,7 @@ function Heading({
           <span className={s.end_kind === "logout" ? "" : "text-[#e8c48a]"}>{sessionEndLabel(s)}</span>
         </p>
         {s.end_kind === "open" ? (
-          <label className="flex items-center gap-2 text-sm text-[var(--tfmc-cream)]">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-[var(--tfmc-cream)]">
             <input
               type="checkbox"
               className="h-4 w-4 accent-[var(--tfmc-accent)]"

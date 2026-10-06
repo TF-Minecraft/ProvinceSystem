@@ -105,6 +105,8 @@ describe("inspect", () => {
     expect(stepObservation(times, 0, -1)).toBeNull();
     expect(stepObservation(times, 180, 1)).toBeNull();
     expect(observedBands(out)).toEqual([[0, 180]]);
+    // A point made up at a range's edge is not an observation.
+    expect(observationTimes(clipStretches(out, 30, 200), 30, 200)).toEqual([60, 120, 180]);
   });
 });
 
@@ -143,6 +145,23 @@ describe("times", () => {
     expect(zoneLabel(noon, noon + 30 * 86400)).toBe("Europe/London (UTC+01:00 → UTC+00:00)");
     expect(describeSpan(noon, noon + 3600)).toBe("Tue 6 Oct 2026, 12:00 → 13:00");
     expect(describeSpan(noon, noon + 86400)).toBe("Tue 6 Oct 2026, 12:00 → Wed 7 Oct 2026, 12:00");
+  });
+
+  it("refuses a repeated half hour too", () => {
+    process.env.TZ = "Australia/Lord_Howe";
+    try {
+      expect(parseLocalInput("2026-04-05T01:45").error).toMatch(/clocks went back/);
+      expect(parseLocalInput("2026-04-05T03:00").time).toBeDefined();
+    } finally {
+      process.env.TZ = "Europe/London";
+    }
+  });
+
+  it("keeps daily ticks on local midnight across a clock change", () => {
+    const start = Date.UTC(2026, 9, 23, 12, 0) / 1000;
+    const ticks = timelineTicks(start, start + 5 * 86400);
+    expect(ticks.map((t) => new Date(t * 1000).getHours())).toEqual(ticks.map(() => 0));
+    expect(ticks.map((t) => new Date(t * 1000).getDate())).toEqual([24, 25, 26, 27, 28]);
   });
 
   it("puts timeline ticks on round local times", () => {

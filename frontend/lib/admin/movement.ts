@@ -91,7 +91,15 @@ export function gapSeconds(pingSeconds: number | null | undefined): number {
  */
 export const JUMP_BLOCKS_PER_SECOND = 20;
 
-export type Sample = { time: number; x: number; y: number; z: number; action: number };
+export type Sample = {
+  time: number;
+  x: number;
+  y: number;
+  z: number;
+  action: number;
+  /** A point made up for drawing (where a clipped path crosses the range's edge), not a row. */
+  estimated?: true;
+};
 
 /** A run of rows with the player seen throughout, in one world. */
 export type Stretch = { world: string | null; samples: Sample[] };
@@ -152,7 +160,14 @@ export function clipStretches(all: readonly Stretch[], from: number, to: number)
       const a = s[i - 1];
       if (!kept.length && a && a.time < from && !isJump(a, b)) {
         const f = (from - a.time) / (b.time - a.time);
-        kept.push({ time: from, x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, z: a.z + (b.z - a.z) * f, action: ACTION_PING });
+        kept.push({
+          time: from,
+          x: a.x + (b.x - a.x) * f,
+          y: a.y + (b.y - a.y) * f,
+          z: a.z + (b.z - a.z) * f,
+          action: ACTION_PING,
+          estimated: true,
+        });
       }
       kept.push(b);
     }
@@ -238,9 +253,11 @@ export function positionAt(all: readonly Stretch[], time: number, hold = 0): Pos
   }
 }
 
-/** Every observation time, oldest first, for stepping to the previous or next one. */
-export function observationTimes(all: readonly Stretch[]): number[] {
-  const times = all.flatMap((stretch) => stretch.samples.map((s) => s.time));
+/** Every recorded observation time in [from, to], oldest first, for stepping to the previous or next one. */
+export function observationTimes(all: readonly Stretch[], from = -Infinity, to = Infinity): number[] {
+  const times = all.flatMap((stretch) =>
+    stretch.samples.filter((s) => !s.estimated && s.time >= from && s.time <= to).map((s) => s.time)
+  );
   return [...new Set(times)].sort((a, b) => a - b);
 }
 
@@ -338,10 +355,20 @@ export function parseLocalInput(value: string): ParsedTime {
   if (toLocalInput(time) !== minute) {
     return { error: "That time doesn’t exist here: the clocks went forward. Choose another time." };
   }
-  if (toLocalInput(time - 3600) === minute || toLocalInput(time + 3600) === minute) {
-    return { error: "That time happens twice here: the clocks went back. Choose a time outside that hour." };
+  // Any other instant with the same wall-clock minute, one offset change away (zones shift by 30 min to 2 h).
+  const offsets = new Set([-2, -1, 0, 1, 2].map((days) => offsetSeconds(time + days * 86400)));
+  for (const a of offsets) {
+    for (const b of offsets) {
+      if (a !== b && toLocalInput(time + (a - b)) === minute) {
+        return { error: "That time happens twice here: the clocks went back. Choose a time outside that change." };
+      }
+    }
   }
   return { time };
+}
+
+function offsetSeconds(at: number): number {
+  return -new Date(at * 1000).getTimezoneOffset() * 60;
 }
 
 /** `UTC+01:00` for the browser's offset at a moment. */
@@ -403,11 +430,29 @@ const TICK_STEPS = [60, 300, 600, 900, 1800, 3600, 2 * 3600, 3 * 3600, 6 * 3600,
 export function timelineTicks(since: number, until: number, most = 8): number[] {
   const span = Math.max(1, until - since);
   const step = TICK_STEPS.find((s) => span / s <= most) ?? TICK_STEPS[TICK_STEPS.length - 1];
-  // Align to local time: a tick at 14:00, not 13:00 UTC shown as 14:00.
-  const offset = -new Date(since * 1000).getTimezoneOffset() * 60;
-  const first = Math.ceil((since + offset) / step) * step - offset;
-  const ticks = [];
-  for (let t = first; t <= until; t += step) ticks.push(t);
+  const ticks: number[] = [];
+  if (step < 3600) {
+    // Minutes line up the same in every zone this side of an offset change.
+    const offset = offsetSeconds(since);
+    for (let t = Math.ceil((since + offset) / step) * step - offset; t <= until; t += step) ticks.push(t);
+    return ticks;
+  }
+  // Hours and days step by wall-clock time, so a clock change does not shift them off round times.
+  const d = new Date(since * 1000);
+  d.setMinutes(0, 0, 0);
+  if (step >= 86400) {
+    d.setHours(0);
+    const days = step / 86400;
+    for (; d.getTime() / 1000 <= until; d.setDate(d.getDate() + days)) {
+      if (d.getTime() / 1000 >= since) ticks.push(d.getTime() / 1000);
+    }
+    return ticks;
+  }
+  const hours = step / 3600;
+  d.setHours(Math.floor(d.getHours() / hours) * hours);
+  for (; d.getTime() / 1000 <= until; d.setHours(Math.floor(d.getHours() / hours) * hours + hours)) {
+    if (d.getTime() / 1000 >= since) ticks.push(d.getTime() / 1000);
+  }
   return ticks;
 }
 
