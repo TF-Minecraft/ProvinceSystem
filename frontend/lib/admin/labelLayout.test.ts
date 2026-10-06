@@ -59,6 +59,30 @@ describe("layoutLabels", () => {
     expect(placed.find((p) => p.key === "lone")).toMatchObject({ leader: null });
   });
 
+  it("puts each name in a touching group on its own side, with no leader over another marker", () => {
+    // Three players overlapping, as seen on Main: yellow upper left, cyan below, blue to the right.
+    const width = (name: string) => name.length * 13 * 0.62;
+    const yellow = point("EstienneHavenga", 126, 95, width("EstienneHavenga"));
+    const cyan = point("keterkcy", 133.3, 100.7, width("keterkcy"));
+    const blue = point("Mabwy", 144, 94, width("Mabwy"));
+    const markers = [yellow, cyan, blue];
+    const placed = new Map(layoutLabels(markers).map((p) => [p.key, p]));
+    expect(placed.size).toBe(3);
+    const middle = (p: PlacedLabel) => ({ x: p.x + p.width / 2, y: p.y + p.height / 2 });
+    expect(middle(placed.get("Mabwy")!).x).toBeGreaterThan(blue.x);
+    expect(middle(placed.get("EstienneHavenga")!).x).toBeLessThan(yellow.x);
+    expect(middle(placed.get("keterkcy")!).y).toBeGreaterThan(cyan.y);
+    for (const label of placed.values()) {
+      if (!label.leader) continue;
+      const { x1, y1, x2, y2 } = label.leader;
+      for (const m of markers.filter((m) => m.key !== label.key)) {
+        const along = ((m.x - x1) * (x2 - x1) + (m.y - y1) * (y2 - y1)) / ((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        const t = Math.max(0, Math.min(1, along));
+        expect(Math.hypot(x1 + t * (x2 - x1) - m.x, y1 + t * (y2 - y1) - m.y)).toBeGreaterThanOrEqual(8);
+      }
+    }
+  });
+
   it("gives earlier labels the better spots, so the same order lays out the same", () => {
     const points = [point("a", 100, 100), point("b", 104, 100), point("c", 108, 100)];
     expect(layoutLabels(points)).toEqual(layoutLabels(points));

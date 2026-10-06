@@ -560,6 +560,32 @@ export default function MovementMap({
               </text>
             </g>
           ) : null}
+          {/* Leader lines go under the markers, so one never draws across a dot. */}
+          {labels.map(({ key, leader }) =>
+            leader ? (
+              <g key={`leader:${key}`} opacity={highlight !== null && highlight !== key ? 0.35 : 1}>
+                <line
+                  x1={leader.x1 * unit}
+                  y1={leader.y1 * unit}
+                  x2={leader.x2 * unit}
+                  y2={leader.y2 * unit}
+                  stroke="#10160f"
+                  strokeOpacity={0.7}
+                  strokeWidth={3 * unit}
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={leader.x1 * unit}
+                  y1={leader.y1 * unit}
+                  x2={leader.x2 * unit}
+                  y2={leader.y2 * unit}
+                  stroke="#f3efe4"
+                  strokeWidth={1.25 * unit}
+                  strokeLinecap="round"
+                />
+              </g>
+            ) : null
+          )}
           {markers.map(({ trail, at, title }) => {
             if (!at || at.world !== mapWorld) return null;
             const dim = highlight !== null && highlight !== trail.key;
@@ -591,34 +617,11 @@ export default function MovementMap({
               </g>
             );
           })}
-          {/* Names over every marker: beside it, or out on a leader line when crowded. */}
-          {labels.map(({ key, label, box, leader, forced }) => {
+          {/* Names over every marker: beside it, or at the end of its leader line when crowded. */}
+          {labels.map(({ key, label, box, forced }) => {
             const dim = highlight !== null && highlight !== key;
             return (
               <g key={`label:${key}`} opacity={dim ? 0.35 : 1}>
-                {leader ? (
-                  <>
-                    <line
-                      x1={leader.x1 * unit}
-                      y1={leader.y1 * unit}
-                      x2={leader.x2 * unit}
-                      y2={leader.y2 * unit}
-                      stroke="#10160f"
-                      strokeOpacity={0.7}
-                      strokeWidth={3 * unit}
-                      strokeLinecap="round"
-                    />
-                    <line
-                      x1={leader.x1 * unit}
-                      y1={leader.y1 * unit}
-                      x2={leader.x2 * unit}
-                      y2={leader.y2 * unit}
-                      stroke="#f3efe4"
-                      strokeWidth={1.25 * unit}
-                      strokeLinecap="round"
-                    />
-                  </>
-                ) : null}
                 {forced ? (
                   <rect
                     x={(box.x - 3) * unit}
