@@ -250,10 +250,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * after those layers were switched off would narrow the compose preview from
    * data still sitting in state, then quietly lapse in a build that never pulls
    * a nation file. Better to say so in the panel and mean one thing everywhere.
+   *
+   * A queued look counts as much as the draft: queue a nation-fill look, then
+   * set the draft to prosperity alone to queue the next, and that first look
+   * must still build narrowed to the realm picked for it.
    */
-  const activeFocusNationId = needsNationFile(toggles)
-    ? focusNationId || null
-    : null;
+  const focusWanted =
+    needsNationFile(toggles) || clips.some((clip) => needsNationFile(clip.toggles));
+  const activeFocusNationId = focusWanted ? focusNationId || null : null;
   const [notice, setNotice] = useState<string | null>(null);
   const [layerError, setLayerError] = useState<string | null>(null);
   const [layersLoading, setLayersLoading] = useState(false);
@@ -737,7 +741,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     ]
   );
 
-  const wantNation = needsNationFile(toggles);
+  // The preview day's nation file also lists the realms the focus picker
+  // offers, so it is fetched while any queued look still uses the focus.
+  const wantNation = focusWanted;
   const wantMarkers = needsMarkers(toggles);
   const wantTrade = needsTradeFile(toggles);
   const wantProvinceData = needsProvinceData(toggles);
@@ -2019,7 +2025,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           setFocusNationId(next);
         }}
         focusDisabledReason={
-          needsNationFile(toggles)
+          focusWanted
             ? focusOptions.length
               ? null
               : "Waiting on the latest day's realms…"

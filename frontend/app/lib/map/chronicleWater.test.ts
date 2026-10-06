@@ -44,6 +44,13 @@ describe("chronicleDiscardedProvinceMask", () => {
     expect(chronicleDiscardedProvinceMask("water")).toBeNull();
   });
 
+  it("refuses a record with a paintable province whose terrain it cannot read", () => {
+    // That province could be water; trusting the rest would let a layer paint it.
+    expect(chronicleDiscardedProvinceMask({ 1: { terrain: "water" }, 2: { prosperity: 3 } })).toBeNull();
+    expect(chronicleDiscardedProvinceMask({ 1: { terrain: "hills" }, 2: null })).toBeNull();
+    expect(chronicleDiscardedProvinceMask({ 1: { terrain: 7 } })).toBeNull();
+  });
+
   it("skips an id the paint pass could never reach", () => {
     const mask = chronicleDiscardedProvinceMask({
       1: { terrain: "water" },

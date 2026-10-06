@@ -57,8 +57,11 @@ export function chronicleDiscardedProvinceMask(
     ) {
       continue;
     }
-    if (typeof value !== "object" || value === null) continue;
+    // A paintable province we cannot read the terrain of could be water, so
+    // the whole record is not to be trusted as a mask.
+    if (typeof value !== "object" || value === null) return null;
     const terrain = (value as { terrain?: unknown }).terrain;
+    if (typeof terrain !== "string") return null;
     if (!isChronicleDiscardedTerrain(terrain)) continue;
     hits.push(id);
     if (id > maxId) maxId = id;
