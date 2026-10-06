@@ -18,6 +18,9 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayerActivity: vi.fn(),
 }));
 
+// The movement map has its own tests; here it would need the map engine.
+vi.mock("./PlayerMovement", () => ({ default: () => null }));
+
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
 const NOW = 2_000_000_000;
 const KINDS = ["block", "click", "kill", "spawn", "container", "item", "entity", "sign", "skill", "command", "session"];

@@ -57,6 +57,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_origin: "That request was blocked. Reload the page and try again.",
   player_not_found: "No player with that UUID has been seen.",
   bad_uuid: "That isn’t a Minecraft UUID.",
+  bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
   bad_sort: "That sort order isn’t available.",
@@ -70,7 +71,7 @@ export function adminErrorMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getApiBase()}${path}`, {
     ...init,
     credentials: "include",
