@@ -14,6 +14,7 @@ import {
   focusChronicleLabels,
   focusOwnsMarker,
 } from "../../lib/map/chronicleFocus";
+import { chronicleRealmContains } from "../../lib/map/chronicleOwnership";
 import type { MapMarker } from "../../lib/mapMarkers";
 import type { ChronicleBorderMask } from "../../lib/map/chronicleBorderMask";
 import type {
@@ -277,16 +278,29 @@ function asArray<T>(value: T[] | undefined | null | unknown): T[] {
  * because `MapMarker` deliberately does not carry an owner and adding one for
  * this would put a field on every pin the live map draws.
  */
+function factionInFocus(
+  factionId: string | null | undefined,
+  focusNationId: string | null,
+  nationFile: RegionRecord | null
+): boolean {
+  if (!focusNationId) return true;
+  if (nationFile && factionId) {
+    return chronicleRealmContains(nationFile, focusNationId, factionId);
+  }
+  return focusOwnsMarker(factionId, focusNationId);
+}
+
 export function chronicleSettlementMarkers(
   markers: MapMarkersResponse | null,
   labelObjects: LabelMapObject[],
-  focusNationId: string | null = null
+  focusNationId: string | null = null,
+  nationFile: RegionRecord | null = null
 ): MapMarker[] {
   if (!markers) return [];
   return [
     ...filterPlacedSettlements(asArray(markers.settlements))
       .filter((settlement) =>
-        focusOwnsMarker(settlement.faction_id, focusNationId)
+        factionInFocus(settlement.faction_id, focusNationId, nationFile)
       )
       .map((settlement) =>
         settlementToMapMarker({
@@ -302,7 +316,7 @@ export function chronicleSettlementMarkers(
       .filter(
         (installation) =>
           installation.kind !== "fort" &&
-          focusOwnsMarker(installation.faction_id, focusNationId)
+          factionInFocus(installation.faction_id, focusNationId, nationFile)
       )
       .map(installationToMapMarker),
   ];
@@ -310,14 +324,15 @@ export function chronicleSettlementMarkers(
 
 export function chronicleFortMarkers(
   markers: MapMarkersResponse | null,
-  focusNationId: string | null = null
+  focusNationId: string | null = null,
+  nationFile: RegionRecord | null = null
 ): MapMarker[] {
   if (!markers) return [];
   return filterPlacedInstallations(asArray(markers.installations))
     .filter(
       (installation) =>
         installation.kind === "fort" &&
-        focusOwnsMarker(installation.faction_id, focusNationId)
+        factionInFocus(installation.faction_id, focusNationId, nationFile)
     )
     .map(installationToMapMarker);
 }
@@ -382,6 +397,12 @@ export function buildChronicleLayers(options: {
    * feature invites, and a second copy of the filter is how it gets in.
    */
   focusNationId?: string | null;
+  /**
+   * The day's nation file. When present, a focused suzerain keeps pins that
+   * belong to its vassals, matching the fill that paints their land as its own.
+   * Absent, focus stays an exact faction-id match.
+   */
+  nationFile?: RegionRecord | null;
 }): ChronicleFrameLayers {
   const {
     toggles,
@@ -392,6 +413,7 @@ export function buildChronicleLayers(options: {
     occupationSeam = null,
     fortControl = null,
     focusNationId = null,
+    nationFile = null,
   } = options;
   const pins: MapMarker[] = [];
   // Name chips are decided here rather than in `MapMarkerLayer` because the
@@ -403,11 +425,16 @@ export function buildChronicleLayers(options: {
 
   if (toggles.settlements) {
     pins.push(
-      ...chronicleSettlementMarkers(markers, labelObjects, focusNationId)
+      ...chronicleSettlementMarkers(
+        markers,
+        labelObjects,
+        focusNationId,
+        nationFile
+      )
     );
   }
   if (toggles.forts) {
-    pins.push(...chronicleFortMarkers(markers, focusNationId));
+    pins.push(...chronicleFortMarkers(markers, focusNationId, nationFile));
   }
   if (toggles.wars) {
     // Wars and their battle pins are deliberately left whole under a focus.

@@ -76,6 +76,19 @@ describe("chronicleFocusProvinceIds", () => {
     expect(Array.from(ids).sort()).toEqual([1, 2]);
   });
 
+  it("includes a vassal's home provinces when the suzerain is focused", () => {
+    const sworn: RegionRecord = {
+      order: { rgb: "1,1,1", provinces: [1], occupied_held: [8] },
+      spore: { rgb: "2,2,2", provinces: [3], overlord: "order", occupied_held: [9] },
+    };
+    expect(Array.from(chronicleFocusProvinceIds(sworn, "order")!).sort()).toEqual([
+      1, 3, 8,
+    ]);
+    expect(Array.from(chronicleFocusProvinceIds(sworn, "spore")!).sort()).toEqual([
+      3, 9,
+    ]);
+  });
+
   it("is empty — not null — for a realm this day has never heard of", () => {
     // Founded later or destroyed earlier. The empty set is what greys the whole
     // map for that day instead of silently un-focusing it.

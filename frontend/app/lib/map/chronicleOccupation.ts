@@ -1,5 +1,7 @@
 import { parseRgbString } from "@/app/lib/map/titleRgb";
 
+import { parchmentWashRgb } from "./displayColour";
+
 import {
   assertChronicleGridShape,
   type ChronicleBorderMask,
@@ -18,13 +20,11 @@ import {
  *
  * Two independent marks, both taken from the pipeline:
  *
- * 1. The fill. `display_colour.occupation_display_rgb` paints occupied land in
- *    the *occupier's* colour, muted 22% of the way toward its own luminance
- *    grey. The chronicle's fill works in raw nation `rgb` rather than the
- *    server's parchment wash, so the mute is applied to the raw colour: what is
- *    mirrored is the relationship between a nation's home and occupied land,
- *    which is the thing the eye reads, not an absolute triple the chronicle
- *    never used for home land either.
+ * 1. The fill. Home land is `display_colour.display_rgb` — the parchment wash,
+ *    not the faction's raw RGB. Occupied land is `occupation_display_rgb`: that
+ *    washed colour muted 22% of the way toward its own luminance grey. The
+ *    mute below is applied to the washed triple, which is the order the server
+ *    uses, so home and occupied stay in the same relationship the overlay has.
  * 2. The seam. `border_paint.apply_occupation_seam_dashes` finds every
  *    occupation-side pixel that 4-neighbours the same nation's home wash and
  *    stamps it in `OCCUPATION_DASH_COLOR`. Its `dash_off` is 0, so the "dashes"
@@ -134,7 +134,8 @@ export function chronicleDayColorLut(
     nations.forEach((nation, index) => {
       const parsed = parseRgbString(nation?.rgb ?? "");
       if (!parsed) return;
-      const rgb = mute ? occupationDisplayRgb(parsed) : parsed;
+      const home = parchmentWashRgb(parsed);
+      const rgb = mute ? occupationDisplayRgb(home) : home;
       const packed = packCanonicalRgba(rgb[0], rgb[1], rgb[2]);
       for (const id of lists[index] ?? []) {
         // Ocean (0) is never owned, and a negative or fractional id is junk.

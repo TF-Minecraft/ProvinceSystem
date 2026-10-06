@@ -14,12 +14,11 @@ import {
  *
  * This canvas deliberately does *not* go through the fill frame's
  * `renderSize` downscale: the fill is painted at 1600, shrunk to 600-1200 and
- * then magnified by the viewport, which is exactly the double resample that
- * turned a 3-px border into a soft band. Borders keep their 1600x1600 backing
- * store, the viewport stretches it once, and `image-rendering: pixelated`
- * keeps the stretch a hard-edged magnification instead of a bilinear smear —
- * at the viewport's maximum zoom one border pixel covers ~2.4 CSS px, the
- * same ratio the live map's server-rendered overlays are shown at.
+ * then magnified by the viewport, which is a second resample. Borders keep
+ * their 1600x1600 backing store and the viewport stretches that once, with
+ * the browser's normal smoothing. The live overlays are full-resolution PNGs
+ * scaled the same way; nearest-neighbour on this coarser grid is what made
+ * the chronicle seam look pixelated beside them.
  *
  * Sits below the label layer (z-15) and above the fill canvas (z-12) so a
  * border is never painted over by the territory it encloses, and never covers
@@ -73,7 +72,6 @@ function ChronicleBorderCanvas({
     <canvas
       ref={canvasRef}
       className="pointer-events-none absolute inset-0 z-[13] h-full w-full"
-      style={{ imageRendering: "pixelated" }}
       aria-hidden
     />
   );

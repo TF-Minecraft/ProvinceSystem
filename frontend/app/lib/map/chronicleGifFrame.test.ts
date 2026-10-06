@@ -10,6 +10,8 @@ import {
   MIN_GIF_DELAY_MS,
   chronicleGifDelayMs,
   chronicleGifFilename,
+  arcGlyphPlacements,
+  chronicleGifLabelArc,
   chronicleGifLabelLayout,
   chronicleGifMapX,
   chronicleGifMapY,
@@ -176,6 +178,39 @@ describe("chronicleGifLabelLayout", () => {
     expect(chronicleGifLabelLayout(t, label({ text: "" }))).toBeNull();
     expect(chronicleGifLabelLayout(t, label({ cx: Number.NaN }))).toBeNull();
     expect(chronicleGifLabelLayout(t, label({ fontSize: Number.NaN }))).toBeNull();
+  });
+});
+
+describe("chronicleGifLabelArc", () => {
+  it("bows the name above a horizontal chord, in export pixels", () => {
+    const t = chronicleGifTransform(MAP, MAP, 720);
+    const arc = chronicleGifLabelArc(t, label())!;
+    expect(arc.cy).toBeLessThan(arc.ay);
+    expect(arc.ay).toBeCloseTo(arc.by);
+    expect(arc.cx).toBeCloseTo((arc.ax + arc.bx) / 2);
+  });
+});
+
+describe("arcGlyphPlacements", () => {
+  it("centers a run on a straight baseline", () => {
+    const placements = arcGlyphPlacements(
+      {
+        text: "abc",
+        fontSize: 12,
+        haloWidth: 1,
+        ax: 0,
+        ay: 0,
+        cx: 50,
+        cy: 0,
+        bx: 100,
+        by: 0,
+      },
+      [10, 10, 10]
+    );
+    expect(placements[0]!.x).toBeCloseTo(40, 1);
+    expect(placements[1]!.x).toBeCloseTo(50, 1);
+    expect(placements[2]!.x).toBeCloseTo(60, 1);
+    expect(placements[1]!.angleRad).toBeCloseTo(0);
   });
 });
 

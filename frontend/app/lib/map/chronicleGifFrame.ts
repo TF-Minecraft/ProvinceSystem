@@ -1,4 +1,4 @@
-import type { NationLabelSpec } from "../mapLabels";
+import { labelArcQuadratic, type NationLabelSpec } from "../mapLabels";
 import { markerLayout, type MapMarker } from "../mapMarkers";
 
 /**
@@ -189,13 +189,9 @@ export type ChronicleGifLabelLayout = {
 /**
  * A realm name reduced to a straight rotated baseline.
  *
- * On screen the name is set along `pathD` with a `<textPath>`, which arches it
- * over the landmass; canvas has no equivalent and reimplementing glyph-by-glyph
- * arc placement for a 480-px GIF would cost far more than it shows. The chord
- * the arc was built around — `angleDeg` through `cx`/`cy` — is where the name
- * reads anyway, so the export sets it flat along that chord. Long names over
- * strongly curved territory drift a few pixels from where the preview put them;
- * nothing lands outside the realm.
+ * The exporter prefers `chronicleGifLabelArc`, which follows the same quadratic
+ * the on-screen `<textPath>` uses. This flat chord is the fallback when the
+ * label has no usable endpoints.
  */
 export function chronicleGifLabelLayout(
   transform: ChronicleGifTransform,
@@ -221,6 +217,156 @@ export function chronicleGifLabelLayout(
     angleRad: (angleDeg * Math.PI) / 180,
     haloWidth: Math.max(1, fontSize * 0.16),
   };
+}
+
+export type ChronicleGifLabelArc = {
+  text: string;
+  fontSize: number;
+  haloWidth: number;
+  ax: number;
+  ay: number;
+  cx: number;
+  cy: number;
+  bx: number;
+  by: number;
+};
+
+/**
+ * The on-screen name's quadratic, shifted by `pathOffset` and mapped into
+ * export pixels. Glyphs are then walked along it so the GIF arches the name
+ * the way the SVG layer does, instead of setting it flat on the chord.
+ */
+export function chronicleGifLabelArc(
+  transform: ChronicleGifTransform,
+  label: NationLabelSpec
+): ChronicleGifLabelArc | null {
+  const layout = chronicleGifLabelLayout(transform, label);
+  if (
+    !layout ||
+    !Number.isFinite(label.x1) ||
+    !Number.isFinite(label.y1) ||
+    !Number.isFinite(label.x2) ||
+    !Number.isFinite(label.y2)
+  ) {
+    return null;
+  }
+
+  const arc = labelArcQuadratic(label.x1, label.y1, label.x2, label.y2);
+  const offsetX = Number.isFinite(label.pathOffsetX) ? label.pathOffsetX : 0;
+  const offsetY = Number.isFinite(label.pathOffsetY) ? label.pathOffsetY : 0;
+  const mapPoint = (x: number, y: number) => ({
+    x: chronicleGifMapX(transform, x + offsetX),
+    y: chronicleGifMapY(transform, y + offsetY),
+  });
+  const start = mapPoint(arc.ax, arc.ay);
+  const control = mapPoint(arc.cx, arc.cy);
+  const end = mapPoint(arc.bx, arc.by);
+  return {
+    text: layout.text,
+    fontSize: layout.fontSize,
+    haloWidth: layout.haloWidth,
+    ax: start.x,
+    ay: start.y,
+    cx: control.x,
+    cy: control.y,
+    bx: end.x,
+    by: end.y,
+  };
+}
+
+export type ArcGlyphPlacement = {
+  x: number;
+  y: number;
+  angleRad: number;
+};
+
+function quadraticPoint(
+  arc: ChronicleGifLabelArc,
+  t: number
+): { x: number; y: number } {
+  const u = 1 - t;
+  return {
+    x: u * u * arc.ax + 2 * u * t * arc.cx + t * t * arc.bx,
+    y: u * u * arc.ay + 2 * u * t * arc.cy + t * t * arc.by,
+  };
+}
+
+function quadraticTangent(
+  arc: ChronicleGifLabelArc,
+  t: number
+): { x: number; y: number } {
+  return {
+    x: 2 * (1 - t) * (arc.cx - arc.ax) + 2 * t * (arc.bx - arc.cx),
+    y: 2 * (1 - t) * (arc.cy - arc.ay) + 2 * t * (arc.by - arc.cy),
+  };
+}
+
+/**
+ * Baseline points for each glyph width, centered on the quadratic the way
+ * `<textPath startOffset="50%" text-anchor="middle">` centers a run. Widths
+ * come from the canvas that will draw them; this only places them.
+ */
+export function arcGlyphPlacements(
+  arc: ChronicleGifLabelArc,
+  glyphWidths: readonly number[]
+): ArcGlyphPlacement[] {
+  const samples = 48;
+  const points = Array.from({ length: samples + 1 }, (_, index) =>
+    quadraticPoint(arc, index / samples)
+  );
+  const cumulative = [0];
+  for (let index = 1; index < points.length; index++) {
+    const previous = points[index - 1]!;
+    const current = points[index]!;
+    const span = Math.hypot(current.x - previous.x, current.y - previous.y);
+    cumulative.push(cumulative[index - 1]! + span);
+  }
+  const pathLength = cumulative[cumulative.length - 1] ?? 0;
+  const textWidth = glyphWidths.reduce((sum, width) => sum + width, 0);
+  let cursor = (pathLength - textWidth) / 2;
+
+  const atDistance = (distance: number): ArcGlyphPlacement => {
+    const startTangent = quadraticTangent(arc, 0);
+    const endTangent = quadraticTangent(arc, 1);
+    const angleOf = (tangent: { x: number; y: number }) =>
+      Math.atan2(tangent.y, tangent.x);
+    const step = (
+      origin: { x: number; y: number },
+      tangent: { x: number; y: number },
+      extra: number
+    ): ArcGlyphPlacement => {
+      const length = Math.hypot(tangent.x, tangent.y) || 1;
+      return {
+        x: origin.x + (tangent.x / length) * extra,
+        y: origin.y + (tangent.y / length) * extra,
+        angleRad: angleOf(tangent),
+      };
+    };
+    if (pathLength < 1e-6) {
+      return { x: arc.ax, y: arc.ay, angleRad: angleOf(startTangent) };
+    }
+    if (distance <= 0) return step({ x: arc.ax, y: arc.ay }, startTangent, distance);
+    if (distance >= pathLength) {
+      return step({ x: arc.bx, y: arc.by }, endTangent, distance - pathLength);
+    }
+    let segment = 1;
+    while (segment < cumulative.length - 1 && cumulative[segment]! < distance) {
+      segment++;
+    }
+    const spanStart = cumulative[segment - 1]!;
+    const spanEnd = cumulative[segment]!;
+    const span = spanEnd - spanStart;
+    const local = span > 0 ? (distance - spanStart) / span : 0;
+    const t = (segment - 1 + local) / samples;
+    const point = quadraticPoint(arc, t);
+    return { ...point, angleRad: angleOf(quadraticTangent(arc, t)) };
+  };
+
+  return glyphWidths.map((width) => {
+    const place = atDistance(cursor + width / 2);
+    cursor += width;
+    return place;
+  });
 }
 
 export type ChronicleWatermarkDateLayout = {

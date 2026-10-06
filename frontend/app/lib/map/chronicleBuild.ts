@@ -9,12 +9,12 @@ import type { ChronicleIndex } from "./chronicleData";
 
 /** Square edge of the painted frames the build keeps in memory. */
 export const CHRONICLE_RENDER_SIZES = [1200, 900, 600] as const;
-export const DEFAULT_CHRONICLE_RENDER_SIZE = 900;
+export const DEFAULT_CHRONICLE_RENDER_SIZE = 1200;
 
 /**
  * Frames are held decoded for the whole playback, so the ceiling is a real
- * browser limit rather than a preference. 256 MB is roughly 79 frames at the
- * default 900px render size — past that the studio asks the user to shorten the
+ * browser limit rather than a preference. 256 MB is roughly 46 frames at the
+ * default 1200px render size — past that the studio asks the user to shorten the
  * range or drop the resolution instead of quietly allocating it.
  */
 export const CHRONICLE_MEMORY_CEILING_BYTES = 256 * 1024 * 1024;
