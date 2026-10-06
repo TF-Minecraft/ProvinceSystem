@@ -70,7 +70,7 @@ export default function SiteHeader() {
     setOpen(false);
   }, []);
 
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => closeMenu(), [pathname, closeMenu]);
 
   useEffect(() => {
     if (!open) return;

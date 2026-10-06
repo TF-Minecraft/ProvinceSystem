@@ -75,6 +75,7 @@ it("closes on a link, the backdrop, Escape and navigation", () => {
   pathname = "/wiki";
   view.rerender(<SiteHeader />);
   expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  expect(document.activeElement).toBe(toggle);
 });
 
 it("keeps Tab and Shift+Tab inside the open menu", () => {
