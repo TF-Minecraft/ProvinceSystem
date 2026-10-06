@@ -32,6 +32,17 @@ it("drops a held write once the reader has left its page", () => {
   expect(window.location.pathname).toBe("/map");
 });
 
+it("drops a held write after back or forward on the same page", () => {
+  window.history.replaceState(null, "", "/admin/movement?at=1");
+  const replace = vi.spyOn(window.history, "replaceState");
+  for (let i = 0; i < 40; i += 1) writeUrl(`/admin/movement?at=${i}`, true);
+  window.history.pushState(null, "", "/admin/movement?session=other");
+  replace.mockClear();
+  vi.advanceTimersByTime(10_000);
+  expect(replace).not.toHaveBeenCalled();
+  expect(window.location.search).toBe("?session=other");
+});
+
 it("never lets a history error escape", () => {
   vi.spyOn(window.history, "replaceState").mockImplementation(() => {
     throw new DOMException("Attempt to use history.replaceState() more than 100 times per 10 seconds", "SecurityError");

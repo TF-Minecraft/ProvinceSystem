@@ -13,7 +13,9 @@ const WINDOW_MS = 10_000;
 const WRITES_PER_WINDOW = 30;
 
 let recent: number[] = [];
-let held: { url: string; replace: boolean } | null = null;
+// `from`: the address when the write was held. Writes are held, not made, until the timer,
+// so any other change of address since (back, forward, a link) means the held one is stale.
+let held: { url: string; replace: boolean; from: string } | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 function write(url: string, replace: boolean): void {
@@ -29,10 +31,8 @@ function flush(): void {
   timer = null;
   const next = held;
   held = null;
-  // Written only if the reader is still on the page it was for, never over another page's address.
-  if (next && new URL(next.url, window.location.href).pathname === window.location.pathname) {
-    writeUrl(next.url, next.replace);
-  }
+  // Written only if the address is still the one it was held against, never over a newer one.
+  if (next && window.location.href === next.from) writeUrl(next.url, next.replace);
 }
 
 export function writeUrl(url: string, replace: boolean): void {
@@ -44,7 +44,7 @@ export function writeUrl(url: string, replace: boolean): void {
     return;
   }
   // Keep the latest; a held push stays a push, so the history entry is not lost.
-  held = { url, replace: replace && (held?.replace ?? true) };
+  held = { url, replace: replace && (held?.replace ?? true), from: window.location.href };
   if (!timer) timer = setTimeout(flush, Math.max(50, WINDOW_MS - (now - recent[0])));
 }
 
