@@ -84,6 +84,8 @@ export default function EveryoneMovement() {
   const from = intParam(search.get("from")) ?? opened - 3600;
   const to = intParam(search.get("to")) ?? opened;
   const follow = search.get("follow") === "1";
+  // What the inspected moment belongs to: a moment being moved does not carry over to another range.
+  const momentView = `range:${from}:${to}:${follow}`;
   const urlAt = intParam(search.get("at"));
   const pin = pinParam(search.get("pin"));
   const chosen = useMemo(() => new Set((search.get("players") ?? "").split(",").filter(Boolean)), [search]);
@@ -103,7 +105,7 @@ export default function EveryoneMovement() {
     [pathname, search]
   );
   // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
-  const { at, move: setMoment, cancel: cancelMoment } = useLiveMoment(urlAt, (time) =>
+  const { at, move: setMoment, cancel: cancelMoment } = useLiveMoment(urlAt, momentView, (time) =>
     update({ at: String(time) }, true)
   );
 

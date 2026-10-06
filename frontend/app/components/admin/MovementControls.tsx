@@ -61,12 +61,18 @@ const MOMENT_WRITE_DELAY_MS = 300;
 /**
  * The inspected moment while it is being moved: shown at once, written to the
  * URL (`at`) only once it rests, so dragging the timeline does not rewrite the
- * URL on every step. `cancel` drops a pending write, for when the view changes
- * (a new session or range clears `at`).
+ * URL on every step. A change of `view` (the session or range shown) or of the
+ * URL's own `at` (back and forward, a link) drops the moment being moved and
+ * any write still pending; `cancel` does the same on demand.
  */
-export function useLiveMoment(urlAt: number | null, writeAt: (time: number) => void) {
+export function useLiveMoment(urlAt: number | null, view: string, writeAt: (time: number) => void) {
   const [live, setLive] = useState<number | null>(null);
   const [seenUrlAt, setSeenUrlAt] = useState(urlAt);
+  const [seenView, setSeenView] = useState(view);
+  if (seenView !== view) {
+    setSeenView(view);
+    setLive(null);
+  }
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const write = useRef(writeAt);
   write.current = writeAt;
@@ -89,6 +95,11 @@ export function useLiveMoment(urlAt: number | null, writeAt: (time: number) => v
       write.current(at);
     }, MOMENT_WRITE_DELAY_MS);
   }, []);
+  // Our own write clears the timer before it lands, so a pending timer here means the change came from elsewhere.
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, [urlAt, view]);
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);

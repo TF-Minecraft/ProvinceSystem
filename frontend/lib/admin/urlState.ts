@@ -29,7 +29,10 @@ function flush(): void {
   timer = null;
   const next = held;
   held = null;
-  if (next) writeUrl(next.url, next.replace);
+  // Written only if the reader is still on the page it was for, never over another page's address.
+  if (next && new URL(next.url, window.location.href).pathname === window.location.pathname) {
+    writeUrl(next.url, next.replace);
+  }
 }
 
 export function writeUrl(url: string, replace: boolean): void {

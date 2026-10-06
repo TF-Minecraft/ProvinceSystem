@@ -98,6 +98,8 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   const from = intParam(search.get("from"));
   const to = intParam(search.get("to"));
   const follow = search.get("follow") === "1";
+  // What the inspected moment belongs to: a moment being moved does not carry over to another view.
+  const momentView = sessionId ? `session:${sessionId}` : `range:${from}:${to}:${follow}`;
   const urlAt = intParam(search.get("at"));
   const pin = pinParam(search.get("pin"));
   // A session in the URL wins over a range.
@@ -124,7 +126,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     [pathname, search]
   );
   // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
-  const { at, move: setCursor, cancel: cancelMoment } = useLiveMoment(urlAt, (time) =>
+  const { at, move: setCursor, cancel: cancelMoment } = useLiveMoment(urlAt, momentView, (time) =>
     update({ at: String(time) }, true)
   );
 
