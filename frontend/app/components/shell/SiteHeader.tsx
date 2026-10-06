@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
+import { getAccount } from "@/lib/account/api";
+import { isStaffRole } from "@/lib/admin/api";
 
 const staticLinks = [
   { href: "/", label: "Home" },
@@ -18,6 +21,20 @@ const staticLinks = [
 export default function SiteHeader() {
   const { state } = useSiteStaffAccess({ enabled: true });
   const isStaff = state === "staff";
+  // Only a hint for showing the link: the panel and its API check the role.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getAccount()
+      .then((account) => {
+        if (active) setIsAdmin(isStaffRole(account?.user.role));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <header
@@ -59,6 +76,14 @@ export default function SiteHeader() {
               Inspect
             </Link>
           </>
+        ) : null}
+        {isAdmin ? (
+          <Link
+            href="/admin"
+            className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+          >
+            Admin
+          </Link>
         ) : null}
       </nav>
     </header>

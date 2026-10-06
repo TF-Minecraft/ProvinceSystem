@@ -150,6 +150,7 @@ from src.api.patchnotes_routes import patchnotes_router
 from src.api.wars_routes import wars_router
 from src.api.patreon_routes import patreon_router
 from src.api.auth_routes import auth_router
+from src.api import admin_routes
 
 app.include_router(map_router)
 app.include_router(editor_router)
@@ -176,3 +177,4 @@ app.include_router(patchnotes_router)
 app.include_router(wars_router)
 app.include_router(patreon_router)
 app.include_router(auth_router)
+admin_routes.install(app)
