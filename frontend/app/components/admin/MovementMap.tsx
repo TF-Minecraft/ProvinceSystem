@@ -23,6 +23,8 @@ import {
 const AGE_BANDS = 16;
 /** Above this many rows the per-ping dots are left out; the line still shows every ping. */
 const MAX_DOTS = 3000;
+/** How close staff can zoom: screen pixels per block, far past the site map's limit. */
+const MAX_PIXELS_PER_BLOCK = 12;
 /** Smallest box the camera frames, in blocks, so one spot is not zoomed in to single pixels. */
 const MIN_FRAME = 160;
 
@@ -101,7 +103,14 @@ export default function MovementMap({
     if (manifest) setMapSize({ w: manifest.width, h: manifest.height });
   }, [manifest]);
 
-  const viewport = useMapViewport({ mapSize, fitMode: "contain", dragPan: true, keyboard: false, restingZoom: true });
+  const viewport = useMapViewport({
+    mapSize,
+    fitMode: "contain",
+    dragPan: true,
+    keyboard: false,
+    restingZoom: true,
+    maxDisplayScale: MAX_PIXELS_PER_BLOCK,
+  });
   const { displayScale, focusMapRect, resetViewport, zoomBy } = viewport;
   const ready = viewport.viewportSize.w > 0;
 

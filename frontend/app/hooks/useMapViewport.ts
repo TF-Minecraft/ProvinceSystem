@@ -13,6 +13,7 @@ import {
   computeCenteredTransform,
   computeDisplayScale,
   computeFitScale,
+  MAP_ZOOM_MAX,
   screenToMap,
   transformForMapRect,
   viewportTransformStyle,
@@ -70,6 +71,12 @@ export type UseMapViewportOptions = {
    * Zoomed instead, the content is laid out at its size on screen.
    */
   restingZoom?: boolean;
+  /**
+   * Allow zooming in until the map draws this many screen pixels per map
+   * pixel, past the site map's usual limit (`MAP_ZOOM_MAX` times the fit).
+   * For close-up maps such as staff movement, where single blocks matter.
+   */
+  maxDisplayScale?: number;
 };
 
 export type MapFocusInset = {
@@ -178,6 +185,7 @@ export function useMapViewport({
   keyboard = false,
   onLiveTransform,
   restingZoom = false,
+  maxDisplayScale,
 }: UseMapViewportOptions): UseMapViewportResult {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -207,6 +215,15 @@ export function useMapViewport({
   mapSizeRef.current = mapSize;
   const fitModeRef = useRef(fitMode);
   fitModeRef.current = fitMode;
+  const maxDisplayScaleRef = useRef(maxDisplayScale);
+  maxDisplayScaleRef.current = maxDisplayScale;
+  /** The deepest user scale allowed at the current fit (see `maxDisplayScale`). */
+  const userScaleCap = useCallback((): number => {
+    const wanted = maxDisplayScaleRef.current;
+    if (!wanted) return MAP_ZOOM_MAX;
+    const fit = computeFitScale(viewportSizeRef.current, mapSizeRef.current, fitModeRef.current);
+    return fit > 0 ? Math.max(MAP_ZOOM_MAX, wanted / fit) : MAP_ZOOM_MAX;
+  }, []);
   const dragPanRef = useRef(dragPan);
   dragPanRef.current = dragPan;
 
@@ -307,7 +324,7 @@ export function useMapViewport({
     const viewport = viewportSizeRef.current;
     const map = mapSizeRef.current;
     const nextFitScale = computeFitScale(viewport, map, fitModeRef.current);
-    const clampedUserScale = clampUserScale(next.userScale);
+    const clampedUserScale = clampUserScale(next.userScale, userScaleCap());
     const nextDisplayScale = computeDisplayScale(nextFitScale, clampedUserScale);
     const clamped = clampTranslate(
       viewport,
@@ -360,7 +377,8 @@ export function useMapViewport({
           current,
           { x: viewport.w / 2, y: viewport.h / 2 },
           current.userScale * factor,
-          fitModeRef.current
+          fitModeRef.current,
+          userScaleCap()
         ),
         VIEWPORT_RESET_TRANSITION,
         VIEWPORT_RESET_TRANSITION_MS
@@ -513,7 +531,8 @@ export function useMapViewport({
             transformRef.current,
             cursor,
             event.deltaY,
-            fitModeRef.current
+            fitModeRef.current,
+            userScaleCap()
           )
         )
       );
@@ -567,7 +586,8 @@ export function useMapViewport({
           gesture.startTransform,
           gesture.start.midpoint,
           pinchUserScale(gesture.startTransform.userScale, gesture.start, sample),
-          fitModeRef.current
+          fitModeRef.current,
+          userScaleCap()
         );
         presentLive(
           applyClampedTransform({
@@ -661,7 +681,8 @@ export function useMapViewport({
           current,
           toViewportPoint(event),
           current.userScale * MAP_ZOOM_STEP,
-          fitModeRef.current
+          fitModeRef.current,
+          userScaleCap()
         ),
         VIEWPORT_RESET_TRANSITION,
         VIEWPORT_RESET_TRANSITION_MS
