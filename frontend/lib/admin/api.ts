@@ -62,6 +62,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_sort: "That sort order isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
+  audit_unavailable: "Chat and commands can’t be shown because the view couldn’t be logged. Try again.",
 };
 
 export function adminErrorMessage(err: unknown): string {
@@ -203,6 +204,9 @@ export type ActivityEntry = {
   target: string | null;
   amount: number | null;
   victim: { minecraft_name: string; uuid: string | null } | null;
+  /** Chat text, for admins only. */
+  message: string | null;
+  truncated: boolean;
   world: string | null;
   x: number;
   y: number;
@@ -215,6 +219,8 @@ export type ActivityPage = {
   next: string | null;
   searched_to: number | null;
   kinds: string[];
+  /** Whether chat and whole commands are included (admins); each such view is audited. */
+  shows_messages: boolean;
   coreprotect: CoreProtectStatus;
 };
 

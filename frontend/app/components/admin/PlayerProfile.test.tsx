@@ -42,7 +42,7 @@ const PROFILE: Profile = {
 function entry(id: string, extra: Partial<ActivityEntry>): ActivityEntry {
   return {
     id, time: NOW - 60, kind: "block", verb: "broke", target: "stone", amount: null, victim: null,
-    world: "TFMC_Map", x: 1, y: 64, z: 2, rolled_back: null, ...extra,
+    message: null, truncated: false, world: "TFMC_Map", x: 1, y: 64, z: 2, rolled_back: null, ...extra,
   };
 }
 
@@ -64,7 +64,7 @@ beforeEach(() => {
       entry("block:2", { kind: "kill", verb: "killed", target: "Bob", victim: { minecraft_name: "Bob", uuid: "00000000-0000-0000-0000-000000000002" } }),
       entry("container:3", { kind: "container", verb: "added", target: "iron_ingot", amount: 3, rolled_back: "rolled back" }),
     ],
-    next: "cursor-1", searched_to: null, kinds: KINDS, coreprotect: { status: "available" },
+    next: "cursor-1", searched_to: null, kinds: KINDS, shows_messages: false, coreprotect: { status: "available" },
   });
 });
 afterEach(() => {
@@ -103,7 +103,7 @@ it("shows activity, links victims and loads more", async () => {
 
   vi.mocked(getPlayerActivity).mockResolvedValueOnce({
     entries: [entry("block:0", { verb: "placed", target: "oak_door" })], next: null, searched_to: null,
-    kinds: KINDS, coreprotect: { status: "available" },
+    kinds: KINDS, shows_messages: false, coreprotect: { status: "available" },
   });
   fireEvent.click(within(feed).getByRole("button", { name: "Load more" }));
   expect(await within(feed).findByText("oak_door")).toBeTruthy();
@@ -117,7 +117,7 @@ it("filters by kind from the first page", async () => {
   const feed = await screen.findByRole("region", { name: "Recent activity" });
   await within(feed).findByText("stone");
   vi.mocked(getPlayerActivity).mockResolvedValue({
-    entries: [], next: "cursor-9", searched_to: NOW - 86400, kinds: KINDS, coreprotect: { status: "available" },
+    entries: [], next: "cursor-9", searched_to: NOW - 86400, kinds: KINDS, shows_messages: false, coreprotect: { status: "available" },
   });
   fireEvent.click(within(feed).getByRole("button", { name: "Kills" }));
   await waitFor(() => expect(getPlayerActivity).toHaveBeenLastCalledWith(UUID, { before: null, kinds: ["kill"] }));
@@ -156,7 +156,7 @@ it("never pages an old filter's cursor into a new filter", async () => {
 
   finish({
     entries: [entry("block:9", { kind: "kill", verb: "killed", target: "cow" })], next: null, searched_to: null,
-    kinds: KINDS, coreprotect: { status: "available" },
+    kinds: KINDS, shows_messages: false, coreprotect: { status: "available" },
   });
   expect(await within(feed).findByText("cow")).toBeTruthy();
   expect(getPlayerActivity).toHaveBeenLastCalledWith(UUID, { before: null, kinds: ["kill"] });
@@ -169,7 +169,7 @@ it("keeps rows and the cursor when a later page is unavailable", async () => {
   await within(feed).findByText("stone");
 
   vi.mocked(getPlayerActivity).mockResolvedValueOnce({
-    entries: [], next: null, searched_to: null, kinds: KINDS, coreprotect: { status: "unavailable", reason: "busy" },
+    entries: [], next: null, searched_to: null, kinds: KINDS, shows_messages: false, coreprotect: { status: "unavailable", reason: "busy" },
   });
   fireEvent.click(within(feed).getByRole("button", { name: "Load more" }));
   expect(await within(feed).findByText(/CoreProtect is busy/)).toBeTruthy();
@@ -177,7 +177,7 @@ it("keeps rows and the cursor when a later page is unavailable", async () => {
 
   vi.mocked(getPlayerActivity).mockResolvedValueOnce({
     entries: [entry("block:0", { verb: "placed", target: "oak_door" })], next: null, searched_to: null,
-    kinds: KINDS, coreprotect: { status: "available" },
+    kinds: KINDS, shows_messages: false, coreprotect: { status: "available" },
   });
   fireEvent.click(within(feed).getByRole("button", { name: "Try again" }));
   expect(await within(feed).findByText("oak_door")).toBeTruthy();
@@ -202,4 +202,28 @@ it("retries a failed sessions page from the same cursor", async () => {
   expect(within(sessions).getByText("No logout recorded")).toBeTruthy();
   fireEvent.click(within(sessions).getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(getPlayerSessions).toHaveBeenLastCalledWith(UUID, "s-1"));
+});
+
+it("shows chat and whole commands to admins, and says views are logged", async () => {
+  vi.mocked(getPlayerActivity).mockResolvedValue({
+    entries: [
+      entry("chat:1", { kind: "chat", verb: "said", target: null, message: "meet at the docks" }),
+      entry("command:2", { kind: "command", verb: "ran", target: "/msg Bob hello", truncated: true }),
+    ],
+    next: null, searched_to: null, kinds: [...KINDS, "chat"], shows_messages: true, coreprotect: { status: "available" },
+  });
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  expect(await within(feed).findByText("meet at the docks")).toBeTruthy();
+  expect(within(feed).getByText("/msg Bob hello")).toBeTruthy();
+  expect(within(feed).getByText("(cut short)")).toBeTruthy();
+  expect(within(feed).getByRole("button", { name: "Chat" })).toBeTruthy();
+  expect(within(feed).getByText(/Your views of these are logged/)).toBeTruthy();
+});
+
+it("keeps moderators' note when messages are not included", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  expect(await within(feed).findByText(/Chat, command arguments and sign text are not shown/)).toBeTruthy();
+  expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
 });

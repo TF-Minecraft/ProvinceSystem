@@ -39,6 +39,7 @@ export const KIND_LABELS: Record<string, string> = {
   skill: "Skills",
   command: "Commands",
   session: "Logins",
+  chat: "Chat",
 };
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; profile: Profile };
@@ -270,6 +271,15 @@ function Retry({ failure, busy, onRetry }: { failure: Failure; busy: boolean; on
 
 function describe(entry: ActivityEntry) {
   const amount = entry.amount && entry.amount > 1 ? `${entry.amount} × ` : "";
+  const cut = entry.truncated ? <span className="text-[var(--tfmc-stone)]"> (cut short)</span> : null;
+  if (entry.kind === "chat") {
+    return (
+      <>
+        said <q className="break-words text-[var(--tfmc-cream)]">{entry.message}</q>
+        {cut}
+      </>
+    );
+  }
   return (
     <>
       {entry.verb}{" "}
@@ -281,11 +291,12 @@ function describe(entry: ActivityEntry) {
           {entry.target}
         </Link>
       ) : entry.target ? (
-        <span className="font-semibold text-[var(--tfmc-cream)]">
+        <span className="break-words font-semibold text-[var(--tfmc-cream)]">
           {amount}
           {entry.target}
         </span>
       ) : null}
+      {cut}
     </>
   );
 }
@@ -298,6 +309,7 @@ function Activity({ uuid }: { uuid: string }) {
   const [searchedTo, setSearchedTo] = useState<number | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "more">("loading");
   const [failure, setFailure] = useState<Failure | null>(null);
+  const [showsMessages, setShowsMessages] = useState(false);
   const request = useRef(0);
 
   const fetchPage = useCallback(
@@ -316,6 +328,7 @@ function Activity({ uuid }: { uuid: string }) {
         setEntries((old) => (before ? [...old, ...page.entries] : page.entries));
         setNext(page.next);
         setSearchedTo(page.searched_to);
+        setShowsMessages(page.shows_messages);
         if (page.kinds.length) setAvailable(page.kinds);
       } catch (err) {
         if (id === request.current) setFailure({ message: adminErrorMessage(err), before });
@@ -353,7 +366,11 @@ function Activity({ uuid }: { uuid: string }) {
   return (
     <section className={panelClass} aria-label="Recent activity">
       <h3 className={headingClass}>Recent activity</h3>
-      <p className="mt-1 text-xs text-[var(--tfmc-stone)]">From CoreProtect. Chat, command arguments and sign text are not shown.</p>
+      <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
+        {showsMessages
+          ? "From CoreProtect, including chat and whole commands. Your views of these are logged. Sign text is not shown."
+          : "From CoreProtect. Chat, command arguments and sign text are not shown."}
+      </p>
       <div role="group" aria-label="Show" className="mt-3 flex flex-wrap gap-1.5">
         <button type="button" aria-pressed={!kinds.length} className={chip(!kinds.length)} onClick={() => choose([])}>
           All
@@ -372,7 +389,7 @@ function Activity({ uuid }: { uuid: string }) {
         <ul className="mt-3 divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-sm">
           {entries.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2">
-              <span className="text-[var(--tfmc-mist)]">
+              <span className="min-w-0 text-[var(--tfmc-mist)]">
                 {describe(entry)}
                 {entry.rolled_back ? <span className="ml-2 text-xs text-[#e8c48a]">{entry.rolled_back}</span> : null}
               </span>
