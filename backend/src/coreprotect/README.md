@@ -18,9 +18,12 @@ above).
 
 Mount the CoreProtect **directory** read-only, so SQLite can see a hot
 `-journal`. Set `disable-wal: true` in CoreProtect's `config.yml` (then
-`/co reload`): our fork uses WAL by default, and a WAL database can only be
-read where its `-wal` and `-shm` files can be created, which a read-only mount
-forbids. The site then reports `cannot_open`. The paths are host-specific, so they belong in the host's
+`/co reload`): our fork uses WAL by default, and through a read-only mount
+SQLite can open a WAL database only while its `-wal` and `-shm` files already
+exist. CoreProtect closes its connections between batches, which removes
+them, so in WAL mode the site mostly reports `cannot_open`. The option is
+appended to `config.yml` once and applied on every start or reload; CoreProtect
+only ever appends missing options to that file, so updates keep it. The paths are host-specific, so they belong in the host's
 `docker-compose.override.yml`, not the repository's compose files:
 
 ```yaml
