@@ -303,7 +303,8 @@ function describe(entry: ActivityEntry) {
 
 function Activity({ uuid }: { uuid: string }) {
   const [kinds, setKinds] = useState<string[]>([]);
-  const [available, setAvailable] = useState<string[]>(Object.keys(KIND_LABELS));
+  // Until the server says which kinds this viewer may filter by, offer only the ones everyone may.
+  const [available, setAvailable] = useState<string[]>(Object.keys(KIND_LABELS).filter((kind) => kind !== "chat"));
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [searchedTo, setSearchedTo] = useState<number | null>(null);
@@ -320,6 +321,8 @@ function Activity({ uuid }: { uuid: string }) {
       try {
         const page = await getPlayerActivity(uuid, { before, kinds: kinds.length ? kinds : undefined });
         if (id !== request.current) return;
+        if (page.kinds.length) setAvailable(page.kinds);
+        setShowsMessages(page.shows_messages);
         const notice = coreProtectMessage(page.coreprotect);
         if (notice) {
           setFailure({ message: notice, before });
@@ -328,8 +331,6 @@ function Activity({ uuid }: { uuid: string }) {
         setEntries((old) => (before ? [...old, ...page.entries] : page.entries));
         setNext(page.next);
         setSearchedTo(page.searched_to);
-        setShowsMessages(page.shows_messages);
-        if (page.kinds.length) setAvailable(page.kinds);
       } catch (err) {
         if (id === request.current) setFailure({ message: adminErrorMessage(err), before });
       } finally {

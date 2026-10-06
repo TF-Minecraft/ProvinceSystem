@@ -227,3 +227,11 @@ it("keeps moderators' note when messages are not included", async () => {
   expect(await within(feed).findByText(/Chat, command arguments and sign text are not shown/)).toBeTruthy();
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
 });
+
+it("never offers Chat before the server allows it", async () => {
+  vi.mocked(getPlayerActivity).mockReturnValue(new Promise(() => {}));
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  expect(within(feed).getByRole("button", { name: "Kills" })).toBeTruthy();
+  expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
+});
