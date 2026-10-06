@@ -20,7 +20,7 @@ from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode a
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src.skins.db import connect
 
-from . import audit, roles, users
+from . import audit, discord_names, roles, users
 
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
@@ -303,6 +303,10 @@ def profile(config: CoreProtectConfig, text: str) -> dict:
     except Unavailable as exc:
         error = exc
     links, roster = _site_rows(key)
+    # A link whose handle is unknown: ask Discord now (with a bot token), so the profile shows it.
+    if links and not (links[0]["account_username"] or links[0]["discord_username"]):
+        if discord_names.refresh_one(links[0]["discord_user_id"]):
+            links, roster = _site_rows(key)
     if not accounts and not links and not roster and error is None:
         raise PlayerError(404, "player_not_found")
     link = links[0] if links else None

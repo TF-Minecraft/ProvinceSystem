@@ -54,6 +54,10 @@ async def lifespan(app: FastAPI):
 
     patreon_stop = asyncio.Event()
     patreon_task = asyncio.create_task(sync_loop(patreon_stop)) if Config.from_env().enabled else None
+    from src.auth.discord_names import BotConfig, refresh_loop
+
+    names_stop = asyncio.Event()
+    names_task = asyncio.create_task(refresh_loop(names_stop)) if BotConfig.from_env().enabled else None
     logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
     try:
         yield
@@ -61,6 +65,9 @@ async def lifespan(app: FastAPI):
         if patreon_task is not None:
             patreon_stop.set()
             await patreon_task
+        if names_task is not None:
+            names_stop.set()
+            await names_task
 
 
 app = FastAPI(lifespan=lifespan)
