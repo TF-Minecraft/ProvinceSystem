@@ -1,4 +1,4 @@
-"""Staff view of Minecraft players: a directory, profiles, sessions and activity.
+"""Staff view of Minecraft players: a directory, profiles, sessions, activity and movement.
 
 A player is a Minecraft account, keyed by its UUID; names are never merged
 on. The directory is the union of everyone CoreProtect has seen join, every
@@ -15,7 +15,7 @@ import threading
 import time
 import uuid as uuidlib
 
-from src.coreprotect import activity, maps as co_maps, sessions
+from src.coreprotect import activity, maps as co_maps, movement, sessions
 from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode as encode_cursor
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src.skins.db import connect
@@ -386,3 +386,70 @@ def player_activity(config: CoreProtectConfig, text: str, before: str | None, li
     if full:
         _audit_messages(viewer, config, key, chosen, before, built["entries"])
     return {**built, "kinds": list(allowed), "shows_messages": full, "coreprotect": _status(None)}
+
+
+
+def _window(since: int | None, until: int | None, longest: int) -> tuple[int, int]:
+    try:
+        return movement.window(since, until, int(time.time()), longest)
+    except movement.BadWindow:
+        raise PlayerError(400, "bad_window") from None
+
+
+def _movement_status(config: CoreProtectConfig, error: Unavailable | None) -> dict:
+    return {**_status(error), "server_label": config.label or None, "ping_seconds": config.ping_seconds or None,
+            "map_world": config.map_world}
+
+
+def _audit_movement(viewer: dict, config: CoreProtectConfig, subject: str, since: int, until: int,
+                    body: dict, rows: int) -> None:
+    """Record that a viewer was shown where players went, before they see it. Never stores positions."""
+    detail = {
+        "server": config.server,
+        "player_uuid": subject,
+        "since": since,
+        "until": until,
+        "complete_from": body["complete_from"],
+        "rows": rows,
+    }
+    try:
+        with connect() as conn:
+            audit.record(conn, actor=viewer, action="player.movement.view", outcome="ok", detail=detail)
+            conn.commit()
+    except Exception:
+        raise PlayerError(503, "audit_unavailable") from None
+
+
+def player_movement(config: CoreProtectConfig, text: str, since: int | None, until: int | None,
+                    viewer: dict) -> dict:
+    """One player's logins, logouts and pings between since and until (epoch seconds). Audited."""
+    key = _require(text)
+    since, until = _window(since, until, movement.PLAYER_WINDOW_SECONDS)
+    empty = {"since": since, "until": until, "worlds": [], "points": [], "complete_from": since,
+             "pings_since": None}
+    try:
+        with Reader(config, Budget()) as reader:
+            ids = [a["id"] for a in _ids(reader, key)]
+            maps = co_maps.get(reader)
+            raw = (movement.fetch_player(reader, ids, since, until, movement.lead_seconds(config.ping_seconds))
+                   if ids else None)
+    except Unavailable as exc:
+        return {**empty, "coreprotect": _movement_status(config, exc)}
+    body = {**empty, **movement.build_player(raw, maps)} if raw else empty
+    _audit_movement(viewer, config, key, since, until, body, len(body["points"]))
+    return {**body, "coreprotect": _movement_status(config, None)}
+
+
+def everyone_movement(config: CoreProtectConfig, since: int | None, until: int | None, viewer: dict) -> dict:
+    """Every player's logins, logouts and pings between since and until (epoch seconds). Audited."""
+    since, until = _window(since, until, movement.EVERYONE_WINDOW_SECONDS)
+    try:
+        with Reader(config, Budget()) as reader:
+            maps = co_maps.get(reader)
+            raw = movement.fetch_everyone(reader, since, until, movement.lead_seconds(config.ping_seconds))
+    except Unavailable as exc:
+        return {"since": since, "until": until, "worlds": [], "players": [], "complete_from": since,
+                "pings_since": None, "coreprotect": _movement_status(config, exc)}
+    body = {"since": since, "until": until, **movement.build_everyone(raw, maps)}
+    _audit_movement(viewer, config, "everyone", since, until, body, sum(len(p["points"]) for p in body["players"]))
+    return {**body, "coreprotect": _movement_status(config, None)}

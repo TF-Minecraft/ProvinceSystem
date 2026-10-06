@@ -263,3 +263,81 @@ def test_oversized_cursor_values_are_refused(app, env, world):
     c = client(app, staff(env))
     huge = cursors.encode("main", f"sessions:{HAZEL}", 10 ** 30, 1)
     assert c.get(f"/admin/players/{HAZEL}/sessions", params={"before": huge}).status_code == 400
+
+
+
+def movement_audits(db):
+    with db.connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM admin_audit WHERE action = 'player.movement.view' ORDER BY id")]
+
+
+@pytest.mark.parametrize("role", ["admin", "root"])
+def test_movement_routes_are_audited(app, env, world, coreprotect, role):
+    coreprotect.session(world["hazel"], 160, 2, x=42)
+    _, token = account(env, f"boss-{role}", role)
+    c = client(app, token)
+    body = c.get(f"/admin/players/{HAZEL}/movement", params={"since": 50, "until": 300}).json()
+    assert [p[0] for p in body["points"]] == [100, 160, 200]
+    assert body["points"][1][2] == 42
+    assert body["worlds"] == ["TFMC_Map"]
+    assert body["complete_from"] == 50
+    assert body["coreprotect"]["status"] == "available"
+    assert body["coreprotect"]["map_world"] == "TFMC_Map"
+    assert (body["since"], body["until"]) == (50, 300)
+
+    body = c.get("/admin/movement", params={"since": 0, "until": 300}).json()
+    assert {p["minecraft_name"] for p in body["players"]} == {"MrEnzo99", "Quiet"}
+
+    rows = movement_audits(env)
+    assert [json.loads(r["detail_json"])["player_uuid"] for r in rows] == [HAZEL, "everyone"]
+    detail = json.loads(rows[0]["detail_json"])
+    assert (detail["since"], detail["until"], detail["rows"]) == (50, 300, 3)
+    # Which window and how much, never where.
+    assert set(detail) == {"server", "player_uuid", "since", "until", "complete_from", "rows"}
+    assert rows[0]["actor_role"] == role
+
+
+def test_movement_is_for_admins(app, env, world):
+    c = client(app, staff(env, "mod"))
+    assert c.get(f"/admin/players/{HAZEL}/movement").status_code == 403
+    assert c.get("/admin/movement").status_code == 403
+    assert movement_audits(env) == []
+
+
+def test_movement_bad_windows(app, env, world):
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    for path, params in [
+        (f"/admin/players/{HAZEL}/movement", {"since": 300, "until": 50}),
+        (f"/admin/players/{HAZEL}/movement", {"since": 0, "until": 8 * 86_400}),
+        ("/admin/movement", {"since": 0, "until": 2 * 86_400}),
+        # In the future, and beyond SQLite's integers.
+        ("/admin/movement", {"until": 2 ** 39}),
+        ("/admin/movement", {"since": 10 ** 30, "until": 10 ** 30 + 3600}),
+    ]:
+        assert c.get(path, params=params).status_code in (400, 422), (path, params)
+    assert c.get("/admin/players/not-a-uuid/movement").status_code == 400
+    assert movement_audits(env) == []
+
+
+def test_no_audit_no_movement(app, env, world, monkeypatch):
+    _, token = account(env, "boss", "admin")
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(players.audit, "record", broken)
+    response = client(app, token).get(f"/admin/players/{HAZEL}/movement", params={"since": 50, "until": 300})
+    assert response.status_code == 503
+    assert response.json()["detail"] == "audit_unavailable"
+
+
+def test_movement_without_coreprotect(app, env, world, monkeypatch):
+    monkeypatch.setenv("COREPROTECT_DB", str(env.DATA_DIR / "nowhere.db"))
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    body = c.get(f"/admin/players/{HAZEL}/movement").json()
+    assert body["points"] == [] and body["coreprotect"]["reason"] == "missing"
+    body = c.get("/admin/movement").json()
+    assert body["players"] == [] and body["coreprotect"]["reason"] == "missing"

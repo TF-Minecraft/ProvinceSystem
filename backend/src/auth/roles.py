@@ -10,6 +10,8 @@ CAPABILITIES = {
     "view_players": "mod",
     # Chat and whole commands in a player's activity; every view is audited.
     "view_player_messages": "admin",
+    # Where players went, minute by minute; every view is audited.
+    "view_player_movement": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
 }
