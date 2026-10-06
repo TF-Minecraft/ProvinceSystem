@@ -5,7 +5,8 @@ SQLite database: who has played, their sessions, and their recent actions.
 `src/auth/players.py` joins that with `discord_links`, `users` and
 `character_roster`; the routes are `GET /admin/players`,
 `/admin/players/{uuid}`, `/sessions` and `/activity` (`view_players`, mod and
-above).
+above). Movement, `GET /admin/players/{uuid}/movement` and `/admin/movement`
+for everyone, is for admins and the owner (`view_player_movement`).
 
 ## Settings
 
@@ -14,7 +15,8 @@ above).
 | `COREPROTECT_DB` | Path to `database.db` inside the backend container. Unset: the directory still lists linked players and characters, and CoreProtect sections say they are unavailable. |
 | `COREPROTECT_SERVER` | Short id that scopes caches and page cursors (default `main`). |
 | `COREPROTECT_SERVER_LABEL` | World name shown with the data, for example `Vardera`. |
-| `COREPROTECT_PING_SECONDS` | The server's `player-pings` interval (default 60; `0` if pings are off). Only used to guess whether someone is online and to end crashed sessions. |
+| `COREPROTECT_PING_SECONDS` | The server's `player-pings` interval (default 60; `0` if pings are off). Used to guess whether someone is online, to end crashed sessions and to tell a gap in a movement path. |
+| `COREPROTECT_MAP_WORLD` | The CoreProtect world the site's map shows: the server's `level-name` (default `TFMC_Map`). Movement in other worlds is summarised, not drawn. |
 
 Mount the CoreProtect **directory** read-only, so SQLite can see a hot
 `-journal`. Set `disable-wal: true` in CoreProtect's `config.yml` (then
@@ -67,6 +69,15 @@ text) before it is returned, and the page is refused if that record cannot
 be written. Sign text, item metadata and NBT are never selected. Sessions are rebuilt from
 login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 
+Movement is a player's session rows in a window (up to 7 days for one
+player, 24 hours for everyone): logins, logouts and a position ping once a
+minute, so the path between pings is a guess. Every request is recorded as
+`player.movement.view` (who, which player or everyone, the window and how
+many rows, never positions) before it is returned, and refused if that
+record cannot be written. Rows are read newest first in batches of 5,000,
+one statement each; a window holding more than the limit keeps the newest
+rows and reports `complete_from`.
+
 ## Deployment gate
 
 `backend/benchmarks/coreprotect_reader.py` measures both sides:
@@ -83,6 +94,13 @@ Acceptance: `hold` p99 ≤ 100 ms and max ≤ 500 ms; `contend` with no writer
 failures and writer transaction p99/max up by no more than 100/500 ms.
 
 Results on 2026-10-06:
+
+- Movement, inside Main's backend container (60 requests): everyone over
+  24 h (26,900 rows, 10 statements) 33 ms per request, longest statement
+  58 ms, usually under 8 ms; one player over 7 days (3,155 rows) 4 ms. Do
+  not time live reads through `~/work/amp-readonly`: it is a FUSE mount that
+  does not pass file locks through, so SQLite sees CoreProtect's journal as
+  hot and fails with "attempt to write a readonly database".
 
 - `hold` on live Main (7.4 GB, 242 players, 1,455 requests): p99 8.6 ms,
   max 18.5 ms.

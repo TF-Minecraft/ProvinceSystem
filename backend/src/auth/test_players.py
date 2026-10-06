@@ -110,6 +110,8 @@ def test_directory_sorts(app, env, world):
     assert by_mc == ["LinkedOnly", "MrEnzo99", "Quiet", None]
     by_discord = [p["discord_username"] for p in c.get("/admin/players", params={"sort": "discord"}).json()["players"]]
     assert by_discord[:2] == ["hazelstone", "linky"]
+    by_character = [p["characters"] for p in c.get("/admin/players", params={"sort": "character"}).json()["players"]]
+    assert by_character[:2] == [["Aldric"], ["Hazel Stonebrook"]] and by_character[2:] == [[], []]
     assert c.get("/admin/players", params={"sort": "bogus"}).status_code == 400
     assert c.get("/admin/players", params={"q": "x" * 65}).status_code == 400
 
@@ -263,3 +265,118 @@ def test_oversized_cursor_values_are_refused(app, env, world):
     c = client(app, staff(env))
     huge = cursors.encode("main", f"sessions:{HAZEL}", 10 ** 30, 1)
     assert c.get(f"/admin/players/{HAZEL}/sessions", params={"before": huge}).status_code == 400
+
+
+
+def movement_audits(db):
+    with db.connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM admin_audit WHERE action = 'player.movement.view' ORDER BY id")]
+
+
+@pytest.mark.parametrize("role", ["admin", "root"])
+def test_movement_routes_are_audited(app, env, world, coreprotect, role):
+    coreprotect.session(world["hazel"], 160, 2, x=42)
+    _, token = account(env, f"boss-{role}", role)
+    c = client(app, token)
+    body = c.get(f"/admin/players/{HAZEL}/movement", params={"since": 50, "until": 300}).json()
+    assert [p[0] for p in body["points"]] == [100, 160, 200]
+    assert body["points"][1][2] == 42
+    assert body["worlds"] == ["TFMC_Map"]
+    assert body["complete_from"] == 50
+    assert body["coreprotect"]["status"] == "available"
+    assert body["coreprotect"]["map_world"] == "TFMC_Map"
+    assert (body["since"], body["until"]) == (50, 300)
+
+    body = c.get("/admin/movement", params={"since": 0, "until": 300}).json()
+    assert {p["minecraft_name"] for p in body["players"]} == {"MrEnzo99", "Quiet"}
+
+    rows = movement_audits(env)
+    assert [json.loads(r["detail_json"])["player_uuid"] for r in rows] == [HAZEL, "everyone"]
+    detail = json.loads(rows[0]["detail_json"])
+    assert (detail["since"], detail["until"], detail["rows"]) == (50, 300, 3)
+    # Which window and how much, never where.
+    assert set(detail) == {"server", "player_uuid", "since", "until", "complete_from", "rows"}
+    assert rows[0]["actor_role"] == role
+
+
+def test_movement_matches_uuids_in_any_case(app, env, world, coreprotect):
+    upper = "44444444-AAAA-4BBB-8CCC-DDDDDDDDDDDD"
+    shouty = coreprotect.user("Shouty", upper)
+    coreprotect.session(shouty, 120, 2, x=9)
+    _, token = account(env, "boss", "admin")
+    body = client(app, token).get(f"/admin/players/{upper.lower()}/movement", params={"since": 50, "until": 300}).json()
+    assert [p[0] for p in body["points"]] == [120]
+
+
+def test_session_movement(app, env, world, coreprotect):
+    coreprotect.session(world["hazel"], 160, 2, x=42)
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    listed = c.get(f"/admin/players/{HAZEL}/sessions").json()["sessions"]
+    assert len(listed) == 1 and listed[0]["id"] and "key" not in listed[0]
+    sid = listed[0]["id"]
+    body = c.get(f"/admin/players/{HAZEL}/sessions/{sid}/movement").json()
+    assert body["session"]["id"] == sid
+    assert body["session"]["end_kind"] == "logout"
+    assert body["session"]["last_observed"]["time"] == 200
+    assert (body["since"], body["until"]) == (100, 200)
+    assert [p[0] for p in body["points"]] == [100, 160, 200]
+    assert body["as_of"] > 0
+    detail = json.loads(movement_audits(env)[-1]["detail_json"])
+    assert detail["session"] == sid and detail["rows"] == 3
+
+    # Another player's session id, a forged one, and a mod are all refused.
+    other = "33333333-3333-3333-3333-333333333333"
+    assert c.get(f"/admin/players/{other}/sessions/{sid}/movement").status_code == 400
+    assert c.get(f"/admin/players/{HAZEL}/sessions/nonsense/movement").status_code == 400
+    from src.coreprotect import cursors
+    forged = cursors.encode("main", f"session:{HAZEL}", 160, 1)
+    gone = c.get(f"/admin/players/{HAZEL}/sessions/{forged}/movement")
+    assert gone.status_code == 404 and gone.json()["detail"] == "session_gone"
+    assert client(app, staff(env, "mod")).get(f"/admin/players/{HAZEL}/sessions/{sid}/movement").status_code == 403
+
+
+def test_movement_is_for_admins(app, env, world):
+    c = client(app, staff(env, "mod"))
+    assert c.get(f"/admin/players/{HAZEL}/movement").status_code == 403
+    assert c.get("/admin/movement").status_code == 403
+    assert movement_audits(env) == []
+
+
+def test_movement_bad_windows(app, env, world):
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    for path, params in [
+        (f"/admin/players/{HAZEL}/movement", {"since": 300, "until": 50}),
+        (f"/admin/players/{HAZEL}/movement", {"since": 0, "until": 8 * 86_400}),
+        ("/admin/movement", {"since": 0, "until": 2 * 86_400}),
+        # In the future, and beyond SQLite's integers.
+        ("/admin/movement", {"until": 2 ** 39}),
+        ("/admin/movement", {"since": 10 ** 30, "until": 10 ** 30 + 3600}),
+    ]:
+        assert c.get(path, params=params).status_code in (400, 422), (path, params)
+    assert c.get("/admin/players/not-a-uuid/movement").status_code == 400
+    assert movement_audits(env) == []
+
+
+def test_no_audit_no_movement(app, env, world, monkeypatch):
+    _, token = account(env, "boss", "admin")
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(players.audit, "record", broken)
+    response = client(app, token).get(f"/admin/players/{HAZEL}/movement", params={"since": 50, "until": 300})
+    assert response.status_code == 503
+    assert response.json()["detail"] == "audit_unavailable"
+
+
+def test_movement_without_coreprotect(app, env, world, monkeypatch):
+    monkeypatch.setenv("COREPROTECT_DB", str(env.DATA_DIR / "nowhere.db"))
+    _, token = account(env, "boss", "admin")
+    c = client(app, token)
+    body = c.get(f"/admin/players/{HAZEL}/movement").json()
+    assert body["points"] == [] and body["coreprotect"]["reason"] == "missing"
+    body = c.get("/admin/movement").json()
+    assert body["players"] == [] and body["coreprotect"]["reason"] == "missing"

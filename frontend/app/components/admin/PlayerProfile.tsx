@@ -18,6 +18,7 @@ import {
 import { formatLocal } from "../../../lib/skins/formatTime";
 import { formatAgo, formatDuration, formatEpoch } from "../../../lib/admin/time";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import MovementCard from "./MovementCard";
 
 const panelClass =
   "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
@@ -99,13 +100,25 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         ) : null}
       </header>
 
+      <MovementCard uuid={profile.uuid} />
+
       <section className={panelClass} aria-label="Discord and website">
         <h3 className={headingClass}>Discord and website</h3>
         {profile.discord ? (
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             <dt className="text-[var(--tfmc-stone)]">Discord</dt>
             <dd className="text-[var(--tfmc-cream)]">
-              {profile.discord.discord_username ? `@${profile.discord.discord_username}` : profile.discord.discord_user_id}
+              {profile.discord.discord_username ? (
+                `@${profile.discord.discord_username}`
+              ) : (
+                <span className="text-[var(--tfmc-mist)]">
+                  Handle not known yet (filled in when they sign in to the website) · ID {profile.discord.discord_user_id}
+                </span>
+              )}
+            </dd>
+            <dt className="text-[var(--tfmc-stone)]">Server nickname</dt>
+            <dd className="text-[var(--tfmc-cream)]">
+              {profile.discord.discord_nickname ?? <span className="text-[var(--tfmc-mist)]">None known</span>}
             </dd>
             <dt className="text-[var(--tfmc-stone)]">Linked</dt>
             <dd className="text-[var(--tfmc-mist)]">{formatLocal(profile.discord.linked_at)}</dd>

@@ -216,6 +216,13 @@ describe("zoomToScaleAtPoint", () => {
     expect(zoomToScaleAtPoint(viewport, map, start, centre, 0.1).userScale).toBe(1);
   });
 
+  it("zooms deeper when a viewport allows it", () => {
+    const start = { userScale: 1, translateX: 0, translateY: 0 };
+    const centre = { x: 500, y: 500 };
+    expect(zoomToScaleAtPoint(viewport, map, start, centre, 99, "cover", 120).userScale).toBe(99);
+    expect(zoomToScaleAtPoint(viewport, map, start, centre, 500, "cover", 120).userScale).toBe(120);
+  });
+
   it("ignores a non-finite scale", () => {
     const start = { userScale: 2, translateX: -100, translateY: -50 };
 

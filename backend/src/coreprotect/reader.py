@@ -48,6 +48,8 @@ class CoreProtectConfig:
     label: str
     # CoreProtect's player-pings interval; 0 when pings are off or unknown.
     ping_seconds: int
+    # The CoreProtect world the site's map shows (the server's level-name).
+    map_world: str = "TFMC_Map"
 
     @classmethod
     def from_env(cls) -> CoreProtectConfig:
@@ -61,6 +63,7 @@ class CoreProtectConfig:
             server=os.getenv("COREPROTECT_SERVER", "main").strip() or "main",
             label=os.getenv("COREPROTECT_SERVER_LABEL", "").strip(),
             ping_seconds=ping,
+            map_world=os.getenv("COREPROTECT_MAP_WORLD", "").strip() or "TFMC_Map",
         )
 
 

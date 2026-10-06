@@ -20,6 +20,9 @@ from src.coreprotect.reader import CoreProtectConfig
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
+# Unix seconds well past any real window; keeps query values inside SQLite's integers.
+MAX_TIME = 2 ** 40
+
 
 class RoleBody(BaseModel):
     role: str = Field(..., max_length=16)
@@ -44,8 +47,8 @@ def _capable(request: Request, capability: str) -> dict:
     return user
 
 
-def _players(request: Request, response: Response, run):
-    viewer = _capable(request, "view_players")
+def _players(request: Request, response: Response, run, capability: str = "view_players"):
+    viewer = _capable(request, capability)
     _no_store(response)
     try:
         return run(CoreProtectConfig.from_env(), viewer)
@@ -135,6 +138,31 @@ def get_player_activity(player_uuid: str, request: Request, response: Response, 
     return _players(request, response,
                     lambda config, viewer: players.player_activity(config, player_uuid, before, limit, kinds,
                                                                    viewer))
+
+
+@admin_router.get("/players/{player_uuid}/movement")
+def get_player_movement(player_uuid: str, request: Request, response: Response,
+                        since: int | None = Query(None, ge=0, le=MAX_TIME),
+                        until: int | None = Query(None, ge=0, le=MAX_TIME)):
+    return _players(request, response,
+                    lambda config, viewer: players.player_movement(config, player_uuid, since, until, viewer),
+                    "view_player_movement")
+
+
+@admin_router.get("/players/{player_uuid}/sessions/{session_id}/movement")
+def get_session_movement(player_uuid: str, session_id: str, request: Request, response: Response):
+    return _players(request, response,
+                    lambda config, viewer: players.session_movement(config, player_uuid, session_id, viewer),
+                    "view_player_movement")
+
+
+@admin_router.get("/movement")
+def get_movement(request: Request, response: Response,
+                 since: int | None = Query(None, ge=0, le=MAX_TIME),
+                 until: int | None = Query(None, ge=0, le=MAX_TIME)):
+    return _players(request, response,
+                    lambda config, viewer: players.everyone_movement(config, since, until, viewer),
+                    "view_player_movement")
 
 
 @admin_router.post("/accounts/{user_id}/role")

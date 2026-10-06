@@ -60,7 +60,9 @@ CREATE TABLE IF NOT EXISTS discord_links (
     discord_username TEXT,
     linked_at TEXT NOT NULL,
     left_guild_at TEXT,
-    grace_until TEXT
+    grace_until TEXT,
+    -- Their nickname in the TFMC Discord server, if any; discord_username is the account handle.
+    discord_nickname TEXT
 );
 
 CREATE TABLE IF NOT EXISTS discord_link_codes (

@@ -156,6 +156,54 @@ def start_link(
     return {"code": plaintext, "expires_at": expires_at}
 
 
+def is_discord_username(value: str) -> bool:
+    """Whether text is shaped like a Discord account handle (not a display name or nickname)."""
+    return _DISCORD_USERNAME_RE.fullmatch(value.strip()) is not None
+
+
+_NICKNAME_MAX = 32
+
+
+def _sanitize_discord_nickname(value: str | None) -> str | None:
+    """A server nickname: any text up to Discord's 32 characters, without control characters."""
+    raw = " ".join(str(value or "").split())
+    if not raw or len(raw) > _NICKNAME_MAX or any(ord(ch) < 32 or ord(ch) == 127 for ch in raw):
+        return None
+    return raw
+
+
+def remember_discord_nicknames(updates: list[dict]) -> dict:
+    """Store each link's current server nickname.
+
+    None or blank clears it (they have no nickname). A value that is not a
+    valid nickname (too long, control characters) is skipped, keeping the
+    stored one, rather than taken as a clear.
+    """
+    if not isinstance(updates, list):
+        raise LinkError("updates must be a list")
+    if len(updates) > _USERNAME_UPDATES_MAX:
+        raise LinkError("too many nickname updates")
+    updated = 0
+    with connect() as conn:
+        for item in updates:
+            if not isinstance(item, dict):
+                continue
+            discord_id = str(item.get("discord_user_id") or "").strip()
+            if not discord_id:
+                continue
+            raw = item.get("discord_nickname")
+            nickname = _sanitize_discord_nickname(raw)
+            if nickname is None and str(raw or "").strip():
+                continue
+            cur = conn.execute(
+                "UPDATE discord_links SET discord_nickname = ? WHERE discord_user_id = ?",
+                (nickname, discord_id),
+            )
+            updated += cur.rowcount
+        conn.commit()
+    return {"updated": updated}
+
+
 def _sanitize_discord_username(value: str | None) -> str | None:
     """Keep a Discord account username. Anything else is omitted, never fatal."""
     raw = str(value or "").strip()

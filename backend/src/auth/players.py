@@ -1,4 +1,4 @@
-"""Staff view of Minecraft players: a directory, profiles, sessions and activity.
+"""Staff view of Minecraft players: a directory, profiles, sessions, activity and movement.
 
 A player is a Minecraft account, keyed by its UUID; names are never merged
 on. The directory is the union of everyone CoreProtect has seen join, every
@@ -15,7 +15,7 @@ import threading
 import time
 import uuid as uuidlib
 
-from src.coreprotect import activity, maps as co_maps, sessions
+from src.coreprotect import activity, maps as co_maps, movement, sessions
 from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode as encode_cursor
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src.skins.db import connect
@@ -25,7 +25,7 @@ from . import audit, roles, users
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
 QUERY_MAX = 64
-SORTS = ("last_seen", "minecraft", "discord")
+SORTS = ("last_seen", "minecraft", "discord", "character")
 
 _DIRECTORY_LOCK = threading.Lock()
 _DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
@@ -54,7 +54,7 @@ def _status(error: Unavailable | None) -> dict:
 # --------------------
 
 _LINKS = """
-    SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.minecraft_name,
+    SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.discord_nickname, dl.minecraft_name,
            dl.linked_at, dl.left_guild_at, dl.grace_until,
            u.id AS user_id, u.role, u.discord_username AS account_username,
            u.discord_global_name, u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
@@ -84,7 +84,9 @@ def _discord(link: dict | None) -> dict | None:
         return None
     return {
         "discord_user_id": link["discord_user_id"],
+        # The account handle (from their sign-in, else the link) and their server nickname.
         "discord_username": link["account_username"] or link["discord_username"],
+        "discord_nickname": link["discord_nickname"],
         "linked_at": link["linked_at"],
         "left_guild_at": link["left_guild_at"],
         "grace_until": link["grace_until"],
@@ -145,7 +147,7 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
     def person(key: str) -> dict:
         return people.setdefault(key, {
             "uuid": key, "minecraft_name": None, "names": set(), "discord_user_id": None,
-            "discord_username": None, "discord_global_name": None, "site_role": None,
+            "discord_username": None, "discord_nickname": None, "discord_global_name": None, "site_role": None,
             "characters": [], "last_seen": None, "online": False,
         })
 
@@ -164,6 +166,7 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         entry.update(
             discord_user_id=link["discord_user_id"],
             discord_username=link["account_username"] or link["discord_username"],
+            discord_nickname=link["discord_nickname"],
             discord_global_name=link["discord_global_name"],
             site_role=link["role"],
         )
@@ -198,7 +201,8 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
 def _matches(entry: dict, needle: str) -> bool:
     if needle in {entry["uuid"], entry["uuid"].replace("-", ""), (entry["discord_user_id"] or "")}:
         return True
-    haystack = [*entry["names"], entry["discord_username"], entry["discord_global_name"], *entry["characters"]]
+    haystack = [*entry["names"], entry["discord_username"], entry["discord_nickname"], entry["discord_global_name"],
+                *entry["characters"]]
     return any(needle in value.casefold() for value in haystack if value)
 
 
@@ -206,7 +210,15 @@ def _sort_key(sort: str):
     if sort == "minecraft":
         return lambda e: (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
     if sort == "discord":
-        return lambda e: (e["discord_username"] is None, (e["discord_username"] or "").casefold(), e["uuid"])
+        # By handle, else server nickname (links older than handles may have only the nickname).
+        return lambda e: (
+            not (e["discord_username"] or e["discord_nickname"]),
+            (e["discord_username"] or e["discord_nickname"] or "").casefold(),
+            e["uuid"],
+        )
+    if sort == "character":
+        # By the first of their characters alphabetically; players without one last.
+        return lambda e: (not e["characters"], min((c.casefold() for c in e["characters"]), default=""), e["uuid"])
     return lambda e: (e["last_seen"] is None, -(e["last_seen"] or 0), (e["minecraft_name"] or "").casefold())
 
 
@@ -216,6 +228,7 @@ def _directory_json(entry: dict) -> dict:
         "minecraft_name": entry["minecraft_name"],
         "discord_user_id": entry["discord_user_id"],
         "discord_username": entry["discord_username"],
+        "discord_nickname": entry["discord_nickname"],
         "site_role": entry["site_role"],
         "characters": entry["characters"],
         "last_seen": entry["last_seen"],
@@ -253,8 +266,13 @@ def clear_cache() -> None:
 # --------------------
 
 def _ids(reader: Reader, key: str) -> list[dict]:
-    """A player's co_user rows, oldest first. CoreProtect keeps one per UUID, but nothing enforces it."""
-    return [dict(r) for r in reader.rows("SELECT id, user, time FROM co_user WHERE uuid = ? ORDER BY time, id", (key,))]
+    """A player's co_user rows, oldest first. CoreProtect keeps one per UUID, but nothing enforces it.
+
+    Matched without regard to letter case, as `key` is canonical (lower case) and the stored UUID
+    need not be. That scans co_user, one of the small name tables.
+    """
+    return [dict(r) for r in reader.rows(
+        "SELECT id, user, time FROM co_user WHERE lower(uuid) = ? ORDER BY time, id", (key,))]
 
 
 def _require(text: str) -> str:
@@ -323,12 +341,19 @@ def player_sessions(config: CoreProtectConfig, text: str, before: str | None, li
     if raw is None:
         return {"sessions": [], "next": None, "coreprotect": _status(None)}
     built = sessions.build(raw, maps, int(time.time()), config.ping_seconds)
+    built["sessions"] = [_session_json(config, key, s) for s in built["sessions"]]
     nxt = raw["next"]
     return {
         **built,
         "next": encode_cursor(config.server, f"sessions:{key}", nxt.time, nxt.rowid) if nxt else None,
         "coreprotect": _status(None),
     }
+
+
+def _session_json(config: CoreProtectConfig, key: str, session: dict) -> dict:
+    """A built session with an opaque id (its login row) in place of the raw key."""
+    login = session.pop("key")
+    return {"id": encode_cursor(config.server, f"session:{key}", login.time, login.rowid), **session}
 
 
 def _audit_messages(viewer: dict, config: CoreProtectConfig, key: str, kinds: tuple[str, ...],
@@ -386,3 +411,109 @@ def player_activity(config: CoreProtectConfig, text: str, before: str | None, li
     if full:
         _audit_messages(viewer, config, key, chosen, before, built["entries"])
     return {**built, "kinds": list(allowed), "shows_messages": full, "coreprotect": _status(None)}
+
+
+
+def _window(since: int | None, until: int | None, longest: int) -> tuple[int, int]:
+    try:
+        return movement.window(since, until, int(time.time()), longest)
+    except movement.BadWindow:
+        raise PlayerError(400, "bad_window") from None
+
+
+def _movement_status(config: CoreProtectConfig, error: Unavailable | None) -> dict:
+    return {**_status(error), "server_label": config.label or None, "ping_seconds": config.ping_seconds or None,
+            "map_world": config.map_world}
+
+
+def _audit_movement(viewer: dict, config: CoreProtectConfig, subject: str, since: int, until: int,
+                    body: dict, rows: int, session: str | None = None) -> None:
+    """Record that a viewer was shown where players went, before they see it. Never stores positions."""
+    detail = {
+        "server": config.server,
+        "player_uuid": subject,
+        "since": since,
+        "until": until,
+        "complete_from": body["complete_from"],
+        "rows": rows,
+    }
+    if session is not None:
+        detail["session"] = session
+    try:
+        with connect() as conn:
+            audit.record(conn, actor=viewer, action="player.movement.view", outcome="ok", detail=detail)
+            conn.commit()
+    except Exception:
+        raise PlayerError(503, "audit_unavailable") from None
+
+
+def player_movement(config: CoreProtectConfig, text: str, since: int | None, until: int | None,
+                    viewer: dict) -> dict:
+    """One player's logins, logouts and pings between since and until (epoch seconds). Audited."""
+    key = _require(text)
+    since, until = _window(since, until, movement.PLAYER_WINDOW_SECONDS)
+    empty = {"since": since, "until": until, "worlds": [], "points": [], "complete_from": since,
+             "pings_since": None}
+    try:
+        with Reader(config, Budget()) as reader:
+            ids = [a["id"] for a in _ids(reader, key)]
+            maps = co_maps.get(reader)
+            raw = (movement.fetch_player(reader, ids, since, until, movement.lead_seconds(config.ping_seconds))
+                   if ids else None)
+    except Unavailable as exc:
+        return {**empty, "coreprotect": _movement_status(config, exc)}
+    body = {**empty, **movement.build_player(raw, maps)} if raw else empty
+    _audit_movement(viewer, config, key, since, until, body, len(body["points"]))
+    return {**body, "as_of": int(time.time()), "coreprotect": _movement_status(config, None)}
+
+
+def session_movement(config: CoreProtectConfig, text: str, session_id: str, viewer: dict) -> dict:
+    """One session's movement: the session as /sessions describes it, and its rows from login to end. Audited."""
+    key = _require(text)
+    try:
+        values = decode_cursor(config.server, f"session:{key}", session_id, 2)
+    except BadCursor:
+        raise PlayerError(400, "bad_session") from None
+    if values is None:
+        raise PlayerError(400, "bad_session")
+    now = int(time.time())
+    try:
+        with Reader(config, Budget()) as reader:
+            ids = [a["id"] for a in _ids(reader, key)]
+            maps = co_maps.get(reader)
+            win = sessions.window(reader, ids, sessions.Key(*values)) if ids else None
+            raw = movement.fetch_session(reader, ids, win) if win else None
+    except Unavailable as exc:
+        return {"session": None, "worlds": [], "points": [], "complete_from": None, "pings_since": None,
+                "as_of": now, "coreprotect": _movement_status(config, exc)}
+    if win is None:
+        # Never theirs, or no longer there (a purge, or a rebuilt database renumbering rows).
+        raise PlayerError(404, "session_gone")
+    built = sessions.build({"windows": [win], "first_seen": None, "history_start": None}, maps, now,
+                           config.ping_seconds)
+    session = _session_json(config, key, built["sessions"][0])
+    # The span shown: from the login (or, if the session held too many rows, from where the kept rows
+    # are complete) to its logout, its last sighting, or now while it is open. An open session has no end.
+    since = session["start"]["time"]
+    if session["end_kind"] == "open":
+        until = now
+    else:
+        until = (session["end"] or session["last_observed"])["time"]
+    body = {"session": session, "since": since, "until": max(since, until), **movement.build_player(raw, maps)}
+    _audit_movement(viewer, config, key, since, body["until"], body, len(body["points"]), session=session_id)
+    return {**body, "as_of": now, "coreprotect": _movement_status(config, None)}
+
+
+def everyone_movement(config: CoreProtectConfig, since: int | None, until: int | None, viewer: dict) -> dict:
+    """Every player's logins, logouts and pings between since and until (epoch seconds). Audited."""
+    since, until = _window(since, until, movement.EVERYONE_WINDOW_SECONDS)
+    try:
+        with Reader(config, Budget()) as reader:
+            maps = co_maps.get(reader)
+            raw = movement.fetch_everyone(reader, since, until, movement.lead_seconds(config.ping_seconds))
+    except Unavailable as exc:
+        return {"since": since, "until": until, "worlds": [], "players": [], "complete_from": since,
+                "pings_since": None, "coreprotect": _movement_status(config, exc)}
+    body = {"since": since, "until": until, "as_of": int(time.time()), **movement.build_everyone(raw, maps)}
+    _audit_movement(viewer, config, "everyone", since, until, body, sum(len(p["points"]) for p in body["players"]))
+    return {**body, "coreprotect": _movement_status(config, None)}

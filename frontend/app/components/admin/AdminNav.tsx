@@ -3,6 +3,7 @@ import Link from "next/link";
 const LINKS = [
   { href: "/admin", label: "Accounts", key: "accounts" },
   { href: "/admin/players", label: "Players", key: "players" },
+  { href: "/admin/movement", label: "Movement", key: "movement" },
 ] as const;
 
 export default function AdminNav({ current }: { current: (typeof LINKS)[number]["key"] }) {

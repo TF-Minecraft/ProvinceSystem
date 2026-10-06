@@ -18,6 +18,9 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayerActivity: vi.fn(),
 }));
 
+// The movement card asks who is signed in; it has its own tests.
+vi.mock("./MovementCard", () => ({ default: () => null }));
+
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
 const NOW = 2_000_000_000;
 const KINDS = ["block", "click", "kill", "spawn", "container", "item", "entity", "sign", "skill", "command", "session"];
@@ -30,7 +33,8 @@ const PROFILE: Profile = {
   last_seen: NOW - 3600,
   online: false,
   discord: {
-    discord_user_id: "422545450919526411", discord_username: "hazelstone", linked_at: "2026-09-20T10:00:00Z",
+    discord_user_id: "422545450919526411", discord_username: "hazelstone", discord_nickname: "Hazel | Enzo",
+    linked_at: "2026-09-20T10:00:00Z",
     left_guild_at: null, grace_until: null,
   },
   account: null,
@@ -52,9 +56,11 @@ beforeEach(() => {
   vi.mocked(getPlayerSessions).mockResolvedValue({
     sessions: [
       { start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 },
-        end: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 }, end_kind: "logout", duration_seconds: 3600 },
+        end: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 }, end_kind: "logout", duration_seconds: 3600,
+        id: "s1", last_observed: { time: NOW - 3600, world: "TFMC_Map", x: 5, y: 64, z: 5 } },
       { start: { time: NOW - 90000, world: "TFMC_Map", x: 0, y: 64, z: 0 },
-        end: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 }, end_kind: "last_observed", duration_seconds: 1800 },
+        end: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 }, end_kind: "last_observed", duration_seconds: 1800,
+        id: "s2", last_observed: { time: NOW - 88200, world: "TFMC_Map", x: 1, y: 64, z: 1 } },
     ],
     next: null, first_seen: NOW - 864000, history_start: NOW - 864000, coreprotect: { status: "available" },
   });
@@ -190,7 +196,8 @@ it("retries a failed sessions page from the same cursor", async () => {
   vi.mocked(getPlayerSessions)
     .mockResolvedValueOnce({
       sessions: [{ start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 }, end: null, end_kind: "unknown",
-                   duration_seconds: null }],
+                   duration_seconds: null, id: "s3",
+                   last_observed: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 } }],
       next: "s-1", history_start: NOW - 864000, coreprotect: { status: "available" },
     })
     .mockRejectedValueOnce(new AccountApiError("bad_cursor", 400))
@@ -234,4 +241,11 @@ it("never offers Chat before the server allows it", async () => {
   const feed = await screen.findByRole("region", { name: "Recent activity" });
   expect(within(feed).getByRole("button", { name: "Kills" })).toBeTruthy();
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
+});
+
+it("shows the Discord handle and the server nickname", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  await screen.findByText("@hazelstone");
+  expect(screen.getByText("Server nickname")).toBeTruthy();
+  expect(screen.getByText("Hazel | Enzo")).toBeTruthy();
 });

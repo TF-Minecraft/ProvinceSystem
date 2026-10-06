@@ -57,12 +57,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_origin: "That request was blocked. Reload the page and try again.",
   player_not_found: "No player with that UUID has been seen.",
   bad_uuid: "That isn’t a Minecraft UUID.",
+  bad_session: "That session link isn’t valid.",
+  session_gone: "That session is no longer in CoreProtect’s records.",
+  bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
   bad_sort: "That sort order isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
-  audit_unavailable: "Chat and commands can’t be shown because the view couldn’t be logged. Try again.",
+  audit_unavailable: "This can’t be shown because the view couldn’t be logged. Try again.",
 };
 
 export function adminErrorMessage(err: unknown): string {
@@ -70,7 +73,7 @@ export function adminErrorMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getApiBase()}${path}`, {
     ...init,
     credentials: "include",
@@ -120,17 +123,20 @@ export function revokeSessions(userId: number, reason: string): Promise<unknown>
 
 export type CoreProtectStatus = { status: "available"; reason?: undefined } | { status: "unavailable"; reason: string };
 
-export type PlayerSort = "last_seen" | "minecraft" | "discord";
+export type PlayerSort = "last_seen" | "minecraft" | "discord" | "character";
 
 export function parsePlayerSort(value: string | undefined): PlayerSort {
-  return value === "minecraft" || value === "discord" ? value : "last_seen";
+  return value === "minecraft" || value === "discord" || value === "character" ? value : "last_seen";
 }
 
 export type PlayerSummary = {
   uuid: string;
   minecraft_name: string | null;
   discord_user_id: string | null;
+  /** Their Discord account handle, when known. */
   discord_username: string | null;
+  /** Their nickname in the TFMC Discord server, if they have one. */
+  discord_nickname: string | null;
   site_role: StaffRole | null;
   characters: string[];
   last_seen: number | null;
@@ -155,6 +161,7 @@ export type PlayerProfile = {
   discord: {
     discord_user_id: string;
     discord_username: string | null;
+    discord_nickname: string | null;
     linked_at: string | null;
     left_guild_at: string | null;
     grace_until: string | null;
@@ -182,10 +189,14 @@ export type PlayerProfile = {
 export type WorldPoint = { time: number; world: string | null; x: number; y: number; z: number };
 
 export type PlayerSession = {
+  /** Opaque; names this session in /sessions/{id}/movement and in links. */
+  id: string;
   start: WorldPoint;
   end: WorldPoint | null;
   end_kind: "logout" | "last_observed" | "open" | "unknown";
   duration_seconds: number | null;
+  /** The newest row seen in the session: its logout, last ping or login. */
+  last_observed: WorldPoint;
 };
 
 export type SessionPage = {

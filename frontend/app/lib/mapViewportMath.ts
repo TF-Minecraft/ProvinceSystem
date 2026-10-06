@@ -54,8 +54,9 @@ export function computeDisplayScale(fitScale: number, userScale: number): number
   return fitScale * userScale;
 }
 
-export function clampUserScale(scale: number): number {
-  return Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, scale));
+/** `max` lets one viewport zoom deeper than the site map (see `useMapViewport`'s `maxDisplayScale`). */
+export function clampUserScale(scale: number, max: number = MAP_ZOOM_MAX): number {
+  return Math.min(max, Math.max(MAP_ZOOM_MIN, scale));
 }
 
 /**
@@ -161,7 +162,8 @@ export function zoomAtPoint(
   transform: ViewportTransform,
   cursor: ViewportPoint,
   wheelDelta: number,
-  mode: FitMode = "cover"
+  mode: FitMode = "cover",
+  maxUserScale: number = MAP_ZOOM_MAX
 ): ViewportTransform {
   // Horizontal-only wheel events (sideways trackpad swipe, Shift+wheel on
   // Windows) arrive with deltaY === 0 and carry no zoom direction.
@@ -177,7 +179,8 @@ export function zoomAtPoint(
     transform,
     cursor,
     transform.userScale * zoomFactor,
-    mode
+    mode,
+    maxUserScale
   );
 }
 
@@ -192,7 +195,8 @@ export function zoomToScaleAtPoint(
   transform: ViewportTransform,
   anchor: ViewportPoint,
   userScale: number,
-  mode: FitMode = "cover"
+  mode: FitMode = "cover",
+  maxUserScale: number = MAP_ZOOM_MAX
 ): ViewportTransform {
   if (!Number.isFinite(userScale)) return transform;
 
@@ -201,7 +205,7 @@ export function zoomToScaleAtPoint(
   const translate = { x: transform.translateX, y: transform.translateY };
   const mapPoint = screenToMap(anchor.x, anchor.y, displayScale, translate);
 
-  const nextUserScale = clampUserScale(userScale);
+  const nextUserScale = clampUserScale(userScale, maxUserScale);
   const nextDisplayScale = computeDisplayScale(fitScale, nextUserScale);
   const clamped = clampTranslate(
     viewport,
