@@ -52,12 +52,17 @@ export default function EveryoneNow() {
 
   useEffect(() => {
     let live = true;
+    // Requests can overlap (a slow one, then the tab coming back): only the latest may answer.
+    let latest = 0;
     const ask = () => {
       if (document.hidden) return;
+      const mine = ++latest;
       getLatestMovement(nowSeconds() - hold)
-        .then((data) => live && setLoad({ kind: "ready", data, fetchedAt: nowSeconds(), error: null }))
+        .then((data) => {
+          if (live && mine === latest) setLoad({ kind: "ready", data, fetchedAt: nowSeconds(), error: null });
+        })
         .catch((err) => {
-          if (!live) return;
+          if (!live || mine !== latest) return;
           const gate = gateKind(err);
           // A failed refresh keeps the last positions on show, saying so.
           setLoad((prev) =>

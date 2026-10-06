@@ -127,3 +127,25 @@ it("switches between now and a time range", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Now" }));
   expect(nav.state.params.toString()).toBe("");
 });
+
+it("ignores an answer that arrives after a newer one", async () => {
+  render(<EveryoneMovement />);
+  await screen.findByText(/2 players online/);
+  let answerSlow: (value: Awaited<ReturnType<typeof getLatestMovement>>) => void = () => {};
+  const first = await vi.mocked(getLatestMovement).mock.results[0].value;
+  vi.mocked(getLatestMovement)
+    .mockImplementationOnce(() => new Promise((resolve) => (answerSlow = resolve)))
+    .mockResolvedValueOnce({ ...first, as_of: T + 30 });
+  await act(async () => {
+    vi.advanceTimersByTime(NOW_REFRESH_MS);
+  });
+  // Back on the tab while the slow request is still out.
+  await act(async () => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await screen.findByText(/updated 14:00:30/);
+  await act(async () => {
+    answerSlow({ ...first, as_of: T + 20 });
+  });
+  expect(screen.getByText(/updated 14:00:30/)).toBeTruthy();
+});
