@@ -7,6 +7,7 @@ _RANK = {role: rank for rank, role in enumerate(ROLES)}
 # Minimum role for each capability.
 CAPABILITIES = {
     "view_admin": "mod",
+    "view_players": "mod",
     "revoke_sessions": "mod",
     "change_role": "admin",
 }

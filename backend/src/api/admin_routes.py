@@ -8,14 +8,15 @@ from __future__ import annotations
 
 import re
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from src.api.auth_routes import _config, _no_store, current_user, require_same_origin, session_cookie
-from src.auth import admin, audit, roles, users
+from src.auth import admin, audit, players, roles, users
+from src.coreprotect.reader import CoreProtectConfig
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -34,6 +35,22 @@ def _staff(request: Request) -> dict:
     if not roles.is_staff(user["role"]):
         raise HTTPException(403, detail="forbidden")
     return user
+
+
+def _capable(request: Request, capability: str) -> dict:
+    user = _staff(request)
+    if not roles.can(user["role"], capability):
+        raise HTTPException(403, detail="forbidden")
+    return user
+
+
+def _players(request: Request, response: Response, run):
+    _capable(request, "view_players")
+    _no_store(response)
+    try:
+        return run(CoreProtectConfig.from_env())
+    except players.PlayerError as exc:
+        raise HTTPException(exc.status, detail=exc.code) from None
 
 
 def _account_json(row: dict) -> dict:
@@ -92,6 +109,31 @@ def lookup_accounts(request: Request, response: Response, q: str = ""):
     _staff(request)
     _no_store(response)
     return {"accounts": [_account_json(row) for row in admin.lookup(q)]}
+
+
+@admin_router.get("/players")
+def get_players(request: Request, response: Response, q: str = "", sort: str = "last_seen",
+                page: int = Query(1, ge=1, le=10_000)):
+    return _players(request, response, lambda config: players.directory(config, q, sort, page))
+
+
+@admin_router.get("/players/{player_uuid}")
+def get_player(player_uuid: str, request: Request, response: Response):
+    return _players(request, response, lambda config: players.profile(config, player_uuid))
+
+
+@admin_router.get("/players/{player_uuid}/sessions")
+def get_player_sessions(player_uuid: str, request: Request, response: Response, before: str | None = None,
+                        limit: int = Query(20, ge=1, le=100)):
+    return _players(request, response,
+                    lambda config: players.player_sessions(config, player_uuid, before, limit))
+
+
+@admin_router.get("/players/{player_uuid}/activity")
+def get_player_activity(player_uuid: str, request: Request, response: Response, before: str | None = None,
+                        limit: int = Query(20, ge=1, le=100), kinds: str | None = None):
+    return _players(request, response,
+                    lambda config: players.player_activity(config, player_uuid, before, limit, kinds))
 
 
 @admin_router.post("/accounts/{user_id}/role")

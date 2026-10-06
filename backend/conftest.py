@@ -37,3 +37,20 @@ def sandbox_event_loop_wakeup():
         yield
     finally:
         asyncio.DefaultEventLoopPolicy.new_event_loop = original
+
+
+@pytest.fixture
+def coreprotect(tmp_path, monkeypatch):
+    """A CoreProtect database the backend reads through COREPROTECT_DB."""
+    from src.coreprotect import maps
+    from src.coreprotect.testing import CoreProtectDb
+
+    (tmp_path / "coreprotect").mkdir()
+    db = CoreProtectDb(tmp_path / "coreprotect" / "database.db")
+    monkeypatch.setenv("COREPROTECT_DB", str(db.path))
+    monkeypatch.setenv("COREPROTECT_SERVER", "main")
+    monkeypatch.setenv("COREPROTECT_SERVER_LABEL", "Vardera")
+    monkeypatch.setenv("COREPROTECT_PING_SECONDS", "60")
+    maps.clear()
+    yield db
+    maps.clear()
