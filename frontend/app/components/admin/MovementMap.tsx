@@ -8,6 +8,7 @@ import { mapFallbackSize, type MapId } from "../map/types";
 import { tileUrl, useTileManifest } from "../../hooks/useTileManifest";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { mapApiUrl } from "@/lib/map/api";
+import { layoutLabels, type PlacedLabel } from "../../../lib/admin/labelLayout";
 import {
   ACTION_LOGIN,
   ACTION_LOGOUT,
@@ -173,6 +174,41 @@ function newestTitle(trail: MovementTrail, s: Sample): string {
   return `${trail.label} — ${s.x}, ${s.y}, ${s.z}\n${recorded} ${formatClock(s.time, true)}`;
 }
 
+type ShownLabel = {
+  key: string;
+  label: string;
+  box: { x: number; y: number; width: number; height: number };
+  leader: PlacedLabel["leader"];
+  /** No room for it in the layout: shown anyway while pointed at or tapped. */
+  forced: boolean;
+};
+
+const LABEL_FONT_PX = 13;
+const LABEL_HEIGHT_PX = 16;
+/** From a label box's top to its text's baseline. */
+const LABEL_BASELINE = 12.5;
+
+const widths = new Map<string, number>();
+let measure: CanvasRenderingContext2D | null | undefined;
+
+/** A name's width in screen pixels at the label font, measured once per name. */
+function labelWidth(text: string): number {
+  const known = widths.get(text);
+  if (known !== undefined) return known;
+  if (measure === undefined) {
+    measure = typeof document !== "undefined" && !navigator.userAgent.includes("jsdom")
+      ? document.createElement("canvas").getContext("2d")
+      : null;
+  }
+  let width = text.length * LABEL_FONT_PX * 0.62;
+  if (measure) {
+    measure.font = `600 ${LABEL_FONT_PX}px ${getComputedStyle(document.body).fontFamily}`;
+    width = measure.measureText(text).width;
+  }
+  widths.set(text, width);
+  return width;
+}
+
 /** 1, 2 or 5 times a power of ten, at least `wanted`. */
 function niceLength(wanted: number): number {
   const power = 10 ** Math.floor(Math.log10(Math.max(wanted, 1e-6)));
@@ -259,6 +295,8 @@ export default function MovementMap({
 
   // Frame a new selection once, when its data is in; refreshes keep the camera.
   const fittedRef = useRef<string | null>(null);
+  // A marker tapped to show its name when there was no room for it.
+  const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
     if (!ready || fitKey === null || fittedRef.current === fitKey) return;
     fittedRef.current = fitKey;
@@ -280,6 +318,34 @@ export default function MovementMap({
     };
   });
   const single = trails.length === 1 ? markers[0]?.at : null;
+
+  // Laid out in pixels from the map's origin, so panning keeps the layout and only zooming redoes it.
+  const named = trails.length > 1 || latest;
+  const anchors = named
+    ? markers.flatMap(({ trail, at }) =>
+        at && at.world === mapWorld
+          ? [{ key: trail.key, label: trail.label, x: (at.x + 0.5) * displayScale, y: (at.z + 0.5) * displayScale }]
+          : []
+      )
+    : [];
+  const layoutKey = anchors.map((a) => `${a.key}:${a.label}:${a.x.toFixed(1)}:${a.y.toFixed(1)}`).join("|");
+  const placed = useMemo(
+    () =>
+      layoutLabels(
+        anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX }))
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layoutKey]
+  );
+  const hiddenNames = anchors.length - placed.length;
+  const labels = anchors.flatMap<ShownLabel>((anchor) => {
+    const spot = placed.find((p) => p.key === anchor.key);
+    if (spot) return [{ key: anchor.key, label: anchor.label, box: spot, leader: spot.leader, forced: false }];
+    // No room: the label shows beside its marker, on a backing, only while pointed at or tapped.
+    if (anchor.key !== highlight && anchor.key !== picked) return [];
+    const box = { x: anchor.x + 12, y: anchor.y - LABEL_HEIGHT_PX / 2, width: labelWidth(anchor.label) };
+    return [{ key: anchor.key, label: anchor.label, box: { ...box, height: LABEL_HEIGHT_PX }, leader: null, forced: true }];
+  });
   const scaleBlocks = displayScale > 0 ? niceLength(100 / displayScale) : 0;
   const halo = { stroke: "#10160f", strokeWidth: 3 * unit, paintOrder: "stroke" as const };
   /** Text beside a map point, flipped to its left when it would run off the right of the view. */
@@ -490,7 +556,14 @@ export default function MovementMap({
               <g
                 key={`cursor:${trail.key}`}
                 opacity={dim ? 0.35 : 1}
-                className={latest ? "pointer-events-auto" : undefined}
+                className={latest ? "pointer-events-auto cursor-pointer" : undefined}
+                onClick={
+                  latest
+                    ? () => {
+                        if (!consumeDragClick()) setPicked((key) => (key === trail.key ? null : trail.key));
+                      }
+                    : undefined
+                }
               >
                 {title ? <title>{title}</title> : null}
                 {/* Solid: recorded at this second. Hollow: estimated or last seen. */}
@@ -503,18 +576,58 @@ export default function MovementMap({
                   strokeWidth={(at.exact ? 2.5 : 3) * unit}
                   strokeDasharray={at.lastSeen !== undefined ? `${3 * unit} ${2.5 * unit}` : undefined}
                 />
-                {trails.length > 1 || latest ? (
-                  <text
-                    {...beside(at.x, 12)}
-                    y={at.z + 0.5 + 4 * unit}
-                    fontSize={13 * unit}
-                    fontWeight={600}
-                    fill="#fff"
-                    {...halo}
-                  >
-                    {trail.label}
-                  </text>
+              </g>
+            );
+          })}
+          {/* Names over every marker: beside it, or out on a leader line when crowded. */}
+          {labels.map(({ key, label, box, leader, forced }) => {
+            const dim = highlight !== null && highlight !== key;
+            return (
+              <g key={`label:${key}`} opacity={dim ? 0.35 : 1}>
+                {leader ? (
+                  <>
+                    <line
+                      x1={leader.x1 * unit}
+                      y1={leader.y1 * unit}
+                      x2={leader.x2 * unit}
+                      y2={leader.y2 * unit}
+                      stroke="#10160f"
+                      strokeOpacity={0.7}
+                      strokeWidth={3 * unit}
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={leader.x1 * unit}
+                      y1={leader.y1 * unit}
+                      x2={leader.x2 * unit}
+                      y2={leader.y2 * unit}
+                      stroke="#f3efe4"
+                      strokeWidth={1.25 * unit}
+                      strokeLinecap="round"
+                    />
+                  </>
                 ) : null}
+                {forced ? (
+                  <rect
+                    x={(box.x - 3) * unit}
+                    y={(box.y - 1) * unit}
+                    width={(box.width + 6) * unit}
+                    height={(box.height + 2) * unit}
+                    rx={3 * unit}
+                    fill="#10160f"
+                    fillOpacity={0.85}
+                  />
+                ) : null}
+                <text
+                  x={box.x * unit}
+                  y={(box.y + LABEL_BASELINE) * unit}
+                  fontSize={LABEL_FONT_PX * unit}
+                  fontWeight={600}
+                  fill="#fff"
+                  {...halo}
+                >
+                  {label}
+                </text>
               </g>
             );
           })}
@@ -535,6 +648,12 @@ export default function MovementMap({
         ))}
       </div>
       <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 flex w-fit max-w-[calc(100%-1rem)] flex-col gap-1 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--tfmc-cream)]">
+        {hiddenNames > 0 ? (
+          <span>
+            {hiddenNames} {hiddenNames === 1 ? "name" : "names"} hidden for room: zoom in
+            {latest ? " or tap a dot" : ""}
+          </span>
+        ) : null}
         {latest ? (
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last recorded
