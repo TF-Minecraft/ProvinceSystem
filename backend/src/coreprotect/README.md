@@ -40,9 +40,10 @@ connection settings for database engines the server does not use.
 The database uses a rollback journal, so a reader's lock holds off
 CoreProtect's commits. `reader.py` explains the guards: autocommit, one
 reader per process, a 1.5 s budget per request (waiting for the lock
-included), and every statement fully fetched before the next. The backend runs as one uvicorn process; running
-more would need the reader limit shared between them. Never open the file
-with `immutable=1`: on Main that read torn pages while CoreProtect wrote.
+included), and every statement fully fetched before the next. The backend
+runs as one uvicorn process; running more would need the reader limit
+shared between them. Never open the file with `immutable=1`: on Main that
+read torn pages while CoreProtect wrote.
 
 Every query is an indexed seek by player, except small whole-table reads of
 CoreProtect's name tables, `co_user` and `co_username_log` (a few hundred
