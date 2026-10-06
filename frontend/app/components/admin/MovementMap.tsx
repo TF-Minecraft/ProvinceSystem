@@ -44,6 +44,8 @@ type Props = {
   cursor: number;
   /** A trail to draw over the others, with the rest dimmed. */
   highlight?: string | null;
+  /** How long after their last row a player still counts as there (see `positionAt`). */
+  hold: number;
   className?: string;
 };
 
@@ -77,7 +79,7 @@ function trailPaths(trail: MovementTrail, mapWorld: string, since: number, until
     }
   }
   const walked: Segment[] = [...bands].map(([colour, steps]) => ({ colour, d: steps.join("") }));
-  return { walked, jumps: jumps.join("") };
+  return { walked, casing: walked.map((seg) => seg.d).join(""), jumps: jumps.join("") };
 }
 
 export default function MovementMap({
@@ -88,6 +90,7 @@ export default function MovementMap({
   until,
   cursor,
   highlight = null,
+  hold,
   className,
 }: Props) {
   const tiles = useTileManifest(mapId, "base", true);
@@ -175,10 +178,20 @@ export default function MovementMap({
           viewBox={`0 0 ${mapSize.w} ${mapSize.h}`}
           preserveAspectRatio="xMidYMid meet"
         >
-          {paths.map(({ trail, walked, jumps }) => {
+          {paths.map(({ trail, walked, casing, jumps }) => {
             const dim = highlight !== null && highlight !== trail.key;
             return (
               <g key={trail.key} opacity={dim ? 0.25 : 1}>
+                {/* A dark edge so the line reads over snow, sand and forest alike. */}
+                <path
+                  d={casing}
+                  fill="none"
+                  stroke="#10160f"
+                  strokeOpacity={0.55}
+                  strokeWidth={5.5 * unit}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
                 {walked.map((seg) => (
                   <path
                     key={seg.colour}
@@ -234,7 +247,7 @@ export default function MovementMap({
             );
           })}
           {trails.map((trail) => {
-            const at = positionAt(trail.stretches, cursor);
+            const at = positionAt(trail.stretches, cursor, hold);
             if (!at || at.world !== mapWorld) return null;
             const dim = highlight !== null && highlight !== trail.key;
             return (

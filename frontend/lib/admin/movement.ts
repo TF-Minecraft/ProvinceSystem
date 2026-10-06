@@ -130,18 +130,31 @@ export type Position = {
   z: number;
   /** Between two pings the position is a straight-line guess. */
   exact: boolean;
+  /** Past a stretch's last row: where they were last seen, at this time. */
+  lastSeen?: number;
 };
 
 /**
  * Where the player was at `time`, or null when they were not seen then
  * (offline, or between stretches). Between two rows of a stretch the
- * position is interpolated, unless the step was a jump.
+ * position is interpolated, unless the step was a jump. For up to `hold`
+ * seconds after a stretch's last row (unless it was a logout) it is that
+ * row, marked `lastSeen`: the next ping may simply not have come yet.
  */
-export function positionAt(all: readonly Stretch[], time: number): Position | null {
-  for (const stretch of all) {
+export function positionAt(all: readonly Stretch[], time: number, hold = 0): Position | null {
+  for (const [index, stretch] of all.entries()) {
     const s = stretch.samples;
     const first = s[0];
     const last = s[s.length - 1];
+    const next = all[index + 1]?.samples[0];
+    if (
+      time > last.time &&
+      time - last.time <= hold &&
+      last.action !== ACTION_LOGOUT &&
+      (!next || next.time > time)
+    ) {
+      return { world: stretch.world, x: last.x, z: last.z, exact: false, lastSeen: last.time };
+    }
     if (time < first.time || time > last.time) continue;
     for (let i = 0; i < s.length; i += 1) {
       const a = s[i];
@@ -205,12 +218,15 @@ export function boundsOf(
   return { x: minX, y: minZ, w: maxX - minX, h: maxZ - minZ };
 }
 
-/** A colour from old (cool, faint) to new (warm, bright) for a moment in the window. */
+/**
+ * A colour from old (violet) through magenta and red to new (orange) for a
+ * moment in the window: hues the map's greens, browns, snow and sea do not use.
+ */
 export function ageColour(fraction: number): string {
   const f = Math.min(1, Math.max(0, fraction));
-  const hue = 210 - 170 * f;
-  const light = 55 + 10 * f;
-  return `hsl(${hue.toFixed(0)} 85% ${light.toFixed(0)}%)`;
+  const hue = (275 + 125 * f) % 360;
+  const light = 58 + 6 * f;
+  return `hsl(${hue.toFixed(0)} 90% ${light.toFixed(0)}%)`;
 }
 
 /** A steady colour per player for the everyone view. */

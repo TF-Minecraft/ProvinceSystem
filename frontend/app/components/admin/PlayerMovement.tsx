@@ -7,6 +7,7 @@ import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
   PLAYER_PRESETS,
   distanceTravelled,
+  gapSeconds,
   getPlayerMovement,
   positionAt,
   stretches,
@@ -77,7 +78,8 @@ export default function PlayerMovement({ uuid, name }: { uuid: string; name: str
   // A window cut short starts where the answer is complete.
   const shownSince = data ? data.complete_from : since;
   const shownUntil = data?.until ?? until;
-  const at = positionAt(parts, cursor ?? shownUntil);
+  const hold = gapSeconds(data?.coreprotect.ping_seconds);
+  const at = positionAt(parts, cursor ?? shownUntil, hold);
   const byWorld = timeByWorld(parts);
   const elsewhere = [...byWorld].filter(([world, seconds]) => world !== mapWorld && seconds > 0);
   const seen = [...byWorld.values()].reduce((a, b) => a + b, 0);
@@ -116,6 +118,7 @@ export default function PlayerMovement({ uuid, name }: { uuid: string; name: str
           since={shownSince}
           until={shownUntil}
           cursor={cursor ?? shownUntil}
+          hold={hold}
           className={expanded ? "min-h-0 flex-1 rounded-sm" : "h-[28rem] rounded-sm"}
         />
       ) : (
@@ -127,7 +130,9 @@ export default function PlayerMovement({ uuid, name }: { uuid: string; name: str
           <p>
             {at
               ? at.world === mapWorld
-                ? at.exact
+                ? at.lastSeen !== undefined
+                  ? `Last seen at ${at.x}, ${at.z}, ${formatDuration((cursor ?? shownUntil) - at.lastSeen).toLowerCase()} earlier.`
+                  : at.exact
                   ? `Seen at ${Math.round(at.x)}, ${Math.round(at.z)}.`
                   : `Between pings, near ${Math.round(at.x)}, ${Math.round(at.z)} (a straight-line guess).`
                 : `In ${worldLabel(at.world)}.`

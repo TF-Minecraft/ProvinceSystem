@@ -63,6 +63,13 @@ describe("positionAt", () => {
     expect(positionAt(out, 181)).toBeNull();
   });
 
+  it("holds the last sighting while the next ping may still come", () => {
+    expect(positionAt(out, 250, 150)).toEqual({ world: "TFMC_Map", x: 5000, z: 60, exact: false, lastSeen: 180 });
+    expect(positionAt(out, 331, 150)).toBeNull();
+    const loggedOut = stretches([p(0, 1, 1, ACTION_LOGIN), p(60, 2, 2, ACTION_LOGOUT)], WORLDS, 60);
+    expect(positionAt(loggedOut, 90, 150)).toBeNull();
+  });
+
   it("leaves teleports out of the distance", () => {
     expect(distanceTravelled(out)).toBe(120);
   });

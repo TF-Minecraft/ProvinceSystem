@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
   EVERYONE_PRESETS,
+  gapSeconds,
   getEveryoneMovement,
   playerColour,
   positionAt,
@@ -77,6 +78,7 @@ export default function EveryoneMovement() {
   const shownSince = data ? data.complete_from : since;
   const shownUntil = data?.until ?? until;
   const moment = cursor ?? shownUntil;
+  const hold = gapSeconds(data?.coreprotect.ping_seconds);
   const notice = data ? coreProtectMessage(data.coreprotect) : null;
 
   return (
@@ -97,6 +99,7 @@ export default function EveryoneMovement() {
             since={shownSince}
             until={shownUntil}
             cursor={moment}
+            hold={hold}
             highlight={highlight}
             className="h-[70vh] flex-1 rounded-sm"
           />
@@ -105,7 +108,7 @@ export default function EveryoneMovement() {
         )}
         <ul className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto lg:w-60" aria-label="Players in this window">
           {trails.map((trail) => {
-            const at = positionAt(trail.stretches, moment);
+            const at = positionAt(trail.stretches, moment, hold);
             return (
               <li key={trail.key}>
                 <Link
