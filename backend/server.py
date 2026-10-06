@@ -24,6 +24,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger("startup")
 
+
+class _OAuthQueryFilter(logging.Filter):
+    """Drop OAuth codes and states from access log lines for callback routes."""
+
+    PATHS = ("/auth/discord/callback", "/patreon/oauth/callback")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if isinstance(args, tuple) and len(args) >= 3 and isinstance(args[2], str):
+            path = args[2]
+            if path.split("?", 1)[0] in self.PATHS and "?" in path:
+                record.args = (*args[:2], path.split("?", 1)[0] + "?[redacted]", *args[3:])
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_OAuthQueryFilter())
+
 # --------------------
 # Startup confirmation
 # --------------------
@@ -132,6 +149,7 @@ from src.api.precedent_routes import precedent_router
 from src.api.patchnotes_routes import patchnotes_router
 from src.api.wars_routes import wars_router
 from src.api.patreon_routes import patreon_router
+from src.api.auth_routes import auth_router
 
 app.include_router(map_router)
 app.include_router(editor_router)
@@ -157,3 +175,4 @@ app.include_router(precedent_router)
 app.include_router(patchnotes_router)
 app.include_router(wars_router)
 app.include_router(patreon_router)
+app.include_router(auth_router)

@@ -10,6 +10,7 @@ const staticLinks = [
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
   { href: "/profile", label: "Profile" },
+  { href: "/account", label: "Account" },
   { href: "/wiki", label: "Guide" },
   { href: "/updates", label: "Updates" },
 ] as const;

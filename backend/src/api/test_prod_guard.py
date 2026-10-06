@@ -79,3 +79,38 @@ class ProdGuardTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DiscordAuthProdGuardTest(unittest.TestCase):
+    BASE = {"PS_PRODUCTION": "1", "PLUGIN_KEY": "real-plugin", "STAFF_KEY": "real-staff"}
+    READY = {
+        "DISCORD_AUTH_ENABLED": "1",
+        "DISCORD_CLIENT_ID": "123",
+        "DISCORD_CLIENT_SECRET": "secret",
+        "DISCORD_GUILD_ID": "999999999999999999",
+        "DISCORD_REDIRECT_URI": "https://www.tfminecraft.net/api/auth/discord/callback",
+        "SITE_PUBLIC_URL": "https://www.tfminecraft.net",
+    }
+
+    def test_disabled_needs_nothing(self) -> None:
+        with patch.dict(os.environ, self.BASE, clear=True):
+            assert_production_safe()
+
+    def test_enabled_and_configured_starts(self) -> None:
+        with patch.dict(os.environ, {**self.BASE, **self.READY}, clear=True):
+            assert_production_safe()
+
+    def test_enabled_without_credentials_refuses(self) -> None:
+        env = {**self.BASE, **self.READY, "DISCORD_CLIENT_SECRET": "", "DISCORD_GUILD_ID": "tfmc"}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError) as ctx:
+                assert_production_safe()
+        self.assertIn("DISCORD_CLIENT_SECRET", str(ctx.exception))
+        self.assertIn("DISCORD_GUILD_ID", str(ctx.exception))
+
+    def test_enabled_over_http_refuses(self) -> None:
+        env = {**self.BASE, **self.READY, "SITE_PUBLIC_URL": "http://www.tfminecraft.net"}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError) as ctx:
+                assert_production_safe()
+        self.assertIn("https", str(ctx.exception))
