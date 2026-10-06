@@ -35,6 +35,7 @@ from src.skins.discord_link import (
     LinkError,
     complete_link,
     get_identity_status,
+    remember_discord_nicknames,
     remember_discord_usernames,
     record_guild_joined,
     record_guild_left,
@@ -158,6 +159,8 @@ class LinkCompleteBody(BaseModel):
 class DiscordUsernameUpdate(BaseModel):
     discord_user_id: str = Field(..., min_length=1, max_length=32)
     discord_username: str | None = Field(default=None, max_length=80)
+    # Their server nickname. Sent (even as null, for none) replaces the stored one; left out, it is kept.
+    discord_nickname: str | None = Field(default=None, max_length=80)
 
 
 class DiscordUsernamesBody(BaseModel):
@@ -367,10 +370,10 @@ def post_discord_usernames(
     body: DiscordUsernamesBody,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
 ):
-    """Store Discord account usernames on existing links for staff lookup."""
+    """Store Discord account usernames (and server nicknames, when sent) on existing links for staff lookup."""
     _require_staff(x_staff_key)
     try:
-        return remember_discord_usernames(
+        result = remember_discord_usernames(
             [
                 {
                     "discord_user_id": item.discord_user_id,
@@ -380,6 +383,14 @@ def post_discord_usernames(
             ],
             overwrite=body.overwrite,
         )
+        nicknames = [
+            {"discord_user_id": item.discord_user_id, "discord_nickname": item.discord_nickname}
+            for item in body.updates
+            if "discord_nickname" in item.model_fields_set
+        ]
+        if nicknames:
+            result["nicknames_updated"] = remember_discord_nicknames(nicknames)["updated"]
+        return result
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

@@ -76,17 +76,28 @@ class DiscordClient:
             "discord_avatar": _text(data.get("avatar")),
         }
 
-    def is_guild_member(self, token: str) -> bool:
-        """True for a full member; members still on rules screening do not count."""
+    def guild_member(self, token: str) -> dict | None:
+        """The user's membership of the server, or None; members still on rules screening do not count.
+
+        `nick` is their server nickname, None when they have not set one.
+        """
         response = self._get(f"/users/@me/guilds/{self.config.guild_id}/member", token)
         if response.status_code == 404:
-            return False
+            return None
         if response.status_code != 200:
             raise DiscordError("discord_guild_check_failed")
         try:
-            return response.json().get("pending") is not True
+            data = response.json()
+            pending = data.get("pending")
         except (ValueError, AttributeError):
             raise DiscordError("discord_guild_check_failed") from None
+        if pending is True:
+            return None
+        return {"nick": _text(data.get("nick"))}
+
+    def is_guild_member(self, token: str) -> bool:
+        """True for a full member; members still on rules screening do not count."""
+        return self.guild_member(token) is not None
 
     def revoke(self, token: str) -> None:
         """Best effort: the site keeps no Discord tokens after sign-in."""

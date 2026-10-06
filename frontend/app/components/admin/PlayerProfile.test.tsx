@@ -33,7 +33,8 @@ const PROFILE: Profile = {
   last_seen: NOW - 3600,
   online: false,
   discord: {
-    discord_user_id: "422545450919526411", discord_username: "hazelstone", linked_at: "2026-09-20T10:00:00Z",
+    discord_user_id: "422545450919526411", discord_username: "hazelstone", discord_nickname: "Hazel | Enzo",
+    linked_at: "2026-09-20T10:00:00Z",
     left_guild_at: null, grace_until: null,
   },
   account: null,
@@ -240,4 +241,11 @@ it("never offers Chat before the server allows it", async () => {
   const feed = await screen.findByRole("region", { name: "Recent activity" });
   expect(within(feed).getByRole("button", { name: "Kills" })).toBeTruthy();
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
+});
+
+it("shows the Discord handle and the server nickname", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  await screen.findByText("@hazelstone");
+  expect(screen.getByText("Server nickname")).toBeTruthy();
+  expect(screen.getByText("Hazel | Enzo")).toBeTruthy();
 });

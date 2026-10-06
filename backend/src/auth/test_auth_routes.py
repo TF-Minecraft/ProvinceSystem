@@ -42,10 +42,10 @@ class Stub:
         return {"discord_user_id": self.discord_id, "discord_username": "steve_tfmc",
                 "discord_global_name": "Steve", "discord_avatar": "a_1234abcd"}
 
-    def is_guild_member(self, token):
+    def guild_member(self, token):
         if self.fail == "guild":
             raise DiscordError("discord_guild_check_failed")
-        return self.member
+        return {"nick": None} if self.member else None
 
     def revoke(self, token):
         self.revoked.append(token)

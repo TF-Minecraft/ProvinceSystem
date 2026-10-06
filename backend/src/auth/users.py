@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 from src.skins.codes import hash_secret
 from src.skins.db import connect
-from src.skins.discord_link import remember_discord_usernames
+from src.skins.discord_link import remember_discord_nicknames, remember_discord_usernames
 
 from .config import AuthConfig
 from .discord import SCOPES
@@ -87,7 +87,7 @@ def consume_state(state: str | None) -> str | None:
     return row["return_to"]
 
 
-def sign_in(identity: dict, *, guild_member: bool) -> str:
+def sign_in(identity: dict, *, guild_member: bool, member: dict | None = None) -> str:
     """Upsert the user, open a session and return its plaintext token."""
     token = secrets.token_urlsafe(32)
     now = _utcnow()
@@ -129,6 +129,11 @@ def sign_in(identity: dict, *, guild_member: bool) -> str:
         remember_discord_usernames(
             [{"discord_user_id": identity["discord_user_id"], "discord_username": identity["discord_username"]}],
             overwrite=True,
+        )
+    if member is not None:
+        # And their server nickname, now that Discord has just said what it is.
+        remember_discord_nicknames(
+            [{"discord_user_id": identity["discord_user_id"], "discord_nickname": member.get("nick")}]
         )
     return token
 

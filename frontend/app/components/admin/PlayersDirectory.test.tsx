@@ -14,7 +14,7 @@ const NOW = 2_000_000_000;
 
 function player(uuid: string, name: string | null, extra: Partial<PlayerSummary> = {}): PlayerSummary {
   return {
-    uuid, minecraft_name: name, discord_user_id: null, discord_username: null, site_role: null,
+    uuid, minecraft_name: name, discord_user_id: null, discord_username: null, discord_nickname: null, site_role: null,
     characters: [], last_seen: null, online: false, ...extra,
   };
 }
@@ -40,8 +40,11 @@ afterEach(() => {
 it("lists players with Discord, characters and last seen", async () => {
   vi.mocked(getPlayers).mockResolvedValue(directory([
     player("0615a817-8cb4-4aef-95f7-f6c9bf7611b8", "MrEnzo99", {
-      discord_username: "hazelstone", characters: ["Hazel Stonebrook"], last_seen: NOW - 7200, site_role: "mod",
+      discord_user_id: "422545450919526411", discord_username: "hazelstone", discord_nickname: "Enzo",
+      characters: ["Hazel Stonebrook"], last_seen: NOW - 7200, site_role: "mod",
     }),
+    // Linked before handles were stored: only the server nickname is known.
+    player("44444444-4444-4444-4444-444444444444", "Justin", { discord_user_id: "5", discord_nickname: "Justin" }),
     player("33333333-3333-3333-3333-333333333333", "Quiet", { online: true, last_seen: NOW }),
     player("22222222-2222-2222-2222-222222222222", null),
   ]));
@@ -50,14 +53,19 @@ it("lists players with Discord, characters and last seen", async () => {
   const link = await screen.findByRole("link", { name: "MrEnzo99" });
   expect(link.getAttribute("href")).toBe("/admin/players/0615a817-8cb4-4aef-95f7-f6c9bf7611b8");
   const row = link.closest("tr")!;
-  expect(within(row).getAllByText("@hazelstone")).toHaveLength(2);
+  // The handle and the server nickname, in the Discord column and in one line for narrow screens.
+  expect(within(row).getByText("@hazelstone")).toBeTruthy();
+  expect(within(row).getByText("Enzo")).toBeTruthy();
+  expect(within(row).getByText("@hazelstone · Enzo")).toBeTruthy();
+  const nicknameOnly = screen.getByRole("link", { name: "Justin" }).closest("tr")!;
+  expect(within(nicknameOnly).queryByText("Not linked")).toBeNull();
   // In its column, and again under the name for narrow screens.
   expect(within(row).getAllByText("Hazel Stonebrook").length).toBeGreaterThan(0);
   expect(within(row).getByText("2 h ago")).toBeTruthy();
   expect(within(row).getByText("Moderator")).toBeTruthy();
   expect(screen.getByText("Seen just now")).toBeTruthy();
   expect(screen.getByRole("link", { name: "22222222-2222-2222-2222-222222222222" })).toBeTruthy();
-  expect(screen.getByText(/3 players · activity from Vardera/)).toBeTruthy();
+  expect(screen.getByText(/4 players · activity from Vardera/)).toBeTruthy();
 });
 
 it("searches after typing stops and sorts by Discord name", async () => {

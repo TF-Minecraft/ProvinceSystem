@@ -30,6 +30,13 @@ const pagerClass =
 
 type Props = { initialQuery: string; initialSort: PlayerSort; initialPage: number };
 
+/** `@handle · Server nickname`, whichever of the two is known. */
+function discordLabel(player: { discord_username: string | null; discord_nickname: string | null }): string {
+  return [player.discord_username ? `@${player.discord_username}` : null, player.discord_nickname]
+    .filter(Boolean)
+    .join(" · ") || "Linked";
+}
+
 type Load =
   | { kind: "loading" }
   | { kind: GateKind }
@@ -104,7 +111,7 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
             setQuery(e.target.value);
             setPage(1);
           }}
-          placeholder="Search by Minecraft, Discord or character name, or UUID"
+          placeholder="Search by Minecraft, Discord (handle or nickname) or character name, or UUID"
           autoComplete="off"
           spellCheck={false}
           className={inputClass}
@@ -191,15 +198,27 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
                             {roleLabel(player.site_role ?? "")}
                           </span>
                         ) : null}
-                        {player.discord_username ? (
-                          <span className="block text-xs text-[var(--tfmc-stone)] sm:hidden">@{player.discord_username}</span>
+                        {player.discord_user_id ? (
+                          <span className="block text-xs text-[var(--tfmc-stone)] sm:hidden">{discordLabel(player)}</span>
                         ) : null}
                         {player.characters.length ? (
                           <span className="block text-xs text-[var(--tfmc-mist)] md:hidden">{player.characters.join(", ")}</span>
                         ) : null}
                       </td>
                       <td className="hidden py-2.5 pr-3 text-[var(--tfmc-mist)] sm:table-cell">
-                        {player.discord_username ? `@${player.discord_username}` : <span className="text-[var(--tfmc-stone)]">Not linked</span>}
+                        {player.discord_user_id ? (
+                          <>
+                            {player.discord_username ? <span>@{player.discord_username}</span> : null}
+                            {player.discord_nickname ? (
+                              <span className={player.discord_username ? "block text-xs text-[var(--tfmc-stone)]" : ""}>
+                                {player.discord_nickname}
+                              </span>
+                            ) : null}
+                            {!player.discord_username && !player.discord_nickname ? "Linked" : null}
+                          </>
+                        ) : (
+                          <span className="text-[var(--tfmc-stone)]">Not linked</span>
+                        )}
                       </td>
                       <td className="hidden max-w-[14rem] truncate py-2.5 pr-3 text-[var(--tfmc-mist)] md:table-cell" title={player.characters.join(", ")}>
                         {player.characters.join(", ") || <span className="text-[var(--tfmc-stone)]">None</span>}

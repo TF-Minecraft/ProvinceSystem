@@ -54,7 +54,7 @@ def _status(error: Unavailable | None) -> dict:
 # --------------------
 
 _LINKS = """
-    SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.minecraft_name,
+    SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.discord_nickname, dl.minecraft_name,
            dl.linked_at, dl.left_guild_at, dl.grace_until,
            u.id AS user_id, u.role, u.discord_username AS account_username,
            u.discord_global_name, u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
@@ -84,7 +84,9 @@ def _discord(link: dict | None) -> dict | None:
         return None
     return {
         "discord_user_id": link["discord_user_id"],
+        # The account handle (from their sign-in, else the link) and their server nickname.
         "discord_username": link["account_username"] or link["discord_username"],
+        "discord_nickname": link["discord_nickname"],
         "linked_at": link["linked_at"],
         "left_guild_at": link["left_guild_at"],
         "grace_until": link["grace_until"],
@@ -145,7 +147,7 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
     def person(key: str) -> dict:
         return people.setdefault(key, {
             "uuid": key, "minecraft_name": None, "names": set(), "discord_user_id": None,
-            "discord_username": None, "discord_global_name": None, "site_role": None,
+            "discord_username": None, "discord_nickname": None, "discord_global_name": None, "site_role": None,
             "characters": [], "last_seen": None, "online": False,
         })
 
@@ -164,6 +166,7 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         entry.update(
             discord_user_id=link["discord_user_id"],
             discord_username=link["account_username"] or link["discord_username"],
+            discord_nickname=link["discord_nickname"],
             discord_global_name=link["discord_global_name"],
             site_role=link["role"],
         )
@@ -198,7 +201,8 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
 def _matches(entry: dict, needle: str) -> bool:
     if needle in {entry["uuid"], entry["uuid"].replace("-", ""), (entry["discord_user_id"] or "")}:
         return True
-    haystack = [*entry["names"], entry["discord_username"], entry["discord_global_name"], *entry["characters"]]
+    haystack = [*entry["names"], entry["discord_username"], entry["discord_nickname"], entry["discord_global_name"],
+                *entry["characters"]]
     return any(needle in value.casefold() for value in haystack if value)
 
 
@@ -206,7 +210,12 @@ def _sort_key(sort: str):
     if sort == "minecraft":
         return lambda e: (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
     if sort == "discord":
-        return lambda e: (e["discord_username"] is None, (e["discord_username"] or "").casefold(), e["uuid"])
+        # By handle, else server nickname (links older than handles may have only the nickname).
+        return lambda e: (
+            not (e["discord_username"] or e["discord_nickname"]),
+            (e["discord_username"] or e["discord_nickname"] or "").casefold(),
+            e["uuid"],
+        )
     if sort == "character":
         # By the first of their characters alphabetically; players without one last.
         return lambda e: (not e["characters"], min((c.casefold() for c in e["characters"]), default=""), e["uuid"])
@@ -219,6 +228,7 @@ def _directory_json(entry: dict) -> dict:
         "minecraft_name": entry["minecraft_name"],
         "discord_user_id": entry["discord_user_id"],
         "discord_username": entry["discord_username"],
+        "discord_nickname": entry["discord_nickname"],
         "site_role": entry["site_role"],
         "characters": entry["characters"],
         "last_seen": entry["last_seen"],

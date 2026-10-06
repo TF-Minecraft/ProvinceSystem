@@ -133,7 +133,10 @@ export type PlayerSummary = {
   uuid: string;
   minecraft_name: string | null;
   discord_user_id: string | null;
+  /** Their Discord account handle, when known. */
   discord_username: string | null;
+  /** Their nickname in the TFMC Discord server, if they have one. */
+  discord_nickname: string | null;
   site_role: StaffRole | null;
   characters: string[];
   last_seen: number | null;
@@ -158,6 +161,7 @@ export type PlayerProfile = {
   discord: {
     discord_user_id: string;
     discord_username: string | null;
+    discord_nickname: string | null;
     linked_at: string | null;
     left_guild_at: string | null;
     grace_until: string | null;

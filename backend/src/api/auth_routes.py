@@ -191,8 +191,10 @@ def _finish_sign_in(config: AuthConfig, code: str | None) -> str | None:
         access_token = client.exchange_code(code)
         try:
             identity = client.identity(access_token)
+            member = None
             try:
-                guild_member = client.is_guild_member(access_token)
+                member = client.guild_member(access_token)
+                guild_member = member is not None
             except DiscordError as exc:
                 # Sign-in still works; linking asks for a fresh check.
                 logger.warning("Discord guild check failed code=%s", exc)
@@ -204,7 +206,7 @@ def _finish_sign_in(config: AuthConfig, code: str | None) -> str | None:
         return None
     finally:
         client.close()
-    return users.sign_in(identity, guild_member=guild_member)
+    return users.sign_in(identity, guild_member=guild_member, member=member)
 
 
 @auth_router.post("/auth/logout")
