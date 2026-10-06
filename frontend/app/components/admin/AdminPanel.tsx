@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AccountApiError } from "../../../lib/account/api";
 import {
@@ -14,6 +13,7 @@ import {
   type AdminMe,
 } from "../../../lib/admin/api";
 import AccountActions from "./AccountActions";
+import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 
 const panelClass =
   "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
@@ -23,13 +23,7 @@ const buttonClass =
 const inputClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)]";
 
-type Load =
-  | { kind: "loading" }
-  | { kind: "signed_out" }
-  | { kind: "forbidden" }
-  | { kind: "unavailable" }
-  | { kind: "error" }
-  | { kind: "ready"; me: AdminMe; staff: AdminAccount[] };
+type Load = { kind: "loading" } | { kind: GateKind } | { kind: "ready"; me: AdminMe; staff: AdminAccount[] };
 
 export default function AdminPanel() {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
@@ -43,13 +37,7 @@ export default function AdminPanel() {
       const [me, staff] = await Promise.all([getAdminMe(), getStaff()]);
       setLoad({ kind: "ready", me, staff });
     } catch (err) {
-      const status = err instanceof AccountApiError ? err.status : 0;
-      setLoad(
-        status === 401 ? { kind: "signed_out" }
-          : status === 403 ? { kind: "forbidden" }
-            : status === 503 ? { kind: "unavailable" }
-              : { kind: "error" }
-      );
+      setLoad({ kind: gateKind(err) });
     }
   }, []);
 
@@ -88,29 +76,7 @@ export default function AdminPanel() {
   }
 
   if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
-  if (load.kind === "signed_out") {
-    return (
-      <p className="mt-6 text-[var(--tfmc-mist)]">
-        <Link href="/account" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
-          Sign in with Discord
-        </Link>{" "}
-        to use the staff panel.
-      </p>
-    );
-  }
-  if (load.kind === "forbidden") {
-    return <p className="mt-6 text-[var(--tfmc-mist)]">This page is for TFMC staff only.</p>;
-  }
-  if (load.kind === "unavailable") {
-    return <p className="mt-6 text-[var(--tfmc-mist)]">The staff panel isn’t available yet.</p>;
-  }
-  if (load.kind === "error") {
-    return (
-      <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">
-        We couldn’t load the staff panel. Please refresh the page.
-      </p>
-    );
-  }
+  if (load.kind !== "ready") return <StaffGateMessage kind={load.kind} />;
 
   const { me, staff } = load;
 

@@ -1,3 +1,4 @@
+import AdminNav from "../components/admin/AdminNav";
 import AdminPanel from "../components/admin/AdminPanel";
 
 export default function AdminPage() {
@@ -6,6 +7,7 @@ export default function AdminPage() {
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
         Staff panel
       </h1>
+      <AdminNav current="accounts" />
       <AdminPanel />
     </main>
   );
