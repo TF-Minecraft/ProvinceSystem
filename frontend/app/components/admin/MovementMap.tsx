@@ -337,12 +337,19 @@ export default function MovementMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [layoutKey]
   );
+  // A pick only stands while its name has no room: once zooming makes room, or the player is gone, it lapses,
+  // so the name never comes back on its own later and the next tap picks it again.
+  const pickLapsed =
+    picked !== null && (placed.some((p) => p.key === picked) || !anchors.some((a) => a.key === picked));
+  useEffect(() => {
+    if (pickLapsed) setPicked(null);
+  }, [pickLapsed]);
   const hiddenNames = anchors.length - placed.length;
   const labels = anchors.flatMap<ShownLabel>((anchor) => {
     const spot = placed.find((p) => p.key === anchor.key);
     if (spot) return [{ key: anchor.key, label: anchor.label, box: spot, leader: spot.leader, forced: false }];
     // No room: the label shows beside its marker, on a backing, only while pointed at or tapped.
-    if (anchor.key !== highlight && anchor.key !== picked) return [];
+    if (anchor.key !== highlight && (anchor.key !== picked || pickLapsed)) return [];
     const box = {
       x: anchor.x + 12,
       y: anchor.y - LABEL_HEIGHT_PX / 2,
