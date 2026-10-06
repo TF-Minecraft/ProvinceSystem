@@ -158,7 +158,7 @@ export function clipStretches(all: readonly Stretch[], from: number, to: number)
       const b = s[i];
       if (b.time < from || b.time > to) continue;
       const a = s[i - 1];
-      if (!kept.length && a && a.time < from && !isJump(a, b)) {
+      if (!kept.length && a && a.time < from && b.time > from && !isJump(a, b)) {
         const f = (from - a.time) / (b.time - a.time);
         kept.push({
           time: from,
@@ -449,9 +449,11 @@ export function timelineTicks(since: number, until: number, most = 8): number[] 
     return ticks;
   }
   const hours = step / 3600;
-  d.setHours(Math.floor(d.getHours() / hours) * hours);
-  for (; d.getTime() / 1000 <= until; d.setHours(Math.floor(d.getHours() / hours) * hours + hours)) {
-    if (d.getTime() / 1000 >= since) ticks.push(d.getTime() / 1000);
+  d.setHours(Math.floor(d.getHours() / hours) * hours, 0, 0, 0);
+  // Minutes are reset each step: a half-hour clock change would otherwise leave every later tick at :30.
+  for (; d.getTime() / 1000 <= until; d.setHours(Math.floor(d.getHours() / hours) * hours + hours, 0, 0, 0)) {
+    // An hour the clocks skip lands off the hour (02:00 → 02:30): leave it out.
+    if (d.getTime() / 1000 >= since && d.getMinutes() === 0) ticks.push(d.getTime() / 1000);
   }
   return ticks;
 }

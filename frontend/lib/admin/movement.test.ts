@@ -120,6 +120,12 @@ describe("clipStretches", () => {
     expect(positionAt(all, 1000)?.x).toBe(100);
   });
 
+  it("keeps a row exactly on the window's edge as it is", () => {
+    const all = stretches([p(900, 0, 0), p(1000, 100, 0), p(1060, 160, 0)], WORLDS, 60);
+    const clipped = clipStretches(all, 1000, 1100);
+    expect(clipped[0].samples.map((s) => [s.time, s.estimated ?? false])).toEqual([[1000, false], [1060, false]]);
+  });
+
   it("drops stretches wholly outside the window", () => {
     expect(clipStretches(stretches([p(0, 0, 0), p(60, 1, 1)], WORLDS, 60), 100, 200)).toEqual([]);
   });
@@ -152,6 +158,17 @@ describe("times", () => {
     try {
       expect(parseLocalInput("2026-04-05T01:45").error).toMatch(/clocks went back/);
       expect(parseLocalInput("2026-04-05T03:00").time).toBeDefined();
+    } finally {
+      process.env.TZ = "Europe/London";
+    }
+  });
+
+  it("keeps hourly ticks on the hour across a half-hour clock change", () => {
+    process.env.TZ = "Australia/Lord_Howe";
+    try {
+      const start = Date.UTC(2026, 9, 3, 13, 0) / 1000;
+      const ticks = timelineTicks(start, start + 8 * 3600);
+      expect(ticks.map((t) => new Date(t * 1000).getMinutes())).toEqual(ticks.map(() => 0));
     } finally {
       process.env.TZ = "Europe/London";
     }
