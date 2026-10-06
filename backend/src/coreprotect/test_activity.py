@@ -119,7 +119,8 @@ def test_cursors_are_scoped_and_validated():
     token = activity.encode_cursor(SCOPE, activity.Cursor(10, 1, 5))
     assert activity.decode_cursor(SCOPE, token) == activity.Cursor(10, 1, 5)
     for bad in ("nonsense", activity.encode_cursor("main:someone-else", activity.Cursor(10, 1, 5)),
-                cursors.encode(SCOPE, "activity", 10, 99, 5), cursors.encode(SCOPE, "sessions", 10, 1, 5), "x" * 300):
+                cursors.encode(SCOPE, "activity", 10, 99, 5), cursors.encode(SCOPE, "sessions", 10, 1, 5), "x" * 300,
+                cursors.encode(SCOPE, "activity", 10 ** 30, 1, 5)):
         with pytest.raises(cursors.BadCursor):
             activity.decode_cursor(SCOPE, bad)
 

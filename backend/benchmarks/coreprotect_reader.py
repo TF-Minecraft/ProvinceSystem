@@ -80,9 +80,10 @@ def synth(args) -> None:
     conn.execute("PRAGMA journal_mode = OFF")
     conn.execute("PRAGMA synchronous = OFF")
     conn.executescript(schema)
-    indexes = [row[0] for row in conn.execute("SELECT sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL")]
-    for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL").fetchall():
-        conn.execute(f"DROP INDEX {name}")
+    found = conn.execute("SELECT name, sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL").fetchall()
+    indexes = [sql for _, sql in found]
+    for name, _ in found:
+        conn.execute('DROP INDEX "{}"'.format(name.replace('"', '""')))
     conn.executemany("INSERT INTO co_user (id, time, user, uuid) VALUES (?, 0, ?, ?)",
                      [(i, f"Player{i}", f"00000000-0000-4000-8000-{i:012d}") for i in range(1, SYNTH_PLAYERS + 1)])
     conn.execute("INSERT INTO co_world (id, world) VALUES (1, 'TFMC_Map')")

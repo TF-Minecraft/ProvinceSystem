@@ -255,3 +255,11 @@ def test_no_audit_no_messages(app, env, world, monkeypatch):
     assert response.status_code == 503
     assert response.json()["detail"] == "audit_unavailable"
     assert "private" not in response.text
+
+
+def test_oversized_cursor_values_are_refused(app, env, world):
+    from src.coreprotect import cursors
+
+    c = client(app, staff(env))
+    huge = cursors.encode("main", f"sessions:{HAZEL}", 10 ** 30, 1)
+    assert c.get(f"/admin/players/{HAZEL}/sessions", params={"before": huge}).status_code == 400

@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import threading
 import time
@@ -118,13 +119,16 @@ def test_spent_budget_stops_before_the_next_statement(coreprotect):
 def test_unreadable_or_corrupt_files_are_unavailable(tmp_path):
     locked = tmp_path / "locked.db"
     sqlite3.connect(locked).close()
-    locked.chmod(0)
-    try:
-        with pytest.raises(Unavailable) as exc:
-            Reader(config(locked)).__enter__()
-        assert exc.value.code == "missing"
-    finally:
-        locked.chmod(0o644)
+    # Root reads the file regardless of its mode.
+    if os.geteuid() != 0:
+        locked.chmod(0)
+        try:
+            with pytest.raises(Unavailable) as exc:
+                with Reader(config(locked)):
+                    pass
+            assert exc.value.code == "missing"
+        finally:
+            locked.chmod(0o644)
     junk = tmp_path / "junk.db"
     junk.write_bytes(b"not a database" * 100)
     with pytest.raises(Unavailable) as exc:

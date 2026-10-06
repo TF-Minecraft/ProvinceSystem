@@ -26,6 +26,7 @@ def decode(server: str, listing: str, token: str | None, size: int) -> tuple[int
         ok = data["s"] == server and data["l"] == listing
     except (ValueError, TypeError, KeyError, binascii.Error):
         raise BadCursor("bad_cursor") from None
-    if not ok or len(values) != size or not all(type(v) is int for v in values):
+    # SQLite integers are 64-bit; a larger one could not even be bound.
+    if not ok or len(values) != size or not all(type(v) is int and -(2 ** 63) <= v < 2 ** 63 for v in values):
         raise BadCursor("bad_cursor")
     return values
