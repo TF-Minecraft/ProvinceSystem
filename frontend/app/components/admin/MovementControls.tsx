@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { MapPin } from "./MovementMap";
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
@@ -53,6 +53,46 @@ export function useMinuteClock(on: boolean): number {
     return () => window.clearInterval(timer);
   }, [on]);
   return now;
+}
+
+/** How long the inspected moment must rest before it is written to the URL. */
+const MOMENT_WRITE_DELAY_MS = 300;
+
+/**
+ * The inspected moment while it is being moved: shown at once, written to the
+ * URL (`at`) only once it rests, so dragging the timeline does not rewrite the
+ * URL on every step. `cancel` drops a pending write, for when the view changes
+ * (a new session or range clears `at`).
+ */
+export function useLiveMoment(urlAt: number | null, writeAt: (time: number) => void) {
+  const [live, setLive] = useState<number | null>(null);
+  const [seenUrlAt, setSeenUrlAt] = useState(urlAt);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const write = useRef(writeAt);
+  write.current = writeAt;
+  // The URL caught up, or changed for another reason: it is the truth again.
+  if (seenUrlAt !== urlAt) {
+    setSeenUrlAt(urlAt);
+    setLive(null);
+  }
+  const cancel = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    setLive(null);
+  }, []);
+  const move = useCallback((time: number) => {
+    const at = Math.round(time);
+    setLive(at);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      write.current(at);
+    }, MOMENT_WRITE_DELAY_MS);
+  }, []);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  return { at: live ?? urlAt, move, cancel };
 }
 
 export type Range = { from: number; to: number; follow: boolean };

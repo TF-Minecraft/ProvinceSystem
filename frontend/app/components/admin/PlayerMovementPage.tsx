@@ -32,6 +32,7 @@ import MovementMap, { type MapPin } from "./MovementMap";
 import {
   CopyButton,
   InspectBar,
+  useLiveMoment,
   PinForm,
   RangeForm,
   Timeline,
@@ -97,7 +98,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   const from = intParam(search.get("from"));
   const to = intParam(search.get("to"));
   const follow = search.get("follow") === "1";
-  const at = intParam(search.get("at"));
+  const urlAt = intParam(search.get("at"));
   const pin = pinParam(search.get("pin"));
   // A session in the URL wins over a range.
   const mode: "session" | "range" = !sessionId && from !== null && to !== null ? "range" : "session";
@@ -121,6 +122,10 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
       writeUrl(`${pathname}?${next.toString()}`, replace);
     },
     [pathname, search]
+  );
+  // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
+  const { at, move: setCursor, cancel: cancelMoment } = useLiveMoment(urlAt, (time) =>
+    update({ at: String(time) }, true)
   );
 
   const [name, setName] = useState<string | null>(null);
@@ -252,11 +257,15 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     : null;
   const onlyEdges = view !== null && view.points.length > 0 && !view.points.some((p) => p[5] === ACTION_PING);
 
-  const selectSession = (session: PlayerSession, replace: boolean) =>
+  const selectSession = (session: PlayerSession, replace: boolean) => {
+    cancelMoment();
     update({ session: session.id, from: null, to: null, follow: null, at: null }, replace);
-  const applyRange = (next: Range) =>
+  };
+  const applyRange = (next: Range) => {
+    cancelMoment();
     update({ session: null, from: String(next.from), to: String(next.to), follow: next.follow ? "1" : null, at: null });
-  const setCursor = (time: number) => update({ at: String(Math.round(time)) }, true);
+  };
+
   const shareUrl = () => {
     const params = new URLSearchParams(search.toString());
     if (range) {
@@ -383,7 +392,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                   <p className="text-[var(--tfmc-cream)]">
                     No observations between {describeSpan(since, until)}.{" "}
                     {mode === "range" ? (
-                      <button type="button" className="underline" onClick={() => { setTab("session"); update({ from: null, to: null, follow: null, at: null }); }}>
+                      <button type="button" className="underline" onClick={() => { setTab("session"); cancelMoment(); update({ from: null, to: null, follow: null, at: null }); }}>
                         Show their latest session
                       </button>
                     ) : null}
