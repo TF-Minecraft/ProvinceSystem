@@ -26,8 +26,15 @@ export default function HubPage() {
       />
 
       <div className="relative z-10 flex max-w-2xl flex-col items-center text-center">
-        <h1 className="hub-rise font-[family-name:var(--font-fraunces)] text-6xl font-medium tracking-tight text-[var(--tfmc-cream)] sm:text-7xl md:text-8xl">
-          TFMC
+        <h1 className="hub-rise">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-512.webp"
+            alt="TFMC"
+            width={256}
+            height={256}
+            className="block h-40 w-40 sm:h-52 sm:w-52 md:h-64 md:w-64"
+          />
         </h1>
         <p className="hub-rise-delay mt-4 max-w-md text-lg text-[var(--tfmc-mist)] sm:text-xl">
           Maps, donator skins, drinks, and characters for TFMC.

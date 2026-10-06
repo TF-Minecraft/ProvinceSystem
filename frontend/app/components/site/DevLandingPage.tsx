@@ -120,8 +120,15 @@ export default function DevLandingPage({
       <HubAtmosphere />
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
-        <h1 className="hub-rise font-[family-name:var(--font-fraunces)] text-6xl font-medium tracking-tight text-[var(--tfmc-cream)] sm:text-7xl">
-          TFMC
+        <h1 className="hub-rise">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-512.webp"
+            alt="TFMC"
+            width={208}
+            height={208}
+            className="block h-40 w-40 sm:h-52 sm:w-52"
+          />
         </h1>
         <p className="hub-rise-delay mt-4 text-lg text-[var(--tfmc-mist)] sm:text-xl">
           We are in development
