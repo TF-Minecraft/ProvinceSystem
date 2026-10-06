@@ -48,6 +48,7 @@ import {
 } from "../map/shell/MapIcons";
 import {
   CHRONICLE_TOGGLE_ORDER,
+  type ChronicleClip,
   type ChronicleToggleKey,
   type ChronicleToggles,
 } from "./chronicleLayers";
@@ -296,6 +297,11 @@ export function ChronicleTogglePanel({
   focusNationId,
   onFocusChange,
   focusDisabledReason,
+  clips,
+  onAddClip,
+  onRemoveClip,
+  onMoveClip,
+  canAddClip,
 }: {
   toggles: ChronicleToggles;
   onToggle: (key: ChronicleToggleKey) => void;
@@ -310,6 +316,16 @@ export function ChronicleTogglePanel({
    * narrowing, so not being able to set one never blocks the next step.
    */
   focusDisabledReason: string | null;
+  /**
+   * Queued looks, played in order as one timelapse. Absent on a caller that
+   * does not stitch; the section is hidden then.
+   */
+  clips?: ChronicleClip[];
+  onAddClip?: () => void;
+  onRemoveClip?: (id: string) => void;
+  onMoveClip?: (id: string, direction: -1 | 1) => void;
+  /** False when the draft look would draw nothing, so it cannot be queued. */
+  canAddClip?: boolean;
 }) {
   return (
     <div className="space-y-5">
@@ -384,6 +400,67 @@ export function ChronicleTogglePanel({
           </span>
         </label>
       </section>
+
+      {onAddClip ? (
+        <section className={`${sectionRuleClass} pt-4`}>
+          <SectionHeading title="Sequence" />
+          <p className="mt-1.5 text-xs leading-snug text-[var(--tfmc-stone)]">
+            One look plays as the layers are now. Add this look to stitch several
+            into one timelapse, in the order you queue them.
+          </p>
+          <button
+            type="button"
+            className={`${quietButtonClass} mt-3`}
+            onClick={onAddClip}
+            disabled={!canAddClip}
+          >
+            Add this look
+          </button>
+          {clips && clips.length > 0 ? (
+            <ol className="mt-3 space-y-2">
+              {clips.map((clip, index) => (
+                <li
+                  key={clip.id}
+                  className="flex items-center gap-2 rounded-lg bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)] px-2.5 py-1.5"
+                >
+                  <span className="w-4 shrink-0 text-xs tabular-nums text-[var(--tfmc-mist)]">
+                    {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--tfmc-cream)]">
+                    {clip.label}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] disabled:opacity-35"
+                    aria-label={`Move look ${index + 1} earlier`}
+                    disabled={index === 0}
+                    onClick={() => onMoveClip?.(clip.id, -1)}
+                  >
+                    Up
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] disabled:opacity-35"
+                    aria-label={`Move look ${index + 1} later`}
+                    disabled={index === clips.length - 1}
+                    onClick={() => onMoveClip?.(clip.id, 1)}
+                  >
+                    Down
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+                    aria-label={`Remove look ${index + 1}`}
+                    onClick={() => onRemoveClip?.(clip.id)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -411,6 +488,7 @@ export function ChronicleRangePanel({
   onRenderSizeChange,
   blockReason,
   notice,
+  lookCount,
 }: {
   days: string[];
   incompleteDays: Set<string>;
@@ -428,7 +506,14 @@ export function ChronicleRangePanel({
    */
   blockReason: string | null;
   notice?: string | null;
+  /**
+   * How many queued looks the build will play, one after another. `1` is a
+   * single look: the draft layers, or a sequence of one.
+   */
+  lookCount?: number;
 }) {
+  const looks = Math.max(1, lookCount ?? 1);
+  const frameCount = selection.days.length * looks;
   const last = days[days.length - 1];
   const presets = [
     ...RANGE_PRESETS.filter((count) => count < days.length).map((count) => ({
@@ -523,7 +608,7 @@ export function ChronicleRangePanel({
             <div>
               <dt className="text-xs text-[var(--tfmc-mist)]">Frames</dt>
               <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">
-                {selection.days.length}
+                {frameCount}
               </dd>
             </div>
             <div>
@@ -540,12 +625,20 @@ export function ChronicleRangePanel({
             </div>
           </dl>
         )}
+        {looks > 1 && !selection.error ? (
+          <p className="mt-2 text-center text-xs text-[var(--tfmc-stone)]">
+            {looks} looks, one after another.
+          </p>
+        ) : null}
       </section>
 
       {estimate.overCeiling ? (
         <ChronicleNotice>
           {formatChronicleBytes(estimate.memoryBytes)} of frames is more than this
-          browser should hold at once. Shorten the range or pick a smaller frame size.
+          browser should hold at once.{" "}
+          {looks > 1
+            ? "Shorten the range, pick a smaller frame size, or drop a look from the sequence."
+            : "Shorten the range or pick a smaller frame size."}
         </ChronicleNotice>
       ) : blockReason && !selection.error ? (
         <ChronicleNotice>{blockReason}</ChronicleNotice>
@@ -574,7 +667,7 @@ export function ChronicleBuildPanel({
           {pct}%
         </p>
         <p className="text-sm text-[var(--tfmc-stone)]">
-          {completed} of {total} days
+          {completed} of {total} {progress?.look ? "frames" : "days"}
         </p>
       </div>
       <div
@@ -592,6 +685,7 @@ export function ChronicleBuildPanel({
       </div>
       {progress ? (
         <p className="text-xs text-[var(--tfmc-stone)]">
+          {progress.look ? `${progress.look} · ` : ""}
           {progress.day ? `${formatChronicleDay(progress.day)} · ` : ""}
           {progress.painted} painted, {progress.reused} reused
           {progress.skipped ? `, ${progress.skipped} skipped` : ""}
@@ -628,6 +722,11 @@ export type ChroniclePlayerProps = {
   incomplete: boolean;
   /** A card along the foot of the map, or rows at the top of the phone sheet. */
   variant: "bar" | "sheet";
+  /**
+   * The queued look on screen, when the timelapse is several looks stitched
+   * together. Absent for a single look.
+   */
+  look?: string | null;
 };
 
 /**
@@ -646,6 +745,7 @@ export function ChroniclePlayer({
   onLoopChange,
   incomplete,
   variant,
+  look,
 }: ChroniclePlayerProps) {
   const total = days.length;
   const day = days[activeIndex];
@@ -673,6 +773,7 @@ export function ChroniclePlayer({
         {day ? formatChronicleDay(day) : "—"}
       </p>
       <p className="truncate text-xs text-[var(--tfmc-mist)]">
+        {look ? `${look} · ` : null}
         Day {Math.min(activeIndex + 1, total)} of {total}
         {incomplete ? <span className="text-[var(--tfmc-accent)]"> · sources missing</span> : null}
       </p>
@@ -700,7 +801,9 @@ export function ChroniclePlayer({
         value={activeIndex}
         onChange={(e) => onScrub(Number(e.target.value))}
         aria-label="Day"
-        aria-valuetext={day ? formatChronicleDay(day) : undefined}
+        aria-valuetext={
+          day ? `${look ? `${look}, ` : ""}${formatChronicleDay(day)}` : undefined
+        }
       />
       <button
         type="button"
@@ -859,7 +962,7 @@ function WatermarkCornerPicker({
       <div className="min-w-0 text-sm">
         <p className="text-[var(--tfmc-cream)]">Watermark</p>
         <p className="text-xs text-[var(--tfmc-stone)]">
-          {label}. The TFMC logo and Discord link go on every GIF.
+          {label}. Where the logo and Discord link sit, when they are on.
         </p>
       </div>
     </div>
@@ -877,6 +980,10 @@ export function ChroniclePlaybackPanel({
   onGifSizeChange,
   gifStampDay,
   onGifStampDayChange,
+  gifLogo,
+  onGifLogoChange,
+  gifDiscordLink,
+  onGifDiscordLinkChange,
   gifCorner,
   onGifCornerChange,
   gifStatus,
@@ -906,7 +1013,13 @@ export function ChroniclePlaybackPanel({
    */
   gifStampDay: boolean;
   onGifStampDayChange: (stamp: boolean) => void;
-  /** The corner the TFMC logo and discord.gg/tfmc line sit in. Always drawn. */
+  /** The TFMC logo in the corner of the file. Independent of the Discord line. */
+  gifLogo: boolean;
+  onGifLogoChange: (logo: boolean) => void;
+  /** The discord.gg/tfmc line. Independent of the logo. */
+  gifDiscordLink: boolean;
+  onGifDiscordLinkChange: (discordLink: boolean) => void;
+  /** The corner the logo and Discord line sit in, when either is on. */
   gifCorner: ChronicleWatermarkCorner;
   onGifCornerChange: (corner: ChronicleWatermarkCorner) => void;
   /**
@@ -966,6 +1079,18 @@ export function ChroniclePlaybackPanel({
           disabled={exporting}
         />
         <div className="mt-2">
+          <ExportSwitch
+            label="Logo"
+            checked={gifLogo}
+            disabled={exporting}
+            onChange={onGifLogoChange}
+          />
+          <ExportSwitch
+            label="Discord link"
+            checked={gifDiscordLink}
+            disabled={exporting}
+            onChange={onGifDiscordLinkChange}
+          />
           <ExportSwitch
             label="Stamp the date"
             checked={gifStampDay}

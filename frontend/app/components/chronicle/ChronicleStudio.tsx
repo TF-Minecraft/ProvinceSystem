@@ -36,6 +36,10 @@ import {
 } from "../../lib/map/chronicleFocus";
 import { buildProsperityColorLut } from "../../lib/map/chronicleProsperity";
 import { buildTradeLeagueColorLut } from "../../lib/map/chronicleTradeLeagues";
+import {
+  chronicleDiscardedProvinceMask,
+  omitDiscardedProvinces,
+} from "../../lib/map/chronicleWater";
 import ChronicleBorderCanvas from "./ChronicleBorderCanvas";
 import type {
   NationColorLut,
@@ -67,6 +71,7 @@ import {
 } from "../../lib/map/chronicleData";
 import {
   MapAccessError,
+  fetchMapJson,
   isAbortError,
   mapRequiresAuth,
   staffMapAccessReason,
@@ -123,6 +128,7 @@ import {
   EMPTY_CHRONICLE_LAYERS,
   anyChronicleToggleOn,
   buildChronicleLayers,
+  chronicleClipLabel,
   chronicleLabelMapObjects,
   chronicleRegionData,
   chronicleToggleSignature,
@@ -132,6 +138,7 @@ import {
   needsProvinceGrid,
   needsTradeFile,
   paintsChronicleFill,
+  type ChronicleClip,
   type ChronicleFrameLayers,
   type ChronicleToggleKey,
   type ChronicleToggles,
@@ -184,7 +191,12 @@ type ChronicleDay = ChronicleDayLoad & {
   nationFingerprint: string | null;
 };
 
-type StudioFrame = ChronicleFrame<ImageBitmap, ChronicleFrameLayers>;
+type StudioFrame = ChronicleFrame<ImageBitmap, ChronicleFrameLayers> & {
+  /** Set when this frame belongs to a queued look. Null for a single-look build. */
+  clipLabel: string | null;
+};
+
+type WaterMaskStatus = "loading" | "ready" | "error";
 
 /** Measured once per source so the estimate can re-derive itself per toggle. */
 type SourceCost = { bytes: number; ms: number };
@@ -202,6 +214,22 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
 
   const [stage, setStage] = useState<ChronicleStage>("compose");
   const [toggles, setToggles] = useState<ChronicleToggles>(CHRONICLE_TOGGLES_OFF);
+  /**
+   * Queued looks, played in order over the same range. Empty means the build
+   * is the draft toggles alone, which is what the studio has always done.
+   */
+  const [clips, setClips] = useState<ChronicleClip[]>([]);
+  const clipSerial = useRef(0);
+  const clipsRef = useRef(clips);
+  clipsRef.current = clips;
+  /**
+   * Water and sea province ids, from the live terrain record. Prosperity and
+   * trade leagues must not paint those, matching the live map generators.
+   * Null until the fetch settles, and null again on failure: those two layers
+   * stay unpainted rather than flashing water.
+   */
+  const [waterMask, setWaterMask] = useState<Uint8Array | null>(null);
+  const [waterMaskStatus, setWaterMaskStatus] = useState<WaterMaskStatus>("loading");
   /**
    * The realm the whole timelapse is narrowed to, or `CHRONICLE_FOCUS_NONE`.
    *
@@ -222,10 +250,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * after those layers were switched off would narrow the compose preview from
    * data still sitting in state, then quietly lapse in a build that never pulls
    * a nation file. Better to say so in the panel and mean one thing everywhere.
+   *
+   * A queued look counts as much as the draft: queue a nation-fill look, then
+   * set the draft to prosperity alone to queue the next, and that first look
+   * must still build narrowed to the realm picked for it.
    */
-  const activeFocusNationId = needsNationFile(toggles)
-    ? focusNationId || null
-    : null;
+  const focusWanted =
+    needsNationFile(toggles) || clips.some((clip) => needsNationFile(clip.toggles));
+  const activeFocusNationId = focusWanted ? focusNationId || null : null;
   const [notice, setNotice] = useState<string | null>(null);
   const [layerError, setLayerError] = useState<string | null>(null);
   const [layersLoading, setLayersLoading] = useState(false);
@@ -263,7 +295,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * dates are carried unless the user deliberately strips them.
    */
   const [gifStampDay, setGifStampDay] = useState(true);
-  /** Where the logo and Discord line sit: always on, so only the corner is chosen. */
+  /** Both travel with the file unless the user strips them for a site that forbids the mark. */
+  const [gifLogo, setGifLogo] = useState(true);
+  const [gifDiscordLink, setGifDiscordLink] = useState(true);
+  /** Where the logo and Discord line sit, when either is on. */
   const [gifCorner, setGifCorner] = useState<ChronicleWatermarkCorner>(
     DEFAULT_CHRONICLE_WATERMARK_CORNER
   );
@@ -412,6 +447,34 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         if (!cancelled) setIndexLoading(false);
       });
 
+    return () => {
+      cancelled = true;
+    };
+  }, [mapId, authToken]);
+
+  // Terrain does not change by day. One fetch covers every frame, and only
+  // the terrain field is read — the payload also carries today's prosperity.
+  useEffect(() => {
+    let cancelled = false;
+    setWaterMask(null);
+    setWaterMaskStatus("loading");
+    fetchMapJson<unknown>(`/${mapId}/compiled_data/provinces`, {
+      sessionToken: authToken,
+    })
+      .then((payload) => {
+        if (cancelled) return;
+        const mask = chronicleDiscardedProvinceMask(payload);
+        if (!mask) {
+          setWaterMaskStatus("error");
+          return;
+        }
+        setWaterMask(mask);
+        setWaterMaskStatus("ready");
+      })
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setWaterMaskStatus("error");
+      });
     return () => {
       cancelled = true;
     };
@@ -678,7 +741,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     ]
   );
 
-  const wantNation = needsNationFile(toggles);
+  // The preview day's nation file also lists the realms the focus picker
+  // offers, so it is fetched while any queued look still uses the focus.
+  const wantNation = focusWanted;
   const wantMarkers = needsMarkers(toggles);
   const wantTrade = needsTradeFile(toggles);
   const wantProvinceData = needsProvinceData(toggles);
@@ -993,11 +1058,12 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    *
    * 1. Home territory, then occupied territory. Both opaque, both the
    *    outright owner of the ground, and already one table between them.
-   * 2. The prosperity heat, partially transparent. It covers every province the
-   *    day reported, so it has to sit above the fill to be visible at all and
-   *    has to be translucent so the realm underneath still reads. Above the
-   *    nation colour it works as a wash over ownership; with the fill off it is
-   *    the whole picture.
+   * 2. The prosperity heat, partially transparent. It covers every land
+   *    province the day reported — water and sea are left bare, as the live
+   *    map leaves them — so it has to sit above the fill to be visible at all
+   *    and has to be translucent so the realm underneath still reads. Above
+   *    the nation colour it works as a wash over ownership; with the fill off
+   *    it is the whole picture.
    * 3. League territory, partially transparent, on top because it is the
    *    sparsest mark of the four — a couple of hundred provinces against the
    *    map — and burying a sparse layer under a full-coverage one hides it.
@@ -1007,39 +1073,51 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * colour showing through the league's.
    */
   const composeFillLut = useCallback(
-    (day: {
-      nation: RegionRecord | null;
-      trade: RegionRecord | null;
-      provinceData: unknown;
-    }): NationColorLut =>
+    (
+      day: {
+        nation: RegionRecord | null;
+        trade: RegionRecord | null;
+        provinceData: unknown;
+      },
+      lookToggles: ChronicleToggles = toggles
+    ): NationColorLut => {
+      // No terrain yet, or the fetch failed: withhold the two layers the live
+      // map refuses to paint on water, rather than paint them and correct
+      // later. A heat map that flashes across the sea is the bug this avoids.
+      const terrainReady = waterMaskStatus === "ready" && waterMask != null;
       // Focus is the last step, over the finished stack rather than over each
       // layer: what the eye reads is "everything that is not this realm", and
       // that includes the league wash and the prosperity heat sitting on other
       // realms' land. Applying it per layer would leave those two in full
       // colour over grey ground.
-      focusChronicleFillLut(
+      return focusChronicleFillLut(
         stackChronicleFillLuts([
-          toggles.nationFill || toggles.occupation
+          lookToggles.nationFill || lookToggles.occupation
             ? chronicleDayColorLut(
                 day.nation ? overviewFillOwnership(day.nation) : null,
                 {
-                  fill: toggles.nationFill,
-                  occupation: toggles.occupation,
+                  fill: lookToggles.nationFill,
+                  occupation: lookToggles.occupation,
                 }
               )
             : null,
-          toggles.prosperity ? buildProsperityColorLut(day.provinceData) : null,
-          toggles.tradeLeagues ? buildTradeLeagueColorLut(day.trade) : null,
+          lookToggles.prosperity && terrainReady
+            ? omitDiscardedProvinces(
+                buildProsperityColorLut(day.provinceData),
+                waterMask
+              )
+            : null,
+          lookToggles.tradeLeagues && terrainReady
+            ? omitDiscardedProvinces(
+                buildTradeLeagueColorLut(day.trade),
+                waterMask
+              )
+            : null,
         ]),
         chronicleFocusProvinceIds(day.nation, activeFocusNationId)
-      ),
-    [
-      toggles.nationFill,
-      toggles.occupation,
-      toggles.prosperity,
-      toggles.tradeLeagues,
-      activeFocusNationId,
-    ]
+      );
+    },
+    [toggles, activeFocusNationId, waterMask, waterMaskStatus]
   );
 
   // The compose preview *is* a build frame: same render target, same downscale,
@@ -1205,16 +1283,39 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     [days, index, rangeStart, rangeEnd]
   );
 
+  const clipSignature = useMemo(
+    () =>
+      clips
+        .map((clip) => `${clip.id}:${chronicleToggleSignature(clip.toggles)}`)
+        .join("|"),
+    [clips]
+  );
+  const lookCount = Math.max(1, clips.length);
+  /**
+   * A sequence is several layer sets. The preview's timing describes only the
+   * draft, so the estimate refuses to call itself measured and falls back to
+   * the expensive case, multiplied by the number of looks.
+   */
+  const estimateSignature = clips.length
+    ? `sequence:${clipSignature}`
+    : toggleSignature;
+
   const estimate = useMemo(
     () =>
       estimateChronicleBuild({
-        dayCount: selection.days.length,
+        dayCount: selection.days.length * lookCount,
         sample: costSample,
-        signature: toggleSignature,
+        signature: estimateSignature,
         renderWidth: renderSize,
         renderHeight: renderSize,
       }),
-    [selection.days.length, costSample, toggleSignature, renderSize]
+    [
+      selection.days.length,
+      lookCount,
+      costSample,
+      estimateSignature,
+      renderSize,
+    ]
   );
 
   /**
@@ -1227,21 +1328,35 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     geometry.ready && geometry.neighbors && geometry.centroids
   );
 
+  const queuedLooks = clips.length > 0 ? clips.map((clip) => clip.toggles) : [toggles];
+  const sequenceNeedsNames = queuedLooks.some((look) => look.nationNames);
+  const sequenceNeedsTerrain = queuedLooks.some(
+    (look) => look.prosperity || look.tradeLeagues
+  );
+  const terrainBlock =
+    sequenceNeedsTerrain && waterMaskStatus !== "ready"
+      ? waterMaskStatus === "error"
+        ? "Prosperity and trade leagues skip water, and the province terrain could not be loaded."
+        : "Still loading which provinces are water."
+      : null;
+
   const buildBlockReason = useMemo(
     () =>
+      terrainBlock ??
       chronicleBuildBlockReason({
         selectionError: selection.error,
         dayCount: selection.days.length,
         building,
-        nationNames: toggles.nationNames,
+        nationNames: sequenceNeedsNames,
         namesSupported,
         geometryReady,
         overCeiling: estimate.overCeiling,
       }),
     [
+      terrainBlock,
       selection,
       building,
-      toggles.nationNames,
+      sequenceNeedsNames,
       namesSupported,
       geometryReady,
       estimate.overCeiling,
@@ -1264,8 +1379,11 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, []);
 
   // Frames are painted from one set of toggles; changing them makes every one
-  // of them a lie. Say so and go back to compose instead of silently rebuilding.
+  // of them a lie. A queued sequence is painted from the clips, not the draft,
+  // so editing the tiles leaves those frames alone until the sequence itself
+  // changes.
   useEffect(() => {
+    if (clipsRef.current.length > 0) return;
     if (!framesRef.current.length) return;
     discardFrames();
     setStage("compose");
@@ -1273,6 +1391,15 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       "Layers changed, so the built frames were discarded. Build again when the look is right."
     );
   }, [toggles, discardFrames]);
+
+  useEffect(() => {
+    if (!framesRef.current.length) return;
+    discardFrames();
+    setStage("compose");
+    setNotice(
+      "The sequence changed, so the built frames were discarded. Build again when the order is right."
+    );
+  }, [clipSignature, discardFrames]);
 
   // The focus is painted into every frame's pixels and filtered into every
   // frame's labels and pins, so changing it makes the built frames as wrong as
@@ -1322,184 +1449,233 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     discardFrames();
     setStage("build");
     setBuildError(null);
+    // An empty queue is the draft look, labelled null so the player does not
+    // announce a sequence of one. Each queued look is its own pass: frame
+    // reuse stays inside the look, so the last borders frame is never the
+    // first prosperity frame.
+    const looks: { label: string | null; toggles: ChronicleToggles }[] =
+      clips.length > 0
+        ? clips.map((clip) => ({ label: clip.label, toggles: clip.toggles }))
+        : [{ label: null, toggles }];
+    const dayTotal = selection.days.length;
+    const frameTotal = dayTotal * looks.length;
     setBuildProgress({
       completed: 0,
-      total: selection.days.length,
+      total: frameTotal,
       day: selection.days[0]!,
       painted: 0,
       reused: 0,
       skipped: 0,
+      look: looks[0]?.label ?? null,
     });
 
     setSkippedDays([]);
     // One measurement per build is enough, and it keeps the paint pass from
     // queueing a React update between every pair of frames.
     let measuredPaint = false;
+    const accumulated: StudioFrame[] = [];
+    const skipped = new Set<string>();
+    let paintedTotal = 0;
+    let reusedTotal = 0;
 
     try {
-      const grid = wantGrid ? await ensureGrid(controller.signal) : null;
+      const sequenceNeedsGrid = looks.some(
+        (look) =>
+          needsProvinceGrid(look.toggles) || needsNationFile(look.toggles)
+      );
+      const sequencePaintsFill = looks.some((look) =>
+        paintsChronicleFill(look.toggles)
+      );
+      const grid = sequenceNeedsGrid ? await ensureGrid(controller.signal) : null;
       // The same target the compose preview painted through: one
       // grid-resolution scratch buffer and one small output canvas, reused for
-      // every day of the build.
-      const target = grid && paintsFill ? ensureRenderTarget(grid) : null;
+      // every day of every look.
+      const target =
+        grid && sequencePaintsFill ? ensureRenderTarget(grid) : null;
 
-      // Labels are a pure function of the nation file, so a day whose
-      // fingerprint matches the one before it reuses them exactly as it reuses
-      // the frame. On a quiet stretch that skips the single most expensive step
-      // in the pass.
-      let lastLabels: {
-        fingerprint: string | null;
-        labels: NationLabelSpec[];
-      } | null = null;
-      // Borders are a pure function of the nation file too, so an unchanged day
-      // shares the previous day's mask object rather than walking 2.5M grid
-      // cells again — a reused day costs zero extra bytes, not even a copy.
-      let lastBorders: {
-        fingerprint: string | null;
-        mask: ChronicleBorderMask | null;
-      } | null = null;
-      // The occupation seam is a pure function of the nation file too, so it
-      // reuses on the same fingerprint. The ZoC hatch is not — it comes off the
-      // markers payload, which carries no fingerprint — so it is recomputed
-      // per day.
-      let lastOccupation: {
-        fingerprint: string | null;
-        mask: ChronicleBorderMask | null;
-      } | null = null;
+      for (let lookIndex = 0; lookIndex < looks.length; lookIndex++) {
+        const look = looks[lookIndex]!;
+        const lookToggles = look.toggles;
+        // Reset per look. A quiet stretch reuses within the look only.
+        let lastLabels: {
+          fingerprint: string | null;
+          labels: NationLabelSpec[];
+        } | null = null;
+        let lastBorders: {
+          fingerprint: string | null;
+          mask: ChronicleBorderMask | null;
+        } | null = null;
+        let lastOccupation: {
+          fingerprint: string | null;
+          mask: ChronicleBorderMask | null;
+        } | null = null;
 
-      const result = await runChronicleBuild<
-        ChronicleDay,
-        ImageBitmap,
-        ChronicleFrameLayers
-      >({
-        days: selection.days,
-        concurrency: CHRONICLE_FETCH_CONCURRENCY,
-        signal: controller.signal,
-        onProgress: (progress) => {
-          if (owns()) setBuildProgress(progress);
-        },
-        effects: {
-          loadDay: async (day, signal) => {
-            try {
-              return await loadDay(day, dayWants, signal);
-            } catch (err) {
-              if (signal?.aborted) throw new ChronicleBuildCancelled();
-              // A day missing its sources is a hole in the history, not a
-              // failure: the build reports it and carries on.
-              if (isChronicleDayFileMissing(err)) return null;
-              throw err;
-            }
-          },
-          renderDay: async (_day, load) => {
-            if (!target) return null;
-            const lut = composeFillLut(load);
-            // Nothing to paint: this day is missing every source the enabled
-            // fill layers read. It becomes a frame with no bitmap — the
-            // overlays still draw over bare parchment — rather than a skip.
-            if (lut.length === 0) return null;
-            const startedAt = performance.now();
-            const { bitmap } = await renderChronicleFrame(target, lut);
-            // The first real build frame is a better sample than the preview's,
-            // and it costs one state update rather than one per day.
-            if (!measuredPaint && owns()) {
-              measuredPaint = true;
-              setFrameMs(performance.now() - startedAt);
-            }
-            return bitmap;
-          },
-          buildLayers: (_day, load) => {
-            const regionData = chronicleRegionData(load.nation);
-            const labelObjects = chronicleLabelMapObjects(
-              regionData,
-              load.nation
-            );
-
-            let labels: NationLabelSpec[] = [];
-            if (toggles.nationNames) {
-              const reusable =
-                lastLabels != null &&
-                load.nationFingerprint != null &&
-                lastLabels.fingerprint === load.nationFingerprint;
-              labels = reusable
-                ? lastLabels!.labels
-                : (computeLabels(regionData, labelObjects) ?? []);
-              lastLabels = { fingerprint: load.nationFingerprint, labels };
-            }
-
-            let borders: ChronicleBorderMask | null = null;
-            if (toggles.nationBorders && grid && load.nation) {
-              const reusable =
-                lastBorders != null &&
-                load.nationFingerprint != null &&
-                lastBorders.fingerprint === load.nationFingerprint;
-              borders = reusable
-                ? lastBorders!.mask
-                : computeChronicleBorderMask(
-                    grid,
-                    overviewFillOwnership(load.nation)
-                  );
-              lastBorders = {
-                fingerprint: load.nationFingerprint,
-                mask: borders,
-              };
-            }
-
-            let occupationSeam: ChronicleBorderMask | null = null;
-            if (toggles.occupation && grid && load.nation) {
-              const reusable =
-                lastOccupation != null &&
-                load.nationFingerprint != null &&
-                lastOccupation.fingerprint === load.nationFingerprint;
-              occupationSeam = reusable
-                ? lastOccupation!.mask
-                : computeChronicleOccupationSeamMask(grid, load.nation);
-              lastOccupation = {
-                fingerprint: load.nationFingerprint,
-                mask: occupationSeam,
-              };
-            }
-
-            const fortControl =
-              toggles.fortControl && grid
-                ? computeChronicleZocMask(
-                    grid,
-                    fortZocProvinceIds(load.markers)
-                  )
-                : null;
-
-            return buildChronicleLayers({
-              toggles,
-              markers: load.markers,
-              labels,
-              labelObjects,
-              borders,
-              occupationSeam,
-              fortControl,
-              focusNationId: activeFocusNationId,
-              nationFile: load.nation,
+        const result = await runChronicleBuild<
+          ChronicleDay,
+          ImageBitmap,
+          ChronicleFrameLayers
+        >({
+          days: selection.days,
+          concurrency: CHRONICLE_FETCH_CONCURRENCY,
+          signal: controller.signal,
+          onProgress: (progress) => {
+            if (!owns()) return;
+            setBuildProgress({
+              ...progress,
+              completed: lookIndex * dayTotal + progress.completed,
+              total: frameTotal,
+              painted: paintedTotal + progress.painted,
+              reused: reusedTotal + progress.reused,
+              skipped: skipped.size + progress.skipped,
+              look: look.label,
             });
           },
-          disposeImage: (bitmap) => bitmap.close(),
-        },
-      });
+          effects: {
+            loadDay: async (day, signal) => {
+              try {
+                return await loadDay(
+                  day,
+                  {
+                    nation: needsNationFile(lookToggles),
+                    markers: needsMarkers(lookToggles),
+                    trade: needsTradeFile(lookToggles),
+                    provinceData: needsProvinceData(lookToggles),
+                  },
+                  signal
+                );
+              } catch (err) {
+                if (signal?.aborted) throw new ChronicleBuildCancelled();
+                // A day missing its sources is a hole in the history, not a
+                // failure: the build reports it and carries on.
+                if (isChronicleDayFileMissing(err)) return null;
+                throw err;
+              }
+            },
+            renderDay: async (_day, load) => {
+              if (!target || !paintsChronicleFill(lookToggles)) return null;
+              const lut = composeFillLut(load, lookToggles);
+              // Nothing to paint: this day is missing every source the enabled
+              // fill layers read. It becomes a frame with no bitmap — the
+              // overlays still draw over bare parchment — rather than a skip.
+              if (lut.length === 0) return null;
+              const startedAt = performance.now();
+              const { bitmap } = await renderChronicleFrame(target, lut);
+              // The first real build frame is a better sample than the preview's,
+              // and it costs one state update rather than one per day.
+              if (!measuredPaint && owns()) {
+                measuredPaint = true;
+                setFrameMs(performance.now() - startedAt);
+              }
+              return bitmap;
+            },
+            buildLayers: (_day, load) => {
+              const regionData = chronicleRegionData(load.nation);
+              const labelObjects = chronicleLabelMapObjects(
+                regionData,
+                load.nation
+              );
+
+              let labels: NationLabelSpec[] = [];
+              if (lookToggles.nationNames) {
+                const reusable =
+                  lastLabels != null &&
+                  load.nationFingerprint != null &&
+                  lastLabels.fingerprint === load.nationFingerprint;
+                labels = reusable
+                  ? lastLabels!.labels
+                  : (computeLabels(regionData, labelObjects) ?? []);
+                lastLabels = { fingerprint: load.nationFingerprint, labels };
+              }
+
+              let borders: ChronicleBorderMask | null = null;
+              if (lookToggles.nationBorders && grid && load.nation) {
+                const reusable =
+                  lastBorders != null &&
+                  load.nationFingerprint != null &&
+                  lastBorders.fingerprint === load.nationFingerprint;
+                borders = reusable
+                  ? lastBorders!.mask
+                  : computeChronicleBorderMask(
+                      grid,
+                      overviewFillOwnership(load.nation)
+                    );
+                lastBorders = {
+                  fingerprint: load.nationFingerprint,
+                  mask: borders,
+                };
+              }
+
+              let occupationSeam: ChronicleBorderMask | null = null;
+              if (lookToggles.occupation && grid && load.nation) {
+                const reusable =
+                  lastOccupation != null &&
+                  load.nationFingerprint != null &&
+                  lastOccupation.fingerprint === load.nationFingerprint;
+                occupationSeam = reusable
+                  ? lastOccupation!.mask
+                  : computeChronicleOccupationSeamMask(grid, load.nation);
+                lastOccupation = {
+                  fingerprint: load.nationFingerprint,
+                  mask: occupationSeam,
+                };
+              }
+
+              const fortControl =
+                lookToggles.fortControl && grid
+                  ? computeChronicleZocMask(
+                      grid,
+                      fortZocProvinceIds(load.markers)
+                    )
+                  : null;
+
+              return buildChronicleLayers({
+                toggles: lookToggles,
+                markers: load.markers,
+                labels,
+                labelObjects,
+                borders,
+                occupationSeam,
+                fortControl,
+                focusNationId: activeFocusNationId,
+                nationFile: load.nation,
+              });
+            },
+            disposeImage: (bitmap) => bitmap.close(),
+          },
+        });
+
+        if (!owns()) {
+          // Cancelled and superseded while this build was still in flight. Its
+          // frames belong to nobody: hand them back to the GC rather than
+          // overwriting the live build's array and leaking it.
+          disposeChronicleFrames(result.frames, (bitmap) => bitmap.close());
+          disposeChronicleFrames(accumulated, (bitmap) => bitmap.close());
+          return;
+        }
+
+        paintedTotal += result.paintedCount;
+        reusedTotal += result.reusedCount;
+        for (const day of result.skippedDays) skipped.add(day);
+        for (const frame of result.frames) {
+          accumulated.push({ ...frame, clipLabel: look.label });
+        }
+      }
 
       if (!owns()) {
-        // Cancelled and superseded while this build was still in flight. Its
-        // frames belong to nobody: hand them back to the GC rather than
-        // overwriting the live build's array and leaking it.
-        disposeChronicleFrames(result.frames, (bitmap) => bitmap.close());
+        disposeChronicleFrames(accumulated, (bitmap) => bitmap.close());
         return;
       }
 
-      framesRef.current = result.frames;
-      setSkippedDays(result.skippedDays);
+      framesRef.current = accumulated;
+      setSkippedDays(Array.from(skipped));
       setFramesVersion((version) => version + 1);
       setPlayIndex(0);
-      setStage(result.frames.length ? "play" : "range");
-      if (!result.frames.length) {
+      setStage(accumulated.length ? "play" : "range");
+      if (!accumulated.length) {
         setBuildError("No day in that range had anything to draw.");
       }
     } catch (err) {
+      disposeChronicleFrames(accumulated, (bitmap) => bitmap.close());
       if (!owns()) return;
       if (isChronicleBuildCancelled(err) || isAbortError(err)) {
         setBuildProgress(null);
@@ -1520,9 +1696,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     buildBlockReason,
     selection,
     toggles,
-    wantGrid,
-    paintsFill,
-    dayWants,
+    clips,
     composeFillLut,
     ensureGrid,
     ensureRenderTarget,
@@ -1661,6 +1835,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         loop,
         centroids: geometry.centroids,
         stampDay: gifStampDay,
+        logo: gifLogo,
+        discordLink: gifDiscordLink,
         watermarkCorner: gifCorner,
         signal: controller.signal,
         onProgress: (progress) => {
@@ -1698,6 +1874,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, [
     gifSize,
     gifStampDay,
+    gifLogo,
+    gifDiscordLink,
     gifCorner,
     mapSize,
     speed,
@@ -1743,8 +1921,12 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
 
   const emptyChronicle = !indexLoading && !indexError && days.length === 0;
   const layersOn = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).length;
+  const hasQueuedLook = clips.some((clip) => anyChronicleToggleOn(clip.toggles));
   const composeReady =
-    anyChronicleToggleOn(toggles) && !composeBlockReason && !layersLoading && !indexLoading;
+    (anyChronicleToggleOn(toggles) || hasQueuedLook) &&
+    !composeBlockReason &&
+    !layersLoading &&
+    !indexLoading;
 
   const step: ChronicleStep =
     stage === "compose" ? "layers" : stage === "play" ? "watch" : "dates";
@@ -1776,6 +1958,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       loop={loop}
       onLoopChange={setLoop}
       incomplete={Boolean(activeFrame?.incomplete)}
+      look={activeFrame?.clipLabel}
     />
   );
 
@@ -1810,7 +1993,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         : stage === "build"
           ? `Building · ${buildProgress?.completed ?? 0} of ${buildProgress?.total ?? 0} days`
           : activeFrame
-            ? formatChronicleDay(activeFrame.day)
+            ? activeFrame.clipLabel
+              ? `${activeFrame.clipLabel} · ${formatChronicleDay(activeFrame.day)}`
+              : formatChronicleDay(activeFrame.day)
             : "";
 
   const indexNotices = (
@@ -1840,12 +2025,40 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           setFocusNationId(next);
         }}
         focusDisabledReason={
-          needsNationFile(toggles)
+          focusWanted
             ? focusOptions.length
               ? null
               : "Waiting on the latest day's realms…"
             : "Switch on a nation layer to pick a nation."
         }
+        clips={clips}
+        canAddClip={anyChronicleToggleOn(toggles)}
+        onAddClip={() => {
+          if (!anyChronicleToggleOn(toggles)) return;
+          clipSerial.current += 1;
+          setClips((current) => [
+            ...current,
+            {
+              id: `look-${clipSerial.current}`,
+              label: chronicleClipLabel(toggles),
+              toggles: { ...toggles },
+            },
+          ]);
+        }}
+        onRemoveClip={(id) => {
+          setClips((current) => current.filter((clip) => clip.id !== id));
+        }}
+        onMoveClip={(id, direction) => {
+          setClips((current) => {
+            const index = current.findIndex((clip) => clip.id === id);
+            const next = index + direction;
+            if (index < 0 || next < 0 || next >= current.length) return current;
+            const copy = current.slice();
+            const [moved] = copy.splice(index, 1);
+            copy.splice(next, 0, moved!);
+            return copy;
+          });
+        }}
       />
     ) : stage === "range" ? (
       <ChronicleRangePanel
@@ -1861,6 +2074,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         onRenderSizeChange={setRenderSize}
         blockReason={buildBlockReason}
         notice={notice ?? buildError}
+        lookCount={lookCount}
       />
     ) : stage === "build" ? (
       <ChronicleBuildPanel progress={buildProgress} error={buildError} />
@@ -1876,6 +2090,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         onGifSizeChange={setGifSize}
         gifStampDay={gifStampDay}
         onGifStampDayChange={setGifStampDay}
+        gifLogo={gifLogo}
+        onGifLogoChange={setGifLogo}
+        gifDiscordLink={gifDiscordLink}
+        onGifDiscordLinkChange={setGifDiscordLink}
         gifCorner={gifCorner}
         onGifCornerChange={setGifCorner}
         gifStatus={gifStatus}
@@ -1896,7 +2114,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           ? "Loading layers…"
           : composeBlockReason
             ? "Waiting on label geometry…"
-            : anyChronicleToggleOn(toggles)
+            : anyChronicleToggleOn(toggles) || hasQueuedLook
               ? "Next: choose the days"
               : "Switch on a layer first"}
       </button>
@@ -1911,7 +2129,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           onClick={() => void startBuild()}
           disabled={Boolean(buildBlockReason)}
         >
-          Build {selection.days.length || ""} frames
+          {clips.length > 0
+            ? `Build ${clips.length} ${clips.length === 1 ? "look" : "looks"}`
+            : `Build ${selection.days.length || ""} frames`}
         </button>
       </div>
     ) : stage === "build" ? (
