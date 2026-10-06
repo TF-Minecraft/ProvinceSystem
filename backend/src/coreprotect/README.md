@@ -17,7 +17,13 @@ above).
 | `COREPROTECT_PING_SECONDS` | The server's `player-pings` interval (default 60; `0` if pings are off). Only used to guess whether someone is online and to end crashed sessions. |
 
 Mount the CoreProtect **directory** read-only, so SQLite can see a hot
-`-journal`. The paths are host-specific, so they belong in the host's
+`-journal`. Set `disable-wal: true` in CoreProtect's `config.yml` (then
+`/co reload`): our fork uses WAL by default, and through a read-only mount
+SQLite can open a WAL database only while its `-wal` and `-shm` files already
+exist. CoreProtect closes its connections between batches, which removes
+them, so in WAL mode the site mostly reports `cannot_open`. The option is
+appended to `config.yml` once and applied on every start or reload; CoreProtect
+only ever appends missing options to that file, so updates keep it. The paths are host-specific, so they belong in the host's
 `docker-compose.override.yml`, not the repository's compose files:
 
 ```yaml
@@ -37,8 +43,8 @@ connection settings for database engines the server does not use.
 
 ## Keeping CoreProtect's writer unblocked
 
-The database uses a rollback journal, so a reader's lock holds off
-CoreProtect's commits. `reader.py` explains the guards: autocommit, one
+With `disable-wal: true` the database uses a rollback journal, so a
+reader's lock holds off CoreProtect's commits. `reader.py` explains the guards: autocommit, one
 reader per process, a 1.5 s budget per request (waiting for the lock
 included), and every statement fully fetched before the next. The backend
 runs as one uvicorn process; running more would need the reader limit

@@ -65,7 +65,7 @@ class CoreProtectConfig:
 
 
 class Unavailable(Exception):
-    """CoreProtect could not be read: not_configured, missing, busy, timeout or error."""
+    """CoreProtect could not be read: not_configured, missing, cannot_open, busy, timeout or error."""
 
     def __init__(self, code: str):
         super().__init__(code)
@@ -169,5 +169,7 @@ def _classify(exc: sqlite3.OperationalError) -> str:
     if "locked" in text or "busy" in text:
         return "busy"
     if "unable to open" in text:
-        return "missing"
+        # The file exists (checked before connecting), so this is access: an
+        # unreadable file, or a WAL database on a read-only mount.
+        return "cannot_open"
     return "error"

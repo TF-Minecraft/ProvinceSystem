@@ -126,7 +126,7 @@ def test_unreadable_or_corrupt_files_are_unavailable(tmp_path):
             with pytest.raises(Unavailable) as exc:
                 with Reader(config(locked)):
                     pass
-            assert exc.value.code == "missing"
+            assert exc.value.code == "cannot_open"
         finally:
             locked.chmod(0o644)
     junk = tmp_path / "junk.db"
