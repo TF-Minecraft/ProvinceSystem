@@ -31,7 +31,13 @@ export type LayoutOptions = {
   crowdRadius: number;
 };
 
-export const DEFAULT_LAYOUT: LayoutOptions = { markerRadius: 8, gap: 4, pad: 2, radii: [26, 42, 62, 86, 114], crowdRadius: 20 };
+export const DEFAULT_LAYOUT: LayoutOptions = {
+  markerRadius: 8,
+  gap: 4,
+  pad: 2,
+  radii: [26, 42, 62, 86, 114],
+  crowdRadius: 20,
+};
 
 type Box = { x: number; y: number; width: number; height: number };
 type Segment = { x1: number; y1: number; x2: number; y2: number };
@@ -40,7 +46,9 @@ type Segment = { x1: number; y1: number; x2: number; y2: number };
 const ANGLES = [-35, -145, 35, 145, -60, -120, 60, 120, 0, 180, -90, 90].map((deg) => (deg * Math.PI) / 180);
 
 function overlaps(a: Box, b: Box, pad: number): boolean {
-  return a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad;
+  return (
+    a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad
+  );
 }
 
 function boxHitsCircle(box: Box, cx: number, cy: number, r: number): boolean {
@@ -113,9 +121,10 @@ export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptio
   const order = [...points].sort((a, b) => crowding.get(a)! - crowding.get(b)!);
 
   for (const point of order) {
+    const top = point.y - point.height / 2;
     const beside: Box[] = [
-      { x: point.x + markerRadius + gap, y: point.y - point.height / 2, width: point.width, height: point.height },
-      { x: point.x - markerRadius - gap - point.width, y: point.y - point.height / 2, width: point.width, height: point.height },
+      { x: point.x + markerRadius + gap, y: top, width: point.width, height: point.height },
+      { x: point.x - markerRadius - gap - point.width, y: top, width: point.width, height: point.height },
     ];
     let placed: PlacedLabel | null = null;
     for (const box of beside) {

@@ -196,9 +196,9 @@ function labelWidth(text: string): number {
   const known = widths.get(text);
   if (known !== undefined) return known;
   if (measure === undefined) {
-    measure = typeof document !== "undefined" && !navigator.userAgent.includes("jsdom")
-      ? document.createElement("canvas").getContext("2d")
-      : null;
+    // jsdom has no canvas: estimate there.
+    const canMeasure = typeof document !== "undefined" && !navigator.userAgent.includes("jsdom");
+    measure = canMeasure ? document.createElement("canvas").getContext("2d") : null;
   }
   let width = text.length * LABEL_FONT_PX * 0.62;
   if (measure) {
@@ -343,8 +343,13 @@ export default function MovementMap({
     if (spot) return [{ key: anchor.key, label: anchor.label, box: spot, leader: spot.leader, forced: false }];
     // No room: the label shows beside its marker, on a backing, only while pointed at or tapped.
     if (anchor.key !== highlight && anchor.key !== picked) return [];
-    const box = { x: anchor.x + 12, y: anchor.y - LABEL_HEIGHT_PX / 2, width: labelWidth(anchor.label) };
-    return [{ key: anchor.key, label: anchor.label, box: { ...box, height: LABEL_HEIGHT_PX }, leader: null, forced: true }];
+    const box = {
+      x: anchor.x + 12,
+      y: anchor.y - LABEL_HEIGHT_PX / 2,
+      width: labelWidth(anchor.label),
+      height: LABEL_HEIGHT_PX,
+    };
+    return [{ key: anchor.key, label: anchor.label, box, leader: null, forced: true }];
   });
   const scaleBlocks = displayScale > 0 ? niceLength(100 / displayScale) : 0;
   const halo = { stroke: "#10160f", strokeWidth: 3 * unit, paintOrder: "stroke" as const };
