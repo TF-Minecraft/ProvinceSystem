@@ -4,6 +4,7 @@ import PlayerProfile from "../../../components/admin/PlayerProfile";
 
 export default async function AdminPlayerPage({ params }: { params: Promise<{ uuid: string }> }) {
   const { uuid } = await params;
+  const id = decodeURIComponent(uuid);
   return (
     <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-4xl flex-col px-6 py-16">
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
@@ -13,7 +14,8 @@ export default async function AdminPlayerPage({ params }: { params: Promise<{ uu
       <Link href="/admin/players" className="mt-4 text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
         ← All players
       </Link>
-      <PlayerProfile uuid={decodeURIComponent(uuid)} />
+      {/* Keyed so moving between players starts afresh, with no earlier player's responses landing. */}
+      <PlayerProfile key={id} uuid={id} />
     </main>
   );
 }
