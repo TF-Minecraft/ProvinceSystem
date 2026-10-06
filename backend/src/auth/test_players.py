@@ -380,3 +380,29 @@ def test_movement_without_coreprotect(app, env, world, monkeypatch):
     assert body["points"] == [] and body["coreprotect"]["reason"] == "missing"
     body = c.get("/admin/movement").json()
     assert body["players"] == [] and body["coreprotect"]["reason"] == "missing"
+
+
+def test_profile_asks_discord_for_an_unknown_handle(app, env, world, monkeypatch):
+    from src.auth import discord_names
+
+    asked = []
+
+    def refresh_one(discord_id):
+        asked.append(discord_id)
+        with env.connect() as conn:
+            conn.execute("UPDATE discord_links SET discord_username = 'linky_handle', discord_nickname = 'Linky' "
+                         "WHERE discord_user_id = ?", (discord_id,))
+            conn.commit()
+        return True
+
+    monkeypatch.setattr(discord_names, "refresh_one", refresh_one)
+    with env.connect() as conn:
+        conn.execute("UPDATE discord_links SET discord_username = NULL WHERE player_uuid = ?", (LINKED_ONLY,))
+        conn.commit()
+    body = client(app, staff(env)).get(f"/admin/players/{LINKED_ONLY}").json()
+    assert asked == ["500000000000000001"]
+    assert body["discord"]["discord_username"] == "linky_handle"
+    assert body["discord"]["discord_nickname"] == "Linky"
+    # A known handle is not looked up.
+    client(app, staff(env)).get(f"/admin/players/{HAZEL}")
+    assert asked == ["500000000000000001"]
