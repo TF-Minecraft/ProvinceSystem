@@ -24,6 +24,7 @@ import {
   chronicleDayColorLut,
   computeChronicleOccupationSeamMask,
 } from "../../lib/map/chronicleOccupation";
+import { overviewFillOwnership } from "../../lib/map/chronicleOwnership";
 import {
   focusChronicleFillLut,
   stackChronicleFillLuts,
@@ -893,7 +894,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       };
     }
     const startedAt = performance.now();
-    const mask = computeChronicleBorderMask(grid, previewNation);
+    const mask = computeChronicleBorderMask(
+      grid,
+      overviewFillOwnership(previewNation)
+    );
     return { mask, ms: performance.now() - startedAt };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toggles.nationBorders, previewNation, gridVersion]);
@@ -953,6 +957,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       occupationSeam: previewOccupation.mask,
       fortControl: previewFortControl.mask,
       focusNationId: activeFocusNationId,
+      nationFile: previewNation,
     });
     return {
       layers,
@@ -1015,10 +1020,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       focusChronicleFillLut(
         stackChronicleFillLuts([
           toggles.nationFill || toggles.occupation
-            ? chronicleDayColorLut(day.nation, {
-                fill: toggles.nationFill,
-                occupation: toggles.occupation,
-              })
+            ? chronicleDayColorLut(
+                day.nation ? overviewFillOwnership(day.nation) : null,
+                {
+                  fill: toggles.nationFill,
+                  occupation: toggles.occupation,
+                }
+              )
             : null,
           toggles.prosperity ? buildProsperityColorLut(day.provinceData) : null,
           toggles.tradeLeagues ? buildTradeLeagueColorLut(day.trade) : null,
@@ -1426,7 +1434,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 lastBorders.fingerprint === load.nationFingerprint;
               borders = reusable
                 ? lastBorders!.mask
-                : computeChronicleBorderMask(grid, load.nation);
+                : computeChronicleBorderMask(
+                    grid,
+                    overviewFillOwnership(load.nation)
+                  );
               lastBorders = {
                 fingerprint: load.nationFingerprint,
                 mask: borders,
@@ -1465,6 +1476,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               occupationSeam,
               fortControl,
               focusNationId: activeFocusNationId,
+              nationFile: load.nation,
             });
           },
           disposeImage: (bitmap) => bitmap.close(),

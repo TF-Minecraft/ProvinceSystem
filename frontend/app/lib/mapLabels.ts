@@ -371,13 +371,26 @@ export function extendLabelEndpoints(
   };
 }
 
-export function labelArcPathD(
+export type LabelArcQuadratic = {
+  ax: number;
+  ay: number;
+  cx: number;
+  cy: number;
+  bx: number;
+  by: number;
+};
+
+/**
+ * The quadratic the on-screen `<textPath>` follows. A zero-length chord
+ * collapses to a point so callers can still place a single glyph.
+ */
+export function labelArcQuadratic(
   x1: number,
   y1: number,
   x2: number,
   y2: number,
   bulgeRatio: number = LABEL_ARC_BULGE_RATIO
-): string {
+): LabelArcQuadratic {
   const oriented = orientLabelEndpoints(x1, y1, x2, y2);
   const ax = oriented.x1;
   const ay = oriented.y1;
@@ -388,7 +401,7 @@ export function labelArcPathD(
   const dy = by - ay;
   const len = Math.hypot(dx, dy);
   if (len === 0) {
-    return `M ${ax} ${ay}`;
+    return { ax, ay, cx: ax, cy: ay, bx, by };
   }
 
   const mx = (ax + bx) / 2;
@@ -396,9 +409,21 @@ export function labelArcPathD(
   const nx = dy / len;
   const ny = -dx / len;
   const bulge = len * bulgeRatio;
-  const cx = mx + nx * bulge;
-  const cy = my + ny * bulge;
-  return `M ${ax} ${ay} Q ${cx} ${cy} ${bx} ${by}`;
+  return { ax, ay, cx: mx + nx * bulge, cy: my + ny * bulge, bx, by };
+}
+
+export function labelArcPathD(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
+): string {
+  const arc = labelArcQuadratic(x1, y1, x2, y2, bulgeRatio);
+  if (arc.ax === arc.bx && arc.ay === arc.by) {
+    return `M ${arc.ax} ${arc.ay}`;
+  }
+  return `M ${arc.ax} ${arc.ay} Q ${arc.cx} ${arc.cy} ${arc.bx} ${arc.by}`;
 }
 
 export function labelPathCenterOffset(

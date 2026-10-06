@@ -12,6 +12,8 @@ import { CHRONICLE_OCCUPATION_SEAM_RGBA } from "../../lib/map/chronicleOccupatio
 import {
   CHRONICLE_WATERMARK_TEXT,
   DEFAULT_CHRONICLE_WATERMARK_CORNER,
+  arcGlyphPlacements,
+  chronicleGifLabelArc,
   chronicleGifLabelLayout,
   chronicleGifMarkerLayout,
   chronicleGifTransform,
@@ -197,11 +199,11 @@ function loadImages(sources: string[]): Promise<Map<string, HTMLImageElement>> {
 
 /**
  * Borders arrive as a 1-bit mask at the province grid's own 1600² resolution.
- * They are expanded onto a scratch canvas at that resolution and scaled down
- * with smoothing *off*, which is the same nearest-neighbour magnification
- * `ChronicleBorderCanvas` gets from `image-rendering: pixelated` — bilinear
- * downsampling turns the 3-px seam into a grey haze that the GIF's palette
- * then posterises into blotches.
+ * They are expanded onto a scratch canvas at that resolution and scaled into
+ * the export with smoothing on. The export is always smaller than that grid,
+ * and a hard nearest-neighbour scale is what made the seam look pixelated next
+ * to the live map's stroked overlay. The ink stays opaque so the softened edge
+ * still reads as a border after the GIF palette is built.
  *
  * Consecutive days with an unchanged nation file share one mask object, so
  * caching on identity means a quiet stretch expands nothing at all. Each
@@ -243,7 +245,9 @@ class MaskScratch {
     }
 
     const smoothing = target.imageSmoothingEnabled;
-    target.imageSmoothingEnabled = false;
+    const quality = target.imageSmoothingQuality;
+    target.imageSmoothingEnabled = true;
+    target.imageSmoothingQuality = "high";
     target.drawImage(
       this.canvas as CanvasImageSource,
       transform.offsetX,
@@ -252,6 +256,7 @@ class MaskScratch {
       transform.drawHeight
     );
     target.imageSmoothingEnabled = smoothing;
+    target.imageSmoothingQuality = quality;
   }
 }
 
@@ -397,19 +402,41 @@ function drawNationLabels(
   for (const label of layers.labels) {
     const layout = chronicleGifLabelLayout(transform, label);
     if (!layout) continue;
+    const arc = chronicleGifLabelArc(transform, label);
     ctx.save();
-    ctx.translate(layout.centerX, layout.centerY);
-    ctx.rotate(layout.angleRad);
     ctx.font = `500 ${layout.fontSize}px ${serifStack}`;
     // The SVG layer sets the name in bare ink and relies on the parchment
     // underneath. Painted ownership at 0.88 can be as dark as the ink, so the
     // export adds the pale halo the label module already defines rather than
     // letting a realm name vanish into its own colour.
     ctx.strokeStyle = LABEL_HALO_RGBA;
-    ctx.lineWidth = layout.haloWidth;
-    ctx.strokeText(layout.text, 0, 0);
     ctx.fillStyle = LABEL_INK;
-    ctx.fillText(layout.text, 0, 0);
+    ctx.lineWidth = layout.haloWidth;
+
+    const glyphs = arc ? Array.from(arc.text) : [];
+    const widths = glyphs.map((glyph) => ctx.measureText(glyph).width);
+    const placements =
+      arc && glyphs.length > 0 ? arcGlyphPlacements(arc, widths) : [];
+    if (placements.length === glyphs.length && glyphs.length > 0) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      for (let index = 0; index < glyphs.length; index++) {
+        const place = placements[index]!;
+        ctx.save();
+        ctx.translate(place.x, place.y);
+        ctx.rotate(place.angleRad);
+        ctx.strokeText(glyphs[index]!, 0, 0);
+        ctx.fillText(glyphs[index]!, 0, 0);
+        ctx.restore();
+      }
+    } else {
+      ctx.translate(layout.centerX, layout.centerY);
+      ctx.rotate(layout.angleRad);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.strokeText(layout.text, 0, 0);
+      ctx.fillText(layout.text, 0, 0);
+    }
     ctx.restore();
   }
   ctx.restore();

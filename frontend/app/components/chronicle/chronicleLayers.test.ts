@@ -612,6 +612,28 @@ describe("buildChronicleLayers under a focus", () => {
     ]);
   });
 
+  it("keeps a vassal's pins when the focused suzerain's nation file is in hand", () => {
+    const layers = buildChronicleLayers({
+      toggles: {
+        ...CHRONICLE_TOGGLES_OFF,
+        settlements: true,
+        forts: true,
+      },
+      markers: owned,
+      labels,
+      labelObjects,
+      focusNationId: "suzerain",
+      nationFile,
+    });
+    expect(layers.markers.map((marker) => marker.id)).toEqual([
+      "s-ours",
+      "s-theirs",
+      "installation:i-ours",
+      "installation:i-theirs",
+      "installation:i-fort",
+    ]);
+  });
+
   it("keeps campaign lines and battle pins whole", () => {
     // `WarExport` names its sides by leader id, not by realm, so there is no
     // field to narrow a war on; showing them all beats guessing wrong.

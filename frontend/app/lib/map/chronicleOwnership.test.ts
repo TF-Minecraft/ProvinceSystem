@@ -6,7 +6,9 @@ import { buildMapObjectsFromRegionData } from "@/app/core/mapObjectBuilder";
 import { MAX_PAINTABLE_PROVINCE_ID } from "./chroniclePaint";
 
 import {
+  chronicleRealmContains,
   directOwnership,
+  overviewFillOwnership,
   visibleOwnership,
 } from "./chronicleOwnership";
 
@@ -265,5 +267,102 @@ describe("visibleOwnership", () => {
 
     expect(ownership.A!.provinces).toEqual([2]);
     expect(ownership.B!.provinces).toEqual([4]);
+  });
+});
+
+describe("overviewFillOwnership", () => {
+  it("paints a vassal's land in its overlord's colour", () => {
+    const ownership = overviewFillOwnership(regionData);
+    expect(ownership.OVERLORD).toMatchObject({
+      rgb: "10,20,30",
+      provinces: [1, 2, 3],
+    });
+    expect(ownership.VASSAL_A).toBeUndefined();
+    expect(ownership.VASSAL_B).toBeUndefined();
+    expect(ownership.LONER).toMatchObject({
+      rgb: "100,110,120",
+      provinces: [4],
+    });
+  });
+
+  it("paints the same land in the realm's own colour once the overlord is gone", () => {
+    const independent: RegionRecord = {
+      SPORE: { rgb: "40,50,60", provinces: [2] },
+      ORDER: { rgb: "10,20,30", provinces: [1] },
+    };
+    const sworn: RegionRecord = {
+      SPORE: { rgb: "40,50,60", provinces: [2], overlord: "ORDER" },
+      ORDER: { rgb: "10,20,30", provinces: [1], subjects: ["SPORE"] },
+    };
+
+    expect(overviewFillOwnership(independent).SPORE!.provinces).toEqual([2]);
+    expect(overviewFillOwnership(independent).SPORE!.rgb).toBe("40,50,60");
+    expect(overviewFillOwnership(sworn).SPORE).toBeUndefined();
+    expect(overviewFillOwnership(sworn).ORDER!.provinces?.slice().sort()).toEqual([
+      1, 2,
+    ]);
+    expect(overviewFillOwnership(sworn).ORDER!.rgb).toBe("10,20,30");
+  });
+
+  it("rolls a nested vassal up to the top realm", () => {
+    const chain: RegionRecord = {
+      TOP: { rgb: "1,1,1", provinces: [1], subjects: ["MID"] },
+      MID: { rgb: "2,2,2", provinces: [2], overlord: "TOP", subjects: ["LEAF"] },
+      LEAF: { rgb: "3,3,3", provinces: [3], overlord: "MID" },
+    };
+    expect(overviewFillOwnership(chain).TOP!.provinces).toEqual([1, 2, 3]);
+    expect(overviewFillOwnership(chain).MID).toBeUndefined();
+    expect(overviewFillOwnership(chain).LEAF).toBeUndefined();
+  });
+
+  it("keeps a vassal's occupied land on the vassal", () => {
+    const held: RegionRecord = {
+      ORDER: { rgb: "10,20,30", provinces: [1] },
+      SPORE: {
+        rgb: "40,50,60",
+        provinces: [2],
+        overlord: "ORDER",
+        occupied_held: [9],
+      },
+    };
+    const ownership = overviewFillOwnership(held);
+    expect(ownership.ORDER!.provinces).toEqual([1, 2]);
+    expect(ownership.SPORE).toEqual({
+      rgb: "40,50,60",
+      provinces: [],
+      occupied_held: [9],
+    });
+  });
+
+  it("keeps a realm's own colour when its overlord is not in the file", () => {
+    const orphan: RegionRecord = {
+      SPORE: { rgb: "40,50,60", provinces: [2], overlord: "MISSING" },
+    };
+    expect(overviewFillOwnership(orphan).SPORE!.provinces).toEqual([2]);
+    expect(overviewFillOwnership(orphan).SPORE!.rgb).toBe("40,50,60");
+  });
+
+  it("stops on an overlord cycle instead of hanging", () => {
+    const cyclic: RegionRecord = {
+      A: { rgb: "1,1,1", provinces: [1], overlord: "B" },
+      B: { rgb: "2,2,2", provinces: [2], overlord: "A" },
+    };
+    const ownership = overviewFillOwnership(cyclic);
+    expect(ownership.A!.provinces).toEqual([1]);
+    expect(ownership.B!.provinces).toEqual([2]);
+  });
+});
+
+describe("chronicleRealmContains", () => {
+  it("counts a realm and the vassals under it, and not the realm above", () => {
+    const chain: RegionRecord = {
+      TOP: { rgb: "1,1,1", provinces: [1] },
+      MID: { rgb: "2,2,2", provinces: [2], overlord: "TOP" },
+      LEAF: { rgb: "3,3,3", provinces: [3], overlord: "MID" },
+    };
+    expect(chronicleRealmContains(chain, "TOP", "LEAF")).toBe(true);
+    expect(chronicleRealmContains(chain, "MID", "LEAF")).toBe(true);
+    expect(chronicleRealmContains(chain, "MID", "TOP")).toBe(false);
+    expect(chronicleRealmContains(chain, "LEAF", "LEAF")).toBe(true);
   });
 });

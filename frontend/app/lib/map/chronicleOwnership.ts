@@ -229,3 +229,118 @@ export function visibleOwnership(
 
   return ownership;
 }
+
+function overlordId(region: Region | null): string | null {
+  const overlord = region && (region as { overlord?: unknown }).overlord;
+  return typeof overlord === "string" && overlord.length > 0 ? overlord : null;
+}
+
+function occupiedHeld(region: Region | null): number[] {
+  if (!region || !Array.isArray(region.occupied_held)) return [];
+  return keepPaintableProvinces(region.occupied_held);
+}
+
+/**
+ * The top of `startId`'s overlord chain: the first realm that has no overlord
+ * present in this file. A cycle returns `startId` itself, so each side keeps
+ * its own colour instead of both collapsing onto whichever was cached first.
+ * An overlord the file does not contain stops the walk the same way: the land
+ * still has somewhere to be painted.
+ */
+function resolveOverviewRoot(regionData: RegionRecord, startId: string): string {
+  let id = startId;
+  const seen = new Set<string>();
+  while (!seen.has(id)) {
+    seen.add(id);
+    const overlord = overlordId(readRegion(regionData, id));
+    if (!overlord || overlord === id || !readRegion(regionData, overlord)) {
+      return id;
+    }
+    if (seen.has(overlord)) return startId;
+    id = overlord;
+  }
+  return startId;
+}
+
+/**
+ * Whether `memberId` is `realmId` or a vassal under it, walking `overlord`
+ * links. A cycle stops the walk. Used so a focused suzerain keeps its vassals'
+ * land and towns, and a focused vassal keeps only its own.
+ */
+export function chronicleRealmContains(
+  regionData: RegionRecord | null | undefined,
+  realmId: string,
+  memberId: string
+): boolean {
+  if (!realmId || !memberId) return false;
+  if (memberId === realmId) return true;
+  if (!regionData) return false;
+
+  let id = memberId;
+  const seen = new Set<string>();
+  while (!seen.has(id)) {
+    seen.add(id);
+    const overlord = overlordId(readRegion(regionData, id));
+    if (!overlord) return false;
+    if (overlord === realmId) return true;
+    id = overlord;
+  }
+  return false;
+}
+
+/**
+ * Home land the way the live overview paints it.
+ *
+ * A realm with an overlord contributes its provinces to the top of that chain,
+ * in the top realm's colour. The next day, if `overlord` is gone, the same
+ * provinces stay on the realm itself and it paints its own colour again.
+ * `occupied_held` stays on the nation that holds it — a vassal's conquest is
+ * still that vassal's — with an empty home list so the fill does not also
+ * paint the vassal's own land a second colour.
+ */
+export function overviewFillOwnership(
+  regionData: RegionRecord | null | undefined
+): NationOwnership {
+  const ownership: NationOwnership = Object.create(null);
+  if (!regionData) return ownership;
+
+  const grouped = new Map<string, number[]>();
+
+  for (const id of Object.keys(regionData)) {
+    const region = readRegion(regionData, id);
+    if (!region?.rgb) continue;
+    const root = resolveOverviewRoot(regionData, id);
+    const rootRegion = readRegion(regionData, root);
+    if (!rootRegion?.rgb) continue;
+    const list = grouped.get(root) ?? [];
+    for (const province of keepPaintableProvinces(ownProvinces(region))) {
+      list.push(province);
+    }
+    grouped.set(root, list);
+  }
+
+  for (const [root, provinces] of grouped) {
+    const region = readRegion(regionData, root);
+    if (!region?.rgb) continue;
+    ownership[root] = {
+      rgb: region.rgb,
+      provinces,
+      occupied_held: occupiedHeld(region),
+    };
+  }
+
+  for (const id of Object.keys(regionData)) {
+    if (Object.prototype.hasOwnProperty.call(ownership, id)) continue;
+    const region = readRegion(regionData, id);
+    if (!region?.rgb) continue;
+    const held = occupiedHeld(region);
+    if (held.length === 0) continue;
+    ownership[id] = {
+      rgb: region.rgb,
+      provinces: [],
+      occupied_held: held,
+    };
+  }
+
+  return ownership;
+}

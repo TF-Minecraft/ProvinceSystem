@@ -67,17 +67,17 @@ describe("chronicleDayColorLut", () => {
       fill: true,
       occupation: false,
     });
-    expect(packed(lut, 1)).toEqual([200, 40, 40]);
+    expect(packed(lut, 1)).toEqual([173, 95, 94]);
     expect(lut[2] ?? 0).toBe(0);
   });
 
   it("paints occupied land in the occupier's muted colour, fill or no fill", () => {
-    const muted = occupationDisplayRgb([200, 40, 40]);
+    const muted = occupationDisplayRgb([173, 95, 94]);
     const both = chronicleDayColorLut(ownership, {
       fill: true,
       occupation: true,
     });
-    expect(packed(both, 1)).toEqual([200, 40, 40]);
+    expect(packed(both, 1)).toEqual([173, 95, 94]);
     expect(packed(both, 2)).toEqual(muted);
 
     // The layer has to stand alone: with the fill off, occupied ground is the

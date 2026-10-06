@@ -1,5 +1,6 @@
 import type { RegionRecord } from "../../components/map/types";
 import { cleanRegionName, type NationLabelSpec } from "../mapLabels";
+import { chronicleRealmContains } from "./chronicleOwnership";
 
 /**
  * Narrowing a chronicle frame to one realm.
@@ -81,21 +82,36 @@ export function chronicleFocusOptions(
  *   survives, and the day reads as "this realm was not here", which is a true
  *   frame of the timelapse rather than a gap in it.
  *
- * Occupied land counts as held. A realm's conquests are the part of its story a
- * timelapse is watched for, and dropping them would grey out the ground it just
- * took on the very day it took it.
+ * Occupied land counts as held, for the focused realm itself. A realm's
+ * conquests are the part of its story a timelapse is watched for, and dropping
+ * them would grey out the ground it just took on the very day it took it.
+ * Vassals' home provinces count too: the fill paints them as part of the
+ * suzerain, and leaving them out of the focus set would grey that land on the
+ * day it is being watched.
  */
 export function chronicleFocusProvinceIds(
   nationFile: RegionRecord | null,
   focusNationId: string | null
 ): ReadonlySet<number> | null {
   if (!focusNationId || !nationFile) return null;
-  const entry = entryOf(nationFile, focusNationId);
   const ids = new Set<number>();
-  for (const list of [entry?.provinces, entry?.occupied_held]) {
-    if (!Array.isArray(list)) continue;
-    for (const id of list) {
-      if (Number.isInteger(id) && id > 0) ids.add(id as number);
+  if (!Object.prototype.hasOwnProperty.call(nationFile, focusNationId)) {
+    return ids;
+  }
+  for (const id of Object.keys(nationFile)) {
+    if (!chronicleRealmContains(nationFile, focusNationId, id)) continue;
+    const entry = entryOf(nationFile, id);
+    const lists =
+      id === focusNationId
+        ? [entry?.provinces, entry?.occupied_held]
+        : [entry?.provinces];
+    for (const list of lists) {
+      if (!Array.isArray(list)) continue;
+      for (const provinceId of list) {
+        if (Number.isInteger(provinceId) && provinceId > 0) {
+          ids.add(provinceId as number);
+        }
+      }
     }
   }
   return ids;
