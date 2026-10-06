@@ -37,6 +37,8 @@ PROFILE_TIMEOUT_SECONDS = 3.0
 PROFILE_RETRY_SECONDS = 600
 # Longest rate-limit wait honoured before giving up on a request.
 MAX_RETRY_WAIT_SECONDS = 30.0
+# After a global rate limit stops a refresh, the next one starts this much later.
+RATE_LIMITED_RETRY_SECONDS = 15 * 60
 
 _RECENT: dict[str, float] = {}
 _RECENT_LOCK = threading.Lock()
@@ -63,6 +65,10 @@ class BotConfig:
 
 class BotTokenRejected(Exception):
     """Discord refused the bot token: stop until it is fixed, rather than ask again for every player."""
+
+
+class GloballyRateLimited(Exception):
+    """Discord limited the whole bot for longer than we wait: stop asking anyone until it lifts."""
 
 
 class NameLookup:
@@ -94,11 +100,19 @@ class NameLookup:
                 raise BotTokenRejected()
             if response.status_code != 429:
                 return response
+            body = _json(response)
             try:
-                wait = float(response.json().get("retry_after", 1.0))
-            except (ValueError, AttributeError, TypeError):
+                wait = float(body.get("retry_after", 1.0))
+            except (AttributeError, ValueError, TypeError):
                 wait = 1.0
             if wait > self.max_retry_wait:
+                is_global = (
+                    (isinstance(body, dict) and body.get("global") is True)
+                    or response.headers.get("X-RateLimit-Global", "").lower() == "true"
+                    or response.headers.get("X-RateLimit-Scope", "").lower() == "global"
+                )
+                if is_global:
+                    raise GloballyRateLimited()
                 return None
             if self.halt.wait(wait):
                 return None
@@ -175,6 +189,8 @@ def refresh_one(discord_id: str) -> bool:
     except BotTokenRejected:
         logger.warning("Discord rejected DISCORD_BOT_TOKEN; names are not looked up")
         return False
+    except GloballyRateLimited:
+        return False
     finally:
         lookup.close()
     if not found:
@@ -211,9 +227,14 @@ async def _refresh_until(stop: asyncio.Event, halt: threading.Event) -> None:
     while not stop.is_set():
         config = BotConfig.from_env()
         lookup = NameLookup(config, halt=halt)
+        pause = REFRESH_SECONDS
         try:
             answered = await asyncio.to_thread(refresh_all, lookup)
             logger.info("Discord names refreshed for %s links", answered)
+        except GloballyRateLimited:
+            # Stop asking anyone; try again sooner than usual once the limit has lifted.
+            logger.warning("Discord rate-limited the bot; name refresh stopped until later")
+            pause = RATE_LIMITED_RETRY_SECONDS
         except BotTokenRejected:
             logger.warning("Discord rejected DISCORD_BOT_TOKEN; names are not looked up")
         except Exception:
@@ -221,7 +242,7 @@ async def _refresh_until(stop: asyncio.Event, halt: threading.Event) -> None:
         finally:
             lookup.close()
         try:
-            await asyncio.wait_for(stop.wait(), timeout=REFRESH_SECONDS)
+            await asyncio.wait_for(stop.wait(), timeout=pause)
         except asyncio.TimeoutError:
             pass
 

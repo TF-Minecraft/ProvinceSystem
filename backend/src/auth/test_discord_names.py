@@ -140,3 +140,25 @@ def test_a_database_error_leaves_the_profile_working(database, monkeypatch):
         raise sqlite3.OperationalError("database is locked")
     monkeypatch.setattr(discord_names, "store", broken)
     assert discord_names.refresh_one("7") is False
+
+
+def test_a_global_rate_limit_stops_the_whole_refresh(database):
+    link(database, "1")
+    link(database, "2")
+    calls = []
+
+    def limited(request):
+        calls.append(request.url.path)
+        return httpx.Response(429, json={"retry_after": 600, "global": True})
+    with pytest.raises(discord_names.GloballyRateLimited):
+        discord_names.refresh_all(lookup(limited))
+    # No fallback to the user record and no further players.
+    assert len(calls) == 1
+    # A limit on one route only skips that request.
+    calls.clear()
+
+    def route_limited(request):
+        calls.append(request.url.path)
+        return httpx.Response(429, json={"retry_after": 600, "global": False})
+    assert discord_names.refresh_all(lookup(route_limited)) == 0
+    assert len(calls) == 4
