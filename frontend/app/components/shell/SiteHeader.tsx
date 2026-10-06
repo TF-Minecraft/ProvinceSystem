@@ -8,6 +8,9 @@ import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 import { getAccount } from "@/lib/account/api";
 import { isStaffRole } from "@/lib/admin/api";
 
+/** public/logo.png downscaled; the 1024 px original is 1 MB. */
+const LOGO_SRC = "/logo-256.png";
+
 const staticLinks = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Map" },
@@ -141,9 +144,11 @@ export default function SiteHeader() {
         <Link
           ref={logoRef}
           href="/"
-          className="shrink-0 font-[family-name:var(--font-fraunces)] text-lg tracking-wide text-[var(--tfmc-cream)] transition-opacity hover:opacity-80 lg:mr-4"
+          aria-label="TFMC home"
+          className="shrink-0 rounded-full transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] lg:mr-4"
         >
-          TFMC
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_SRC} alt="" width={40} height={40} className="block h-10 w-10" />
         </Link>
         <nav className="ml-auto hidden items-center gap-8 whitespace-nowrap lg:flex" aria-label="Main">
           {links.map(({ href, label }) => {
@@ -182,9 +187,11 @@ export default function SiteHeader() {
       >
         <Link
           href="/"
-          className="mb-6 self-center font-[family-name:var(--font-fraunces)] text-3xl tracking-wide text-[var(--tfmc-cream)]"
+          aria-label="TFMC home"
+          className="mb-6 self-center rounded-full"
         >
-          TFMC
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_SRC} alt="" width={96} height={96} className="block h-24 w-24" />
         </Link>
         <nav aria-label="Main" className="flex flex-col">
           {links.map(({ href, label }) => {
