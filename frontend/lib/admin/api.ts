@@ -65,7 +65,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_sort: "That sort order isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
-  audit_unavailable: "Chat and commands can’t be shown because the view couldn’t be logged. Try again.",
+  audit_unavailable: "This can’t be shown because the view couldn’t be logged. Try again.",
 };
 
 export function adminErrorMessage(err: unknown): string {
