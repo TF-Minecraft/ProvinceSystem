@@ -123,10 +123,10 @@ export function revokeSessions(userId: number, reason: string): Promise<unknown>
 
 export type CoreProtectStatus = { status: "available"; reason?: undefined } | { status: "unavailable"; reason: string };
 
-export type PlayerSort = "last_seen" | "minecraft" | "discord";
+export type PlayerSort = "last_seen" | "minecraft" | "discord" | "character";
 
 export function parsePlayerSort(value: string | undefined): PlayerSort {
-  return value === "minecraft" || value === "discord" ? value : "last_seen";
+  return value === "minecraft" || value === "discord" || value === "character" ? value : "last_seen";
 }
 
 export type PlayerSummary = {

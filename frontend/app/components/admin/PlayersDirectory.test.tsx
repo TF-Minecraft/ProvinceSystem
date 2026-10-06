@@ -51,7 +51,8 @@ it("lists players with Discord, characters and last seen", async () => {
   expect(link.getAttribute("href")).toBe("/admin/players/0615a817-8cb4-4aef-95f7-f6c9bf7611b8");
   const row = link.closest("tr")!;
   expect(within(row).getAllByText("@hazelstone")).toHaveLength(2);
-  expect(within(row).getByText("Hazel Stonebrook")).toBeTruthy();
+  // In its column, and again under the name for narrow screens.
+  expect(within(row).getAllByText("Hazel Stonebrook").length).toBeGreaterThan(0);
   expect(within(row).getByText("2 h ago")).toBeTruthy();
   expect(within(row).getByText("Moderator")).toBeTruthy();
   expect(screen.getByText("Seen just now")).toBeTruthy();
@@ -69,6 +70,12 @@ it("searches after typing stops and sorts by Discord name", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Discord name" }));
   await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "hazel", sort: "discord", page: 1 }));
   expect(window.location.search).toBe("?q=hazel&sort=discord");
+
+  fireEvent.click(screen.getByRole("button", { name: "Character name" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "hazel", sort: "character", page: 1 }));
+  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "", sort: "character", page: 1 }));
+  expect(screen.queryByRole("button", { name: "Clear search" })).toBeNull();
 });
 
 it("pages through results", async () => {

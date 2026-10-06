@@ -19,11 +19,12 @@ const SORTS: { key: PlayerSort; label: string }[] = [
   { key: "last_seen", label: "Last seen" },
   { key: "minecraft", label: "Minecraft name" },
   { key: "discord", label: "Discord name" },
+  { key: "character", label: "Character name" },
 ];
 const SEARCH_DELAY_MS = 250;
 
 const inputClass =
-  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)]";
+  "w-full appearance-none rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] py-3 pl-10 pr-11 text-base text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_70%,transparent)] focus:border-[var(--tfmc-accent)] [&::-webkit-search-cancel-button]:hidden";
 const pagerClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-3 py-1.5 text-sm text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)] disabled:opacity-40";
 
@@ -79,10 +80,22 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
 
   return (
     <section aria-label="Players" className="mt-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="sr-only" htmlFor="player-search">
-          Search players
-        </label>
+      {/* Search gets a row of its own, so the sort buttons never squeeze it. */}
+      <label className="sr-only" htmlFor="player-search">
+        Search players
+      </label>
+      <div className="relative">
+        <svg
+          aria-hidden
+          viewBox="0 0 20 20"
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--tfmc-stone)]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="8.5" cy="8.5" r="5.5" />
+          <path d="M13 13l4 4" strokeLinecap="round" />
+        </svg>
         <input
           id="player-search"
           type="search"
@@ -91,12 +104,29 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
             setQuery(e.target.value);
             setPage(1);
           }}
-          placeholder="Minecraft name, Discord name, character or UUID"
+          placeholder="Search by Minecraft, Discord or character name, or UUID"
           autoComplete="off"
           spellCheck={false}
-          className={`${inputClass} min-w-0 flex-1`}
+          className={inputClass}
         />
-        <div role="group" aria-label="Sort by" className="flex gap-1">
+        {query ? (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => {
+              setQuery("");
+              setSearch("");
+              setPage(1);
+            }}
+            className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-xl text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+          >
+            ×
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm text-[var(--tfmc-stone)]">Sort by</span>
+        <div role="group" aria-label="Sort by" className="flex flex-wrap gap-1">
           {SORTS.map((option) => (
             <button
               key={option.key}
@@ -106,7 +136,7 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
                 setSort(option.key);
                 setPage(1);
               }}
-              className={`rounded-sm px-3 py-1.5 text-sm transition-colors ${
+              className={`min-h-11 rounded-sm px-3 py-1.5 text-sm transition-colors sm:min-h-9 ${
                 sort === option.key
                   ? "bg-[var(--tfmc-accent)] font-semibold text-[var(--tfmc-forest-deep)]"
                   : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
@@ -163,6 +193,9 @@ export default function PlayersDirectory({ initialQuery, initialSort, initialPag
                         ) : null}
                         {player.discord_username ? (
                           <span className="block text-xs text-[var(--tfmc-stone)] sm:hidden">@{player.discord_username}</span>
+                        ) : null}
+                        {player.characters.length ? (
+                          <span className="block text-xs text-[var(--tfmc-mist)] md:hidden">{player.characters.join(", ")}</span>
                         ) : null}
                       </td>
                       <td className="hidden py-2.5 pr-3 text-[var(--tfmc-mist)] sm:table-cell">

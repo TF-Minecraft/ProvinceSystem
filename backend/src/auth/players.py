@@ -25,7 +25,7 @@ from . import audit, roles, users
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
 QUERY_MAX = 64
-SORTS = ("last_seen", "minecraft", "discord")
+SORTS = ("last_seen", "minecraft", "discord", "character")
 
 _DIRECTORY_LOCK = threading.Lock()
 _DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
@@ -207,6 +207,9 @@ def _sort_key(sort: str):
         return lambda e: (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
     if sort == "discord":
         return lambda e: (e["discord_username"] is None, (e["discord_username"] or "").casefold(), e["uuid"])
+    if sort == "character":
+        # By the first of their characters alphabetically; players without one last.
+        return lambda e: (not e["characters"], min((c.casefold() for c in e["characters"]), default=""), e["uuid"])
     return lambda e: (e["last_seen"] is None, -(e["last_seen"] or 0), (e["minecraft_name"] or "").casefold())
 
 

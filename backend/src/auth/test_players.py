@@ -110,6 +110,8 @@ def test_directory_sorts(app, env, world):
     assert by_mc == ["LinkedOnly", "MrEnzo99", "Quiet", None]
     by_discord = [p["discord_username"] for p in c.get("/admin/players", params={"sort": "discord"}).json()["players"]]
     assert by_discord[:2] == ["hazelstone", "linky"]
+    by_character = [p["characters"] for p in c.get("/admin/players", params={"sort": "character"}).json()["players"]]
+    assert by_character[:2] == [["Aldric"], ["Hazel Stonebrook"]] and by_character[2:] == [[], []]
     assert c.get("/admin/players", params={"sort": "bogus"}).status_code == 400
     assert c.get("/admin/players", params={"q": "x" * 65}).status_code == 400
 
