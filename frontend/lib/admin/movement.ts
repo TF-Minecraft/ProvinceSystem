@@ -70,6 +70,47 @@ export function getEveryoneMovement(since: number, until: number): Promise<Every
   return adminRequest(`/admin/movement?since=${since}&until=${until}`);
 }
 
+/** Everyone's rows from `since` to now, for where each player is now (see `latestPositions`). */
+export function getLatestMovement(since: number): Promise<EveryoneMovement> {
+  return adminRequest(`/admin/movement?since=${since}`);
+}
+
+/** A player's newest row, as where they are now. */
+export type LatestPosition = {
+  uuid: string;
+  name: string;
+  world: string | null;
+  x: number;
+  y: number;
+  z: number;
+  /** When the row was recorded. */
+  time: number;
+  action: number;
+};
+
+/**
+ * Where each player is as of `asOf`: their newest row, unless it is a logout
+ * or older than `hold` seconds (they left without one, or pings stopped).
+ * Sorted by name.
+ */
+export function latestPositions(data: EveryoneMovement, asOf: number, hold: number): LatestPosition[] {
+  const out: LatestPosition[] = [];
+  for (const player of data.players) {
+    const last = player.points[player.points.length - 1];
+    if (!last) continue;
+    const [time, wi, x, y, z, action] = last;
+    if (action === ACTION_LOGOUT || asOf - time > hold) continue;
+    out.push({ uuid: player.uuid, name: player.minecraft_name, world: data.worlds[wi] ?? null, x, y, z, time, action });
+  }
+  return out.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.uuid.localeCompare(b.uuid));
+}
+
+/** `40 s ago`, `3 min ago`: how old a recent position is. */
+export function formatAge(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return s < 60 ? `${s} s ago` : `${Math.floor(s / 60)} min ago`;
+}
+
 /** CoreProtect names the Nether and the End after the overworld (`TFMC_Map_nether`, `TFMC_Map_the_end`). */
 export function worldLabel(world: string | null | undefined): string {
   if (!world) return "an unknown world";

@@ -11,7 +11,9 @@ import {
   clampMoment,
   clipStretches,
   describeSpan,
+  formatAge,
   inspect,
+  latestPositions,
   observationTimes,
   observedBands,
   parseLocalInput,
@@ -230,5 +232,50 @@ describe("session labels", () => {
     expect(sessionEndLabel(session("unknown", null, at(13, 2)))).toBe("End unknown");
     expect(sessionSpanLabel(session("logout", at(14, 15), at(14, 15)))).toBe("13:02 → 14:15");
     expect(sessionSpanLabel(session("open", null, at(14, 14)))).toBe("13:02 → now");
+  });
+});
+
+describe("latestPositions", () => {
+  const T = 1_800_000_000;
+  const movement = (players: { uuid: string; minecraft_name: string; points: MovementPoint[] }[]) => ({
+    since: T - 150,
+    until: T,
+    as_of: T,
+    worlds: ["TFMC_Map", "TFMC_Map_nether"],
+    players,
+    complete_from: T - 150,
+    pings_since: null,
+    coreprotect: { status: "available" as const, server_label: null, ping_seconds: 60, map_world: "TFMC_Map" },
+  });
+
+  it("keeps each player's newest row, unless they logged out or it is too old", () => {
+    const found = latestPositions(
+      movement([
+        {
+          uuid: "c",
+          minecraft_name: "carol",
+          points: [[T - 100, 0, 1, 64, 1, ACTION_PING], [T - 40, 1, 2, 70, 3, ACTION_PING]],
+        },
+        {
+          uuid: "b",
+          minecraft_name: "Bob",
+          points: [[T - 90, 0, 5, 64, 5, ACTION_PING], [T - 30, 0, 5, 64, 5, ACTION_LOGOUT]],
+        },
+        { uuid: "a", minecraft_name: "Alice", points: [[T - 10, 0, 9, 64, 9, ACTION_LOGIN]] },
+        { uuid: "d", minecraft_name: "Dave", points: [[T - 200, 0, 0, 64, 0, ACTION_PING]] },
+        { uuid: "e", minecraft_name: "Eve", points: [] },
+      ]),
+      T,
+      150
+    );
+    expect(found.map((p) => p.name)).toEqual(["Alice", "carol"]);
+    expect(found[1]).toMatchObject({ world: "TFMC_Map_nether", x: 2, y: 70, z: 3, time: T - 40 });
+    expect(found[0].action).toBe(ACTION_LOGIN);
+  });
+
+  it("says how old a position is", () => {
+    expect(formatAge(42.4)).toBe("42 s ago");
+    expect(formatAge(-3)).toBe("0 s ago");
+    expect(formatAge(130)).toBe("2 min ago");
   });
 });
