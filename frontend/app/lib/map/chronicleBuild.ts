@@ -369,6 +369,11 @@ export type ChronicleBuildProgress = {
   painted: number;
   reused: number;
   skipped: number;
+  /**
+   * Which queued look this frame belongs to. Absent for a build of the draft
+   * toggles alone, where every frame is the same look.
+   */
+  look?: string | null;
 };
 
 export type ChronicleBuildResult<TImage, TLayers> = {

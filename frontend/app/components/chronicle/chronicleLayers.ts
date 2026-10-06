@@ -216,6 +216,35 @@ export function chronicleToggleSignature(toggles: ChronicleToggles): string {
 }
 
 /**
+ * One look in a stitched timelapse: the layers as they were when it was added,
+ * played in list order over the same date range.
+ *
+ * The draft toggles stay editable after a look is added. The clip keeps the
+ * copy it was given, so changing the tiles does not rewrite a look already
+ * queued.
+ */
+export type ChronicleClip = {
+  id: string;
+  label: string;
+  toggles: ChronicleToggles;
+};
+
+/**
+ * A short name for a queued look, from the layers that are on.
+ *
+ * Three names fit on a row. Past that the rest collapse to a count so a look
+ * with every layer on does not become a paragraph in the player.
+ */
+export function chronicleClipLabel(toggles: ChronicleToggles): string {
+  const names = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).map(
+    ({ label }) => label
+  );
+  if (names.length === 0) return "Empty look";
+  if (names.length <= 3) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} + ${names.length - 2} more`;
+}
+
+/**
  * Same filter the live map applies in `useMapModeData`: a nation with no colour
  * or no land has nothing to paint and no place to hang a label, and letting it
  * through only produces empty label components.

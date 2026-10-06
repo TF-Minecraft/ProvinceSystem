@@ -8,6 +8,7 @@ import {
   chronicleLabelMapObjects,
   chronicleFortMarkers,
   chronicleSettlementMarkers,
+  chronicleClipLabel,
   chronicleToggleSignature,
   chronicleRegionData,
   chronicleWars,
@@ -686,5 +687,31 @@ describe("buildChronicleLayers under a focus", () => {
       })
     ).toEqual(base);
     expect(base.labels).toBe(labels);
+  });
+});
+
+describe("chronicleClipLabel", () => {
+  it("names the layers that are on, and collapses a long list", () => {
+    expect(chronicleClipLabel(CHRONICLE_TOGGLES_OFF)).toBe("Empty look");
+    expect(
+      chronicleClipLabel({ ...CHRONICLE_TOGGLES_OFF, nationBorders: true })
+    ).toBe("Nation borders");
+    expect(
+      chronicleClipLabel({
+        ...CHRONICLE_TOGGLES_OFF,
+        nationBorders: true,
+        prosperity: true,
+        tradeLeagues: true,
+      })
+    ).toBe("Nation borders, Trade leagues, Prosperity");
+    expect(
+      chronicleClipLabel({
+        ...CHRONICLE_TOGGLES_OFF,
+        nationFill: true,
+        nationBorders: true,
+        occupation: true,
+        prosperity: true,
+      })
+    ).toBe("Nation fill, Nation borders + 2 more");
   });
 });
