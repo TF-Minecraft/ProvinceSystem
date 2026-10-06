@@ -17,6 +17,7 @@ import {
   formatClock,
   isJump,
   positionAt,
+  type Position,
   type Sample,
   type Stretch,
 } from "../../../lib/admin/movement";
@@ -70,6 +71,11 @@ type Props = {
   fitKey: string | null;
   /** A recorded dot was clicked: inspect that moment. */
   onInspect?: (time: number) => void;
+  /**
+   * Each trail holds only a player's newest row: mark and label where they
+   * are now, with no trail, and ignore `cursor` and `hold`.
+   */
+  latest?: boolean;
   className?: string;
 };
 
@@ -155,6 +161,18 @@ function endpointLabels(trail: MovementTrail, mapWorld: string): { sample: Sampl
   ];
 }
 
+/** A trail's newest row and its world. */
+function newestSample(trail: MovementTrail): { world: string | null; sample: Sample } | null {
+  const stretch = trail.stretches[trail.stretches.length - 1];
+  const sample = stretch?.samples[stretch.samples.length - 1];
+  return sample ? { world: stretch.world, sample } : null;
+}
+
+function newestTitle(trail: MovementTrail, s: Sample): string {
+  const recorded = s.action === ACTION_LOGIN ? "Logged in" : "Recorded";
+  return `${trail.label} — ${s.x}, ${s.y}, ${s.z}\n${recorded} ${formatClock(s.time, true)}`;
+}
+
 /** 1, 2 or 5 times a power of ten, at least `wanted`. */
 function niceLength(wanted: number): number {
   const power = 10 ** Math.floor(Math.log10(Math.max(wanted, 1e-6)));
@@ -175,6 +193,7 @@ export default function MovementMap({
   pin = null,
   fitKey,
   onInspect,
+  latest = false,
   className,
 }: Props) {
   const tiles = useTileManifest(mapId, "base", true);
@@ -209,8 +228,9 @@ export default function MovementMap({
   // Drawn and framed: only the window. Markers read the full trails, which
   // carry the row before the window for where the player was as it opened.
   const shown = useMemo(
-    () => trails.map((trail) => ({ ...trail, stretches: clipStretches(trail.stretches, since, until) })),
-    [trails, since, until]
+    () =>
+      latest ? trails : trails.map((trail) => ({ ...trail, stretches: clipStretches(trail.stretches, since, until) })),
+    [trails, since, until, latest]
   );
   const paths = useMemo(
     () => shown.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until, cursor) })),
@@ -249,7 +269,16 @@ export default function MovementMap({
   }, [fitKey, ready]);
 
   const dots = shown.reduce((n, t) => n + t.stretches.reduce((m, s) => m + s.samples.length, 0), 0) <= MAX_DOTS;
-  const markers = trails.map((trail) => ({ trail, at: positionAt(trail.stretches, cursor, hold) }));
+  const markers = trails.map((trail) => {
+    if (!latest) return { trail, at: positionAt(trail.stretches, cursor, hold), title: null };
+    const newest = newestSample(trail);
+    const at: Position | null = newest && { world: newest.world, x: newest.sample.x, z: newest.sample.z, exact: true };
+    return {
+      trail,
+      at,
+      title: newest && newestTitle(trail, newest.sample),
+    };
+  });
   const single = trails.length === 1 ? markers[0]?.at : null;
   const scaleBlocks = displayScale > 0 ? niceLength(100 / displayScale) : 0;
   const halo = { stroke: "#10160f", strokeWidth: 3 * unit, paintOrder: "stroke" as const };
@@ -268,7 +297,7 @@ export default function MovementMap({
   const controls = [
     { label: "+", title: "Zoom in", run: () => zoomBy(1.6) },
     { label: "−", title: "Zoom out", run: () => zoomBy(1 / 1.6) },
-    { label: "⤢", title: "Fit the trail", run: fitTrail },
+    { label: "⤢", title: latest ? "Fit everyone" : "Fit the trail", run: fitTrail },
     ...(single && single.world === mapWorld
       ? [{ label: "◎", title: "Go to the inspected position", run: () => focusPoint(single.x, single.z) }]
       : []),
@@ -354,7 +383,7 @@ export default function MovementMap({
                   ) : null
                 )}
                 {trail.stretches.map((stretch) =>
-                  stretch.world === mapWorld
+                  stretch.world === mapWorld && !latest
                     ? stretch.samples.map((s, i) => {
                         const edge = s.action === ACTION_LOGIN || s.action === ACTION_LOGOUT;
                         // A point made up at the range's edge is drawn through, never as a recorded dot.
@@ -453,12 +482,17 @@ export default function MovementMap({
               </text>
             </g>
           ) : null}
-          {markers.map(({ trail, at }) => {
+          {markers.map(({ trail, at, title }) => {
             if (!at || at.world !== mapWorld) return null;
             const dim = highlight !== null && highlight !== trail.key;
             const colour = trail.colour ?? "#f4c96b";
             return (
-              <g key={`cursor:${trail.key}`} opacity={dim ? 0.35 : 1}>
+              <g
+                key={`cursor:${trail.key}`}
+                opacity={dim ? 0.35 : 1}
+                className={latest ? "pointer-events-auto" : undefined}
+              >
+                {title ? <title>{title}</title> : null}
                 {/* Solid: recorded at this second. Hollow: estimated or last seen. */}
                 <circle
                   cx={at.x + 0.5}
@@ -469,7 +503,7 @@ export default function MovementMap({
                   strokeWidth={(at.exact ? 2.5 : 3) * unit}
                   strokeDasharray={at.lastSeen !== undefined ? `${3 * unit} ${2.5 * unit}` : undefined}
                 />
-                {trails.length > 1 ? (
+                {trails.length > 1 || latest ? (
                   <text
                     {...beside(at.x, 12)}
                     y={at.z + 0.5 + 4 * unit}
@@ -501,25 +535,34 @@ export default function MovementMap({
         ))}
       </div>
       <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 flex w-fit max-w-[calc(100%-1rem)] flex-col gap-1 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--tfmc-cream)]">
-        {trails.length === 1 && !trails[0].colour ? (
+        {latest ? (
           <span className="flex items-center gap-1.5">
-            older
-            <span
-              className="inline-block h-1.5 w-16 rounded-full"
-              style={{ background: `linear-gradient(to right, ${ageColour(0)}, ${ageColour(0.5)}, ${ageColour(1)})` }}
-            />
-            newer
+            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last recorded
+            position (once a minute)
           </span>
-        ) : null}
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
-          <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimate or last seen
-        </span>
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> unobserved transition
-          <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7fd18b]" /> logged in
-          <span className="inline-block h-2 w-2 rounded-full bg-[#e8796f]" /> logged out
-        </span>
+        ) : (
+          <>
+            {trails.length === 1 && !trails[0].colour ? (
+              <span className="flex items-center gap-1.5">
+                older
+                <span
+                  className="inline-block h-1.5 w-16 rounded-full"
+                  style={{ background: `linear-gradient(to right, ${ageColour(0)}, ${ageColour(0.5)}, ${ageColour(1)})` }}
+                />
+                newer
+              </span>
+            ) : null}
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
+              <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimate or last seen
+            </span>
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> unobserved transition
+              <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7fd18b]" /> logged in
+              <span className="inline-block h-2 w-2 rounded-full bg-[#e8796f]" /> logged out
+            </span>
+          </>
+        )}
       </div>
       {scaleBlocks ? (
         <div className="pointer-events-none absolute left-2 top-2 z-20 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_82%,transparent)] px-2 py-1 text-[11px] text-[var(--tfmc-cream)]">

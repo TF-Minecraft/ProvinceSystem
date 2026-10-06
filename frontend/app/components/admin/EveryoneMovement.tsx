@@ -24,6 +24,7 @@ import {
 import { formatDuration } from "../../../lib/admin/time";
 import { writeUrl } from "../../../lib/admin/urlState";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import EveryoneNow from "./EveryoneNow";
 import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
   CopyButton,
@@ -34,6 +35,7 @@ import {
   Timeline,
   chipClass,
   chipOff,
+  chipOn,
   inputClass,
   mutedClass,
   useLiveMapId,
@@ -74,8 +76,37 @@ function whereText(found: Inspection, moment: number, mapWorld: string): string 
   }
 }
 
-/** Every player's movement over a range on one map, compared at one inspected moment. */
+/**
+ * The everyone view: where players are now (the default), or their movement
+ * over a range. A link with a range (from, to or follow) opens the range.
+ */
 export default function EveryoneMovement() {
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const ranged = search.get("view") === "range" || ["from", "to", "follow"].some((key) => search.has(key));
+  const tab = (on: boolean) => `${chipClass} ${on ? chipOn : chipOff}`;
+  return (
+    <>
+      <div className="mt-4 flex gap-2" role="group" aria-label="Movement view">
+        <button type="button" className={tab(!ranged)} aria-pressed={!ranged} onClick={() => writeUrl(pathname, false)}>
+          Now
+        </button>
+        <button
+          type="button"
+          className={tab(ranged)}
+          aria-pressed={ranged}
+          onClick={() => writeUrl(`${pathname}?view=range`, false)}
+        >
+          Time range
+        </button>
+      </div>
+      {ranged ? <EveryoneRange /> : <EveryoneNow />}
+    </>
+  );
+}
+
+/** Every player's movement over a range on one map, compared at one inspected moment. */
+function EveryoneRange() {
   const pathname = usePathname();
   const search = useSearchParams();
   const mapId = useLiveMapId();
