@@ -35,7 +35,7 @@ export const DEFAULT_LAYOUT: LayoutOptions = {
   markerRadius: 8,
   gap: 4,
   pad: 2,
-  radii: [26, 42, 62, 86, 114],
+  radii: [24, 40, 60, 84],
   crowdRadius: 20,
 };
 
@@ -98,11 +98,25 @@ function boxAtLeaderEnd(point: LabelPoint, ex: number, ey: number, angle: number
   return { x, y, width: point.width, height: point.height };
 }
 
+const HALF_TURN = Math.PI / 2 + 1e-9;
+
+/** How far apart two directions are, in radians (0 to π). */
+function turn(a: number, b: number): number {
+  const d = Math.abs(a - b) % (2 * Math.PI);
+  return d > Math.PI ? 2 * Math.PI - d : d;
+}
+
 /**
  * Places the labels of markers with the fewest neighbours first, so a lone
  * marker beside a crowd keeps its name beside it and the crowd's names fan
  * out around it. Ties keep the order given: pass a stable one, so labels do
  * not jump about between refreshes.
+ *
+ * A marker touching others puts its name on its own side of the group: the
+ * directions nearest "away from the markers it touches" are tried first, so
+ * names do not swap sides and leaders do not cross. Leaders are kept off
+ * every other marker where a leader of that length allows it; otherwise it
+ * may pass under a marker lying on top of its own.
  */
 export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptions = DEFAULT_LAYOUT): PlacedLabel[] {
   const { markerRadius, gap, pad, radii } = options;
@@ -115,49 +129,77 @@ export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptio
   const free = (box: Box) => boxes.every((placed) => !overlaps(box, placed, pad));
 
   const near = options.crowdRadius;
-  const crowding = new Map(
-    points.map((p) => [p, points.filter((q) => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < near).length])
+  const touching = new Map(
+    points.map((p) => [p, points.filter((q) => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < near)])
   );
-  const order = [...points].sort((a, b) => crowding.get(a)! - crowding.get(b)!);
+  const order = [...points].sort((a, b) => touching.get(a)!.length - touching.get(b)!.length);
 
   for (const point of order) {
+    // Away from the middle of the markers it touches; null when alone, or right on top of them.
+    const others = touching.get(point)!;
+    let away: number | null = null;
+    if (others.length) {
+      const dx = point.x - others.reduce((sum, q) => sum + q.x, 0) / others.length;
+      const dy = point.y - others.reduce((sum, q) => sum + q.y, 0) / others.length;
+      if (Math.hypot(dx, dy) >= 1) away = Math.atan2(dy, dx);
+    }
+    const outward = (angles: readonly number[]) =>
+      away === null ? angles : [...angles].sort((a, b) => turn(a, away!) - turn(b, away!));
+    // A marker in a group looks on its own side first, at every length, and only then on the far side.
+    const sides =
+      away === null
+        ? [() => true]
+        : [(a: number) => turn(a, away!) <= HALF_TURN, (a: number) => turn(a, away!) > HALF_TURN];
+
     const top = point.y - point.height / 2;
-    const beside: Box[] = [
-      { x: point.x + markerRadius + gap, y: top, width: point.width, height: point.height },
-      { x: point.x - markerRadius - gap - point.width, y: top, width: point.width, height: point.height },
-    ];
-    let placed: PlacedLabel | null = null;
-    for (const box of beside) {
+    // Set by the tries below; `as` keeps TypeScript from narrowing it to null for good.
+    let placed = null as PlacedLabel | null;
+    const tryBeside = (side: number) => {
+      const box =
+        side === 0
+          ? { x: point.x + markerRadius + gap, y: top, width: point.width, height: point.height }
+          : { x: point.x - markerRadius - gap - point.width, y: top, width: point.width, height: point.height };
       if (free(box) && clearOfMarkers(box, point) && leaders.every((l) => !segmentHitsBox(l, box))) {
         placed = { key: point.key, ...box, leader: null };
-        break;
       }
-    }
-    for (let r = 0; !placed && r < radii.length; r += 1) {
-      for (const angle of ANGLES) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const leader = {
-          x1: point.x + cos * markerRadius,
-          y1: point.y + sin * markerRadius,
-          x2: point.x + cos * radii[r],
-          y2: point.y + sin * radii[r],
-        };
-        const box = boxAtLeaderEnd(point, leader.x2, leader.y2, angle);
-        if (
-          free(box) &&
-          clearOfMarkers(box, point) &&
-          boxes.every((b) => !segmentHitsBox(leader, b)) &&
-          leaders.every((l) => !segmentsCross(l, leader) && !segmentHitsBox(l, box)) &&
-          // Markers on top of this one are crossed whichever way the leader goes.
-          points.every(
-            (p) =>
-              Math.hypot(p.x - point.x, p.y - point.y) < 2 * markerRadius ||
-              !segmentHitsCircle(leader, p.x, p.y, markerRadius)
-          )
-        ) {
-          placed = { key: point.key, ...box, leader };
-          break;
+    };
+    const tryLeader = (angle: number, length: number, strict: boolean) => {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const leader = {
+        x1: point.x + cos * markerRadius,
+        y1: point.y + sin * markerRadius,
+        x2: point.x + cos * length,
+        y2: point.y + sin * length,
+      };
+      const box = boxAtLeaderEnd(point, leader.x2, leader.y2, angle);
+      if (
+        free(box) &&
+        clearOfMarkers(box, point) &&
+        boxes.every((b) => !segmentHitsBox(leader, b)) &&
+        leaders.every((l) => !segmentsCross(l, leader) && !segmentHitsBox(l, box)) &&
+        points.every(
+          (p) =>
+            p === point ||
+            (!strict && Math.hypot(p.x - point.x, p.y - point.y) < 2 * markerRadius) ||
+            !segmentHitsCircle(leader, p.x, p.y, markerRadius)
+        )
+      ) {
+        placed = { key: point.key, ...box, leader };
+      }
+    };
+    for (const onSide of sides) {
+      for (const side of outward([0, Math.PI]).filter(onSide)) {
+        if (!placed) tryBeside(side);
+      }
+      const angles = outward(ANGLES).filter(onSide);
+      // Shortest leaders first. At each length, first keeping the leader off every other marker, then
+      // letting it pass under a marker lying on top of this one (leaders are drawn beneath markers).
+      for (const length of radii) {
+        for (const strict of [true, false]) {
+          for (const angle of angles) {
+            if (!placed) tryLeader(angle, length, strict);
+          }
         }
       }
     }
