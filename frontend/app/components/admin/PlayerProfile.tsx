@@ -170,21 +170,25 @@ function Sessions({ uuid }: { uuid: string }) {
   const [next, setNext] = useState<string | null>(null);
   const [historyStart, setHistoryStart] = useState<number | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "more">("loading");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
 
   const fetchPage = useCallback(
     async (before: string | null) => {
       setState(before ? "more" : "loading");
-      setError(null);
+      setFailure(null);
       try {
         const page = await getPlayerSessions(uuid, before);
         const notice = coreProtectMessage(page.coreprotect);
-        if (notice) setError(notice);
+        // An unavailable page has no cursor: keep what is shown so the same page can be retried.
+        if (notice) {
+          setFailure({ message: notice, before });
+          return;
+        }
         setRows((old) => (before ? [...old, ...page.sessions] : page.sessions));
         setNext(page.next);
         if (page.history_start !== undefined) setHistoryStart(page.history_start ?? null);
       } catch (err) {
-        setError(adminErrorMessage(err));
+        setFailure({ message: adminErrorMessage(err), before });
       } finally {
         setState("ready");
       }
@@ -203,12 +207,7 @@ function Sessions({ uuid }: { uuid: string }) {
         <p className="mt-1 text-xs text-[var(--tfmc-stone)]">Session records go back to {formatEpoch(historyStart)}.</p>
       ) : null}
       {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
-      {error ? (
-        <p className={errorClass} role="alert">
-          {error}
-        </p>
-      ) : null}
-      {state !== "loading" && !rows.length && !error ? <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p> : null}
+      {state !== "loading" && !rows.length && !failure ? <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p> : null}
       {rows.length ? (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[34rem] text-left text-sm">
@@ -243,12 +242,29 @@ function Sessions({ uuid }: { uuid: string }) {
           </table>
         </div>
       ) : null}
-      {next ? (
-        <button type="button" className={moreClass} disabled={state === "more"} onClick={() => void fetchPage(next)}>
+      {failure ? (
+        <Retry failure={failure} busy={state !== "ready"} onRetry={() => void fetchPage(failure.before)} />
+      ) : next ? (
+        <button type="button" className={moreClass} disabled={state !== "ready"} onClick={() => void fetchPage(next)}>
           {state === "more" ? "Loading…" : "Load more sessions"}
         </button>
       ) : null}
     </section>
+  );
+}
+
+type Failure = { message: string; before: string | null };
+
+function Retry({ failure, busy, onRetry }: { failure: Failure; busy: boolean; onRetry: () => void }) {
+  return (
+    <div>
+      <p className={errorClass} role="alert">
+        {failure.message}
+      </p>
+      <button type="button" className={moreClass} disabled={busy} onClick={onRetry}>
+        Try again
+      </button>
+    </div>
   );
 }
 
@@ -281,25 +297,28 @@ function Activity({ uuid }: { uuid: string }) {
   const [next, setNext] = useState<string | null>(null);
   const [searchedTo, setSearchedTo] = useState<number | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "more">("loading");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const request = useRef(0);
 
   const fetchPage = useCallback(
     async (before: string | null) => {
       const id = ++request.current;
       setState(before ? "more" : "loading");
-      setError(null);
+      setFailure(null);
       try {
         const page = await getPlayerActivity(uuid, { before, kinds: kinds.length ? kinds : undefined });
         if (id !== request.current) return;
         const notice = coreProtectMessage(page.coreprotect);
-        if (notice) setError(notice);
+        if (notice) {
+          setFailure({ message: notice, before });
+          return;
+        }
         setEntries((old) => (before ? [...old, ...page.entries] : page.entries));
         setNext(page.next);
         setSearchedTo(page.searched_to);
         if (page.kinds.length) setAvailable(page.kinds);
       } catch (err) {
-        if (id === request.current) setError(adminErrorMessage(err));
+        if (id === request.current) setFailure({ message: adminErrorMessage(err), before });
       } finally {
         if (id === request.current) setState("ready");
       }
@@ -311,8 +330,17 @@ function Activity({ uuid }: { uuid: string }) {
     void fetchPage(null);
   }, [fetchPage]);
 
+  function choose(next: string[]) {
+    // The old filter's rows and cursor must not be paged into the new one.
+    setNext(null);
+    setSearchedTo(null);
+    setEntries([]);
+    setFailure(null);
+    setKinds(next);
+  }
+
   function toggle(kind: string) {
-    setKinds((old) => (old.includes(kind) ? old.filter((k) => k !== kind) : [...old, kind]));
+    choose(kinds.includes(kind) ? kinds.filter((k) => k !== kind) : [...kinds, kind]);
   }
 
   const chip = (active: boolean) =>
@@ -327,7 +355,7 @@ function Activity({ uuid }: { uuid: string }) {
       <h3 className={headingClass}>Recent activity</h3>
       <p className="mt-1 text-xs text-[var(--tfmc-stone)]">From CoreProtect. Chat, command arguments and sign text are not shown.</p>
       <div role="group" aria-label="Show" className="mt-3 flex flex-wrap gap-1.5">
-        <button type="button" aria-pressed={!kinds.length} className={chip(!kinds.length)} onClick={() => setKinds([])}>
+        <button type="button" aria-pressed={!kinds.length} className={chip(!kinds.length)} onClick={() => choose([])}>
           All
         </button>
         {available.map((kind) => (
@@ -337,12 +365,7 @@ function Activity({ uuid }: { uuid: string }) {
         ))}
       </div>
       {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
-      {error ? (
-        <p className={errorClass} role="alert">
-          {error}
-        </p>
-      ) : null}
-      {state !== "loading" && !entries.length && !error ? (
+      {state !== "loading" && !entries.length && !failure ? (
         <p className={`mt-3 ${mutedClass}`}>{searchedTo ? "Nothing yet." : "No activity recorded."}</p>
       ) : null}
       {entries.length ? (
@@ -361,11 +384,13 @@ function Activity({ uuid }: { uuid: string }) {
           ))}
         </ul>
       ) : null}
-      {searchedTo && next ? (
+      {searchedTo && next && !failure ? (
         <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Searched back to {formatEpoch(searchedTo)}.</p>
       ) : null}
-      {next ? (
-        <button type="button" className={moreClass} disabled={state === "more"} onClick={() => void fetchPage(next)}>
+      {failure ? (
+        <Retry failure={failure} busy={state !== "ready"} onRetry={() => void fetchPage(failure.before)} />
+      ) : next ? (
+        <button type="button" className={moreClass} disabled={state !== "ready"} onClick={() => void fetchPage(next)}>
           {state === "more" ? "Loading…" : searchedTo ? "Search further back" : "Load more"}
         </button>
       ) : null}

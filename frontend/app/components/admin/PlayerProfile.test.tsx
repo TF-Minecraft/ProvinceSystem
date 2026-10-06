@@ -141,3 +141,65 @@ it.each([
   render(<PlayerProfile uuid={UUID} />);
   expect(await screen.findByText(text)).toBeTruthy();
 });
+
+it("never pages an old filter's cursor into a new filter", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  await within(feed).findByRole("button", { name: "Load more" });
+
+  let finish: (value: Awaited<ReturnType<typeof getPlayerActivity>>) => void = () => {};
+  vi.mocked(getPlayerActivity).mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+  fireEvent.click(within(feed).getByRole("button", { name: "Kills" }));
+  // While the filtered first page loads, the old rows and their cursor are gone.
+  expect(within(feed).queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(within(feed).queryByText("stone")).toBeNull();
+
+  finish({
+    entries: [entry("block:9", { kind: "kill", verb: "killed", target: "cow" })], next: null, searched_to: null,
+    kinds: KINDS, coreprotect: { status: "available" },
+  });
+  expect(await within(feed).findByText("cow")).toBeTruthy();
+  expect(getPlayerActivity).toHaveBeenLastCalledWith(UUID, { before: null, kinds: ["kill"] });
+  expect(within(feed).queryByText("stone")).toBeNull();
+});
+
+it("keeps rows and the cursor when a later page is unavailable", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  await within(feed).findByText("stone");
+
+  vi.mocked(getPlayerActivity).mockResolvedValueOnce({
+    entries: [], next: null, searched_to: null, kinds: KINDS, coreprotect: { status: "unavailable", reason: "busy" },
+  });
+  fireEvent.click(within(feed).getByRole("button", { name: "Load more" }));
+  expect(await within(feed).findByText(/CoreProtect is busy/)).toBeTruthy();
+  expect(within(feed).getByText("stone")).toBeTruthy();
+
+  vi.mocked(getPlayerActivity).mockResolvedValueOnce({
+    entries: [entry("block:0", { verb: "placed", target: "oak_door" })], next: null, searched_to: null,
+    kinds: KINDS, coreprotect: { status: "available" },
+  });
+  fireEvent.click(within(feed).getByRole("button", { name: "Try again" }));
+  expect(await within(feed).findByText("oak_door")).toBeTruthy();
+  expect(getPlayerActivity).toHaveBeenLastCalledWith(UUID, { before: "cursor-1", kinds: undefined });
+  expect(within(feed).getByText("stone")).toBeTruthy();
+  expect(within(feed).queryByText(/CoreProtect is busy/)).toBeNull();
+});
+
+it("retries a failed sessions page from the same cursor", async () => {
+  vi.mocked(getPlayerSessions)
+    .mockResolvedValueOnce({
+      sessions: [{ start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 }, end: null, end_kind: "unknown",
+                   duration_seconds: null }],
+      next: "s-1", history_start: NOW - 864000, coreprotect: { status: "available" },
+    })
+    .mockRejectedValueOnce(new AccountApiError("bad_cursor", 400))
+    .mockResolvedValueOnce({ sessions: [], next: null, coreprotect: { status: "available" } });
+  render(<PlayerProfile uuid={UUID} />);
+  const sessions = await screen.findByRole("region", { name: "Sessions" });
+  fireEvent.click(await within(sessions).findByRole("button", { name: "Load more sessions" }));
+  expect(await within(sessions).findByText("That page link has expired. Reload to start again.")).toBeTruthy();
+  expect(within(sessions).getByText("No logout recorded")).toBeTruthy();
+  fireEvent.click(within(sessions).getByRole("button", { name: "Try again" }));
+  await waitFor(() => expect(getPlayerSessions).toHaveBeenLastCalledWith(UUID, "s-1"));
+});
