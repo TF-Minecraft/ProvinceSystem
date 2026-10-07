@@ -289,12 +289,12 @@ function EveryoneRange() {
               {listed.map((trail) => (
                 <li
                   key={trail.key}
-                  className="flex items-center gap-2 rounded-sm px-1 py-1 hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]"
+                  className="flex items-center gap-2 rounded-sm py-1 pr-1 hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]"
                   onMouseEnter={() => setHighlight(trail.key)}
                   onMouseLeave={() => setHighlight(null)}
                 >
-                  {/* A 44 px target around a small box. */}
-                  <label className="-my-1 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
+                  {/* A 44 px tall target around a small box, which lines up with the boxes above. */}
+                  <label className="-my-1 flex h-11 w-7 shrink-0 cursor-pointer items-center">
                     <input
                       type="checkbox"
                       aria-label={`Select ${trail.label}`}

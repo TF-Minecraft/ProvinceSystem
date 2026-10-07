@@ -16,7 +16,7 @@ const buttonClass =
 const quietButtonClass =
   "text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50";
 const inputClass =
-  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]";
+  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-base text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)] sm:text-sm";
 
 type Mode = null | "role" | "sessions";
 
