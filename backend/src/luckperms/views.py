@@ -87,6 +87,7 @@ def group_detail(viewer: dict, name: str) -> dict:
         counts = mirror.group_counts(conn)
         tracks = mirror.load_tracks(conn)
         members = mirror.search_users(conn, "", name, 1)
+        _add_ranks(conn, members, groups, now)
         status = mirror.status(conn)
     group = groups[name]
     editable = policy.may_edit_definitions(viewer["role"])
@@ -208,6 +209,17 @@ def user_detail(viewer: dict, raw_uuid: str) -> dict:
     }
 
 
+def _add_ranks(conn, listing: dict, groups: dict[str, dict], now: int) -> None:
+    """Give each listed player their active groups and rank, as the player rows show them."""
+    for row in listing["rows"]:
+        held = mirror.user_nodes(conn, row["uuid"])
+        row["groups"] = [
+            {"name": nodes.group_of(n["key"]), "contexts": n["contexts"], "expiry": n["expiry"]}
+            for n in held if nodes.group_of(n["key"]) and n["value"] and nodes.active(n, now)
+        ]
+        row["rank"] = mirror.rank_group(groups, held, now)
+
+
 def users(viewer: dict, q: str, group: str | None, page: int) -> dict:
     group = (group or "").strip().lower() or None
     if group is not None and not nodes.GROUP_NAME.match(group):
@@ -218,12 +230,5 @@ def users(viewer: dict, q: str, group: str | None, page: int) -> dict:
             listing = mirror.search_users(conn, q, group, page)
         except mirror.SnapshotError as exc:
             raise AdminError(400, exc.code, "invalid") from None
-        groups = mirror.load_groups(conn)
-        for row in listing["rows"]:
-            held = mirror.user_nodes(conn, row["uuid"])
-            row["groups"] = [
-                {"name": nodes.group_of(n["key"]), "contexts": n["contexts"], "expiry": n["expiry"]}
-                for n in held if nodes.group_of(n["key"]) and n["value"] and nodes.active(n, now)
-            ]
-            row["rank"] = mirror.rank_group(groups, held, now)
+        _add_ranks(conn, listing, mirror.load_groups(conn), now)
     return listing

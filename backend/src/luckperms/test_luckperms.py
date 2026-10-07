@@ -230,6 +230,9 @@ def test_mods_see_everything_but_change_nothing(app, bridge, staff, env):
     assert [r["name"] for r in listing["rows"]] == ["Alice"] and listing["rows"][0]["rank"] == "commoner"
     members = mod.get("/admin/luckperms/players", params={"group": "staff"}).json()
     assert {r["name"] for r in members["rows"]} == {"AdminMC", "RootMC"}
+    staff_detail = mod.get("/admin/luckperms/groups/staff").json()
+    assert {r["name"]: r["rank"] for r in staff_detail["members"]["rows"]} == {"AdminMC": "staff", "RootMC": "staff"}
+    assert all("staff" in {g["name"] for g in r["groups"]} for r in staff_detail["members"]["rows"])
     detail = mod.get("/admin/luckperms/groups/helper").json()["group"]
     assert detail["inherits"] == ["helper_inactive", "helper_player", "commoner", "default"]
     assert detail["tracks"] == ["helper"] and detail["children"] == []
