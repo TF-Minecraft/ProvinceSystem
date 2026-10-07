@@ -115,9 +115,9 @@ def lookup_accounts(request: Request, response: Response, q: str = ""):
 
 
 @admin_router.get("/players")
-def get_players(request: Request, response: Response, q: str = "", sort: str = "last_seen",
+def get_players(request: Request, response: Response, q: str = "", view: str = "activity",
                 page: int = Query(1, ge=1, le=10_000)):
-    return _players(request, response, lambda config, _viewer: players.directory(config, q, sort, page))
+    return _players(request, response, lambda config, _viewer: players.directory(config, q, view, page))
 
 
 @admin_router.get("/players/{player_uuid}")

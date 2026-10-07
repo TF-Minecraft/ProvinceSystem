@@ -42,12 +42,12 @@ def link(db, player_uuid, discord_id, mc_name, discord_name):
         conn.commit()
 
 
-def character(db, player_uuid, name, realm="main"):
+def character(db, player_uuid, name, realm="main", status="alive", character_id=None):
     with db.connect() as conn:
         conn.execute(
             "INSERT INTO character_roster (player_uuid, realm_id, character_id, name, status, race, class, "
-            "updated_at) VALUES (?, ?, ?, ?, 'alive', 'human', 'smith', '2026-09-21T10:00:00Z')",
-            (player_uuid, realm, f"c-{name}", name))
+            "updated_at) VALUES (?, ?, ?, ?, ?, 'human', 'smith', '2026-09-21T10:00:00Z')",
+            (player_uuid, realm, character_id or f"c-{name}", name, status))
         conn.commit()
 
 
@@ -82,38 +82,87 @@ def test_requires_a_staff_role(app, env, world):
     assert client(app, staff(env, "mod")).get("/admin/players").status_code == 200
 
 
+def rows(c, **params):
+    return c.get("/admin/players", params=params).json()["rows"]
+
+
 def test_directory_merges_every_source(app, env, world):
     body = client(app, staff(env)).get("/admin/players").json()
+    assert body["view"] == "activity"
     assert body["coreprotect"] == {"status": "available", "server_label": "Vardera"}
-    by_uuid = {p["uuid"]: p for p in body["players"]}
+    assert body["omitted"] == 0
+    by_uuid = {p["uuid"]: p for p in body["rows"]}
     assert set(by_uuid) == {HAZEL, LINKED_ONLY, ROSTER_ONLY, "33333333-3333-3333-3333-333333333333"}
     assert by_uuid[HAZEL]["minecraft_name"] == "MrEnzo99"
+    assert by_uuid[HAZEL]["aliases"] == ["OldEnzo"]
     assert by_uuid[HAZEL]["discord_username"] == "hazelstone"
     assert by_uuid[HAZEL]["characters"] == ["Hazel Stonebrook"]
     assert by_uuid[HAZEL]["last_seen"] == 200
     assert by_uuid[LINKED_ONLY]["minecraft_name"] == "LinkedOnly"
     assert by_uuid[ROSTER_ONLY]["minecraft_name"] is None
     # Last seen first, never-seen last.
-    assert [p["uuid"] for p in body["players"]][:2] == [HAZEL, "33333333-3333-3333-3333-333333333333"]
+    assert [p["uuid"] for p in body["rows"]][:2] == [HAZEL, "33333333-3333-3333-3333-333333333333"]
+
+
+def test_directory_lists_only_this_servers_characters(app, env, world):
+    character(env, HAZEL, "Tutorial Hazel", realm="tutorial")
+    character(env, "44444444-4444-4444-4444-444444444444", "Only On Tutorial", realm="tutorial")
+    c = client(app, staff(env))
+    by_uuid = {p["uuid"]: p for p in rows(c)}
+    assert by_uuid[HAZEL]["characters"] == ["Hazel Stonebrook"]
+    assert "44444444-4444-4444-4444-444444444444" not in by_uuid
+    assert [r["character"]["name"] for r in rows(c, view="character")] == ["Aldric", "Hazel Stonebrook"]
+    assert rows(c, q="tutorial") == []
 
 
 @pytest.mark.parametrize("query", ["oldenzo", "HAZELSTONE", "@hazelstone", "stonebrook", HAZEL,
                                    HAZEL.replace("-", ""), "422545450919526411"])
 def test_directory_search(app, env, world, query):
-    body = client(app, staff(env)).get("/admin/players", params={"q": query}).json()
-    assert [p["uuid"] for p in body["players"]] == [HAZEL]
+    for view in ("activity", "discord", "minecraft"):
+        body = client(app, staff(env)).get("/admin/players", params={"q": query, "view": view}).json()
+        assert [p["uuid"] for p in body["rows"]] == [HAZEL]
 
 
-def test_directory_sorts(app, env, world):
+def test_directory_views(app, env, world):
     c = client(app, staff(env))
-    by_mc = [p["minecraft_name"] for p in c.get("/admin/players", params={"sort": "minecraft"}).json()["players"]]
-    assert by_mc == ["LinkedOnly", "MrEnzo99", "Quiet", None]
-    by_discord = [p["discord_username"] for p in c.get("/admin/players", params={"sort": "discord"}).json()["players"]]
-    assert by_discord[:2] == ["hazelstone", "linky"]
-    by_character = [p["characters"] for p in c.get("/admin/players", params={"sort": "character"}).json()["players"]]
-    assert by_character[:2] == [["Aldric"], ["Hazel Stonebrook"]] and by_character[2:] == [[], []]
-    assert c.get("/admin/players", params={"sort": "bogus"}).status_code == 400
+    assert [p["minecraft_name"] for p in rows(c, view="minecraft")] == ["LinkedOnly", "MrEnzo99", "Quiet", None]
+    # Linked players only; the rest are counted.
+    body = c.get("/admin/players", params={"view": "discord"}).json()
+    assert [p["discord_username"] for p in body["rows"]] == ["hazelstone", "linky"]
+    assert (body["total"], body["omitted"]) == (2, 2)
+    body = c.get("/admin/players", params={"view": "character"}).json()
+    assert [(r["character"]["name"], r["player"]["uuid"]) for r in body["rows"]] == [
+        ("Aldric", ROSTER_ONLY), ("Hazel Stonebrook", HAZEL)]
+    assert body["rows"][0]["character"] == {
+        "character_id": "c-Aldric", "name": "Aldric", "status": "alive", "race": "human", "class": "smith"}
+    assert (body["total"], body["omitted"]) == (2, 2)
+    assert c.get("/admin/players", params={"view": "bogus"}).status_code == 400
     assert c.get("/admin/players", params={"q": "x" * 65}).status_code == 400
+
+
+def test_character_view_has_a_row_per_character(app, env, world):
+    character(env, HAZEL, "Bramble", status="DEAD")
+    character(env, HAZEL, "Aldric", character_id="c-other-aldric")
+    c = client(app, staff(env))
+    found = rows(c, view="character")
+    # Same-named characters stay apart, in a stable order.
+    assert [(r["character"]["name"], r["player"]["uuid"]) for r in found] == [
+        ("Aldric", HAZEL), ("Aldric", ROSTER_ONLY), ("Bramble", HAZEL), ("Hazel Stonebrook", HAZEL)]
+    assert found[2]["character"]["status"] == "dead"
+    # Searching a character finds that character, not their siblings; searching the player finds all of theirs.
+    assert [r["character"]["name"] for r in rows(c, view="character", q="bramble")] == ["Bramble"]
+    assert len(rows(c, view="character", q="hazelstone")) == 3
+    body = c.get("/admin/players", params={"view": "character", "q": "quiet"}).json()
+    assert (body["rows"], body["omitted"]) == ([], 1)
+
+
+def test_directory_pages_each_view(app, env, world, monkeypatch):
+    monkeypatch.setattr(players, "PAGE_SIZE", 1)
+    c = client(app, staff(env))
+    second = c.get("/admin/players", params={"view": "character", "page": 2}).json()
+    assert [r["character"]["name"] for r in second["rows"]] == ["Hazel Stonebrook"]
+    assert (second["total"], second["page"]) == (2, 2)
+    assert c.get("/admin/players", params={"view": "character", "page": 3}).json()["rows"] == []
 
 
 def test_directory_without_coreprotect(app, env, world, monkeypatch):
@@ -121,7 +170,7 @@ def test_directory_without_coreprotect(app, env, world, monkeypatch):
     body = client(app, staff(env)).get("/admin/players").json()
     assert body["coreprotect"]["status"] == "unavailable"
     assert body["coreprotect"]["reason"] == "missing"
-    assert {p["uuid"] for p in body["players"]} == {HAZEL, LINKED_ONLY, ROSTER_ONLY}
+    assert {p["uuid"] for p in body["rows"]} == {HAZEL, LINKED_ONLY, ROSTER_ONLY}
 
 
 def test_profile(app, env, world):

@@ -25,7 +25,7 @@ from . import audit, discord_names, roles, users
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
 QUERY_MAX = 64
-SORTS = ("last_seen", "minecraft", "discord", "character")
+VIEWS = ("activity", "discord", "minecraft", "character")
 
 _DIRECTORY_LOCK = threading.Lock()
 _DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
@@ -172,8 +172,17 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         )
     for character in roster:
         key = canonical_uuid(character["player_uuid"])
-        if key is not None and character["name"]:
-            person(key)["characters"].append(character["name"])
+        # Only this server's characters: the site's CoreProtect server name is also its realm id,
+        # and other realms' characters (the tutorial server's) would sit beside activity from here.
+        if key is None or not character["name"] or character["realm_id"] != config.server:
+            continue
+        person(key)["characters"].append({
+            "character_id": character["character_id"],
+            "name": character["name"],
+            "status": (character["status"] or "").lower() or None,
+            "race": character["race"],
+            "class": character["class"],
+        })
     return list(people.values()), _status(error)
 
 
@@ -198,59 +207,96 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         _DIRECTORY_LOCK.release()
 
 
-def _matches(entry: dict, needle: str) -> bool:
+def _player_matches(entry: dict, needle: str) -> bool:
+    """The player themselves: UUID, Discord ID, any Minecraft name they have used, their Discord names."""
     if needle in {entry["uuid"], entry["uuid"].replace("-", ""), (entry["discord_user_id"] or "")}:
         return True
-    haystack = [*entry["names"], entry["discord_username"], entry["discord_nickname"], entry["discord_global_name"],
-                *entry["characters"]]
+    haystack = [*entry["names"], entry["discord_username"], entry["discord_nickname"], entry["discord_global_name"]]
     return any(needle in value.casefold() for value in haystack if value)
 
 
-def _sort_key(sort: str):
-    if sort == "minecraft":
-        return lambda e: (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
-    if sort == "discord":
-        # By handle, else server nickname (links older than handles may have only the nickname).
-        return lambda e: (
-            not (e["discord_username"] or e["discord_nickname"]),
-            (e["discord_username"] or e["discord_nickname"] or "").casefold(),
-            e["uuid"],
-        )
-    if sort == "character":
-        # By the first of their characters alphabetically; players without one last.
-        return lambda e: (not e["characters"], min((c.casefold() for c in e["characters"]), default=""), e["uuid"])
-    return lambda e: (e["last_seen"] is None, -(e["last_seen"] or 0), (e["minecraft_name"] or "").casefold())
+def _character_matches(character: dict, needle: str) -> bool:
+    return needle in character["name"].casefold()
 
 
-def _directory_json(entry: dict) -> dict:
+def _last_seen_key(e: dict):
+    return (e["last_seen"] is None, -(e["last_seen"] or 0), (e["minecraft_name"] or "").casefold(), e["uuid"])
+
+
+def _minecraft_key(e: dict):
+    return (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
+
+
+def _discord_key(e: dict):
+    # By handle, else server nickname (links older than handles may have only the nickname).
+    name = e["discord_username"] or e["discord_nickname"]
+    return (not name, (name or "").casefold(), e["uuid"])
+
+
+def _player_json(entry: dict) -> dict:
+    current = (entry["minecraft_name"] or "").casefold()
     return {
         "uuid": entry["uuid"],
         "minecraft_name": entry["minecraft_name"],
+        # Other names this account has gone by; CoreProtect's log gives no reliable order.
+        "aliases": sorted((n for n in entry["names"] if n.casefold() != current), key=str.casefold),
         "discord_user_id": entry["discord_user_id"],
         "discord_username": entry["discord_username"],
         "discord_nickname": entry["discord_nickname"],
         "site_role": entry["site_role"],
-        "characters": entry["characters"],
+        "characters": [c["name"] for c in entry["characters"]],
         "last_seen": entry["last_seen"],
         "online": entry["online"],
     }
 
 
-def directory(config: CoreProtectConfig, query: str = "", sort: str = "last_seen", page: int = 1) -> dict:
-    if sort not in SORTS:
-        raise PlayerError(400, "bad_sort")
+def _rows(view: str, entries: list[dict], needle: str) -> tuple[list[tuple[dict, dict | None]], int]:
+    """The view's rows, as (player, character) pairs in order, and how many matching players it leaves out."""
+    if view == "character":
+        # One row per character. A search for a character finds that character, not their siblings;
+        # a search for the player finds all of theirs.
+        rows = []
+        omitted = 0
+        for entry in entries:
+            whole = not needle or _player_matches(entry, needle)
+            if not entry["characters"]:
+                omitted += whole
+                continue
+            rows += [(entry, c) for c in entry["characters"] if whole or _character_matches(c, needle)]
+        rows.sort(key=lambda r: (r[1]["name"].casefold(), r[1]["name"], r[0]["uuid"], r[1]["character_id"]))
+        return rows, omitted
+    chosen = [e for e in entries if not needle or _player_matches(e, needle)
+              or any(_character_matches(c, needle) for c in e["characters"])]
+    if view == "discord":
+        linked = [e for e in chosen if e["discord_user_id"]]
+        return [(e, None) for e in sorted(linked, key=_discord_key)], len(chosen) - len(linked)
+    key = _minecraft_key if view == "minecraft" else _last_seen_key
+    return [(e, None) for e in sorted(chosen, key=key)], 0
+
+
+def _row_json(player: dict, character: dict | None) -> dict:
+    if character is None:
+        return _player_json(player)
+    return {"character": dict(character), "player": _player_json(player)}
+
+
+def directory(config: CoreProtectConfig, query: str = "", view: str = "activity", page: int = 1) -> dict:
+    if view not in VIEWS:
+        raise PlayerError(400, "bad_view")
     text = " ".join((query or "").split()).lstrip("@")
     if len(text) > QUERY_MAX:
         raise PlayerError(400, "query_too_long")
     entries, status = _directory(config)
-    needle = text.casefold()
-    chosen = [e for e in entries if _matches(e, needle)] if needle else list(entries)
-    chosen.sort(key=_sort_key(sort))
+    rows, omitted = _rows(view, entries, text.casefold())
     page = max(1, page)
     start = (page - 1) * PAGE_SIZE
     return {
-        "players": [_directory_json(e) for e in chosen[start:start + PAGE_SIZE]],
-        "total": len(chosen),
+        "view": view,
+        "rows": [_row_json(*row) for row in rows[start:start + PAGE_SIZE]],
+        "total": len(rows),
+        # Matching players with no row here: unlinked ones in the Discord view, those without
+        # a character in the Character view.
+        "omitted": omitted,
         "page": page,
         "page_size": PAGE_SIZE,
         "coreprotect": {**status, "server_label": config.label or None},

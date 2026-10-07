@@ -62,7 +62,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
-  bad_sort: "That sort order isn’t available.",
+  bad_view: "That view isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
   audit_unavailable: "This can’t be shown because the view couldn’t be logged. Try again.",
@@ -123,10 +123,15 @@ export function revokeSessions(userId: number, reason: string): Promise<unknown>
 
 export type CoreProtectStatus = { status: "available"; reason?: undefined } | { status: "unavailable"; reason: string };
 
-export type PlayerSort = "last_seen" | "minecraft" | "discord" | "character";
+export type PlayerView = "activity" | "discord" | "minecraft" | "character";
 
-export function parsePlayerSort(value: string | undefined): PlayerSort {
-  return value === "minecraft" || value === "discord" || value === "character" ? value : "last_seen";
+/** The view in a page link; links from before the views (`?sort=`) still land on the matching one. */
+export function parsePlayerView(view: string | undefined, legacySort?: string): PlayerView {
+  for (const value of [view, legacySort]) {
+    if (value === "activity" || value === "discord" || value === "minecraft" || value === "character") return value;
+    if (value === "last_seen") return "activity";
+  }
+  return "activity";
 }
 
 export type PlayerSummary = {
@@ -138,18 +143,37 @@ export type PlayerSummary = {
   /** Their nickname in the TFMC Discord server, if they have one. */
   discord_nickname: string | null;
   site_role: StaffRole | null;
+  /** Other Minecraft names this account has gone by, in no particular order. */
+  aliases: string[];
+  /** Their characters on this server. */
   characters: string[];
   last_seen: number | null;
   online: boolean;
 };
 
-export type PlayerDirectory = {
-  players: PlayerSummary[];
+export type DirectoryCharacter = {
+  character_id: string;
+  name: string;
+  status: string | null;
+  race: string | null;
+  class: string | null;
+};
+
+export type CharacterRow = { character: DirectoryCharacter; player: PlayerSummary };
+
+type DirectoryPage = {
   total: number;
+  /** Players matching the search with no row in this view: unlinked (Discord), or without a character. */
+  omitted: number;
   page: number;
   page_size: number;
   coreprotect: CoreProtectStatus & { server_label: string | null };
 };
+
+export type PlayerDirectory = DirectoryPage & (
+  | { view: "activity" | "discord" | "minecraft"; rows: PlayerSummary[] }
+  | { view: "character"; rows: CharacterRow[] }
+);
 
 export type PlayerProfile = {
   uuid: string;
@@ -258,8 +282,8 @@ function query(params: Record<string, string | number | null | undefined>): stri
   return text ? `?${text}` : "";
 }
 
-export function getPlayers(params: { q?: string; sort?: PlayerSort; page?: number }): Promise<PlayerDirectory> {
-  return adminRequest(`/admin/players${query({ q: params.q?.trim(), sort: params.sort, page: params.page })}`);
+export function getPlayers(params: { q?: string; view?: PlayerView; page?: number }): Promise<PlayerDirectory> {
+  return adminRequest(`/admin/players${query({ q: params.q?.trim(), view: params.view, page: params.page })}`);
 }
 
 export function getPlayer(uuid: string): Promise<PlayerProfile> {
