@@ -240,25 +240,14 @@ it("pages through results", async () => {
   expect(window.location.search).toBe("?view=discord&page=2");
 });
 
-it("tidies an old link's address", async () => {
-  window.history.replaceState(null, "", "/admin/players?sort=discord");
-  serve({});
-  renderDirectory(parsePlayerListing(undefined, "discord"));
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ view: "discord" })));
-  expect(window.location.search).toBe("?view=discord");
-});
-
 it("maps page links to a view and order", () => {
   const listing = (view: PlayerView, sort: string, order: string) => ({ view, sort, order });
   expect(parsePlayerListing()).toEqual(listing("minecraft", "name", "asc"));
-  expect(parsePlayerListing("character", "minecraft")).toEqual(listing("character", "name", "asc"));
+  expect(parsePlayerListing("character")).toEqual(listing("character", "name", "asc"));
+  expect(parsePlayerListing("discord", "last_seen")).toEqual(listing("discord", "last_seen", "desc"));
   expect(parsePlayerListing("discord", "last_seen", "asc")).toEqual(listing("discord", "last_seen", "asc"));
   expect(parsePlayerListing(undefined, "name", "desc")).toEqual(listing("minecraft", "name", "desc"));
-  // The old Activity view, and the sort from before the views.
-  expect(parsePlayerListing("activity")).toEqual(listing("minecraft", "last_seen", "desc"));
-  expect(parsePlayerListing(undefined, "last_seen")).toEqual(listing("minecraft", "last_seen", "desc"));
-  expect(parsePlayerListing(undefined, "character")).toEqual(listing("character", "name", "asc"));
-  expect(parsePlayerListing("bogus", "bogus", "bogus")).toEqual(listing("minecraft", "name", "asc"));
+  expect(parsePlayerListing("activity", "bogus", "bogus")).toEqual(listing("minecraft", "name", "asc"));
 });
 
 it("says when CoreProtect cannot be read, and that last seen is unknown", async () => {

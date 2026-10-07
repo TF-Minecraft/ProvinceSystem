@@ -136,15 +136,10 @@ export function defaultOrder(sort: PlayerSort): SortOrder {
   return sort === "last_seen" ? "desc" : "asc";
 }
 
-/**
- * The view and order in a page link. Older links still land somewhere sensible: `?view=activity` and
- * `?sort=last_seen` (before the views) open the Minecraft list by last seen, and `?sort=<view>` opens that view.
- */
+/** The view and order in a page link; anything unknown falls back to the default. */
 export function parsePlayerListing(view?: string, sort?: string, order?: string): PlayerListing {
-  const isView = (v?: string): v is PlayerView => v === "minecraft" || v === "discord" || v === "character";
-  const byLastSeen = view === "activity" || sort === "last_seen";
-  const chosenView = isView(view) ? view : isView(sort) ? sort : "minecraft";
-  const chosenSort: PlayerSort = byLastSeen ? "last_seen" : "name";
+  const chosenView: PlayerView = view === "discord" || view === "character" ? view : "minecraft";
+  const chosenSort: PlayerSort = sort === "last_seen" ? "last_seen" : "name";
   const chosenOrder = order === "asc" || order === "desc" ? order : defaultOrder(chosenSort);
   return { view: chosenView, sort: chosenSort, order: chosenOrder };
 }
