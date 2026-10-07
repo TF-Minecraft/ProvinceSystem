@@ -30,6 +30,17 @@ const FADE_MS = 160;
  * two, as a timer can fire just before the transition's last frame.
  */
 const SHOWN_MS = FADE_MS + 40;
+/**
+ * How far, in screen pixels, an opaque tile reaches under its right and
+ * bottom neighbours at rest; twice that mid-zoom (see `.map-tile` in
+ * globals.css).
+ */
+const TILE_OVERLAP_PX = 1;
+/**
+ * How far, in screen pixels, the backdrop runs on under the edge of opaque
+ * sharp tiles (see the backdrop's clip path below).
+ */
+const BACKDROP_UNDERLAP_PX = 8;
 
 type TileLayerProps = {
   manifest: TileManifest;
@@ -43,6 +54,11 @@ type TileLayerProps = {
   onReady?: () => void;
   /** A tile failed to load, typically because its pyramid was replaced. */
   onTileError?: () => void;
+  /**
+   * A see-through raster: its tiles never overlap, where the strips under a
+   * neighbour would show twice as deep.
+   */
+  seeThrough?: boolean;
 };
 
 /**
@@ -67,6 +83,7 @@ function TileLayer({
   style,
   onReady,
   onTileError,
+  seeThrough = false,
 }: TileLayerProps) {
   const dpr = tilePixelRatio();
   const level = pickTileLevel(manifest, view.displayScale, dpr);
@@ -205,7 +222,11 @@ function TileLayer({
   // pixel ratio (Windows at 125 %, say) Chrome painted a box placed by
   // left/top up to a quarter pixel off its snapped edge, so the first column
   // and row of every tile let the page through and the map showed a grid of
-  // dark lines. A translate keeps the exact position.
+  // dark lines. A translate keeps the exact position. The size still goes
+  // through `zoom` and can end a hair short of the pixel, and mid-zoom the
+  // edges land between pixels anyway; Chrome lets about a quarter of such a
+  // pixel through. So opaque tiles also reach a little under their right and
+  // bottom neighbours, which are drawn after them (on top).
   const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
   const snap = (value: number) =>
@@ -224,6 +245,8 @@ function TileLayer({
     const loaded = loadedRef.current.has(loadedKey(tile));
     const left = snap(tile.left);
     const top = snap(tile.top);
+    const width = snap(tile.left + tile.width) - left;
+    const height = snap(tile.top + tile.height) - top;
     return (
       <img
         key={loadedKey(tile)}
@@ -239,11 +262,17 @@ function TileLayer({
         decoding="sync"
         onLoad={(event) => handleLoad(event.currentTarget, loadedKey(tile))}
         onError={reportTileError}
-        className="absolute left-0 top-0 max-w-none select-none"
+        className={`absolute left-0 top-0 max-w-none select-none ${seeThrough ? "" : "map-tile"}`}
         style={{
-          transform: `translate(${left}px, ${top}px)`,
-          width: snap(tile.left + tile.width) - left,
-          height: snap(tile.top + tile.height) - top,
+          translate: `${left}px ${top}px`,
+          transformOrigin: "0 0",
+          // The overlap as a fraction of the tile's size on screen at rest.
+          ...({
+            "--tile-ox": TILE_OVERLAP_PX / (width * view.displayScale),
+            "--tile-oy": TILE_OVERLAP_PX / (height * view.displayScale),
+          } as CSSProperties),
+          width,
+          height,
           opacity: !fadeIn || loaded ? 1 : 0,
           visibility: hidden ? "hidden" : undefined,
           transition: fadeIn ? `opacity ${FADE_MS}ms ease-out` : undefined,
@@ -267,8 +296,19 @@ function TileLayer({
           // fast pan scales and moves this layer without a render, and a
           // hidden backdrop left only the tiles that were on screen, a small
           // island of map on black until the gesture settled.
+          // Under opaque tiles it runs on a little past their edge: mid-zoom
+          // the edge lands between pixels, the backdrop and the sharp tiles
+          // each half-covered that pixel, and the page showed through along
+          // the sharp tiles' left and top.
           clipPath: currentShown
-            ? backdropClipPath(manifest.width, manifest.height, coverage(currentTiles, snap))
+            ? backdropClipPath(
+                manifest.width,
+                manifest.height,
+                inset(
+                  coverage(currentTiles, snap),
+                  seeThrough ? 0 : BACKDROP_UNDERLAP_PX / view.displayScale
+                )
+              )
             : undefined,
         }}
       >
@@ -292,6 +332,13 @@ function coverage(tiles: PlacedTile[], snap: (value: number) => number): Rect {
     right: snap(Math.max(...tiles.map((tile) => tile.left + tile.width))),
     bottom: snap(Math.max(...tiles.map((tile) => tile.top + tile.height))),
   };
+}
+
+/** `rect` shrunk by `by` on every side, never past its middle. */
+function inset(rect: Rect, by: number): Rect {
+  const x = Math.min(by, (rect.right - rect.left) / 2);
+  const y = Math.min(by, (rect.bottom - rect.top) / 2);
+  return { left: rect.left + x, top: rect.top + y, right: rect.right - x, bottom: rect.bottom - y };
 }
 
 export default memo(TileLayer);

@@ -424,6 +424,21 @@ html.map-fullscreen textarea {
     overflow: hidden;
   }
 
+  /* A tile's edge can land a hair off a pixel boundary, and mid-zoom (the
+   * map scaled past its resting size) between pixels; Chrome then lets
+   * about a quarter of that pixel through and the page shows as a grid of
+   * dark lines. So an opaque tile reaches TILE_OVERLAP_PX (TileLayer) under
+   * its right and bottom neighbours, and twice that mid-zoom, divided by
+   * the live scale to stay that size on screen. */
+  .map-tile {
+    scale: calc(1 + var(--tile-ox)) calc(1 + var(--tile-oy));
+  }
+
+  [data-scaling] .map-tile {
+    scale: calc(1 + 2 * var(--tile-ox) / var(--map-live-scale))
+      calc(1 + 2 * var(--tile-oy) / var(--map-live-scale));
+  }
+
   /* An in-text link to another realm or place. */
   .map-link {
     color: var(--tfmc-cream);

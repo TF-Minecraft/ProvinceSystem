@@ -182,12 +182,14 @@ describe("TileLayer", () => {
     fadeIn();
 
     // A gesture scales the layer without a render: past the sharp tiles the
-    // backdrop must still be there, and only there. It is clipped, not
-    // remounted: a new <img> paints nothing on iOS until it has decoded.
+    // backdrop must still be there, and (but for 8 px under their edge, see
+    // the next test) only there. It is clipped, not remounted: a new <img>
+    // paints nothing on iOS until it has decoded.
     expect(sameBackdrop()).toBe(true);
     expect(clip()).toBe(
       "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
-        "0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%, 0% 0%)"
+        "0.390625% 0.390625%, 0.390625% 24.609375%, 24.609375% 24.609375%, " +
+        "24.609375% 0.390625%, 0.390625% 0.390625%, 0% 0%)"
     );
 
     // Zooming out to the backdrop level holds the sharp tiles until it has
@@ -303,5 +305,52 @@ describe("TileLayer", () => {
     expect(clip()).toBe("");
     advance(100);
     expect(clip()).not.toBe("");
+  });
+
+  it("overlaps opaque tiles, and leaves see-through ones exactly edge to edge", () => {
+    vi.useFakeTimers();
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 2048,
+      height: 2048,
+      tile_size: 256,
+      max_level: 1,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+      ],
+    };
+    const zoomedIn: TileView = {
+      displayScale: 1,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 200,
+      viewportH: 200,
+    };
+    const layer = (seeThrough: boolean) => {
+      const { container } = render(
+        <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} seeThrough={seeThrough} />
+      );
+      loadAll(container);
+      fadeIn();
+      const sharp = container.querySelector<HTMLImageElement>('img[src="/t/1/0/0.webp"]')!;
+      const backdrop = container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!;
+      return { sharp, clip: backdrop.parentElement!.style.clipPath };
+    };
+
+    // An opaque tile reaches one screen pixel (here 1/256 of itself) under
+    // its neighbours, and the backdrop runs on 8 px under the sharp tiles:
+    // where two edges meet off a pixel boundary the page would show through.
+    const opaque = layer(false);
+    expect(opaque.sharp.classList.contains("map-tile")).toBe(true);
+    expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe(String(1 / 256));
+    expect(opaque.clip).toContain("0.390625% 0.390625%, 0.390625% 24.609375%");
+    cleanup();
+
+    // A see-through tile stacked on another would show twice as deep.
+    const seeThrough = layer(true);
+    expect(seeThrough.sharp.classList.contains("map-tile")).toBe(false);
+    expect(seeThrough.clip).toContain("0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%");
   });
 });
