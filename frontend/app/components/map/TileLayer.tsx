@@ -201,6 +201,11 @@ function TileLayer({
 
   // Snap tile edges to whole screen pixels so neighbours meet without gaps
   // or overlaps, which would darken see-through rasters such as prosperity.
+  // The position goes in a transform, not left/top: at a fractional device
+  // pixel ratio (Windows at 125 %, say) Chrome painted a box placed by
+  // left/top up to a quarter pixel off its snapped edge, so the first column
+  // and row of every tile let the page through and the map showed a grid of
+  // dark lines. A translate keeps the exact position.
   const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
   const snap = (value: number) =>
@@ -234,10 +239,9 @@ function TileLayer({
         decoding="sync"
         onLoad={(event) => handleLoad(event.currentTarget, loadedKey(tile))}
         onError={reportTileError}
-        className="absolute max-w-none select-none"
+        className="absolute left-0 top-0 max-w-none select-none"
         style={{
-          left,
-          top,
+          transform: `translate(${left}px, ${top}px)`,
           width: snap(tile.left + tile.width) - left,
           height: snap(tile.top + tile.height) - top,
           opacity: !fadeIn || loaded ? 1 : 0,
