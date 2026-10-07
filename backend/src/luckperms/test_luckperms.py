@@ -467,3 +467,13 @@ def test_unanswered_definition_change_holds_others_until_a_snapshot(app, bridge,
     monkeypatch.setattr(mirror, "_iso", lambda ts=None: changes._iso(later + 1))
     bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=9000))
     assert [c["target"] for c in changes.fetch_for_bridge()] == [ALICE]
+
+
+def test_a_bad_result_state_leaves_the_mirror_alone(app, bridge, staff, env):
+    change = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}]).json()
+    changes.fetch_for_bridge()
+    wrong = {"uuid": BOB, "name": "Bob", "nodes": []}
+    changes.record_results([{"id": change["id"], "ok": True, "revision": 7000, "state": wrong}])
+    with env.connect() as conn:
+        assert mirror.user_row(conn, ALICE) is not None
+        assert conn.execute("SELECT hash FROM lp_state").fetchone()["hash"] is None

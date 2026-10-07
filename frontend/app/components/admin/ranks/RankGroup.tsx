@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AccountApiError } from "../../../../lib/account/api";
-import { adminErrorMessage } from "../../../../lib/admin/api";
 import {
   contextLabel,
   expiryLabel,
   getLpGroup,
   getLpPlayers,
+  lpRequestMessage,
   STATUS_LABELS,
   type LpGroupDetail,
   type LpNode,
@@ -49,7 +49,7 @@ export default function RankGroup({ name }: { name: string }) {
       setMembers(data.members);
     } catch (err) {
       const status = err instanceof AccountApiError ? err.status : 0;
-      setLoad(status === 400 || status === 404 ? { kind: "failed", message: adminErrorMessage(err) } : { kind: gateKind(err) });
+      setLoad(status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) });
     }
   }, [name]);
 
@@ -61,7 +61,7 @@ export default function RankGroup({ name }: { name: string }) {
   if (load.kind === "failed") {
     return (
       <p className="mt-6 text-[var(--tfmc-mist)]" role="alert">
-        {load.message === "group_missing" ? "That group doesn’t exist." : load.message}
+        {load.message}
       </p>
     );
   }
@@ -225,6 +225,8 @@ function SettingsForm({
   const [weight, setWeight] = useState(currentWeight);
   const [prefix, setPrefix] = useState(currentPrefix);
   const [priority, setPriority] = useState(currentPriority || currentWeight || "0");
+  // A priority on its own is not a change: it only counts with a prefix.
+  const prefixChanged = prefix !== currentPrefix || (Boolean(prefix) && priority !== currentPriority);
 
   function save() {
     const ops: LpOp[] = [];
@@ -232,7 +234,7 @@ function SettingsForm({
       if (weightNode) ops.push({ op: "remove_node", node: plain(weightNode) });
       if (weight) ops.push({ op: "add_node", node: { key: `weight.${weight}` } });
     }
-    if (prefix !== currentPrefix || priority !== currentPriority) {
+    if (prefixChanged) {
       if (prefixNode) ops.push({ op: "remove_node", node: plain(prefixNode) });
       if (prefix) ops.push({ op: "add_node", node: { key: `prefix.${priority || "0"}.${prefix}` } });
     }
@@ -242,7 +244,7 @@ function SettingsForm({
       summary: (
         <>
           {weight !== currentWeight ? <>Weight {currentWeight || "none"} → {weight || "none"}. </> : null}
-          {prefix !== currentPrefix || priority !== currentPriority ? (
+          {prefixChanged ? (
             <>
               Prefix {currentPrefix ? <McText text={currentPrefix} /> : "none"} → {prefix ? <McText text={prefix} /> : "none"}
               {prefix ? ` (priority ${priority || 0})` : ""}.
@@ -274,7 +276,7 @@ function SettingsForm({
           Preview <McText text={prefix} />
         </span>
       ) : null}
-      <button type="button" className={buttonClass} onClick={save} disabled={weight === currentWeight && prefix === currentPrefix && priority === currentPriority}>
+      <button type="button" className={buttonClass} onClick={save} disabled={weight === currentWeight && !prefixChanged}>
         Save
       </button>
     </div>

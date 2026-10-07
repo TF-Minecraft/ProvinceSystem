@@ -1,4 +1,5 @@
-import { adminRequest } from "./api";
+import { AccountApiError } from "../account/api";
+import { adminErrorMessage, adminRequest } from "./api";
 import type { StaffRole } from "./api";
 
 /** A LuckPerms node. Contexts are {} when global; expiry is Unix seconds, 0 when permanent. */
@@ -226,6 +227,12 @@ export const LP_ERRORS: Record<string, string> = {
   no_longer_allowed: "Cancelled: it was no longer allowed when the server picked it up (rights or groups changed).",
   expired: "The server didn’t pick it up in time.",
 };
+
+/** A failed request in words: LuckPerms codes first, then the staff panel's own. */
+export function lpRequestMessage(err: unknown): string {
+  if (err instanceof AccountApiError && err.message in LP_ERRORS) return LP_ERRORS[err.message];
+  return adminErrorMessage(err);
+}
 
 export function lpErrorMessage(code: string | null | undefined): string {
   if (!code) return "Something went wrong.";

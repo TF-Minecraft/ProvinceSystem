@@ -1,11 +1,9 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
-import { AccountApiError } from "../../../../lib/account/api";
-import { adminErrorMessage } from "../../../../lib/admin/api";
 import {
-  LP_ERRORS,
   lpErrorMessage,
+  lpRequestMessage,
   STATUS_LABELS,
   submitLpChange,
   waitForChange,
@@ -58,7 +56,7 @@ export default function ChangeConfirm({
       setChange(settled);
       if (settled.status === "applied") onDone(settled);
     } catch (err) {
-      setError(err instanceof AccountApiError && err.message in LP_ERRORS ? LP_ERRORS[err.message] : adminErrorMessage(err));
+      setError(lpRequestMessage(err));
     } finally {
       setBusy(false);
     }

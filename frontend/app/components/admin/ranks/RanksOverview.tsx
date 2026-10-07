@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { adminErrorMessage } from "../../../../lib/admin/api";
 import {
   getLpPlayers,
@@ -56,20 +56,27 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
   const [page, setPage] = useState<LpPlayerPage | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The search the shown results belong to, for paging; and the newest request, so older answers drop.
+  const [searched, setSearched] = useState("");
+  const latest = useRef(0);
 
   const search = useCallback(async (text: string, pageNumber = 1) => {
     if (!text.trim()) return;
+    const request = ++latest.current;
     setBusy(true);
     setError(null);
     try {
-      setPage(await getLpPlayers({ q: text, page: pageNumber }));
+      const result = await getLpPlayers({ q: text, page: pageNumber });
+      if (request !== latest.current) return;
+      setPage(result);
+      setSearched(text);
       const url = new URL(window.location.href);
       url.searchParams.set("q", text.trim());
       window.history.replaceState(null, "", url);
     } catch (err) {
-      setError(adminErrorMessage(err));
+      if (request === latest.current) setError(adminErrorMessage(err));
     } finally {
-      setBusy(false);
+      if (request === latest.current) setBusy(false);
     }
   }, []);
 
@@ -110,7 +117,7 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
           {error}
         </p>
       ) : null}
-      {page ? <PlayerResults page={page} onPage={(n) => void search(query, n)} /> : null}
+      {page ? <PlayerResults page={page} onPage={(n) => void search(searched, n)} /> : null}
     </section>
   );
 }

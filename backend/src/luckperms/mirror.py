@@ -187,20 +187,25 @@ def apply_state(conn, target_type: str, target: str, state, revision) -> None:
     revision = _revision(revision)
     if not _newer(conn, revision):
         return
+    # Parse and match before deleting anything, so a bad state leaves the mirror alone.
+    if state is not None and not isinstance(state, dict):
+        raise SnapshotError("bad_snapshot")
     if target_type == "user":
+        parsed = _user(state) if state is not None else None
+        if parsed is not None and parsed[0]["uuid"] != target:
+            raise SnapshotError("bad_snapshot")
         conn.execute("DELETE FROM lp_user_nodes WHERE uuid = ?", (target,))
         conn.execute("DELETE FROM lp_users WHERE uuid = ?", (target,))
-        if isinstance(state, dict):
-            user, user_nodes = _user(state)
-            if user["uuid"] == target:
-                _insert_user(conn, user, user_nodes)
-    elif target_type == "group":
+        if parsed is not None:
+            _insert_user(conn, *parsed)
+    else:
+        parsed = _group(state) if state is not None else None
+        if parsed is not None and parsed[0]["name"] != target:
+            raise SnapshotError("bad_snapshot")
         conn.execute("DELETE FROM lp_group_nodes WHERE group_name = ?", (target,))
         conn.execute("DELETE FROM lp_groups WHERE name = ?", (target,))
-        if isinstance(state, dict):
-            group, group_nodes = _group(state)
-            if group["name"] == target:
-                _insert_group(conn, group, group_nodes)
+        if parsed is not None:
+            _insert_group(conn, *parsed)
     conn.execute("UPDATE lp_state SET hash = NULL, revision = ? WHERE id = 1", (revision,))
 
 

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AccountApiError } from "../../../../lib/account/api";
-import { adminErrorMessage, roleLabel } from "../../../../lib/admin/api";
+import { roleLabel } from "../../../../lib/admin/api";
 import {
   contextLabel,
   DURATIONS,
   expiryLabel,
   getLpPlayer,
+  lpRequestMessage,
   STATUS_LABELS,
   type LpNode,
   type LpOp,
@@ -39,7 +40,7 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
       setLoad({ kind: "ready", data: await getLpPlayer(uuid) });
     } catch (err) {
       const status = err instanceof AccountApiError ? err.status : 0;
-      setLoad(status === 400 || status === 404 ? { kind: "failed", message: adminErrorMessage(err) } : { kind: gateKind(err) });
+      setLoad(status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) });
     }
   }, [uuid]);
 
