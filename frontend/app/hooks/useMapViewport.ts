@@ -252,7 +252,6 @@ export function useMapViewport({
     }
     if (!liveActiveRef.current) return;
     liveActiveRef.current = false;
-    contentRef.current?.removeAttribute("data-gesturing");
     setTransform(transformRef.current);
   }, []);
 
@@ -275,9 +274,7 @@ export function useMapViewport({
       );
       // No `will-change` here: on a 6400 px layer it makes the browser
       // rasterise one enormous texture, which measured slower than letting it
-      // re-tile. `data-gesturing` lets costly effects (the selection's
-      // outline filter) stand down until the map settles.
-      content.setAttribute("data-gesturing", "");
+      // re-tile.
       content.style.transition = "none";
       // A drag only moves the map: like the resting position (see below) it
       // sits on whole device pixels, or every tile edge straddles a pixel and

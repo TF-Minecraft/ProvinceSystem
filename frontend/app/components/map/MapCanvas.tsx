@@ -104,7 +104,9 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
  * light rim `rimPx` screen pixels wide. The overlay sits inside the scaled
  * map, so the rim is sized in map pixels divided by the scale to stay
  * constant on screen. Hover gets a thin rim, the region whose details are
- * open a thicker one; both stand down mid-gesture (`.map-selected-region`).
+ * open a thicker one. Mid-gesture the scale runs ahead of React, so the
+ * viewport writes it into `--map-rim-scale` on each `.map-selected-region`
+ * (see `setLiveRimScale`) and the rim keeps its width through a zoom.
  */
 function regionHighlightStyle(
   displayScale: number,
@@ -115,17 +117,30 @@ function regionHighlightStyle(
   // Unfiltered, it still stands out: drawn again over its own colour, and,
   // when selected, over the faded rest of the world.
   if (!mapFiltersSupportedHere()) return {};
-  const px = displayScale > 0 ? rimPx / displayScale : 0;
+  if (!(displayScale > 0)) return {};
+  const px = `calc(${rimPx}px / var(--map-rim-scale))`;
   const rim = `rgb(232 228 217 / ${rimAlpha})`;
   return {
+    ["--map-rim-scale" as string]: displayScale,
     filter: [
       "brightness(1.18) saturate(1.08)",
-      `drop-shadow(${px}px 0 0 ${rim})`,
-      `drop-shadow(-${px}px 0 0 ${rim})`,
-      `drop-shadow(0 ${px}px 0 ${rim})`,
-      `drop-shadow(0 -${px}px 0 ${rim})`,
+      `drop-shadow(${px} 0 0 ${rim})`,
+      `drop-shadow(calc(-1 * ${px}) 0 0 ${rim})`,
+      `drop-shadow(0 ${px} 0 ${rim})`,
+      `drop-shadow(0 calc(-1 * ${px}) 0 ${rim})`,
     ].join(" "),
   };
+}
+
+/**
+ * Size the highlight rims under `content` for the scale on screen now. React
+ * writes the same value once the gesture settles, so nothing is left behind.
+ */
+function setLiveRimScale(content: HTMLElement | null, displayScale: number) {
+  if (!content || !(displayScale > 0)) return;
+  for (const element of content.querySelectorAll<HTMLElement>(".map-selected-region")) {
+    element.style.setProperty("--map-rim-scale", String(displayScale));
+  }
 }
 
 /**
@@ -463,6 +478,7 @@ export default function MapCanvas({
     // Mid-gesture the transform runs ahead of React; keep hover picking on
     // what is actually on screen.
     onLiveTransform: (live) => {
+      setLiveRimScale(viewport.contentRef.current, live.displayScale);
       if (!viewportCoordsRef?.current) return;
       viewportCoordsRef.current.displayScale = live.displayScale;
       viewportCoordsRef.current.translateX = live.translateX;
