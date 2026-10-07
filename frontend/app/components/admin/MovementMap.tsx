@@ -183,16 +183,16 @@ type ShownLabel = {
   forced: boolean;
 };
 
-const LABEL_FONT_PX = 13;
-const LABEL_HEIGHT_PX = 16;
+export const LABEL_FONT_PX = 13;
+export const LABEL_HEIGHT_PX = 16;
 /** From a label box's top to its text's baseline. */
-const LABEL_BASELINE = 12.5;
+export const LABEL_BASELINE = 12.5;
 
 const widths = new Map<string, number>();
 let measure: CanvasRenderingContext2D | null | undefined;
 
 /** A name's width in screen pixels at the label font, measured once per name. */
-function labelWidth(text: string): number {
+export function labelWidth(text: string): number {
   const known = widths.get(text);
   if (known !== undefined) return known;
   if (measure === undefined) {
@@ -210,7 +210,7 @@ function labelWidth(text: string): number {
 }
 
 /** 1, 2 or 5 times a power of ten, at least `wanted`. */
-function niceLength(wanted: number): number {
+export function niceLength(wanted: number): number {
   const power = 10 ** Math.floor(Math.log10(Math.max(wanted, 1e-6)));
   const step = [1, 2, 5, 10].find((m) => m * power >= wanted) ?? 10;
   return step * power;
