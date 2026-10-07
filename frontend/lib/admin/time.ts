@@ -5,6 +5,10 @@ export function formatEpoch(seconds: number | null | undefined): string {
   return new Date(seconds * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
+export function formatDate(seconds: number): string {
+  return new Date(seconds * 1000).toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
 export function formatAgo(seconds: number | null | undefined, now = Date.now() / 1000): string {
   if (seconds === null || seconds === undefined) return "Never";
   const elapsed = Math.max(0, now - seconds);

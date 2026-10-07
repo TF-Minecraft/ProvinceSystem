@@ -6,6 +6,7 @@ import { AccountApiError } from "../../../lib/account/api";
 import {
   adminErrorMessage,
   coreProtectMessage,
+  getAdminMe,
   getPlayer,
   getPlayerActivity,
   getPlayerSessions,
@@ -16,7 +17,8 @@ import {
   type WorldPoint,
 } from "../../../lib/admin/api";
 import { formatLocal } from "../../../lib/skins/formatTime";
-import { formatAgo, formatDuration, formatEpoch } from "../../../lib/admin/time";
+import { formatAgo, formatDate, formatEpoch } from "../../../lib/admin/time";
+import { groupByDay, sessionRow } from "../../../lib/admin/sessionDays";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import MovementCard from "./MovementCard";
 
@@ -47,6 +49,18 @@ type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message
 
 export default function PlayerProfile({ uuid }: { uuid: string }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
+  // Movement is for admins and the owner; mods see the profile without it.
+  const [movement, setMovement] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    getAdminMe()
+      .then((me) => live && setMovement(me.capabilities.includes("view_player_movement")))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -100,7 +114,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         ) : null}
       </header>
 
-      <MovementCard uuid={profile.uuid} />
+      {movement ? <MovementCard uuid={profile.uuid} /> : null}
 
       <section className={panelClass} aria-label="Discord and website">
         <h3 className={headingClass}>Discord and website</h3>
@@ -161,7 +175,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         )}
       </section>
 
-      <Sessions uuid={profile.uuid} />
+      <Sessions uuid={profile.uuid} movement={movement} />
       <Activity uuid={profile.uuid} />
     </>
   );
@@ -172,14 +186,39 @@ function place(point: WorldPoint | null): string {
   return `${point.world ?? "?"} ${point.x}, ${point.y}, ${point.z}`;
 }
 
-const END_LABELS: Record<PlayerSession["end_kind"], string> = {
-  logout: "Logged out",
-  open: "Still playing",
-  last_observed: "No logout recorded",
-  unknown: "No logout recorded",
-};
+function SessionItem({ session, day, uuid, movement }: { session: PlayerSession; day: string; uuid: string; movement: boolean }) {
+  const row = sessionRow(session);
+  const spoken = `${day}, ${row.start} to ${row.end}${row.duration ? `, ${row.duration}` : ""}${row.note ? `. ${row.note}` : ""}`;
+  const body = (
+    <>
+      <span className="sr-only">{spoken}</span>
+      <span aria-hidden="true">
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="text-[var(--tfmc-cream)]">
+            {row.start} → {row.end}
+          </span>
+          {row.duration ? <span className="shrink-0 text-right text-[var(--tfmc-mist)]">{row.duration}</span> : null}
+        </span>
+        {row.note ? (
+          <span className={`block text-xs ${session.end_kind === "open" ? "text-[var(--tfmc-accent)]" : "text-[#e8c48a]"}`}>
+            {row.note}
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+  if (!movement) return <div className="py-2">{body}</div>;
+  return (
+    <Link
+      href={`/admin/players/${encodeURIComponent(uuid)}/movement?session=${encodeURIComponent(session.id)}`}
+      className="-mx-2 block rounded-sm px-2 py-2 hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
+    >
+      {body}
+    </Link>
+  );
+}
 
-function Sessions({ uuid }: { uuid: string }) {
+function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
   const [rows, setRows] = useState<PlayerSession[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [historyStart, setHistoryStart] = useState<number | null>(null);
@@ -214,46 +253,27 @@ function Sessions({ uuid }: { uuid: string }) {
     void fetchPage(null);
   }, [fetchPage]);
 
+  const days = groupByDay(rows, Date.now() / 1000);
+
   return (
     <section className={panelClass} aria-label="Sessions">
       <h3 className={headingClass}>Sessions</h3>
-      {historyStart ? (
-        <p className="mt-1 text-xs text-[var(--tfmc-stone)]">Session records go back to {formatEpoch(historyStart)}.</p>
-      ) : null}
       {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
       {state !== "loading" && !rows.length && !failure ? <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p> : null}
-      {rows.length ? (
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[34rem] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wider text-[var(--tfmc-stone)]">
-              <tr>
-                <th scope="col" className="py-2 pr-3 font-semibold">Joined</th>
-                <th scope="col" className="py-2 pr-3 font-semibold">Length</th>
-                <th scope="col" className="py-2 font-semibold">Ended</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]">
-              {rows.map((s, index) => (
-                <tr key={`${s.start.time}:${index}`}>
-                  <td className="py-2 pr-3 text-[var(--tfmc-cream)]" title={place(s.start)}>
-                    {formatEpoch(s.start.time)}
-                  </td>
-                  <td className="py-2 pr-3 text-[var(--tfmc-mist)]">
-                    {s.end_kind === "last_observed" && s.duration_seconds !== null ? "At least " : ""}
-                    {formatDuration(s.duration_seconds)}
-                  </td>
-                  <td className="py-2 text-[var(--tfmc-mist)]" title={place(s.end)}>
-                    {END_LABELS[s.end_kind]}
-                    {s.end_kind === "last_observed" && s.end ? (
-                      <span className="text-[var(--tfmc-stone)]"> · last seen {formatEpoch(s.end.time)}</span>
-                    ) : s.end_kind === "logout" && s.end ? (
-                      <span className="text-[var(--tfmc-stone)]"> · {formatEpoch(s.end.time)}</span>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {days.length ? (
+        <div className="mt-3 space-y-4">
+          {days.map((day) => (
+            <div key={day.key}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{day.label}</h4>
+              <ul aria-label={day.label} className="mt-1 divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-sm">
+                {day.sessions.map((session) => (
+                  <li key={session.id}>
+                    <SessionItem session={session} day={day.label} uuid={uuid} movement={movement} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       ) : null}
       {failure ? (
@@ -262,6 +282,9 @@ function Sessions({ uuid }: { uuid: string }) {
         <button type="button" className={moreClass} disabled={state !== "ready"} onClick={() => void fetchPage(next)}>
           {state === "more" ? "Loading…" : "Load more sessions"}
         </button>
+      ) : rows.length && historyStart && state === "ready" ? (
+        // The oldest session row CoreProtect still holds for anyone, not this player's first session.
+        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Retained session records start {formatDate(historyStart)}.</p>
       ) : null}
     </section>
   );
