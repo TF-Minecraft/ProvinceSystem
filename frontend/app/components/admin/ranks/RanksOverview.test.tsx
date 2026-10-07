@@ -90,7 +90,12 @@ it("edits a group's weight as a remove and an add", async () => {
       children: ["gilded"],
       tracks: [],
     },
-    members: { total: 0, page: 1, page_size: 50, rows: [] },
+    members: {
+      total: 1,
+      page: 1,
+      page_size: 50,
+      rows: [{ uuid: "u", name: "Bob", rank: "noble", groups: [{ name: "noble", contexts: {}, expiry: 0 }] }],
+    },
     all_groups: ["noble", "commoner", "default"],
     rights: { read_only: false, change_players: true, edit_definitions: true },
     changes: [],
@@ -100,6 +105,7 @@ it("edits a group's weight as a remove and an add", async () => {
   vi.mocked(waitForChange).mockResolvedValue({ id: 4, status: "applied" } as LpChange);
   render(<RankGroup name="noble" />);
   const settings = await screen.findByRole("region", { name: "Settings" });
+  expect(within(screen.getByRole("region", { name: "Members" })).getByText("Bob")).toBeTruthy();
   fireEvent.change(within(settings).getByLabelText("Weight"), { target: { value: "25" } });
   fireEvent.click(within(settings).getByRole("button", { name: "Save" }));
   fireEvent.change(within(settings).getByLabelText("Reason (recorded)"), { target: { value: "Reorder ranks" } });
