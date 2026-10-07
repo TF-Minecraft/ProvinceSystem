@@ -138,13 +138,14 @@ def _parse_track(data: dict, world: str) -> _Track | None:
     for segment in data.get("segments") or []:
         try:
             i = int(segment["fromIndex"])
-        except (KeyError, TypeError, ValueError):
+            health = float(segment.get("health", 1.0))
+        except (AttributeError, KeyError, TypeError, ValueError):
             continue
         if not 0 <= i < len(broken):
             continue
         if segment.get("broken"):
             broken[i] = True
-        elif float(segment.get("health", 1.0)) < 1.0:
+        elif health < 1.0:
             damaged[i] = True
     return _Track(id=data["id"], loop=bool(data.get("loop")), xz=xz, s=s, broken=broken, damaged=damaged)
 
@@ -325,8 +326,11 @@ def load_network(config: RailConfig, map_name: str) -> dict:
         data = _read_json(path)
         if not data or data.get("stem") not in tracks or data.get("branch") not in tracks:
             continue
-        stem = tracks[data["stem"]]
-        x, z = stem.point_at(float(data.get("s", 0.0)))
+        try:
+            along = float(data.get("s", 0.0))
+        except (TypeError, ValueError):
+            continue
+        x, z = tracks[data["stem"]].point_at(along)
         junctions.append({
             "id": str(data.get("id", path.stem)),
             "stem": data["stem"],
@@ -362,7 +366,8 @@ def load_network(config: RailConfig, map_name: str) -> dict:
     network = {
         "status": "ok",
         "world": config.world,
-        "updated_at": max((os.stat(p).st_mtime for p in files + junction_files if p.exists()), default=None),
+        # From the stamps taken above: a file VehicleFramework has since replaced cannot fail this.
+        "updated_at": max((stamp[1] / 1e9 for stamp in key[2] if stamp[1] is not None), default=None),
         "unreadable_files": unreadable,
         "lines": lines,
         "tracks": [

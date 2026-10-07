@@ -18,6 +18,7 @@ from src.api.auth_routes import _config, _no_store, current_user, require_same_o
 from src.auth import admin, audit, players, roles, users
 from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
+from src.scripts.util.dirs import validate_map
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -172,9 +173,11 @@ def get_rail(request: Request, response: Response, map: str = Query("main", max_
     _capable(request, "view_rail")
     _no_store(response)
     try:
-        return rail.load_network(rail.RailConfig.from_env(), map)
+        validate_map(map)
     except ValueError:
         raise HTTPException(400, detail="bad_map") from None
+    try:
+        return rail.load_network(rail.RailConfig.from_env(), map)
     except rail.RailUnavailable as exc:
         return {"status": exc.code, "world": rail.RailConfig.from_env().world, "updated_at": None,
                 "unreadable_files": 0, "lines": [], "tracks": [], "junctions": [], "stops": []}

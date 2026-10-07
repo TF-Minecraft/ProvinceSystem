@@ -168,3 +168,27 @@ def test_route_reports_an_unconfigured_site(app, env, rail, monkeypatch):
     _, admin = account(env, "boss", "admin")
     body = client(app, admin).get("/admin/rail").json()
     assert body["status"] == "not_configured" and body["tracks"] == []
+
+
+def test_bad_values_skip_one_segment_or_junction(rail):
+    data = json.loads((rail / f"{MAIN}.json").read_text())
+    data["segments"][60]["health"] = None
+    data["segments"][61]["health"] = "worn"
+    data["segments"][62]["health"] = 0.5
+    (rail / f"{MAIN}.json").write_text(json.dumps(data))
+    (rail / "junctions" / "j2.json").write_text(json.dumps({"id": "j2", "stem": MAIN, "branch": SPUR, "s": None}))
+    (rail / "junctions" / "j3.json").write_text(json.dumps({"id": "j3", "stem": MAIN, "branch": SPUR, "s": "x"}))
+    net = load()
+    main = next(t for t in net["tracks"] if t["id"] == MAIN)
+    assert [(d["from"], d["to"]) for d in main["damaged"]] == [(62.0, 63.0)]
+    assert [j["id"] for j in net["junctions"]] == ["j1"]
+
+
+def test_updated_at_is_the_newest_file(rail):
+    import os
+
+    os.utime(rail / f"{SPUR}.json", (1_800_000_000, 1_800_000_000))
+    for path in [*rail.glob("*.json"), *(rail / "junctions").glob("*.json")]:
+        if path.name != f"{SPUR}.json":
+            os.utime(path, (1_700_000_000, 1_700_000_000))
+    assert load()["updated_at"] == 1_800_000_000

@@ -104,11 +104,11 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
     bounds ? focusMapRect(bounds, FOCUS_INSET, FRAMING) : resetViewport({ animated: true });
 
   // Frame the network once the map's real size is known (a size change refits the whole map),
-  // then whatever is picked from the list.
+  // then whatever is picked from the list, even over the preview when the tiles fail to load.
   const framedRef = useRef<string | null>(null);
   const target = focus ?? (bounds ? { key: "network", bounds } : null);
   useEffect(() => {
-    if (!ready || !manifest || !target || framedRef.current === target.key) return;
+    if (!ready || !target || framedRef.current === target.key || (!focus && !manifest)) return;
     framedRef.current = target.key;
     focusMapRect(target.bounds, FOCUS_INSET, FRAMING);
     // eslint-disable-next-line react-hooks/exhaustive-deps

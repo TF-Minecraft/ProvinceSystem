@@ -8,7 +8,7 @@ import type { RailNetwork } from "../../../lib/admin/rail";
 const view = vi.hoisted(() => ({
   focused: [] as { x: number; y: number; w: number; h: number }[],
   // The real hook hands back the same manifest until it changes.
-  manifest: { width: 6400, height: 6400 },
+  manifest: { width: 6400, height: 6400 } as { width: number; height: number } | null,
 }));
 
 vi.mock("../map/MapViewport", () => ({
@@ -35,6 +35,7 @@ vi.mock("../../hooks/useMapViewport", () => ({
 afterEach(() => {
   cleanup();
   view.focused = [];
+  view.manifest = { width: 6400, height: 6400 };
 });
 
 const network: RailNetwork = {
@@ -83,4 +84,15 @@ it("draws the network, names its stops and frames it once", () => {
     { x: 1000, y: 940, w: 400, h: 120 },
     { x: 1, y: 2, w: 3, h: 4 },
   ]);
+});
+
+it("frames a picked stop over the preview when the tiles fail to load", () => {
+  view.manifest = null;
+  const { rerender } = render(<RailMap mapId="main" network={network} />);
+  // The whole network waits for the map's real size; the preview keeps the overview.
+  expect(view.focused).toEqual([]);
+  rerender(
+    <RailMap mapId="main" network={network} focus={{ key: "stop:East", bounds: { x: 1, y: 2, w: 3, h: 4 } }} />
+  );
+  expect(view.focused).toEqual([{ x: 1, y: 2, w: 3, h: 4 }]);
 });
