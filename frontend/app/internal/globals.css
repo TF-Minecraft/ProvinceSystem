@@ -424,12 +424,6 @@ html.map-fullscreen textarea {
     overflow: hidden;
   }
 
-  /* The selection's outline is a stack of drop-shadow filters, redrawn at
-   * every scale; while the map is being zoomed or dragged it stands down. */
-  [data-gesturing] .map-selected-region {
-    filter: none !important;
-  }
-
   /* An in-text link to another realm or place. */
   .map-link {
     color: var(--tfmc-cream);
