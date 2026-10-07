@@ -53,8 +53,9 @@ runs as one uvicorn process; running more would need the reader limit
 shared between them. Never open the file with `immutable=1`: on Main that
 read torn pages while CoreProtect wrote.
 
-Every query is an indexed seek by player, except small whole-table reads of
-CoreProtect's name tables, `co_user` and `co_username_log` (a few hundred
+Candidate scans are indexed seeks by player; final-page metadata reads use
+row IDs. The only whole-table reads are the small tables holding
+CoreProtect names, including `co_user` and `co_username_log` (a few hundred
 to a few thousand rows). Activity pages examine at most `SCAN_LIMIT` rows per
 table, so a sparse filter stops early and returns a cursor to continue
 (`searched_to`).
@@ -66,8 +67,22 @@ inside SQL. Admins and the owner (`view_player_messages`) also get chat and
 whole commands, each cut to 512 characters; every page that shows any is
 recorded in `admin_audit` as `player.messages.view` (which rows, never the
 text) before it is returned, and the page is refused if that record cannot
-be written. Sign text, item metadata and NBT are never selected. Sessions are rebuilt from
-login, logout and ping rows; see `sessions.py` for how crashed sessions end.
+be written. Sign text is never selected. After selecting the final activity page,
+point reads
+fetch at most 64 KiB per item, entity, or identity blob for displayed rows. After closing the
+reader, a bounded, read-only Java-stream/NBT decoder extracts only custom names
+and MMOItems type/ID; raw metadata, lore, and other tags never enter API responses.
+Decompression is capped at 256 KiB, with depth and node limits. Malformed,
+oversized, or unsupported metadata retains the vanilla label.
+
+Item and container labels include the recorded MMOItems identity beside the
+saved name (including alloys). Named vanilla items are explicitly marked renamed.
+Historical mob kills show their saved name as a name, not a proven mob type. New
+kills from the custom-identity CoreProtect build additionally show the MythicMobs
+ID from the `coreprotect:mythic` block-metadata marker. No history rewrite is
+needed. Custom-ID search and ItemsAdder block identity are outside this change.
+
+Sessions are rebuilt from login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 
 Movement is a player's session rows in a window (up to 7 days for one
 player, 24 hours for everyone): logins, logouts and a position ping once a

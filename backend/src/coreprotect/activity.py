@@ -10,14 +10,14 @@ row's key.
 Only what staff need to see what happened is selected. Unless the caller
 may read messages (full_text), chat is never read and commands are cut to
 their first word inside SQL, so arguments (messages, passwords, link codes)
-never leave the database. Sign text, item metadata and NBT are never
-selected.
+never leave the database. Sign text is never selected. Bounded item/entity metadata is fetched only
+for the final page; build() extracts labels after the database reader closes.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from . import cursors
+from . import cursors, metadata
 from .maps import Maps
 from .reader import Reader
 
@@ -227,6 +227,7 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         marks = ",".join("?" * len(victims))
         names = {r["id"]: {"minecraft_name": r["user"], "uuid": r["uuid"]}
                  for r in reader.rows(f"SELECT id, user, uuid FROM co_user WHERE id IN ({marks})", tuple(victims))}
+    _fetch_metadata(reader, maps, rows)
     return {
         "rows": rows,
         "victims": names,
@@ -234,6 +235,41 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         # Set when the page stopped at a scan limit rather than filling up.
         "searched_to": frontier.time if frontier is not None and nxt == frontier else None,
     }
+
+
+def _fetch_metadata(reader: Reader, maps: Maps, rows: list) -> None:
+    """Point reads after pagination; never pull blobs into candidate scans."""
+    for source in SOURCES:
+        selected = [row for origin, row in rows if origin == source]
+        if not selected:
+            continue
+        if source.name in {"item", "container", "entity_container"}:
+            column = "data" if source.name == "item" else "metadata"
+            marks = ",".join("?" for _ in selected)
+            blobs = {r["rid"]: r["blob"] for r in reader.rows(
+                f"SELECT rowid AS rid, CASE WHEN length({column}) <= ? THEN {column} END AS blob "
+                f"FROM {source.table} WHERE rowid IN ({marks})",
+                (metadata.MAX_BLOB, *(r["rid"] for r in selected)))}
+            for row in selected:
+                row["identity_blob"] = blobs.get(row["rid"])
+        elif source.name == "block":
+            kills = [r for r in selected if r["action"] == 3 and r["type"] != 0]
+            if not kills:
+                continue
+            marks = ",".join("?" for _ in kills)
+            blobs = {r["rid"]: r["blob"] for r in reader.rows(
+                "SELECT rowid AS rid, CASE WHEN length(meta) <= ? THEN meta END AS blob "
+                f"FROM co_block WHERE rowid IN ({marks})",
+                (metadata.MAX_BLOB, *(r["rid"] for r in kills)))}
+            entities = {}
+            if "co_entity" in maps.tables:
+                entities = {r["id"]: r["blob"] for r in reader.rows(
+                    "SELECT id, CASE WHEN length(data) <= ? THEN data END AS blob "
+                    f"FROM co_entity WHERE id IN ({marks})",
+                    (metadata.MAX_BLOB, *(r["data"] for r in kills)))}
+            for row in kills:
+                row["identity_blob"] = blobs.get(row["rid"])
+                row["entity_blob"] = entities.get(row["data"])
 
 
 _ITEM_VERBS = {
@@ -275,7 +311,8 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
                 entry.update(kind="kill", verb="killed", victim=victim,
                              target=victim["minecraft_name"] if victim else "a player")
             else:
-                entry.update(kind="kill", verb="killed", target=maps.entity(row["type"]))
+                entry.update(kind="kill", verb="killed", target=metadata.mob_label(
+                    row.get("entity_blob"), row.get("identity_blob"), maps.entity(row["type"])))
         elif action == 13:
             entry.update(kind="spawn", verb="spawned", target=maps.entity(row["type"]))
         elif action == 2:
@@ -284,10 +321,10 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
             entry.update(kind="block", verb="placed" if action == 1 else "broke", target=maps.material(row["type"]))
     elif source.name in {"container", "entity_container"}:
         entry.update(kind="container", verb="added" if action == 1 else "removed",
-                     target=maps.material(row["type"]), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
     elif source.name == "item":
         entry.update(kind="item", verb=_ITEM_VERBS.get(action, "moved"),
-                     target=maps.material(row["type"]), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
     elif source.name == "entity":
         entry.update(kind="entity", verb=_ENTITY_VERBS.get(action, "clicked"), target=maps.entity(row["type"]))
     elif source.name == "sign":
