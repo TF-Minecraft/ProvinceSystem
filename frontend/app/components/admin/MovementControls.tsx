@@ -22,15 +22,17 @@ export const chipClass = "min-h-11 rounded-sm border px-3 py-1 text-sm transitio
 export const chipOn = "border-[var(--tfmc-accent)] text-[var(--tfmc-cream)]";
 export const chipOff =
   "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]";
+// 16 px text on phones: iOS Safari zooms in on any smaller box it focuses.
 export const inputClass =
-  "min-h-11 w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-transparent px-2 py-1 text-sm text-[var(--tfmc-cream)] [color-scheme:dark]";
+  "min-h-11 w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-transparent px-2 py-1 text-base text-[var(--tfmc-cream)] [color-scheme:dark] sm:text-sm";
 export const mutedClass = "text-sm text-[var(--tfmc-mist)]";
 /**
  * Date and time boxes. Safari draws them at their own width, past a narrow
  * box, over whatever sits beside them; without its native appearance it
- * keeps to the width given.
+ * keeps to the width given. iOS also sets the value at the top of a taller
+ * box, so the height is fixed and the value is centred on one line.
  */
-export const dateInputClass = `${inputClass} block min-w-0 appearance-none`;
+export const dateInputClass = `${inputClass} block h-11 min-w-0 appearance-none py-0 leading-10 [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:text-left`;
 const errorClass = "text-sm text-[#e8a0a0]";
 
 /** How often a range that follows the clock asks again: about one ping. */
