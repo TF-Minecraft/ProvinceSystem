@@ -441,20 +441,20 @@ def _actor_name(row) -> str:
     return f"web:{row['actor_name'] or row['actor_user_id']}"[:100]
 
 
-def _still_allowed(conn, row) -> bool:
+def _current_actor(conn, row) -> dict | None:
     """The actor's rights again at collection time: a demotion since queueing cancels the change."""
     actor = conn.execute("SELECT id AS user_id, discord_user_id, role FROM users WHERE id = ?",
                          (row["actor_user_id"],)).fetchone()
     if actor is None or not roles.can(actor["role"], "change_luckperms"):
-        return False
+        return None
     actor = dict(actor)
     try:
         if row["target_type"] == "user":
             check_user_target(conn, actor, row["target"])
         check_ops_allowed(conn, actor["role"], row["target_type"], json.loads(row["ops_json"]))
     except AdminError:
-        return False
-    return True
+        return None
+    return actor
 
 
 def settle_timeouts(conn, now: float | None = None) -> None:
@@ -469,14 +469,14 @@ def settle_timeouts(conn, now: float | None = None) -> None:
                          (_iso(now), row["id"]))
 
 
-def _guard(conn, row) -> dict | None:
+def _guard(conn, row, actor: dict) -> dict | None:
     """What the bridge must recheck against live LuckPerms for an admin's change.
 
     The mirror can lag in-game edits, so the bridge refuses the change if the
     player now holds a group outside the admin groups, or a group being added
     now inherits one.
     """
-    if row["target_type"] != "user" or row["actor_role"] == "root":
+    if row["target_type"] != "user" or actor["role"] == "root":
         return None
     rules = policy.load()
     groups = mirror.load_groups(conn)
@@ -498,8 +498,15 @@ def fetch_for_bridge() -> list[dict]:
             mirror.record_poll(conn)
             settle_timeouts(conn, now)
             out = []
+            # Until a definition change's result arrives, or a snapshot taken after it was
+            # sent shows LuckPerms as it now is, nothing else is checked against old groups.
             definition_sent = conn.execute(
-                "SELECT 1 FROM lp_changes WHERE status = 'sent' AND target_type != 'user'").fetchone()
+                """
+                SELECT 1 FROM lp_changes c
+                WHERE c.target_type != 'user'
+                  AND (c.status = 'sent' OR (c.status = 'unknown' AND NOT EXISTS (
+                      SELECT 1 FROM lp_state s WHERE s.id = 1 AND s.checked_at > c.sent_at)))
+                """).fetchone()
             rows = [] if read_only() or definition_sent else conn.execute(
                 "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id").fetchall()
             for row in rows:
@@ -508,7 +515,8 @@ def fetch_for_bridge() -> list[dict]:
                 definition = row["target_type"] != "user"
                 if definition and out:
                     break
-                if not _still_allowed(conn, row):
+                actor = _current_actor(conn, row)
+                if actor is None:
                     conn.execute("UPDATE lp_changes SET status = 'failed', finished_at = ?, error = 'no_longer_allowed' "
                                  "WHERE id = ?", (_iso(now), row["id"]))
                     continue
@@ -524,7 +532,7 @@ def fetch_for_bridge() -> list[dict]:
                     "description": row["description"],
                     "ops": json.loads(row["ops_json"]),
                 }
-                guard = _guard(conn, row)
+                guard = _guard(conn, row, actor)
                 if guard is not None:
                     change["guard"] = guard
                 out.append(change)

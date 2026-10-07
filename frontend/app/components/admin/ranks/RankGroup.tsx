@@ -398,7 +398,7 @@ function NodesPanel({
             onSubmit={(e) => {
               e.preventDefault();
               const contexts: Record<string, string[]> = server ? { server: [server] } : {};
-              const node = { key: key.trim(), value, contexts };
+              const node = { key, value, contexts };
               addNode(node, (
                 <>
                   Set <span className="font-mono">{node.key}</span> to {String(value)} on {group}

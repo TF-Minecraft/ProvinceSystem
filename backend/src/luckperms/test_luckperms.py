@@ -445,3 +445,25 @@ def test_timeouts_settle_without_the_bridge(app, bridge, staff, monkeypatch):
     later = time.time() + changes.RESULT_WAIT_SECONDS + 5
     monkeypatch.setattr(changes.time, "time", lambda: later)
     assert client(app, staff["mod"]).get(f"/admin/luckperms/changes/{change['id']}").json()["status"] == "unknown"
+
+
+def test_guard_follows_the_actors_current_role(app, bridge, staff, env):
+    submit(app, staff["root"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}])
+    with env.connect() as conn:
+        conn.execute("UPDATE users SET role = 'admin' WHERE discord_username = 'rory'")
+        conn.commit()
+    sent = changes.fetch_for_bridge()
+    assert len(sent) == 1 and "admin_groups" in sent[0]["guard"]
+
+
+def test_unanswered_definition_change_holds_others_until_a_snapshot(app, bridge, staff, monkeypatch):
+    submit(app, staff["root"], "group", "noble", [{"op": "add_node", "node": {"key": "tips.off"}}])
+    assert len(changes.fetch_for_bridge()) == 1
+    submit(app, staff["root"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}])
+    later = time.time() + changes.RESULT_WAIT_SECONDS + 5
+    monkeypatch.setattr(changes.time, "time", lambda: later)
+    monkeypatch.setattr(mirror.time, "time", lambda: later)
+    assert changes.fetch_for_bridge() == []  # unknown, and no snapshot since
+    monkeypatch.setattr(mirror, "_iso", lambda ts=None: changes._iso(later + 1))
+    bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=9000))
+    assert [c["target"] for c in changes.fetch_for_bridge()] == [ALICE]

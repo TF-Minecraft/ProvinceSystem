@@ -482,7 +482,7 @@ function PermissionsPanel({
           className="mt-4 flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
-            const node = { key: key.trim(), value, ...scopeFields(server, duration) };
+            const node = { key, value, ...scopeFields(server, duration) };
             onAsk({
               key: "add-permission",
               summary: (
