@@ -185,7 +185,7 @@ function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: 
               <MinecraftName player={player} />
               <RoleTag player={player} />
             </td>
-            <td className={`hidden truncate text-[var(--tfmc-mist)] md:table-cell ${cellClass}`} title={player.characters.join(", ")}>
+            <td className={`hidden text-[var(--tfmc-mist)] md:table-cell ${cellClass}`}>
               <Characters player={player} />
             </td>
             {lastSeenCell(player, known)}
@@ -226,7 +226,7 @@ function MinecraftTable({ rows, known, sorting }: { rows: PlayerSummary[]; known
           <td className={`hidden text-[var(--tfmc-mist)] sm:table-cell ${cellClass}`}>
             <Discord player={player} />
           </td>
-          <td className={`hidden truncate text-[var(--tfmc-mist)] md:table-cell ${cellClass}`} title={player.characters.join(", ")}>
+          <td className={`hidden text-[var(--tfmc-mist)] md:table-cell ${cellClass}`}>
             <Characters player={player} />
           </td>
           {lastSeenCell(player, known)}
