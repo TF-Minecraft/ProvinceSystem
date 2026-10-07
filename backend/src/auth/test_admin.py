@@ -75,14 +75,16 @@ def sessions_of(db, user_id):
 # --------------------
 
 def test_role_rules():
-    assert roles.assignable_roles("root") == ["player", "mod", "admin"]
+    assert roles.assignable_roles("root") == ["player", "mod", "admin", "root"]
     assert roles.assignable_roles("admin") == ["player", "mod"]
     assert roles.assignable_roles("mod") == []
     assert roles.assignable_roles("player") == []
     assert roles.outranks("admin", "mod") and not roles.outranks("admin", "admin")
     assert not roles.outranks("root", "unknown") and not roles.outranks("unknown", "player")
+    # Roots may act on other roots; cannot_act_on_self still covers their own account.
+    assert roles.outranks("root", "root") and not roles.outranks("admin", "root")
     assert not roles.is_staff("player") and not roles.is_staff("wizard") and roles.is_staff("mod")
-    assert roles.capabilities("mod") == ["view_admin", "view_players", "revoke_sessions"]
+    assert roles.capabilities("mod") == ["view_admin", "view_players", "revoke_sessions", "view_luckperms"]
     assert roles.capabilities("bogus") == []
 
 
@@ -159,7 +161,7 @@ def test_panel_reads_need_staff(app, env):
     _, mod = account(env, "mona", "mod")
     me = client(app, mod).get("/admin/me")
     assert me.status_code == 200 and me.headers["cache-control"] == "no-store"
-    assert me.json()["capabilities"] == ["view_admin", "view_players", "revoke_sessions"]
+    assert me.json()["capabilities"] == ["view_admin", "view_players", "revoke_sessions", "view_luckperms"]
     assert me.json()["assignable_roles"] == []
 
 
@@ -215,8 +217,9 @@ def test_root_can_make_admins_and_target_is_signed_out(app, env):
     ("admin", "admin", "mod", 403, "target_outranks_you"),
     ("admin", "root", "player", 403, "target_outranks_you"),
     ("root", "admin", "player", 200, None),
-    ("root", "player", "root", 403, "role_not_assignable"),
-    ("root", "root", "admin", 403, "target_outranks_you"),
+    ("root", "player", "root", 200, None),
+    ("root", "root", "admin", 200, None),
+    ("admin", "player", "root", 403, "role_not_assignable"),
     ("mod", "player", "mod", 403, "forbidden"),
     ("player", "player", "mod", 403, "forbidden"),
     ("admin", "player", "player", 409, "role_unchanged"),

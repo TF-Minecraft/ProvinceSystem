@@ -1,0 +1,55 @@
+# Who may change what in LuckPerms from the staff panel. Mods only view.
+# Group definitions and tracks are root-only, and so is every group not listed here.
+
+# Groups admins may add to or remove from players, and move players between on tracks.
+# A listed group only counts while every group it inherits is listed too.
+admin_groups:
+  - default
+  - commoner
+  - legacy
+  - noble
+  - gilded
+  - ascended
+  - helper_player
+  - helper_inactive
+  - helper
+
+# Granted by the Patreon sync (TFMCWeb on Main). Its reconcile resets permanent,
+# global grants of these groups for linked patrons, so the panel warns about that.
+patreon_groups:
+  - noble
+  - gilded
+  - ascended
+
+# Never admin-editable, even inside an allowed namespace (armourshop.admin,
+# professions.admin...). Checked before admin_permissions.
+root_only_permissions:
+  - "*.admin"
+  - "*.admin.*"
+  - "*.staff"
+  - "*.staff.*"
+  - "*.mod"
+  - "*.moderator"
+  - "*.bypass"
+  - "*.bypass.*"
+  - "*.reload"
+  - "*.op"
+
+# Player permissions admins may set or unset. Shell-style patterns, any case.
+# Every other permission, and any key containing "*" or written as a regex
+# ("r=..."), is root-only. These are the progress and preference nodes in use.
+admin_permissions:
+  - "professions.*"
+  - "rulequiz.completed"
+  - "tfmc.has_spawned"
+  - "tfmcresourcepack.enable"
+  - "tips.off"
+  - "pvp.non_lethal"
+  - "chatbubble.see"
+  - "armourshop.*"
+  - "mural.*"
+  - "mcpet.*"
+  - "deepsea.*"
+  - "bloodmagic.complete"
+  - "necromancy.complete"
+  - "ia.user.craft.*"

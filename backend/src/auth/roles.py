@@ -14,6 +14,10 @@ CAPABILITIES = {
     "view_player_movement": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
+    # In-game LuckPerms ranks: everyone on staff sees them; what an admin may
+    # change, beyond viewing, is decided per node by src/luckperms/policy.py.
+    "view_luckperms": "mod",
+    "change_luckperms": "admin",
 }
 
 
@@ -34,12 +38,16 @@ def capabilities(role: str | None) -> list[str]:
 
 
 def outranks(actor_role: str | None, target_role: str | None) -> bool:
-    """Staff may only act on accounts strictly below their own role."""
+    """Staff may only act on accounts below their own role; root may also act on other roots."""
+    if actor_role == "root" and target_role == "root":
+        return True
     return rank(actor_role) > rank(target_role) >= 0
 
 
 def assignable_roles(actor_role: str | None) -> list[str]:
-    """Roles below the actor's own. Root is granted only by an operator."""
+    """Roles below the actor's own; root may give any role, root included."""
     if not can(actor_role, "change_role"):
         return []
-    return [role for role in ROLES if role != "root" and rank(role) < rank(actor_role)]
+    if actor_role == "root":
+        return list(ROLES)
+    return [role for role in ROLES if rank(role) < rank(actor_role)]

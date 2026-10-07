@@ -10,8 +10,11 @@ import {
   getPlayer,
   getPlayerActivity,
   getPlayerSessions,
+  canManage,
   roleLabel,
   type ActivityEntry,
+  type AdminAccount,
+  type AdminMe,
   type PlayerProfile as Profile,
   type PlayerSession,
   type WorldPoint,
@@ -21,6 +24,7 @@ import { formatAgo, formatDate, formatEpoch } from "../../../lib/admin/time";
 import { groupByDay, sessionRow } from "../../../lib/admin/sessionDays";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import MovementCard from "./MovementCard";
+import AccountActions from "./AccountActions";
 
 const panelClass =
   "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
@@ -49,20 +53,21 @@ type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message
 
 export default function PlayerProfile({ uuid }: { uuid: string }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
+  const [me, setMe] = useState<AdminMe | null>(null);
   // Movement is for admins and the owner; mods see the profile without it.
-  const [movement, setMovement] = useState(false);
+  const movement = me?.capabilities.includes("view_player_movement") ?? false;
 
   useEffect(() => {
     let live = true;
     getAdminMe()
-      .then((me) => live && setMovement(me.capabilities.includes("view_player_movement")))
+      .then((value) => live && setMe(value))
       .catch(() => undefined);
     return () => {
       live = false;
     };
   }, []);
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     let live = true;
     getPlayer(uuid)
       .then((profile) => live && setLoad({ kind: "ready", profile }))
@@ -75,6 +80,8 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
       live = false;
     };
   }, [uuid]);
+
+  useEffect(() => loadProfile(), [loadProfile]);
 
   if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
   if (load.kind === "failed") {
@@ -107,6 +114,11 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
             Previously {profile.past_names.map((n) => n.name).join(", ")}
           </p>
         ) : null}
+        <p className="mt-2 text-sm">
+          <Link href={`/admin/ranks/players/${profile.uuid}`} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+            In-game ranks and permissions →
+          </Link>
+        </p>
         {notice ? (
           <p className="mt-3 text-sm text-[#e8c48a]" role="status">
             {notice}
@@ -152,9 +164,13 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
                 : "Hasn’t signed in"}
             </dd>
           </dl>
-        ) : (
-          <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>
-        )}
+        ) : null}
+        {me && profile.discord && profile.account && canManage(me, websiteAccount(profile)) ? (
+          <AccountActions me={me} account={websiteAccount(profile)} onChanged={async () => {
+            loadProfile();
+          }} />
+        ) : null}
+        {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}
       </section>
 
       <section className={panelClass} aria-label="Characters">
@@ -179,6 +195,22 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
       <Activity uuid={profile.uuid} />
     </>
   );
+}
+
+/** The profile's website account in the shape the account actions use. */
+function websiteAccount(profile: Profile): AdminAccount {
+  const account = profile.account!;
+  return {
+    user_id: account.user_id,
+    discord_user_id: profile.discord!.discord_user_id,
+    discord_username: profile.discord!.discord_username,
+    discord_global_name: account.discord_global_name,
+    avatar_url: account.avatar_url,
+    role: account.role,
+    minecraft_name: profile.minecraft_name,
+    created_at: account.created_at,
+    last_login_at: account.last_login_at,
+  };
 }
 
 function place(point: WorldPoint | null): string {

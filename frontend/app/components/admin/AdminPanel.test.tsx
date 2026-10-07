@@ -114,6 +114,9 @@ it("mirrors the rank rule", () => {
   expect(canManage(ADMIN, acct(2, "x", "mod"))).toBe(true);
   expect(canManage(ADMIN, acct(2, "x", "admin"))).toBe(false);
   expect(canManage(ADMIN, acct(1, "adam", "player"))).toBe(false);
+  const ROOT: AdminMe = { ...ADMIN, user_id: 9, role: "root" };
+  expect(canManage(ROOT, acct(3, "co-owner", "root"))).toBe(true);
+  expect(canManage(ROOT, acct(9, "self", "root"))).toBe(false);
 });
 
 it("offers the account's new choices after a role change", async () => {

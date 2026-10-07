@@ -1,4 +1,4 @@
-"""Operator commands for root accounts. The website never grants or removes root.
+"""Operator commands for root accounts, for the first owner or when no root can sign in.
 
 Run inside the backend container, for example:
   python -m src.auth.admin_cli grant-root --discord-id 123 --reason "First owner"
@@ -6,7 +6,8 @@ Run inside the backend container, for example:
   python -m src.auth.admin_cli list-staff
 
 The account must have signed in to the website once. Each change is audited
-as an operator action and signs the account out everywhere.
+as an operator action and signs the account out everywhere. Once one root
+exists, roots can also give and take root in the staff panel.
 """
 from __future__ import annotations
 
