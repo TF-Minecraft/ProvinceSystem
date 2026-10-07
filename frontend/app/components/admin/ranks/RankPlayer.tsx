@@ -202,7 +202,7 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
       <section className={panelClass} aria-label="Groups">
         <h3 className={headingClass}>Groups</h3>
         {player.inherits.length ? (
-          <p className={`mt-1 ${mutedClass}`}>Inherits {player.inherits.join(" → ")}.</p>
+          <p className={`mt-1 ${mutedClass}`}>With inheritance, everywhere: {player.inherits.join(", ")}.</p>
         ) : null}
         {groupNodes.length ? (
           <ul className={`mt-2 ${rowClass}`}>
