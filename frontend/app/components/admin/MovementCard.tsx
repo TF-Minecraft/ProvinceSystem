@@ -1,23 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { getAdminMe } from "../../../lib/admin/api";
-
-/** A way into the player's movement page, for those allowed to see it (admins and the owner). */
+/** A way into the player's movement page; the profile shows it only to those allowed (admins and the owner). */
 export default function MovementCard({ uuid }: { uuid: string }) {
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    let live = true;
-    getAdminMe()
-      .then((me) => live && setAllowed(me.capabilities.includes("view_player_movement")))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, []);
-  if (!allowed) return null;
   return (
     <section
       aria-label="Movement"

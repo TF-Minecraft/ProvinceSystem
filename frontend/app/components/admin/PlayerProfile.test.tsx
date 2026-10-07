@@ -1,9 +1,14 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+
+// Day headings below are written for London.
+process.env.TZ = "Europe/London";
+
 import PlayerProfile from "./PlayerProfile";
 import { AccountApiError } from "../../../lib/account/api";
 import {
+  getAdminMe,
   getPlayer,
   getPlayerActivity,
   getPlayerSessions,
@@ -13,6 +18,7 @@ import {
 
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../lib/admin/api")>(),
+  getAdminMe: vi.fn(),
   getPlayer: vi.fn(),
   getPlayerSessions: vi.fn(),
   getPlayerActivity: vi.fn(),
@@ -53,6 +59,8 @@ function entry(id: string, extra: Partial<ActivityEntry>): ActivityEntry {
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(NOW * 1000);
   vi.mocked(getPlayer).mockResolvedValue(PROFILE);
+  // A mod: no movement.
+  vi.mocked(getAdminMe).mockResolvedValue({ capabilities: [] } as never);
   vi.mocked(getPlayerSessions).mockResolvedValue({
     sessions: [
       { start: { time: NOW - 7200, world: "TFMC_Map", x: 0, y: 64, z: 0 },
@@ -90,13 +98,25 @@ it("shows identity, Discord and characters", async () => {
   expect(screen.getByText("Hazel Stonebrook")).toBeTruthy();
 });
 
-it("shows sessions, marking ones without a logout", async () => {
+it("groups sessions by day and hedges ones without a logout", async () => {
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   await within(sessions).findByText("1 h");
-  expect(within(sessions).getByText("Logged out")).toBeTruthy();
-  expect(within(sessions).getByText("At least 30 min")).toBeTruthy();
-  expect(within(sessions).getByText("No logout recorded")).toBeTruthy();
+  expect(within(sessions).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual(["Today", "Yesterday"]);
+  expect(within(sessions).getByText("at least 30 min")).toBeTruthy();
+  expect(within(sessions).getByText(/^No logout recorded · last seen \d\d:\d\d$/)).toBeTruthy();
+  expect(within(sessions).queryByText(/Logged out/)).toBeNull();
+  expect(within(sessions).queryByRole("link")).toBeNull();
+  expect(within(sessions).getByText(/^Retained session records start/)).toBeTruthy();
+});
+
+it("links each session to its route for those who may see movement", async () => {
+  vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_player_movement"] } as never);
+  render(<PlayerProfile uuid={UUID} />);
+  const sessions = await screen.findByRole("region", { name: "Sessions" });
+  const today = await within(sessions).findByRole("link", { name: /^Today, \d\d:\d\d to \d\d:\d\d, 1 h$/ });
+  expect(today.getAttribute("href")).toBe(`/admin/players/${UUID}/movement?session=s1`);
+  expect(within(sessions).getByRole("link", { name: /^Yesterday, .*, at least 30 min\. No logout recorded/ })).toBeTruthy();
 });
 
 it("shows activity, links victims and loads more", async () => {
@@ -206,7 +226,8 @@ it("retries a failed sessions page from the same cursor", async () => {
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   fireEvent.click(await within(sessions).findByRole("button", { name: "Load more sessions" }));
   expect(await within(sessions).findByText("That page link has expired. Reload to start again.")).toBeTruthy();
-  expect(within(sessions).getByText("No logout recorded")).toBeTruthy();
+  expect(within(sessions).getByText("End unknown")).toBeTruthy();
+  expect(within(sessions).queryByText(/Retained session records/)).toBeNull();
   fireEvent.click(within(sessions).getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(getPlayerSessions).toHaveBeenLastCalledWith(UUID, "s-1"));
 });
