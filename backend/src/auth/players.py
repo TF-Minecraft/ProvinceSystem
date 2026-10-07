@@ -25,7 +25,9 @@ from . import audit, discord_names, roles, users
 DIRECTORY_TTL_SECONDS = 60
 PAGE_SIZE = 50
 QUERY_MAX = 64
-VIEWS = ("activity", "discord", "minecraft", "character")
+VIEWS = ("minecraft", "discord", "character")
+SORTS = ("name", "last_seen")
+ORDERS = ("asc", "desc")
 
 _DIRECTORY_LOCK = threading.Lock()
 _DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
@@ -219,20 +221,6 @@ def _character_matches(character: dict, needle: str) -> bool:
     return needle in character["name"].casefold()
 
 
-def _last_seen_key(e: dict):
-    return (e["last_seen"] is None, -(e["last_seen"] or 0), (e["minecraft_name"] or "").casefold(), e["uuid"])
-
-
-def _minecraft_key(e: dict):
-    return (e["minecraft_name"] is None, (e["minecraft_name"] or "").casefold(), e["uuid"])
-
-
-def _discord_key(e: dict):
-    # By handle, else server nickname (links older than handles may have only the nickname).
-    name = e["discord_username"] or e["discord_nickname"]
-    return (not name, (name or "").casefold(), e["uuid"])
-
-
 def _player_json(entry: dict) -> dict:
     current = (entry["minecraft_name"] or "").casefold()
     return {
@@ -251,7 +239,7 @@ def _player_json(entry: dict) -> dict:
 
 
 def _rows(view: str, entries: list[dict], needle: str) -> tuple[list[tuple[dict, dict | None]], int]:
-    """The view's rows, as (player, character) pairs in order, and how many matching players it leaves out."""
+    """The view's rows, as (player, character) pairs, and how many matching players it leaves out."""
     if view == "character":
         # One row per character. A search for a character finds that character, not their siblings;
         # a search for the player finds all of theirs.
@@ -263,15 +251,39 @@ def _rows(view: str, entries: list[dict], needle: str) -> tuple[list[tuple[dict,
                 omitted += whole
                 continue
             rows += [(entry, c) for c in entry["characters"] if whole or _character_matches(c, needle)]
-        rows.sort(key=lambda r: (r[1]["name"].casefold(), r[1]["name"], r[0]["uuid"], r[1]["character_id"]))
         return rows, omitted
     chosen = [e for e in entries if not needle or _player_matches(e, needle)
               or any(_character_matches(c, needle) for c in e["characters"])]
     if view == "discord":
         linked = [e for e in chosen if e["discord_user_id"]]
-        return [(e, None) for e in sorted(linked, key=_discord_key)], len(chosen) - len(linked)
-    key = _minecraft_key if view == "minecraft" else _last_seen_key
-    return [(e, None) for e in sorted(chosen, key=key)], 0
+        return [(e, None) for e in linked], len(chosen) - len(linked)
+    return [(e, None) for e in chosen], 0
+
+
+def _row_name(view: str, row: tuple[dict, dict | None]) -> str | None:
+    """The name leading the row: the character's, the Discord handle (else server nickname), or the Minecraft name."""
+    entry, character = row
+    if character is not None:
+        return character["name"]
+    if view == "discord":
+        return entry["discord_username"] or entry["discord_nickname"]
+    return entry["minecraft_name"]
+
+
+def _sort(rows: list[tuple[dict, dict | None]], view: str, sort: str, order: str) -> None:
+    """Order the whole list, so every page follows it. Rows without a value come last either way;
+    ties go by name, then UUID, in ascending order whichever way the column runs."""
+    def name(row):
+        value = _row_name(view, row)
+        return (value.casefold(), value) if value else None
+
+    def value(row):
+        return name(row) if sort == "name" else row[0]["last_seen"]
+
+    rows.sort(key=lambda r: (name(r) is None, name(r) or ("", ""), r[0]["uuid"], r[1]["character_id"] if r[1] else ""))
+    # Python's sort is stable, also when reversed, so the ties keep that order.
+    rows.sort(key=lambda r: value(r) or (("", "") if sort == "name" else 0), reverse=order == "desc")
+    rows.sort(key=lambda r: value(r) is None)
 
 
 def _row_json(player: dict, character: dict | None) -> dict:
@@ -280,18 +292,26 @@ def _row_json(player: dict, character: dict | None) -> dict:
     return {"character": dict(character), "player": _player_json(player)}
 
 
-def directory(config: CoreProtectConfig, query: str = "", view: str = "activity", page: int = 1) -> dict:
+def directory(config: CoreProtectConfig, query: str = "", view: str = "minecraft", sort: str = "name",
+              order: str = "asc", page: int = 1) -> dict:
     if view not in VIEWS:
         raise PlayerError(400, "bad_view")
+    if sort not in SORTS:
+        raise PlayerError(400, "bad_sort")
+    if order not in ORDERS:
+        raise PlayerError(400, "bad_order")
     text = " ".join((query or "").split()).lstrip("@")
     if len(text) > QUERY_MAX:
         raise PlayerError(400, "query_too_long")
     entries, status = _directory(config)
     rows, omitted = _rows(view, entries, text.casefold())
+    _sort(rows, view, sort, order)
     page = max(1, page)
     start = (page - 1) * PAGE_SIZE
     return {
         "view": view,
+        "sort": sort,
+        "order": order,
         "rows": [_row_json(*row) for row in rows[start:start + PAGE_SIZE]],
         "total": len(rows),
         # Matching players with no row here: unlinked ones in the Discord view, those without

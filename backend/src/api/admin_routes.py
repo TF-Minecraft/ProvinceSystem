@@ -115,9 +115,10 @@ def lookup_accounts(request: Request, response: Response, q: str = ""):
 
 
 @admin_router.get("/players")
-def get_players(request: Request, response: Response, q: str = "", view: str = "activity",
-                page: int = Query(1, ge=1, le=10_000)):
-    return _players(request, response, lambda config, _viewer: players.directory(config, q, view, page))
+def get_players(request: Request, response: Response, q: str = "", view: str = "minecraft", sort: str = "name",
+                order: str = "asc", page: int = Query(1, ge=1, le=10_000)):
+    return _players(request, response,
+                    lambda config, _viewer: players.directory(config, q, view, sort, order, page))
 
 
 @admin_router.get("/players/{player_uuid}")

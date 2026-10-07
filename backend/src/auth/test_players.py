@@ -88,7 +88,7 @@ def rows(c, **params):
 
 def test_directory_merges_every_source(app, env, world):
     body = client(app, staff(env)).get("/admin/players").json()
-    assert body["view"] == "activity"
+    assert (body["view"], body["sort"], body["order"]) == ("minecraft", "name", "asc")
     assert body["coreprotect"] == {"status": "available", "server_label": "Vardera"}
     assert body["omitted"] == 0
     by_uuid = {p["uuid"]: p for p in body["rows"]}
@@ -100,8 +100,6 @@ def test_directory_merges_every_source(app, env, world):
     assert by_uuid[HAZEL]["last_seen"] == 200
     assert by_uuid[LINKED_ONLY]["minecraft_name"] == "LinkedOnly"
     assert by_uuid[ROSTER_ONLY]["minecraft_name"] is None
-    # Last seen first, never-seen last.
-    assert [p["uuid"] for p in body["rows"]][:2] == [HAZEL, "33333333-3333-3333-3333-333333333333"]
 
 
 def test_directory_lists_only_this_servers_characters(app, env, world):
@@ -118,7 +116,7 @@ def test_directory_lists_only_this_servers_characters(app, env, world):
 @pytest.mark.parametrize("query", ["oldenzo", "HAZELSTONE", "@hazelstone", "stonebrook", HAZEL,
                                    HAZEL.replace("-", ""), "422545450919526411"])
 def test_directory_search(app, env, world, query):
-    for view in ("activity", "discord", "minecraft"):
+    for view in ("minecraft", "discord"):
         body = client(app, staff(env)).get("/admin/players", params={"q": query, "view": view}).json()
         assert [p["uuid"] for p in body["rows"]] == [HAZEL]
 
@@ -137,6 +135,9 @@ def test_directory_views(app, env, world):
         "character_id": "c-Aldric", "name": "Aldric", "status": "alive", "race": "human", "class": "smith"}
     assert (body["total"], body["omitted"]) == (2, 2)
     assert c.get("/admin/players", params={"view": "bogus"}).status_code == 400
+    assert c.get("/admin/players", params={"view": "activity"}).status_code == 400
+    assert c.get("/admin/players", params={"sort": "bogus"}).status_code == 400
+    assert c.get("/admin/players", params={"order": "bogus"}).status_code == 400
     assert c.get("/admin/players", params={"q": "x" * 65}).status_code == 400
 
 
@@ -154,6 +155,35 @@ def test_character_view_has_a_row_per_character(app, env, world):
     assert len(rows(c, view="character", q="hazelstone")) == 3
     body = c.get("/admin/players", params={"view": "character", "q": "quiet"}).json()
     assert (body["rows"], body["omitted"]) == ([], 1)
+
+
+@pytest.mark.parametrize(("view", "sort", "order", "expected"), [
+    ("minecraft", "name", "desc", ["Quiet", "MrEnzo99", "LinkedOnly", None]),
+    # Most recent first; never seen last, by name.
+    ("minecraft", "last_seen", "desc", ["MrEnzo99", "Quiet", "LinkedOnly", None]),
+    ("minecraft", "last_seen", "asc", ["Quiet", "MrEnzo99", "LinkedOnly", None]),
+    ("discord", "name", "desc", ["LinkedOnly", "MrEnzo99"]),
+    ("discord", "last_seen", "desc", ["MrEnzo99", "LinkedOnly"]),
+])
+def test_directory_sorts(app, env, world, view, sort, order, expected):
+    c = client(app, staff(env))
+    assert [p["minecraft_name"] for p in rows(c, view=view, sort=sort, order=order)] == expected
+
+
+def test_character_view_sorts_by_player_last_seen(app, env, world):
+    character(env, "33333333-3333-3333-3333-333333333333", "Zed")
+    c = client(app, staff(env))
+    found = rows(c, view="character", sort="last_seen", order="desc")
+    assert [r["character"]["name"] for r in found] == ["Hazel Stonebrook", "Zed", "Aldric"]
+    found = rows(c, view="character", sort="name", order="desc")
+    assert [r["character"]["name"] for r in found] == ["Zed", "Hazel Stonebrook", "Aldric"]
+
+
+def test_directory_sorts_across_pages(app, env, world, monkeypatch):
+    monkeypatch.setattr(players, "PAGE_SIZE", 1)
+    c = client(app, staff(env))
+    seen = [rows(c, sort="last_seen", order="desc", page=page)[0]["minecraft_name"] for page in (1, 2, 3, 4)]
+    assert seen == ["MrEnzo99", "Quiet", "LinkedOnly", None]
 
 
 def test_directory_pages_each_view(app, env, world, monkeypatch):

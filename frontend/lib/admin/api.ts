@@ -63,6 +63,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
   bad_view: "That view isn’t available.",
+  bad_sort: "That sort isn’t available.",
+  bad_order: "That sort isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
   audit_unavailable: "This can’t be shown because the view couldn’t be logged. Try again.",
@@ -123,15 +125,28 @@ export function revokeSessions(userId: number, reason: string): Promise<unknown>
 
 export type CoreProtectStatus = { status: "available"; reason?: undefined } | { status: "unavailable"; reason: string };
 
-export type PlayerView = "activity" | "discord" | "minecraft" | "character";
+export type PlayerView = "minecraft" | "discord" | "character";
+/** The leading name column, or when the player was last seen. */
+export type PlayerSort = "name" | "last_seen";
+export type SortOrder = "asc" | "desc";
+export type PlayerListing = { view: PlayerView; sort: PlayerSort; order: SortOrder };
 
-/** The view in a page link; links from before the views (`?sort=`) still land on the matching one. */
-export function parsePlayerView(view: string | undefined, legacySort?: string): PlayerView {
-  for (const value of [view, legacySort]) {
-    if (value === "activity" || value === "discord" || value === "minecraft" || value === "character") return value;
-    if (value === "last_seen") return "activity";
-  }
-  return "activity";
+/** Names read A to Z; last seen reads most recent first. */
+export function defaultOrder(sort: PlayerSort): SortOrder {
+  return sort === "last_seen" ? "desc" : "asc";
+}
+
+/**
+ * The view and order in a page link. Older links still land somewhere sensible: `?view=activity` and
+ * `?sort=last_seen` (before the views) open the Minecraft list by last seen, and `?sort=<view>` opens that view.
+ */
+export function parsePlayerListing(view?: string, sort?: string, order?: string): PlayerListing {
+  const isView = (v?: string): v is PlayerView => v === "minecraft" || v === "discord" || v === "character";
+  const byLastSeen = view === "activity" || sort === "last_seen";
+  const chosenView = isView(view) ? view : isView(sort) ? sort : "minecraft";
+  const chosenSort: PlayerSort = byLastSeen ? "last_seen" : "name";
+  const chosenOrder = order === "asc" || order === "desc" ? order : defaultOrder(chosenSort);
+  return { view: chosenView, sort: chosenSort, order: chosenOrder };
 }
 
 export type PlayerSummary = {
@@ -162,6 +177,8 @@ export type DirectoryCharacter = {
 export type CharacterRow = { character: DirectoryCharacter; player: PlayerSummary };
 
 type DirectoryPage = {
+  sort: PlayerSort;
+  order: SortOrder;
   total: number;
   /** Players matching the search with no row in this view: unlinked (Discord), or without a character. */
   omitted: number;
@@ -171,7 +188,7 @@ type DirectoryPage = {
 };
 
 export type PlayerDirectory = DirectoryPage & (
-  | { view: "activity" | "discord" | "minecraft"; rows: PlayerSummary[] }
+  | { view: "discord" | "minecraft"; rows: PlayerSummary[] }
   | { view: "character"; rows: CharacterRow[] }
 );
 
@@ -282,8 +299,11 @@ function query(params: Record<string, string | number | null | undefined>): stri
   return text ? `?${text}` : "";
 }
 
-export function getPlayers(params: { q?: string; view?: PlayerView; page?: number }): Promise<PlayerDirectory> {
-  return adminRequest(`/admin/players${query({ q: params.q?.trim(), view: params.view, page: params.page })}`);
+export function getPlayers(
+  params: { q?: string; view?: PlayerView; sort?: PlayerSort; order?: SortOrder; page?: number },
+): Promise<PlayerDirectory> {
+  const { q, view, sort, order, page } = params;
+  return adminRequest(`/admin/players${query({ q: q?.trim(), view, sort, order, page })}`);
 }
 
 export function getPlayer(uuid: string): Promise<PlayerProfile> {

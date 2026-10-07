@@ -6,21 +6,24 @@ import { AccountApiError } from "../../../lib/account/api";
 import {
   adminErrorMessage,
   coreProtectMessage,
+  defaultOrder,
   getPlayers,
   isStaffRole,
   roleLabel,
   type CharacterRow,
   type PlayerDirectory,
+  type PlayerListing,
+  type PlayerSort,
   type PlayerSummary,
   type PlayerView,
+  type SortOrder,
 } from "../../../lib/admin/api";
 import { formatAgo, formatEpoch } from "../../../lib/admin/time";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 
 const VIEWS: { key: PlayerView; label: string }[] = [
-  { key: "activity", label: "Activity" },
-  { key: "discord", label: "Discord" },
   { key: "minecraft", label: "Minecraft" },
+  { key: "discord", label: "Discord" },
   { key: "character", label: "Character" },
 ];
 const SEARCH_DELAY_MS = 250;
@@ -36,10 +39,13 @@ const leadClass =
 const nameLinkClass =
   "font-semibold text-[var(--tfmc-cream)] underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline";
 const headClass = "py-2 pr-3 font-semibold";
+const lastSeenHeadClass = "py-2 font-semibold";
 const cellClass = "py-2.5 pr-3 align-top";
 const smallClass = "block text-xs text-[var(--tfmc-stone)]";
 
-type Props = { initialQuery: string; initialView: PlayerView; initialPage: number };
+type Props = { initialQuery: string; initialListing: PlayerListing; initialPage: number };
+
+type Sorting = { sort: PlayerSort; order: SortOrder; onSort: (sort: PlayerSort) => void };
 
 type Load =
   | { kind: "loading" }
@@ -84,17 +90,16 @@ function Characters({ player }: { player: PlayerSummary }) {
 }
 
 /** When the player was last on the server. Without CoreProtect, "never" can't be known. */
-function LastSeen({ player, known, strong = false }: { player: PlayerSummary; known: boolean; strong?: boolean }) {
+function LastSeen({ player, known }: { player: PlayerSummary; known: boolean }) {
   if (player.online) {
     return (
-      <span className={`inline-flex items-center gap-1.5 text-[#9fd8a4] ${strong ? "font-semibold" : ""}`}>
+      <span className="inline-flex items-center gap-1.5 text-[#9fd8a4]">
         <span aria-hidden className="h-2 w-2 rounded-full bg-[#6cc072]" />
         Seen just now
       </span>
     );
   }
-  const text = player.last_seen === null && !known ? "Unknown" : formatAgo(player.last_seen);
-  return <span className={strong ? "font-semibold text-[var(--tfmc-cream)]" : ""}>{text}</span>;
+  return <>{player.last_seen === null && !known ? "Unknown" : formatAgo(player.last_seen)}</>;
 }
 
 function lastSeenCell(player: PlayerSummary, known: boolean) {
@@ -118,54 +123,41 @@ function Table({ head, children }: { head: ReactNode; children: ReactNode }) {
   );
 }
 
-function ActivityTable({ rows, known }: { rows: PlayerSummary[]; known: boolean }) {
+/** A column heading that sorts the whole list, every page of it; choosing it again reverses it. */
+function SortHeader({ column, label, sorting, className }: {
+  column: PlayerSort;
+  label: string;
+  sorting: Sorting;
+  className: string;
+}) {
+  const active = sorting.sort === column;
+  // The arrow shows the order now, or on hover the order a click would give.
+  const shown = active ? sorting.order : defaultOrder(column);
   return (
-    <Table
-      head={
-        <>
-          <th scope="col" className={headClass}>Last seen</th>
-          <th scope="col" className={headClass}>Minecraft</th>
-          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Discord</th>
-          <th scope="col" className={`hidden md:table-cell ${headClass}`}>Characters</th>
-        </>
-      }
-    >
-      {rows.map((player) => (
-        <tr key={player.uuid}>
-          <td className={`whitespace-nowrap text-base sm:text-lg ${cellClass}`} title={formatEpoch(player.last_seen)}>
-            <LastSeen player={player} known={known} strong />
-          </td>
-          <td className={cellClass}>
-            <Link href={profileHref(player)} className={nameLinkClass}>
-              <MinecraftName player={player} />
-            </Link>
-            <RoleTag player={player} />
-            {player.discord_user_id ? <span className={`${smallClass} sm:hidden`}>{discordLabel(player)}</span> : null}
-            {player.characters.length ? (
-              <span className={`${smallClass} md:hidden`}>{player.characters.join(", ")}</span>
-            ) : null}
-          </td>
-          <td className={`hidden text-[var(--tfmc-mist)] sm:table-cell ${cellClass}`}>
-            <Discord player={player} />
-          </td>
-          <td className={`hidden max-w-[14rem] truncate text-[var(--tfmc-mist)] md:table-cell ${cellClass}`} title={player.characters.join(", ")}>
-            <Characters player={player} />
-          </td>
-        </tr>
-      ))}
-    </Table>
+    <th scope="col" className={className} aria-sort={active ? (sorting.order === "asc" ? "ascending" : "descending") : undefined}>
+      <button
+        type="button"
+        onClick={() => sorting.onSort(column)}
+        className="group inline-flex items-center gap-1 uppercase tracking-wider hover:text-[var(--tfmc-cream)]"
+      >
+        {label}
+        <span aria-hidden className={active ? "text-[var(--tfmc-accent)]" : "opacity-0 group-hover:opacity-60"}>
+          {shown === "asc" ? "↑" : "↓"}
+        </span>
+      </button>
+    </th>
   );
 }
 
-function DiscordTable({ rows, known }: { rows: PlayerSummary[]; known: boolean }) {
+function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: boolean; sorting: Sorting }) {
   return (
     <Table
       head={
         <>
-          <th scope="col" className={headClass}>Discord</th>
+          <SortHeader column="name" label="Discord" sorting={sorting} className={headClass} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Minecraft</th>
           <th scope="col" className={`hidden md:table-cell ${headClass}`}>Characters</th>
-          <th scope="col" className="py-2 font-semibold">Last seen</th>
+          <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
     >
@@ -202,15 +194,15 @@ function DiscordTable({ rows, known }: { rows: PlayerSummary[]; known: boolean }
   );
 }
 
-function MinecraftTable({ rows, known }: { rows: PlayerSummary[]; known: boolean }) {
+function MinecraftTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: boolean; sorting: Sorting }) {
   return (
     <Table
       head={
         <>
-          <th scope="col" className={headClass}>Minecraft</th>
+          <SortHeader column="name" label="Minecraft" sorting={sorting} className={headClass} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Discord</th>
           <th scope="col" className={`hidden md:table-cell ${headClass}`}>Characters</th>
-          <th scope="col" className="py-2 font-semibold">Last seen</th>
+          <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
     >
@@ -242,14 +234,14 @@ function MinecraftTable({ rows, known }: { rows: PlayerSummary[]; known: boolean
   );
 }
 
-function CharacterTable({ rows, known }: { rows: CharacterRow[]; known: boolean }) {
+function CharacterTable({ rows, known, sorting }: { rows: CharacterRow[]; known: boolean; sorting: Sorting }) {
   return (
     <Table
       head={
         <>
-          <th scope="col" className={headClass}>Character</th>
+          <SortHeader column="name" label="Character" sorting={sorting} className={headClass} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Player</th>
-          <th scope="col" className="py-2 font-semibold">Player last seen</th>
+          <SortHeader column="last_seen" label="Player last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
     >
@@ -296,10 +288,12 @@ function countLine(data: PlayerDirectory): string {
   return data.view === "character" ? `${counted} on ${source}` : `${counted} · activity from ${source}`;
 }
 
-export default function PlayersDirectory({ initialQuery, initialView, initialPage }: Props) {
+export default function PlayersDirectory({ initialQuery, initialListing, initialPage }: Props) {
   const [query, setQuery] = useState(initialQuery);
   const [search, setSearch] = useState(initialQuery);
-  const [view, setView] = useState<PlayerView>(initialView);
+  const [view, setView] = useState<PlayerView>(initialListing.view);
+  const [sort, setSort] = useState<PlayerSort>(initialListing.sort);
+  const [order, setOrder] = useState<SortOrder>(initialListing.order);
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const request = useRef(0);
@@ -313,13 +307,18 @@ export default function PlayersDirectory({ initialQuery, initialView, initialPag
   useEffect(() => {
     const id = ++request.current;
     const url = new URL(window.location.href);
-    url.searchParams.delete("sort");
-    for (const [key, value] of [["q", search.trim()], ["view", view === "activity" ? "" : view], ["page", page > 1 ? String(page) : ""]]) {
-      if (value) url.searchParams.set(key, value);
-      else url.searchParams.delete(key);
-    }
+    const params = [
+      ["q", search.trim()],
+      ["view", view === "minecraft" ? "" : view],
+      ["sort", sort === "name" ? "" : sort],
+      ["order", order === defaultOrder(sort) ? "" : order],
+      ["page", page > 1 ? String(page) : ""],
+    ];
+    // Cleared first, so the address keeps this order however the choices were made.
+    for (const [key] of params) url.searchParams.delete(key);
+    for (const [key, value] of params) if (value) url.searchParams.set(key, value);
     window.history.replaceState(null, "", url);
-    getPlayers({ q: search, view, page })
+    getPlayers({ q: search, view, sort, order, page })
       .then((data) => {
         if (id === request.current) setLoad({ kind: "ready", data });
       })
@@ -330,11 +329,18 @@ export default function PlayersDirectory({ initialQuery, initialView, initialPag
           ? { kind: "failed", message: adminErrorMessage(err) }
           : { kind: gateKind(err) });
       });
-  }, [search, view, page]);
+  }, [search, view, sort, order, page]);
 
   function choose(next: PlayerView) {
     if (next === view) return;
     setView(next);
+    setPage(1);
+  }
+
+  // The server sorts the whole list, so the order runs across every page, not just this one.
+  function sortBy(next: PlayerSort) {
+    setOrder(next === sort ? (order === "asc" ? "desc" : "asc") : defaultOrder(next));
+    setSort(next);
     setPage(1);
   }
 
@@ -361,6 +367,7 @@ export default function PlayersDirectory({ initialQuery, initialView, initialPag
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
   const notice = data ? coreProtectMessage(data.coreprotect) : null;
   const known = data?.coreprotect.status === "available";
+  const sorting: Sorting = { sort, order, onSort: sortBy };
 
   return (
     <section aria-label="Players" className="mt-6">
@@ -457,13 +464,11 @@ export default function PlayersDirectory({ initialQuery, initialView, initialPag
             {data.rows.length === 0 ? (
               <p className="mt-4 text-sm text-[var(--tfmc-mist)]">No {data.view === "character" ? "characters" : "players"} match that.</p>
             ) : data.view === "character" ? (
-              <CharacterTable rows={data.rows} known={known} />
+              <CharacterTable rows={data.rows} known={known} sorting={sorting} />
             ) : data.view === "discord" ? (
-              <DiscordTable rows={data.rows} known={known} />
-            ) : data.view === "minecraft" ? (
-              <MinecraftTable rows={data.rows} known={known} />
+              <DiscordTable rows={data.rows} known={known} sorting={sorting} />
             ) : (
-              <ActivityTable rows={data.rows} known={known} />
+              <MinecraftTable rows={data.rows} known={known} sorting={sorting} />
             )}
             {pages > 1 ? (
               <div className="mt-4 flex items-center gap-3 text-sm text-[var(--tfmc-stone)]">
