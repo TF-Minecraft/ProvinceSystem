@@ -801,6 +801,7 @@ export default function MapCanvas({
               view={tileView}
               className={pixelatedClass(viewport.displayScale)}
               style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
+              seeThrough
               // A newer pyramid replaced the one this manifest names (the
               // server hands out the last finished one while it builds).
               onTileError={rasterTileState.refresh}
