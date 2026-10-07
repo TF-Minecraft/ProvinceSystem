@@ -175,6 +175,12 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+/** `value` (CSS pixels) moved onto the nearest whole device pixel. */
+function onDevicePixel(value: number): number {
+  const ratio = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  return Math.round(value * ratio) / ratio;
+}
+
 export function readViewportSize(element: HTMLElement): Size {
   const rect = element.getBoundingClientRect();
   return { w: rect.width, h: rect.height };
@@ -207,6 +213,8 @@ export function useMapViewport({
   const appliedZoom = restingZoom ? zoomBase : 1;
   const appliedZoomRef = useRef(appliedZoom);
   appliedZoomRef.current = appliedZoom;
+  const restingZoomRef = useRef(restingZoom);
+  restingZoomRef.current = restingZoom;
   const liveActiveRef = useRef(false);
   if (!liveActiveRef.current) transformRef.current = transform;
   const onLiveTransformRef = useRef(onLiveTransform);
@@ -271,10 +279,15 @@ export function useMapViewport({
       // outline filter) stand down until the map settles.
       content.setAttribute("data-gesturing", "");
       content.style.transition = "none";
+      // A drag only moves the map: like the resting position (see below) it
+      // sits on whole device pixels, or every tile edge straddles a pixel and
+      // the seams between tiles show as a grid of dark lines while it moves.
+      const liveScale = displayScale / appliedZoomRef.current;
+      const pixelAligned = restingZoomRef.current && liveScale === 1;
       content.style.transform = viewportTransformStyle(
-        displayScale / appliedZoomRef.current,
-        next.translateX,
-        next.translateY
+        liveScale,
+        pixelAligned ? onDevicePixel(next.translateX) : next.translateX,
+        pixelAligned ? onDevicePixel(next.translateY) : next.translateY
       );
       onLiveTransformRef.current?.({
         displayScale,
@@ -810,14 +823,10 @@ export function useMapViewport({
   // edges (see TileLayer) land on pixel boundaries too; a sub-pixel shift no
   // one can see.
   const restingOnZoom = restingZoom && appliedZoom === displayScale;
-  const devicePixelRatio =
-    typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
-  const onDevicePixel = (value: number) =>
-    restingOnZoom ? Math.round(value * devicePixelRatio) / devicePixelRatio : value;
   const transformStyle = viewportTransformStyle(
     displayScale / appliedZoom,
-    onDevicePixel(transform.translateX),
-    onDevicePixel(transform.translateY)
+    restingOnZoom ? onDevicePixel(transform.translateX) : transform.translateX,
+    restingOnZoom ? onDevicePixel(transform.translateY) : transform.translateY
   );
   const cursorClassName = isPanning ? "cursor-grabbing" : "cursor-grab";
   const transformTransition = isPanning ? undefined : transition;
