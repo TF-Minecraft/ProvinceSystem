@@ -38,9 +38,11 @@ const leadClass =
   "text-base font-semibold text-[var(--tfmc-cream)] underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline sm:text-lg";
 const nameLinkClass =
   "font-semibold text-[var(--tfmc-cream)] underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline";
+// Fixed column widths, so sorting or paging never shifts the columns about.
 const headClass = "py-2 pr-3 font-semibold";
-const lastSeenHeadClass = "py-2 font-semibold";
-const cellClass = "py-2.5 pr-3 align-top";
+const charactersHeadClass = `hidden w-56 md:table-cell ${headClass}`;
+const lastSeenHeadClass = "w-36 py-2 font-semibold";
+const cellClass = "break-words py-2.5 pr-3 align-top";
 const smallClass = "block text-xs text-[var(--tfmc-stone)]";
 
 type Props = { initialQuery: string; initialListing: PlayerListing; initialPage: number };
@@ -113,7 +115,7 @@ function lastSeenCell(player: PlayerSummary, known: boolean) {
 function Table({ head, children }: { head: ReactNode; children: ReactNode }) {
   return (
     <div className="mt-2 overflow-x-auto">
-      <table className="w-full text-left text-sm">
+      <table className="w-full table-fixed text-left text-sm">
         <thead className="text-xs uppercase tracking-wider text-[var(--tfmc-stone)]">
           <tr>{head}</tr>
         </thead>
@@ -156,7 +158,7 @@ function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: 
         <>
           <SortHeader column="name" label="Discord" sorting={sorting} className={headClass} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Minecraft</th>
-          <th scope="col" className={`hidden md:table-cell ${headClass}`}>Characters</th>
+          <th scope="col" className={charactersHeadClass}>Characters</th>
           <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
@@ -183,7 +185,7 @@ function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: 
               <MinecraftName player={player} />
               <RoleTag player={player} />
             </td>
-            <td className={`hidden max-w-[14rem] truncate text-[var(--tfmc-mist)] md:table-cell ${cellClass}`} title={player.characters.join(", ")}>
+            <td className={`hidden text-[var(--tfmc-mist)] md:table-cell ${cellClass}`}>
               <Characters player={player} />
             </td>
             {lastSeenCell(player, known)}
@@ -201,7 +203,7 @@ function MinecraftTable({ rows, known, sorting }: { rows: PlayerSummary[]; known
         <>
           <SortHeader column="name" label="Minecraft" sorting={sorting} className={headClass} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Discord</th>
-          <th scope="col" className={`hidden md:table-cell ${headClass}`}>Characters</th>
+          <th scope="col" className={charactersHeadClass}>Characters</th>
           <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
@@ -224,7 +226,7 @@ function MinecraftTable({ rows, known, sorting }: { rows: PlayerSummary[]; known
           <td className={`hidden text-[var(--tfmc-mist)] sm:table-cell ${cellClass}`}>
             <Discord player={player} />
           </td>
-          <td className={`hidden max-w-[14rem] truncate text-[var(--tfmc-mist)] md:table-cell ${cellClass}`} title={player.characters.join(", ")}>
+          <td className={`hidden text-[var(--tfmc-mist)] md:table-cell ${cellClass}`}>
             <Characters player={player} />
           </td>
           {lastSeenCell(player, known)}
