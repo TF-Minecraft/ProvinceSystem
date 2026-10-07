@@ -716,3 +716,85 @@ WHEN NEW.id IS NOT NULL AND EXISTS (SELECT 1 FROM admin_audit WHERE id = NEW.id)
 BEGIN
     SELECT RAISE(ABORT, 'admin_audit is append-only');
 END;
+
+-- LuckPerms mirror for the staff panel. The TFMCWeb bridge publishes a whole
+-- snapshot, which replaces these tables in one transaction; see
+-- src/luckperms/README.md. Contexts are canonical JSON ({} when global) and
+-- expiry is unix seconds, 0 when permanent.
+CREATE TABLE IF NOT EXISTS lp_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    server TEXT,
+    hash TEXT,
+    generated_at INTEGER,
+    -- Newest bridge revision applied: a snapshot's, or a change result's.
+    revision INTEGER,
+    received_at TEXT,
+    -- Last time the bridge confirmed the snapshot is still current.
+    checked_at TEXT,
+    -- Last time an applying bridge asked for changes.
+    polled_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS lp_groups (
+    name TEXT PRIMARY KEY,
+    display_name TEXT,
+    weight INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS lp_group_nodes (
+    group_name TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value INTEGER NOT NULL,
+    contexts TEXT NOT NULL,
+    expiry INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_lp_group_nodes_group ON lp_group_nodes(group_name);
+
+CREATE TABLE IF NOT EXISTS lp_tracks (
+    name TEXT PRIMARY KEY,
+    groups_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lp_users (
+    uuid TEXT PRIMARY KEY,
+    name TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_lp_users_name ON lp_users(lower(name));
+
+CREATE TABLE IF NOT EXISTS lp_user_nodes (
+    uuid TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value INTEGER NOT NULL,
+    contexts TEXT NOT NULL,
+    expiry INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_uuid ON lp_user_nodes(uuid);
+CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_key ON lp_user_nodes(key);
+
+-- Changes staff queued for the bridge. Rows are kept as the change history.
+CREATE TABLE IF NOT EXISTS lp_changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    actor_user_id INTEGER NOT NULL,
+    actor_name TEXT,
+    actor_role TEXT,
+    actor_minecraft_uuid TEXT,
+    target_type TEXT NOT NULL CHECK (target_type IN ('user', 'group', 'track')),
+    target TEXT NOT NULL,
+    target_name TEXT,
+    description TEXT NOT NULL,
+    ops_json TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'sent', 'applied', 'failed', 'expired', 'unknown')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    sent_at TEXT,
+    finished_at TEXT,
+    error TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_lp_changes_status ON lp_changes(status, id);
+CREATE INDEX IF NOT EXISTS idx_lp_changes_target ON lp_changes(target_type, target, id);

@@ -185,6 +185,7 @@ def post_revoke_sessions(user_id: int, body: ReasonBody, request: Request, respo
 _WRITE_ROUTES = (
     (re.compile(r"^/admin/accounts/([^/]+)/role$"), "account.role.change"),
     (re.compile(r"^/admin/accounts/([^/]+)/sessions/revoke$"), "account.sessions.revoke"),
+    (re.compile(r"^/admin/luckperms/changes$"), "luckperms.change"),
 )
 
 
@@ -203,7 +204,7 @@ def _audit_invalid_write(request: Request, exc: RequestValidationError) -> None:
         return
     if actor is None:
         return
-    raw_id = match.group(1)
+    raw_id = match.group(1) if match.groups() else ""
     fields = sorted({".".join(str(part) for part in error.get("loc", ())[1:]) for error in exc.errors()})
     audit.record_refusal(
         actor=actor, action=action, outcome="invalid",
@@ -219,5 +220,9 @@ async def _validation_handler(request: Request, exc: RequestValidationError):
 
 def install(app: FastAPI) -> None:
     """Mount the staff routes and audit their malformed writes."""
+    from src.api.luckperms_routes import plugin_router, staff_router
+
     app.include_router(admin_router)
+    app.include_router(staff_router)
+    app.include_router(plugin_router)
     app.add_exception_handler(RequestValidationError, _validation_handler)
