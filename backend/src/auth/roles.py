@@ -12,6 +12,8 @@ CAPABILITIES = {
     "view_player_messages": "admin",
     # Where players went, minute by minute; every view is audited.
     "view_player_movement": "admin",
+    # The rail network as VehicleFramework saved it.
+    "view_rail": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
     # In-game LuckPerms ranks: everyone on staff sees them; what an admin may

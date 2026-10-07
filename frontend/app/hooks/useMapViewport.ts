@@ -79,6 +79,9 @@ export type UseMapViewportOptions = {
   maxDisplayScale?: number;
 };
 
+/** How much of the view a framed rectangle fills (default 0.55), and how far in it may zoom (default 5x). */
+export type MapFocusFraming = { fill?: number; maxUserScale?: number };
+
 export type MapFocusInset = {
   left?: number;
   right?: number;
@@ -111,7 +114,7 @@ export type UseMapViewportResult = {
   /** Zoom by `factor` around the viewport centre, animated. */
   zoomBy: (factor: number) => void;
   /** Animate to frame a map-space rectangle, clear of `inset` screen furniture. */
-  focusMapRect: (rect: MapRect, inset?: MapFocusInset) => void;
+  focusMapRect: (rect: MapRect, inset?: MapFocusInset, framing?: MapFocusFraming) => void;
   /**
    * True once for the click that ends a drag. The browser still fires `click`
    * after a press that panned the map; the canvas asks this first so a pan
@@ -388,14 +391,14 @@ export function useMapViewport({
   );
 
   const focusMapRect = useCallback(
-    (rect: MapRect, inset?: MapFocusInset) => {
+    (rect: MapRect, inset?: MapFocusInset, framing?: MapFocusFraming) => {
       const viewport = viewportSizeRef.current;
       if (viewport.w <= 0 || viewport.h <= 0) return;
       animateTo(
         transformForMapRect(viewport, mapSizeRef.current, rect, fitModeRef.current, {
-          fill: 0.55,
+          fill: framing?.fill ?? 0.55,
           // A one-province realm should not fill the screen with four pixels.
-          maxUserScale: 5,
+          maxUserScale: framing?.maxUserScale ?? 5,
           inset,
         }),
         VIEWPORT_FOCUS_TRANSITION,
