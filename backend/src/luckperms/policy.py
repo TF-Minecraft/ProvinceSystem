@@ -20,6 +20,7 @@ class Policy:
     admin_groups: frozenset[str]
     patreon_groups: frozenset[str]
     admin_permissions: tuple[str, ...]
+    root_only_permissions: tuple[str, ...]
 
 
 @lru_cache(maxsize=1)
@@ -29,6 +30,7 @@ def load() -> Policy:
         admin_groups=frozenset(str(g).lower() for g in raw.get("admin_groups") or ()),
         patreon_groups=frozenset(str(g).lower() for g in raw.get("patreon_groups") or ()),
         admin_permissions=tuple(str(p).lower() for p in raw.get("admin_permissions") or ()),
+        root_only_permissions=tuple(str(p).lower() for p in raw.get("root_only_permissions") or ()),
     )
 
 
@@ -60,6 +62,8 @@ def node_role(policy: Policy, groups: dict[str, dict], node: dict) -> str:
     if node_kind == "group":
         return group_role(policy, groups, nodes.group_of(key) or "")
     if node_kind == "meta" or "*" in key or key.startswith("r="):
+        return "root"
+    if any(fnmatch.fnmatchcase(key, pattern) for pattern in policy.root_only_permissions):
         return "root"
     if any(fnmatch.fnmatchcase(key, pattern) for pattern in policy.admin_permissions):
         return "admin"

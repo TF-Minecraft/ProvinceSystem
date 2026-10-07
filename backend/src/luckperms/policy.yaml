@@ -21,6 +21,20 @@ patreon_groups:
   - gilded
   - ascended
 
+# Never admin-editable, even inside an allowed namespace (armourshop.admin,
+# professions.admin...). Checked before admin_permissions.
+root_only_permissions:
+  - "*.admin"
+  - "*.admin.*"
+  - "*.staff"
+  - "*.staff.*"
+  - "*.mod"
+  - "*.moderator"
+  - "*.bypass"
+  - "*.bypass.*"
+  - "*.reload"
+  - "*.op"
+
 # Player permissions admins may set or unset. Shell-style patterns, any case.
 # Every other permission, and any key containing "*" or written as a regex
 # ("r=..."), is root-only. These are the progress and preference nodes in use.

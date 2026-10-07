@@ -171,7 +171,8 @@ def test_policy_puts_staff_power_out_of_admin_reach():
     assert policy.node_role(rules, groups, node("group.staff")) == "root"
     assert policy.node_role(rules, groups, node("professions.chef_1")) == "admin"
     assert policy.node_role(rules, groups, node("professions.chef_1", value=False)) == "admin"
-    for key in ("*", "professions.*", "essentials.kick", "tfmc.staff", "luckperms.user.parent.add",
+    assert policy.node_role(rules, groups, node("armourshop.ravoukar")) == "admin"
+    for key in ("*", "professions.*", "essentials.kick", "armourshop.admin", "professions.admin", "mural.bypass.x", "tfmc.staff", "luckperms.user.parent.add",
                 "minecraft.command.op", "r=professions.*", "prefix.300.&cOwner", "weight.999", "meta.x.y"):
         assert policy.node_role(rules, groups, node(key)) == "root", key
     # A listed group that inherits a staff group, in any context, is no longer an admin group.
@@ -388,7 +389,7 @@ def test_demotion_after_queueing_cancels_the_change(app, bridge, staff, env):
         conn.execute("UPDATE users SET role = 'mod' WHERE discord_username = 'adam'")
         conn.commit()
     assert changes.fetch_for_bridge() == []
-    assert changes.get_change(change["id"])["error"] == "actor_changed"
+    assert changes.get_change(change["id"])["error"] == "no_longer_allowed"
 
 
 def test_read_only_site_shows_but_never_changes(app, bridge, staff, monkeypatch):
@@ -405,3 +406,42 @@ def test_malformed_change_is_audited(app, bridge, staff, env):
     assert response.status_code == 422
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"]) == ("luckperms.change", "invalid")
+
+
+def test_meta_keys_keep_their_spaces():
+    assert nodes.from_request({"key": "prefix.100.&6[Noble] "}, new=True)["key"] == "prefix.100.&6[Noble] "
+    assert nodes.from_request({"key": "prefix.100.&6[Noble] "}, new=False)["key"] == "prefix.100.&6[Noble] "
+    assert nodes.from_request({"key": " tips.off "}, new=True)["key"] == "tips.off"
+
+
+def test_bridge_rechecks_admin_changes_against_live_groups(app, bridge, staff):
+    submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}])
+    submit(app, staff["root"], "user", BOB, [{"op": "add_node", "node": {"key": "tips.off"}}])
+    sent = {c["target"]: c for c in bridge.get("/luckperms/plugin/changes", headers=PLUGIN).json()["changes"]}
+    assert set(sent[ALICE]["guard"]["admin_groups"]) == {
+        "default", "commoner", "noble", "helper_player", "helper_inactive", "helper"}
+    assert "guard" not in sent[BOB]
+
+
+def test_definition_changes_go_alone_and_hold_later_changes(app, bridge, staff):
+    group_change = submit(app, staff["root"], "group", "helper",
+                          [{"op": "add_node", "node": {"key": "group.staff_player"}}]).json()
+    submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "group.helper"}}])
+    first = bridge.get("/luckperms/plugin/changes", headers=PLUGIN).json()["changes"]
+    assert [c["id"] for c in first] == [group_change["id"]]
+    assert bridge.get("/luckperms/plugin/changes", headers=PLUGIN).json()["changes"] == []
+    helper = group("helper", 140, "group.helper_inactive", "group.staff_player", prefix="&dHelper")
+    bridge.post("/luckperms/plugin/changes/results", headers=PLUGIN,
+                json={"results": [{"id": group_change["id"], "ok": True, "revision": 3000, "state": helper}]})
+    # helper now inherits a staff group, so the admin's queued grant is cancelled.
+    assert bridge.get("/luckperms/plugin/changes", headers=PLUGIN).json()["changes"] == []
+    alice = client(app, staff["admin"]).get(f"/admin/luckperms/players/{ALICE}").json()
+    assert alice["changes"][0]["error"] == "no_longer_allowed"
+
+
+def test_timeouts_settle_without_the_bridge(app, bridge, staff, monkeypatch):
+    change = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}]).json()
+    changes.fetch_for_bridge()
+    later = time.time() + changes.RESULT_WAIT_SECONDS + 5
+    monkeypatch.setattr(changes.time, "time", lambda: later)
+    assert client(app, staff["mod"]).get(f"/admin/luckperms/changes/{change['id']}").json()["status"] == "unknown"

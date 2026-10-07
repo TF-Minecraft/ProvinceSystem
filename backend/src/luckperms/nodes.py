@@ -95,8 +95,10 @@ def from_request(raw, *, now: int | None = None, new: bool) -> dict:
     key = raw.get("key")
     if not isinstance(key, str):
         raise NodeError("bad_node")
-    key = key.strip()
-    if not key or len(key) > KEY_MAX or not _printable(key):
+    # Removals name an existing node exactly; prefixes and suffixes may end in a space on purpose.
+    if new and kind(key.strip()) != "meta":
+        key = key.strip()
+    if not key.strip() or len(key) > KEY_MAX or not _printable(key):
         raise NodeError("bad_node")
     value = raw.get("value", True)
     if not isinstance(value, bool):

@@ -333,6 +333,7 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
                 target_type, target, raw_ops = _shape(target_type, target, raw_ops)
                 detail_target = {"target_type": target_type, "target": target}
                 state = mirror.status(conn)
+                settle_timeouts(conn)
                 if read_only() or not state["applying"]:
                     raise AdminError(503, "bridge_offline", "unavailable")
                 if conn.execute(
@@ -404,8 +405,14 @@ def _change_json(row) -> dict:
     }
 
 
+def _settled_reads(conn) -> None:
+    settle_timeouts(conn)
+    conn.commit()
+
+
 def get_change(change_id: int) -> dict:
     with connect() as conn:
+        _settled_reads(conn)
         row = conn.execute("SELECT * FROM lp_changes WHERE id = ?", (change_id,)).fetchone()
     if row is None:
         raise AdminError(404, "change_not_found", "not_found")
@@ -419,6 +426,7 @@ def list_changes(target_type: str | None = None, target: str | None = None, limi
         args += [target_type, target]
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     with connect() as conn:
+        _settled_reads(conn)
         rows = conn.execute(f"SELECT * FROM lp_changes {clause} ORDER BY id DESC LIMIT ?",
                             [*args, max(1, min(limit, HISTORY_LIMIT))]).fetchall()
     return [_change_json(row) for row in rows]
@@ -449,37 +457,64 @@ def _still_allowed(conn, row) -> bool:
     return True
 
 
+def settle_timeouts(conn, now: float | None = None) -> None:
+    """Expire unfetched changes and mark unanswered ones unknown, whether or not the bridge polls."""
+    now = time.time() if now is None else now
+    for row in conn.execute("SELECT id, status, created_at, sent_at FROM lp_changes WHERE status IN ('pending', 'sent')"):
+        if row["status"] == "sent" and now - _parse(row["sent_at"]) > RESULT_WAIT_SECONDS:
+            conn.execute("UPDATE lp_changes SET status = 'unknown', finished_at = ?, error = 'no_result' WHERE id = ?",
+                         (_iso(now), row["id"]))
+        elif row["status"] == "pending" and now - _parse(row["created_at"]) > PENDING_TTL_SECONDS:
+            conn.execute("UPDATE lp_changes SET status = 'expired', finished_at = ?, error = 'expired' WHERE id = ?",
+                         (_iso(now), row["id"]))
+
+
+def _guard(conn, row) -> dict | None:
+    """What the bridge must recheck against live LuckPerms for an admin's change.
+
+    The mirror can lag in-game edits, so the bridge refuses the change if the
+    player now holds a group outside the admin groups, or a group being added
+    now inherits one.
+    """
+    if row["target_type"] != "user" or row["actor_role"] == "root":
+        return None
+    rules = policy.load()
+    groups = mirror.load_groups(conn)
+    allowed = sorted(name for name in groups if policy.group_role(rules, groups, name) == "admin")
+    return {"admin_groups": allowed}
+
+
 def fetch_for_bridge() -> list[dict]:
-    """Changes for the bridge, oldest first. Each is handed out once; records the poll."""
+    """Changes for the bridge, oldest first. Each is handed out once; records the poll.
+
+    A group or track change is handed out on its own, and nothing more until
+    its result arrives: later changes are checked against the definitions it
+    leaves behind.
+    """
     now = time.time()
     with connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
         try:
             mirror.record_poll(conn)
+            settle_timeouts(conn, now)
             out = []
-            rows = conn.execute(
-                "SELECT * FROM lp_changes WHERE status IN ('pending', 'sent') ORDER BY id").fetchall()
+            definition_sent = conn.execute(
+                "SELECT 1 FROM lp_changes WHERE status = 'sent' AND target_type != 'user'").fetchone()
+            rows = [] if read_only() or definition_sent else conn.execute(
+                "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id").fetchall()
             for row in rows:
-                if row["status"] == "sent":
-                    if now - _parse(row["sent_at"]) > RESULT_WAIT_SECONDS:
-                        conn.execute("UPDATE lp_changes SET status = 'unknown', finished_at = ?, error = 'no_result' "
-                                     "WHERE id = ?", (_iso(now), row["id"]))
-                    continue
-                if now - _parse(row["created_at"]) > PENDING_TTL_SECONDS:
-                    conn.execute("UPDATE lp_changes SET status = 'expired', finished_at = ?, error = 'expired' "
-                                 "WHERE id = ?", (_iso(now), row["id"]))
-                    continue
-                if read_only():
-                    continue
-                if not _still_allowed(conn, row):
-                    conn.execute("UPDATE lp_changes SET status = 'failed', finished_at = ?, error = 'actor_changed' "
-                                 "WHERE id = ?", (_iso(now), row["id"]))
-                    continue
                 if len(out) >= FETCH_LIMIT:
+                    break
+                definition = row["target_type"] != "user"
+                if definition and out:
+                    break
+                if not _still_allowed(conn, row):
+                    conn.execute("UPDATE lp_changes SET status = 'failed', finished_at = ?, error = 'no_longer_allowed' "
+                                 "WHERE id = ?", (_iso(now), row["id"]))
                     continue
                 conn.execute("UPDATE lp_changes SET status = 'sent', sent_at = ?, attempts = attempts + 1 "
                              "WHERE id = ?", (_iso(now), row["id"]))
-                out.append({
+                change = {
                     "id": row["id"],
                     "target_type": row["target_type"],
                     "target": row["target"],
@@ -488,7 +523,13 @@ def fetch_for_bridge() -> list[dict]:
                     "actor_uuid": row["actor_minecraft_uuid"],
                     "description": row["description"],
                     "ops": json.loads(row["ops_json"]),
-                })
+                }
+                guard = _guard(conn, row)
+                if guard is not None:
+                    change["guard"] = guard
+                out.append(change)
+                if definition:
+                    break
             conn.commit()
         except BaseException:
             conn.rollback()

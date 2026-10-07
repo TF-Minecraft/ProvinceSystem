@@ -72,7 +72,7 @@ export default function ChangeConfirm({
           {STATUS_LABELS[change.status]}
           {change.error ? `: ${lpErrorMessage(change.error)}` : "…"}
           {change.status === "unknown" ? " Check the player before trying again." : ""}
-          {!settled && !busy ? " It is still queued; this page will show it once the server applies it." : ""}
+          {!settled && !busy ? " Reload the page later to see whether it applied." : ""}
         </p>
         {settled || !busy ? (
           <button type="button" className={`${quietButtonClass} self-start`} onClick={() => onDone(change)}>

@@ -12,7 +12,7 @@ dev.tfminecraft.net) without applying, which makes that site read-only.
 | Who | May |
 | --- | --- |
 | mod | view everything: groups, tracks, every player's groups and permissions, change history |
-| admin | add or remove the groups in `policy.yaml` `admin_groups` on players, promote/demote players along tracks between those groups, set or unset player permissions matching `admin_permissions` |
+| admin | add or remove the groups in `policy.yaml` `admin_groups` on players, promote/demote players along tracks between those groups, set or unset player permissions matching `admin_permissions` but not `root_only_permissions` (such as `armourshop.admin`) |
 | root | everything, including staff groups, other permissions, meta (prefix/suffix/weight) on players, group definitions and tracks |
 
 A listed group counts as an admin group only while everything it inherits, in
@@ -24,7 +24,7 @@ Admins may not change anything on their own Minecraft account, on a player
 whose linked website account is admin or root, or on a player who holds or
 inherits a root-only group (in-game staff, linked or not). Rights are checked
 when a change is queued and again when the bridge collects it, so a demotion
-in between cancels it. Every change carries a
+in between cancels it (`no_longer_allowed`). Every change carries a
 reason and is written to `admin_audit`, and LuckPerms logs it (`/lp log`) with
 the source `web:<discord name>`.
 
@@ -78,9 +78,18 @@ on the same single worker thread that applies changes, so a snapshot never preda
   "actor_name": "web:w.o.n",       // LuckPerms action source name
   "actor_uuid": null,              // the actor's linked Minecraft UUID, if any
   "description": "parent add staff",  // LuckPerms action log text
-  "ops": [OP]
+  "ops": [OP],
+  "guard": {"admin_groups": ["default", "commoner"]}  // admin changes only
 }]}
 ```
+
+A group or track change is handed out on its own, and nothing else is handed out until its
+result arrives, so later changes are checked against the definitions it leaves.
+
+`guard` is on changes an admin made. The mirror can lag in-game edits, so the bridge checks live
+LuckPerms before mutating: the player must hold no group (any context) outside `admin_groups`
+(else `target_is_staff`), and every group an `add_node` grants must inherit only groups in
+`admin_groups` (else `root_only`).
 
 Ops, applied in order to one holder and saved once:
 
@@ -118,6 +127,7 @@ on later ticks until the site answers `ok`.
 Site side, a change is `pending` until fetched, then `sent`, and the site never offers it again: a
 change is applied at most once. A sent change with no result after 300 s becomes `unknown` (staff
 are told to check the player); a late result still settles it. A change not fetched within
-10 minutes `expired`. New changes are refused with `bridge_offline` unless the bridge polled in the
+10 minutes `expired`. Both timeouts are settled on staff reads too, so they happen even when the
+bridge is gone. New changes are refused with `bridge_offline` unless the bridge polled in the
 last 60 s, and always on a site with `LUCKPERMS_READ_ONLY=1` (dev.tfminecraft.net, whose server
 shares LuckPerms with Main).

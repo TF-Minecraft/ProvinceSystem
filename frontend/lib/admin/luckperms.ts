@@ -172,10 +172,11 @@ export function isFinished(status: LpChangeStatus): boolean {
   return status !== "pending" && status !== "sent";
 }
 
-const POLL_MS = 1000;
-const POLL_LIMIT_MS = 30_000;
+const POLL_MS = 1500;
+// Past the site's 5-minute wait for a result, so every change ends settled.
+const POLL_LIMIT_MS = 330_000;
 
-/** Wait for the server to apply a change, or give up after half a minute and return what is known. */
+/** Wait until the change is settled: applied, failed, expired or of unknown outcome. */
 export async function waitForChange(
   id: number,
   { signal, intervalMs = POLL_MS, limitMs = POLL_LIMIT_MS }: { signal?: AbortSignal; intervalMs?: number; limitMs?: number } = {}
@@ -222,7 +223,7 @@ export const LP_ERRORS: Record<string, string> = {
   player_not_found: "LuckPerms has no record of that player.",
   save_failed: "LuckPerms couldn’t save the change.",
   no_result: "The server never reported back.",
-  actor_changed: "Cancelled: the person who made it no longer had the rights.",
+  no_longer_allowed: "Cancelled: it was no longer allowed when the server picked it up (rights or groups changed).",
   expired: "The server didn’t pick it up in time.",
 };
 
