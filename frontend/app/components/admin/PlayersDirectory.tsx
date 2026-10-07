@@ -419,7 +419,7 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
       <div
         role="tablist"
         aria-label="Player views"
-        className="mt-3 grid grid-cols-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] p-0.5 sm:inline-grid"
+        className="mt-3 grid grid-cols-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] p-0.5 sm:inline-grid"
       >
         {VIEWS.map((option, index) => (
           <button
