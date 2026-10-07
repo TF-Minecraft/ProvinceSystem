@@ -29,9 +29,11 @@ export function isStaffRole(role: string | null | undefined): boolean {
   return (RANK[role ?? ""] ?? -1) >= RANK.mod;
 }
 
-/** Mirrors the server's rule for showing actions; the server still decides. */
+/** Mirrors the server's rule for showing actions; the server still decides. Roots may manage other roots. */
 export function canManage(me: AdminMe, target: AdminAccount): boolean {
-  return me.user_id !== target.user_id && (RANK[me.role] ?? -1) > (RANK[target.role] ?? 99);
+  if (me.user_id === target.user_id) return false;
+  if (me.role === "root" && target.role === "root") return true;
+  return (RANK[me.role] ?? -1) > (RANK[target.role] ?? 99);
 }
 
 const ROLE_LABELS: Record<StaffRole, string> = {

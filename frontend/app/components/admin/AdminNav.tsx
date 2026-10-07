@@ -4,11 +4,12 @@ const LINKS = [
   { href: "/admin", label: "Accounts", key: "accounts" },
   { href: "/admin/players", label: "Players", key: "players" },
   { href: "/admin/movement", label: "Movement", key: "movement" },
+  { href: "/admin/ranks", label: "Ranks", key: "ranks" },
 ] as const;
 
 export default function AdminNav({ current }: { current: (typeof LINKS)[number]["key"] }) {
   return (
-    <nav aria-label="Staff panel" className="mt-4 flex gap-5 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
+    <nav aria-label="Staff panel" className="mt-4 flex gap-4 border-b sm:gap-5 border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
       {LINKS.map((link) => (
         <Link
           key={link.key}
