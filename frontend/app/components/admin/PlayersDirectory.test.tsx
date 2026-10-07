@@ -5,9 +5,10 @@ import PlayersDirectory from "./PlayersDirectory";
 import { AccountApiError } from "../../../lib/account/api";
 import {
   getPlayers,
-  parsePlayerView,
+  parsePlayerListing,
   type CharacterRow,
   type PlayerDirectory,
+  type PlayerListing,
   type PlayerSummary,
   type PlayerView,
 } from "../../../lib/admin/api";
@@ -31,7 +32,7 @@ const ENZO = player("0615a817-8cb4-4aef-95f7-f6c9bf7611b8", "MrEnzo99", {
   characters: ["Hazel Stonebrook"], last_seen: NOW - 7200, site_role: "mod",
 });
 
-const PAGE = { total: 0, omitted: 0, page: 1, page_size: 50, coreprotect: { status: "available", server_label: "Vardera" } } as const;
+const PAGE = { sort: "name", order: "asc", total: 0, omitted: 0, page: 1, page_size: 50, coreprotect: { status: "available", server_label: "Vardera" } } as const;
 
 function directory(view: Exclude<PlayerView, "character">, rows: PlayerSummary[], extra: Partial<PlayerDirectory> = {}): PlayerDirectory {
   return { ...PAGE, total: rows.length, view, rows, ...extra } as PlayerDirectory;
@@ -43,11 +44,16 @@ function characters(rows: CharacterRow[], extra: Partial<PlayerDirectory> = {}):
 
 /** Answers each request with the given view's page. */
 function serve(pages: Partial<Record<PlayerView, PlayerDirectory>>) {
-  vi.mocked(getPlayers).mockImplementation(async ({ view }) => pages[view ?? "activity"] ?? directory("activity", []));
+  vi.mocked(getPlayers).mockImplementation(async ({ view }) => pages[view ?? "minecraft"] ?? directory("minecraft", []));
 }
 
-function renderDirectory(initialView: PlayerView = "activity", initialQuery = "") {
-  return render(<PlayersDirectory initialQuery={initialQuery} initialView={initialView} initialPage={1} />);
+function renderDirectory(initial: PlayerView | PlayerListing = "minecraft", initialQuery = "") {
+  const listing = typeof initial === "string" ? { view: initial, sort: "name", order: "asc" } as const : initial;
+  return render(<PlayersDirectory initialQuery={initialQuery} initialListing={listing} initialPage={1} />);
+}
+
+function called(extra: Record<string, unknown> = {}) {
+  return { q: "", view: "minecraft", sort: "name", order: "asc", page: 1, ...extra };
 }
 
 function lead(row: HTMLElement): string {
@@ -65,13 +71,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("leads the Activity table with when each player was last seen", async () => {
+it("lists everyone under Minecraft by default", async () => {
   serve({
-    activity: directory("activity", [
-      player("33333333-3333-3333-3333-333333333333", "Quiet", { online: true, last_seen: NOW }),
+    minecraft: directory("minecraft", [
       ENZO,
       // Linked before handles were stored: only the server nickname is known.
       player("44444444-4444-4444-4444-444444444444", "Justin", { discord_user_id: "5", discord_nickname: "Justin" }),
+      player("33333333-3333-3333-3333-333333333333", "Quiet", { online: true, last_seen: NOW }),
       player("22222222-2222-2222-2222-222222222222", null),
     ], { total: 243 }),
   });
@@ -80,17 +86,52 @@ it("leads the Activity table with when each player was last seen", async () => {
   const link = await screen.findByRole("link", { name: "MrEnzo99" });
   expect(link.getAttribute("href")).toBe("/admin/players/0615a817-8cb4-4aef-95f7-f6c9bf7611b8");
   const row = link.closest("tr")!;
-  expect(lead(row)).toBe("2 h ago");
+  expect(within(row).getByText("2 h ago")).toBeTruthy();
   expect(within(row).getByText("Moderator")).toBeTruthy();
   // In its column, and again under the name for narrow screens.
   expect(within(row).getAllByText("@hazelstone · Enzo").length).toBe(2);
   expect(within(row).getAllByText("Hazel Stonebrook").length).toBe(2);
   expect(within(screen.getByRole("link", { name: "Justin" }).closest("tr")!).queryByText("Not linked")).toBeNull();
-  expect(lead(screen.getByRole("link", { name: "Quiet" }).closest("tr")!)).toBe("Seen just now");
-  expect(lead(screen.getByRole("link", { name: "22222222-2222-2222-2222-222222222222" }).closest("tr")!)).toBe("Never");
+  expect(within(screen.getByRole("link", { name: "Quiet" }).closest("tr")!).getByText("Seen just now")).toBeTruthy();
+  expect(within(screen.getByRole("link", { name: "22222222-2222-2222-2222-222222222222" }).closest("tr")!).getByText("Never")).toBeTruthy();
   expect(screen.getByText("243 players · activity from Vardera")).toBeTruthy();
-  expect(screen.getByRole("tab", { name: "Activity" }).getAttribute("aria-selected")).toBe("true");
-  expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("players-tab-activity");
+  expect(screen.queryByRole("tab", { name: "Activity" })).toBeNull();
+  expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Minecraft", "Discord", "Character"]);
+  expect(screen.getByRole("tab", { name: "Minecraft" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("players-tab-minecraft");
+  expect(getPlayers).toHaveBeenLastCalledWith(called());
+});
+
+it("sorts the whole list from the column headings", async () => {
+  serve({ minecraft: directory("minecraft", [ENZO], { total: 120 }) });
+  renderDirectory();
+  await screen.findByText("Page 1 of 3");
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ page: 2 })));
+  expect(screen.getByRole("columnheader", { name: "Minecraft" }).getAttribute("aria-sort")).toBe("ascending");
+  expect(screen.getByRole("columnheader", { name: "Last seen" }).getAttribute("aria-sort")).toBeNull();
+
+  // Last seen opens most recent first, back on the first page; the server orders every page.
+  fireEvent.click(screen.getByRole("button", { name: "Last seen" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ sort: "last_seen", order: "desc" })));
+  expect(window.location.search).toBe("?sort=last_seen");
+  expect(screen.getByRole("columnheader", { name: "Last seen" }).getAttribute("aria-sort")).toBe("descending");
+  fireEvent.click(screen.getByRole("button", { name: "Last seen" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ sort: "last_seen", order: "asc" })));
+  expect(window.location.search).toBe("?sort=last_seen&order=asc");
+
+  // Names open A to Z, and reverse on a second click.
+  fireEvent.click(screen.getByRole("button", { name: "Minecraft" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called()));
+  expect(window.location.search).toBe("");
+  fireEvent.click(screen.getByRole("button", { name: "Minecraft" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ order: "desc" })));
+  expect(screen.getByRole("columnheader", { name: "Minecraft" }).getAttribute("aria-sort")).toBe("descending");
+
+  // The order stays when switching views.
+  fireEvent.click(screen.getByRole("tab", { name: "Character" }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ view: "character", order: "desc" })));
+  expect(window.location.search).toBe("?view=character&order=desc");
 });
 
 it("leads the Discord table with the handle and counts unlinked players", async () => {
@@ -109,7 +150,7 @@ it("leads the Discord table with the handle and counts unlinked players", async 
   expect(screen.getByText(/34 players without a Discord link aren’t listed here/)).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: "See everyone under Minecraft" }));
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "", view: "minecraft", page: 1 }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called()));
   expect(screen.getByRole("tab", { name: "Minecraft" }).getAttribute("aria-selected")).toBe("true");
 });
 
@@ -148,14 +189,14 @@ it("keeps the search across views and never shows one view's rows in another's t
   vi.mocked(getPlayers).mockImplementation(({ view }) =>
     view === "character"
       ? new Promise((resolve) => { answerCharacters = resolve; })
-      : Promise.resolve(directory("activity", [ENZO])));
+      : Promise.resolve(directory("minecraft", [ENZO])));
   renderDirectory();
   await screen.findByRole("link", { name: "MrEnzo99" });
 
   fireEvent.change(screen.getByLabelText("Search players"), { target: { value: "hazel" } });
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "hazel", view: "activity", page: 1 }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ q: "hazel" })));
   fireEvent.click(screen.getByRole("tab", { name: "Character" }));
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "hazel", view: "character", page: 1 }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ q: "hazel", view: "character" })));
   expect(window.location.search).toBe("?q=hazel&view=character");
   expect(screen.queryByRole("link", { name: "MrEnzo99" })).toBeNull();
   expect(screen.getByText("Loading…")).toBeTruthy();
@@ -170,60 +211,54 @@ it("moves between tabs with the arrow keys and opens one with Enter", async () =
   serve({});
   renderDirectory();
   await screen.findByText("No players match that.");
-  const activity = screen.getByRole("tab", { name: "Activity" });
-  expect(activity.tabIndex).toBe(0);
+  const minecraft = screen.getByRole("tab", { name: "Minecraft" });
+  expect(minecraft.tabIndex).toBe(0);
   expect(screen.getByRole("tab", { name: "Discord" }).tabIndex).toBe(-1);
 
-  activity.focus();
-  fireEvent.keyDown(activity, { key: "ArrowLeft" });
+  minecraft.focus();
+  fireEvent.keyDown(minecraft, { key: "ArrowLeft" });
   expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Character" }));
   fireEvent.keyDown(document.activeElement!, { key: "Home" });
-  expect(document.activeElement).toBe(activity);
-  fireEvent.keyDown(activity, { key: "ArrowRight" });
+  expect(document.activeElement).toBe(minecraft);
+  fireEvent.keyDown(minecraft, { key: "ArrowRight" });
   const discord = screen.getByRole("tab", { name: "Discord" });
   expect(document.activeElement).toBe(discord);
   // Moving focus alone fetches nothing.
   expect(getPlayers).toHaveBeenCalledTimes(1);
   fireEvent.click(discord);
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "", view: "discord", page: 1 }));
+  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith(called({ view: "discord" })));
 });
 
 it("pages through results", async () => {
   vi.mocked(getPlayers).mockImplementation(async ({ page }) =>
-    directory("minecraft", [player(`0000000${page}-0000-0000-0000-000000000000`, `P${page}`)], { total: 120, page: page ?? 1 }));
-  renderDirectory("minecraft");
+    directory("discord", [player(`0000000${page}-0000-0000-0000-000000000000`, `P${page}`)], { total: 120, page: page ?? 1 }));
+  renderDirectory("discord");
   await screen.findByText("Page 1 of 3");
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
   await screen.findByText("Page 2 of 3");
-  expect(getPlayers).toHaveBeenLastCalledWith({ q: "", view: "minecraft", page: 2 });
-  expect(window.location.search).toBe("?view=minecraft&page=2");
+  expect(getPlayers).toHaveBeenLastCalledWith(called({ view: "discord", page: 2 }));
+  expect(window.location.search).toBe("?view=discord&page=2");
 });
 
-it("drops an old ?sort= from the address", async () => {
-  window.history.replaceState(null, "", "/admin/players?sort=discord");
-  serve({});
-  renderDirectory(parsePlayerView(undefined, "discord"));
-  await waitFor(() => expect(getPlayers).toHaveBeenLastCalledWith({ q: "", view: "discord", page: 1 }));
-  expect(window.location.search).toBe("?view=discord");
-});
-
-it("maps page links to views", () => {
-  expect(parsePlayerView(undefined)).toBe("activity");
-  expect(parsePlayerView("character", "minecraft")).toBe("character");
-  expect(parsePlayerView(undefined, "last_seen")).toBe("activity");
-  expect(parsePlayerView(undefined, "character")).toBe("character");
-  expect(parsePlayerView("bogus", "bogus")).toBe("activity");
+it("maps page links to a view and order", () => {
+  const listing = (view: PlayerView, sort: string, order: string) => ({ view, sort, order });
+  expect(parsePlayerListing()).toEqual(listing("minecraft", "name", "asc"));
+  expect(parsePlayerListing("character")).toEqual(listing("character", "name", "asc"));
+  expect(parsePlayerListing("discord", "last_seen")).toEqual(listing("discord", "last_seen", "desc"));
+  expect(parsePlayerListing("discord", "last_seen", "asc")).toEqual(listing("discord", "last_seen", "asc"));
+  expect(parsePlayerListing(undefined, "name", "desc")).toEqual(listing("minecraft", "name", "desc"));
+  expect(parsePlayerListing("activity", "bogus", "bogus")).toEqual(listing("minecraft", "name", "asc"));
 });
 
 it("says when CoreProtect cannot be read, and that last seen is unknown", async () => {
   serve({
-    activity: directory("activity", [player("11111111-1111-1111-1111-111111111111", "Linked")], {
+    minecraft: directory("minecraft", [player("11111111-1111-1111-1111-111111111111", "Linked")], {
       coreprotect: { status: "unavailable", reason: "busy", server_label: null },
     }),
   });
   renderDirectory();
   expect(await screen.findByText(/CoreProtect is busy.*Only linked players and characters are listed/)).toBeTruthy();
-  expect(lead(screen.getByRole("link", { name: "Linked" }).closest("tr")!)).toBe("Unknown");
+  expect(within(screen.getByRole("link", { name: "Linked" }).closest("tr")!).getByText("Unknown")).toBeTruthy();
 });
 
 it.each([
@@ -237,7 +272,7 @@ it.each([
 
 it("shows request errors without hiding the search", async () => {
   vi.mocked(getPlayers).mockRejectedValue(new AccountApiError("query_too_long", 400));
-  renderDirectory("activity", "x".repeat(70));
+  renderDirectory("minecraft", "x".repeat(70));
   expect(await screen.findByText("Search for 64 characters or fewer.")).toBeTruthy();
   expect(screen.getByLabelText("Search players")).toBeTruthy();
   await act(async () => {});

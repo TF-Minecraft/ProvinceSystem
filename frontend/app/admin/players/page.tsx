@@ -1,6 +1,6 @@
 import AdminNav from "../../components/admin/AdminNav";
 import PlayersDirectory from "../../components/admin/PlayersDirectory";
-import { parsePlayerView } from "../../../lib/admin/api";
+import { parsePlayerListing } from "../../../lib/admin/api";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -18,7 +18,7 @@ export default async function AdminPlayersPage({ searchParams }: { searchParams:
       <AdminNav current="players" />
       <PlayersDirectory
         initialQuery={first(params.q) ?? ""}
-        initialView={parsePlayerView(first(params.view), first(params.sort))}
+        initialListing={parsePlayerListing(first(params.view), first(params.sort), first(params.order))}
         initialPage={Number.parseInt(first(params.page) ?? "1", 10) || 1}
       />
     </main>
