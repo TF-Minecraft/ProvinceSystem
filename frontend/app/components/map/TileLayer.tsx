@@ -142,13 +142,19 @@ function TileLayer({
     currentTiles.length > 0 &&
     currentTiles.every((tile) => shownRef.current.has(loadedKey(tile)));
 
-  useEffect(() => {
-    if (currentShown && settledLevel !== level) setSettledLevel(level);
-  }, [currentShown, level, settledLevel]);
-
   const backdropLoaded =
     backdropTiles.length > 0 &&
     backdropTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
+
+  // At the backdrop's level there are no sharp tiles to wait for: it settles
+  // once the backdrop has loaded. Otherwise a level settled before stayed held
+  // on top of it for good. A layer that first rendered before its viewport
+  // was measured (scale 0, so level 0, 200 px across) drew that over the
+  // sharp backdrop until the next zoom.
+  const levelReady = level === backdrop ? backdropLoaded : currentShown;
+  useEffect(() => {
+    if (levelReady && settledLevel !== level) setSettledLevel(level);
+  }, [levelReady, level, settledLevel]);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
   useEffect(() => {
@@ -317,7 +323,10 @@ function TileLayer({
       {/* One list, so a tile that turns from current into held as the level
           changes keeps its element (the levels' keys never collide). */}
       {[
-        ...holdTiles.map((tile) => renderTile(tile, false, currentShown)),
+        // A held level coarser than the backdrop only covers for it while it loads.
+        ...holdTiles.map((tile) =>
+          renderTile(tile, false, currentShown || (settledLevel < backdrop && backdropLoaded))
+        ),
         ...currentTiles.map((tile) => renderTile(tile, true)),
       ]}
     </div>

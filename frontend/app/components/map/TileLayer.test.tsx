@@ -192,9 +192,9 @@ describe("TileLayer", () => {
         "24.609375% 0.390625%, 0.390625% 0.390625%, 0% 0%)"
     );
 
-    // Zooming out to the backdrop level holds the sharp tiles until it has
-    // loaded, on the same elements.
-    const sharp = container.querySelector('img[src="/t/1/0/0.webp"]');
+    // Zooming out to the backdrop level: it has loaded already, so the sharp
+    // tiles stand down at once and the whole backdrop shows, on the same
+    // elements.
     rerender(
       <TileLayer
         manifest={pyramid}
@@ -202,9 +202,49 @@ describe("TileLayer", () => {
         view={{ ...zoomedIn, displayScale: 0.25 }}
       />
     );
-    expect(container.querySelector('img[src="/t/1/0/0.webp"]')).toBe(sharp);
+    expect(container.querySelector('img[src^="/t/1/"]')).toBeNull();
     expect(sameBackdrop()).toBe(true);
     expect(clip()).toBe("");
+  });
+  it("does not hold a level seen before the viewport was measured over the backdrop", () => {
+    vi.useFakeTimers();
+    // 6400 px map like the live one: levels 200 to 6400 px, backdrop level 2.
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 6400,
+      height: 6400,
+      tile_size: 256,
+      max_level: 5,
+      levels: [200, 400, 800, 1600, 3200, 6400].map((size) => ({ width: size, height: size })),
+    };
+    const at = (displayScale: number): TileView => ({
+      displayScale,
+      translateX: 0,
+      translateY: 0,
+      viewportW: 632,
+      viewportH: 632,
+    });
+    const shown = (level: number) =>
+      [...container.querySelectorAll<HTMLImageElement>(`img[src^="/t/${level}/"]`)].filter(
+        (img) => img.style.visibility !== "hidden"
+      );
+    // A cached manifest renders the layer before its viewport has a size.
+    const { container, rerender } = render(
+      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0)} />
+    );
+    loadAll(container);
+    fadeIn();
+
+    // The whole map in 632 px wants the 800 px level, which is the backdrop.
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(632 / 6400)} />);
+    expect(shown(2)).toHaveLength(16);
+    loadAll(container);
+    fadeIn();
+
+    // The 200 px level was drawn over it until the next zoom.
+    expect(shown(0)).toHaveLength(0);
+    expect(shown(2)).toHaveLength(16);
   });
   it("waits for new elements when zooming back to a level seen before", () => {
     vi.useFakeTimers();
