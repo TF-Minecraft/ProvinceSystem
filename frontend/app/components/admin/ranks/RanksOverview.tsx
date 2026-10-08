@@ -4,10 +4,14 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { adminErrorMessage } from "../../../../lib/admin/api";
 import {
+  expiryLabel,
   getLpPlayers,
   getLuckPerms,
+  shortContextLabel,
+  type LpGroupSummary,
   type LpOverview,
   type LpPlayerPage,
+  type LpPlayerRow,
   type LpTrack,
 } from "../../../../lib/admin/luckperms";
 import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
@@ -119,46 +123,128 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
           {error}
         </p>
       ) : null}
-      {page ? <PlayerResults page={page} onPage={(n) => void search(searched, n)} /> : null}
+      {page ? <PlayerResults page={page} busy={busy} onPage={(n) => void search(searched, n)} /> : null}
     </section>
   );
 }
 
-export function PlayerResults({ page, onPage }: { page: LpPlayerPage; onPage: (page: number) => void }) {
+type Grant = LpPlayerRow["groups"][number];
+
+const MEMBER_COLUMNS = "lg:grid-cols-[12rem_minmax(12rem,1fr)_minmax(0,2fr)]";
+const SEARCH_COLUMNS = "lg:grid-cols-[12rem_minmax(0,1fr)]";
+const pageButtonClass = `${quietButtonClass} inline-flex min-h-11 items-center px-2`;
+
+/** How a player holds the viewed group. One global permanent grant is the usual case, so phones skip it. */
+function Assignment({ grants }: { grants: Grant[] }) {
+  if (!grants.length) return <div className="hidden lg:block" />;
+  const [only] = grants;
+  if (grants.length === 1 && !shortContextLabel(only.contexts) && !only.expiry) {
+    return <div className="hidden text-sm text-[var(--tfmc-stone)] lg:block">Permanent</div>;
+  }
+  return (
+    <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-[var(--tfmc-mist)] lg:flex-col">
+      {grants.map((grant, index) => (
+        <li key={index}>
+          {shortContextLabel(grant.contexts) || "Global"} · {expiryLabel(grant.expiry) || "Permanent"}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Player rows for a search, or for a group's members when membershipGroup is set. */
+export function PlayerResults({
+  page,
+  onPage,
+  membershipGroup,
+  busy = false,
+  error = null,
+}: {
+  page: LpPlayerPage;
+  onPage: (page: number) => void;
+  membershipGroup?: string;
+  busy?: boolean;
+  error?: string | null;
+}) {
   if (!page.rows.length) return <p className={`mt-3 ${mutedClass}`}>No players match.</p>;
   const pages = Math.max(1, Math.ceil(page.total / page.page_size));
+  const columns = membershipGroup ? MEMBER_COLUMNS : SEARCH_COLUMNS;
   return (
     <>
-      <ul className={`mt-3 ${rowClass}`}>
-        {page.rows.map((row) => (
-          <li key={row.uuid} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-            <Link
-              href={`/admin/ranks/players/${row.uuid}`}
-              className="min-w-[8rem] font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]"
-            >
-              {row.name ?? <span className="font-mono text-xs">{row.uuid}</span>}
-            </Link>
-            <span className="flex flex-wrap gap-1">
-              {row.groups.map((group, index) => (
-                <GroupChip key={`${group.name}-${index}`} name={group.name} contexts={group.contexts} expiry={group.expiry} />
-              ))}
-            </span>
-          </li>
-        ))}
+      {membershipGroup ? (
+        <div className={`mt-4 hidden gap-x-4 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)] lg:grid ${columns}`}>
+          <span>Player</span>
+          <span>Assignment</span>
+          <span>Other groups</span>
+        </div>
+      ) : null}
+      <ul className={`mt-3 lg:mt-1 ${rowClass}`}>
+        {page.rows.map((row) => {
+          const own = membershipGroup ? row.groups.filter((group) => group.name === membershipGroup) : [];
+          const others = membershipGroup
+            ? row.groups.filter((group) => group.name !== membershipGroup).sort((a, b) => a.name.localeCompare(b.name))
+            : row.groups;
+          return (
+            <li key={row.uuid} className={`grid grid-cols-1 gap-1 pb-3 lg:items-center lg:gap-x-4 lg:py-1 ${columns}`}>
+              <Link
+                href={`/admin/ranks/players/${row.uuid}`}
+                className="flex min-h-11 items-center font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]"
+              >
+                {row.name ?? <span className="break-all font-mono text-xs">{row.uuid}</span>}
+              </Link>
+              {membershipGroup ? <Assignment grants={own} /> : null}
+              {others.length ? (
+                <div className="flex flex-wrap gap-1">
+                  {others.map((group, index) => (
+                    <GroupChip
+                      key={`${group.name}-${index}`}
+                      name={group.name}
+                      contexts={group.contexts}
+                      expiry={group.expiry}
+                      muted={group.name === "default"}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="hidden text-sm text-[var(--tfmc-stone)] lg:block">—</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
       {pages > 1 ? (
-        <div className="mt-3 flex items-center gap-4 text-sm text-[var(--tfmc-stone)]">
-          <button type="button" className={quietButtonClass} disabled={page.page <= 1} onClick={() => onPage(page.page - 1)}>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
+          <button type="button" className={pageButtonClass} disabled={busy || page.page <= 1} onClick={() => onPage(page.page - 1)}>
             ← Previous
           </button>
-          <span>
-            Page {page.page} of {pages}
-          </span>
-          <button type="button" className={quietButtonClass} disabled={page.page >= pages} onClick={() => onPage(page.page + 1)}>
+          <span className="px-2">{busy ? "Loading…" : `Page ${page.page} of ${pages}`}</span>
+          <button type="button" className={pageButtonClass} disabled={busy || page.page >= pages} onClick={() => onPage(page.page + 1)}>
             Next →
           </button>
         </div>
       ) : null}
+      {error ? (
+        <p className={`mt-2 ${errorClass}`} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function groupHref(name: string): string {
+  return `/admin/ranks/groups/${encodeURIComponent(name)}`;
+}
+
+function playerCount(count: number): string {
+  return `${count.toLocaleString()} ${count === 1 ? "player" : "players"}`;
+}
+
+function GroupBadges({ group }: { group: LpGroupSummary }) {
+  return (
+    <>
+      {group.min_role === "root" ? <span className={`${badgeClass} bg-[#5a2a2a] text-[#f0c0c0]`}>Owner only</span> : null}
+      {group.patreon ? <span className={`${badgeClass} bg-[#4a3a1a] text-[#f0d79a]`}>Patreon</span> : null}
     </>
   );
 }
@@ -181,7 +267,9 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
           </button>
         ) : null}
       </div>
-      <p className={`mt-1 ${mutedClass}`}>Heaviest first: a player shows the rank of the heaviest group they inherit.</p>
+      <p className={`mt-1 ${mutedClass}`}>
+        Heaviest first: a player shows the rank of the heaviest group they inherit. Player counts are direct assignments only.
+      </p>
       {creating ? (
         <div className="mt-3 flex flex-col gap-3">
           <div className="flex flex-wrap gap-3">
@@ -236,40 +324,62 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
           )}
         </div>
       ) : null}
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[34rem] text-left text-sm">
-          <thead className="text-xs uppercase tracking-wider text-[var(--tfmc-stone)]">
-            <tr>
-              <th className="py-2 pr-3 font-semibold">Group</th>
-              <th className="py-2 pr-3 font-semibold">Prefix</th>
-              <th className="py-2 pr-6 text-right font-semibold">Weight</th>
-              <th className="w-1/3 py-2 pr-3 font-semibold">Inherits</th>
-              <th className="py-2 text-right font-semibold">Players</th>
+      {/* Phones and narrow windows get a list; the table needs the width for five columns. */}
+      <ul className={`mt-3 lg:hidden ${rowClass}`} aria-label="Groups list">
+        {data.groups.map((group) => (
+          <li key={group.name} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 pb-3">
+            <Link href={groupHref(group.name)} className="flex min-h-11 items-center break-words font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]">
+              {group.name}
+            </Link>
+            <Link href={`${groupHref(group.name)}#members`} className="flex min-h-11 items-center tabular-nums text-sm text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
+              {playerCount(group.members)}
+            </Link>
+            <p className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <GroupBadges group={group} />
+              {group.prefix ? <McText text={group.prefix} /> : null}
+              {group.weight !== null ? <span className="tabular-nums text-[var(--tfmc-mist)]">Weight {group.weight}</span> : null}
+            </p>
+            {group.parents.length ? (
+              <p className="col-span-2 mt-1 break-words text-sm text-[var(--tfmc-mist)]">Inherits: {group.parents.join(", ")}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <table className="mt-3 hidden w-full text-left text-sm lg:table">
+        <thead className="text-xs uppercase tracking-wider text-[var(--tfmc-stone)]">
+          <tr>
+            <th className="py-2 pr-3 font-semibold">Group</th>
+            <th className="py-2 pr-3 font-semibold">Prefix</th>
+            <th className="py-2 pr-6 text-right font-semibold">Weight</th>
+            <th className="py-2 pr-3 font-semibold">Inherits</th>
+            <th className="py-2 text-right font-semibold">Players</th>
+          </tr>
+        </thead>
+        <tbody className={rowClass}>
+          {data.groups.map((group) => (
+            <tr key={group.name} className="align-top">
+              <td className="py-2 pr-3">
+                <Link href={groupHref(group.name)} className="font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]">
+                  {group.name}
+                </Link>
+                {group.min_role === "root" || group.patreon ? (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <GroupBadges group={group} />
+                  </div>
+                ) : null}
+              </td>
+              <td className="py-2 pr-3">{group.prefix ? <McText text={group.prefix} /> : <span className="text-[var(--tfmc-stone)]">—</span>}</td>
+              <td className="py-2 pr-6 text-right tabular-nums text-[var(--tfmc-mist)]">{group.weight ?? "—"}</td>
+              <td className="break-words py-2 pr-3 text-[var(--tfmc-mist)]">{group.parents.join(", ") || "—"}</td>
+              <td className="py-2 text-right tabular-nums">
+                <Link href={`${groupHref(group.name)}#members`} className="text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
+                  {group.members.toLocaleString()}
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody className={rowClass}>
-            {data.groups.map((group) => (
-              <tr key={group.name}>
-                <td className="py-2 pr-3">
-                  <Link href={`/admin/ranks/groups/${encodeURIComponent(group.name)}`} className="font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]">
-                    {group.name}
-                  </Link>
-                  {group.min_role === "root" ? <span className={`${badgeClass} ml-2 bg-[#5a2a2a] text-[#f0c0c0]`}>Owner only</span> : null}
-                  {group.patreon ? <span className={`${badgeClass} ml-2 bg-[#4a3a1a] text-[#f0d79a]`}>Patreon</span> : null}
-                </td>
-                <td className="py-2 pr-3">{group.prefix ? <McText text={group.prefix} /> : <span className="text-[var(--tfmc-stone)]">—</span>}</td>
-                <td className="py-2 pr-6 text-right tabular-nums text-[var(--tfmc-mist)]">{group.weight ?? "—"}</td>
-                <td className="py-2 pr-3 text-[var(--tfmc-mist)]">{group.parents.join(", ") || "—"}</td>
-                <td className="py-2 text-right tabular-nums">
-                  <Link href={`/admin/ranks/groups/${encodeURIComponent(group.name)}#members`} className="text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
-                    {group.members.toLocaleString()}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

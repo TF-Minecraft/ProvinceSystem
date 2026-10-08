@@ -13,5 +13,5 @@ export const errorClass = "text-sm text-[#e8a0a0]";
 export const warnClass = "text-sm text-[#e8c48a]";
 export const chipClass =
   "inline-flex items-center gap-1 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)] px-2 py-0.5 text-xs text-[var(--tfmc-cream)]";
-export const badgeClass = "rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider";
+export const badgeClass = "inline-flex whitespace-nowrap rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider";
 export const rowClass = "divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
