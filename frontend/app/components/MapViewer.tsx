@@ -1437,8 +1437,9 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       onDetailsClose={clearSelection}
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
       zoomControls={zoomControls}
-      layers={
+      layers={(placement) => (
         <MapLayersMenu
+          placement={placement}
           mapType={mapType}
           onMapTypeChange={handleMapTypeChange}
           toggles={layerToggles}
@@ -1448,7 +1449,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           // staff map's images need a token each: both keep the icons.
           previews={!authToken && day === null}
         />
-      }
+      )}
       paintPanel={!chronicle && paint.enabled ? <PaintToolbar paint={paint} /> : null}
     >
       <MapCanvas

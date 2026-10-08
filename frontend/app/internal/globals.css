@@ -485,11 +485,11 @@ html.map-fullscreen textarea {
   }
 }
 
-/* The layers panel: a sheet rising on a phone, a drop-down on a desktop. */
+/* The layers panel: a sheet rising on a phone, a pop-up over the corner tile on a desktop. */
 @keyframes map-popover-in {
   from {
     opacity: 0;
-    transform: translateY(-0.5rem);
+    transform: translateY(0.5rem);
   }
   to {
     opacity: 1;
