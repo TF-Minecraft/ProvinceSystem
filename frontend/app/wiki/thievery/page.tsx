@@ -8,10 +8,9 @@ export default function ThieveryPage() {
       title="Thievery"
       intro={
         <>
-          Thievery is the server&apos;s in-house crime system. You can lock your own doors and
-          chests with keys, and you can break into other people&apos;s doors, chests, display
-          furniture and graves with lockpicks, pickpocket players, or hold someone up in a
-          consensual timed robbery. Almost everything you do here can leave a{" "}
+          Lock your things, or steal other people&apos;s. Keys lock your doors and chests;
+          lockpicks break into other people&apos;s doors, chests, display furniture and graves. You
+          can also pickpocket players, or hold someone up in a consensual timed robbery. Almost everything you do here can leave a{" "}
           <strong>clue</strong> pointing back at your character.
         </>
       }
@@ -52,12 +51,11 @@ export default function ThieveryPage() {
             <WikiItemText key={`${c.clickOnto}-target`} text={c.clickOnto} />,
             <WikiItemText key={`${c.result}-result`} text={c.result} />,
           ])}
-          caption="Copying a key to paper is on a 240-minute (4 hour) per-player, per-key cooldown."
+          caption="Copying a key to paper is on a 4-hour per-player, per-key cooldown."
         />
       </div>
 
-
-      <WikiSectionHeading id="lockpicking" intro="The offensive loop: breaking into someone else's stuff.">
+      <WikiSectionHeading id="lockpicking" intro="Breaking into someone else's stuff.">
         Lockpicking
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
@@ -77,12 +75,12 @@ export default function ThieveryPage() {
         </li>
         <li>
           <strong>Containers and furniture</strong> do not hand you the contents directly on a
-          success: you get a Steal GUI instead. You click slots to probe them; each probe risks
+          success: you get a Steal menu instead. You click slots to probe them; each probe risks
           breaking your lockpick, and each item you take costs budget points from your loadout.
         </li>
         <li>
           <strong>Graves</strong> work the same way as containers: right-clicking another player&apos;s
-          grave opens the Steal GUI with a 10-point budget.
+          grave opens the Steal menu with a 10-point budget.
         </li>
       </ol>
 
@@ -92,7 +90,7 @@ export default function ThieveryPage() {
       <ul className="list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
           <strong>Pickpocketing</strong>: <code className="text-[var(--tfmc-accent)]">/pickpocket start</code>,
-          then right-click a target within 4 blocks. A Steal GUI of their inventory opens with a
+          then right-click a target within 4 blocks. A Steal menu of their inventory opens with a
           10-point budget. The victim sees a warning subtitle (a rarer &quot;critical&quot; version
           names your character directly). Moving too far away ends it.
         </li>

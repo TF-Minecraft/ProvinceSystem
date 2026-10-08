@@ -32,7 +32,7 @@ export default function GatheringPage() {
         <li>The spot is consumed: gathering it once uses it up, and its chunk goes on cooldown.</li>
       </ol>
 
-      <WikiSectionHeading id="discovery" intro="Passive discovery is rolled once every 12 seconds for everyone within range.">
+      <WikiSectionHeading id="discovery">
         Discovery chance
       </WikiSectionHeading>
       <StatGrid
@@ -45,15 +45,13 @@ export default function GatheringPage() {
         columns={3}
       />
 
-
-      <WikiSectionHeading id="loot" intro="What you actually get for harvesting a spot.">
+      <WikiSectionHeading id="loot">
         Loot
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         A forest-herbs spot gives 1–2 loot rolls, and every roll currently comes from the same
         pool: 2–4 <WikiItemLink name="Stack of Gold Denars" /> (worth 10 denars each, so 20–40 denars per roll).
       </p>
-
 
       <SeeAlso hrefs={["/wiki/materials", "/wiki/commands", "/wiki/advanced-crafting"]} />
     </WikiPage>

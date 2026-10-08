@@ -8,10 +8,9 @@ export default function WikiOverviewPage() {
     <WikiPage
       lastModified="2026-10-02"
       title="Gameplay Guide"
-      intro="TFMC Season 5: crafting stations, recipes, and mechanics for the custom systems on the server. More sections will be added as the season goes on."
+      intro="Crafting, recipes and mechanics for Season 5."
       width="sm"
     >
-
       {populatedCategories().map((category) => (
         <section key={category.key} className="mt-8">
           <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">

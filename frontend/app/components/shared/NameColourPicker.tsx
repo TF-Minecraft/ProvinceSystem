@@ -112,8 +112,7 @@ export default function NameColourPicker({
           ) : null}
         </span>
         <span className="text-xs text-[var(--tfmc-mist)]">
-          One colour = solid. Two or more = gradient across the name. Drag chips
-          to reorder; × removes.
+          One colour = solid; two or more = gradient. Drag to reorder.
         </span>
         <div className="flex flex-wrap gap-2">
           {colours.map((c, i) => (

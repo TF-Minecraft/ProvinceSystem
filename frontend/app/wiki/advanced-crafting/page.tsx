@@ -198,14 +198,13 @@ export default function AdvancedCraftingPage() {
   return (
     <WikiPage
       lastModified="2026-09-27"
-      title="AdvancedCrafting"
+      title="Advanced Crafting"
       intro={
         <>
           Hands-on blacksmithing: pick a recipe at a <strong><StationLink name="Forging Station" /></strong>, feed it raw
           materials, then physically hammer, carve, etch or sew it with smithing tools. Every
           ingredient you load adds a number of required hits per tool, and you work the station
-          until each tool&apos;s counter is full: it refuses extra hits with a tool that is already
-          done, and refuses to finish while any counter is short. The finished item has a quality
+          until each tool&apos;s counter is full. The finished item has a quality
           grade, stats and socket slots. A second station, the <strong><StationLink name="Alloy Forge" /></strong>, lets you invent and
           name your own metal alloys, which anyone can then use as an ingredient.
         </>
@@ -217,8 +216,8 @@ export default function AdvancedCraftingPage() {
         station refuses a material, continue that profession until you reach its required rank.
       </Callout>
 
-      <WikiSectionHeading id="crafting-a-weapon" intro={<>The loop at the <StationLink name="Forging Station" />.</>}>
-        Crafting a weapon or piece of armor
+      <WikiSectionHeading id="crafting-a-weapon">
+        Crafting a weapon or piece of armour
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Place a <StationLink name="Forging Station" />. Recipe below.</li>
@@ -246,18 +245,17 @@ export default function AdvancedCraftingPage() {
 
       <WikiSectionHeading
         id="recipes"
-        intro={<>All 35 recipes the <StationLink name="Forging Station" /> offers, in the order its category menu lists them.</>}
+        intro={<>All 35 <StationLink name="Forging Station" /> recipes.</>}
       >
         <StationLink name="Forging Station" /> recipes
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Every one of these is a <strong>template</strong>, not a fixed recipe. The listed
-        quantities are ingredient <em>types</em>, so &quot;4 × Metal&quot; means any four metal
-        ingredients: four Iron Ingots, four <WikiItemLink name="Mythril Ingot">Mythril Ingots</WikiItemLink>, a mix, or your own alloy. Which ones
-        you pick is what changes the finished item. The name is generated at craft time, so the{" "}
-        <span className="italic text-[var(--tfmc-accent)]">Material</span> part of each output
-        name below is a placeholder rather than a literal word. None of the 35 has a crafting
-        time, a cost or a level requirement.
+        Quantities are ingredient <em>types</em>: &quot;4 × Metal&quot; means any four metal
+        ingredients, such as four Iron Ingots, four <WikiItemLink name="Mythril Ingot">Mythril Ingots</WikiItemLink>, a mix, or your own alloy.
+        What you pick changes the finished item.{" "}
+        <span className="italic text-[var(--tfmc-accent)]">Material</span> in each name below is
+        filled in when you craft. None of the 35 has a crafting time, a cost or a level
+        requirement.
       </p>
 
       <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">
@@ -268,7 +266,7 @@ export default function AdvancedCraftingPage() {
           { header: "Class", nowrap: true },
           { header: "Item" },
           { header: "Ingredients" },
-          { header: "Socket track", nowrap: true },
+          { header: "Socket", nowrap: true },
         ]}
         rows={armorRecipeTemplates.map((recipe) => [
           recipe.group,
@@ -304,7 +302,7 @@ export default function AdvancedCraftingPage() {
         rowKey={(_row, index) => bowRecipeTemplates[index].id}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Every weapon and bow, and all armor except Mage armor, takes Gemstone sockets. Mage armor
+        Every weapon and bow, and all armour except Mage armour, takes Gemstone sockets. Mage armour
         is the only recipe group on the Armor Rune track.
       </p>
       <WikiSectionHeading
@@ -323,7 +321,7 @@ export default function AdvancedCraftingPage() {
         rows={qualityTiers}
       />
       <Callout variant="note" className="mt-4">
-        Mage armor uses a separate socket track instead of the Gemstone track above: Minor /
+        Mage armour uses a separate socket track instead of the Gemstone track above: Minor /
         Lesser / Greater / Ascendant Armor Rune, at the same thresholds. In both tracks the
         lowest grade, Rusted, grants no socket at all, so only the top four grades give you one.
       </Callout>
@@ -341,7 +339,7 @@ export default function AdvancedCraftingPage() {
         <CraftingGrid recipe={alloyForgeRecipe} />
       </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        The <strong><StationLink name="Ingredient Converter" /></strong> turns a raw material into an AdvancedCrafting
+        The <strong><StationLink name="Ingredient Converter" /></strong> turns a raw material into an Advanced Crafting
         ingredient: right-click it holding a listed material and it opens a{" "}
         <strong>Stat Preview</strong> showing what stats that ingredient contributes. Holding
         something with no matching stats gives &quot;This item has no stats matching any
@@ -433,13 +431,13 @@ export default function AdvancedCraftingPage() {
           The forge tracks one Base: only a metal or wood ingredient can fill it. The only
           catalysts a metal or wood base accepts are <strong>crystal</strong> ingredients: the
           gemstones and other crystals listed above. <WikiItemLink name="Leather" />, feather, wool, paper and <WikiItemLink name="Enchanted Dust">enchanted dust</WikiItemLink>{" "}
-          are not valid alloy catalysts (<code>config.yml:47-51</code>).
+          are not valid alloy catalysts.
         </li>
         <li>Forge it. You need at least 2 ingredients total (a base plus at least one catalyst).</li>
         <li>
           If the resulting alloy is new, you get a 60-second naming prompt: run{" "}
           <code className="text-[var(--tfmc-accent)]">/alloy name &lt;NewName&gt;</code> (letters
-          and underscores only; underscores render as spaces).
+          and underscores only; use _ for a space).
         </li>
         <li>
           Once named, the alloy is stored server-wide and anyone can use it as a crafting

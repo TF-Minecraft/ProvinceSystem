@@ -6,7 +6,7 @@ export default function ResearchPage() {
     <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
       <li>Sneak-right-click a Cartography Table to open the <StationLink name="Research Station" />. Combine one vanilla Paper and one <WikiItemLink name="Alchemy Powder" /> for one <WikiItemLink name="Parchment Paper" />. It takes 2 seconds.</li>
       <li>Combine one <WikiItemLink name="Parchment Paper" /> with the subject ingredient. Every paper, including an <WikiItemLink name="Unknown Research Paper" />, takes 5 seconds. Every station recipe grants 10 Herborist EXP. Recipes hide when you lack their ingredients.</li>
-      <li>Hold the resulting paper and right-click a Lectern. Each lectern has one owner, so find another lectern if one is occupied. A Minor, Lesser, Greater or Ascendant Runestone (weapon or armor) can start its own project without first becoming a paper.</li>
+      <li>Hold the resulting paper and right-click a Lectern. Each lectern has one owner, so find another lectern if one is occupied. A Minor, Lesser, Greater or Ascendant Runestone (weapon or armour) can start its own project without first becoming a paper.</li>
       <li>Choose an experiment item, inspect its point preview, then confirm. Each different item may be tested once per project. Items with no aspect tags cannot be used.</li>
       <li>Use the Testing, Confirmed and Rejected labels to guide your next experiment. Fill every required aspect completely, then collect the result that drops above the lectern. It is not placed directly in your inventory.</li>
     </ol>

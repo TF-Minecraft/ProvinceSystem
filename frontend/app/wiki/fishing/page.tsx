@@ -12,10 +12,9 @@ export default function FishingPage() {
       width="lg"
       intro={
         <>
-          CustomFishing replaces vanilla fishing with a skill minigame: when something bites, you
-          play a timing minigame, and what you get depends on your rod tier, the biome you&apos;re
-          fishing in, and any hook and bait you have equipped. Win the minigame and you get the
-          loot; lose it and the fish gets away.
+          When something bites, you play a timing minigame. What you catch depends on your rod
+          tier, the biome you&apos;re fishing in, and any hook and bait you have equipped. Win the
+          minigame and you get the loot; lose it and the fish gets away.
         </>
       }
     >

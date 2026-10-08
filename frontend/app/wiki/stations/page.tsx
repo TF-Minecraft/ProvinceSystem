@@ -12,7 +12,7 @@ export default function StationsPage() {
     <WikiPage
       lastModified="2026-09-27"
       title="Crafting Stations"
-      intro="Browse every station, learn which block opens it, and follow its link for recipes and requirements. Select a station to preview it."
+      intro="Every crafting station and the block that opens it."
       width="lg"
     >
       <h2 id="catalogue" className="sr-only">Station catalogue</h2>

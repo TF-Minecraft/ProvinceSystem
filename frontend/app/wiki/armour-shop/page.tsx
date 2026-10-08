@@ -28,7 +28,7 @@ export default function ArmourShopPage() {
       }
       width="lg"
     >
-      <WikiSectionHeading id="how-to" intro="One command opens the whole shop.">
+      <WikiSectionHeading id="how-to">
         How to use it
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
@@ -43,7 +43,7 @@ export default function ArmourShopPage() {
           steel-tier skin). Missing either one cancels with an error and a sound: nothing is
           consumed.
         </li>
-        <li>Applying a skin consumes exactly 1 scroll and merges the new look onto your item, keeping its stats.</li>
+        <li>Applying a skin consumes exactly 1 scroll and restyles your item, keeping its stats.</li>
         <li>
           To go back, use the free <strong>Reset to Default</strong> category. It covers leather,
           iron, steel, abyssalite, mythril, mage and infantry base sets.
@@ -51,7 +51,7 @@ export default function ArmourShopPage() {
       </ol>
       <Callout variant="note">
         Player-forged &quot;custom&quot; gear from the crafting system is skinnable too: every base
-        set&apos;s skin list also accepts the equivalent custom-crafted item templates.
+        set&apos;s skin list also accepts the equivalent custom-crafted items.
       </Callout>
 
       <WikiSectionHeading id="scrolls">
@@ -62,17 +62,14 @@ export default function ArmourShopPage() {
         image: `/wiki/textures/skin-scrolls/${scroll.scroll.split(" ")[0].toLowerCase()}.png`,
       }))} />
 
-      <WikiSectionHeading
-        id="donator-tiers"
-        intro="This governs minting your own skin token to upload a custom skin through the website: not browsing the built-in shop."
-      >
-        Skin token entitlements
+      <WikiSectionHeading id="donator-tiers" intro="For uploading your own skin on the website.">
+        Custom skin perks by rank
       </WikiSectionHeading>
       <DataTable
         columns={[
           { header: "Rank" },
           { header: "Token cooldown", align: "right" },
-          { header: "3D armour helmet:" },
+          { header: "3D helmet" },
           { header: "Skin kinds unlocked" },
         ]}
         rows={donatorTiers.map((t) => [

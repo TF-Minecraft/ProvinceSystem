@@ -24,7 +24,6 @@ export const sittingCommands: WikiCommandSet = {
       command: "/layback",
       aliases: ["/glayback"],
       description: "A lie-back pose.",
-      notes: "Not listed on the in-game /help menu.",
     },
     {
       command: "/bellyflop",
@@ -41,12 +40,6 @@ export const sittingCommands: WikiCommandSet = {
       aliases: ["/gcrawl"],
       description: "Drop to a prone, crawling position.",
       notes: "Double-tapping sneak to crawl is turned off here, so this command is the only way in.",
-    },
-    {
-      command: "/crawl toggle",
-      aliases: ["/gcrawl toggle"],
-      description: "Would toggle double-sneak-to-crawl.",
-      notes: "Double-sneak-to-crawl is disabled server-wide anyway.",
     },
   ],
   excludedStaffCommands: ["/gsitreload"],

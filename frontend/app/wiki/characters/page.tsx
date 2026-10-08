@@ -15,10 +15,10 @@ export default function CharactersPage() {
   return (
     <WikiPage
       lastModified="2026-09-15"
-      title="RPCharacters"
+      title="Characters"
       intro={
         <>
-          RPCharacters is who you <em>are</em> on this server. Your roleplay chat, injuries and
+          Your character is who you <em>are</em> on this server. Your roleplay chat, injuries and
           deaths belong to a character you create, not to your Minecraft
           account directly. In Survival, you cannot do much of anything until you have one.
         </>
@@ -71,7 +71,7 @@ export default function CharactersPage() {
         Rank benefits
       </WikiSectionHeading>
       <DataTable
-        columns={[{ header: "Rank" }, { header: "Switch cooldown" }, { header: "Alive characters" }, { header: "Name colour stops" }, { header: "Wardrobe slots" }]}
+        columns={[{ header: "Rank" }, { header: "Switch cooldown" }, { header: "Alive characters" }, { header: "Name colours" }, { header: "Wardrobe slots" }]}
         rows={[
           [<RankName key="commoner" rank="Commoner" />, "14 days", 3, 0, 1],
           [<RankName key="noble" rank="Noble" />, "10 days", 3, 1, 1],
@@ -144,7 +144,7 @@ export default function CharactersPage() {
         blindness: each comes with real stat penalties while it lasts. Two players can arrange a
         consensual roleplay injury with{" "}
         <code className="text-[var(--tfmc-accent)]">/rpcharacter injure &lt;player&gt;</code>: you
-        pick the injury from a GUI, then the target has to confirm it within 30 seconds. If your
+        pick the injury from a menu, then the target has to confirm it within 30 seconds. If your
         character dies, a grave chest appears with a hologram showing who killed you: right-click
         it to recover your things (or let someone else rob it). Graves never expire on their own.
         A <strong>Grave Insurance</strong> item, if you have one,
@@ -181,7 +181,7 @@ export default function CharactersPage() {
         <code className="text-[var(--tfmc-accent)]">description</code>,{" "}
         <code className="text-[var(--tfmc-accent)]">birthday</code> let you fill in and adjust who
         your character is after creation. Descriptions must contain 32 to 256 characters. The
-        name-colour tool supports the number of colour stops listed for your rank above. Players
+        name-colour tool supports the number of name colours listed for your rank above. Players
         with <RankName rank="Noble" />, <RankName rank="Gilded" />, <RankName rank="Ascended" />,
         or <RankName rank="Legacy" /> rank can use colour codes.
       </p>

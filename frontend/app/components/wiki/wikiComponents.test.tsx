@@ -19,7 +19,7 @@ import Callout, { type CalloutVariant } from "./Callout";
 import CommandTable from "./CommandTable";
 import DataTable from "./DataTable";
 import SeeAlso from "./SeeAlso";
-import WikiPage, { WIKI_LAST_MODIFIED } from "./WikiPage";
+import WikiPage, { WIKI_LAST_MODIFIED, formatWikiDate } from "./WikiPage";
 
 afterEach(cleanup);
 
@@ -27,21 +27,21 @@ describe("WikiPage", () => {
   it("always shows the maintained wiki revision as one semantic date", () => {
     render(<WikiPage title="Materials">Content</WikiPage>);
 
-    const labels = screen.getAllByText(/Last modified:/);
+    const labels = screen.getAllByText(/Updated/);
     expect(labels).toHaveLength(1);
     const date = labels[0].querySelector("time");
     expect(date?.dateTime).toBe(WIKI_LAST_MODIFIED);
-    expect(date?.textContent).toBe(WIKI_LAST_MODIFIED);
+    expect(date?.textContent).toBe(formatWikiDate(WIKI_LAST_MODIFIED));
   });
 
   it("uses a valid page-specific ISO date and falls back for invalid calendar dates", () => {
     const { rerender } = render(
       <WikiPage title="Commands" lastModified="2026-09-01">Content</WikiPage>
     );
-    expect(screen.getByText(/Last modified:/).querySelector("time")?.dateTime).toBe("2026-09-01");
+    expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe("2026-09-01");
 
     rerender(<WikiPage title="Commands" lastModified="2026-02-30">Content</WikiPage>);
-    expect(screen.getByText(/Last modified:/).querySelector("time")?.dateTime).toBe(
+    expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(
       WIKI_LAST_MODIFIED
     );
 
@@ -49,10 +49,17 @@ describe("WikiPage", () => {
       expect(() =>
         rerender(<WikiPage title="Commands" lastModified={invalidDate}>Content</WikiPage>)
       ).not.toThrow();
-      expect(screen.getByText(/Last modified:/).querySelector("time")?.dateTime).toBe(
+      expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(
         WIKI_LAST_MODIFIED
       );
     }
+  });
+});
+
+describe("formatWikiDate", () => {
+  it("writes the day, short month and year in British order", () => {
+    expect(formatWikiDate("2026-09-12")).toMatch(/^12 Sept? 2026$/);
+    expect(formatWikiDate("2026-01-01")).toBe("1 Jan 2026");
   });
 });
 

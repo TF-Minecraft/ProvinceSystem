@@ -1,3 +1,3 @@
 import type { WikiCommandSet, WikiSection } from "./types";
 export const codexCommands: WikiCommandSet = {system: "Codex", href: "/wiki/codex", commands: [{command:"/codex", description:"Opens the discovery journal."},{command:"/codex help", description:"Shows the commands available to you."}], excludedStaffCommands:["/codex unlock <player> <category> <discovery> [true/false]","/codex resetplayer <player>/* [category] [discovery]","/codex reload","/codex open <player> <inventory>","/codex verify"]};
-export const codexSection: WikiSection = {nav:{href:"/wiki/codex",label:"Codex",category:"magic",blurb:"Browse lore, character entries and achievements, with missing unlock paths clearly identified."},commands:codexCommands};
+export const codexSection: WikiSection = {nav:{href:"/wiki/codex",label:"Codex",category:"magic",blurb:"Browse lore, character entries and achievements."},commands:codexCommands};

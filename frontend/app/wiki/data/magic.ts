@@ -87,7 +87,7 @@ export const magicCommands: WikiCommandSet = {
       description:
         "Opens your Resonance profile: a bar per element, your Equilibrium (Corruption vs Tranquility), your Mental Points, and the Surge / Flow cast-mode toggle.",
       notes:
-        'Permission magic.use, default true: every player already has it. Needs an active RP character, otherwise: "You need an active character to view resonance."',
+        "Requires an active character.",
     },
   ],
   excludedStaffCommands: [
@@ -106,8 +106,7 @@ export const magicSection: WikiSection = {
     href: "/wiki/magic",
     label: "Magic",
     category: "magic",
-    blurb:
-      "Mage weapon parts, spell runes and shrines; attunement is blocked by missing charge sources.",
+    blurb: "Mage weapon parts, spell runes and shrines.",
   },
   recipes: magicRecipes,
   commands: magicCommands,

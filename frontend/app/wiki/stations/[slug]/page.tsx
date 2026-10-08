@@ -80,7 +80,7 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
       <WikiSectionHeading id="using">How to use it</WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{station.interaction}</p>
 
-      <WikiSectionHeading id="recipes" intro={recipes.length ? `${recipes.length} recipes use this station.` : "This station uses a different crafting or interaction flow."}>
+      <WikiSectionHeading id="recipes" intro={recipes.length ? `${recipes.length} recipes use this station.` : station.guide ? "See its guide below." : undefined}>
         Recipes crafted here
       </WikiSectionHeading>
       {recipes.length ? <RecipeCards recipes={recipes} /> : station.guide ? (

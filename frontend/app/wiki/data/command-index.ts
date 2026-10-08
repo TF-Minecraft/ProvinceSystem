@@ -13,6 +13,6 @@ export const commandIndexSection: WikiSection = {
     label: "Command Index",
     category: "reference",
     blurb:
-      "Every command a player can type, A–Z, with the page that documents it and which ones need a permission.",
+      "Every command a player can type, A–Z, with the page that documents it.",
   },
 };

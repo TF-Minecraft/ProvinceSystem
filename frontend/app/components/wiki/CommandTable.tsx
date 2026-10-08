@@ -21,11 +21,11 @@ export default function CommandTable({ commands, showAliases = true, showNotes =
       <code key="command" className="break-words font-mono text-[var(--tfmc-accent)] [overflow-wrap:anywhere]">{command.command}</code>,
     ];
     if (showAliases) {
-      cells.push(command.aliases?.length ? <span key="aliases" className="break-words font-mono text-[var(--tfmc-mist)] [overflow-wrap:anywhere]">{command.aliases.join(", ")}</span> : "None");
+      cells.push(command.aliases?.length ? <span key="aliases" className="break-words font-mono text-[var(--tfmc-mist)] [overflow-wrap:anywhere]">{command.aliases.join(", ")}</span> : "—");
     }
     cells.push(<span key="description" className="break-words [overflow-wrap:anywhere]">{typeof command.description === "string" ? <WikiItemText text={command.description} /> : command.description}</span>);
     if (showNotes) {
-      cells.push(<span key="notes" className="break-words [overflow-wrap:anywhere]">{typeof command.notes === "string" ? <WikiItemText text={command.notes} /> : command.notes ?? "None"}</span>);
+      cells.push(<span key="notes" className="break-words [overflow-wrap:anywhere]">{typeof command.notes === "string" ? <WikiItemText text={command.notes} /> : command.notes ?? "—"}</span>);
     }
     return cells;
   });

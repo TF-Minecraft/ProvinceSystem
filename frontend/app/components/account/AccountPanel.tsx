@@ -157,10 +157,6 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
 
   return (
     <>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Your TFMC account brings together Discord, your Minecraft account and Patreon.
-      </p>
-
       {actionError || notice ? (
         <p className="mt-4 text-sm text-[#e8a0a0]" role="alert">
           {actionError || notice}
@@ -195,7 +191,7 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
           {minecraft ? (
             <>
               <p className="text-[var(--tfmc-cream)]">
-                Mojang account <strong>{minecraft.minecraft_name || minecraft.player_uuid}</strong>
+                <strong>{minecraft.minecraft_name || "Minecraft account"}</strong>
                 {formatDate(minecraft.linked_at) ? (
                   <span className="text-[var(--tfmc-stone)]"> · linked {formatDate(minecraft.linked_at)}</span>
                 ) : null}
@@ -247,9 +243,7 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
           connected={Boolean(patreon?.linked)}
           status={patreon ? (patreon.linked ? "Connected" : "Not connected") : "Unavailable"}
         >
-          {!patreon ? (
-            <p className="text-sm text-[var(--tfmc-mist)]">Patreon linking isn’t available right now.</p>
-          ) : patreon.linked ? (
+          {!patreon ? null : patreon.linked ? (
             <p className="text-[var(--tfmc-cream)]">
               {patreon.tier_name ? (
                 <>
@@ -273,11 +267,11 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
       </ol>
 
       <p className="mt-8 text-sm text-[var(--tfmc-stone)]">
-        Characters, skins and drinks still use in-game codes on the{" "}
+        Characters, skins and drinks are on your{" "}
         <Link href="/profile" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
           Profile
-        </Link>{" "}
-        page.
+        </Link>
+        .
       </p>
     </>
   );
@@ -296,7 +290,7 @@ function ConnectionRow({
   label: string;
   connected: boolean;
   status: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <li className={rowClass} aria-label={label}>
@@ -317,7 +311,7 @@ function ConnectionRow({
             {status}
           </span>
         </div>
-        <div className="mt-3">{children}</div>
+        {children ? <div className="mt-3">{children}</div> : null}
       </div>
     </li>
   );

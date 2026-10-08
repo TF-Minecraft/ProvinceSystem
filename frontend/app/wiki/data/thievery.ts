@@ -23,24 +23,23 @@ export const thieveryCommands: CommandRow[] = [
   },
   {
     command: "/thievery loadout",
-    description: "Opens the 30-point steal-category loadout GUI.",
+    description: "Choose what you can steal.",
     notes: 'Requires the "thief" character trait, else you are told you lack the needed trait(s).',
   },
   {
     command: "/thievery clearclues",
-    description: "Arms a right-click to wipe clues from one door or container.",
-    notes: "No permission check exists in the code for this command.",
+    description: "Then right-click to wipe clues from one door or container.",
   },
   { command: "/pickpocket", description: "Shows pickpocket usage." },
   {
     command: "/pickpocket start",
-    description: "Arms a right-click to pickpocket a player within 4 blocks.",
+    description: "Then right-click to pickpocket a player within 4 blocks.",
     notes: 'Requires the "thief" trait.',
   },
   { command: "/robbery", description: "Shows robbery usage." },
   {
     command: "/robbery start",
-    description: "Arms a right-click to demand a robbery from a player within 4 blocks.",
+    description: "Then right-click to demand a robbery from a player within 4 blocks.",
     notes: 'Requires the "bandit" trait.',
   },
   {

@@ -30,4 +30,4 @@ export const furnitureRecipes = [
   {pieces:"Lure",station:"Block Station",cost:"2 Oak Planks",time:"2 s"},
 ];
 export const furnitureCommands: WikiCommandSet = {system:"InteractibleFurniture",href:"/wiki/furniture",commands:[],excludedStaffCommands:["/if reload","/if nested attach|detach","/if debug <on|off>"]};
-export const furnitureSection: WikiSection = {nav:{href:"/wiki/furniture",label:"Interactive Furniture",category:"professions",blurb:"Place, carry and fill 26 interactive cooking and display furniture definitions."},commands:furnitureCommands};
+export const furnitureSection: WikiSection = {nav:{href:"/wiki/furniture",label:"Interactive Furniture",category:"professions",blurb:"Place, carry and fill cooking and display furniture."},commands:furnitureCommands};

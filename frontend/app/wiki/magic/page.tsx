@@ -71,13 +71,13 @@ export default function MagicPage() {
         open at all without an active character.
       </Callout>
 
-      <WikiSectionHeading id="loop" intro="The intended loop, start to finish.">
+      <WikiSectionHeading id="loop">
         The loop
       </WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
-          <strong>Be a Mage.</strong> The Mage class is what gates Mage Staffs, Mage Wands,
-          Mage Blades and Mage Armor. Its own description warns that mages are expensive to gear.
+          <strong>Be a Mage.</strong> Only Mages can use Mage Staffs, Mage Wands, Mage Blades and
+          Mage Armor. Its own description warns that mages are expensive to gear.
         </li>
         <li>
           <strong>Open <code className="text-[var(--tfmc-accent)]">/resonance</code></strong> and
@@ -151,12 +151,12 @@ export default function MagicPage() {
       />
       <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
-          <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armor
+          <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armour
           can take an Ascendant Armor Rune, but only if that piece came out Masterwork. A Tempered iron piece has a Minor
           socket, so a Minor Armor Rune is the most it will ever hold.
         </li>
-        <li>Armor runes go on Mage armor only. Every other armor piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
-        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armor.</li>
+        <li>Armor runes go on Mage armour only. Every other armour piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
+        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armour.</li>
         <li>A smaller rune in a bigger socket works, but it uses that socket up. If a piece has several sockets, the rune goes into the smallest one that can hold it.</li>
         <li>Check the socket line in the item&apos;s lore before you spend the dust. It names the biggest size the piece accepts.</li>
       </ul>
@@ -171,7 +171,7 @@ export default function MagicPage() {
         columns={[
           { header: "Archetype", nowrap: true },
           { header: "In-game name" },
-          { header: "Melee:", nowrap: true },
+          { header: "Melee", nowrap: true },
           { header: "Parts it needs" },
         ]}
         rows={[
@@ -194,13 +194,13 @@ export default function MagicPage() {
         {enchantedChargeRecipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
       </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        A weak shrine cannot fill a high-tier charge. That is the tier gate. The band printed on a
+        A weak shrine cannot fill a high-tier charge. The band printed on a
         charge (&quot;Cerrith II&quot;) is just a readout of how much aura it holds: under 10 shows
         a dash, 10 is I, 40 is II, 75 is III, 110 is IV.
       </p>
       <WikiSectionHeading
         id="orbs"
-        intro="Applying a charge to a weapon does not just write the attunement. It starts a timed minigame, and the charge is spent up front whether you win or not."
+        intro="Applying a charge to a weapon starts a timed minigame. The charge is spent up front, win or lose."
       >
         The orb minigame
       </WikiSectionHeading>
@@ -213,7 +213,7 @@ export default function MagicPage() {
       </p>
       <Callout title="A charge can exceed your Resonance">
         Right-click the prepared weapon on its station with the charge to start. If the charge
-        demands more Resonance than you have, the configured warning lists each shortfall and
+        demands more Resonance than you have, a warning lists each shortfall and
         asks you to right-click again to commit anyway. That second click spends the charge.
       </Callout>
       <StatGrid
@@ -256,14 +256,14 @@ export default function MagicPage() {
           ],
           [
             "*Damaged*",
-            "A config change left the weapon holding runes it can no longer seat.",
+            "The weapon holds runes that no longer fit.",
             "Nothing, but the weapon will not cast until you reclaim its runes.",
           ],
         ]}
       />
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-        A refusal explains itself in chat: <em>&quot;The weapon asks for {"{element} {need}"}. You
-        carry {"{have}"}.&quot;</em>, but only once every 30 seconds per weapon and element, so do not
+        A refusal explains itself in chat, for example <em>&quot;This spell needs Cerrith 40. You carry
+        25.&quot;</em>, but only once every 30 seconds per weapon and element, so do not
         expect a message on every click. To fix a <em>Damaged</em> weapon, right-click an{" "}
         <strong>empty</strong> <StationLink name="Magic Station" />: it works the loose runes free and hands them back.
       </p>
