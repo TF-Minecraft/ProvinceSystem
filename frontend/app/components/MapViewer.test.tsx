@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapEngineProvider } from "../core/MapEngineContext";
 import MapViewer from "./MapViewer";
@@ -97,8 +97,8 @@ describe("MapViewer terrain and picking readiness", () => {
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
     expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 512, height: 512 });
     expect(bitmap.close).toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole("button", { name: /Layers/ })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Counties" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Counties" }));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
     // The last mode's regions are gone, not merely gated.
     expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();

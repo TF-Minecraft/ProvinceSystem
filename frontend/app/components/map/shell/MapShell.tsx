@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
+import type { MapLayersPlacement } from "./MapLayersMenu";
+
 type MapShellProps = {
   /** The map itself. Rendered exactly once, at every breakpoint. */
   children: ReactNode;
@@ -27,8 +29,12 @@ type MapShellProps = {
   /** Pinned under the details' scrolling content: the panel's main action. */
   detailsFooter?: ReactNode;
   zoomControls: ReactNode;
-  /** The layers button (map types and overlays), top right. */
-  layers?: ReactNode;
+  /**
+   * The layers control (map types and overlays), built for each place it
+   * goes: a round button under the search on a phone, the picture tile in
+   * the bottom-left corner on a desktop.
+   */
+  layers?: (placement: MapLayersPlacement) => ReactNode;
   /**
    * A bar along the foot of the map between the left column and the zoom
    * buttons, on desktop only: the timelapse's player.
@@ -36,7 +42,7 @@ type MapShellProps = {
   footer?: ReactNode;
   /** A panel down the right-hand side, on desktop only: the timelapse's charts. */
   aside?: ReactNode;
-  /** War-planning toolbar, top right under the layers button while paint mode is on. */
+  /** War-planning toolbar, top right while paint mode is on. */
   paintPanel?: ReactNode;
   /**
    * A card over the plaque, in the left column: a stored day's date and the
@@ -47,14 +53,15 @@ type MapShellProps = {
 
 /**
  * Full-bleed map with its controls floating over it, laid out like Google
- * Maps. Search and the details panel down the left, layers top right (the map
- * modes live in its panel), zoom bottom right.
+ * Maps. Search and the details panel down the left, the layers tile in the
+ * bottom-left corner (beside the details while they are open), zoom bottom
+ * right.
  *
  * On a phone the same pieces regroup instead of shrinking: one slim search
  * row across the top with the breadcrumb and layers under it, details in a
  * bottom sheet, and no zoom buttons (pinch zooms). The map and the panels are
- * one node each, placed by responsive classes; only the small top-row
- * controls (breadcrumb, layers) have a phone and a desktop copy.
+ * one node each, placed by responsive classes; only the small controls
+ * (breadcrumb, layers) have a phone and a desktop copy.
  */
 export default function MapShell({
   children,
@@ -106,7 +113,7 @@ export default function MapShell({
           {breadcrumb || layers ? (
             <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
               <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
-              {layers ? <div className="pointer-events-auto ml-auto shrink-0">{layers}</div> : null}
+              {layers ? <div className="pointer-events-auto ml-auto shrink-0">{layers("phone")}</div> : null}
             </div>
           ) : null}
         </div>
@@ -144,16 +151,22 @@ export default function MapShell({
 
       {paintPanel ? (
         <div
-          className="pointer-events-auto absolute right-4 top-[4.25rem] z-20 hidden max-h-[calc(100%-12.25rem)] w-72 overflow-y-auto md:block"
+          className="pointer-events-auto absolute right-4 top-4 z-20 hidden max-h-[calc(100%-9rem)] w-72 overflow-y-auto md:block"
         >
           {paintPanel}
         </div>
       ) : null}
 
-      {/* Over the paint toolbar and zoom, so the layers panel drops down across them. */}
+      {/* As in Google Maps: bottom left, moving aside for the details panel
+          (23rem from 1rem in). Its strip of choices unfolds to the right as
+          far as the zoom buttons, wrapping upwards when it runs out of room. */}
       {layers ? (
-        <div className="absolute right-4 top-4 z-40 hidden md:block">
-          {layers}
+        <div
+          className={`pointer-events-none absolute bottom-4 right-[4.5rem] z-40 hidden md:flex ${
+            details ? "left-[25rem]" : "left-4"
+          }`}
+        >
+          {layers("desktop")}
         </div>
       ) : null}
 

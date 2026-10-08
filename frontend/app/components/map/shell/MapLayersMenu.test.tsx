@@ -27,6 +27,7 @@ beforeEach(() => {
 function renderMenu(onMapTypeChange = vi.fn()) {
   render(
     <MapLayersMenu
+      placement="phone"
       mapType="nation"
       onMapTypeChange={onMapTypeChange}
       toggles={[]}
@@ -34,7 +35,7 @@ function renderMenu(onMapTypeChange = vi.fn()) {
       previews={false}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: /Layers/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Layers" }));
   return screen.getByRole("dialog", { name: "Map layers" });
 }
 
@@ -51,6 +52,21 @@ function pull(sheet: HTMLElement, from: number, to: number, stepMs = 16) {
 }
 
 describe("MapLayersMenu", () => {
+  it("shows only the layers icon on a phone, not the current map type", () => {
+    render(
+      <MapLayersMenu
+        placement="phone"
+        mapType="nation"
+        onMapTypeChange={vi.fn()}
+        toggles={[]}
+        mapId="main"
+        previews={false}
+      />
+    );
+    const button = screen.getByRole("button", { name: "Layers" });
+    expect(button.textContent).toBe("");
+  });
+
   it("closes once a map type is chosen", () => {
     const onMapTypeChange = vi.fn();
     renderMenu(onMapTypeChange);
@@ -126,15 +142,80 @@ describe("MapLayersMenu intent loading", () => {
       max_level: 0, levels: [{ width: 512, height: 512 }],
     });
     const { container } = render(
-      <MapLayersMenu mapType="nation" onMapTypeChange={vi.fn()} toggles={[]} mapId="main" previews />
+      <MapLayersMenu placement="phone" mapType="nation" onMapTypeChange={vi.fn()} toggles={[]} mapId="main" previews />
     );
     await act(async () => vi.advanceTimersByTime(10000));
     expect(fetchManifest).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /Layers/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
     await act(async () => {});
     expect(fetchManifest).toHaveBeenCalledWith("/main/tiles/regions-county/manifest");
     const images = container.querySelectorAll("img");
     expect(images.length).toBeGreaterThan(0);
     for (const image of images) expect(image.getAttribute("fetchpriority")).toBe("low");
+  });
+});
+
+const MANIFEST = {
+  ready: true, version: "v1", width: 512, height: 512, tile_size: 256,
+  max_level: 0, levels: [{ width: 512, height: 512 }],
+};
+
+function renderDesktop(props: Partial<Parameters<typeof MapLayersMenu>[0]> = {}) {
+  return render(
+    <MapLayersMenu
+      placement="desktop"
+      mapType="nation"
+      onMapTypeChange={vi.fn()}
+      toggles={[]}
+      mapId="main"
+      previews={false}
+      {...props}
+    />
+  );
+}
+
+describe("MapLayersMenu on a desktop", () => {
+  it("labels the corner tile Layers, not with the current map type", () => {
+    renderDesktop();
+    const tile = screen.getByRole("button", { name: "Layers" });
+    expect(tile.textContent).toBe("Layers");
+  });
+
+  it("offers every map type and overlay in the strip, and keeps it after a choice", () => {
+    const onMapTypeChange = vi.fn();
+    const onChange = vi.fn();
+    renderDesktop({
+      onMapTypeChange,
+      toggles: [
+        { id: "paint", label: "War planning", icon: () => null, desktopOnly: true, checked: false, onChange },
+      ],
+    });
+    const strip = screen.getByRole("group", { name: "Map type and details" });
+    expect(strip.querySelectorAll("button[aria-pressed]")).toHaveLength(11);
+    fireEvent.click(screen.getByRole("button", { name: "Duchies" }));
+    expect(onMapTypeChange).toHaveBeenCalledWith("duchy");
+    fireEvent.click(screen.getByRole("switch", { name: "War planning" }));
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(screen.getByRole("group", { name: "Map type and details" })).toBe(strip);
+  });
+
+  it("opens the full panel from the tile, in place of the strip", () => {
+    renderDesktop();
+    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
+    expect(screen.getByRole("dialog", { name: "Map layers" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Map type and details" })).toBeNull();
+  });
+
+  it("loads only the tile's own preview until the strip is hovered", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://map.test");
+    fetchManifest.mockResolvedValue(MANIFEST);
+    // Another map than the tests above, whose manifests are cached by now.
+    const { container } = renderDesktop({ previews: true, mapId: "dev" });
+    await act(async () => vi.advanceTimersByTime(10000));
+    const asked = () => fetchManifest.mock.calls.map(([path]) => path).sort();
+    expect(asked()).toEqual(["/dev/tiles/base/manifest", "/dev/tiles/regions-nation/manifest"]);
+    fireEvent.pointerEnter(container.firstElementChild!);
+    await act(async () => {});
+    expect(asked()).toContain("/dev/tiles/regions-county/manifest");
   });
 });
