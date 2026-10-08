@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AccountApiError } from "../../../../lib/account/api";
+import { adminErrorMessage } from "../../../../lib/admin/api";
 import {
   contextLabel,
   expiryLabel,
@@ -41,6 +42,8 @@ export default function RankGroup({ name }: { name: string }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [pending, setPending] = useState<Pending | null>(null);
   const [members, setMembers] = useState<LpPlayerPage | null>(null);
+  const [membersBusy, setMembersBusy] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -151,16 +154,27 @@ export default function RankGroup({ name }: { name: string }) {
       />
 
       <section className={panelClass} aria-label="Members" id="members">
-        <h3 className={headingClass}>Players in {group.name}</h3>
-        <p className={`mt-1 ${mutedClass}`}>Players who hold it themselves, in any context. Inheriting groups aren’t listed.</p>
+        <h3 className={headingClass}>
+          Players in {group.name}{" "}
+          <span className="whitespace-nowrap text-[var(--tfmc-mist)]">· {(members?.total ?? group.members).toLocaleString()}</span>
+        </h3>
+        <p className={`mt-1 ${mutedClass}`}>
+          Players with a direct {group.name} entry, in any context. Chips show their other directly held groups.
+        </p>
         {members ? (
           <PlayerResults
             page={members}
-            onPage={(page) =>
+            membershipGroup={group.name}
+            busy={membersBusy}
+            error={membersError}
+            onPage={(page) => {
+              setMembersBusy(true);
+              setMembersError(null);
               void getLpPlayers({ group: group.name, page })
                 .then(setMembers)
-                .catch(() => undefined)
-            }
+                .catch((err) => setMembersError(adminErrorMessage(err)))
+                .finally(() => setMembersBusy(false));
+            }}
           />
         ) : null}
       </section>

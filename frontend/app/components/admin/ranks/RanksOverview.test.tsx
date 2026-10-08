@@ -49,14 +49,20 @@ it("lists groups, tracks and recent changes, and finds players", async () => {
   });
   render(<RanksOverview />);
   const groups = await screen.findByRole("region", { name: "Groups" });
-  expect(within(groups).getByText("Owner only")).toBeTruthy();
-  expect(within(groups).getByText("Patreon")).toBeTruthy();
+  const table = within(groups).getByRole("table");
+  expect(within(table).getByText("Owner only")).toBeTruthy();
+  expect(within(table).getByText("Patreon")).toBeTruthy();
+  // The narrow-screen list carries the same facts as the table.
+  const list = within(groups).getByRole("list", { name: "Groups list" });
+  expect(within(list).getByRole("link", { name: "13 players" }).getAttribute("href")).toBe("/admin/ranks/groups/noble#members");
+  expect(within(list).getByText("Inherits: staff_inactive")).toBeTruthy();
+  expect(within(list).getByText("Weight 200")).toBeTruthy();
   expect(within(groups).queryByRole("button", { name: "New group" })).toBeNull();
   expect(screen.getByRole("region", { name: "Recent changes" }).textContent).toContain("promote helper");
   fireEvent.change(screen.getByLabelText("Minecraft name or UUID"), { target: { value: "ali" } });
   fireEvent.click(screen.getByRole("button", { name: "Find" }));
   expect(await screen.findByRole("link", { name: "Alice" })).toBeTruthy();
-  expect(screen.getByText("(server=main)")).toBeTruthy();
+  expect(screen.getByText("(Main)")).toBeTruthy();
 });
 
 it("lets root create a group", async () => {
@@ -91,10 +97,23 @@ it("edits a group's weight as a remove and an add", async () => {
       tracks: [],
     },
     members: {
-      total: 1,
+      total: 51,
       page: 1,
       page_size: 50,
-      rows: [{ uuid: "u", name: "Bob", rank: "noble", groups: [{ name: "noble", contexts: {}, expiry: 0 }] }],
+      rows: [
+        { uuid: "u", name: "Bob", rank: "noble", groups: [{ name: "noble", contexts: {}, expiry: 0 }] },
+        {
+          uuid: "c",
+          name: "Cara",
+          rank: "noble",
+          groups: [
+            { name: "noble", contexts: {}, expiry: 0 },
+            { name: "noble", contexts: {}, expiry: Date.now() / 1000 + 12 * 86400 },
+            { name: "default", contexts: {}, expiry: 0 },
+            { name: "commoner", contexts: { server: ["main"], world: ["vardera"] }, expiry: 0 },
+          ],
+        },
+      ],
     },
     all_groups: ["noble", "commoner", "default"],
     rights: { read_only: false, change_players: true, edit_definitions: true },
@@ -103,9 +122,21 @@ it("edits a group's weight as a remove and an add", async () => {
   });
   vi.mocked(submitLpChange).mockResolvedValue({ id: 4, status: "pending" } as LpChange);
   vi.mocked(waitForChange).mockResolvedValue({ id: 4, status: "applied" } as LpChange);
+  vi.mocked(getLpPlayers).mockRejectedValue(new Error("offline"));
   render(<RankGroup name="noble" />);
   const settings = await screen.findByRole("region", { name: "Settings" });
-  expect(within(screen.getByRole("region", { name: "Members" })).getByText("Bob")).toBeTruthy();
+  const members = screen.getByRole("region", { name: "Members" });
+  expect(within(members).getByRole("heading").textContent).toBe("Players in noble · 51");
+  const [bob, cara] = within(members).getAllByRole("listitem").filter((item) => item.querySelector("a[href^='/admin/ranks/players/']"));
+  // The viewed group is the page's subject, so it never repeats as a chip.
+  expect(within(bob).queryByRole("link", { name: "noble" })).toBeNull();
+  expect(bob.textContent).toContain("Permanent");
+  expect(cara.textContent).toContain("Global · Permanent");
+  expect(cara.textContent).toContain("Global · Expires in 12 d");
+  expect(within(cara).getAllByRole("link").map((link) => link.textContent)).toEqual(["Cara", "commoner(Main, world=vardera)", "default"]);
+  fireEvent.click(within(members).getByRole("button", { name: "Next →" }));
+  expect(await within(members).findByRole("alert")).toBeTruthy();
+  expect(within(members).getByText("Page 1 of 2")).toBeTruthy();
   fireEvent.change(within(settings).getByLabelText("Weight"), { target: { value: "25" } });
   fireEvent.click(within(settings).getByRole("button", { name: "Save" }));
   fireEvent.change(within(settings).getByLabelText("Reason (recorded)"), { target: { value: "Reorder ranks" } });

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { formatAgo } from "../../../../lib/admin/time";
 import {
-  contextLabel,
   expiryLabel,
   lpErrorMessage,
+  shortContextLabel,
   STATUS_LABELS,
   type LpChange,
   type LpRights,
@@ -44,22 +44,25 @@ export function GroupChip({
   contexts = {},
   expiry = 0,
   href = true,
+  muted = false,
 }: {
   name: string;
   contexts?: Record<string, string[]>;
   expiry?: number;
   href?: boolean;
+  muted?: boolean;
 }) {
-  const extra = [contextLabel(contexts), expiryLabel(expiry)].filter(Boolean).join(" · ");
+  const extra = [shortContextLabel(contexts), expiryLabel(expiry)].filter(Boolean).join(" · ");
   const body = (
     <>
       {name}
       {extra ? <span className="text-[var(--tfmc-stone)]">({extra})</span> : null}
     </>
   );
-  if (!href) return <span className={chipClass}>{body}</span>;
+  const className = muted ? `${chipClass} opacity-60` : chipClass;
+  if (!href) return <span className={className}>{body}</span>;
   return (
-    <Link href={`/admin/ranks/groups/${encodeURIComponent(name)}`} className={`${chipClass} hover:border-[var(--tfmc-accent)]`}>
+    <Link href={`/admin/ranks/groups/${encodeURIComponent(name)}`} className={`${className} hover:border-[var(--tfmc-accent)]`}>
       {body}
     </Link>
   );
