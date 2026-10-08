@@ -252,7 +252,7 @@ function DesktopLayers({
           <div
             role="group"
             aria-label="Map type and details"
-            className="map-frame flex flex-wrap items-start gap-x-0.5 gap-y-2 px-1.5 py-2"
+            className="map-frame flex flex-wrap items-start gap-y-1 px-1 py-1.5"
           >
             {mapModeOptions().map((option) => {
               const active = option.value === mapType;
@@ -310,9 +310,9 @@ function DesktopLayers({
   );
 }
 
-/** The strip's tiles: the panel's, a size smaller. */
+/** The strip's tiles: the panel's, two sizes smaller. */
 const stripFrameClass =
-  "relative block h-12 w-12 overflow-hidden rounded-lg transition-shadow";
+  "relative block h-10 w-10 overflow-hidden rounded-lg transition-shadow";
 
 function StripTile({
   label,
@@ -328,10 +328,17 @@ function StripTile({
     <button
       type="button"
       {...button}
-      className="group flex w-[4.25rem] flex-col items-center gap-1 rounded-lg px-0.5 py-1 text-center focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
+      className="group flex min-w-[3.25rem] flex-col items-center gap-1 rounded-lg px-1 py-1 text-center focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
     >
       {children}
-      <span lang="en" className={layerTileLabelClass(active)}>
+      {/* One line, so a long label widens its own tile rather than
+          deepening the whole strip. */}
+      <span
+        lang="en"
+        className={`whitespace-nowrap text-[11px] leading-tight ${
+          active ? "font-semibold text-[var(--tfmc-accent)]" : "text-[var(--tfmc-stone)]"
+        }`}
+      >
         {label}
       </span>
     </button>
