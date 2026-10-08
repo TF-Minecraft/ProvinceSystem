@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { layoutLabels, type LabelPoint, type PlacedLabel } from "./labelLayout";
+import { DEFAULT_LAYOUT, layoutLabels, type LabelPoint, type PlacedLabel } from "./labelLayout";
 
 const point = (key: string, x: number, y: number, width = 60): LabelPoint => ({ key, x, y, width, height: 16 });
 
@@ -81,6 +81,27 @@ describe("layoutLabels", () => {
         expect(Math.hypot(x1 + t * (x2 - x1) - m.x, y1 + t * (y2 - y1) - m.y)).toBeGreaterThanOrEqual(8);
       }
     }
+  });
+
+  it("keeps names inside the map at its edges", () => {
+    const area = { width: 400, height: 300 };
+    const options = { ...DEFAULT_LAYOUT, area };
+    // As seen on Main: a name beside a marker by the east edge ran off the map.
+    const [east] = layoutLabels([point("east", 390, 150)], options);
+    expect(east).toMatchObject({ leader: null });
+    expect(east.x + east.width).toBe(378);
+    // Two markers by the west edge: the right side holds one name, the other goes out on a leader.
+    const placed = layoutLabels([point("a", 10, 20), point("b", 10, 36)], options);
+    expect(placed).toHaveLength(2);
+    for (const p of placed) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+      expect(p.x + p.width).toBeLessThanOrEqual(area.width);
+      expect(p.y + p.height).toBeLessThanOrEqual(area.height);
+    }
+    // A marker at the very top: its name moves down.
+    const [top] = layoutLabels([point("top", 200, 3)], options);
+    expect(top.y).toBeGreaterThanOrEqual(0);
   });
 
   it("gives earlier labels the better spots, so the same order lays out the same", () => {

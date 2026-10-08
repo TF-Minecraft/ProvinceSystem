@@ -8,7 +8,7 @@ import { mapFallbackSize, type MapId } from "../map/types";
 import { tileUrl, useTileManifest } from "../../hooks/useTileManifest";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { mapApiUrl } from "@/lib/map/api";
-import { layoutLabels } from "../../../lib/admin/labelLayout";
+import { DEFAULT_LAYOUT, layoutLabels } from "../../../lib/admin/labelLayout";
 import {
   blocks,
   boundsOfPoints,
@@ -123,11 +123,13 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
     x: stop.at[0] * displayScale,
     y: stop.at[1] * displayScale,
   }));
-  const layoutKey = `${displayScale.toFixed(4)}|${anchors.map((a) => a.label).join("|")}`;
+  const area = { width: mapSize.w * displayScale, height: mapSize.h * displayScale };
+  const layoutKey = `${displayScale.toFixed(4)}:${mapSize.w}:${mapSize.h}|${anchors.map((a) => a.label).join("|")}`;
   const placed = useMemo(
     () =>
       layoutLabels(
-        anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX }))
+        anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX })),
+        { ...DEFAULT_LAYOUT, area }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [layoutKey]
