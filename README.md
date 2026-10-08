@@ -25,6 +25,10 @@ It connects the Minecraft world with a browser experience: players can explore t
 
 Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
 
+Each branch gets a preview at `https://<branch>.tfminecraft.net`, merging to `main`
+deploys `https://dev.tfminecraft.net`, and **Actions → Deploy** puts `main` live on
+`https://www.tfminecraft.net`. See [Previews and deploys](https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/DEPLOY.md).
+
 ## Tests
 
 CI runs the frontend Vitest suite and the backend pytest suite, then builds the
@@ -37,32 +41,6 @@ Next.js frontend. To run the same suites from the repository root:
 
 The suites cover the website and API in isolation; they do not run a Minecraft
 server or the companion plugins.
-
-## Branch previews
-
-Pushing any branch other than `main` deploys that branch on its own at
-`https://<branch>.tfminecraft.net`; for example, `homepagechange` becomes
-`https://homepagechange.tfminecraft.net`. Names are lowercased and anything
-other than letters and digits becomes `-`, so `codex/new-map` becomes
-`codex-new-map`. The branch's Actions run and PR link to the address.
-
-- A preview starts with a copy of the dev site's data, with sign-in sessions
-  removed. It never touches dev or the live site.
-- Previews are public, like dev, but search engines are told not to index
-  them. Discord sign-in is off on previews.
-- A preview stops 90 minutes after its last deploy. Push again, or run the
-  **Preview** workflow on the branch, to start it again.
-- Deleting the branch removes its preview. Up to four run at once.
-
-## Deploying
-
-- Merging to `main` deploys `https://dev.tfminecraft.net` once CI passes.
-- `https://www.tfminecraft.net` deploys only from **Actions → Deploy → Run
-  workflow** with site `www`. Leave the commit blank for the latest `main`, or
-  give an older commit on `main` to roll back.
-
-The server backs up the database before each deploy, rebuilds only what
-changed, and puts the previous code back if the site does not come up.
 
 ## License
 
