@@ -363,7 +363,7 @@ export default function MovementMap({
     if (anchor.key !== highlight && (anchor.key !== picked || pickLapsed)) return [];
     const width = labelWidth(anchor.label);
     const box = {
-      x: anchor.x + 12 + width > area.width ? anchor.x - 12 - width : anchor.x + 12,
+      x: Math.max(0, anchor.x + 12 + width > area.width ? anchor.x - 12 - width : anchor.x + 12),
       y: Math.max(0, Math.min(anchor.y - LABEL_HEIGHT_PX / 2, area.height - LABEL_HEIGHT_PX)),
       width,
       height: LABEL_HEIGHT_PX,
