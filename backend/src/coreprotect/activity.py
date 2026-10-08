@@ -41,24 +41,48 @@ _COMMAND_TEXT = (
 )
 _FULL_COMMAND_TEXT = f"CASE WHEN {_SKILL} THEN substr({_CAST}, 1, 80) ELSE substr(message, 1, {MESSAGE_MAX}) END"
 
-# RPCharacters' chat channels, as sent by command (`/looc hi`): alias → label,
-# from Main's plugins/RPCharacters/chat.yml. Plain chat goes to the player's
-# current channel, which CoreProtect does not record.
-CHANNELS = {
-    "rp": "RP", "shout": "Shout", "yell": "Yell", "y": "Yell", "whisper": "Whisper", "wh": "Whisper",
-    "me": "Emote", "dm": "DM", "narrate": "DM", "scene": "Scene",
-    "ooc": "OOC", "looc": "LOOC", "gooc": "GOOC", "fooc": "FOOC", "pooc": "POOC", "rooc": "ROOC",
-    "admin": "Admin", "a": "Admin", "helper": "Helper", "h": "Helper",
+# RPCharacters' chat channels, from Main's plugins/RPCharacters/chat.yml:
+# id → (label, the commands that speak in it, `/looc hi`).
+_CHANNELS = {
+    "rp": ("RP", ("rp",)), "shout": ("Shout", ("shout",)), "yell": ("Yell", ("yell", "y")),
+    "whisper": ("Whisper", ("whisper", "wh")), "action": ("Emote", ("me",)), "dm": ("DM", ("dm", "narrate")),
+    "scene": ("Scene", ("scene",)), "ooc": ("OOC", ("ooc",)), "looc": ("LOOC", ("looc",)),
+    "gooc": ("GOOC", ("gooc",)), "fooc": ("FOOC", ("fooc",)), "pooc": ("POOC", ("pooc",)),
+    "rooc": ("ROOC", ("rooc",)), "admin": ("Admin", ("admin", "a")), "helper": ("Helper", ("helper", "h")),
 }
+_ALIASES = {alias: cid for cid, (_, aliases) in _CHANNELS.items() for alias in aliases}
+# Plain chat goes to the channel last chosen with `/channel <name>` since the
+# player logged in (RPCharacters keeps it in memory and forgets it on quit),
+# else the default. Only these may be chosen (chat.yml channel-switcher).
+DEFAULT_CHANNEL = "rp"
+SWITCHABLE = frozenset({"rp", "ooc", "looc", "whisper", "shout", "yell", "action"})
+# How many of a session's commands to look back through for the last switch.
+SWITCH_SCAN = 5000
 _FIRST_WORD = "lower(CASE WHEN instr(message, ' ') > 0 THEN substr(message, 1, instr(message, ' ') - 1) ELSE message END)"
 _CHANNEL = "{} IN ({})".format(_FIRST_WORD, ", ".join(
-    f"'/{prefix}{alias}'" for alias in CHANNELS for prefix in ("", "rpcharacters:")))
+    f"'/{prefix}{alias}'" for alias in _ALIASES for prefix in ("", "rpcharacters:")))
+_SWITCH = ("(lower(substr(message, 1, 9)) = '/channel ' "
+           "OR lower(substr(message, 1, 22)) = '/rpcharacters:channel ')")
+
+
+def _label(word: str) -> str:
+    return word.lower().removeprefix("/").removeprefix("rpcharacters:")
 
 
 def channel_of(command: str | None) -> str | None:
     """The chat channel a command speaks in (`/looc hi` → LOOC), or None."""
-    word = (command or "").split(" ", 1)[0].lower().removeprefix("/").removeprefix("rpcharacters:")
-    return CHANNELS.get(word)
+    cid = _ALIASES.get(_label((command or "").split(" ", 1)[0]))
+    return _CHANNELS[cid][0] if cid else None
+
+
+def switched_to(command: str) -> str | None:
+    """The channel a successful `/channel <name>` makes the default, or None."""
+    words = command.split(" ")
+    if len(words) != 2 or _label(words[0]) != "channel":
+        return None
+    name = words[1].lower()
+    cid = name if name in _CHANNELS else _ALIASES.get(name)
+    return cid if cid in SWITCHABLE else None
 
 
 @dataclass(frozen=True)
@@ -96,7 +120,7 @@ SOURCES = (
            # Those who may read chat see channel commands as chat (source 10), not here.
            full_kinds={"skill": _SKILL, "command": f"NOT {_SKILL} AND NOT {_CHANNEL}"}),
     Source(8, "session", "co_session", "action", {"session": "action IN (0, 1)"}),
-    Source(9, "chat", "co_chat", f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
+    Source(9, "chat", "co_chat", f"user, substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
            {"chat": "1"}, sensitive=True),
     Source(10, "channel", "co_command",
            f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
@@ -255,6 +279,7 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         names = {r["id"]: {"minecraft_name": r["user"], "uuid": r["uuid"]}
                  for r in reader.rows(f"SELECT id, user, uuid FROM co_user WHERE id IN ({marks})", tuple(victims))}
     _fetch_metadata(reader, maps, rows)
+    _infer_channels(reader, rows)
     return {
         "rows": rows,
         "victims": names,
@@ -262,6 +287,30 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         # Set when the page stopped at a scan limit rather than filling up.
         "searched_to": frontier.time if frontier is not None and nxt == frontier else None,
     }
+
+
+def _infer_channels(reader: Reader, rows: list) -> None:
+    """Each plain chat line's channel: the last `/channel` switch since that login, else the default.
+
+    None when no login is recorded before it, or the switch lies beyond
+    SWITCH_SCAN commands back. Point reads for the final page only.
+    """
+    for source, row in rows:
+        if source.name != "chat":
+            continue
+        login = reader.rows(
+            "SELECT time FROM co_session WHERE user = ? AND time <= ? AND action = 1 "
+            "ORDER BY time DESC LIMIT 1", (row["user"], row["time"]))
+        if not login:
+            continue
+        window = (row["user"], login[0]["time"], row["time"], SWITCH_SCAN)
+        recent = ("SELECT message FROM co_command WHERE user = ? AND time BETWEEN ? AND ? "
+                  "ORDER BY time DESC, rowid DESC LIMIT ?")
+        switches = reader.rows(f"SELECT message FROM ({recent}) WHERE {_SWITCH}", window)
+        chosen = next((cid for r in switches if (cid := switched_to(r["message"] or ""))), None)
+        if chosen is None and reader.rows(f"SELECT COUNT(*) AS n FROM ({recent})", window)[0]["n"] == SWITCH_SCAN:
+            continue
+        row["channel"] = chosen or DEFAULT_CHANNEL
 
 
 def _fetch_metadata(reader: Reader, maps: Maps, rows: list) -> None:
@@ -360,6 +409,8 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "rolled_back": _rollback(row.get("rolled_back")),
         "target_info": None,
         "channel": None,
+        # True when the channel was worked out from `/channel` switches, not recorded.
+        "channel_inferred": False,
     }
     if source.name == "block":
         if action == 3:
@@ -404,8 +455,10 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
             entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]),
                          channel=channel_of(row["text"]))
     elif source.name == "chat":
+        cid = row.get("channel")
         entry.update(kind="chat", verb="said", target=None, message=row["text"] or "",
-                     truncated=bool(row["truncated"]))
+                     truncated=bool(row["truncated"]), channel=_CHANNELS[cid][0] if cid else None,
+                     channel_inferred=bool(cid))
     elif source.name == "channel":
         entry.update(kind="chat", verb="said", target=None, channel=channel_of(row["text"]),
                      message=(row["text"] or "").partition(" ")[2].strip(), truncated=bool(row["truncated"]))

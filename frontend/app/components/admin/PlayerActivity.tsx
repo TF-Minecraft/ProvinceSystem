@@ -45,10 +45,11 @@ const CHANNEL_COLOURS: Record<string, string> = {
   Admin: "#ff6b6b", Helper: "#ff77ff", Shout: "#ffaa00", Yell: "#ff6b6b", Whisper: "#55aaff", Emote: "#ff77ff",
 };
 
-function ChannelTag({ channel }: { channel: string }) {
+function ChannelTag({ channel, inferred = false }: { channel: string; inferred?: boolean }) {
   const colour = CHANNEL_COLOURS[channel] ?? "var(--tfmc-mist)";
   return (
     <span
+      title={inferred ? "Their channel at the time, from their last /channel switch since logging in" : undefined}
       className="mr-1.5 inline-block rounded-full border px-1.5 align-[1px] text-[10px] font-semibold uppercase tracking-wide"
       style={{ color: colour, borderColor: `color-mix(in srgb, ${colour} 45%, transparent)` }}
     >
@@ -181,7 +182,7 @@ function Row({ row, names }: { row: ActivityRow; names: WorldNames }) {
         {entry.kind === "chat" ? (
           <p className="break-words border-l-2 border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] pl-2.5 text-[var(--tfmc-cream)]">
             <span className="sr-only">Said </span>
-            {entry.channel ? <ChannelTag channel={entry.channel} /> : null}
+            {entry.channel ? <ChannelTag channel={entry.channel} inferred={entry.channel_inferred} /> : null}
             <span>{entry.message}</span>
             {entry.truncated ? <span className="text-[var(--tfmc-stone)]"> (cut short)</span> : null}
           </p>

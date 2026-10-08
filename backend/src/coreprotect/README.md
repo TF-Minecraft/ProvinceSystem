@@ -101,7 +101,13 @@ the aliases are `CHANNELS` in `activity.py`, from Main's `chat.yml`) is chat:
 for admins it comes back as kind `chat` with its `channel` and the text after
 the command, under the Chat filter and audited like chat; moderators still get
 only the command word, with the `channel` named. Plain chat goes to the
-player's current channel, which CoreProtect does not record, so it has none.
+player's current channel, which CoreProtect does not record, so it is worked
+out (`channel_inferred`): RPCharacters keeps the channel picked with
+`/channel <name>` in memory until the player quits, so a line's channel is
+the last valid switch since their latest login, else RP. That looks back at
+most 5,000 commands; further than that, or with no login recorded, the
+channel is left unknown. Character-creation answers typed in chat are not
+channel chat but are labelled as if they were.
 
 Sessions are rebuilt from login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 

@@ -272,8 +272,10 @@ export type ActivityEntry = {
   victim: { minecraft_name: string; uuid: string | null } | null;
   /** Chat text, for admins only. */
   message: string | null;
-  /** The RPCharacters channel (`LOOC`, `Emote`) of chat sent by command; plain chat's channel is not recorded. */
+  /** The RPCharacters channel (`LOOC`, `Emote`): recorded for chat sent by command. */
   channel?: string | null;
+  /** Plain chat's channel, worked out from the player's last `/channel` switch since logging in. */
+  channel_inferred?: boolean;
   truncated: boolean;
   world: string | null;
   x: number;
