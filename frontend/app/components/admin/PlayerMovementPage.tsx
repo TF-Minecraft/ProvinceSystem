@@ -28,6 +28,8 @@ import {
 } from "../../../lib/admin/movement";
 import { formatDuration } from "../../../lib/admin/time";
 import { writeUrl } from "../../../lib/admin/urlState";
+import AdminColumn from "./AdminColumn";
+import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MapPin } from "./MovementMap";
 import {
   CopyButton,
@@ -105,7 +107,6 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   // A session in the URL wins over a range.
   const mode: "session" | "range" = !sessionId && from !== null && to !== null ? "range" : "session";
   const [tab, setTab] = useState<"session" | "range">(mode);
-  const [collapsed, setCollapsed] = useState(false);
   const [followSession, setFollowSession] = useState(false);
   // Following is for one open session: a new selection starts without it.
   const [followedSession, setFollowedSession] = useState(sessionId);
@@ -234,12 +235,22 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     [parts, view]
   );
 
-  if (gate) return <StaffGateMessage kind={gate} />;
+  if (gate) {
+    return (
+      <AdminColumn>
+        <StaffGateMessage kind={gate} />
+      </AdminColumn>
+    );
+  }
   if (load.kind === "gate") {
-    return load.gate === "forbidden" ? (
-      <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>
-    ) : (
-      <StaffGateMessage kind={load.gate} />
+    return (
+      <AdminColumn>
+        {load.gate === "forbidden" ? (
+          <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>
+        ) : (
+          <StaffGateMessage kind={load.gate} />
+        )}
+      </AdminColumn>
     );
   }
 
@@ -280,9 +291,13 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
+    <MapWorkspace
+      // The links and the player's tabs above.
+      above="6rem"
+      // The timeline under the map: one row of bands, its labels and its key.
+      stripHeight="6.75rem"
+      panel={
+        <>
           <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
             {name ?? "…"} · movement
           </h2>
@@ -290,54 +305,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
             {view?.coreprotect.server_label ? `${view.coreprotect.server_label} · ` : ""}
             Positions are recorded once a minute; lines between them are estimates. Admins only; each view is logged.
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={`${chipClass} ${chipOff} hidden lg:inline-block`} onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? "Show panel" : "Hide panel"}
-          </button>
           {view ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4 lg:flex-row">
-        {!collapsed ? (
-          <aside className="flex shrink-0 flex-col gap-3 lg:w-80">
-            <div className="flex gap-2" role="tablist">
-              {(["session", "range"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === t}
-                  onClick={() => setTab(t)}
-                  className={`${chipClass} ${tab === t ? chipOn : chipOff} flex-1`}
-                >
-                  {t === "session" ? "Sessions" : "Time range"}
-                </button>
-              ))}
-            </div>
-            {tab === "session" ? (
-              <SessionList
-                uuid={uuid}
-                selected={mode === "session" ? sessionId : null}
-                autoSelect={mode === "session" && !sessionId}
-                onSelect={selectSession}
-              />
-            ) : (
-              <RangeForm
-                // Opening the tab on a session starts from that session's span.
-                value={range ?? spanOrLastHour(since, until)}
-                longest={PLAYER_WINDOW_SECONDS}
-                asOf={view?.asOf ?? null}
-                onApply={applyRange}
-              />
-            )}
-            <PinForm pin={pin} onChange={(next) => update({ pin: next ? `${next.x},${next.z}` : null }, true)} />
-          </aside>
-        ) : null}
-
-        <section className="flex min-w-0 flex-1 flex-col gap-3">
-          <Heading view={view} mode={mode} followSession={followSession} onFollowSession={setFollowSession} />
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
           {load.kind === "failed" ? (
             <div className="flex flex-wrap items-center gap-3">
@@ -353,39 +321,77 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
           {load.kind === "loading" ? (
             <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
           ) : null}
-          <div className={stale ? "opacity-70 transition-opacity" : ""}>
-            {mapId ? (
-              <MovementMap
-                mapId={mapId}
-                mapWorld={mapWorld}
-                trails={trails}
-                since={view?.completeFrom ?? since}
-                until={until}
-                cursor={cursor}
-                hold={hold}
-                endpoints
-                pin={pin}
-                fitKey={load.kind === "ready" && load.view.key === viewKey ? viewKey : null}
-                onInspect={setCursor}
-                className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-24rem)]"
-              />
-            ) : (
-              <div className="h-[60vh] min-h-[22rem]" />
-            )}
+          <div className="flex gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3" role="tablist">
+            {(["session", "range"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={`${chipClass} ${tab === t ? chipOn : chipOff} flex-1`}
+              >
+                {t === "session" ? "Sessions" : "Time range"}
+              </button>
+            ))}
           </div>
+          {tab === "session" ? (
+            <SessionList
+              uuid={uuid}
+              selected={mode === "session" ? sessionId : null}
+              autoSelect={mode === "session" && !sessionId}
+              onSelect={selectSession}
+            />
+          ) : (
+            <RangeForm
+              // Opening the tab on a session starts from that session's span.
+              value={range ?? spanOrLastHour(since, until)}
+              longest={PLAYER_WINDOW_SECONDS}
+              asOf={view?.asOf ?? null}
+              onApply={applyRange}
+            />
+          )}
+          <PinForm pin={pin} onChange={(next) => update({ pin: next ? `${next.x},${next.z}` : null }, true)} />
+        </>
+      }
+      map={
+        <div className={`h-full ${stale ? "opacity-70 transition-opacity" : ""}`}>
+          {mapId ? (
+            <MovementMap
+              mapId={mapId}
+              mapWorld={mapWorld}
+              trails={trails}
+              since={view?.completeFrom ?? since}
+              until={until}
+              cursor={cursor}
+              hold={hold}
+              endpoints
+              pin={pin}
+              fitKey={load.kind === "ready" && load.view.key === viewKey ? viewKey : null}
+              onInspect={setCursor}
+              className={mapFrameClass}
+            />
+          ) : null}
+        </div>
+      }
+      strip={
+        view ? (
+          <Timeline
+            since={since}
+            until={until}
+            unknownUntil={unknownUntil}
+            unknownLabel={view.completeFrom > since ? "earlier observations omitted" : "before available position observations"}
+            bands={observedBands(inWindow).map(([a, b]) => ({ from: a, to: b }))}
+            cursor={cursor}
+            onCursor={setCursor}
+          />
+        ) : null
+      }
+      inspector={
+        <>
+          <Heading view={view} mode={mode} followSession={followSession} onFollowSession={setFollowSession} />
           {view ? (
             <>
-              <Timeline
-                since={since}
-                until={until}
-                unknownUntil={unknownUntil}
-                unknownLabel={
-                  view.completeFrom > since ? "earlier observations omitted" : "before available position observations"
-                }
-                bands={observedBands(inWindow).map(([a, b]) => ({ from: a, to: b }))}
-                cursor={cursor}
-                onCursor={setCursor}
-              />
               <InspectBar cursor={cursor} since={since} until={until} times={times} onCursor={setCursor}>
                 <Readout found={found} cursor={cursor} mapWorld={mapWorld} />
               </InspectBar>
@@ -423,12 +429,15 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
               </div>
             </>
           ) : null}
-        </section>
-      </div>
-      <Link href={`/admin/players/${encodeURIComponent(uuid)}`} className="text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
-        ← Back to the profile
-      </Link>
-    </div>
+          <Link
+            href={`/admin/players/${encodeURIComponent(uuid)}`}
+            className="border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3 text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+          >
+            ← Back to the profile
+          </Link>
+        </>
+      }
+    />
   );
 }
 

@@ -13,6 +13,8 @@ import {
   type RailNetwork,
 } from "../../../lib/admin/rail";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import AdminColumn from "./AdminColumn";
+import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import RailMap, { pointFocus, type RailFocus } from "./RailMap";
 import { chipClass, chipOff, mutedClass, useLiveMapId } from "./MovementControls";
 
@@ -65,27 +67,49 @@ export default function RailOverview() {
   );
 
   if (load.kind === "forbidden") {
-    return <p className="mt-6 text-[var(--tfmc-mist)]">The rail map is for admins and the owner only.</p>;
+    return (
+      <AdminColumn>
+        <p className="mt-6 text-[var(--tfmc-mist)]">The rail map is for admins and the owner only.</p>
+      </AdminColumn>
+    );
   }
   if (load.kind === "signed_out" || load.kind === "unavailable" || load.kind === "error") {
-    return <StaffGateMessage kind={load.kind} />;
+    return (
+      <AdminColumn>
+        <StaffGateMessage kind={load.kind} />
+      </AdminColumn>
+    );
   }
   if (load.kind === "failed") {
     return (
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <p className="text-sm text-[#e8a0a0]" role="alert">
-          {load.message}
-        </p>
-        <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
-          Retry
-        </button>
-      </div>
+      <AdminColumn>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-[#e8a0a0]" role="alert">
+            {load.message}
+          </p>
+          <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
+            Retry
+          </button>
+        </div>
+      </AdminColumn>
     );
   }
-  if (!data) return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
+  if (!data) {
+    return (
+      <AdminColumn>
+        <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+      </AdminColumn>
+    );
+  }
 
   const notice = statusMessage(data.status);
-  if (notice) return <p className="mt-6 text-sm text-[#e8c48a]">{notice}</p>;
+  if (notice) {
+    return (
+      <AdminColumn>
+        <p className="mt-6 text-sm text-[#e8c48a]">{notice}</p>
+      </AdminColumn>
+    );
+  }
 
   const lineById = new Map(data.lines.map((l) => [l.id, l]));
   const focusLine = (id: number) => {
@@ -96,20 +120,21 @@ export default function RailOverview() {
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
-      <p className={mutedClass}>
-        The tracks as VehicleFramework last saved them
-        {data.updated_at ? `, at ${formatMoment(data.updated_at)}` : ""}. A stop is a settlement whose provinces a
-        track crosses; it sits where the track comes closest to the settlement.
-      </p>
-      {data.unreadable_files ? (
-        <p className="text-sm text-[#e8c48a]">
-          {data.unreadable_files} track {data.unreadable_files === 1 ? "file" : "files"} couldn’t be read, probably
-          mid-save. Reload in a moment.
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <aside className="flex shrink-0 flex-col gap-4 lg:max-h-[calc(100dvh-20rem)] lg:w-80 lg:overflow-y-auto">
+    <MapWorkspace
+      mapFirst
+      panel={
+        <>
+          <p className={mutedClass}>
+            The tracks as VehicleFramework last saved them
+            {data.updated_at ? `, at ${formatMoment(data.updated_at)}` : ""}. A stop is a settlement whose provinces a
+            track crosses; it sits where the track comes closest to the settlement.
+          </p>
+          {data.unreadable_files ? (
+            <p className="text-sm text-[#e8c48a]">
+              {data.unreadable_files} track {data.unreadable_files === 1 ? "file" : "files"} couldn’t be read, probably
+              mid-save. Reload in a moment.
+            </p>
+          ) : null}
           {problems.length ? (
             <section aria-label="Broken and damaged track">
               <h2 className="mb-1 text-sm font-semibold text-[#ff8a80]">Needs repair</h2>
@@ -141,6 +166,14 @@ export default function RailOverview() {
           ) : (
             <p className={mutedClass}>No broken or damaged track.</p>
           )}
+        </>
+      }
+      map={
+        mapId ? <RailMap mapId={mapId} network={data} highlight={highlight} focus={focus} className={mapFrameClass} /> : null
+      }
+      inspector={
+        <>
+          <h2 className="text-sm font-semibold text-[var(--tfmc-cream)]">Lines and stops</h2>
           {data.lines.map((line) => {
             const stops = data.stops.filter((s) => s.line === line.id);
             return (
@@ -179,20 +212,8 @@ export default function RailOverview() {
               </section>
             );
           })}
-        </aside>
-        {/* The map comes first on a phone. */}
-        <section className="order-first min-w-0 flex-1 lg:order-none">
-          {mapId ? (
-            <RailMap
-              mapId={mapId}
-              network={data}
-              highlight={highlight}
-              focus={focus}
-              className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-20rem)]"
-            />
-          ) : null}
-        </section>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

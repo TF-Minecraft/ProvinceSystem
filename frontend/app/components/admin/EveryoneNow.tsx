@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
@@ -16,6 +16,8 @@ import {
   type LatestPosition,
 } from "../../../lib/admin/movement";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import AdminColumn from "./AdminColumn";
+import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MovementTrail } from "./MovementMap";
 import { chipClass, chipOff, inputClass, mutedClass, useLiveMapId } from "./MovementControls";
 
@@ -39,7 +41,7 @@ function nowSeconds(): number {
  * for again every NOW_REFRESH_MS while the page is visible. Rows are pings
  * once a minute, so a position can be up to a minute (plus a refresh) old.
  */
-export default function EveryoneNow() {
+export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactNode }) {
   const mapId = useLiveMapId();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [query, setQuery] = useState("");
@@ -113,21 +115,34 @@ export default function EveryoneNow() {
   );
 
   if (load.kind === "forbidden") {
-    return <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>;
+    return (
+      <AdminColumn>
+        <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>
+      </AdminColumn>
+    );
   }
   if (load.kind === "signed_out" || load.kind === "unavailable" || load.kind === "error") {
-    return <StaffGateMessage kind={load.kind} />;
+    return (
+      <AdminColumn>
+        <StaffGateMessage kind={load.kind} />
+      </AdminColumn>
+    );
   }
   if (load.kind === "failed") {
     return (
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <p className="text-sm text-[#e8a0a0]" role="alert">
-          {load.message}
-        </p>
-        <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
-          Retry
-        </button>
-      </div>
+      <AdminColumn>
+        <div className="mt-5 flex flex-col items-start gap-4">
+          {viewSwitch}
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-[#e8a0a0]" role="alert">
+              {load.message}
+            </p>
+            <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </AdminColumn>
     );
   }
 
@@ -140,15 +155,48 @@ export default function EveryoneNow() {
     p.world === mapWorld ? `${Math.round(p.x)}, ${Math.round(p.z)}` : worldLabel(p.world);
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
-      <p className={mutedClass}>
-        {data?.coreprotect.server_label ? `${data.coreprotect.server_label} · ` : ""}
-        Where everyone online is now: each player&rsquo;s latest recorded position. Positions are recorded once a
-        minute, so one can be up to a minute old. Refreshes every {NOW_REFRESH_MS / 1000} seconds; each refresh is
-        logged.
-      </p>
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <aside className="flex shrink-0 flex-col gap-3 lg:w-80">
+    <MapWorkspace
+      panel={
+        <>
+          {viewSwitch}
+          <p className={mutedClass}>
+            {data?.coreprotect.server_label ? `${data.coreprotect.server_label} · ` : ""}
+            Where everyone online is now: each player&rsquo;s latest recorded position. Positions are recorded once a
+            minute, so one can be up to a minute old. Refreshes every {NOW_REFRESH_MS / 1000} seconds; each refresh is
+            logged.
+          </p>
+          {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
+          {load.kind === "ready" && load.error ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-[#e8a0a0]" role="alert">
+                {load.error} Showing positions from {formatClock(load.data.as_of ?? load.data.until, true)}.
+              </p>
+              <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
+                Retry
+              </button>
+            </div>
+          ) : null}
+        </>
+      }
+      map={
+        mapId ? (
+          <MovementMap
+            mapId={mapId}
+            mapWorld={mapWorld}
+            trails={trails}
+            since={data?.since ?? clock}
+            until={data?.as_of ?? clock}
+            cursor={data?.as_of ?? clock}
+            hold={hold}
+            highlight={highlight}
+            fitKey={data ? "now" : null}
+            latest
+            className={mapFrameClass}
+          />
+        ) : null
+      }
+      inspector={
+        <>
           <p className="text-sm text-[var(--tfmc-cream)]" aria-live="polite">
             {data
               ? `${positions.length} ${positions.length === 1 ? "player" : "players"} online · updated ${formatClock(
@@ -165,7 +213,8 @@ export default function EveryoneNow() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto" aria-label="Players online">
+          {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
+          <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible" aria-label="Players online">
             {listed.map((p) => (
               <li
                 key={p.uuid}
@@ -189,39 +238,8 @@ export default function EveryoneNow() {
             ))}
             {data && !positions.length ? <li className={mutedClass}>Nobody is online.</li> : null}
           </ul>
-        </aside>
-        {/* The map comes first on a phone, above a list that can run long. */}
-        <section className="order-first flex min-w-0 flex-1 flex-col gap-3 lg:order-none">
-          {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
-          {load.kind === "ready" && load.error ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-[#e8a0a0]" role="alert">
-                {load.error} Showing positions from {formatClock(load.data.as_of ?? load.data.until, true)}.
-              </p>
-              <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
-                Retry
-              </button>
-            </div>
-          ) : null}
-          {mapId ? (
-            <MovementMap
-              mapId={mapId}
-              mapWorld={mapWorld}
-              trails={trails}
-              since={data?.since ?? clock}
-              until={data?.as_of ?? clock}
-              cursor={data?.as_of ?? clock}
-              hold={hold}
-              highlight={highlight}
-              fitKey={data ? "now" : null}
-              latest
-              className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-20rem)]"
-            />
-          ) : (
-            <div className="h-[60vh] min-h-[22rem]" />
-          )}
-        </section>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }
