@@ -34,7 +34,7 @@ CI uses Node 22 and Python 3.12. From the repository root, install dependencies
 and run the frontend Vitest and backend pytest suites with the same JUnit output:
 
 ```sh
-(cd frontend && npm ci && npm test -- --reporter=default --reporter=junit --outputFile.junit=../test-results/frontend.xml)
+(cd frontend && npm ci && npm test -- --reporter=default --reporter=junit --outputFile.junit=../test-results/frontend.xml) &&
 (cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q --junitxml=../test-results/backend.xml)
 ```
 
