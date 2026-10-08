@@ -15,12 +15,13 @@ const ALL_MODES: MapMode[] = [
   "trade",
   "prosperity",
   "infestation",
+  "plain",
 ];
 
 describe("mapModeOptions", () => {
   it("offers every map mode for each map", () => {
     const values = mapModeOptions().map((opt) => opt.value);
-    expect(values).toHaveLength(11);
+    expect(values).toHaveLength(12);
     expect(values).toEqual(ALL_MODES);
   });
 
@@ -45,6 +46,12 @@ describe("mapModeTileLayer", () => {
     expect(mapModeTileLayer("trade")).toBe("regions-trade");
     expect(mapModeTileLayer("terrain")).toBe("mapdata-terrain");
     expect(mapModeTileLayer("province")).toBe("mapdata-province");
-    for (const mode of ALL_MODES) expect(mapModeTileLayer(mode)).not.toBeNull();
+    for (const mode of ALL_MODES) {
+      if (mode !== "plain") expect(mapModeTileLayer(mode)).not.toBeNull();
+    }
+  });
+
+  it("gives Plain no layer: it is the base map alone", () => {
+    expect(mapModeTileLayer("plain")).toBeNull();
   });
 });

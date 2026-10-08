@@ -191,7 +191,7 @@ describe("MapLayersMenu on a desktop", () => {
       ],
     });
     const strip = screen.getByRole("group", { name: "Map type and details" });
-    expect(strip.querySelectorAll("button[aria-pressed]")).toHaveLength(11);
+    expect(strip.querySelectorAll("button[aria-pressed]")).toHaveLength(12);
     fireEvent.click(screen.getByRole("button", { name: "Duchies" }));
     expect(onMapTypeChange).toHaveBeenCalledWith("duchy");
     fireEvent.click(screen.getByRole("switch", { name: "War planning" }));
@@ -217,5 +217,16 @@ describe("MapLayersMenu on a desktop", () => {
     fireEvent.pointerEnter(container.firstElementChild!);
     await act(async () => {});
     expect(asked()).toContain("/dev/tiles/regions-county/manifest");
+  });
+
+  it("previews Plain as the base map alone", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://map.test");
+    fetchManifest.mockResolvedValue(MANIFEST);
+    renderDesktop({ previews: true, mapType: "plain" });
+    await act(async () => vi.advanceTimersByTime(10000));
+    const images = screen.getByRole("button", { name: "Layers" }).querySelectorAll("img");
+    expect([...images].map((image) => image.getAttribute("src"))).toEqual([
+      expect.stringContaining("/main/tiles/base/"),
+    ]);
   });
 });

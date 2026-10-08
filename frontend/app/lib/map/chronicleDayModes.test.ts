@@ -26,6 +26,7 @@ const ALL_MODES: MapMode[] = [
   "trade",
   "prosperity",
   "infestation",
+  "plain",
 ];
 
 const DAY = "2026-08-31";
@@ -43,9 +44,10 @@ describe("mode classification", () => {
     }
   });
 
-  it("classifies the three modes the user says never change as static", () => {
+  it("classifies the modes that never change as static", () => {
     expect([...CHRONICLE_STATIC_MODES].sort()).toEqual([
       "fertility",
+      "plain",
       "province",
       "terrain",
     ]);
