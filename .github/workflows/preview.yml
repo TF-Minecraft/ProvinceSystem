@@ -71,13 +71,14 @@ jobs:
           cache-to: type=gha,scope=preview-frontend,mode=max
       - name: Start the preview
         env:
-          PREVIEW_SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
-          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
-          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          SSH_USER: psdeploy
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
           SLUG: ${{ steps.slug.outputs.slug }}
         run: |
           status=0
-          .github/scripts/preview_ssh.sh up "$SLUG" "$GITHUB_SHA" || status=$?
+          .github/scripts/server_ssh.sh up "$SLUG" "$GITHUB_SHA" || status=$?
           if [ "$status" -eq 3 ]; then
             echo "::error::Four previews are already running. Delete a finished branch, or stop one on the server with: sudo -u tfmc ps-preview down <slug>"
           fi
@@ -110,8 +111,9 @@ jobs:
       - name: Remove the preview
         if: steps.slug.outcome == 'success'
         env:
-          PREVIEW_SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
-          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
-          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          SSH_USER: psdeploy
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
           SLUG: ${{ steps.slug.outputs.slug }}
-        run: .github/scripts/preview_ssh.sh down "$SLUG"
+        run: .github/scripts/server_ssh.sh down "$SLUG"

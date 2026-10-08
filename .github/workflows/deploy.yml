@@ -1,0 +1,76 @@
+name: Deploy
+
+# main goes live on dev.tfminecraft.net once its Build run passes.
+# www.tfminecraft.net deploys only from Run workflow, for the latest main or a
+# chosen commit on main (an older one rolls www back). The server backs up the
+# database, rebuilds only what changed and rolls the code back if the site
+# does not come up.
+
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      site:
+        description: Site to deploy
+        type: choice
+        options: [www, dev]
+        default: www
+      commit:
+        description: Commit on main to deploy (leave blank for the latest)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.site || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref_name == 'main' ||
+      github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.site == 'www' && 'production' || 'dev' }}
+      url: ${{ inputs.site == 'www' && 'https://www.tfminecraft.net' || 'https://dev.tfminecraft.net' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: main
+      - id: target
+        name: Choose the commit
+        env:
+          SITE: ${{ inputs.site || 'dev' }}
+          COMMIT: ${{ inputs.commit || github.event.workflow_run.head_sha || 'main' }}
+        run: |
+          sha=$(git rev-parse --verify --quiet "${COMMIT}^{commit}") || { echo "::error::Unknown commit: $COMMIT"; exit 1; }
+          git merge-base --is-ancestor "$sha" origin/main || { echo "::error::${sha::7} is not on main."; exit 1; }
+          echo "site=$SITE" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${sha::7} ($(git log -1 --format=%s "$sha")) to $SITE"
+      - name: Deploy
+        env:
+          SSH_USER: ryan
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          SITE: ${{ steps.target.outputs.site }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          status=0
+          .github/scripts/server_ssh.sh deploy "$SITE" "$SHA" | tee result.txt || status=$?
+          case "$status" in
+            0) ;;
+            4) echo "::error::${SHA::7} is not on main." ;;
+            5) echo "::error::$SITE did not come up on ${SHA::7}; the server put the previous code back and kept a database backup." ;;
+          esac
+          { echo "### Deploy $SITE ${SHA::7}"; echo; tail -1 result.txt; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
