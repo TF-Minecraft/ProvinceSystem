@@ -271,7 +271,8 @@ def test_unknown_player_sections_are_empty(app, env, world, monkeypatch):
     assert body == {"sessions": [], "next": None, "coreprotect": {"status": "available"}}
     monkeypatch.setenv("COREPROTECT_DB", str(env.DATA_DIR / "nowhere.db"))
     body = c.get(f"/admin/players/{HAZEL}/activity").json()
-    assert body["coreprotect"] == {"status": "unavailable", "reason": "missing"}
+    assert body["coreprotect"] == {"status": "unavailable", "reason": "missing",
+                                   "server_label": "Vardera", "map_world": "TFMC_Map"}
 
 
 def message_audits(db):

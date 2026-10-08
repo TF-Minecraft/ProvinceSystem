@@ -264,6 +264,49 @@ it("never offers Chat before the server allows it", async () => {
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
 });
 
+it("names things properly, merges block runs and calls the world by its name", async () => {
+  const grass = { name: "Short Grass", source: "vanilla" as const, id: "short_grass", vanilla_name: "Short Grass",
+                  source_id: null, custom_name: null };
+  vi.mocked(getPlayerActivity).mockResolvedValue({
+    entries: [
+      entry("block:1", { target: "short_grass", target_info: grass, x: 4049, y: 162, z: 2078 }),
+      entry("block:2", { target: "short_grass", target_info: grass, time: NOW - 70, x: 4050 }),
+      entry("block:3", { target: "short_grass", target_info: grass, time: NOW - 80, x: 4052 }),
+      entry("item:4", { kind: "item", verb: "picked up", target: "Mouse Plush [MMOItems MISC:MOUSE_PLUSH]", time: NOW - 90,
+                        target_info: { name: "Mouse Plush", source: "mmoitems", id: "paper", vanilla_name: "Paper",
+                                       source_id: "MISC:MOUSE_PLUSH", custom_name: null } }),
+      entry("item:5", { kind: "item", verb: "dropped", target: "diamond_sword (renamed: Fang)", time: NOW - 100,
+                        target_info: { name: "Diamond Sword", source: "vanilla", id: "diamond_sword",
+                                       vanilla_name: "Diamond Sword", source_id: null, custom_name: "Fang" } }),
+      entry("session:6", { kind: "session", verb: "logged in", target: null, time: NOW - 110 }),
+    ],
+    next: null, searched_to: null, kinds: KINDS, shows_messages: false,
+    coreprotect: { status: "available", server_label: "Vardera", map_world: "TFMC_Map" },
+  });
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  expect(await within(feed).findByText("3 × Short Grass")).toBeTruthy();
+  expect(within(feed).queryByText(/short_grass/)).toBeNull();
+  expect(within(feed).queryByText(/TFMC_Map/)).toBeNull();
+  expect(within(feed).getAllByText("Vardera").length).toBeGreaterThan(0);
+
+  const places = within(feed).getByRole("button", { name: /3 places/ });
+  expect(places.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(places);
+  expect(within(feed).getByText(/4052, 64, 2$/)).toBeTruthy();
+
+  expect(within(feed).getByText("Mouse Plush")).toBeTruthy();
+  expect(within(feed).getByText("MMOItems")).toBeTruthy();
+  expect(within(feed).queryByText(/MISC:MOUSE_PLUSH/)).toBeNull();
+  const plush = within(feed).getAllByRole("button", { name: /Details/ })[0];
+  fireEvent.click(plush);
+  expect(within(feed).getByText("MMOItems id MISC:MOUSE_PLUSH")).toBeTruthy();
+  expect(within(feed).getByText("Based on Paper")).toBeTruthy();
+
+  expect(within(feed).getByText("“Fang”")).toBeTruthy();
+  expect(within(feed).getByText("Logged in")).toBeTruthy();
+});
+
 it("shows the Discord handle and the server nickname", async () => {
   render(<PlayerProfile uuid={UUID} />);
   await screen.findByText("@hazelstone");

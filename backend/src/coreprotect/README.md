@@ -82,6 +82,20 @@ kills from the custom-identity CoreProtect build additionally show the MythicMob
 ID from the `coreprotect:mythic` block-metadata marker. No history rewrite is
 needed. Custom-ID search and ItemsAdder block identity are outside this change.
 
+Each activity entry also carries `target_info`: the name the panel shows
+(`Short Grass`, not `short_grass`), where it came from (vanilla, MMOItems,
+MythicMobs, a player) and the ids behind it. Vanilla names come from
+Minecraft's own `en_us.json`, which is Mojang's to publish, not ours: the
+backend image runs `scripts/build_minecraft_names.py` to fetch the pinned
+client jar, check its SHA-1 and keep the block, item and entity names
+(about 94 KB) in `data/minecraft_names.json`, which git ignores. Bump the
+pinned version there when the server updates. Without the file, ids are
+tidied instead. Block changes use block names (`wheat` is "Wheat Crops"),
+items use item names ("Wheat"); only `minecraft:` ids are looked up.
+Activity responses also return `server_label` and `map_world`, so the panel
+calls the map's world by its name (Vardera). The panel merges consecutive
+changes to the same block within a minute into one row; the API does not.
+
 Sessions are rebuilt from login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 
 Movement is a player's session rows in a window (up to 7 days for one

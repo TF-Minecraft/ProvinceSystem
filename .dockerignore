@@ -24,3 +24,6 @@ backend/src/data/*.db-shm
 
 # Test-data generators must never reach a production image.
 backend/src/scripts/tools/generate_spoof_*.py
+
+# Built inside the image from the pinned Mojang jar instead.
+backend/src/coreprotect/data

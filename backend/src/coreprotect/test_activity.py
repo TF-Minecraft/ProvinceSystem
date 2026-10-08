@@ -5,6 +5,7 @@ import pytest
 
 from src.coreprotect import activity, cursors, maps
 from src.coreprotect.reader import CoreProtectConfig, Reader
+from src.coreprotect.test_names import vanilla  # noqa: F401  (fixture)
 
 SCOPE = "main:0615a817-8cb4-4aef-95f7-f6c9bf7611b8"
 
@@ -17,7 +18,7 @@ def read(db, ids, kinds=activity.KINDS, before=None, limit=20):
     return activity.build(raw, names, SCOPE)
 
 
-def test_decodes_each_source(coreprotect):
+def test_decodes_each_source(coreprotect, vanilla):
     me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
     victim = coreprotect.user("Bob", "00000000-0000-0000-0000-000000000002")
     coreprotect.block(me, 1, 0)
@@ -60,6 +61,12 @@ def test_decodes_each_source(coreprotect):
     assert by_kind["container"]["rolled_back"] == "rolled back (player inventory)"
     assert entries[9]["victim"] == {"minecraft_name": "Bob", "uuid": "00000000-0000-0000-0000-000000000002"}
     assert by_kind["block"]["world"] == "TFMC_Map"
+    shown = [(e["target_info"] or {}).get("name") for e in entries]
+    assert shown == [None, None, None, None, "Sign", "Sheep", "Iron Ingot", "Iron Ingot", "Sheep", "Bob", "Cow",
+                     "Oak Door", "Stone", "Stone"]
+    assert by_kind["block"]["target_info"] == {"name": "Stone", "source": "vanilla", "id": "stone",
+                                               "vanilla_name": "Stone", "source_id": None, "custom_name": None}
+    assert entries[9]["target_info"]["source"] == "player"
     text = json.dumps(entries)
     for secret in ("meet me", "secret base", "secret sign", "chat is never", "4 5 6"):
         assert secret not in text

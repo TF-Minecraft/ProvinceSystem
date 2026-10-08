@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from . import cursors, metadata
+from . import cursors, metadata, names
 from .maps import Maps
 from .reader import Reader
 
@@ -291,7 +291,35 @@ def _rollback(state: int | None) -> str | None:
     return _ROLLBACK.get(state, f"rollback state {state}")
 
 
+def _material(maps: Maps, type_id: int | None, order: tuple[str, ...]) -> dict:
+    return names.describe(maps.materials.get(type_id or 0), order, f"Unknown material #{type_id}")
+
+
+def _mob(maps: Maps, type_id: int | None) -> dict:
+    return names.describe(maps.entities.get(type_id or 0), names.ENTITY, f"Unknown entity #{type_id}")
+
+
+def _item_target(row: dict, maps: Maps) -> dict:
+    base = _material(maps, row["type"], names.ITEM)
+    identity, name = metadata.item_identity(row.get("identity_blob"))
+    if identity:
+        title = identity.partition(":")[2].replace("_", " ").title()
+        return {**base, "name": name or title, "source": "mmoitems", "source_id": identity,
+                "vanilla_name": base["name"]}
+    return {**base, "custom_name": name or None}
+
+
+def _mob_target(row: dict, maps: Maps) -> dict:
+    base = _mob(maps, row["type"])
+    identity, name = metadata.mob_identity(row.get("entity_blob"), row.get("identity_blob"))
+    if identity:
+        return {**base, "name": name or identity.replace("_", " ").title(), "source": "mythicmobs",
+                "source_id": identity, "vanilla_name": base["name"]}
+    return {**base, "custom_name": name or None}
+
+
 def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
+    """One row. `target` is the plain label; `target_info` the structured name the panel shows."""
     action = row.get("action")
     entry = {
         "id": f"{source.name}:{row['rid']}",
@@ -303,32 +331,42 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "message": None,
         "truncated": False,
         "rolled_back": _rollback(row.get("rolled_back")),
+        "target_info": None,
     }
     if source.name == "block":
         if action == 3:
             if row["type"] == 0:
                 victim = victims.get(row["data"])
-                entry.update(kind="kill", verb="killed", victim=victim,
-                             target=victim["minecraft_name"] if victim else "a player")
+                name = victim["minecraft_name"] if victim else "a player"
+                entry.update(kind="kill", verb="killed", victim=victim, target=name,
+                             target_info=names.target(name, source="player"))
             else:
                 entry.update(kind="kill", verb="killed", target=metadata.mob_label(
-                    row.get("entity_blob"), row.get("identity_blob"), maps.entity(row["type"])))
+                    row.get("entity_blob"), row.get("identity_blob"), maps.entity(row["type"])),
+                    target_info=_mob_target(row, maps))
         elif action == 13:
-            entry.update(kind="spawn", verb="spawned", target=maps.entity(row["type"]))
+            entry.update(kind="spawn", verb="spawned", target=maps.entity(row["type"]),
+                         target_info=_mob(maps, row["type"]))
         elif action == 2:
-            entry.update(kind="click", verb="clicked", target=maps.material(row["type"]))
+            entry.update(kind="click", verb="clicked", target=maps.material(row["type"]),
+                         target_info=_material(maps, row["type"], names.BLOCK))
         else:
-            entry.update(kind="block", verb="placed" if action == 1 else "broke", target=maps.material(row["type"]))
+            entry.update(kind="block", verb="placed" if action == 1 else "broke", target=maps.material(row["type"]),
+                         target_info=_material(maps, row["type"], names.BLOCK))
     elif source.name in {"container", "entity_container"}:
         entry.update(kind="container", verb="added" if action == 1 else "removed",
-                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"],
+                     target_info=_item_target(row, maps))
     elif source.name == "item":
         entry.update(kind="item", verb=_ITEM_VERBS.get(action, "moved"),
-                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"],
+                     target_info=_item_target(row, maps))
     elif source.name == "entity":
-        entry.update(kind="entity", verb=_ENTITY_VERBS.get(action, "clicked"), target=maps.entity(row["type"]))
+        entry.update(kind="entity", verb=_ENTITY_VERBS.get(action, "clicked"), target=maps.entity(row["type"]),
+                     target_info=_mob(maps, row["type"]))
     elif source.name == "sign":
-        entry.update(kind="sign", verb=_SIGN_VERBS.get(action, "changed"), target="sign")
+        entry.update(kind="sign", verb=_SIGN_VERBS.get(action, "changed"), target="sign",
+                     target_info=names.target("Sign"))
     elif source.name == "command":
         if row["is_skill"]:
             entry.update(kind="skill", verb="teleported with" if row["teleport"] else "cast",
