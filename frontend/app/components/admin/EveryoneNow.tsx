@@ -159,7 +159,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
       panel={
         <>
           {viewSwitch}
-          <p className={mutedClass}>Positions can be up to a minute old. Views are logged.</p>
+          <p className={mutedClass}>Positions update about once a minute. Views are logged.</p>
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
           {load.kind === "ready" && load.error ? (
             <div className="flex flex-wrap items-center gap-3">
@@ -194,7 +194,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
         <>
           <p className="text-sm text-[var(--tfmc-cream)]" aria-live="polite">
             {data
-              ? `${positions.length} ${positions.length === 1 ? "player" : "players"} online · updated ${formatClock(
+              ? `${positions.length} ${positions.length === 1 ? "player" : "players"} seen recently · updated ${formatClock(
                   data.as_of ?? data.until,
                   true
                 )}`
@@ -231,7 +231,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
                 </span>
               </li>
             ))}
-            {data && !positions.length ? <li className={mutedClass}>Nobody is online.</li> : null}
+            {data && !positions.length ? <li className={mutedClass}>Nobody seen recently.</li> : null}
           </ul>
         </>
       }

@@ -376,7 +376,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
             since={since}
             until={until}
             unknownUntil={unknownUntil}
-            unknownLabel={view.completeFrom > since ? "too many to show" : "no positions recorded"}
+            unknownLabel={view.completeFrom > since ? "too many to show" : "login and logout locations only"}
             bands={observedBands(inWindow).map(([a, b]) => ({ from: a, to: b }))}
             cursor={cursor}
             onCursor={setCursor}
@@ -403,7 +403,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                   </p>
                 ) : (
                   <p>
-                    Seen for about {formatDuration(observed).toLowerCase()}
+                    Seen for about {formatDuration(observed).toLowerCase()} in this range
                     {byWorld.length > 1
                       ? ` (${byWorld.map(([world, s]) => `${formatDuration(s).toLowerCase()} in ${worldLabel(world)}`).join(", ")})`
                       : byWorld.length === 1 && byWorld[0][0] !== mapWorld
@@ -418,7 +418,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                 ) : null}
                 {view.pingsSince !== null && view.pingsSince > since ? (
                   <p>
-                    No positions before {formatMoment(view.pingsSince)}, only where they logged in and out.
+                    Before {formatMoment(view.pingsSince)}, only login and logout locations.
                   </p>
                 ) : null}
               </div>

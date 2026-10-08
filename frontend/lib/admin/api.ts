@@ -60,7 +60,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   player_not_found: "No player with that UUID has been seen.",
   bad_uuid: "That isn’t a Minecraft UUID.",
   bad_session: "That session link isn’t valid.",
-  session_gone: "That session is no longer in CoreProtect’s records.",
+  session_gone: "That session is no longer available.",
   bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",

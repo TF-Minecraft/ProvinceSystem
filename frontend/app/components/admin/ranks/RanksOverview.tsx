@@ -106,7 +106,7 @@ function PlayerSearch({ initialQuery }: { initialQuery: string }) {
           id="ranks-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Find a player"
+          placeholder="Minecraft name or UUID"
           autoComplete="off"
           spellCheck={false}
           className={`${inputClass} min-w-0 flex-1 basis-64`}
@@ -268,7 +268,7 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
         ) : null}
       </div>
       <p className={`mt-1 ${mutedClass}`}>
-        Heaviest first: a player shows the rank of the heaviest group they inherit. Player counts are direct assignments only.
+        Highest weight first. A player shows the rank of their highest-weight group. Player counts are direct members only.
       </p>
       {creating ? (
         <div className="mt-3 flex flex-col gap-3">

@@ -87,7 +87,7 @@ it("warns about Patreon groups and explains refusals", async () => {
   const groups = await screen.findByRole("region", { name: "Groups" });
   fireEvent.change(within(groups).getByLabelText("Add to group"), { target: { value: "noble" } });
   fireEvent.click(within(groups).getByRole("button", { name: "Add" }));
-  expect(within(groups).getByText(/Patreon manages this group/)).toBeTruthy();
+  expect(within(groups).getByText(/Patreon may reset/)).toBeTruthy();
   fireEvent.change(within(groups).getByLabelText("Reason (recorded)"), { target: { value: "Gift" } });
   fireEvent.click(within(groups).getAllByRole("button", { name: "Add" }).at(-1)!);
   expect(await within(groups).findByText(/No server is applying rank changes/)).toBeTruthy();

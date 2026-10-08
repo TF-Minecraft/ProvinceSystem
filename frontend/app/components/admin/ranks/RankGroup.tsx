@@ -198,7 +198,7 @@ export default function RankGroup({ name }: { name: string }) {
                       Delete <strong>{group.name}</strong>.
                     </>
                   ),
-                  warning: `${group.members} players hold it directly and ${group.children.length} groups inherit it. Remove it from tracks first.`,
+                  warning: `${group.members} players hold it directly and ${group.children.length} groups inherit it; deleting leaves its entries on those players. Remove it from tracks first.`,
                   ops: [{ op: "delete_group" }],
                   label: "Delete group",
                 })
@@ -322,7 +322,7 @@ function NodesPanel({
     <section className={panelClass} aria-label="Permissions">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 className={headingClass}>Permissions and settings</h3>
-        <span className="text-xs text-[var(--tfmc-stone)]">{nodes.length} nodes</span>
+        <span className="text-xs text-[var(--tfmc-stone)]">{nodes.length} entries</span>
       </div>
       {nodes.length > 8 ? (
         <input

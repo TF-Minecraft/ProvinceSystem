@@ -124,7 +124,10 @@ export default function RailOverview() {
       mapFirst
       panel={
         <>
-          {data.updated_at ? <p className={mutedClass}>Updated {formatMoment(data.updated_at)}.</p> : null}
+          <p className={mutedClass}>
+            {data.updated_at ? `Updated ${formatMoment(data.updated_at)}. ` : ""}Stops are where a track passes closest to a
+            settlement.
+          </p>
           {data.unreadable_files ? (
             <p className="text-sm text-[#e8c48a]">Some track couldn’t be loaded. Reload in a moment.</p>
           ) : null}

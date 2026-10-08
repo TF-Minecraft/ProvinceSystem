@@ -152,9 +152,9 @@ function endpointLabels(trail: MovementTrail, mapWorld: string): { sample: Sampl
   const lastStretch = shown[shown.length - 1].samples;
   const last = lastStretch[lastStretch.length - 1];
   const start = first.estimated
-    ? `≈ Start ${formatClock(first.time)}`
-    : `${first.action === ACTION_LOGIN ? "Logged in" : "Start"} ${formatClock(first.time)}`;
-  const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "End"} ${formatClock(last.time)}`;
+    ? `≈ First shown ${formatClock(first.time)}`
+    : `${first.action === ACTION_LOGIN ? "Logged in" : "First shown"} ${formatClock(first.time)}`;
+  const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "Last shown"} ${formatClock(last.time)}`;
   if (first === last) return [{ sample: first, text: start }];
   return [
     { sample: first, text: start },

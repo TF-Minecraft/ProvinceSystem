@@ -398,7 +398,7 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Minecraft, Discord or character name"
+            placeholder="Minecraft, Discord or character name, or UUID"
             autoComplete="off"
             spellCheck={false}
             className={inputClass}

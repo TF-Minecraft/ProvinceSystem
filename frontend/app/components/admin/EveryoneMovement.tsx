@@ -312,7 +312,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
             since={since}
             until={until}
             unknownUntil={unknownUntil}
-            unknownLabel={completeFrom > since ? "too many to show" : "no positions recorded"}
+            unknownLabel={completeFrom > since ? "too many to show" : "login and logout locations only"}
             bands={bands}
             cursor={moment}
             onCursor={setMoment}
@@ -323,7 +323,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
         <>
           {data ? (
             <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
-              {formatClock(moment, true)} · {seenNow} of {drawn.length} players seen
+              {formatClock(moment, true)} · {seenNow} of {drawn.length} players seen or estimated
             </InspectBar>
           ) : null}
           {data && completeFrom > since ? (
@@ -332,7 +332,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
             </p>
           ) : null}
           {data && data.pings_since !== null && data.pings_since > since ? (
-            <p className={mutedClass}>No positions before {formatMoment(data.pings_since)}.</p>
+            <p className={mutedClass}>Before {formatMoment(data.pings_since)}, only login and logout locations.</p>
           ) : null}
           <div className="flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
             <input

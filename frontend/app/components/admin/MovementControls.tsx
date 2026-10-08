@@ -253,7 +253,7 @@ export function RangeForm({
             }
           }}
         />
-        Keep up to date
+        Move range with the clock
       </label>
       {error ? (
         <p className={errorClass} role="alert">
@@ -368,7 +368,7 @@ export function Timeline({
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]" /> not
-          seen
+          seen (not proof of offline)
         </span>
         {hatchEnd !== null ? (
           <span className="flex items-center gap-1.5">
@@ -493,7 +493,7 @@ function PinForm({ pin, onChange }: { pin: MapPin | null; onChange: (pin: MapPin
         if (valid) onChange({ x: Number(x.trim()), z: Number(z.trim()) });
       }}
     >
-      <span className="text-sm text-[var(--tfmc-mist)]">Pin a place</span>
+      <span className="text-sm text-[var(--tfmc-mist)]">Pin a place in the overworld</span>
       <div className="flex gap-2">
         <input aria-label="Pin x" placeholder="x" inputMode="numeric" className={inputClass} value={x} onChange={(e) => setX(e.target.value)} />
         <input aria-label="Pin z" placeholder="z" inputMode="numeric" className={inputClass} value={z} onChange={(e) => setZ(e.target.value)} />

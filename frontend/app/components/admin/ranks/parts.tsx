@@ -28,12 +28,12 @@ export function StatusLine({ status, rights }: { status: LpStatus; rights: LpRig
   const checked = seconds(status.checked_at);
   const stale = checked !== null && Date.now() / 1000 - checked > 180;
   const notes = [
-    stale ? `Last updated ${formatAgo(checked).toLowerCase()}.` : null,
+    stale ? `Last checked ${formatAgo(checked).toLowerCase()}.` : null,
     rights.read_only
       ? "View only. Change ranks on the main site."
       : status.applying
         ? null
-        : "Changes are paused until a server is online.",
+        : "Rank changes are unavailable right now.",
   ].filter(Boolean);
   if (!notes.length) return null;
   return (

@@ -310,7 +310,7 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
         </button>
       ) : rows.length && historyStart && state === "ready" ? (
         // The oldest session row CoreProtect still holds for anyone, not this player's first session.
-        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">History starts {formatDate(historyStart)}.</p>
+        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Server session history starts {formatDate(historyStart)}.</p>
       ) : null}
     </section>
   );

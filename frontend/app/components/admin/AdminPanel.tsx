@@ -83,7 +83,7 @@ export default function AdminPanel() {
   return (
     <>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Signed in as {me.discord_username ? `@${me.discord_username}` : "staff"} · {roleLabel(me.role)}
+        Signed in as {me.discord_username ? `@${me.discord_username}` : "staff"} · {roleLabel(me.role)}. Changes and reasons are recorded.
       </p>
 
       {/* The roster beside the lookup on wide screens; stacked below that. */}
