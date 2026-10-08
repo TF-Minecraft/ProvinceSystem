@@ -249,6 +249,24 @@ it("shows chat and whole commands to admins, and says views are logged", async (
   expect(within(feed).getByText(/Your views of these are logged/)).toBeTruthy();
 });
 
+it("tags chat with its channel, and tells moderators only the channel", async () => {
+  vi.mocked(getPlayerActivity).mockResolvedValue({
+    entries: [
+      entry("channel:1", { kind: "chat", verb: "said", target: null, message: "where is the beagle", channel: "LOOC" }),
+      entry("chat:2", { kind: "chat", verb: "said", target: null, message: "hello" }),
+      entry("command:3", { kind: "command", verb: "ran", target: "/fooc", channel: "FOOC" }),
+    ],
+    next: null, searched_to: null, kinds: [...KINDS, "chat"], shows_messages: true, coreprotect: { status: "available" },
+  });
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  const looc = await within(feed).findByText("where is the beagle");
+  expect(looc.parentElement!.textContent).toBe("Said LOOCwhere is the beagle");
+  expect(within(feed).getByText("hello").parentElement!.textContent).toBe("Said hello");
+  expect(within(feed).getByText(/Spoke in/).textContent).toBe("Spoke in FOOC");
+  expect(within(feed).queryByText("/fooc")).toBeNull();
+});
+
 it("keeps moderators' note when messages are not included", async () => {
   render(<PlayerProfile uuid={UUID} />);
   const feed = await screen.findByRole("region", { name: "Recent activity" });

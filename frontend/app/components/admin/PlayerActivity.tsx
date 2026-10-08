@@ -39,6 +39,24 @@ export const KIND_LABELS: Record<string, string> = {
 
 const SOURCE_LABELS: Record<string, string> = { mmoitems: "MMOItems", mythicmobs: "MythicMobs" };
 
+// Each channel in the colour its in-game tag uses (RPCharacters' chat.yml).
+const CHANNEL_COLOURS: Record<string, string> = {
+  LOOC: "#55c455", OOC: "#7f8cff", GOOC: "#ffaa00", FOOC: "#55e0e0", POOC: "#ff77ff", ROOC: "#ff77ff",
+  Admin: "#ff6b6b", Helper: "#ff77ff", Shout: "#ffaa00", Yell: "#ff6b6b", Whisper: "#55aaff", Emote: "#ff77ff",
+};
+
+function ChannelTag({ channel }: { channel: string }) {
+  const colour = CHANNEL_COLOURS[channel] ?? "var(--tfmc-mist)";
+  return (
+    <span
+      className="mr-1.5 inline-block rounded-full border px-1.5 align-[1px] text-[10px] font-semibold uppercase tracking-wide"
+      style={{ color: colour, borderColor: `color-mix(in srgb, ${colour} 45%, transparent)` }}
+    >
+      {channel}
+    </span>
+  );
+}
+
 const strongClass = "font-semibold text-[var(--tfmc-cream)]";
 const badgeClass =
   "ml-1.5 inline-block rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] px-1.5 align-[1px] text-[10px] font-medium uppercase tracking-wide text-[var(--tfmc-stone)]";
@@ -92,7 +110,14 @@ function Thing({ entry, count }: { entry: ActivityEntry; count: number }) {
 
 function Sentence({ entry, count }: { entry: ActivityEntry; count: number }) {
   const verb = capital(entry.verb);
-  if (entry.kind === "chat") return <>{verb}</>;
+  if (entry.kind === "command" && entry.channel) {
+    // A moderator's view of channel chat: where they spoke, not what.
+    return (
+      <>
+        Spoke in <ChannelTag channel={entry.channel} />
+      </>
+    );
+  }
   if (entry.kind === "command") {
     return (
       <>
@@ -153,16 +178,20 @@ function Row({ row, names }: { row: ActivityRow; names: WorldNames }) {
     <li className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 py-2.5">
       <Clock at={entry.time} />
       <div className="min-w-0">
-        <p className="break-words text-[var(--tfmc-mist)]">
-          <Sentence entry={entry} count={count} />
-          {entry.truncated ? <span className="text-[var(--tfmc-stone)]"> (cut short)</span> : null}
-          {entry.rolled_back ? <Rollback text={entry.rolled_back} /> : null}
-        </p>
         {entry.kind === "chat" ? (
-          <blockquote className="mt-1 break-words rounded-sm border-l-2 border-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_5%,transparent)] px-2.5 py-1 text-[var(--tfmc-cream)]">
-            {entry.message}
-          </blockquote>
-        ) : null}
+          <p className="break-words border-l-2 border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] pl-2.5 text-[var(--tfmc-cream)]">
+            <span className="sr-only">Said </span>
+            {entry.channel ? <ChannelTag channel={entry.channel} /> : null}
+            <span>{entry.message}</span>
+            {entry.truncated ? <span className="text-[var(--tfmc-stone)]"> (cut short)</span> : null}
+          </p>
+        ) : (
+          <p className="break-words text-[var(--tfmc-mist)]">
+            <Sentence entry={entry} count={count} />
+            {entry.truncated ? <span className="text-[var(--tfmc-stone)]"> (cut short)</span> : null}
+            {entry.rolled_back ? <Rollback text={entry.rolled_back} /> : null}
+          </p>
+        )}
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1 text-xs text-[var(--tfmc-stone)]">
           {where ? (
             <span>
@@ -291,7 +320,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
       <div
         role="group"
         aria-label="Show"
-        className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+        className="scroll-strip mt-3 flex gap-1.5 overflow-x-auto overscroll-x-contain py-1 sm:flex-wrap sm:overflow-visible"
       >
         <button type="button" aria-pressed={!kinds.length} className={chip(!kinds.length)} onClick={() => choose([])}>
           All

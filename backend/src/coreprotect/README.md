@@ -96,6 +96,13 @@ Activity responses also return `server_label` and `map_world`, so the panel
 calls the map's world by its name (Vardera). The panel merges consecutive
 changes to the same block within a minute into one row; the API does not.
 
+RPCharacters chat sent by command (`/looc hi`, `/fooc`, `/me`, `/shout`…;
+the aliases are `CHANNELS` in `activity.py`, from Main's `chat.yml`) is chat:
+for admins it comes back as kind `chat` with its `channel` and the text after
+the command, under the Chat filter and audited like chat; moderators still get
+only the command word, with the `channel` named. Plain chat goes to the
+player's current channel, which CoreProtect does not record, so it has none.
+
 Sessions are rebuilt from login, logout and ping rows; see `sessions.py` for how crashed sessions end.
 
 Movement is a player's session rows in a window (up to 7 days for one

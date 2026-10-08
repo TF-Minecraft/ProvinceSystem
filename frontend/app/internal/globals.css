@@ -72,6 +72,15 @@ html.map-fullscreen textarea {
   height: 8px;
 }
 
+/* A sideways strip (the activity filters) that scrolls without a bar. Unlayered
+   like the rules above, which a Tailwind utility could not override. */
+.scroll-strip {
+  scrollbar-width: none;
+}
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+
 *::-webkit-scrollbar-track {
   background: color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
   border-radius: 4px;

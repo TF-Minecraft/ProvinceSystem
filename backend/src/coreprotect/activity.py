@@ -41,6 +41,25 @@ _COMMAND_TEXT = (
 )
 _FULL_COMMAND_TEXT = f"CASE WHEN {_SKILL} THEN substr({_CAST}, 1, 80) ELSE substr(message, 1, {MESSAGE_MAX}) END"
 
+# RPCharacters' chat channels, as sent by command (`/looc hi`): alias → label,
+# from Main's plugins/RPCharacters/chat.yml. Plain chat goes to the player's
+# current channel, which CoreProtect does not record.
+CHANNELS = {
+    "rp": "RP", "shout": "Shout", "yell": "Yell", "y": "Yell", "whisper": "Whisper", "wh": "Whisper",
+    "me": "Emote", "dm": "DM", "narrate": "DM", "scene": "Scene",
+    "ooc": "OOC", "looc": "LOOC", "gooc": "GOOC", "fooc": "FOOC", "pooc": "POOC", "rooc": "ROOC",
+    "admin": "Admin", "a": "Admin", "helper": "Helper", "h": "Helper",
+}
+_FIRST_WORD = "lower(CASE WHEN instr(message, ' ') > 0 THEN substr(message, 1, instr(message, ' ') - 1) ELSE message END)"
+_CHANNEL = "{} IN ({})".format(_FIRST_WORD, ", ".join(
+    f"'/{prefix}{alias}'" for alias in CHANNELS for prefix in ("", "rpcharacters:")))
+
+
+def channel_of(command: str | None) -> str | None:
+    """The chat channel a command speaks in (`/looc hi` → LOOC), or None."""
+    word = (command or "").split(" ", 1)[0].lower().removeprefix("/").removeprefix("rpcharacters:")
+    return CHANNELS.get(word)
+
 
 @dataclass(frozen=True)
 class Source:
@@ -53,6 +72,8 @@ class Source:
     full_columns: str | None = None
     # Read only when the caller may read messages.
     sensitive: bool = False
+    # Kinds used instead when the caller may read messages.
+    full_kinds: dict[str, str] | None = None
 
 
 SOURCES = (
@@ -71,10 +92,15 @@ SOURCES = (
            f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_COMMAND_TEXT} AS text, 0 AS truncated",
            {"skill": _SKILL, "command": f"NOT {_SKILL}"},
            full_columns=(f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_FULL_COMMAND_TEXT} AS text, "
-                         f"NOT {_SKILL} AND length(message) > {MESSAGE_MAX} AS truncated")),
+                         f"NOT {_SKILL} AND length(message) > {MESSAGE_MAX} AS truncated"),
+           # Those who may read chat see channel commands as chat (source 10), not here.
+           full_kinds={"skill": _SKILL, "command": f"NOT {_SKILL} AND NOT {_CHANNEL}"}),
     Source(8, "session", "co_session", "action", {"session": "action IN (0, 1)"}),
     Source(9, "chat", "co_chat", f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
            {"chat": "1"}, sensitive=True),
+    Source(10, "channel", "co_command",
+           f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
+           {"chat": _CHANNEL}, sensitive=True),
 )
 # Kinds anyone with view_players may ask for, and the extra ones for view_player_messages.
 KINDS = tuple(dict.fromkeys(kind for source in SOURCES if not source.sensitive for kind in source.kinds))
@@ -190,7 +216,8 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
     for source in SOURCES:
         if source.table not in maps.tables or (source.sensitive and not full_text):
             continue
-        conditions = [cond for kind, cond in source.kinds.items() if kind in kinds]
+        source_kinds = (source.full_kinds if full_text else None) or source.kinds
+        conditions = [cond for kind, cond in source_kinds.items() if kind in kinds]
         if not conditions:
             continue
         upper = _upper(source, cursor)
@@ -332,6 +359,7 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "truncated": False,
         "rolled_back": _rollback(row.get("rolled_back")),
         "target_info": None,
+        "channel": None,
     }
     if source.name == "block":
         if action == 3:
@@ -372,10 +400,15 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
             entry.update(kind="skill", verb="teleported with" if row["teleport"] else "cast",
                          target=(row["text"] or "").strip() or "a skill")
         else:
-            entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]))
+            # Without full text this is just `/looc`: which channel, never what was said.
+            entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]),
+                         channel=channel_of(row["text"]))
     elif source.name == "chat":
         entry.update(kind="chat", verb="said", target=None, message=row["text"] or "",
                      truncated=bool(row["truncated"]))
+    elif source.name == "channel":
+        entry.update(kind="chat", verb="said", target=None, channel=channel_of(row["text"]),
+                     message=(row["text"] or "").partition(" ")[2].strip(), truncated=bool(row["truncated"]))
     else:
         entry.update(kind="session", verb="logged in" if action == 1 else "logged out", target=None)
     return entry
