@@ -287,7 +287,7 @@ function countLine(data: PlayerDirectory): string {
         : n === 1 ? "1 player" : `${n} players`;
   const source = data.coreprotect.server_label;
   if (!source) return counted;
-  return data.view === "character" ? `${counted} on ${source}` : `${counted} · activity from ${source}`;
+  return data.view === "character" ? `${counted} on ${source}` : counted;
 }
 
 export default function PlayersDirectory({ initialQuery, initialListing, initialPage }: Props) {
@@ -398,7 +398,7 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by Minecraft, Discord (handle or nickname) or character name, or UUID"
+            placeholder="Minecraft, Discord or character name, or UUID"
             autoComplete="off"
             spellCheck={false}
             className={inputClass}

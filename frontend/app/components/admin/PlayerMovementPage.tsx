@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -299,12 +298,9 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
       panel={
         <>
           <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-            {name ?? "…"} · movement
+            {name ?? "…"}
           </h2>
-          <p className={mutedClass}>
-            {view?.coreprotect.server_label ? `${view.coreprotect.server_label} · ` : ""}
-            Positions are recorded once a minute; lines between them are estimates. Admins only; each view is logged.
-          </p>
+          <p className={mutedClass}>Lines between positions are estimates. Views are logged.</p>
           {view ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
           {load.kind === "failed" ? (
@@ -380,7 +376,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
             since={since}
             until={until}
             unknownUntil={unknownUntil}
-            unknownLabel={view.completeFrom > since ? "earlier observations omitted" : "before available position observations"}
+            unknownLabel={view.completeFrom > since ? "too many to show" : "login and logout locations only"}
             bands={observedBands(inWindow).map(([a, b]) => ({ from: a, to: b }))}
             cursor={cursor}
             onCursor={setCursor}
@@ -398,7 +394,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
               <div className={`${mutedClass} flex flex-col gap-1`}>
                 {!view.points.length ? (
                   <p className="text-[var(--tfmc-cream)]">
-                    No observations between {describeSpan(since, until)}.{" "}
+                    Nothing recorded between {describeSpan(since, until)}.{" "}
                     {mode === "range" ? (
                       <button type="button" className="underline" onClick={() => { setTab("session"); cancelMoment(); update({ from: null, to: null, follow: null, at: null }); }}>
                         Show their latest session
@@ -407,7 +403,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                   </p>
                 ) : (
                   <p>
-                    Estimated observed time in the span shown: {formatDuration(observed).toLowerCase()}
+                    Seen for about {formatDuration(observed).toLowerCase()} in this range
                     {byWorld.length > 1
                       ? ` (${byWorld.map(([world, s]) => `${formatDuration(s).toLowerCase()} in ${worldLabel(world)}`).join(", ")})`
                       : byWorld.length === 1 && byWorld[0][0] !== mapWorld
@@ -416,25 +412,18 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                     .
                   </p>
                 )}
-                {onlyEdges ? <p>Login and logout locations only; the route is unavailable for this span.</p> : null}
+                {onlyEdges ? <p>Route unavailable; only where they logged in and out.</p> : null}
                 {view.completeFrom > since ? (
-                  <p>Earlier observations omitted: too many to show, so the route starts at {formatMoment(view.completeFrom)}.</p>
+                  <p>Too many positions to show; the route starts at {formatMoment(view.completeFrom)}.</p>
                 ) : null}
                 {view.pingsSince !== null && view.pingsSince > since ? (
                   <p>
-                    Before {formatMoment(view.pingsSince)} there are no available position observations, only login and
-                    logout places.
+                    Before {formatMoment(view.pingsSince)}, only login and logout locations.
                   </p>
                 ) : null}
               </div>
             </>
           ) : null}
-          <Link
-            href={`/admin/players/${encodeURIComponent(uuid)}`}
-            className="border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3 text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
-          >
-            ← Back to the profile
-          </Link>
         </>
       }
     />
@@ -488,7 +477,7 @@ function Readout({
   cursor: number;
   mapWorld: string;
 }) {
-  const when = `Inspecting ${formatClock(cursor, true)}`;
+  const when = formatClock(cursor, true);
   const where = (world: string | null) => (world === mapWorld ? "" : ` in ${worldLabel(world)}`);
   switch (found.kind) {
     case "observed": {
@@ -496,7 +485,7 @@ function Readout({
       return (
         <div className="flex flex-wrap items-center gap-3">
           <span>
-            {when} · recorded at {s.x}, {s.y}, {s.z}
+            {when} · {s.x}, {s.y}, {s.z}
             {where(found.world)}
           </span>
           {found.world === mapWorld ? <CopyButton text={`/tp ${s.x} ${s.y} ${s.z}`} label="Copy teleport command" /> : null}
@@ -506,15 +495,15 @@ function Readout({
     case "estimated":
       return (
         <span>
-          {when} · estimated between observations at {formatClock(found.before.time, true)} and{" "}
-          {formatClock(found.after.time, true)}: near {Math.round(found.x)}, {Math.round(found.z)}
+          {when} · about {Math.round(found.x)}, {Math.round(found.z)} (estimated between{" "}
+          {formatClock(found.before.time, true)} and {formatClock(found.after.time, true)})
           {where(found.world)}
         </span>
       );
     case "unobserved":
       return (
         <span>
-          {when} · position unknown: an unobserved transition from {found.before.x}, {found.before.z} (
+          {when} · unknown; moved from {found.before.x}, {found.before.z} (
           {formatClock(found.before.time, true)}) to {found.after.x}, {found.after.z} ({formatClock(found.after.time, true)})
           {where(found.world)}
         </span>
@@ -522,7 +511,7 @@ function Readout({
     case "stale":
       return (
         <span>
-          {when} · position unknown; last observed {formatDuration(cursor - found.before.time).toLowerCase()} earlier at{" "}
+          {when} · unknown; last seen {formatDuration(cursor - found.before.time).toLowerCase()} earlier at{" "}
           {found.before.x}, {found.before.z}
           {where(found.world)}
         </span>
@@ -530,8 +519,8 @@ function Readout({
     default:
       return (
         <span>
-          {when} · not observed (offline, or not recorded)
-          {found.before ? `; last observation ${formatClock(found.before.time, true)}` : ""}.
+          {when} · not seen
+          {found.before ? `; last seen ${formatClock(found.before.time, true)}` : ""}.
         </span>
       );
   }

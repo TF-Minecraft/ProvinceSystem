@@ -70,11 +70,11 @@ function whereText(found: Inspection, moment: number, mapWorld: string): string 
     case "estimated":
       return `≈ ${place(found.x, found.z, found.world)}`;
     case "unobserved":
-      return "unobserved transition";
+      return "unknown";
     case "stale":
       return `${place(found.before.x, found.before.z, found.world)} · ${formatDuration(moment - found.before.time).toLowerCase()} before`;
     default:
-      return "not observed";
+      return "not seen";
   }
 }
 
@@ -255,11 +255,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
       panel={
         <>
           {viewSwitch}
-          <p className={mutedClass}>
-            {data?.coreprotect.server_label ? `${data.coreprotect.server_label} · ` : ""}
-            Everyone online over a range of up to 24 hours. Positions are recorded once a minute; lines between them are
-            estimates. Each view is logged.
-          </p>
+          <p className={mutedClass}>Lines between positions are estimates. Views are logged.</p>
           {data ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
           {load.kind === "failed" ? (
@@ -316,7 +312,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
             since={since}
             until={until}
             unknownUntil={unknownUntil}
-            unknownLabel={completeFrom > since ? "earlier observations omitted" : "before available position observations"}
+            unknownLabel={completeFrom > since ? "too many to show" : "login and logout locations only"}
             bands={bands}
             cursor={moment}
             onCursor={setMoment}
@@ -327,17 +323,16 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
         <>
           {data ? (
             <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
-              Inspecting {formatClock(moment, true)} · {seenNow} of {drawn.length} players observed or estimated at this
-              moment. Positions in the list are as of this moment.
+              {formatClock(moment, true)} · {seenNow} of {drawn.length} players seen or estimated
             </InspectBar>
           ) : null}
           {data && completeFrom > since ? (
             <p className={mutedClass}>
-              Earlier observations omitted: too many to show, so the range starts at {formatMoment(completeFrom)}.
+              Too many positions to show; the range starts at {formatMoment(completeFrom)}.
             </p>
           ) : null}
           {data && data.pings_since !== null && data.pings_since > since ? (
-            <p className={mutedClass}>Before {formatMoment(data.pings_since)} there are no available position observations.</p>
+            <p className={mutedClass}>Before {formatMoment(data.pings_since)}, only login and logout locations.</p>
           ) : null}
           <div className="flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
             <input
@@ -397,7 +392,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                   </span>
                 </li>
               ))}
-              {data && !all.length ? <li className={mutedClass}>Nobody was observed in this range.</li> : null}
+              {data && !all.length ? <li className={mutedClass}>Nobody was seen in this range.</li> : null}
             </ul>
           </div>
         </>

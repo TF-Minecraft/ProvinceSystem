@@ -508,9 +508,9 @@ export function sessionEndLabel(session: PlayerSession): string {
     case "logout":
       return `Logged out ${formatClock(session.end!.time)}`;
     case "open":
-      return `Probably online · last observed ${formatClock(session.last_observed.time)}`;
+      return `Probably online · last seen ${formatClock(session.last_observed.time)}`;
     case "last_observed":
-      return `Last observed ${formatClock(session.last_observed.time)} · logout not recorded`;
+      return `Last seen ${formatClock(session.last_observed.time)} · no logout recorded`;
     default:
       return "End unknown";
   }

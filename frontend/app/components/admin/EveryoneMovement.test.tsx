@@ -76,7 +76,7 @@ afterEach(() => {
 
 it("compares everyone at the inspected moment and carries the view to a player", async () => {
   render(<EveryoneMovement />);
-  await screen.findByText(/2 of 2 players observed or estimated at this moment/);
+  await screen.findByText(/2 of 2 players seen/);
   expect(getEveryoneMovement).toHaveBeenCalledWith(T - 3600, T);
   expect(screen.getByText("11, 21")).toBeTruthy();
   // Bob's last ping was 90 s before the moment, in the End.
@@ -91,5 +91,5 @@ it("compares everyone at the inspected moment and carries the view to a player",
   // "Only selected" lives in the URL, so a copied link shows the same players.
   fireEvent.click(await screen.findByLabelText(/Only selected/));
   expect(nav.state.params.get("only")).toBe("1");
-  await screen.findByText(/1 of 1 players observed/);
+  await screen.findByText(/1 of 1 players seen/);
 });

@@ -125,15 +125,11 @@ export default function RailOverview() {
       panel={
         <>
           <p className={mutedClass}>
-            The tracks as VehicleFramework last saved them
-            {data.updated_at ? `, at ${formatMoment(data.updated_at)}` : ""}. A stop is a settlement whose provinces a
-            track crosses; it sits where the track comes closest to the settlement.
+            {data.updated_at ? `Updated ${formatMoment(data.updated_at)}. ` : ""}Stops are where a track passes closest to a
+            settlement.
           </p>
           {data.unreadable_files ? (
-            <p className="text-sm text-[#e8c48a]">
-              {data.unreadable_files} track {data.unreadable_files === 1 ? "file" : "files"} couldn’t be read, probably
-              mid-save. Reload in a moment.
-            </p>
+            <p className="text-sm text-[#e8c48a]">Some track couldn’t be loaded. Reload in a moment.</p>
           ) : null}
           {problems.length ? (
             <section aria-label="Broken and damaged track">

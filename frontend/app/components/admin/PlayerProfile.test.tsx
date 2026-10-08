@@ -135,7 +135,7 @@ it("groups sessions by day and hedges ones without a logout", async () => {
   expect(within(sessions).getByText(/^No logout recorded · last seen \d\d:\d\d$/)).toBeTruthy();
   expect(within(sessions).queryByText(/Logged out/)).toBeNull();
   expect(within(sessions).queryByRole("link")).toBeNull();
-  expect(within(sessions).getByText(/^Retained session records start/)).toBeTruthy();
+  expect(within(sessions).getByText(/^Server session history starts/)).toBeTruthy();
 });
 
 it("links each session to its route for those who may see movement", async () => {
@@ -185,7 +185,7 @@ it("reports CoreProtect problems per section", async () => {
   nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
-  expect(await within(sessions).findByText(/CoreProtect took too long/)).toBeTruthy();
+  expect(await within(sessions).findByText(/Activity history took too long/)).toBeTruthy();
 });
 
 it.each([
@@ -228,7 +228,7 @@ it("keeps rows and the cursor when a later page is unavailable", async () => {
     entries: [], next: null, searched_to: null, kinds: KINDS, shows_messages: false, coreprotect: { status: "unavailable", reason: "busy" },
   });
   fireEvent.click(within(feed).getByRole("button", { name: "Load more" }));
-  expect(await within(feed).findByText(/CoreProtect is busy/)).toBeTruthy();
+  expect(await within(feed).findByText(/Activity history is busy/)).toBeTruthy();
   expect(within(feed).getByText("stone")).toBeTruthy();
 
   vi.mocked(getPlayerActivity).mockResolvedValueOnce({
@@ -239,7 +239,7 @@ it("keeps rows and the cursor when a later page is unavailable", async () => {
   expect(await within(feed).findByText("oak_door")).toBeTruthy();
   expect(getPlayerActivity).toHaveBeenLastCalledWith(UUID, { before: "cursor-1", kinds: undefined });
   expect(within(feed).getByText("stone")).toBeTruthy();
-  expect(within(feed).queryByText(/CoreProtect is busy/)).toBeNull();
+  expect(within(feed).queryByText(/Activity history is busy/)).toBeNull();
 });
 
 it("retries a failed sessions page from the same cursor", async () => {
@@ -258,7 +258,7 @@ it("retries a failed sessions page from the same cursor", async () => {
   fireEvent.click(await within(sessions).findByRole("button", { name: "Load more sessions" }));
   expect(await within(sessions).findByText("That page link has expired. Reload to start again.")).toBeTruthy();
   expect(within(sessions).getByText("End unknown")).toBeTruthy();
-  expect(within(sessions).queryByText(/Retained session records/)).toBeNull();
+  expect(within(sessions).queryByText(/Server session history starts/)).toBeNull();
   fireEvent.click(within(sessions).getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(getPlayerSessions).toHaveBeenLastCalledWith(UUID, "s-1"));
 });
@@ -277,7 +277,7 @@ it("shows chat and whole commands to admins, and says views are logged", async (
   expect(within(feed).getByText("/msg Bob hello")).toBeTruthy();
   expect(within(feed).getByText("(cut short)")).toBeTruthy();
   expect(within(feed).getByRole("button", { name: "Chat" })).toBeTruthy();
-  expect(within(feed).getByText(/Your views of these are logged/)).toBeTruthy();
+  expect(within(feed).getByText(/Views are logged/)).toBeTruthy();
 });
 
 it("tags chat with its channel, and tells moderators only the channel", async () => {
@@ -301,7 +301,7 @@ it("tags chat with its channel, and tells moderators only the channel", async ()
 it("keeps moderators' note when messages are not included", async () => {
   render(<PlayerProfile uuid={UUID} />);
   const feed = await screen.findByRole("region", { name: "Recent activity" });
-  expect(await within(feed).findByText(/Chat, command arguments and sign text are not shown/)).toBeTruthy();
+  expect(await within(feed).findByText(/Chat, command details and sign text are hidden/)).toBeTruthy();
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
 });
 
@@ -345,11 +345,11 @@ it("names things properly, merges block runs and calls the world by its name", a
   expect(within(feed).getByText(/4052, 64, 2$/)).toBeTruthy();
 
   expect(within(feed).getByText("Mouse Plush")).toBeTruthy();
-  expect(within(feed).getByText("MMOItems")).toBeTruthy();
+  expect(within(feed).getByText("Custom item")).toBeTruthy();
   expect(within(feed).queryByText(/MISC:MOUSE_PLUSH/)).toBeNull();
   const plush = within(feed).getAllByRole("button", { name: /Details/ })[0];
   fireEvent.click(plush);
-  expect(within(feed).getByText("MMOItems id MISC:MOUSE_PLUSH")).toBeTruthy();
+  expect(within(feed).getByText("Custom item id MISC:MOUSE_PLUSH")).toBeTruthy();
   expect(within(feed).getByText("Based on Paper")).toBeTruthy();
 
   expect(within(feed).getByText("“Fang”")).toBeTruthy();

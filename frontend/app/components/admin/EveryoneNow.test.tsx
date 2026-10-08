@@ -88,7 +88,7 @@ afterEach(() => {
 
 it("opens on where everyone online is now, and refreshes", async () => {
   render(<EveryoneMovement />);
-  await screen.findByText(/2 players online · updated 14:00:00/);
+  await screen.findByText(/2 players seen recently · updated 14:00:00/);
   expect(getLatestMovement).toHaveBeenCalledWith(T - 150);
   // Carol logged out: not listed. Bob is in the Nether: listed, not on the map's world.
   expect(screen.getByText("11, 21 · 40 s ago")).toBeTruthy();
@@ -109,7 +109,7 @@ it("opens on where everyone online is now, and refreshes", async () => {
 
 it("keeps the last positions when a refresh fails", async () => {
   render(<EveryoneMovement />);
-  await screen.findByText(/2 players online/);
+  await screen.findByText(/2 players seen recently/);
   vi.mocked(getLatestMovement).mockRejectedValueOnce(new Error("boom"));
   await act(async () => {
     vi.advanceTimersByTime(NOW_REFRESH_MS);
@@ -120,7 +120,7 @@ it("keeps the last positions when a refresh fails", async () => {
 
 it("switches between now and a time range", async () => {
   render(<EveryoneMovement />);
-  await screen.findByText(/2 players online/);
+  await screen.findByText(/2 players seen recently/);
   fireEvent.click(screen.getByRole("button", { name: "Time range" }));
   expect(nav.state.params.get("view")).toBe("range");
   expect(screen.getByRole("button", { name: "Time range" }).getAttribute("aria-pressed")).toBe("true");
@@ -130,7 +130,7 @@ it("switches between now and a time range", async () => {
 
 it("ignores an answer that arrives after a newer one", async () => {
   render(<EveryoneMovement />);
-  await screen.findByText(/2 players online/);
+  await screen.findByText(/2 players seen recently/);
   let answerSlow: (value: Awaited<ReturnType<typeof getLatestMovement>>) => void = () => {};
   const first = await vi.mocked(getLatestMovement).mock.results[0].value;
   vi.mocked(getLatestMovement)

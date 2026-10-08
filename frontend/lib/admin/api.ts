@@ -60,7 +60,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   player_not_found: "No player with that UUID has been seen.",
   bad_uuid: "That isn’t a Minecraft UUID.",
   bad_session: "That session link isn’t valid.",
-  session_gone: "That session is no longer in CoreProtect’s records.",
+  session_gone: "That session is no longer available.",
   bad_window: "Choose a time range of up to 7 days for one player, or 24 hours for everyone.",
   bad_cursor: "That page link has expired. Reload to start again.",
   bad_kinds: "That filter isn’t available.",
@@ -296,12 +296,12 @@ export type ActivityPage = {
 };
 
 const COREPROTECT_REASONS: Record<string, string> = {
-  not_configured: "CoreProtect isn’t connected to this site.",
-  missing: "The CoreProtect database couldn’t be found.",
-  cannot_open: "The CoreProtect database couldn’t be opened.",
-  busy: "CoreProtect is busy. Try again in a moment.",
-  timeout: "CoreProtect took too long to answer. Try again in a moment.",
-  error: "CoreProtect couldn’t be read.",
+  not_configured: "Activity history isn’t available on this site.",
+  missing: "Activity history isn’t available right now.",
+  cannot_open: "Activity history isn’t available right now.",
+  busy: "Activity history is busy. Try again in a moment.",
+  timeout: "Activity history took too long. Try again in a moment.",
+  error: "Activity history isn’t available right now.",
 };
 
 export function coreProtectMessage(status: CoreProtectStatus): string | null {

@@ -67,8 +67,8 @@ export function lineColour(line: RailLine | undefined): string {
 }
 
 export function statusMessage(status: RailStatus): string | null {
-  if (status === "not_configured") return "This site isn’t set up to read the rail network yet.";
-  if (status === "missing") return "The rail network’s files can’t be found on the server.";
+  if (status === "not_configured") return "Rail data isn’t available on this site.";
+  if (status === "missing") return "Rail data isn’t available right now.";
   return null;
 }
 

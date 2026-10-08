@@ -44,7 +44,7 @@ export default function RanksOverview({ initialQuery = "" }: { initialQuery?: st
   return (
     <>
       <StatusLine status={data.status} rights={data.rights} />
-      <PlayerSearch initialQuery={initialQuery} total={data.players} />
+      <PlayerSearch initialQuery={initialQuery} />
       <GroupsPanel data={data} onChanged={refresh} />
       {/* Side by side on wide screens: neither needs the full width. */}
       <div className="grid gap-x-6 lg:grid-cols-2">
@@ -58,7 +58,7 @@ export default function RanksOverview({ initialQuery = "" }: { initialQuery?: st
   );
 }
 
-function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: number }) {
+function PlayerSearch({ initialQuery }: { initialQuery: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [page, setPage] = useState<LpPlayerPage | null>(null);
   const [busy, setBusy] = useState(false);
@@ -106,7 +106,7 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
           id="ranks-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Find a player: Minecraft name or UUID"
+          placeholder="Minecraft name or UUID"
           autoComplete="off"
           spellCheck={false}
           className={`${inputClass} min-w-0 flex-1 basis-64`}
@@ -115,7 +115,7 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
           {busy ? "Searching…" : "Find"}
         </button>
         <p className="text-xs text-[var(--tfmc-stone)]">
-          {total.toLocaleString()} players have something set in LuckPerms. Part of a name is enough.
+          Part of a name is enough.
         </p>
       </form>
       {error ? (
@@ -268,7 +268,7 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
         ) : null}
       </div>
       <p className={`mt-1 ${mutedClass}`}>
-        Heaviest first: a player shows the rank of the heaviest group they inherit. Player counts are direct assignments only.
+        Highest weight first. A player shows the rank of their highest-weight group. Player counts are direct members only.
       </p>
       {creating ? (
         <div className="mt-3 flex flex-col gap-3">

@@ -16,25 +16,29 @@ function seconds(stamp: string | null): number | null {
   return stamp ? Date.parse(stamp) / 1000 : null;
 }
 
-/** Where the data comes from, how fresh it is, and whether changes can be made. */
+/** Says only when something is off: no data yet, stale data, or changes that can't be made. */
 export function StatusLine({ status, rights }: { status: LpStatus; rights: LpRights }) {
   if (!status.has_snapshot) {
     return (
       <p className={`mt-3 ${warnClass}`} role="status">
-        No server has sent LuckPerms data to this site yet. It appears once TFMCWeb’s LuckPerms bridge is on.
+        Ranks aren’t available yet.
       </p>
     );
   }
   const checked = seconds(status.checked_at);
   const stale = checked !== null && Date.now() / 1000 - checked > 180;
+  const notes = [
+    stale ? `Last checked ${formatAgo(checked).toLowerCase()}.` : null,
+    rights.read_only
+      ? "View only. Change ranks on the main site."
+      : status.applying
+        ? null
+        : "Rank changes are unavailable right now.",
+  ].filter(Boolean);
+  if (!notes.length) return null;
   return (
     <p className={`mt-3 ${stale ? warnClass : mutedClass}`} role="status">
-      LuckPerms from {status.server ?? "the server"}, checked {formatAgo(checked).toLowerCase()}.{" "}
-      {rights.read_only
-        ? "This site only shows ranks; change them on the main site."
-        : status.applying
-          ? "Changes apply within seconds."
-          : "No server is applying changes right now, so nothing can be changed."}
+      {notes.join(" ")}
     </p>
   );
 }

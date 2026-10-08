@@ -7,7 +7,6 @@ import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { liveMapIdFrom } from "../../lib/map/chronicleDayRoute";
 import { formatDuration } from "../../../lib/admin/time";
 import {
-  describeSpan,
   formatClock,
   formatDay,
   formatMoment,
@@ -254,7 +253,7 @@ export function RangeForm({
             }
           }}
         />
-        Keep up to date (moves the range with the clock)
+        Move range with the clock
       </label>
       {error ? (
         <p className={errorClass} role="alert">
@@ -262,8 +261,7 @@ export function RangeForm({
         </p>
       ) : null}
       <p className={mutedClass}>
-        Showing <span className="text-[var(--tfmc-cream)]">{describeSpan(value.from, value.to)}</span> ·{" "}
-        {formatDuration(value.to - value.from).toLowerCase()} · times in {zoneLabel(value.from, value.to)}
+        {formatDuration(value.to - value.from)} · times in {zoneLabel(value.from, value.to)}
         {value.follow && asOf ? ` · updated ${formatClock(asOf)}` : ""}
       </p>
     </form>
@@ -366,11 +364,11 @@ export function Timeline({
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--tfmc-mist)]">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-4 rounded-sm bg-[var(--tfmc-accent)]" /> observed
+          <span className="inline-block h-2 w-4 rounded-sm bg-[var(--tfmc-accent)]" /> seen
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]" /> not
-          observed (offline, or not recorded)
+          seen (not proof of offline)
         </span>
         {hatchEnd !== null ? (
           <span className="flex items-center gap-1.5">
@@ -420,7 +418,7 @@ export function InspectBar({
     <div className="flex flex-col gap-2">
       {/* The box on its own row, the steps together below it: nothing beside a date box to run into. */}
       <label className="flex w-full max-w-72 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
-        Inspect time
+        Time
         <input
           type="datetime-local"
           className={dateInputClass}
@@ -442,7 +440,7 @@ export function InspectBar({
           disabled={previous === null}
           onClick={() => previous !== null && onCursor(previous)}
         >
-          ‹ Previous observation
+          ‹ Previous
         </button>
         <button
           type="button"
@@ -450,7 +448,7 @@ export function InspectBar({
           disabled={next === null}
           onClick={() => next !== null && onCursor(next)}
         >
-          Next observation ›
+          Next ›
         </button>
       </div>
       {error ? (
@@ -495,7 +493,7 @@ function PinForm({ pin, onChange }: { pin: MapPin | null; onChange: (pin: MapPin
         if (valid) onChange({ x: Number(x.trim()), z: Number(z.trim()) });
       }}
     >
-      <span className="text-sm text-[var(--tfmc-mist)]">Pin a place on the overworld map (for a report)</span>
+      <span className="text-sm text-[var(--tfmc-mist)]">Pin a place in the overworld</span>
       <div className="flex gap-2">
         <input aria-label="Pin x" placeholder="x" inputMode="numeric" className={inputClass} value={x} onChange={(e) => setX(e.target.value)} />
         <input aria-label="Pin z" placeholder="z" inputMode="numeric" className={inputClass} value={z} onChange={(e) => setZ(e.target.value)} />
