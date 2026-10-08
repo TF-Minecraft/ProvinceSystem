@@ -213,15 +213,15 @@ export function PlayerResults({
         })}
       </ul>
       {pages > 1 ? (
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
+        <nav aria-label="Pages" className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
           <button type="button" className={pageButtonClass} disabled={busy || page.page <= 1} onClick={() => onPage(page.page - 1)}>
             ← Previous
           </button>
-          <span className="px-2">{busy ? "Loading…" : `Page ${page.page} of ${pages}`}</span>
+          <span className="px-2" aria-current="page">{busy ? "Loading…" : `Page ${page.page} of ${pages}`}</span>
           <button type="button" className={pageButtonClass} disabled={busy || page.page >= pages} onClick={() => onPage(page.page + 1)}>
             Next →
           </button>
-        </div>
+        </nav>
       ) : null}
       {error ? (
         <p className={`mt-2 ${errorClass}`} role="alert">

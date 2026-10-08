@@ -254,12 +254,12 @@ export function contextLabel(contexts: Record<string, string[]>): string {
     .join(", ");
 }
 
-const SERVER_NAMES: Record<string, string> = { main: "Main", dev: "Dev", tutorial: "Tutorial" };
+const SERVER_NAMES = new Map([["main", "Main"], ["dev", "Dev"], ["tutorial", "Tutorial"]]);
 
 /** contextLabel for lists: known servers by name ("Main"), anything else as key=value. */
 export function shortContextLabel(contexts: Record<string, string[]>): string {
   return Object.entries(contexts)
-    .flatMap(([key, values]) => values.map((value) => (key === "server" && SERVER_NAMES[value]) || `${key}=${value}`))
+    .flatMap(([key, values]) => values.map((value) => (key === "server" && SERVER_NAMES.get(value)) || `${key}=${value}`))
     .join(", ");
 }
 
