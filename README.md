@@ -48,8 +48,8 @@ other than letters and digits becomes `-`, so `codex/new-map` becomes
 
 - A preview starts with a copy of the dev site's data, with sign-in sessions
   removed. It never touches dev or the live site.
-- Previews sit behind a shared `preview` login; ask staff for the password.
-  Discord sign-in is off on previews.
+- Previews are public, like dev, but search engines are told not to index
+  them. Discord sign-in is off on previews.
 - A preview stops 90 minutes after its last deploy. Push again, or run the
   **Preview** workflow on the branch, to start it again.
 - Deleting the branch removes its preview. Up to four run at once.

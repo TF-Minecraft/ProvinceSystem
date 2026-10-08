@@ -90,7 +90,7 @@ jobs:
             echo "### Preview: $URL"
             echo
             echo "Built from \`${GITHUB_SHA::7}\`. It stops 90 minutes after this deploy; push again or re-run this workflow to restart it."
-            echo "Sign in to the preview with the shared \`preview\` login. Discord sign-in is off on previews."
+            echo "Discord sign-in is off on previews."
           } >> "$GITHUB_STEP_SUMMARY"
 
   teardown:
