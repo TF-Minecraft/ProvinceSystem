@@ -42,13 +42,13 @@ export async function redeemProfile(
   const data = await parseJson(res);
   if (!res.ok) {
     throw new CharactersApiError(
-      detailMessage(data, `Redeem failed (${res.status})`),
+      detailMessage(data, "Couldn’t log in. Check the code and try again."),
       res.status
     );
   }
   const body = data as Partial<RedeemResult>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
-    throw new CharactersApiError("Invalid redeem response from API", res.status);
+    throw new CharactersApiError("Couldn’t log in. Please try again.", res.status);
   }
   return {
     session_token: body.session_token,

@@ -32,16 +32,16 @@ export default function GamesPage() {
         <li>Right-click a block. A game-select GUI opens with four icons.</li>
         <li>
           Pick a game. Blackjack opens a table-options GUI (min bet, max bet, house settings) first;
-          Poker, Five-Draw and Free play arm placement immediately.
+          Poker, Five-Draw and Free play go straight to placing the table.
         </li>
-        <li>Click the spot to place the table. Sneaking cancels an armed placement.</li>
-        <li>Picking the table back up drops the <WikiItemLink name="Deck of Cards" /> item again at the table&apos;s origin.</li>
+        <li>Click the spot to place the table. Sneak to cancel.</li>
+        <li>Picking the table back up drops the <WikiItemLink name="Deck of Cards" /> where the table was.</li>
       </ol>
       <WikiSectionHeading id="playing" intro="Rules shared by every table, whichever game you pick.">
         Playing at a table
       </WikiSectionHeading>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Cards render fanned in front of you, visible only within 48 blocks.</li>
+        <li>Your cards fan out in front of you, visible only within 48 blocks.</li>
         <li>
           Left-click a card in your fan to inspect it. Press your swap-hands key (F) to flip your
           whole hand face-up for the table.
@@ -52,10 +52,7 @@ export default function GamesPage() {
           Walk more than 6 blocks from the table and your cards return. This round&apos;s stake comes
           back with them.
         </li>
-        <li>
-          Only whole denars go on a table; silver bits are refused. The house&apos;s own help book puts
-          it plainly: &quot;Only whole coins go on a table. Silver bits are no good.&quot;
-        </li>
+        <li>Only whole denars go on a table; silver bits are refused.</li>
         <li>Winnings are subject to the usual citizen tax, same as any other income.</li>
       </ul>
 
@@ -94,7 +91,7 @@ export default function GamesPage() {
         ))}
       </div>
 
-      <WikiSectionHeading id="blackjack" intro="The only game with a table actually standing on the server today.">
+      <WikiSectionHeading id="blackjack">
         Blackjack
       </WikiSectionHeading>
       <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-[var(--tfmc-mist)]">
@@ -170,9 +167,6 @@ export default function GamesPage() {
         in.
       </p>
 
-      <Callout variant="note" className="mt-4">
-        Place a <WikiItemLink name="Deck of Cards" /> to set up a table and choose a game.
-      </Callout>
       <Callout variant="note">
         The deck is themed to server lore: the four suits are cerrith, mitlan, oseni and seithr,
         rather than hearts, clubs, diamonds and spades.

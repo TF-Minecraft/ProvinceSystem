@@ -50,10 +50,10 @@ export default function MusicalInstrumentsPage() {
       <WikiSectionHeading id="numbers">The numbers</WikiSectionHeading>
       <StatGrid
         stats={[
-          { label: "Audible range", value: "64 blocks", note: "volume 4.0; 1 volume = 16 blocks" },
+          { label: "Audible range", value: "64 blocks" },
           { label: "Sound category", value: "Records", note: "the Jukebox / Note Blocks slider" },
           { label: "Craft time", value: "10 seconds", note: <>all nine, at the <StationLink name="Instrument Station" /></> },
-          { label: "Class needed to play", value: "None", note: "Bard is only a crafting gate" },
+          { label: "Class needed to play", value: "None", note: "Only Bards can craft them" },
         ]}
       />
 
@@ -70,9 +70,8 @@ export default function MusicalInstrumentsPage() {
           sixteen notes total.
         </li>
         <li>
-          After every note your selection snaps back to slot 9. This is deliberate, and lets you
-          hit the same note twice in a row instead of the key doing nothing the second time.
-          Whatever sits in slot 9 is therefore what bystanders see in your main hand while you play.
+          After every note your selection snaps back to slot 9, so you can hit the same note twice
+          in a row. Whatever sits in slot 9 is what bystanders see in your main hand while you play.
         </li>
         <li>A single note particle appears above your head with each note, so everyone can tell it is you.</li>
       </ul>
@@ -87,9 +86,8 @@ export default function MusicalInstrumentsPage() {
         columns={[{ header: "Item", nowrap: true }, { header: "What it is" }]}
         rows={bardWeaponLutes.map((l) => [
           l.name,
-          "Bard weapon: shares the station and the Bard gate, but has no note keyboard.",
+          "Bard weapon, not playable",
         ])}
-        caption={<>A Bard browsing the <StationLink name="Instrument Station" /> sees 13+ entries, not 9.</>}
         minWidth="40rem"
       />
 
@@ -123,15 +121,7 @@ export default function MusicalInstrumentsPage() {
             &quot;Can I <em>play</em> an instrument without being a Bard?&quot;
           </dt>
           <dd className="text-[var(--tfmc-mist)]">
-            Yes. The instrument items carry no class requirement and no stat requirement of any
-            kind, and nothing checks your class when you press a key. Instruments are tradeable, so
-            a non-Bard handed one plays it exactly as well as its maker.
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[var(--tfmc-cream)]">&quot;Do I need a permission?&quot;</dt>
-          <dd className="text-[var(--tfmc-mist)]">
-            No. Both instrument commands are available to every player.
+            Yes. Anyone can play one.
           </dd>
         </div>
       </dl>

@@ -74,10 +74,8 @@ export default function LoreLinesEditor({
           heading === "section" ? "mt-2" : "mt-1"
         }`}
       >
-        Up to {LORE_MAX_LINES} custom lines ({LORE_LINE_MAX} characters each).
-        Use §c, &amp;c, or #RRGGBB mid-line. Lines without a leading colour
-        (including §l / &amp;l alone) get gray (§7) first so styles stay gray,
-        not purple italic.
+        Up to {LORE_MAX_LINES} lines, {LORE_LINE_MAX} characters each. Colour
+        codes like &amp;c work.
       </p>
       {lines.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{emptyMessage}</p>
@@ -110,7 +108,7 @@ export default function LoreLinesEditor({
             onChange={(e) => setDraft(e.target.value)}
             maxLength={LORE_LINE_MAX}
             className={`${inputClass} sm:flex-1`}
-            placeholder="Add a lore line (§c highlight)"
+            placeholder="Add a line"
             autoComplete="off"
           />
           <button

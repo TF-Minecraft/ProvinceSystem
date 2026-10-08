@@ -62,8 +62,7 @@ export default async function MaterialDetailPage({
         <section className="mt-8">
           <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Block unpacking</h2>
           <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-            Recover material from a storage block you already own. Packing and unpacking
-            preserve the amount of material; you still need an acquisition source above.
+            Recover material from a storage block you already own.
           </p>
           <div className="mt-4 space-y-4">
             {material.unpackingRecipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
@@ -82,7 +81,7 @@ export default async function MaterialDetailPage({
         </div>
       ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          Nothing on the Gameplay Guide currently lists this as an ingredient.
+          Not used in any recipe here.
         </p>
       )}
     </WikiPage>

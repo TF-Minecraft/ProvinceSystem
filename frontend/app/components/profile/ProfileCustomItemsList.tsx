@@ -7,7 +7,7 @@ function statusLabel(item: ProfileCustomItem): string {
   const state = String(item.state || "").trim().toLowerCase();
   const sub = String(item.submission_status || "").trim().toLowerCase();
   if (state === "pending_skin") {
-    if (sub === "approved") return "Pending pack";
+    if (sub === "approved") return "Approved";
     return "Awaiting approval";
   }
   switch (state) {
@@ -20,7 +20,7 @@ function statusLabel(item: ProfileCustomItem): string {
     case "draft":
       return "Draft";
     default:
-      return state || "Unknown";
+      return "In progress";
   }
 }
 
@@ -32,7 +32,7 @@ export default function ProfileCustomItemsList({ items }: Props) {
   if (items.length === 0) {
     return (
       <p className="text-sm text-[var(--tfmc-mist)]">
-        No kit custom items in progress.
+        No custom items yet.
       </p>
     );
   }
@@ -51,14 +51,14 @@ export default function ProfileCustomItemsList({ items }: Props) {
                 href={href}
                 className="font-medium text-[var(--tfmc-cream)] hover:underline"
               >
-                {item.display_name || item.kit_key}
+                {item.display_name || "Custom item"}
               </Link>
               <span className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
                 {statusLabel(item)}
               </span>
             </div>
             <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-              {item.character_name} · {item.kit_key}
+              {item.character_name}
             </p>
             {item.deny_reason ? (
               <p className="mt-1 text-xs text-[#e8a0a0]">{item.deny_reason}</p>

@@ -42,9 +42,19 @@ function isIsoCalendarDate(value: string): boolean {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+/** "12 Sept 2026": the ISO date read as UTC so the day never shifts. */
+export function formatWikiDate(value: string): string {
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /**
  * The standard wiki page frame: `<article>` + `<h1>` + optional intro and
- * "last modified" note. Every `/wiki/*` page body should start here so titles,
+ * "updated" note. Every `/wiki/*` page body should start here so titles,
  * spacing and reading width stay identical across ~40 pages.
  */
 export default function WikiPage({
@@ -71,7 +81,7 @@ export default function WikiPage({
       </div>
       {intro ? <p className={cx("mt-2", wikiBodyText)}>{intro}</p>: null}
       <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-        Last modified: <time dateTime={modifiedDate}>{modifiedDate}</time>
+        Updated <time dateTime={modifiedDate}>{formatWikiDate(modifiedDate)}</time>
       </p>
       {children}
     </article>

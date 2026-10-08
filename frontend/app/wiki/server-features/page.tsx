@@ -27,7 +27,7 @@ export default function ServerFeaturesPage() {
       lastModified="2026-10-02"
       title="Server Features & Website Link"
     >
-      <WikiSectionHeading id="sealed-letters" intro="Not to be confused with BirdMessenger's mail: see below.">
+      <WikiSectionHeading id="sealed-letters">
         Sealed letters
       </WikiSectionHeading>
       <div className="mt-4">
@@ -41,9 +41,12 @@ export default function ServerFeaturesPage() {
         accidentally reading someone&apos;s letter.
       </p>
       <Callout variant="note">
-        This is a different system from <strong>BirdMessenger</strong>, which delivers letters to
-        a specific character over real time via a bird coop. TFMCCore&apos;s sealed letters are
-        just an item: sending it anywhere is still up to you.
+        This is not{" "}
+        <Link href="/wiki/bird-mail" className="text-[var(--tfmc-accent)] hover:underline">
+          Bird Mail
+        </Link>
+        , which delivers letters to a specific character over real time via a bird coop. A sealed
+        letter is just an item: sending it anywhere is still up to you.
       </Callout>
 
       <WikiSectionHeading id="lorestones" intro="Add a permanent line of lore or a new name to an item.">
@@ -69,7 +72,7 @@ export default function ServerFeaturesPage() {
         ]}
       />
 
-      <WikiSectionHeading id="animal-limit" intro="There is a cap on how many animals one player can keep.">
+      <WikiSectionHeading id="animal-limit">
         Animal limit
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
@@ -116,26 +119,24 @@ export default function ServerFeaturesPage() {
         a click-to-copy code with instructions. Run <code className="text-[var(--tfmc-accent)]">
         /linkdiscord &lt;code&gt;</code> in the Discord server, and within about a second the
         game confirms the link and opens access to Survival.{" "}
-        <code className="text-[var(--tfmc-accent)]">/unlinkdiscord</code> removes the link again
-        and reapplies the gate.
+        <code className="text-[var(--tfmc-accent)]">/unlinkdiscord</code> removes the link again.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        <code className="text-[var(--tfmc-accent)]">/token create profile</code> mints a code to
-        sign into your website profile. Selecting <strong>Remember me</strong> keeps that session
-        on this device for 30 days.{" "}
+        <code className="text-[var(--tfmc-accent)]">/token create profile</code> creates a code to
+        sign into your website profile.{" "}
         <code className="text-[var(--tfmc-accent)]">/token create skin</code> and{" "}
-        <code className="text-[var(--tfmc-accent)]">/token create drink</code> mint codes for
+        <code className="text-[var(--tfmc-accent)]">/token create drink</code> create codes for
         uploading a custom skin or a custom drink, but these two share one cooldown, and how
-        often you can mint one depends on your rank.
+        often you can create one depends on your rank.
       </p>
       <div className="mt-4">
         <DataTable
           columns={[
             { header: "Rank", nowrap: true },
-            { header: "Skin/drink mint cooldown", align: "right" },
+            { header: "Skin/drink code cooldown", align: "right" },
           ]}
           rows={[
-            [<RankName key="commoner" rank="Commoner" />, "Cannot mint"],
+            [<RankName key="commoner" rank="Commoner" />, "Not available"],
             [<RankName key="legacy" rank="Legacy" />, "7 days"],
             [<RankName key="ascended" rank="Ascended" />, "14 days"],
             [<RankName key="gilded" rank="Gilded" />, "21 days"],

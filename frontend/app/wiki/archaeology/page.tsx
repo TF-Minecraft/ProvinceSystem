@@ -96,7 +96,7 @@ export default function ArchaeologyPage() {
         Take the recovered piece to the cabinet and right-click while holding it. Sneak if you only
         want the block&apos;s ordinary Minecraft use. A dirty piece opens the lab, where each stain
         names the tool that removes it. A cleaned piece without a drawing can be registered, and an
-        already filed piece opens its reading. Empty-handed clicks do not open the cabinet workflow.
+        already filed piece opens its reading.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         To make the drawing, click a field sheet onto the pencil in your inventory, or hold the
@@ -109,7 +109,7 @@ export default function ArchaeologyPage() {
         Build any room you like. Shift-right-click a recovered find on a frame, lectern, shelf,
         armor stand, or a case that accepts plaques to open the same reading available from the camp
         board. Clicking without Shift keeps the ordinary Minecraft action, such as hanging,
-        rotating, or taking an item. Empty supports and unrelated items do nothing extra.
+        rotating, or taking an item.
       </p>
 
       <WikiSectionHeading id="finish">8. When the site is finished</WikiSectionHeading>

@@ -12,10 +12,10 @@ const steps = [
 export default function GettingStartedPage() {
   return (
     <WikiPage lastModified="2026-09-12" title={gettingStartedSection.nav.label} intro="Create your character, then follow the guides for the activity you want to play.">
-      <WikiSectionHeading id="first-steps" intro="Follow these in order on a new account.">Your first steps</WikiSectionHeading>
-      <DataTable columns={[{header:"Step"},{header:"Goal"},{header:"What to do"},{header:"Guide"}]} rows={steps.map(([n,goal,action,href])=>[n,goal,<code key={`${n}-action`} className="text-[var(--tfmc-accent)]">{action}</code>,<Link key={href} href={href} className="text-[var(--tfmc-accent)] hover:underline">Read guide</Link>])}/>
+      <WikiSectionHeading id="first-steps">Your first steps</WikiSectionHeading>
+      <DataTable columns={[{header:"Step"},{header:"Goal"},{header:"What to do"},{header:"Guide"}]} rows={steps.map(([n,goal,action,href])=>[n,goal,action.startsWith("/") ? <code key={`${n}-action`} className="text-[var(--tfmc-accent)]">{action}</code> : action,<Link key={href} href={href} className="text-[var(--tfmc-accent)] hover:underline">Read guide</Link>])}/>
 
-      <WikiSectionHeading id="choose-path" intro="After the essentials, follow the system that matches what you want to do.">Choose your next guide</WikiSectionHeading>
+      <WikiSectionHeading id="choose-path">Choose your next guide</WikiSectionHeading>
       <DataTable columns={[{header:"If you want to…"},{header:"Start here"}]} rows={[
         ["Craft weapons, armour, tools or consumables",<Link key="gear" href="/wiki/advanced-crafting" className="text-[var(--tfmc-accent)] hover:underline">Weapons and Armor</Link>],
         ["Farm crops, fish or collect materials",<Link key="farm" href="/wiki/farming" className="text-[var(--tfmc-accent)] hover:underline">Farming</Link>],

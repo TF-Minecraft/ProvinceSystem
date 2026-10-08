@@ -15,7 +15,7 @@ export default function BirdMailPage() {
       lastModified="2026-09-19"
       title="Bird Mail"
     >
-      <WikiSectionHeading id="how-it-works" intro="Everything here is block and GUI interaction: there is no /mail command.">
+      <WikiSectionHeading id="how-it-works" intro="There is no /mail command.">
         Sending a letter
       </WikiSectionHeading>
       <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -54,8 +54,7 @@ export default function BirdMailPage() {
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         The bird&apos;s flight time is based on the distance from where you sent it to the
-        recipient character&apos;s last known location: roughly a quarter of a second per block,
-        floored and capped.
+        recipient character&apos;s last known location: roughly a quarter of a second per block.
       </p>
       <StatGrid
         columns={3}

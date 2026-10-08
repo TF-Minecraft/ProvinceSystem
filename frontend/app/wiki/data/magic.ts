@@ -106,8 +106,7 @@ export const magicSection: WikiSection = {
     href: "/wiki/magic",
     label: "Magic",
     category: "magic",
-    blurb:
-      "Mage weapon parts, spell runes and shrines; attunement is blocked by missing charge sources.",
+    blurb: "Mage weapon parts, spell runes and shrines.",
   },
   recipes: magicRecipes,
   commands: magicCommands,

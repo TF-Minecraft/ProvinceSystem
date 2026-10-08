@@ -54,7 +54,7 @@ export default function ProfileRedeemForm({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Redeem failed";
+            : "Couldn’t log in. Check the code and try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -96,7 +96,7 @@ export default function ProfileRedeemForm({
               Remember me
             </span>
             <span className="mt-0.5 block text-[var(--tfmc-mist)]">
-              Keep this session for 30 days on this device.
+              Stay logged in for 30 days.
             </span>
           </span>
         </label>

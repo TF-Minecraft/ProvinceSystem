@@ -19,7 +19,7 @@ export default function ArmorStatuesPage() {
         </>
       }
     >
-      <WikiSectionHeading id="getting-the-book" intro="One command hands it to you.">
+      <WikiSectionHeading id="getting-the-book">
         Getting the book
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">

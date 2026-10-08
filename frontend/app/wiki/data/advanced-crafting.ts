@@ -89,7 +89,7 @@ export const advancedCraftingRecipes: Recipe[] = [
 // ---------- Commands ----------
 
 export const advancedCraftingCommands: WikiCommandSet = {
-  system: "AdvancedCrafting",
+  system: "Advanced Crafting",
   href: "/wiki/advanced-crafting",
   commands: [
     {
@@ -116,7 +116,7 @@ export const advancedCraftingCommands: WikiCommandSet = {
 export const advancedCraftingSection: WikiSection = {
   nav: {
     href: "/wiki/advanced-crafting",
-    label: "AdvancedCrafting",
+    label: "Advanced Crafting",
     category: "professions",
     blurb: "Hammer your own weapons and armor, then invent and name your own metal alloys.",
   },

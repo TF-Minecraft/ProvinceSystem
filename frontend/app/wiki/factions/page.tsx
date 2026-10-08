@@ -18,7 +18,7 @@ export default function FactionsPage() {
       title="Factions"
       width="lg"
     >
-      <WikiSectionHeading id="getting-started" intro="The first few steps every faction goes through.">
+      <WikiSectionHeading id="getting-started">
         Founding a faction
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">

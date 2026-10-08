@@ -25,8 +25,7 @@ export default function InfestationsPage() {
         infestation lifted entirely if you clear it.
       </p>
 
-
-      <WikiSectionHeading id="where" intro="Infestations are province-wide and active day and night.">
+      <WikiSectionHeading id="where">
         Where to find one
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
@@ -34,7 +33,7 @@ export default function InfestationsPage() {
         spawning and <WikiItemLink name="Lure" /> waves run at <strong>any time of day</strong>.
       </p>
 
-      <WikiSectionHeading id="loop" intro="What actually happens once you step into an infested province.">
+      <WikiSectionHeading id="loop">
         The loop
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">

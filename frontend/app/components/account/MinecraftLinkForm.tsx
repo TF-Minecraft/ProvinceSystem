@@ -73,7 +73,7 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
     return (
       <>
         <p className="text-sm text-[var(--tfmc-mist)]">
-          Please confirm your Discord membership again before linking. Your code stays valid until it expires.
+          Please confirm your Discord membership again before linking.
         </p>
         <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-4`}>
           Confirm with Discord
@@ -83,11 +83,17 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
   }
 
   if (preview) {
-    const name = preview.minecraft_name || preview.player_uuid;
     return (
       <div>
         <p className="text-[var(--tfmc-cream)]">
-          Link Minecraft account <strong>{name}</strong> to Discord <strong>{discordName}</strong>?
+          {preview.minecraft_name ? (
+            <>
+              Link Minecraft account <strong>{preview.minecraft_name}</strong>
+            </>
+          ) : (
+            "Link this Minecraft account"
+          )}{" "}
+          to Discord <strong>{discordName}</strong>?
         </p>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           Only continue if you ran /linkdiscord yourself. Never enter a code someone else gave you.
@@ -112,9 +118,7 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
   return (
     <form onSubmit={onCheck} className="flex flex-col gap-4">
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Prove the Mojang account is yours: join the server and run{" "}
-        <code className="text-[var(--tfmc-accent)]">/linkdiscord</code>. Click the code in chat to copy it, then
-        paste it here.
+        Run <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> in game, then paste the code here.
       </p>
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">Link code</span>

@@ -25,7 +25,7 @@ export default function CookingPage() {
       }
 
     >
-      <WikiSectionHeading id="loop" intro="The furniture and the two clicks that drive every station.">
+      <WikiSectionHeading id="loop">
         The basic loop
       </WikiSectionHeading>
       <ol className="mt-4 flex flex-col gap-2 text-sm text-[var(--tfmc-mist)]">
@@ -33,7 +33,6 @@ export default function CookingPage() {
         <li>2. <strong>Right-click the furniture while holding an ingredient</strong> to place it into one of the furniture&apos;s slots.</li>
         <li>3. <strong>Right-click with an empty hand</strong> to take the item back out, or to operate the station (churn, turn the spit, stir).</li>
         <li>4. Stations that need heat must sit above a heat source. For soup, place a <WikiItemLink name="Pot" /> directly on an <WikiItemLink name="Oven Bottom" />, add logs and light them.</li>
-        <li>5. Cooking ticks once per second, so every time listed below is in real seconds, not ticks.</li>
       </ol>
 
       <WikiSectionHeading id="simple-soup" intro="A simple carrot and potato soup to get you started.">
@@ -56,7 +55,7 @@ export default function CookingPage() {
         <li>Pour the soup into a Bowl, then right-click to eat it.</li>
       </ol>
 
-      <WikiSectionHeading id="stations" intro="What to hold and what happens at each station.">
+      <WikiSectionHeading id="stations">
         Station by station
       </WikiSectionHeading>
       <DataTable
@@ -84,12 +83,12 @@ export default function CookingPage() {
           [
             furnitureLink("Milling Stone", "milling_stone"),
             "Insert 8 Wheat, then perform 4 revolutions",
-            <WikiItemText key="flour-output" text="1 batch of Flour, over 60 ticks (3 s)." />,
+            <WikiItemText key="flour-output" text="1 batch of Flour in 3 seconds." />,
           ],
           [
             furnitureLink("Mixing Bowl", "mixing_bowl"),
             <WikiItemText key="mixing-inputs" text="Add Flour + Cup of Water + Yeast, then stir 3 times" />,
-            <WikiItemText key="dough-output" text="Dough (10 ticks per stir)." />,
+            <WikiItemText key="dough-output" text="Dough (½ second per stir)." />,
           ],
           [
             <>{furnitureLink("Bread Tray", "bread_tray")} (in an Oven)</>,
@@ -110,7 +109,7 @@ export default function CookingPage() {
         ]}
       />
 
-      <WikiSectionHeading id="cutting-board" intro={<>Every recipe the <WikiItemLink name="Cutting Board" /> can run.</>}>
+      <WikiSectionHeading id="cutting-board">
         <WikiItemLink name="Cutting Board" /> recipes
       </WikiSectionHeading>
       <DataTable
@@ -121,16 +120,16 @@ export default function CookingPage() {
           { header: "Input" },
         ]}
         rows={[
-          ["cut_vegetables", <WikiItemText key="raw-vegetables" text="Any raw vegetable (Carrot, Potato, Tomato, Onion, Lettuce, Cucumber, Corn, Beetroot, Pumpkin)" />],
-          ["chop_vegetables", "Any cut vegetable"],
-          ["chop_olive", <WikiItemText key="olive" text="Olive" />],
-          ["chop_pistachio", <WikiItemText key="pistachio" text="Pistachio" />],
-          ["chop_rhubarb", <WikiItemText key="rhubarb" text="Rhubarb" />],
-          ["chop_garlic", <WikiItemText key="garlic" text="Garlic" />],
+          ["Cut vegetables", <WikiItemText key="raw-vegetables" text="Any raw vegetable (Carrot, Potato, Tomato, Onion, Lettuce, Cucumber, Corn, Beetroot, Pumpkin)" />],
+          ["Chop vegetables", "Any cut vegetable"],
+          ["Chop olive", <WikiItemText key="olive" text="Olive" />],
+          ["Chop pistachio", <WikiItemText key="pistachio" text="Pistachio" />],
+          ["Chop rhubarb", <WikiItemText key="rhubarb" text="Rhubarb" />],
+          ["Chop garlic", <WikiItemText key="garlic" text="Garlic" />],
         ]}
       />
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        <WikiItemText text="Olive, Pistachio, Rhubarb and Garlic skip the cutting step and go straight to chopped : every other vegetable above is cut first, then optionally chopped again." />
+        <WikiItemText text="Olive, Pistachio, Rhubarb and Garlic skip the cutting step and go straight to chopped; every other vegetable above is cut first, then optionally chopped again." />
       </p>
 
       <WikiSectionHeading id="cook-times">Cooking stations</WikiSectionHeading>

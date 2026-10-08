@@ -2,7 +2,7 @@ import type { WikiCommandSet, WikiSection } from "./types";
 
 /** DrinkBuilder has no in-game commands: drinks are designed on the website. */
 export const drinkBuilderCommands: WikiCommandSet = {
-  system: "DrinkBuilder",
+  system: "Drink Builder",
   href: "/wiki/drink-builder",
   commands: [],
   excludedStaffCommands: [
@@ -17,7 +17,7 @@ export const drinkBuilderCommands: WikiCommandSet = {
 export const drinkBuilderSection: WikiSection = {
   nav: {
     href: "/wiki/drink-builder",
-    label: "DrinkBuilder",
+    label: "Drink Builder",
     category: "food",
     blurb: "Design your own donator drink on the website; it brews like any server recipe.",
   },

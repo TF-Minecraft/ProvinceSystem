@@ -2,7 +2,6 @@ import {
   CommandTable,
   DataTable,
   SeeAlso,
-  StatGrid,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -46,12 +45,12 @@ export default function SittingPage() {
             ["Stairs (bottom half)", "Top-half / upside-down stairs and slabs"],
             ["Slabs (bottom half)", "Lava"],
             ["Carpets (wool and moss)", "Anything while holding an item"],
-            ["Snow layers", "N/A"],
+            ["Snow layers", "—"],
           ]}
         />
       </div>
 
-      <WikiSectionHeading id="poses" intro="For scenes that need more than sitting.">
+      <WikiSectionHeading id="poses">
         Lying down and poses
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
@@ -70,14 +69,6 @@ export default function SittingPage() {
         crawling stance; sneak to stand back up. Double-tapping sneak to start crawling is turned
         off on this server, so the command is the only way in.
       </p>
-
-      <StatGrid
-        columns={2}
-        stats={[
-          { label: "Click-to-sit reach", value: "3 blocks" },
-          { label: "Damage while seated", value: "Doesn't stand you up" },
-        ]}
-      />
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
       <CommandTable

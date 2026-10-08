@@ -46,9 +46,9 @@ describe("public wiki page entry points", () => {
 
     const html = renderToStaticMarkup(await module.default());
     expect(html, `${href} rendered no heading`).toMatch(/<h1\b/);
-    expect(html.match(/Last modified:/g), `${href} must show one revision date`).toHaveLength(1);
+    expect(html.match(/Updated <time/g), `${href} must show one revision date`).toHaveLength(1);
     expect(html, `${href} must expose a valid machine-readable revision date`).toMatch(
-      /<time dateTime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}<\/time>/
+      /<time dateTime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]{2,3} \d{4}<\/time>/
     );
 
     const publicRoutes = new Set([overviewNavItem.href, ...discoveredPages.map((page) => page.href)]);
@@ -71,8 +71,8 @@ describe("public wiki page entry points", () => {
 
   it("renders the overview through the same dated frame", () => {
     const html = renderToStaticMarkup(<WikiOverviewPage />);
-    expect(html.match(/Last modified:/g)).toHaveLength(1);
-    expect(html).toMatch(/<time dateTime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}<\/time>/);
+    expect(html.match(/Updated <time/g)).toHaveLength(1);
+    expect(html).toMatch(/<time dateTime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]{2,3} \d{4}<\/time>/);
   });
 
   it("keeps every static and dynamic wiki entry point on the dated frame", () => {

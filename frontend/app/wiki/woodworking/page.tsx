@@ -6,10 +6,10 @@ export default function WoodworkingPage() {
     <WikiPage
       lastModified="2026-09-18"
       title="Woodworking Furniture"
-      intro={`Woodworkers build decorative furniture at the Woodworking Station. There are ${woodworkingProjects.length} pieces across ${woodworkingCategories.length} styles; pick one below to see its model.`}
+      intro={`Woodworkers build decorative furniture at the Woodworking Station: ${woodworkingProjects.length} pieces in ${woodworkingCategories.length} styles.`}
       width="lg"
     >
-      <WikiSectionHeading id="catalogue" intro="Choose a style, then a piece, to rotate its 3D model.">Furniture pieces</WikiSectionHeading>
+      <WikiSectionHeading id="catalogue">Furniture pieces</WikiSectionHeading>
       <WoodworkingGallery categories={woodworkingCategories} projects={woodworkingProjects} />
 
       <WikiSectionHeading id="materials" intro="Every piece is made from these five materials.">Materials</WikiSectionHeading>

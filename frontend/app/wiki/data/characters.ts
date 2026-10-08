@@ -3,7 +3,7 @@ import type { WikiCommandSet, WikiSection } from "./types";
 // ---------- RPCharacters ----------
 
 export const charactersCommands: WikiCommandSet = {
-  system: "RPCharacters",
+  system: "Characters",
   href: "/wiki/characters",
   commands: [
     {
@@ -55,8 +55,8 @@ export const charactersCommands: WikiCommandSet = {
     },
     {
       command: "/rpcharacter namecolour <#hex...>",
-      description: "Sets your character's name colour, or a gradient across several stops.",
-      notes: "How many colour stops you can use depends on your rank.",
+      description: "Sets your character's name colour, or a gradient across several colours.",
+      notes: "How many colours you can use depends on your rank.",
     },
     {
       command: "/rpcharacter gender <Male/Female/Other>",
@@ -205,7 +205,7 @@ export const charactersCommands: WikiCommandSet = {
 export const charactersSection: WikiSection = {
   nav: {
     href: "/wiki/characters",
-    label: "RPCharacters",
+    label: "Characters",
     category: "character",
     blurb: "Create your character and learn how in-character chat, clues and injuries work.",
   },

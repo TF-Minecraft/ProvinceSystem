@@ -74,7 +74,7 @@ export async function getProfileDashboard(
   const data = await parseJson(res);
   if (!res.ok) {
     throw new ProfileApiError(
-      detailMessage(data, `Profile load failed (${res.status})`),
+      detailMessage(data, "Couldn’t load your profile. Please try again."),
       res.status
     );
   }

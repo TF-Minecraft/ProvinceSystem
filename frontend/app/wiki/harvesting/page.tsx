@@ -21,10 +21,7 @@ export default function HarvestingPage() {
         The only crops this affects: Wheat, Potatoes, Carrots, Beetroots, and Nether Wart.
       </p>
 
-      <WikiSectionHeading
-        id="radius"
-        intro="These are the hoes' built-in Efficiency levels and harvest areas."
-      >
+      <WikiSectionHeading id="radius">
         Hoe harvest areas
       </WikiSectionHeading>
       <DataTable

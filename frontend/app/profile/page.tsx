@@ -25,7 +25,7 @@ import {
 } from "../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../lib/characters/sheetDev";
-import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { formatExpiresIn } from "../../lib/skins/formatTime";
 
 type TabId = "characters" | "skins" | "drinks" | "items";
 
@@ -200,22 +200,20 @@ export default function ProfilePage() {
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Create a profile token with{" "}
-        <code className="text-[var(--tfmc-accent)]">/token create profile</code>, then log in to
-        see your characters, submissions, and kit custom items.
-      </p>
 
       {!valid ? (
-        <ProfileRedeemForm onRedeemed={onRedeemed} />
+        <>
+          <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game,
+            then enter the code below.
+          </p>
+          <ProfileRedeemForm onRedeemed={onRedeemed} />
+        </>
       ) : (
         <>
           <SupporterPanel sessionToken={session!.session_token} />
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-stone)]">
-            <span>
-              Session expires {formatExpiresIn(session!.expires_at)} (
-              {formatLocal(session!.expires_at)})
-            </span>
+            <span>Session expires {formatExpiresIn(session!.expires_at)}</span>
             <button
               type="button"
               onClick={() => void onLogout()}
@@ -283,16 +281,10 @@ export default function ProfilePage() {
                 </>
               ) : null}
               {tab === "skins" ? (
-                <ProfileSubmissionList
-                  skins={dashboard.skins}
-                  drinks={[]}
-                />
+                <ProfileSubmissionList kind="skins" rows={dashboard.skins} />
               ) : null}
               {tab === "drinks" ? (
-                <ProfileSubmissionList
-                  skins={[]}
-                  drinks={dashboard.drinks}
-                />
+                <ProfileSubmissionList kind="drinks" rows={dashboard.drinks} />
               ) : null}
               {tab === "items" ? (
                 <ProfileCustomItemsList items={dashboard.custom_items} />

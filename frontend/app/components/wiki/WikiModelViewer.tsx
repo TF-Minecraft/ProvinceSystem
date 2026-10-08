@@ -126,7 +126,7 @@ export default function WikiModelViewer({
         return;
       }
       if (disposed || !Array.isArray(model.elements) || !model.elements.length) {
-        if (!disposed) setError("This model has no geometry.");
+        if (!disposed) setError("Preview unavailable.");
         return;
       }
 
@@ -199,7 +199,7 @@ export default function WikiModelViewer({
 
       if (!group.children.length) {
         for (const d of disposables) d.dispose();
-        if (!disposed) setError("This model has no textured faces.");
+        if (!disposed) setError("Preview unavailable.");
         return;
       }
 

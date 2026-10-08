@@ -8,10 +8,9 @@ export default function ThieveryPage() {
       title="Thievery"
       intro={
         <>
-          Thievery is the server&apos;s in-house crime system. You can lock your own doors and
-          chests with keys, and you can break into other people&apos;s doors, chests, display
-          furniture and graves with lockpicks, pickpocket players, or hold someone up in a
-          consensual timed robbery. Almost everything you do here can leave a{" "}
+          Lock your things, or steal other people&apos;s. Keys lock your doors and chests;
+          lockpicks break into other people&apos;s doors, chests, display furniture and graves. You
+          can also pickpocket players, or hold someone up in a consensual timed robbery. Almost everything you do here can leave a{" "}
           <strong>clue</strong> pointing back at your character.
         </>
       }
@@ -52,12 +51,11 @@ export default function ThieveryPage() {
             <WikiItemText key={`${c.clickOnto}-target`} text={c.clickOnto} />,
             <WikiItemText key={`${c.result}-result`} text={c.result} />,
           ])}
-          caption="Copying a key to paper is on a 240-minute (4 hour) per-player, per-key cooldown."
+          caption="Copying a key to paper is on a 4-hour per-player, per-key cooldown."
         />
       </div>
 
-
-      <WikiSectionHeading id="lockpicking" intro="The offensive loop: breaking into someone else's stuff.">
+      <WikiSectionHeading id="lockpicking" intro="Breaking into someone else's stuff.">
         Lockpicking
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">

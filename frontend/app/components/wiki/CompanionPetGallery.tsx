@@ -37,9 +37,6 @@ export default function CompanionPetGallery() {
         label={pet.name}
         height="sm"
       />
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Drag to look around your companion.
-      </p>
     </div>
   );
 }

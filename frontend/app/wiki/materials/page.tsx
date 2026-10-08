@@ -20,11 +20,7 @@ export default function MaterialsPage() {
   }));
 
   return (
-    <WikiPage lastModified="2026-09-27" title="Materials" width="lg" intro={<>
-        The custom material catalogue used across every crafting station on the server :
-        ingots, herbal alchemy components, magical cores, and more. Icons shown are the exact
-        item textures players see in their inventory.
-      </>}>
+    <WikiPage lastModified="2026-09-27" title="Materials" width="lg" intro="Every custom material: ingots, alchemy components, magical cores and more.">
 
       {byStation.map(({ station, recipes }) =>
         recipes.length ? (
@@ -45,10 +41,6 @@ export default function MaterialsPage() {
         <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
           Gathered materials and loot
         </h2>
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          Open a material for its acquisition methods. Some materials
-          can also be unpacked from storage blocks; those conversions are shown on their detail pages.
-        </p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {dropOnlyMaterials.map((m) => (
             <Link
