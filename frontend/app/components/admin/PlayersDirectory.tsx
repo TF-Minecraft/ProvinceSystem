@@ -241,7 +241,7 @@ function CharacterTable({ rows, known, sorting }: { rows: CharacterRow[]; known:
     <Table
       head={
         <>
-          <SortHeader column="name" label="Character" sorting={sorting} className={headClass} />
+          <SortHeader column="name" label="Character" sorting={sorting} className={`sm:w-[45%] ${headClass}`} />
           <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Player</th>
           <SortHeader column="last_seen" label="Player last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
@@ -373,79 +373,81 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
 
   return (
     <section aria-label="Players" className="mt-6">
-      {/* Search gets a row of its own, so the view tabs never squeeze it. */}
-      <label className="sr-only" htmlFor="player-search">
-        Search players
-      </label>
-      <div className="relative">
-        <svg
-          aria-hidden
-          viewBox="0 0 20 20"
-          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--tfmc-stone)]"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="8.5" cy="8.5" r="5.5" />
-          <path d="M13 13l4 4" strokeLinecap="round" />
-        </svg>
-        <input
-          id="player-search"
-          type="search"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search by Minecraft, Discord (handle or nickname) or character name, or UUID"
-          autoComplete="off"
-          spellCheck={false}
-          className={inputClass}
-        />
-        {query ? (
-          <button
-            type="button"
-            aria-label="Clear search"
-            onClick={() => {
-              setQuery("");
-              setSearch("");
+      {/* Search and the view tabs share a row on wide screens; the tabs move under it before they squeeze it. */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <label className="sr-only" htmlFor="player-search">
+          Search players
+        </label>
+        <div className="relative min-w-0 flex-1">
+          <svg
+            aria-hidden
+            viewBox="0 0 20 20"
+            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--tfmc-stone)]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="8.5" cy="8.5" r="5.5" />
+            <path d="M13 13l4 4" strokeLinecap="round" />
+          </svg>
+          <input
+            id="player-search"
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
               setPage(1);
             }}
-            className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-xl text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
-          >
-            ×
-          </button>
-        ) : null}
-      </div>
+            placeholder="Search by Minecraft, Discord (handle or nickname) or character name, or UUID"
+            autoComplete="off"
+            spellCheck={false}
+            className={inputClass}
+          />
+          {query ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => {
+                setQuery("");
+                setSearch("");
+                setPage(1);
+              }}
+              className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-xl text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
 
-      <div
-        role="tablist"
-        aria-label="Player views"
-        className="mt-3 grid grid-cols-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] p-0.5 sm:inline-grid"
-      >
-        {VIEWS.map((option, index) => (
-          <button
-            key={option.key}
-            ref={(el) => {
-              tabs.current[index] = el;
-            }}
-            id={`players-tab-${option.key}`}
-            type="button"
-            role="tab"
-            aria-selected={view === option.key}
-            aria-controls={PANEL_ID}
-            tabIndex={view === option.key ? 0 : -1}
-            onClick={() => choose(option.key)}
-            onKeyDown={(event) => onTabKey(event, index)}
-            className={`min-h-11 rounded-sm px-2 text-sm transition-colors sm:min-h-9 sm:px-4 ${
-              view === option.key
-                ? "bg-[var(--tfmc-accent)] font-semibold text-[var(--tfmc-forest-deep)]"
-                : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+        <div
+          role="tablist"
+          aria-label="Player views"
+          className="grid shrink-0 grid-cols-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] p-0.5 sm:self-start lg:self-auto"
+        >
+          {VIEWS.map((option, index) => (
+            <button
+              key={option.key}
+              ref={(el) => {
+                tabs.current[index] = el;
+              }}
+              id={`players-tab-${option.key}`}
+              type="button"
+              role="tab"
+              aria-selected={view === option.key}
+              aria-controls={PANEL_ID}
+              tabIndex={view === option.key ? 0 : -1}
+              onClick={() => choose(option.key)}
+              onKeyDown={(event) => onTabKey(event, index)}
+              className={`min-h-11 rounded-sm px-2 text-sm transition-colors sm:min-h-9 sm:px-4 ${
+                view === option.key
+                  ? "bg-[var(--tfmc-accent)] font-semibold text-[var(--tfmc-forest-deep)]"
+                  : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div id={PANEL_ID} role="tabpanel" aria-labelledby={`players-tab-${view}`}>

@@ -1,4 +1,4 @@
-/** The reading column for staff pages without a map: one width, on the frame's left edge. */
+/** The column every staff page sits in: centred, at the same width as the title and tabs. */
 export default function AdminColumn({ children }: { children: React.ReactNode }) {
-  return <div className="flex max-w-5xl flex-col">{children}</div>;
+  return <div className="mx-auto flex w-full max-w-[72rem] flex-col">{children}</div>;
 }

@@ -27,7 +27,7 @@ export function adminSection(pathname: string): AdminSection | null {
 export default function AdminNav() {
   const current = adminSection(usePathname() ?? "");
   return (
-    <nav aria-label="Staff panel" className="mt-4 flex gap-4 border-b sm:gap-5 border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
+    <nav aria-label="Staff panel" className="flex gap-4 sm:gap-5">
       {LINKS.map((link) => (
         <Link
           key={link.key}

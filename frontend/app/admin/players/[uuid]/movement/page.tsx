@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import AdminColumn from "../../../../components/admin/AdminColumn";
 import PlayerMovementPage from "../../../../components/admin/PlayerMovementPage";
 import PlayerTabs from "../../../../components/admin/PlayerTabs";
 
@@ -7,7 +8,7 @@ export default async function AdminPlayerMovementPage({ params }: { params: Prom
   const { uuid } = await params;
   const id = decodeURIComponent(uuid);
   return (
-    <>
+    <AdminColumn>
       <Link href="/admin/players" className="mt-4 text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
         ← All players
       </Link>
@@ -17,6 +18,6 @@ export default async function AdminPlayerMovementPage({ params }: { params: Prom
       <Suspense fallback={<p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>}>
         <PlayerMovementPage key={id} uuid={id} />
       </Suspense>
-    </>
+    </AdminColumn>
   );
 }

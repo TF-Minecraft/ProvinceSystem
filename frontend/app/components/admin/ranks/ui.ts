@@ -1,6 +1,6 @@
 /** Class names shared by the Ranks pages, matching the rest of the staff panel. */
 export const panelClass =
-  "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
+  "mt-6 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] p-5 sm:p-6";
 export const headingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 export const buttonClass =
   "inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50";

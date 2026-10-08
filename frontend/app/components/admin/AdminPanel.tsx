@@ -16,7 +16,7 @@ import AccountActions from "./AccountActions";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 
 const panelClass =
-  "mt-6 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-5";
+  "mt-6 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] p-5 sm:p-6";
 const headingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 const buttonClass =
   "inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50";
@@ -87,42 +87,45 @@ export default function AdminPanel() {
         change here is recorded with your reason.
       </p>
 
-      <section className={panelClass} aria-label="Staff">
-        <h2 className={headingClass}>Staff</h2>
-        <AccountTable accounts={staff} me={me} onChanged={afterChange} empty="No staff yet." />
-      </section>
+      {/* The roster beside the lookup on wide screens; stacked below that. */}
+      <div className="grid gap-x-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+        <section className={panelClass} aria-label="Staff">
+          <h2 className={headingClass}>Staff</h2>
+          <AccountTable accounts={staff} me={me} onChanged={afterChange} empty="No staff yet." />
+        </section>
 
-      <section className={panelClass} aria-label="Find an account">
-        <h2 className={headingClass}>Find an account</h2>
-        <form onSubmit={onSearch} className="mt-3 flex flex-wrap gap-3">
-          <label className="sr-only" htmlFor="admin-lookup">
-            Discord username, display name or ID
-          </label>
-          <input
-            id="admin-lookup"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Discord username, display name or ID"
-            autoComplete="off"
-            spellCheck={false}
-            className={`${inputClass} min-w-0 flex-1`}
-          />
-          <button type="submit" disabled={searching} className={buttonClass}>
-            {searching ? "Searching…" : "Find"}
-          </button>
-        </form>
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-          Exact matches only. People appear once they have signed in to the website.
-        </p>
-        {searchError ? (
-          <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
-            {searchError}
+        <section className={panelClass} aria-label="Find an account">
+          <h2 className={headingClass}>Find an account</h2>
+          <form onSubmit={onSearch} className="mt-3 flex flex-wrap gap-3">
+            <label className="sr-only" htmlFor="admin-lookup">
+              Discord username, display name or ID
+            </label>
+            <input
+              id="admin-lookup"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Discord username, display name or ID"
+              autoComplete="off"
+              spellCheck={false}
+              className={`${inputClass} min-w-0 flex-1`}
+            />
+            <button type="submit" disabled={searching} className={buttonClass}>
+              {searching ? "Searching…" : "Find"}
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
+            Exact matches only. People appear once they have signed in to the website.
           </p>
-        ) : null}
-        {results ? (
-          <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No account matches that." />
-        ) : null}
-      </section>
+          {searchError ? (
+            <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
+              {searchError}
+            </p>
+          ) : null}
+          {results ? (
+            <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No account matches that." />
+          ) : null}
+        </section>
+      </div>
     </>
   );
 }
