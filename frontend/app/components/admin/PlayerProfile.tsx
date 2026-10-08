@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AccountApiError } from "../../../lib/account/api";
 import {
@@ -20,7 +21,7 @@ import { formatLocal } from "../../../lib/skins/formatTime";
 import { formatAgo, formatDate, formatEpoch } from "../../../lib/admin/time";
 import { groupByDay, sessionRow } from "../../../lib/admin/sessionDays";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
-import MovementCard from "./MovementCard";
+import PlayerTabs, { profileTab } from "./PlayerTabs";
 import AccountActions from "./AccountActions";
 import PlayerActivity from "./PlayerActivity";
 import {
@@ -39,6 +40,10 @@ type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message
 export default function PlayerProfile({ uuid }: { uuid: string }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [me, setMe] = useState<AdminMe | null>(null);
+  const tab = profileTab(useSearchParams().get("tab"));
+  // Tabs open once stay mounted (hidden), so going back keeps their pages, filters and scroll.
+  const [opened, setOpened] = useState<Set<string>>(() => new Set([tab]));
+  if (!opened.has(tab)) setOpened(new Set(opened).add(tab));
   // Movement is for admins and the owner; mods see the profile without it.
   const movement = me?.capabilities.includes("view_player_movement") ?? false;
 
@@ -111,9 +116,20 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         ) : null}
       </header>
 
-      {movement ? <MovementCard uuid={profile.uuid} /> : null}
+      <PlayerTabs uuid={profile.uuid} current={tab} movement={movement} />
 
-      <section className={panelClass} aria-label="Discord and website">
+      {opened.has("activity") ? (
+        <div hidden={tab !== "activity"}>
+          <PlayerActivity uuid={profile.uuid} />
+        </div>
+      ) : null}
+      {opened.has("sessions") ? (
+        <div hidden={tab !== "sessions"}>
+          <Sessions uuid={profile.uuid} movement={movement} />
+        </div>
+      ) : null}
+
+      <section hidden={tab !== "discord"} className={panelClass} aria-label="Discord and website">
         <h3 className={headingClass}>Discord and website</h3>
         {profile.discord ? (
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -158,7 +174,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}
       </section>
 
-      <section className={panelClass} aria-label="Characters">
+      <section hidden={tab !== "characters"} className={panelClass} aria-label="Characters">
         <h3 className={headingClass}>Characters</h3>
         {profile.characters.length ? (
           <ul className="mt-3 space-y-1 text-sm">
@@ -176,8 +192,6 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         )}
       </section>
 
-      <Sessions uuid={profile.uuid} movement={movement} />
-      <PlayerActivity uuid={profile.uuid} />
     </>
   );
 }

@@ -16,6 +16,10 @@ import {
   type PlayerProfile as Profile,
 } from "../../../lib/admin/api";
 
+// The profile's tab is `?tab=`; each test sets the query it opens with.
+const nav = vi.hoisted(() => ({ query: "" }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(nav.query) }));
+
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../lib/admin/api")>(),
   getAdminMe: vi.fn(),
@@ -24,8 +28,6 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayerActivity: vi.fn(),
 }));
 
-// The movement card asks who is signed in; it has its own tests.
-vi.mock("./MovementCard", () => ({ default: () => null }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
 const NOW = 2_000_000_000;
@@ -57,6 +59,7 @@ function entry(id: string, extra: Partial<ActivityEntry>): ActivityEntry {
 }
 
 beforeEach(() => {
+  nav.query = "";
   vi.spyOn(Date, "now").mockReturnValue(NOW * 1000);
   vi.mocked(getPlayer).mockResolvedValue(PROFILE);
   // A mod: no movement.
@@ -98,7 +101,32 @@ it("shows identity, Discord and characters", async () => {
   expect(screen.getByText("Hazel Stonebrook")).toBeTruthy();
 });
 
+it("opens on Activity, with the other sections behind tabs", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  const tabs = await screen.findByRole("navigation", { name: "Player" });
+  expect(within(tabs).getAllByRole("link").map((l) => l.textContent)).toEqual(["Activity", "Sessions", "Characters", "Discord"]);
+  expect(within(tabs).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("page");
+  expect(within(tabs).getByRole("link", { name: "Sessions" }).getAttribute("href")).toBe(`/admin/players/${UUID}?tab=sessions`);
+  expect(await screen.findByRole("region", { name: "Recent activity" })).toBeTruthy();
+  // Sessions are not even asked for until their tab is opened; the rest is hidden.
+  expect(getPlayerSessions).not.toHaveBeenCalled();
+  expect(screen.queryByRole("region", { name: "Characters" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "Discord and website" })).toBeNull();
+});
+
+it("offers Movement to those who may see it, and opens a tab from the address", async () => {
+  vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_player_movement"] } as never);
+  nav.query = "tab=characters";
+  render(<PlayerProfile uuid={UUID} />);
+  expect(await screen.findByRole("region", { name: "Characters" })).toBeTruthy();
+  expect(screen.queryByRole("region", { name: "Recent activity" })).toBeNull();
+  const movement = await screen.findByRole("link", { name: "Movement" });
+  expect(movement.getAttribute("href")).toBe(`/admin/players/${UUID}/movement`);
+  expect(getPlayerActivity).not.toHaveBeenCalled();
+});
+
 it("groups sessions by day and hedges ones without a logout", async () => {
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   await within(sessions).findByText("1 h");
@@ -112,6 +140,7 @@ it("groups sessions by day and hedges ones without a logout", async () => {
 
 it("links each session to its route for those who may see movement", async () => {
   vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_player_movement"] } as never);
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   const today = await within(sessions).findByRole("link", { name: /^Today, \d\d:\d\d to \d\d:\d\d, 1 h$/ });
@@ -153,6 +182,7 @@ it("filters by kind from the first page", async () => {
 
 it("reports CoreProtect problems per section", async () => {
   vi.mocked(getPlayerSessions).mockResolvedValue({ sessions: [], next: null, coreprotect: { status: "unavailable", reason: "timeout" } });
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   expect(await within(sessions).findByText(/CoreProtect took too long/)).toBeTruthy();
@@ -222,6 +252,7 @@ it("retries a failed sessions page from the same cursor", async () => {
     })
     .mockRejectedValueOnce(new AccountApiError("bad_cursor", 400))
     .mockResolvedValueOnce({ sessions: [], next: null, coreprotect: { status: "available" } });
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   fireEvent.click(await within(sessions).findByRole("button", { name: "Load more sessions" }));

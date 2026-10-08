@@ -253,6 +253,9 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
   const [showsMessages, setShowsMessages] = useState(false);
   const [names, setNames] = useState<WorldNames>({});
   const request = useRef(0);
+  const strip = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const [hold, setHold] = useState<number | null>(null);
 
   const fetchPage = useCallback(
     async (before: string | null) => {
@@ -287,6 +290,12 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
   }, [fetchPage]);
 
   function choose(next: string[]) {
+    // The list is the bottom of the page: emptied, the page would shrink and the browser would
+    // pull it up under the finger. Keep it as tall as the screen below the filters was showing.
+    const bottom = strip.current?.getBoundingClientRect().bottom;
+    if (bottom !== undefined && list.current) {
+      setHold(Math.max(0, Math.min(list.current.offsetHeight, window.innerHeight - bottom)));
+    }
     // The old filter's rows and cursor must not be paged into the new one.
     setNext(null);
     setSearchedTo(null);
@@ -319,6 +328,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
       </p>
       {/* One row that scrolls sideways on a phone; wraps where there is room. */}
       <div
+        ref={strip}
         role="group"
         aria-label="Show"
         className="scroll-strip mt-3 flex gap-1.5 overflow-x-auto overscroll-x-contain py-1 sm:flex-wrap sm:overflow-visible"
@@ -332,39 +342,41 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
           </button>
         ))}
       </div>
-      {kinds.length ? (
-        <p className="mt-1 text-xs text-[var(--tfmc-stone)] sm:hidden">
-          Showing {kinds.map((kind) => (KIND_LABELS[kind] ?? kind).toLowerCase()).join(", ")}
-        </p>
-      ) : null}
-      {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
-      {state !== "loading" && !entries.length && !failure ? (
-        <p className={`mt-3 ${mutedClass}`}>{searchedTo ? "No matching activity in the period searched." : empty}</p>
-      ) : null}
-      {days.length ? (
-        <div className="mt-4 space-y-4">
-          {days.map((day) => (
-            <div key={day.key}>
-              <h4 className={dayHeadingClass}>{day.label}</h4>
-              <ul aria-label={day.label} className={`mt-1 text-sm ${dividerClass}`}>
-                {day.rows.map((row) => (
-                  <Row key={row.key} row={row} names={names} />
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {searchedTo && next && !failure ? (
-        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Searched back to {formatEpoch(searchedTo)}.</p>
-      ) : null}
-      {failure ? (
-        <Retry failure={failure} busy={state !== "ready"} onRetry={() => void fetchPage(failure.before)} />
-      ) : next ? (
-        <button type="button" className={moreClass} disabled={state !== "ready"} onClick={() => void fetchPage(next)}>
-          {state === "more" ? "Loading…" : searchedTo ? "Search further back" : "Load more"}
-        </button>
-      ) : null}
+      <div ref={list} style={hold ? { minHeight: hold } : undefined}>
+        {kinds.length ? (
+          <p className="mt-1 text-xs text-[var(--tfmc-stone)] sm:hidden">
+            Showing {kinds.map((kind) => (KIND_LABELS[kind] ?? kind).toLowerCase()).join(", ")}
+          </p>
+        ) : null}
+        {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
+        {state !== "loading" && !entries.length && !failure ? (
+          <p className={`mt-3 ${mutedClass}`}>{searchedTo ? "No matching activity in the period searched." : empty}</p>
+        ) : null}
+        {days.length ? (
+          <div className="mt-4 space-y-4">
+            {days.map((day) => (
+              <div key={day.key}>
+                <h4 className={dayHeadingClass}>{day.label}</h4>
+                <ul aria-label={day.label} className={`mt-1 text-sm ${dividerClass}`}>
+                  {day.rows.map((row) => (
+                    <Row key={row.key} row={row} names={names} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {searchedTo && next && !failure ? (
+          <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Searched back to {formatEpoch(searchedTo)}.</p>
+        ) : null}
+        {failure ? (
+          <Retry failure={failure} busy={state !== "ready"} onRetry={() => void fetchPage(failure.before)} />
+        ) : next ? (
+          <button type="button" className={moreClass} disabled={state !== "ready"} onClick={() => void fetchPage(next)}>
+            {state === "more" ? "Loading…" : searchedTo ? "Search further back" : "Load more"}
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }
