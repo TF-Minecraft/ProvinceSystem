@@ -3,7 +3,7 @@ import { formatClock, formatDay } from "./movement";
 import { formatDuration } from "./time";
 
 /** A local calendar day, `2026-10-7`, so that days compare across years and clock changes. */
-function dayKey(at: number): string {
+export function dayKey(at: number): string {
   const d = new Date(at * 1000);
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }

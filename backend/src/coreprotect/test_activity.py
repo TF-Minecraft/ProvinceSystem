@@ -5,6 +5,7 @@ import pytest
 
 from src.coreprotect import activity, cursors, maps
 from src.coreprotect.reader import CoreProtectConfig, Reader
+from src.coreprotect.test_names import vanilla  # noqa: F401  (fixture)
 
 SCOPE = "main:0615a817-8cb4-4aef-95f7-f6c9bf7611b8"
 
@@ -17,7 +18,7 @@ def read(db, ids, kinds=activity.KINDS, before=None, limit=20):
     return activity.build(raw, names, SCOPE)
 
 
-def test_decodes_each_source(coreprotect):
+def test_decodes_each_source(coreprotect, vanilla):
     me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
     victim = coreprotect.user("Bob", "00000000-0000-0000-0000-000000000002")
     coreprotect.block(me, 1, 0)
@@ -60,6 +61,12 @@ def test_decodes_each_source(coreprotect):
     assert by_kind["container"]["rolled_back"] == "rolled back (player inventory)"
     assert entries[9]["victim"] == {"minecraft_name": "Bob", "uuid": "00000000-0000-0000-0000-000000000002"}
     assert by_kind["block"]["world"] == "TFMC_Map"
+    shown = [(e["target_info"] or {}).get("name") for e in entries]
+    assert shown == [None, None, None, None, "Sign", "Sheep", "Iron Ingot", "Iron Ingot", "Sheep", "Bob", "Cow",
+                     "Oak Door", "Stone", "Stone"]
+    assert by_kind["block"]["target_info"] == {"name": "Stone", "source": "vanilla", "id": "stone",
+                                               "vanilla_name": "Stone", "source_id": None, "custom_name": None}
+    assert entries[9]["target_info"]["source"] == "player"
     text = json.dumps(entries)
     for secret in ("meet me", "secret base", "secret sign", "chat is never", "4 5 6"):
         assert secret not in text
@@ -225,3 +232,68 @@ def test_rollback_states(coreprotect, state, label):
     coreprotect.block(me, 1, 0, rolled_back=state)
     coreprotect.container(me, 2, 1, rolled_back=state)
     assert [e["rolled_back"] for e in read(coreprotect, [me])["entries"]] == [label, label]
+
+
+def test_plain_chat_takes_the_channel_last_switched_to_since_login(coreprotect, monkeypatch):
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    coreprotect.chat(me, 5, "before any login")
+    coreprotect.session(me, 10, 1)
+    coreprotect.chat(me, 11, "in rp by default")
+    coreprotect.command(me, 12, "/channel looc")
+    coreprotect.chat(me, 13, "in looc")
+    coreprotect.command(me, 14, "/channel fooc")  # not switchable: refused, still LOOC
+    coreprotect.command(me, 15, "/channel")  # only says which channel is active
+    coreprotect.chat(me, 16, "still looc")
+    coreprotect.command(me, 17, "/RPCharacters:channel me")  # an alias of action
+    coreprotect.chat(me, 17, "an emote, same second")
+    coreprotect.session(me, 20, 0)
+    coreprotect.session(me, 30, 1)
+    coreprotect.chat(me, 31, "back to rp after logging in again")
+    config = CoreProtectConfig(path=str(coreprotect.path), server="main", label="", ping_seconds=60)
+    with Reader(config) as r:
+        names = maps.get(r)
+        raw = activity.fetch(r, names, [me], ("chat",), None, 20, full_text=True)
+    chats = [(e["message"], e["channel"], e["channel_inferred"]) for e in activity.build(raw, names, SCOPE)["entries"]]
+    assert chats == [
+        ("back to rp after logging in again", "RP", True),
+        ("an emote, same second", "Emote", True),
+        ("still looc", "LOOC", True),
+        ("in looc", "LOOC", True),
+        ("in rp by default", "RP", True),
+        ("before any login", None, False),
+    ]
+
+    # A switch further back than the scan reaches is unknown, not the default.
+    monkeypatch.setattr(activity, "SWITCH_SCAN", 2)
+    with Reader(config) as r:
+        raw = activity.fetch(r, names, [me], ("chat",), None, 20, full_text=True)
+    assert activity.build(raw, names, SCOPE)["entries"][2]["channel"] is None
+
+
+def test_channel_switches_are_parsed_like_rpcharacters():
+    assert activity.switched_to("/channel OOC") == "ooc"
+    assert activity.switched_to("/channel me") == "action"
+    assert activity.switched_to("/channel gooc") is None
+    assert activity.switched_to("/channel action erana glances over") is None
+    assert activity.switched_to("/channeltoggle ooc") is None
+    assert activity.channel_of("/RPCharacters:LOOC hi") == "LOOC"
+    assert activity.channel_of("/channel looc") is None
+
+
+def test_channel_lookups_are_per_session_not_per_line(coreprotect):
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    coreprotect.session(me, 10, 1)
+    coreprotect.command(me, 40, "/channel ooc")
+    for t in range(20, 80):
+        coreprotect.chat(me, t, f"line {t}")
+    config = CoreProtectConfig(path=str(coreprotect.path), server="main", label="", ping_seconds=60)
+    with Reader(config) as r:
+        source = next(s for s in activity.SOURCES if s.name == "chat")
+        rows = [(source, dict(row)) for row in r.rows("SELECT user, time FROM co_chat ORDER BY time DESC")]
+        statements = []
+        real = r.rows
+        r.rows = lambda sql, params=(): statements.append(sql) or real(sql, params)
+        activity._infer_channels(r, rows)
+    assert len(statements) <= 4
+    channels = {row["time"]: row["channel"] for _, row in rows}
+    assert channels[39] == "rp" and channels[40] == "ooc" and channels[79] == "ooc"

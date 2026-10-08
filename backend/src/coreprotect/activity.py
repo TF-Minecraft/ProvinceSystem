@@ -15,9 +15,10 @@ for the final page; build() extracts labels after the database reader closes.
 """
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass
 
-from . import cursors, metadata
+from . import cursors, metadata, names
 from .maps import Maps
 from .reader import Reader
 
@@ -41,6 +42,49 @@ _COMMAND_TEXT = (
 )
 _FULL_COMMAND_TEXT = f"CASE WHEN {_SKILL} THEN substr({_CAST}, 1, 80) ELSE substr(message, 1, {MESSAGE_MAX}) END"
 
+# RPCharacters' chat channels, from Main's plugins/RPCharacters/chat.yml:
+# id → (label, the commands that speak in it, `/looc hi`).
+_CHANNELS = {
+    "rp": ("RP", ("rp",)), "shout": ("Shout", ("shout",)), "yell": ("Yell", ("yell", "y")),
+    "whisper": ("Whisper", ("whisper", "wh")), "action": ("Emote", ("me",)), "dm": ("DM", ("dm", "narrate")),
+    "scene": ("Scene", ("scene",)), "ooc": ("OOC", ("ooc",)), "looc": ("LOOC", ("looc",)),
+    "gooc": ("GOOC", ("gooc",)), "fooc": ("FOOC", ("fooc",)), "pooc": ("POOC", ("pooc",)),
+    "rooc": ("ROOC", ("rooc",)), "admin": ("Admin", ("admin", "a")), "helper": ("Helper", ("helper", "h")),
+}
+_ALIASES = {alias: cid for cid, (_, aliases) in _CHANNELS.items() for alias in aliases}
+# Plain chat goes to the channel last chosen with `/channel <name>` since the
+# player logged in (RPCharacters keeps it in memory and forgets it on quit),
+# else the default. Only these may be chosen (chat.yml channel-switcher).
+DEFAULT_CHANNEL = "rp"
+SWITCHABLE = frozenset({"rp", "ooc", "looc", "whisper", "shout", "yell", "action"})
+# How many of a session's commands to look back through for the last switch.
+SWITCH_SCAN = 5000
+_FIRST_WORD = "lower(CASE WHEN instr(message, ' ') > 0 THEN substr(message, 1, instr(message, ' ') - 1) ELSE message END)"
+_CHANNEL = "{} IN ({})".format(_FIRST_WORD, ", ".join(
+    f"'/{prefix}{alias}'" for alias in _ALIASES for prefix in ("", "rpcharacters:")))
+_SWITCH = ("(lower(substr(message, 1, 9)) = '/channel ' "
+           "OR lower(substr(message, 1, 22)) = '/rpcharacters:channel ')")
+
+
+def _label(word: str) -> str:
+    return word.lower().removeprefix("/").removeprefix("rpcharacters:")
+
+
+def channel_of(command: str | None) -> str | None:
+    """The chat channel a command speaks in (`/looc hi` → LOOC), or None."""
+    cid = _ALIASES.get(_label((command or "").split(" ", 1)[0]))
+    return _CHANNELS[cid][0] if cid else None
+
+
+def switched_to(command: str) -> str | None:
+    """The channel a successful `/channel <name>` makes the default, or None."""
+    words = command.split(" ")
+    if len(words) != 2 or _label(words[0]) != "channel":
+        return None
+    name = words[1].lower()
+    cid = name if name in _CHANNELS else _ALIASES.get(name)
+    return cid if cid in SWITCHABLE else None
+
 
 @dataclass(frozen=True)
 class Source:
@@ -53,6 +97,8 @@ class Source:
     full_columns: str | None = None
     # Read only when the caller may read messages.
     sensitive: bool = False
+    # Kinds used instead when the caller may read messages.
+    full_kinds: dict[str, str] | None = None
 
 
 SOURCES = (
@@ -71,10 +117,15 @@ SOURCES = (
            f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_COMMAND_TEXT} AS text, 0 AS truncated",
            {"skill": _SKILL, "command": f"NOT {_SKILL}"},
            full_columns=(f"{_SKILL} AS is_skill, {_TELEPORT} > 0 AS teleport, {_FULL_COMMAND_TEXT} AS text, "
-                         f"NOT {_SKILL} AND length(message) > {MESSAGE_MAX} AS truncated")),
+                         f"NOT {_SKILL} AND length(message) > {MESSAGE_MAX} AS truncated"),
+           # Those who may read chat see channel commands as chat (source 10), not here.
+           full_kinds={"skill": _SKILL, "command": f"NOT {_SKILL} AND NOT {_CHANNEL}"}),
     Source(8, "session", "co_session", "action", {"session": "action IN (0, 1)"}),
-    Source(9, "chat", "co_chat", f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
+    Source(9, "chat", "co_chat", f"user, substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
            {"chat": "1"}, sensitive=True),
+    Source(10, "channel", "co_command",
+           f"substr(message, 1, {MESSAGE_MAX}) AS text, length(message) > {MESSAGE_MAX} AS truncated",
+           {"chat": _CHANNEL}, sensitive=True),
 )
 # Kinds anyone with view_players may ask for, and the extra ones for view_player_messages.
 KINDS = tuple(dict.fromkeys(kind for source in SOURCES if not source.sensitive for kind in source.kinds))
@@ -190,7 +241,8 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
     for source in SOURCES:
         if source.table not in maps.tables or (source.sensitive and not full_text):
             continue
-        conditions = [cond for kind, cond in source.kinds.items() if kind in kinds]
+        source_kinds = (source.full_kinds if full_text else None) or source.kinds
+        conditions = [cond for kind, cond in source_kinds.items() if kind in kinds]
         if not conditions:
             continue
         upper = _upper(source, cursor)
@@ -228,6 +280,7 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         names = {r["id"]: {"minecraft_name": r["user"], "uuid": r["uuid"]}
                  for r in reader.rows(f"SELECT id, user, uuid FROM co_user WHERE id IN ({marks})", tuple(victims))}
     _fetch_metadata(reader, maps, rows)
+    _infer_channels(reader, rows)
     return {
         "rows": rows,
         "victims": names,
@@ -235,6 +288,49 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
         # Set when the page stopped at a scan limit rather than filling up.
         "searched_to": frontier.time if frontier is not None and nxt == frontier else None,
     }
+
+
+def _infer_channels(reader: Reader, rows: list) -> None:
+    """Each plain chat line's channel: the last `/channel` switch since that login, else the default.
+
+    None when no login is recorded before it, or the session's newest
+    SWITCH_SCAN commands hold no switch before it and do not reach back to
+    its login. For the final page only, a few reads per player and session.
+    """
+    by_user: dict[int, list[dict]] = {}
+    for source, row in rows:
+        if source.name == "chat":
+            by_user.setdefault(row["user"], []).append(row)
+    for user, chats in by_user.items():
+        oldest, newest = min(r["time"] for r in chats), max(r["time"] for r in chats)
+        logins = {r["time"] for r in reader.rows(
+            "SELECT time FROM co_session WHERE user = ? AND action = 1 AND time BETWEEN ? AND ?",
+            (user, oldest, newest))}
+        logins |= {r["time"] for r in reader.rows(
+            "SELECT time FROM co_session WHERE user = ? AND time <= ? AND action = 1 "
+            "ORDER BY time DESC LIMIT 1", (user, oldest))}
+        starts = sorted(logins)
+        sessions: dict[int, list[dict]] = {}
+        for row in chats:
+            index = bisect.bisect_right(starts, row["time"]) - 1
+            if index >= 0:
+                sessions.setdefault(starts[index], []).append(row)
+        for login, members in sessions.items():
+            window = (user, login, max(r["time"] for r in members), SWITCH_SCAN)
+            recent = ("SELECT time, message FROM co_command WHERE user = ? AND time BETWEEN ? AND ? "
+                      "ORDER BY time DESC, rowid DESC LIMIT ?")
+            # Newest first, so each line takes the first switch at or before it.
+            switches = [(r["time"], cid) for r in reader.rows(f"SELECT time, message FROM ({recent}) WHERE {_SWITCH}", window)
+                        if (cid := switched_to(r["message"] or ""))]
+            capped = None
+            for row in members:
+                chosen = next((cid for at, cid in switches if at <= row["time"]), None)
+                if chosen is None:
+                    if capped is None:
+                        capped = reader.rows(f"SELECT COUNT(*) AS n FROM ({recent})", window)[0]["n"] == SWITCH_SCAN
+                    if capped:
+                        continue
+                row["channel"] = chosen or DEFAULT_CHANNEL
 
 
 def _fetch_metadata(reader: Reader, maps: Maps, rows: list) -> None:
@@ -291,7 +387,35 @@ def _rollback(state: int | None) -> str | None:
     return _ROLLBACK.get(state, f"rollback state {state}")
 
 
+def _material(maps: Maps, type_id: int | None, order: tuple[str, ...]) -> dict:
+    return names.describe(maps.materials.get(type_id or 0), order, f"Unknown material #{type_id}")
+
+
+def _mob(maps: Maps, type_id: int | None) -> dict:
+    return names.describe(maps.entities.get(type_id or 0), names.ENTITY, f"Unknown entity #{type_id}")
+
+
+def _item_target(row: dict, maps: Maps) -> dict:
+    base = _material(maps, row["type"], names.ITEM)
+    identity, name = metadata.item_identity(row.get("identity_blob"))
+    if identity:
+        title = identity.partition(":")[2].replace("_", " ").title()
+        return {**base, "name": name or title, "source": "mmoitems", "source_id": identity,
+                "vanilla_name": base["name"]}
+    return {**base, "custom_name": name or None}
+
+
+def _mob_target(row: dict, maps: Maps) -> dict:
+    base = _mob(maps, row["type"])
+    identity, name = metadata.mob_identity(row.get("entity_blob"), row.get("identity_blob"))
+    if identity:
+        return {**base, "name": name or identity.replace("_", " ").title(), "source": "mythicmobs",
+                "source_id": identity, "vanilla_name": base["name"]}
+    return {**base, "custom_name": name or None}
+
+
 def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
+    """One row. `target` is the plain label; `target_info` the structured name the panel shows."""
     action = row.get("action")
     entry = {
         "id": f"{source.name}:{row['rid']}",
@@ -303,41 +427,61 @@ def _entry(source: Source, row: dict, maps: Maps, victims: dict) -> dict:
         "message": None,
         "truncated": False,
         "rolled_back": _rollback(row.get("rolled_back")),
+        "target_info": None,
+        "channel": None,
+        # True when the channel was worked out from `/channel` switches, not recorded.
+        "channel_inferred": False,
     }
     if source.name == "block":
         if action == 3:
             if row["type"] == 0:
                 victim = victims.get(row["data"])
-                entry.update(kind="kill", verb="killed", victim=victim,
-                             target=victim["minecraft_name"] if victim else "a player")
+                name = victim["minecraft_name"] if victim else "a player"
+                entry.update(kind="kill", verb="killed", victim=victim, target=name,
+                             target_info=names.target(name, source="player"))
             else:
                 entry.update(kind="kill", verb="killed", target=metadata.mob_label(
-                    row.get("entity_blob"), row.get("identity_blob"), maps.entity(row["type"])))
+                    row.get("entity_blob"), row.get("identity_blob"), maps.entity(row["type"])),
+                    target_info=_mob_target(row, maps))
         elif action == 13:
-            entry.update(kind="spawn", verb="spawned", target=maps.entity(row["type"]))
+            entry.update(kind="spawn", verb="spawned", target=maps.entity(row["type"]),
+                         target_info=_mob(maps, row["type"]))
         elif action == 2:
-            entry.update(kind="click", verb="clicked", target=maps.material(row["type"]))
+            entry.update(kind="click", verb="clicked", target=maps.material(row["type"]),
+                         target_info=_material(maps, row["type"], names.BLOCK))
         else:
-            entry.update(kind="block", verb="placed" if action == 1 else "broke", target=maps.material(row["type"]))
+            entry.update(kind="block", verb="placed" if action == 1 else "broke", target=maps.material(row["type"]),
+                         target_info=_material(maps, row["type"], names.BLOCK))
     elif source.name in {"container", "entity_container"}:
         entry.update(kind="container", verb="added" if action == 1 else "removed",
-                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"],
+                     target_info=_item_target(row, maps))
     elif source.name == "item":
         entry.update(kind="item", verb=_ITEM_VERBS.get(action, "moved"),
-                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"])
+                     target=metadata.item_label(row.get("identity_blob"), maps.material(row["type"])), amount=row["amount"],
+                     target_info=_item_target(row, maps))
     elif source.name == "entity":
-        entry.update(kind="entity", verb=_ENTITY_VERBS.get(action, "clicked"), target=maps.entity(row["type"]))
+        entry.update(kind="entity", verb=_ENTITY_VERBS.get(action, "clicked"), target=maps.entity(row["type"]),
+                     target_info=_mob(maps, row["type"]))
     elif source.name == "sign":
-        entry.update(kind="sign", verb=_SIGN_VERBS.get(action, "changed"), target="sign")
+        entry.update(kind="sign", verb=_SIGN_VERBS.get(action, "changed"), target="sign",
+                     target_info=names.target("Sign"))
     elif source.name == "command":
         if row["is_skill"]:
             entry.update(kind="skill", verb="teleported with" if row["teleport"] else "cast",
                          target=(row["text"] or "").strip() or "a skill")
         else:
-            entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]))
+            # Without full text this is just `/looc`: which channel, never what was said.
+            entry.update(kind="command", verb="ran", target=row["text"] or "/", truncated=bool(row["truncated"]),
+                         channel=channel_of(row["text"]))
     elif source.name == "chat":
+        cid = row.get("channel")
         entry.update(kind="chat", verb="said", target=None, message=row["text"] or "",
-                     truncated=bool(row["truncated"]))
+                     truncated=bool(row["truncated"]), channel=_CHANNELS[cid][0] if cid else None,
+                     channel_inferred=bool(cid))
+    elif source.name == "channel":
+        entry.update(kind="chat", verb="said", target=None, channel=channel_of(row["text"]),
+                     message=(row["text"] or "").partition(" ")[2].strip(), truncated=bool(row["truncated"]))
     else:
         entry.update(kind="session", verb="logged in" if action == 1 else "logged out", target=None)
     return entry

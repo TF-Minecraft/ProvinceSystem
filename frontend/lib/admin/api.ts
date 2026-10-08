@@ -245,16 +245,37 @@ export type SessionPage = {
   coreprotect: CoreProtectStatus;
 };
 
+/** What a row names, with where the name came from. */
+export type ActivityTarget = {
+  /** The name to show: `Short Grass`, an MMOItems item's own name, a player. */
+  name: string;
+  source: "vanilla" | "mmoitems" | "mythicmobs" | "player" | "unknown";
+  /** The recorded Minecraft id (`short_grass`, or a plugin's `ns:id`). */
+  id: string | null;
+  /** The vanilla thing underneath a custom item or mob. */
+  vanilla_name: string | null;
+  /** MMOItems `TYPE:ID` or a MythicMobs mob id. */
+  source_id: string | null;
+  /** An anvil name or mob name tag on a vanilla thing. */
+  custom_name: string | null;
+};
+
 export type ActivityEntry = {
   id: string;
   time: number;
   kind: string;
   verb: string;
+  /** A plain label; `target_info` is what the panel shows when present. */
   target: string | null;
+  target_info?: ActivityTarget | null;
   amount: number | null;
   victim: { minecraft_name: string; uuid: string | null } | null;
   /** Chat text, for admins only. */
   message: string | null;
+  /** The RPCharacters channel (`LOOC`, `Emote`): recorded for chat sent by command. */
+  channel?: string | null;
+  /** Plain chat's channel, worked out from the player's last `/channel` switch since logging in. */
+  channel_inferred?: boolean;
   truncated: boolean;
   world: string | null;
   x: number;
@@ -270,7 +291,8 @@ export type ActivityPage = {
   kinds: string[];
   /** Whether chat and whole commands are included (admins); each such view is audited. */
   shows_messages: boolean;
-  coreprotect: CoreProtectStatus;
+  /** `map_world` is the CoreProtect world players know as `server_label` (TFMC_Map → Vardera). */
+  coreprotect: CoreProtectStatus & { server_label?: string | null; map_world?: string };
 };
 
 const COREPROTECT_REASONS: Record<string, string> = {

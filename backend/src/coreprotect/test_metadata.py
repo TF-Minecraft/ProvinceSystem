@@ -6,6 +6,7 @@ import pytest
 
 from src.coreprotect import metadata
 from src.coreprotect.test_activity import read
+from src.coreprotect.test_names import vanilla  # noqa: F401  (fixture)
 
 FIXTURES = {k: base64.b64decode(v) for k, v in json.loads(
     Path(__file__).with_name('testdata').joinpath('metadata.json').read_text()).items()}
@@ -50,7 +51,7 @@ def test_decompression_and_depth_limits():
         stream.read(10)
 
 
-def test_page_labels_include_containers_and_kills_without_raw_data(coreprotect):
+def test_page_labels_include_containers_and_kills_without_raw_data(coreprotect, vanilla):
     me = coreprotect.user('Hazel', '0615a817-8cb4-4aef-95f7-f6c9bf7611b8')
     item = coreprotect.item(me, 4, 3)
     chest = coreprotect.container(me, 3, 1)
@@ -68,6 +69,18 @@ def test_page_labels_include_containers_and_kills_without_raw_data(coreprotect):
         'iron_ingot (renamed: Mythril Ingot)',
         'Mythril-Steel Alloy [MMOItems CRAFTING:ALLOY]',
         'Cursed Ghoul [MythicMobs cursed_ghoul]',
+    ]
+    info = [{k: e['target_info'][k] for k in ('name', 'source', 'source_id', 'custom_name', 'vanilla_name')}
+            for e in entries]
+    assert info == [
+        {'name': 'Mythril Ingot', 'source': 'mmoitems', 'source_id': 'MATERIALS:MYTHRIL_INGOT',
+         'custom_name': None, 'vanilla_name': 'Iron Ingot'},
+        {'name': 'Iron Ingot', 'source': 'vanilla', 'source_id': None,
+         'custom_name': 'Mythril Ingot', 'vanilla_name': 'Iron Ingot'},
+        {'name': 'Mythril-Steel Alloy', 'source': 'mmoitems', 'source_id': 'CRAFTING:ALLOY',
+         'custom_name': None, 'vanilla_name': 'Iron Ingot'},
+        {'name': 'Cursed Ghoul', 'source': 'mythicmobs', 'source_id': 'cursed_ghoul',
+         'custom_name': None, 'vanilla_name': 'Cow'},
     ]
     text = json.dumps(entries)
     assert 'private' not in text and 'blob' not in text and 'never exposed' not in text

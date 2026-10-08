@@ -271,7 +271,8 @@ def test_unknown_player_sections_are_empty(app, env, world, monkeypatch):
     assert body == {"sessions": [], "next": None, "coreprotect": {"status": "available"}}
     monkeypatch.setenv("COREPROTECT_DB", str(env.DATA_DIR / "nowhere.db"))
     body = c.get(f"/admin/players/{HAZEL}/activity").json()
-    assert body["coreprotect"] == {"status": "unavailable", "reason": "missing"}
+    assert body["coreprotect"] == {"status": "unavailable", "reason": "missing",
+                                   "server_label": "Vardera", "map_world": "TFMC_Map"}
 
 
 def message_audits(db):
@@ -316,6 +317,27 @@ def test_admins_see_chat_and_whole_commands_and_it_is_audited(app, env, world, c
     assert detail["newest"]["time"] == 180 and detail["oldest"]["time"] == 160
     # The audit records which rows were shown, never what they said.
     assert "docks" not in rows[0]["detail_json"] and "private" not in rows[0]["detail_json"]
+
+
+def test_channel_commands_are_chat_for_admins_and_a_channel_name_for_mods(app, env, world, coreprotect):
+    hazel = world["hazel"]
+    coreprotect.command(hazel, 171, "/looc where is the beagle")
+    coreprotect.command(hazel, 172, "/RPCharacters:FOOC raid at dusk")
+    coreprotect.command(hazel, 173, "/me waves")
+    coreprotect.command(hazel, 174, "/home")
+    _, token = account(env, "boss", "admin")
+    feed = client(app, token).get(f"/admin/players/{HAZEL}/activity").json()
+    said = [(e["kind"], e["channel"], e["message"]) for e in feed["entries"] if e["kind"] == "chat"]
+    assert said == [("chat", "Emote", "waves"), ("chat", "FOOC", "raid at dusk"), ("chat", "LOOC", "where is the beagle")]
+    assert [e["target"] for e in feed["entries"] if e["kind"] == "command"] == ["/home", "/msg Bob a private thing"]
+    only_chat = client(app, token).get(f"/admin/players/{HAZEL}/activity", params={"kinds": "chat"}).json()
+    assert [e["channel"] for e in only_chat["entries"]] == ["Emote", "FOOC", "LOOC"]
+    assert json.loads(message_audits(env)[0]["detail_json"])["rows"] == 5
+
+    mod = client(app, staff(env, "mod")).get(f"/admin/players/{HAZEL}/activity").json()
+    commands = [(e["target"], e["channel"]) for e in mod["entries"] if e["kind"] == "command"]
+    assert commands == [("/home", None), ("/me", "Emote"), ("/RPCharacters:FOOC", "FOOC"), ("/looc", "LOOC"), ("/msg", None)]
+    assert "beagle" not in str(mod) and "dusk" not in str(mod) and "waves" not in str(mod)
 
 
 def test_pages_without_messages_are_not_audited(app, env, world):

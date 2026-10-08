@@ -28,6 +28,10 @@ RUN npm ci --ignore-scripts \
     && npx playwright install-deps chromium
 
 WORKDIR /app
+# Vanilla names for the staff activity list, from Mojang's jar (not ours to
+# commit). Only re-runs when the script, and so the pinned version, changes.
+COPY backend/scripts/build_minecraft_names.py /tmp/
+RUN python3 /tmp/build_minecraft_names.py /app/src/coreprotect/data/minecraft_names.json
 COPY backend/ .
 # constants.py resolves ProvinceSystem/shared via parents[4] → /shared/...
 COPY shared /shared

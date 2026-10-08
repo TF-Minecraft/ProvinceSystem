@@ -16,6 +16,10 @@ import {
   type PlayerProfile as Profile,
 } from "../../../lib/admin/api";
 
+// The profile's tab is `?tab=`; each test sets the query it opens with.
+const nav = vi.hoisted(() => ({ query: "" }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(nav.query) }));
+
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../lib/admin/api")>(),
   getAdminMe: vi.fn(),
@@ -24,8 +28,6 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayerActivity: vi.fn(),
 }));
 
-// The movement card asks who is signed in; it has its own tests.
-vi.mock("./MovementCard", () => ({ default: () => null }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
 const NOW = 2_000_000_000;
@@ -57,6 +59,7 @@ function entry(id: string, extra: Partial<ActivityEntry>): ActivityEntry {
 }
 
 beforeEach(() => {
+  nav.query = "";
   vi.spyOn(Date, "now").mockReturnValue(NOW * 1000);
   vi.mocked(getPlayer).mockResolvedValue(PROFILE);
   // A mod: no movement.
@@ -98,7 +101,32 @@ it("shows identity, Discord and characters", async () => {
   expect(screen.getByText("Hazel Stonebrook")).toBeTruthy();
 });
 
+it("opens on Activity, with the other sections behind tabs", async () => {
+  render(<PlayerProfile uuid={UUID} />);
+  const tabs = await screen.findByRole("navigation", { name: "Player" });
+  expect(within(tabs).getAllByRole("link").map((l) => l.textContent)).toEqual(["Activity", "Sessions", "Characters", "Discord"]);
+  expect(within(tabs).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("page");
+  expect(within(tabs).getByRole("link", { name: "Sessions" }).getAttribute("href")).toBe(`/admin/players/${UUID}?tab=sessions`);
+  expect(await screen.findByRole("region", { name: "Recent activity" })).toBeTruthy();
+  // Sessions are not even asked for until their tab is opened; the rest is hidden.
+  expect(getPlayerSessions).not.toHaveBeenCalled();
+  expect(screen.queryByRole("region", { name: "Characters" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "Discord and website" })).toBeNull();
+});
+
+it("offers Movement to those who may see it, and opens a tab from the address", async () => {
+  vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_player_movement"] } as never);
+  nav.query = "tab=characters";
+  render(<PlayerProfile uuid={UUID} />);
+  expect(await screen.findByRole("region", { name: "Characters" })).toBeTruthy();
+  expect(screen.queryByRole("region", { name: "Recent activity" })).toBeNull();
+  const movement = await screen.findByRole("link", { name: "Movement" });
+  expect(movement.getAttribute("href")).toBe(`/admin/players/${UUID}/movement`);
+  expect(getPlayerActivity).not.toHaveBeenCalled();
+});
+
 it("groups sessions by day and hedges ones without a logout", async () => {
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   await within(sessions).findByText("1 h");
@@ -112,6 +140,7 @@ it("groups sessions by day and hedges ones without a logout", async () => {
 
 it("links each session to its route for those who may see movement", async () => {
   vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_player_movement"] } as never);
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   const today = await within(sessions).findByRole("link", { name: /^Today, \d\d:\d\d to \d\d:\d\d, 1 h$/ });
@@ -153,6 +182,7 @@ it("filters by kind from the first page", async () => {
 
 it("reports CoreProtect problems per section", async () => {
   vi.mocked(getPlayerSessions).mockResolvedValue({ sessions: [], next: null, coreprotect: { status: "unavailable", reason: "timeout" } });
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   expect(await within(sessions).findByText(/CoreProtect took too long/)).toBeTruthy();
@@ -222,6 +252,7 @@ it("retries a failed sessions page from the same cursor", async () => {
     })
     .mockRejectedValueOnce(new AccountApiError("bad_cursor", 400))
     .mockResolvedValueOnce({ sessions: [], next: null, coreprotect: { status: "available" } });
+  nav.query = "tab=sessions";
   render(<PlayerProfile uuid={UUID} />);
   const sessions = await screen.findByRole("region", { name: "Sessions" });
   fireEvent.click(await within(sessions).findByRole("button", { name: "Load more sessions" }));
@@ -249,6 +280,24 @@ it("shows chat and whole commands to admins, and says views are logged", async (
   expect(within(feed).getByText(/Your views of these are logged/)).toBeTruthy();
 });
 
+it("tags chat with its channel, and tells moderators only the channel", async () => {
+  vi.mocked(getPlayerActivity).mockResolvedValue({
+    entries: [
+      entry("channel:1", { kind: "chat", verb: "said", target: null, message: "where is the beagle", channel: "LOOC" }),
+      entry("chat:2", { kind: "chat", verb: "said", target: null, message: "hello" }),
+      entry("command:3", { kind: "command", verb: "ran", target: "/fooc", channel: "FOOC" }),
+    ],
+    next: null, searched_to: null, kinds: [...KINDS, "chat"], shows_messages: true, coreprotect: { status: "available" },
+  });
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  const looc = await within(feed).findByText("where is the beagle");
+  expect(looc.parentElement!.textContent).toBe("Said LOOCwhere is the beagle");
+  expect(within(feed).getByText("hello").parentElement!.textContent).toBe("Said hello");
+  expect(within(feed).getByText(/Spoke in/).textContent).toBe("Spoke in FOOC");
+  expect(within(feed).queryByText("/fooc")).toBeNull();
+});
+
 it("keeps moderators' note when messages are not included", async () => {
   render(<PlayerProfile uuid={UUID} />);
   const feed = await screen.findByRole("region", { name: "Recent activity" });
@@ -262,6 +311,49 @@ it("never offers Chat before the server allows it", async () => {
   const feed = await screen.findByRole("region", { name: "Recent activity" });
   expect(within(feed).getByRole("button", { name: "Kills" })).toBeTruthy();
   expect(within(feed).queryByRole("button", { name: "Chat" })).toBeNull();
+});
+
+it("names things properly, merges block runs and calls the world by its name", async () => {
+  const grass = { name: "Short Grass", source: "vanilla" as const, id: "short_grass", vanilla_name: "Short Grass",
+                  source_id: null, custom_name: null };
+  vi.mocked(getPlayerActivity).mockResolvedValue({
+    entries: [
+      entry("block:1", { target: "short_grass", target_info: grass, x: 4049, y: 162, z: 2078 }),
+      entry("block:2", { target: "short_grass", target_info: grass, time: NOW - 70, x: 4050 }),
+      entry("block:3", { target: "short_grass", target_info: grass, time: NOW - 80, x: 4052 }),
+      entry("item:4", { kind: "item", verb: "picked up", target: "Mouse Plush [MMOItems MISC:MOUSE_PLUSH]", time: NOW - 90,
+                        target_info: { name: "Mouse Plush", source: "mmoitems", id: "paper", vanilla_name: "Paper",
+                                       source_id: "MISC:MOUSE_PLUSH", custom_name: null } }),
+      entry("item:5", { kind: "item", verb: "dropped", target: "diamond_sword (renamed: Fang)", time: NOW - 100,
+                        target_info: { name: "Diamond Sword", source: "vanilla", id: "diamond_sword",
+                                       vanilla_name: "Diamond Sword", source_id: null, custom_name: "Fang" } }),
+      entry("session:6", { kind: "session", verb: "logged in", target: null, time: NOW - 110 }),
+    ],
+    next: null, searched_to: null, kinds: KINDS, shows_messages: false,
+    coreprotect: { status: "available", server_label: "Vardera", map_world: "TFMC_Map" },
+  });
+  render(<PlayerProfile uuid={UUID} />);
+  const feed = await screen.findByRole("region", { name: "Recent activity" });
+  expect(await within(feed).findByText("3 × Short Grass")).toBeTruthy();
+  expect(within(feed).queryByText(/short_grass/)).toBeNull();
+  expect(within(feed).queryByText(/TFMC_Map/)).toBeNull();
+  expect(within(feed).getAllByText("Vardera").length).toBeGreaterThan(0);
+
+  const places = within(feed).getByRole("button", { name: /3 places/ });
+  expect(places.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(places);
+  expect(within(feed).getByText(/4052, 64, 2$/)).toBeTruthy();
+
+  expect(within(feed).getByText("Mouse Plush")).toBeTruthy();
+  expect(within(feed).getByText("MMOItems")).toBeTruthy();
+  expect(within(feed).queryByText(/MISC:MOUSE_PLUSH/)).toBeNull();
+  const plush = within(feed).getAllByRole("button", { name: /Details/ })[0];
+  fireEvent.click(plush);
+  expect(within(feed).getByText("MMOItems id MISC:MOUSE_PLUSH")).toBeTruthy();
+  expect(within(feed).getByText("Based on Paper")).toBeTruthy();
+
+  expect(within(feed).getByText("“Fang”")).toBeTruthy();
+  expect(within(feed).getByText("Logged in")).toBeTruthy();
 });
 
 it("shows the Discord handle and the server nickname", async () => {

@@ -472,15 +472,20 @@ def player_activity(config: CoreProtectConfig, text: str, before: str | None, li
             raw = activity.fetch(reader, maps, ids, chosen, cursor, limit, full_text=full) if ids else None
     except Unavailable as exc:
         return {"entries": [], "next": None, "searched_to": None, "kinds": list(allowed),
-                "shows_messages": full, "coreprotect": _status(exc)}
+                "shows_messages": full, "coreprotect": _world_status(config, exc)}
     if raw is None:
         return {"entries": [], "next": None, "searched_to": None, "kinds": list(allowed),
-                "shows_messages": full, "coreprotect": _status(None)}
+                "shows_messages": full, "coreprotect": _world_status(config, None)}
     built = activity.build(raw, maps, f"{config.server}:{key}")
     # CoreProtect is closed by now; the view is on record before the response leaves.
     if full:
         _audit_messages(viewer, config, key, chosen, before, built["entries"])
-    return {**built, "kinds": list(allowed), "shows_messages": full, "coreprotect": _status(None)}
+    return {**built, "kinds": list(allowed), "shows_messages": full, "coreprotect": _world_status(config, None)}
+
+
+def _world_status(config: CoreProtectConfig, error: Unavailable | None) -> dict:
+    """The status, plus what to call the map's world (`TFMC_Map` is Vardera to players)."""
+    return {**_status(error), "server_label": config.label or None, "map_world": config.map_world}
 
 
 

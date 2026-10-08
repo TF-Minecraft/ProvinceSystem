@@ -248,7 +248,8 @@ def _id(value):
     return value if isinstance(value, str) and _ID.fullmatch(value) else None
 
 
-def item_label(data, vanilla):
+def item_identity(data):
+    """(MMOItems `TYPE:ID` or None, display name or "") from an item's metadata blob."""
     try:
         # Only the first item-meta map, never nested lore, books or container items.
         groups = _list(_java(data))
@@ -257,12 +258,16 @@ def item_label(data, vanilla):
         tags = _custom(meta.get("custom"))
         item_type, item_id = _id(tags.get("MMOITEMS_ITEM_TYPE")), _id(tags.get("MMOITEMS_ITEM_ID"))
         name = clean_name(meta.get("display-name") or meta.get("item-name"), component=True)
-        if item_type and item_id:
-            identity = f"{item_type}:{item_id}"
-            return f"{name or item_id.replace('_', ' ').title()} [MMOItems {identity}]"
-        return f"{vanilla} (renamed: {name})" if name else vanilla
+        return (f"{item_type}:{item_id}" if item_type and item_id else None), name
     except (ValueError, TypeError, KeyError, IndexError, UnicodeError, RecursionError, zlib.error):
-        return vanilla
+        return None, ""
+
+
+def item_label(data, vanilla):
+    identity, name = item_identity(data)
+    if identity:
+        return f"{name or identity.partition(':')[2].replace('_', ' ').title()} [MMOItems {identity}]"
+    return f"{vanilla} (renamed: {name})" if name else vanilla
 
 
 def _safe_list(data):
@@ -272,12 +277,17 @@ def _safe_list(data):
         return []
 
 
-def mob_label(data, metadata, vanilla):
+def mob_identity(data, metadata):
+    """(MythicMobs id or None, custom name or "") from a killed mob's two blobs."""
     # Each optional blob can fail independently; retain any valid evidence.
     fields = _safe_list(metadata)
     identity = _id(fields[1]) if len(fields) == 2 and fields[0] == "coreprotect:mythic" else None
     state = _safe_list(data)
-    name = clean_name(state[4]) if len(state) > 4 else ""
+    return identity, clean_name(state[4]) if len(state) > 4 else ""
+
+
+def mob_label(data, metadata, vanilla):
+    identity, name = mob_identity(data, metadata)
     if identity:
         return f"{name or identity.replace('_', ' ').title()} [MythicMobs {identity}]"
     return f"{vanilla} (named: {name})" if name else vanilla

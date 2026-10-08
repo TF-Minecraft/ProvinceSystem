@@ -59,3 +59,6 @@ backend/src/data/skins/**
 .claude/
 backend/src/defines/*/derived_sources.json
 CLAUDE.md
+
+# Vanilla Minecraft names, built from Mojang's client jar (backend/scripts/build_minecraft_names.py).
+backend/src/coreprotect/data/
