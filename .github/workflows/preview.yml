@@ -4,10 +4,13 @@ name: Preview
 # https://<branch>.tfminecraft.net, built from that branch alone. The server
 # stops it 90 minutes after the last deploy: push again, or run this workflow
 # on the branch, to bring it back. Deleting the branch removes it at once.
+#
+# Pushes to main build the same images without deploying them, to refresh the
+# registry build cache every branch starts from.
 
 on:
   push:
-    branches-ignore: [main, 'dependabot/**']
+    branches-ignore: ['dependabot/**']
   workflow_dispatch:
   delete:
 
@@ -20,15 +23,52 @@ concurrency:
 
 env:
   IMAGE_PREFIX: ghcr.io/tf-minecraft/provincesystem-preview
+  IS_MAIN: ${{ github.ref_name == 'main' }}
 
 jobs:
-  deploy:
-    if: github.event_name != 'delete' && github.ref_type == 'branch' && github.ref_name != 'main'
+  build:
+    if: github.event_name != 'delete' && github.ref_type == 'branch'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - id: slug
+        if: env.IS_MAIN != 'true'
+        run: python3 .github/scripts/preview_slug.py "$GITHUB_REF_NAME"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: ${{ env.IS_MAIN != 'true' }}
+          provenance: false
+          # The browser calls the preview's own /api, which the router sends to its backend.
+          build-args: ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_API_URL={0}/api', steps.slug.outputs.url) || '' }}
+          tags: ${{ env.IS_MAIN != 'true' && format('{0}-{1}:{2}', env.IMAGE_PREFIX, matrix.service, steps.slug.outputs.slug) || '' }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          # Branches cannot read each other's Actions cache, so main keeps a registry cache they all share.
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:buildcache
+          cache-to: ${{ env.IS_MAIN == 'true' && format('type=registry,ref={0}-{1}:buildcache,mode=max', env.IMAGE_PREFIX, matrix.service) || '' }}
+
+  deploy:
+    needs: build
+    if: github.ref_name != 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     environment:
       name: preview
       url: ${{ steps.slug.outputs.url }}
@@ -38,37 +78,6 @@ jobs:
           persist-credentials: false
       - id: slug
         run: python3 .github/scripts/preview_slug.py "$GITHUB_REF_NAME"
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build backend
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: backend/Dockerfile
-          push: true
-          provenance: false
-          tags: ${{ env.IMAGE_PREFIX }}-backend:${{ steps.slug.outputs.slug }}
-          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-          cache-from: type=gha,scope=preview-backend
-          cache-to: type=gha,scope=preview-backend,mode=max
-      - name: Build frontend
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: frontend/Dockerfile
-          push: true
-          provenance: false
-          # The browser calls the preview's own /api, which the router sends to its backend.
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ steps.slug.outputs.url }}/api
-          tags: ${{ env.IMAGE_PREFIX }}-frontend:${{ steps.slug.outputs.slug }}
-          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-          cache-from: type=gha,scope=preview-frontend
-          cache-to: type=gha,scope=preview-frontend,mode=max
       - name: Start the preview
         env:
           SSH_USER: psdeploy
