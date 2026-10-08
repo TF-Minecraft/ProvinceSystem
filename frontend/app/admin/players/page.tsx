@@ -1,4 +1,4 @@
-import AdminNav from "../../components/admin/AdminNav";
+import AdminColumn from "../../components/admin/AdminColumn";
 import PlayersDirectory from "../../components/admin/PlayersDirectory";
 import { parsePlayerListing } from "../../../lib/admin/api";
 
@@ -11,16 +11,12 @@ function first(value: string | string[] | undefined): string | undefined {
 export default async function AdminPlayersPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   return (
-    <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-5xl flex-col px-6 py-16">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Staff panel
-      </h1>
-      <AdminNav current="players" />
+    <AdminColumn>
       <PlayersDirectory
         initialQuery={first(params.q) ?? ""}
         initialListing={parsePlayerListing(first(params.view), first(params.sort), first(params.order))}
         initialPage={Number.parseInt(first(params.page) ?? "1", 10) || 1}
       />
-    </main>
+    </AdminColumn>
   );
 }

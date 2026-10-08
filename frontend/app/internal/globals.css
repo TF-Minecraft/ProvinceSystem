@@ -34,6 +34,12 @@ body {
   font-family: var(--font-source-sans), system-ui, sans-serif;
 }
 
+/* Staff pages keep the scrollbar's room even when nothing scrolls, so the
+   frame does not shift sideways as a list loads or a tab changes length. */
+html:has(.staff-panel) {
+  scrollbar-gutter: stable;
+}
+
 /* While the full-screen map is open (MapShell), the page does not scroll or
    bounce: only the map and its panels move. */
 html.map-fullscreen,

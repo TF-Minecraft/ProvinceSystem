@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/admin", label: "Accounts", key: "accounts" },
@@ -8,7 +11,21 @@ const LINKS = [
   { href: "/admin/ranks", label: "Ranks", key: "ranks" },
 ] as const;
 
-export default function AdminNav({ current }: { current: (typeof LINKS)[number]["key"] }) {
+export type AdminSection = (typeof LINKS)[number]["key"];
+
+/** The tab a staff path sits under: the deepest link that is the path or one of its parents. */
+export function adminSection(pathname: string): AdminSection | null {
+  let match: (typeof LINKS)[number] | null = null;
+  for (const link of LINKS) {
+    const under = pathname === link.href || pathname.startsWith(`${link.href}/`);
+    if (under && (!match || link.href.length > match.href.length)) match = link;
+  }
+  return match?.key ?? null;
+}
+
+/** Rendered once by the staff layout, so it stays mounted and in place as the tabs change. */
+export default function AdminNav() {
+  const current = adminSection(usePathname() ?? "");
   return (
     <nav aria-label="Staff panel" className="mt-4 flex gap-4 border-b sm:gap-5 border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
       {LINKS.map((link) => (
