@@ -58,14 +58,15 @@ jobs:
           echo "Deploying ${sha::7} ($(git log -1 --format=%s "$sha")) to $SITE"
       - name: Deploy
         env:
-          PREVIEW_SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
-          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
-          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          SSH_USER: ryan
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
           SITE: ${{ steps.target.outputs.site }}
           SHA: ${{ steps.target.outputs.sha }}
         run: |
           status=0
-          .github/scripts/preview_ssh.sh deploy "$SITE" "$SHA" | tee result.txt || status=$?
+          .github/scripts/server_ssh.sh deploy "$SITE" "$SHA" | tee result.txt || status=$?
           case "$status" in
             0) ;;
             4) echo "::error::${SHA::7} is not on main." ;;
