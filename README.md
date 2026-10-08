@@ -54,7 +54,15 @@ other than letters and digits becomes `-`, so `codex/new-map` becomes
   **Preview** workflow on the branch, to start it again.
 - Deleting the branch removes its preview. Up to four run at once.
 
-`dev.tfminecraft.net` always runs `main`.
+## Deploying
+
+- Merging to `main` deploys `https://dev.tfminecraft.net` once CI passes.
+- `https://www.tfminecraft.net` deploys only from **Actions → Deploy → Run
+  workflow** with site `www`. Leave the commit blank for the latest `main`, or
+  give an older commit on `main` to roll back.
+
+The server backs up the database before each deploy, rebuilds only what
+changed, and puts the previous code back if the site does not come up.
 
 ## License
 

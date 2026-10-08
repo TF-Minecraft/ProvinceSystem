@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run one preview command on the TF server: up <slug> <sha> | down <slug> | list.
-# The deploy key can only run these; the server's ps-preview does the work.
+# Run one command on the TF server: up <slug> <sha> | down <slug> | list | deploy <www|dev> <sha>.
+# The deploy key can only run these; the server's ps-preview and ps-deploy do the work.
 set -euo pipefail
 
 : "${PREVIEW_SSH_KEY:?}" "${PREVIEW_SSH_HOST:?}" "${PREVIEW_SSH_KNOWN_HOSTS:?}"
