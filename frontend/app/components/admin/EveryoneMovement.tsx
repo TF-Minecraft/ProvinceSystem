@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
@@ -25,6 +25,8 @@ import { formatDuration } from "../../../lib/admin/time";
 import { writeUrl } from "../../../lib/admin/urlState";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import EveryoneNow from "./EveryoneNow";
+import AdminColumn from "./AdminColumn";
+import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
   CopyButton,
@@ -85,9 +87,9 @@ export default function EveryoneMovement() {
   const search = useSearchParams();
   const ranged = search.get("view") === "range" || ["from", "to", "follow"].some((key) => search.has(key));
   const tab = (on: boolean) => `${chipClass} ${on ? chipOn : chipOff}`;
-  return (
-    <>
-      <div className="mt-4 flex gap-2" role="group" aria-label="Movement view">
+  // Shown at the top of either view's panel.
+  const viewSwitch = (
+    <div className="flex gap-2" role="group" aria-label="Movement view">
         <button type="button" className={tab(!ranged)} aria-pressed={!ranged} onClick={() => writeUrl(pathname, false)}>
           Now
         </button>
@@ -98,15 +100,14 @@ export default function EveryoneMovement() {
           onClick={() => writeUrl(`${pathname}?view=range`, false)}
         >
           Time range
-        </button>
-      </div>
-      {ranged ? <EveryoneRange /> : <EveryoneNow />}
-    </>
+      </button>
+    </div>
   );
+  return ranged ? <EveryoneRange viewSwitch={viewSwitch} /> : <EveryoneNow viewSwitch={viewSwitch} />;
 }
 
 /** Every player's movement over a range on one map, compared at one inspected moment. */
-function EveryoneRange() {
+function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const mapId = useLiveMapId();
@@ -194,10 +195,18 @@ function EveryoneRange() {
   );
 
   if (load.kind === "forbidden") {
-    return <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>;
+    return (
+      <AdminColumn>
+        <p className="mt-6 text-[var(--tfmc-mist)]">Movement is for admins and the owner only.</p>
+      </AdminColumn>
+    );
   }
   if (load.kind === "signed_out" || load.kind === "unavailable" || load.kind === "error") {
-    return <StaffGateMessage kind={load.kind} />;
+    return (
+      <AdminColumn>
+        <StaffGateMessage kind={load.kind} />
+      </AdminColumn>
+    );
   }
 
   const mapWorld = data?.coreprotect.map_world ?? "TFMC_Map";
@@ -240,26 +249,96 @@ function EveryoneRange() {
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className={mutedClass}>
-          {data?.coreprotect.server_label ? `${data.coreprotect.server_label} · ` : ""}
-          Everyone online over a range of up to 24 hours. Positions are recorded once a minute; lines between them are
-          estimates. Each view is logged.
-        </p>
-        {data ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
-      </div>
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <aside className="flex shrink-0 flex-col gap-3 lg:w-80">
-          <RangeForm
-            value={range}
-            longest={EVERYONE_WINDOW_SECONDS}
-            asOf={data?.as_of ?? null}
-            onApply={(next) => {
-              cancelMoment();
-              update({ from: String(next.from), to: String(next.to), follow: next.follow ? "1" : null, at: null });
-            }}
+    <MapWorkspace
+      // The timeline under the map: up to eight rows of bands, its labels and its key.
+      stripHeight="8.5rem"
+      panel={
+        <>
+          {viewSwitch}
+          <p className={mutedClass}>
+            {data?.coreprotect.server_label ? `${data.coreprotect.server_label} · ` : ""}
+            Everyone online over a range of up to 24 hours. Positions are recorded once a minute; lines between them are
+            estimates. Each view is logged.
+          </p>
+          {data ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
+          {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
+          {load.kind === "failed" ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-[#e8a0a0]" role="alert">
+                {load.message}
+                {load.previous ? " Showing the previous results." : ""}
+              </p>
+              <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
+                Retry
+              </button>
+            </div>
+          ) : null}
+          {load.kind === "loading" ? (
+            <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
+          ) : null}
+          <div className="border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
+            <RangeForm
+              value={range}
+              longest={EVERYONE_WINDOW_SECONDS}
+              asOf={data?.as_of ?? null}
+              onApply={(next) => {
+                cancelMoment();
+                update({ from: String(next.from), to: String(next.to), follow: next.follow ? "1" : null, at: null });
+              }}
+            />
+          </div>
+          <PinForm pin={pin} onChange={(next) => update({ pin: next ? `${next.x},${next.z}` : null }, true)} />
+        </>
+      }
+      map={
+        <div className={`h-full ${load.kind !== "ready" && data ? "opacity-70" : ""}`}>
+          {mapId ? (
+            <MovementMap
+              mapId={mapId}
+              mapWorld={mapWorld}
+              trails={drawn}
+              since={completeFrom}
+              until={until}
+              cursor={moment}
+              hold={hold}
+              highlight={highlight}
+              pin={pin}
+              fitKey={load.kind === "ready" && load.key === viewKey ? viewKey : null}
+              onInspect={setMoment}
+              className={mapFrameClass}
+            />
+          ) : null}
+        </div>
+      }
+      strip={
+        data ? (
+          <Timeline
+            since={since}
+            until={until}
+            unknownUntil={unknownUntil}
+            unknownLabel={completeFrom > since ? "earlier observations omitted" : "before available position observations"}
+            bands={bands}
+            cursor={moment}
+            onCursor={setMoment}
           />
+        ) : null
+      }
+      inspector={
+        <>
+          {data ? (
+            <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
+              Inspecting {formatClock(moment, true)} · {seenNow} of {drawn.length} players observed or estimated at this
+              moment. Positions in the list are as of this moment.
+            </InspectBar>
+          ) : null}
+          {data && completeFrom > since ? (
+            <p className={mutedClass}>
+              Earlier observations omitted: too many to show, so the range starts at {formatMoment(completeFrom)}.
+            </p>
+          ) : null}
+          {data && data.pings_since !== null && data.pings_since > since ? (
+            <p className={mutedClass}>Before {formatMoment(data.pings_since)} there are no available position observations.</p>
+          ) : null}
           <div className="flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
             <input
               aria-label="Search players"
@@ -285,7 +364,8 @@ function EveryoneRange() {
                 </button>
               ) : null}
             </div>
-            <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto" aria-label="Players in this range">
+            {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
+            <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible" aria-label="Players in this range">
               {listed.map((trail) => (
                 <li
                   key={trail.key}
@@ -320,71 +400,8 @@ function EveryoneRange() {
               {data && !all.length ? <li className={mutedClass}>Nobody was observed in this range.</li> : null}
             </ul>
           </div>
-          <PinForm pin={pin} onChange={(next) => update({ pin: next ? `${next.x},${next.z}` : null }, true)} />
-        </aside>
-        <section className="flex min-w-0 flex-1 flex-col gap-3">
-          {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
-          {load.kind === "failed" ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-[#e8a0a0]" role="alert">
-                {load.message}
-                {load.previous ? " Showing the previous results." : ""}
-              </p>
-              <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => setRetry((n) => n + 1)}>
-                Retry
-              </button>
-            </div>
-          ) : null}
-          {load.kind === "loading" ? (
-            <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
-          ) : null}
-          <div className={load.kind !== "ready" && data ? "opacity-70" : ""}>
-            {mapId ? (
-              <MovementMap
-                mapId={mapId}
-                mapWorld={mapWorld}
-                trails={drawn}
-                since={completeFrom}
-                until={until}
-                cursor={moment}
-                hold={hold}
-                highlight={highlight}
-                pin={pin}
-                fitKey={load.kind === "ready" && load.key === viewKey ? viewKey : null}
-                onInspect={setMoment}
-                className="h-[60vh] min-h-[22rem] rounded-sm lg:h-[calc(100dvh-24rem)]"
-              />
-            ) : (
-              <div className="h-[60vh] min-h-[22rem]" />
-            )}
-          </div>
-          {data ? (
-            <>
-              <Timeline
-                since={since}
-                until={until}
-                unknownUntil={unknownUntil}
-                unknownLabel={completeFrom > since ? "earlier observations omitted" : "before available position observations"}
-                bands={bands}
-                cursor={moment}
-                onCursor={setMoment}
-              />
-              <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
-                Inspecting {formatClock(moment, true)} · {seenNow} of {drawn.length} players observed or estimated at this
-                moment. Positions in the list are as of this moment.
-              </InspectBar>
-              {completeFrom > since ? (
-                <p className={mutedClass}>
-                  Earlier observations omitted: too many to show, so the range starts at {formatMoment(completeFrom)}.
-                </p>
-              ) : null}
-              {data.pings_since !== null && data.pings_since > since ? (
-                <p className={mutedClass}>Before {formatMoment(data.pings_since)} there are no available position observations.</p>
-              ) : null}
-            </>
-          ) : null}
-        </section>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }
