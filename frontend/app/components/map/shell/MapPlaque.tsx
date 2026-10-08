@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 type MapPlaqueProps = {
-  /** Small caps over the name, e.g. "World map". */
-  eyebrow: string;
+  /** Small caps over the name, e.g. "Archived chapter". */
+  eyebrow?: string;
   mapDisplayName: string;
   /** Icon buttons beside the name: history, archive, edit titles. */
   actions?: ReactNode;
@@ -23,7 +23,9 @@ export default function MapPlaque({
   return (
     <div className="map-frame flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3">
       <div className="hidden min-w-0 flex-1 px-0.5 md:block">
-        <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
+        {eyebrow ? (
+          <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>
+        ) : null}
         <h1 className="truncate font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
           {mapDisplayName}
         </h1>

@@ -72,16 +72,6 @@ export default function EditorSaveBar({
         </a>
       </div>
 
-      {exportState === "exporting" ? (
-        <p className="text-sm text-[var(--tfmc-mist)]">Preparing title ZIP...</p>
-      ) : null}
-
-      {regenState === "running" ? (
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Starting regeneration...
-        </p>
-      ) : null}
-
       {exportError ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">{exportError}</p>
       ) : null}

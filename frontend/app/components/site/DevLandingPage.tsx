@@ -106,7 +106,7 @@ export default function DevLandingPage({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Redeem failed";
+            : "Sign-in failed";
       setStaffError(message);
     } finally {
       setSubmitting(false);

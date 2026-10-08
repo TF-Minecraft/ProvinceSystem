@@ -26,7 +26,6 @@ export type RealmPanelProps = {
   mapType: MapMode;
   regionId: string;
   regionData: RegionRecord;
-  mapDisplayName: string;
   sessionToken?: string | null;
   settlements: SettlementMarker[];
   /** Open another region's panel: an overlord, subject or neighbour. */
@@ -324,8 +323,7 @@ function RealmBody({
  * modes carry less, so they get the same frame with the fields they have.
  */
 export function RealmPanelContent(props: RealmPanelProps) {
-  const { mapId, mapType, regionId, regionData, mapDisplayName, sessionToken, onSelectRegion } =
-    props;
+  const { mapId, mapType, regionId, regionData, sessionToken, onSelectRegion } = props;
   const raw = regionData[regionId];
 
   const profile = useMemo(
@@ -336,8 +334,8 @@ export function RealmPanelContent(props: RealmPanelProps) {
     [mapType, raw, regionId]
   );
   const info = useMemo(
-    () => (raw ? buildRegionInfo(regionId, raw, mapType, mapDisplayName, regionData) : null),
-    [raw, regionId, mapType, mapDisplayName, regionData]
+    () => (raw ? buildRegionInfo(regionId, raw, mapType, regionData) : null),
+    [raw, regionId, mapType, regionData]
   );
   if (!raw || !info) return null;
 
@@ -363,18 +361,18 @@ export function RealmPanelContent(props: RealmPanelProps) {
           />
         }
         subtitle={
-          <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
-            {overlordId ? (
-              <>
-                {mapType === "nation" ? "Subject of " : "Part of "}
-                <RegionLink id={overlordId} regionData={regionData} onSelectRegion={onSelectRegion} />
-              </>
-            ) : mapType === "nation" ? (
-              "Independent realm"
-            ) : (
-              info.description
-            )}
-          </p>
+          overlordId || mapType === "nation" ? (
+            <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
+              {overlordId ? (
+                <>
+                  {mapType === "nation" ? "Subject of " : "Part of "}
+                  <RegionLink id={overlordId} regionData={regionData} onSelectRegion={onSelectRegion} />
+                </>
+              ) : (
+                "Independent realm"
+              )}
+            </p>
+          ) : undefined
         }
       />
 
@@ -393,7 +391,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
               </span>
             ) : (
               <span className="truncate text-sm italic text-[var(--tfmc-stone)]">
-                Character not yet known
+                Unknown
               </span>
             )}
           </div>
@@ -401,10 +399,11 @@ export function RealmPanelContent(props: RealmPanelProps) {
         </>
       ) : (
         <>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <Fact label={mapType === "trade" ? "Type" : "Tier"}>{info.tier}</Fact>
-            {info.size > 0 ? <Fact label="Provinces">{info.size}</Fact> : null}
-          </dl>
+          {info.size > 0 ? (
+            <dl>
+              <Fact label="Provinces">{info.size}</Fact>
+            </dl>
+          ) : null}
           <PanelActions onFocusRegion={props.onFocusRegion} onShowSubjects={props.onShowSubjects} />
           {info.subjects.length > 0 ? (
             <Section title={`Contains · ${info.subjects.length}`}>

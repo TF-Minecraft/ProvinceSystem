@@ -33,7 +33,6 @@ export function GuildPanelContent({
   onClose,
 }: GuildPanelProps) {
   const realm = regionData?.[guild.factionId];
-  const realmName = cleanRegionName(realm?.name ?? guild.factionId) || guild.factionId;
   const seatPlaced =
     seat && typeof seat.map_x === "number" && typeof seat.map_y === "number" ? seat : null;
 
@@ -43,7 +42,7 @@ export function GuildPanelContent({
         onClose={onClose}
         centred
         title={guild.name}
-        eyebrow={`${guild.typeLabel} of ${realmName}`}
+        eyebrow={guild.typeLabel}
         visual={
           <div
             aria-hidden
@@ -71,7 +70,7 @@ export function GuildPanelContent({
           </span>
         ) : (
           <span className="truncate text-sm italic text-[var(--tfmc-stone)]">
-            Character not yet known
+            Unknown
           </span>
         )}
       </div>

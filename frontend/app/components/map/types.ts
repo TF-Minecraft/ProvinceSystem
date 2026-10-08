@@ -24,7 +24,6 @@ export type RegionInfo = {
   subject_size: number;
   overlord: string;
   subjects: string[];
-  description: string;
 };
 
 export type RegionRecord = Record<

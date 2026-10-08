@@ -95,7 +95,7 @@ function InspectResultPanel({ result }: { result: InspectCodeResult }) {
         </div>
       </dl>
       <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
-        Read-only lookup. Does not log you in or consume the code.
+        Checking does not sign you in or use up the code.
       </p>
     </div>
   );

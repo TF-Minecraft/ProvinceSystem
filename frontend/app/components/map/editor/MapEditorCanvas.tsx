@@ -555,7 +555,7 @@ export default function MapEditorCanvas({
 
       {loading && !suppressLoadingOverlay ? (
         <div className="flex min-h-[28rem] items-center justify-center p-8">
-          <p className="text-sm text-[var(--tfmc-mist)]">Loading map pick data...</p>
+          <p className="text-sm text-[var(--tfmc-mist)]">Loading map…</p>
         </div>
       ) : error ? (
         <div className="flex min-h-[28rem] items-center justify-center p-8">

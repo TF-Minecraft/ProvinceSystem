@@ -254,20 +254,20 @@ export function chronicleBuildBlockReason(options: {
 }): string | null {
   if (options.building) return "A build is already running.";
   if (options.selectionError) return options.selectionError;
-  if (options.dayCount <= 0) return "Pick a range with at least one stored day.";
+  if (options.dayCount <= 0) return "Pick a range with at least one recorded day.";
   if (options.nationNames) {
     if (!options.namesSupported) {
-      return "Nation names need label geometry, which this map does not have.";
+      return "Nation names aren't available for this map.";
     }
     if (!options.geometryReady) {
       // Without this the label pass returns [] in microseconds: the estimate
       // would quote that empty path and the build would write unlabelled frames
       // while the toggle says names are on.
-      return "Still loading label geometry — nation names cannot be measured or drawn yet.";
+      return "Loading nation names…";
     }
   }
   if (options.overCeiling) {
-    return "Those frames are more than this browser should hold at once.";
+    return "That's too many frames to build at once.";
   }
   return null;
 }
@@ -366,9 +366,6 @@ export type ChronicleBuildProgress = {
   completed: number;
   total: number;
   day: string;
-  painted: number;
-  reused: number;
-  skipped: number;
   /**
    * Which queued look this frame belongs to. Absent for a build of the draft
    * toggles alone, where every frame is the same look.
@@ -497,9 +494,6 @@ export async function runChronicleBuild<
         completed: i + 1,
         total: days.length,
         day,
-        painted,
-        reused,
-        skipped: skippedDays.length,
       });
     }
   } catch (error) {

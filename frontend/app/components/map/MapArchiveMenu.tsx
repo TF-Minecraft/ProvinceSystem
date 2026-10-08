@@ -38,7 +38,7 @@ export default function MapArchiveMenu({ maps, linkClass }: MapArchiveMenuProps)
         aria-haspopup="listbox"
         className={linkClass}
       >
-        See archive
+        Earlier chapters
       </button>
       {open ? (
         <div

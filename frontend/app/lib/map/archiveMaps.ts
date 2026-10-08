@@ -8,7 +8,7 @@ function displayNameKey(entry: AccessibleMapEntry): string {
 }
 
 /**
- * Frozen chapters for the See archive picker. `main` and `dev` never appear,
+ * Frozen chapters for the Earlier chapters picker. `main` and `dev` never appear,
  * even if someone sets `archived: true` on them in yaml.
  */
 export function archivedChapterMaps(

@@ -13,7 +13,6 @@ export function useRegionHover({
   getHoverRegion,
   setHoveredOverlay,
   setSelectedRegionId,
-  mapDisplayName,
   mapObjects,
 }: {
   mapId: string;
@@ -33,7 +32,6 @@ export function useRegionHover({
   };
   setHoveredOverlay: (overlay: HoverOverlay | null) => void;
   setSelectedRegionId: (id: string | null) => void;
-  mapDisplayName: string;
   mapObjects: MapObject[];
 }) {
   const lastHoverKeyRef = useRef<string | null>(null);
@@ -87,7 +85,6 @@ export function useRegionHover({
       regionId,
       regionData![regionId],
       mapType,
-      mapDisplayName,
       regionData!
     );
 

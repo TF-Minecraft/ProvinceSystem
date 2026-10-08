@@ -90,6 +90,7 @@ import {
 } from "@/lib/map/api";
 import { editorUrl } from "@/lib/map/editorAccess";
 import { chronicleStudioHref } from "@/app/lib/map/chronicleDayRoute";
+import { formatChronicleDay } from "@/app/lib/map/chronicleDayLabel";
 import { useResponsiveFitMode } from "@/app/hooks/useResponsiveFitMode";
 import { isArchivedMap, showReviewHistory } from "@/app/lib/map/archiveMaps";
 import MapArchiveMenu from "./map/MapArchiveMenu";
@@ -793,7 +794,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     setHoveredFortZoc,
     setSelectedRegionId: setHoveredRegionId,
     getHoverRegion,
-    mapDisplayName: displayName,
     mapObjects,
     markers: mapMarkers,
     labels: regionLabels,
@@ -1213,6 +1213,8 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     );
   }
 
+  const dayLabel = day ? formatChronicleDay(day) : "this day";
+
   /**
    * Every mode is offered on a stored day, so an unclassified mode needs this
    * answer when it has neither a static source nor a `CHRONICLE_MODE_SOURCE`.
@@ -1224,19 +1226,17 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          Not recorded for {day}
+          Not recorded for {dayLabel}
         </p>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          Nothing in this day&rsquo;s capture answers for this map mode, and it
-          is not one of the modes that stays the same on every day, so showing
-          today&rsquo;s would be a lie about the past.
+          This view wasn&rsquo;t recorded on this day.
         </p>
         <button
           type="button"
           onClick={() => handleMapTypeChange("nation")}
           className={actionLinkClass}
         >
-          Back to the nation map
+          Back to Realms
         </button>
       </div>
     );
@@ -1260,19 +1260,17 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          Missing from the {day} capture
+          Not available for {dayLabel}
         </p>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          This day was recorded, but the file behind this map mode is not in
-          its snapshot. Nothing is shown rather than an empty world under a
-          real date. Another mode, or a nearby day, may still have it.
+          Try another view or a nearby day.
         </p>
         <button
           type="button"
           onClick={() => handleMapTypeChange("nation")}
           className={actionLinkClass}
         >
-          Back to the nation map
+          Back to Realms
         </button>
       </div>
     );
@@ -1329,8 +1327,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
   const archiveFooter =
     chronicle || archived ? null : (
-      <div className="flex items-center justify-between gap-2 text-sm text-[var(--tfmc-stone)]">
-        <span>Earlier chapters</span>
+      <div className="flex justify-end">
         <MapArchiveMenu maps={maps} linkClass={actionLinkClass} />
       </div>
     );
@@ -1380,7 +1377,6 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         mapType={mapType}
         regionId={selectedId}
         regionData={regionData}
-        mapDisplayName={displayName}
         sessionToken={authToken}
         settlements={settlements}
         onSelectRegion={(id) => selectRegion(id)}
@@ -1404,7 +1400,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       banner={dayBar}
       plaque={
         <MapPlaque
-          eyebrow={archived ? "Archived chapter" : "World map"}
+          eyebrow={archived ? "Archived chapter" : undefined}
           mapDisplayName={displayName}
           actions={plaqueActions}
           search={

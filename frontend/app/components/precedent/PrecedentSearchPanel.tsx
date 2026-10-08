@@ -53,8 +53,7 @@ export default function PrecedentSearchPanel() {
         Find precedent
       </h2>
       <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-        Semantic search over past rulings, same as{" "}
-        <code className="text-xs">/precedent</code> in Discord.
+        Same as <code className="text-xs">/precedent</code> in Discord.
       </p>
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -84,8 +83,7 @@ export default function PrecedentSearchPanel() {
         <div className="mt-4">
           {result.matches.length === 0 ? (
             <p className="text-sm text-[var(--tfmc-mist)]">
-              No relevant precedent found. Nothing in the corpus is close enough
-              to this query to be worth citing.
+              No relevant precedent found.
             </p>
           ) : (
             <>

@@ -86,15 +86,15 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
-    setShareNote(`Exported ${paint.shapes.length} drawing(s).`);
+    setShareNote("Plan downloaded.");
   }
 
   async function handleImportFile(file: File) {
     const result = paint.importPlan(await file.text());
     setShareNote(
       result.ok
-        ? `Imported ${result.shapes.length} drawing(s)` +
-            (result.skipped ? `, skipped ${result.skipped} unreadable.` : ".")
+        ? "Plan opened." +
+            (result.skipped ? ` Skipped ${result.skipped} unreadable drawing(s).` : "")
         : result.reason
     );
   }
@@ -117,16 +117,13 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
     <div className={`${panelClass} p-2`}>
       <div className="flex w-full items-center justify-between gap-2 px-1 py-0.5">
         <span className="truncate text-xs font-semibold uppercase tracking-wide text-[var(--tfmc-stone)]">
-          Paint mode
-          {paint.enabled ? (
-            <span className="text-[var(--tfmc-cream)]"> — on</span>
-          ) : null}
+          War planning
         </span>
         <button
           type="button"
           role="switch"
           aria-checked={paint.enabled}
-          aria-label="Toggle paint mode"
+          aria-label="Toggle war planning"
           onClick={() => paint.setEnabled(!paint.enabled)}
           className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
             paint.enabled
@@ -148,18 +145,18 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
             type="button"
             onClick={handleExport}
             disabled={!paint.shapes.length}
-            title="Download this plan as a JSON file"
+            title="Download this plan"
             className={`rounded-md px-2 py-1 text-xs ${idleClass} disabled:opacity-35`}
           >
-            Export JSON
+            Download plan
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            title="Load a plan someone exported (replaces the current one)"
+            title="Open a downloaded plan (replaces this one)"
             className={`rounded-md px-2 py-1 text-xs ${idleClass}`}
           >
-            Import JSON
+            Open plan
           </button>
           <input
             ref={fileInputRef}
@@ -206,7 +203,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
               <button
                 key={id}
                 type="button"
-                title={`${PAINT_COLOR_LABELS[id]} — ${PAINT_COLORS[id]}`}
+                title={PAINT_COLOR_LABELS[id]}
                 aria-label={`Ink colour ${PAINT_COLOR_LABELS[id]}`}
                 aria-pressed={paint.color === id}
                 onClick={() => paint.setColor(id)}
@@ -293,7 +290,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                 </span>
               </div>
               <label className="flex items-center gap-2 text-[0.65rem] uppercase tracking-wide text-[var(--tfmc-stone)]">
-                Plate
+                Background
                 <input
                   type="range"
                   min={0}
@@ -321,8 +318,8 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                       <button
                         key={id}
                         type="button"
-                        title={`Plate: ${label}`}
-                        aria-label={`Plate colour ${label}`}
+                        title={`Background: ${label}`}
+                        aria-label={`Background colour ${label}`}
                         aria-pressed={paint.textStyle.bgColor === id}
                         onClick={() => paint.setTextStyle({ bgColor: id })}
                         className={`h-5 w-5 rounded-full border-2 ${
@@ -443,10 +440,8 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
 
       {paint.enabled ? (
         <p className="mt-2 px-1 text-[0.65rem] leading-tight text-[var(--tfmc-stone)]">
-          Left-drag to draw. Select a drawing to move it, drag a corner to
-          resize, or the top knob to rotate (hold Shift to snap). Click a
-          selected label again to edit it. Middle-drag still pans, scroll still
-          zooms.
+          Drag to draw. Select a drawing to move, resize or rotate it.
+          Middle-drag to pan; scroll to zoom.
         </p>
       ) : null}
     </div>

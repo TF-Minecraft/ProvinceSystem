@@ -3,7 +3,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 import {
   CHRONICLE_RENDER_SIZES,
-  formatChronicleBytes,
   formatChronicleDuration,
   type ChronicleBuildProgress,
   type ChronicleEstimate,
@@ -328,11 +327,6 @@ export function ChronicleTogglePanel({
 }) {
   return (
     <div className="space-y-5">
-      {/* Not on a phone, where the sheet's peek has room for the tiles only. */}
-      <p className="text-sm leading-snug text-[var(--tfmc-stone)] max-md:hidden">
-        The map starts bare. Pick what each day should show; the map previews the
-        latest day as you go.
-      </p>
       {notice ? <ChronicleNotice>{notice}</ChronicleNotice> : null}
 
       {TOGGLE_GROUPS.map((group) => (
@@ -372,9 +366,10 @@ export function ChronicleTogglePanel({
         </section>
       ))}
 
+      {/* A tile's title tooltip is not reliable on touch or keyboard. */}
       {Object.entries(disabledReasons).map(([key, reason]) => (
         <ChronicleNotice key={key} tone="quiet">
-          {TOGGLE_DETAILS.get(key as ChronicleToggleKey)?.label}: {reason}
+          {reason}
         </ChronicleNotice>
       ))}
 
@@ -404,8 +399,7 @@ export function ChronicleTogglePanel({
         <section className={`${sectionRuleClass} pt-4`}>
           <SectionHeading title="Sequence" />
           <p className="mt-1.5 text-xs leading-snug text-[var(--tfmc-stone)]">
-            One look plays as the layers are now. Add this look to stitch several
-            into one timelapse, in the order you queue them.
+            Queue several looks to play one after another.
           </p>
           <button
             type="button"
@@ -575,8 +569,7 @@ export function ChronicleRangePanel({
         {selection.incompleteDays.length && !selection.error ? (
           <p className="mt-2 text-xs text-[var(--tfmc-accent)]">
             {selection.incompleteDays.length} day
-            {selection.incompleteDays.length === 1 ? " was" : "s were"} captured with
-            missing sources.
+            {selection.incompleteDays.length === 1 ? " is" : "s are"} incomplete.
           </p>
         ) : null}
       </section>
@@ -603,7 +596,7 @@ export function ChronicleRangePanel({
         {selection.error ? (
           <p className="text-sm text-[var(--tfmc-accent)]">{selection.error}</p>
         ) : (
-          <dl className="grid grid-cols-3 gap-2 text-center">
+          <dl className="grid grid-cols-2 gap-2 text-center">
             <div>
               <dt className="text-xs text-[var(--tfmc-mist)]">Frames</dt>
               <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">
@@ -614,12 +607,6 @@ export function ChronicleRangePanel({
               <dt className="text-xs text-[var(--tfmc-mist)]">Build time</dt>
               <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">
                 ~{formatChronicleDuration(estimate.totalMs)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-[var(--tfmc-mist)]">Memory</dt>
-              <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">
-                ~{formatChronicleBytes(estimate.memoryBytes)}
               </dd>
             </div>
           </dl>
@@ -633,8 +620,7 @@ export function ChronicleRangePanel({
 
       {estimate.overCeiling ? (
         <ChronicleNotice>
-          {formatChronicleBytes(estimate.memoryBytes)} of frames is more than this
-          browser should hold at once.{" "}
+          That&rsquo;s too many frames to build at once.{" "}
           {looks > 1
             ? "Shorten the range, pick a smaller frame size, or drop a look from the sequence."
             : "Shorten the range or pick a smaller frame size."}
@@ -682,12 +668,10 @@ export function ChronicleBuildPanel({
           style={{ width: `${pct}%` }}
         />
       </div>
-      {progress ? (
+      {progress?.day ? (
         <p className="text-xs text-[var(--tfmc-stone)]">
           {progress.look ? `${progress.look} · ` : ""}
-          {progress.day ? `${formatChronicleDay(progress.day)} · ` : ""}
-          {progress.painted} painted, {progress.reused} reused
-          {progress.skipped ? `, ${progress.skipped} skipped` : ""}
+          {formatChronicleDay(progress.day)}
         </p>
       ) : null}
       {error ? <ChronicleNotice>{error}</ChronicleNotice> : null}
@@ -774,7 +758,7 @@ export function ChroniclePlayer({
       <p className="truncate text-xs text-[var(--tfmc-mist)]">
         {look ? `${look} · ` : null}
         Day {Math.min(activeIndex + 1, total)} of {total}
-        {incomplete ? <span className="text-[var(--tfmc-accent)]"> · sources missing</span> : null}
+        {incomplete ? <span className="text-[var(--tfmc-accent)]"> · incomplete</span> : null}
       </p>
     </div>
   );
@@ -961,7 +945,7 @@ function WatermarkCornerPicker({
       <div className="min-w-0 text-sm">
         <p className="text-[var(--tfmc-cream)]">Watermark</p>
         <p className="text-xs text-[var(--tfmc-stone)]">
-          {label}. Where the logo and Discord link sit, when they are on.
+          {label}
         </p>
       </div>
     </div>
@@ -1056,8 +1040,7 @@ export function ChroniclePlaybackPanel({
 
       {skippedDays.length ? (
         <ChronicleNotice tone="quiet">
-          {skippedDays.length} day{skippedDays.length === 1 ? " had" : "s had"} no stored
-          sources and {skippedDays.length === 1 ? "was" : "were"} left out.
+          {skippedDays.length} day{skippedDays.length === 1 ? "" : "s"} skipped (no data).
         </ChronicleNotice>
       ) : null}
 
