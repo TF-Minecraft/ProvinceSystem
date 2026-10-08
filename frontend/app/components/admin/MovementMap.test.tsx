@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import MovementMap, { type MovementTrail } from "./MovementMap";
 
-const view = vi.hoisted(() => ({ scale: 1 }));
+const view = vi.hoisted(() => ({ scale: 1, focus: vi.fn() }));
 
 vi.mock("../map/MapViewport", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -21,7 +21,7 @@ vi.mock("../../hooks/useMapViewport", () => ({
     translateX: 0,
     translateY: 0,
     viewportSize: { w: 800, h: 600 },
-    focusMapRect: () => {},
+    focusMapRect: view.focus,
     resetViewport: () => {},
     zoomBy: () => {},
     consumeDragClick: () => false,
@@ -40,7 +40,7 @@ const trails: MovementTrail[] = Array.from({ length: 20 }, (_, i) => ({
   ],
 }));
 
-const map = () => (
+const map = (fitKey = "now") => (
   <MovementMap
     mapId="main"
     mapWorld="TFMC_Map"
@@ -49,7 +49,7 @@ const map = () => (
     until={100}
     cursor={100}
     hold={150}
-    fitKey="now"
+    fitKey={fitKey}
     latest
   />
 );
@@ -77,4 +77,15 @@ it("shows a crowded name on tap only while it has no room, and drops the tap onc
   expect(names()).not.toContain(name);
   fireEvent.click(dot());
   expect(names()).toContain(name);
+});
+
+it("jumps to the first framing and animates later ones", () => {
+  // Animated from the whole map, the first framing's sharp tiles stayed blurry until the next zoom.
+  view.focus.mockClear();
+  const { rerender } = render(map("first"));
+  expect(view.focus).toHaveBeenCalledTimes(1);
+  expect(view.focus.mock.calls[0][3]).toEqual({ animated: false });
+  rerender(map("second"));
+  expect(view.focus).toHaveBeenCalledTimes(2);
+  expect(view.focus.mock.calls[1][3]).toEqual({ animated: true });
 });

@@ -109,8 +109,10 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
   const target = focus ?? (bounds ? { key: "network", bounds } : null);
   useEffect(() => {
     if (!ready || !target || framedRef.current === target.key || (!focus && !manifest)) return;
+    // The first framing jumps there, as on the movement map (blurry tiles after a long first zoom).
+    const animated = framedRef.current !== null;
     framedRef.current = target.key;
-    focusMapRect(target.bounds, FOCUS_INSET, FRAMING);
+    focusMapRect(target.bounds, FOCUS_INSET, FRAMING, { animated });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, manifest, target?.key]);
 

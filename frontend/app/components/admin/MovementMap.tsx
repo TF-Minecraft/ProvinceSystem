@@ -290,8 +290,10 @@ export default function MovementMap({
   }, [shown, mapWorld]);
 
   const fitTrail = () => (bounds ? focusMapRect(bounds, FOCUS_INSET) : resetViewport({ animated: true }));
-  const focusPoint = (x: number, z: number) =>
-    focusMapRect({ x: x - MIN_FRAME / 2, y: z - MIN_FRAME / 2, w: MIN_FRAME, h: MIN_FRAME }, FOCUS_INSET);
+  const focusPoint = (x: number, z: number, animated = true) =>
+    focusMapRect({ x: x - MIN_FRAME / 2, y: z - MIN_FRAME / 2, w: MIN_FRAME, h: MIN_FRAME }, FOCUS_INSET, undefined, {
+      animated,
+    });
 
   // Frame a new selection once, when its data is in; refreshes keep the camera.
   const fittedRef = useRef<string | null>(null);
@@ -299,10 +301,14 @@ export default function MovementMap({
   const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
     if (!ready || fitKey === null || fittedRef.current === fitKey) return;
+    // The first framing jumps there. Animated, it zoomed in several times over
+    // from the whole map, and the sharp tiles that loaded mid-zoom stayed
+    // blurry until the next zoom.
+    const animated = fittedRef.current !== null;
     fittedRef.current = fitKey;
-    if (bounds) focusMapRect(bounds, FOCUS_INSET);
-    else if (pin) focusPoint(pin.x, pin.z);
-    else resetViewport({ animated: true });
+    if (bounds) focusMapRect(bounds, FOCUS_INSET, undefined, { animated });
+    else if (pin) focusPoint(pin.x, pin.z, animated);
+    else resetViewport({ animated });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, ready]);
 

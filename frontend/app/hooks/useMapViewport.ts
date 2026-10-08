@@ -113,8 +113,16 @@ export type UseMapViewportResult = {
   resetViewport: (options?: ViewportResetOptions) => void;
   /** Zoom by `factor` around the viewport centre, animated. */
   zoomBy: (factor: number) => void;
-  /** Animate to frame a map-space rectangle, clear of `inset` screen furniture. */
-  focusMapRect: (rect: MapRect, inset?: MapFocusInset, framing?: MapFocusFraming) => void;
+  /**
+   * Frame a map-space rectangle, clear of `inset` screen furniture; animated
+   * unless `options.animated` is false.
+   */
+  focusMapRect: (
+    rect: MapRect,
+    inset?: MapFocusInset,
+    framing?: MapFocusFraming,
+    options?: ViewportResetOptions
+  ) => void;
   /**
    * True once for the click that ends a drag. The browser still fires `click`
    * after a press that panned the map; the canvas asks this first so a pan
@@ -320,16 +328,19 @@ export function useMapViewport({
     setTransition(undefined);
   }, []);
 
-  /** Apply `next` with a CSS transition that is dropped once it has run. */
+  /**
+   * Apply `next` with a CSS transition that is dropped once it has run, or at
+   * once when `animated` is false.
+   */
   const animateTo = useCallback(
-    (next: ViewportTransform, css: string, ms: number) => {
+    (next: ViewportTransform, css: string, ms: number, animated = true) => {
       commitLive();
       clearTransition();
       // The live path wrote `transition: none` straight onto the element;
       // React will not clear what it did not set.
       contentRef.current?.style.removeProperty("transition");
       setTransform(next);
-      if (prefersReducedMotion()) return;
+      if (!animated || prefersReducedMotion()) return;
       setTransition(css);
       transitionTimerRef.current = setTimeout(() => {
         transitionTimerRef.current = null;
@@ -416,7 +427,12 @@ export function useMapViewport({
   );
 
   const focusMapRect = useCallback(
-    (rect: MapRect, inset?: MapFocusInset, framing?: MapFocusFraming) => {
+    (
+      rect: MapRect,
+      inset?: MapFocusInset,
+      framing?: MapFocusFraming,
+      options?: ViewportResetOptions
+    ) => {
       const viewport = viewportSizeRef.current;
       if (viewport.w <= 0 || viewport.h <= 0) return;
       animateTo(
@@ -427,7 +443,8 @@ export function useMapViewport({
           inset,
         }),
         VIEWPORT_FOCUS_TRANSITION,
-        VIEWPORT_FOCUS_TRANSITION_MS
+        VIEWPORT_FOCUS_TRANSITION_MS,
+        options?.animated ?? true
       );
     },
     [animateTo]
