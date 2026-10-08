@@ -77,6 +77,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
           aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
+          aria-keyshortcuts="/"
           aria-activedescendant={showList && results[active] ? `${listId}-${active}` : undefined}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -117,11 +118,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
           >
             <CloseIcon size={14} />
           </button>
-        ) : (
-          <kbd className="hidden shrink-0 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] px-1.5 text-[0.65rem] text-[var(--tfmc-stone)] md:inline">
-            /
-          </kbd>
-        )}
+        ) : null}
       </div>
 
       {showList ? (
