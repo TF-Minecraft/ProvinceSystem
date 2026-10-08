@@ -42,11 +42,14 @@ export default function RanksOverview({ initialQuery = "" }: { initialQuery?: st
       <StatusLine status={data.status} rights={data.rights} />
       <PlayerSearch initialQuery={initialQuery} total={data.players} />
       <GroupsPanel data={data} onChanged={refresh} />
-      <TracksPanel data={data} onChanged={refresh} />
-      <section className={panelClass} aria-label="Recent changes">
-        <h2 className={headingClass}>Recent changes</h2>
-        <ChangeHistory changes={data.recent} showTarget />
-      </section>
+      {/* Side by side on wide screens: neither needs the full width. */}
+      <div className="grid gap-x-6 lg:grid-cols-2">
+        <TracksPanel data={data} onChanged={refresh} />
+        <section className={panelClass} aria-label="Recent changes">
+          <h2 className={headingClass}>Recent changes</h2>
+          <ChangeHistory changes={data.recent} showTarget />
+        </section>
+      </div>
     </>
   );
 }
@@ -90,9 +93,8 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
   }
 
   return (
-    <section className={panelClass} aria-label="Find a player">
-      <h2 className={headingClass}>Find a player</h2>
-      <form onSubmit={onSubmit} className="mt-3 flex flex-wrap gap-3">
+    <section className="mt-6" aria-label="Find a player">
+      <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="sr-only" htmlFor="ranks-search">
           Minecraft name or UUID
         </label>
@@ -100,18 +102,18 @@ function PlayerSearch({ initialQuery, total }: { initialQuery: string; total: nu
           id="ranks-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Minecraft name or UUID"
+          placeholder="Find a player: Minecraft name or UUID"
           autoComplete="off"
           spellCheck={false}
-          className={`${inputClass} min-w-0 flex-1`}
+          className={`${inputClass} min-w-0 flex-1 basis-64`}
         />
         <button type="submit" disabled={busy} className={buttonClass}>
           {busy ? "Searching…" : "Find"}
         </button>
+        <p className="text-xs text-[var(--tfmc-stone)]">
+          {total.toLocaleString()} players have something set in LuckPerms. Part of a name is enough.
+        </p>
       </form>
-      <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-        {total.toLocaleString()} players have something set in LuckPerms. Part of a name is enough.
-      </p>
       {error ? (
         <p className={`mt-3 ${errorClass}`} role="alert">
           {error}
@@ -240,8 +242,8 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
             <tr>
               <th className="py-2 pr-3 font-semibold">Group</th>
               <th className="py-2 pr-3 font-semibold">Prefix</th>
-              <th className="py-2 pr-3 font-semibold">Weight</th>
-              <th className="py-2 pr-3 font-semibold">Inherits</th>
+              <th className="py-2 pr-6 text-right font-semibold">Weight</th>
+              <th className="w-1/3 py-2 pr-3 font-semibold">Inherits</th>
               <th className="py-2 text-right font-semibold">Players</th>
             </tr>
           </thead>
@@ -256,7 +258,7 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
                   {group.patreon ? <span className={`${badgeClass} ml-2 bg-[#4a3a1a] text-[#f0d79a]`}>Patreon</span> : null}
                 </td>
                 <td className="py-2 pr-3">{group.prefix ? <McText text={group.prefix} /> : <span className="text-[var(--tfmc-stone)]">—</span>}</td>
-                <td className="py-2 pr-3 tabular-nums text-[var(--tfmc-mist)]">{group.weight ?? "—"}</td>
+                <td className="py-2 pr-6 text-right tabular-nums text-[var(--tfmc-mist)]">{group.weight ?? "—"}</td>
                 <td className="py-2 pr-3 text-[var(--tfmc-mist)]">{group.parents.join(", ") || "—"}</td>
                 <td className="py-2 text-right tabular-nums">
                   <Link href={`/admin/ranks/groups/${encodeURIComponent(group.name)}#members`} className="text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
