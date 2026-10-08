@@ -15,6 +15,7 @@ for the final page; build() extracts labels after the database reader closes.
 """
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass
 
 from . import cursors, metadata, names
@@ -292,25 +293,44 @@ def fetch(reader: Reader, maps: Maps, ids: list[int], kinds: tuple[str, ...], cu
 def _infer_channels(reader: Reader, rows: list) -> None:
     """Each plain chat line's channel: the last `/channel` switch since that login, else the default.
 
-    None when no login is recorded before it, or the switch lies beyond
-    SWITCH_SCAN commands back. Point reads for the final page only.
+    None when no login is recorded before it, or the session's newest
+    SWITCH_SCAN commands hold no switch before it and do not reach back to
+    its login. For the final page only, a few reads per player and session.
     """
+    by_user: dict[int, list[dict]] = {}
     for source, row in rows:
-        if source.name != "chat":
-            continue
-        login = reader.rows(
+        if source.name == "chat":
+            by_user.setdefault(row["user"], []).append(row)
+    for user, chats in by_user.items():
+        oldest, newest = min(r["time"] for r in chats), max(r["time"] for r in chats)
+        logins = {r["time"] for r in reader.rows(
+            "SELECT time FROM co_session WHERE user = ? AND action = 1 AND time BETWEEN ? AND ?",
+            (user, oldest, newest))}
+        logins |= {r["time"] for r in reader.rows(
             "SELECT time FROM co_session WHERE user = ? AND time <= ? AND action = 1 "
-            "ORDER BY time DESC LIMIT 1", (row["user"], row["time"]))
-        if not login:
-            continue
-        window = (row["user"], login[0]["time"], row["time"], SWITCH_SCAN)
-        recent = ("SELECT message FROM co_command WHERE user = ? AND time BETWEEN ? AND ? "
-                  "ORDER BY time DESC, rowid DESC LIMIT ?")
-        switches = reader.rows(f"SELECT message FROM ({recent}) WHERE {_SWITCH}", window)
-        chosen = next((cid for r in switches if (cid := switched_to(r["message"] or ""))), None)
-        if chosen is None and reader.rows(f"SELECT COUNT(*) AS n FROM ({recent})", window)[0]["n"] == SWITCH_SCAN:
-            continue
-        row["channel"] = chosen or DEFAULT_CHANNEL
+            "ORDER BY time DESC LIMIT 1", (user, oldest))}
+        starts = sorted(logins)
+        sessions: dict[int, list[dict]] = {}
+        for row in chats:
+            index = bisect.bisect_right(starts, row["time"]) - 1
+            if index >= 0:
+                sessions.setdefault(starts[index], []).append(row)
+        for login, members in sessions.items():
+            window = (user, login, max(r["time"] for r in members), SWITCH_SCAN)
+            recent = ("SELECT time, message FROM co_command WHERE user = ? AND time BETWEEN ? AND ? "
+                      "ORDER BY time DESC, rowid DESC LIMIT ?")
+            # Newest first, so each line takes the first switch at or before it.
+            switches = [(r["time"], cid) for r in reader.rows(f"SELECT time, message FROM ({recent}) WHERE {_SWITCH}", window)
+                        if (cid := switched_to(r["message"] or ""))]
+            capped = None
+            for row in members:
+                chosen = next((cid for at, cid in switches if at <= row["time"]), None)
+                if chosen is None:
+                    if capped is None:
+                        capped = reader.rows(f"SELECT COUNT(*) AS n FROM ({recent})", window)[0]["n"] == SWITCH_SCAN
+                    if capped:
+                        continue
+                row["channel"] = chosen or DEFAULT_CHANNEL
 
 
 def _fetch_metadata(reader: Reader, maps: Maps, rows: list) -> None:

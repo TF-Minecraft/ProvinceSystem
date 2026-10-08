@@ -278,3 +278,22 @@ def test_channel_switches_are_parsed_like_rpcharacters():
     assert activity.switched_to("/channeltoggle ooc") is None
     assert activity.channel_of("/RPCharacters:LOOC hi") == "LOOC"
     assert activity.channel_of("/channel looc") is None
+
+
+def test_channel_lookups_are_per_session_not_per_line(coreprotect):
+    me = coreprotect.user("Hazel", "0615a817-8cb4-4aef-95f7-f6c9bf7611b8")
+    coreprotect.session(me, 10, 1)
+    coreprotect.command(me, 40, "/channel ooc")
+    for t in range(20, 80):
+        coreprotect.chat(me, t, f"line {t}")
+    config = CoreProtectConfig(path=str(coreprotect.path), server="main", label="", ping_seconds=60)
+    with Reader(config) as r:
+        source = next(s for s in activity.SOURCES if s.name == "chat")
+        rows = [(source, dict(row)) for row in r.rows("SELECT user, time FROM co_chat ORDER BY time DESC")]
+        statements = []
+        real = r.rows
+        r.rows = lambda sql, params=(): statements.append(sql) or real(sql, params)
+        activity._infer_channels(r, rows)
+    assert len(statements) <= 4
+    channels = {row["time"]: row["channel"] for _, row in rows}
+    assert channels[39] == "rp" and channels[40] == "ooc" and channels[79] == "ooc"
