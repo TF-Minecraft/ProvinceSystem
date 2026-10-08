@@ -19,6 +19,11 @@ type MapShellProps = {
   detailsKey?: string | null;
   /** Clears the selection: the phone sheet was pulled down and closed. */
   onDetailsClose?: () => void;
+  /**
+   * Pinned above the details' scrolling content, so the scrollbar starts
+   * under it: the timelapse's steps.
+   */
+  detailsHeader?: ReactNode;
   /** Pinned under the details' scrolling content: the panel's main action. */
   detailsFooter?: ReactNode;
   zoomControls: ReactNode;
@@ -58,6 +63,7 @@ export default function MapShell({
   details,
   detailsKey,
   onDetailsClose,
+  detailsHeader,
   detailsFooter,
   status,
   zoomControls,
@@ -107,7 +113,12 @@ export default function MapShell({
 
         {details ? (
           // Keyed, so a newly selected region opens at the peek height again.
-          <DetailsSheet key={detailsKey ?? undefined} onClose={onDetailsClose} footer={detailsFooter}>
+          <DetailsSheet
+            key={detailsKey ?? undefined}
+            onClose={onDetailsClose}
+            header={detailsHeader}
+            footer={detailsFooter}
+          >
             {details}
           </DetailsSheet>
         ) : null}
@@ -177,10 +188,12 @@ const FULL_SHEET_GAP_PX = 12;
 function DetailsSheet({
   children,
   onClose,
+  header,
   footer,
 }: {
   children: ReactNode;
   onClose?: () => void;
+  header?: ReactNode;
   footer?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -210,6 +223,7 @@ function DetailsSheet({
       >
         <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
       </button>
+      {header ? <div className="shrink-0">{header}</div> : null}
       <div
         ref={scrollerRef}
         className="relative min-h-0 flex-1 overflow-y-auto overscroll-none px-4 pb-4"

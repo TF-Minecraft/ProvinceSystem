@@ -186,7 +186,7 @@ const STEPS: { key: ChronicleStep; label: string }[] = [
 ];
 
 /**
- * The three steps across the top of the panel, pinned while it scrolls. A step
+ * The three steps across the top of the panel, above its scrolling body. A step
  * already reached can be gone back to; one not yet reached cannot be skipped
  * to, since each needs what the one before it settles.
  */
@@ -201,12 +201,11 @@ export function ChronicleSteps({
 }) {
   const currentIndex = STEPS.findIndex((step) => step.key === current);
   return (
-    // Pinned at the very top of the panel body, which has no top padding, so
-    // Safari and Chrome agree where it rests (see PanelHeader). The upward
-    // shadow seals the hairline iOS can leave above a sticky bar.
+    // The panel's header rather than a sticky bar in its body, so the body's
+    // scrollbar starts under it instead of running up into the corner.
     <nav
       aria-label="Timelapse steps"
-      className="sticky top-0 z-10 -mx-4 mb-4 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[var(--tfmc-forest-deep)] px-3 pb-2.5 pt-1 shadow-[0_-4px_0_var(--tfmc-forest-deep)] md:rounded-t-[9px] md:pt-3"
+      className="border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-3 pb-2.5 pt-1 md:pt-3"
     >
       <ol className="flex items-center gap-1">
         {STEPS.map((step, index) => {

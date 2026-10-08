@@ -2176,13 +2176,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const panel = sheetMin ? (
     <ChronicleSheetSummary step={step} summary={sheetSummary} onOpen={() => setSheetMin(false)} />
   ) : (
-    <>
-      <ChronicleSteps current={step} reachable={reachable} onSelect={goToStep} />
-      <div className="space-y-5">
-        {indexNotices}
-        {stepBody}
-      </div>
-    </>
+    <div className="space-y-5 pt-4">
+      {indexNotices}
+      {stepBody}
+    </div>
   );
 
   return (
@@ -2193,6 +2190,11 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       // and when playback starts, so the player is what shows.
       detailsKey={sheetMin ? "summary" : stage === "play" ? "watch" : "steps"}
       onDetailsClose={() => setSheetMin(true)}
+      detailsHeader={
+        sheetMin ? null : (
+          <ChronicleSteps current={step} reachable={reachable} onSelect={goToStep} />
+        )
+      }
       detailsFooter={sheetMin ? null : stepFooter}
       status={
         indexLoading
