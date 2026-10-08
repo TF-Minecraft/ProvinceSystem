@@ -60,11 +60,15 @@ html.map-fullscreen textarea {
   user-select: text;
 }
 
-/* Themed scrollbars (Firefox + Chromium/WebKit) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--tfmc-mist) 45%, transparent)
-    color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+/* Themed scrollbars. The standard properties are for Firefox only: Chrome
+   ignores every ::-webkit-scrollbar rule below once they are set, and falls
+   back to its plain native bar with arrow buttons. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--tfmc-mist) 45%, transparent)
+      color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+  }
 }
 
 *::-webkit-scrollbar {
