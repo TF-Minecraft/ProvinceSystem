@@ -447,15 +447,12 @@ html.map-fullscreen textarea {
    * map scaled past its resting size) between pixels; Chrome then lets
    * about a quarter of that pixel through and the page shows as a grid of
    * dark lines. So an opaque tile reaches TILE_OVERLAP_PX (TileLayer) under
-   * its right and bottom neighbours, and twice that mid-zoom, divided by
-   * the live scale to stay that size on screen. */
+   * its right and bottom neighbours, divided by the live scale to stay that
+   * size on screen. The same size mid-zoom and at rest: when it shrank as a
+   * zoom settled, every tile's far side moved back a pixel. */
   .map-tile {
-    scale: calc(1 + var(--tile-ox)) calc(1 + var(--tile-oy));
-  }
-
-  [data-scaling] .map-tile {
-    scale: calc(1 + 2 * var(--tile-ox) / var(--map-live-scale))
-      calc(1 + 2 * var(--tile-oy) / var(--map-live-scale));
+    scale: calc(1 + var(--tile-ox) / var(--map-live-scale, 1))
+      calc(1 + var(--tile-oy) / var(--map-live-scale, 1));
   }
 
   /* An in-text link to another realm or place. */

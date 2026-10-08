@@ -32,10 +32,10 @@ const FADE_MS = 160;
 const SHOWN_MS = FADE_MS + 40;
 /**
  * How far, in screen pixels, an opaque tile reaches under its right and
- * bottom neighbours at rest; twice that mid-zoom (see `.map-tile` in
- * globals.css).
+ * bottom neighbours, at rest and mid-zoom alike (see `.map-tile` in
+ * globals.css). One pixel let a seam through mid-zoom.
  */
-const TILE_OVERLAP_PX = 1;
+const TILE_OVERLAP_PX = 2;
 /**
  * How far, in screen pixels, the backdrop runs on under the edge of opaque
  * sharp tiles (see the backdrop's clip path below).
@@ -222,8 +222,6 @@ function TileLayer({
     image.decode().then(settle, settle);
   };
 
-  // Snap tile edges to whole screen pixels so neighbours meet without gaps
-  // or overlaps, which would darken see-through rasters such as prosperity.
   // The position goes in a transform, not left/top: at a fractional device
   // pixel ratio (Windows at 125 %, say) Chrome painted a box placed by
   // left/top up to a quarter pixel off its snapped edge, so the first column
@@ -231,12 +229,18 @@ function TileLayer({
   // dark lines. A translate keeps the exact position. The size still goes
   // through `zoom` and can end a hair short of the pixel, and mid-zoom the
   // edges land between pixels anyway; Chrome lets about a quarter of such a
-  // pixel through. So opaque tiles also reach a little under their right and
-  // bottom neighbours, which are drawn after them (on top).
+  // pixel through. So opaque tiles reach a little under their right and
+  // bottom neighbours, which are drawn after them (on top), and keep their
+  // exact place: snapped to the pixels of each new zoom they moved by up to
+  // a pixel, each its own way, when a zoom settled.
+  //
+  // See-through rasters such as prosperity cannot overlap, which would
+  // darken the strip, so their edges snap to whole screen pixels to meet
+  // without gaps.
   const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
   const snap = (value: number) =>
-    mapPxPerScreenPx > 0 && Number.isFinite(mapPxPerScreenPx)
+    seeThrough && mapPxPerScreenPx > 0 && Number.isFinite(mapPxPerScreenPx)
       ? Math.round(value / mapPxPerScreenPx) * mapPxPerScreenPx
       : value;
 

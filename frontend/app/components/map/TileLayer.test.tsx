@@ -379,12 +379,12 @@ describe("TileLayer", () => {
       return { sharp, clip: backdrop.parentElement!.style.clipPath };
     };
 
-    // An opaque tile reaches one screen pixel (here 1/256 of itself) under
+    // An opaque tile reaches two screen pixels (here 2/256 of itself) under
     // its neighbours, and the backdrop runs on 8 px under the sharp tiles:
     // where two edges meet off a pixel boundary the page would show through.
     const opaque = layer(false);
     expect(opaque.sharp.classList.contains("map-tile")).toBe(true);
-    expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe(String(1 / 256));
+    expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe(String(2 / 256));
     expect(opaque.clip).toContain("0.390625% 0.390625%, 0.390625% 24.609375%");
     cleanup();
 
@@ -392,5 +392,30 @@ describe("TileLayer", () => {
     const seeThrough = layer(true);
     expect(seeThrough.sharp.classList.contains("map-tile")).toBe(false);
     expect(seeThrough.clip).toContain("0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%");
+  });
+
+  it("keeps opaque tiles in place and snaps only see-through ones to pixels", () => {
+    // At 0.7 a tile's edge at map x 256 is 179.2 screen pixels in.
+    const placed = (seeThrough: boolean) => {
+      const { container } = render(
+        <TileLayer
+          manifest={manifest("v1")}
+          tileUrl={tileUrl}
+          view={{ ...view, displayScale: 0.7 }}
+          seeThrough={seeThrough}
+        />
+      );
+      const tile = container.querySelector<HTMLImageElement>('img[src="/t/0/1/0.webp"]')!;
+      const { translate, width } = tile.style;
+      cleanup();
+      return { translate, width };
+    };
+
+    // Snapped to the pixels of each zoom, a tile moved when a zoom settled.
+    expect(placed(false)).toEqual({ translate: "256px 0px", width: "256px" });
+    // 179 screen pixels, which see-through neighbours meet on exactly.
+    const snapped = placed(true);
+    expect(parseFloat(snapped.translate) * 0.7).toBeCloseTo(179, 9);
+    expect(parseFloat(snapped.width) * 0.7).toBeCloseTo(179, 9);
   });
 });

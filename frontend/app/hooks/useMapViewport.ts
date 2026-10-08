@@ -195,11 +195,9 @@ function onDevicePixel(value: number): number {
  */
 function markScaling(content: HTMLElement, scale: number | null): void {
   if (scale === null) {
-    content.removeAttribute("data-scaling");
     content.style.removeProperty("--map-live-scale");
     return;
   }
-  content.setAttribute("data-scaling", "");
   content.style.setProperty("--map-live-scale", String(scale));
 }
 
@@ -298,11 +296,13 @@ export function useMapViewport({
       // rasterise one enormous texture, which measured slower than letting it
       // re-tile.
       content.style.transition = "none";
-      // A drag only moves the map: like the resting position (see below) it
-      // sits on whole device pixels, or every tile edge straddles a pixel and
-      // the seams between tiles show as a grid of dark lines while it moves.
+      // Like the resting position (see below) the live one sits on whole
+      // device pixels. A drag only moves the map, and off them every tile
+      // edge straddles a pixel and the seams show as a grid of dark lines
+      // while it moves. Mid-zoom the same rounding puts the tiles exactly
+      // where the zoom will rest, so nothing moves when it settles.
       const liveScale = displayScale / appliedZoomRef.current;
-      const pixelAligned = restingZoomRef.current && liveScale === 1;
+      const pixelAligned = restingZoomRef.current;
       content.style.transform = viewportTransformStyle(
         liveScale,
         pixelAligned ? onDevicePixel(next.translateX) : next.translateX,
@@ -848,23 +848,25 @@ export function useMapViewport({
     setZoomBase(displayScale);
   }, [restingZoom, displayScale, transition, isPanning, zoomBase]);
 
-  // At rest the position sits on a whole device pixel, so the tiles' snapped
-  // edges (see TileLayer) land on pixel boundaries too; a sub-pixel shift no
-  // one can see.
   // An animated zoom runs from the zoom held so far to the new scale: size
   // the tiles' overlap for the smaller end, so it covers the whole way.
   const restingScale = displayScale / appliedZoom;
+  const overlapScale = transition === undefined ? restingScale : Math.min(1, restingScale);
   useLayoutEffect(() => {
     const content = contentRef.current;
     if (!content || liveActiveRef.current) return;
-    markScaling(content, restingZoom && restingScale !== 1 ? Math.min(1, restingScale) : null);
+    markScaling(content, restingZoom && restingScale !== 1 ? overlapScale : null);
   });
 
-  const restingOnZoom = restingZoom && appliedZoom === displayScale;
+  // At rest the position sits on a whole device pixel, so the see-through
+  // tiles' snapped edges (see TileLayer) land on pixel boundaries too; a
+  // sub-pixel shift no one can see. So does the render that commits a
+  // gesture, before `zoom` catches up: it keeps the position the gesture
+  // ended on.
   const transformStyle = viewportTransformStyle(
     displayScale / appliedZoom,
-    restingOnZoom ? onDevicePixel(transform.translateX) : transform.translateX,
-    restingOnZoom ? onDevicePixel(transform.translateY) : transform.translateY
+    restingZoom ? onDevicePixel(transform.translateX) : transform.translateX,
+    restingZoom ? onDevicePixel(transform.translateY) : transform.translateY
   );
   const cursorClassName = isPanning ? "cursor-grabbing" : "cursor-grab";
   const transformTransition = isPanning ? undefined : transition;
