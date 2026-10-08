@@ -8,7 +8,7 @@ import { mapFallbackSize, type MapId } from "../map/types";
 import { tileUrl, useTileManifest } from "../../hooks/useTileManifest";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { mapApiUrl } from "@/lib/map/api";
-import { layoutLabels, type PlacedLabel } from "../../../lib/admin/labelLayout";
+import { DEFAULT_LAYOUT, layoutLabels, type PlacedLabel } from "../../../lib/admin/labelLayout";
 import {
   ACTION_LOGIN,
   ACTION_LOGOUT,
@@ -334,11 +334,16 @@ export default function MovementMap({
           : []
       )
     : [];
-  const layoutKey = anchors.map((a) => `${a.key}:${a.label}:${a.x.toFixed(1)}:${a.y.toFixed(1)}`).join("|");
+  // Names stay on the map: the overlay is cut off at its edges.
+  const area = { width: mapSize.w * displayScale, height: mapSize.h * displayScale };
+  const layoutKey = `${area.width.toFixed(1)}:${area.height.toFixed(1)}|${anchors
+    .map((a) => `${a.key}:${a.label}:${a.x.toFixed(1)}:${a.y.toFixed(1)}`)
+    .join("|")}`;
   const placed = useMemo(
     () =>
       layoutLabels(
-        anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX }))
+        anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX })),
+        { ...DEFAULT_LAYOUT, area }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [layoutKey]
@@ -356,10 +361,11 @@ export default function MovementMap({
     if (spot) return [{ key: anchor.key, label: anchor.label, box: spot, leader: spot.leader, forced: false }];
     // No room: the label shows beside its marker, on a backing, only while pointed at or tapped.
     if (anchor.key !== highlight && (anchor.key !== picked || pickLapsed)) return [];
+    const width = labelWidth(anchor.label);
     const box = {
-      x: anchor.x + 12,
-      y: anchor.y - LABEL_HEIGHT_PX / 2,
-      width: labelWidth(anchor.label),
+      x: anchor.x + 12 + width > area.width ? anchor.x - 12 - width : anchor.x + 12,
+      y: Math.max(0, Math.min(anchor.y - LABEL_HEIGHT_PX / 2, area.height - LABEL_HEIGHT_PX)),
+      width,
       height: LABEL_HEIGHT_PX,
     };
     return [{ key: anchor.key, label: anchor.label, box, leader: null, forced: true }];

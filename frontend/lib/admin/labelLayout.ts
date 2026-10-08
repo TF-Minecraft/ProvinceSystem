@@ -29,6 +29,8 @@ export type LayoutOptions = {
   radii: readonly number[];
   /** Markers closer than this to one another (about touching) count as crowded together. */
   crowdRadius: number;
+  /** Labels stay inside this box (the map's drawn area), when given. */
+  area?: { width: number; height: number };
 };
 
 export const DEFAULT_LAYOUT: LayoutOptions = {
@@ -109,7 +111,8 @@ function turn(a: number, b: number): number {
 /**
  * Places the labels of markers with the fewest neighbours first, so a lone
  * marker beside a crowd keeps its name beside it and the crowd's names fan
- * out around it. Ties keep the order given: pass a stable one, so labels do
+ * out around it. Near the area's edge a name goes to the inner side or out
+ * on a leader, as when crowded. Ties keep the order given: pass a stable one, so labels do
  * not jump about between refreshes.
  *
  * A marker touching others puts its name on its own side of the group: the
@@ -119,14 +122,17 @@ function turn(a: number, b: number): number {
  * may pass under a marker lying on top of its own.
  */
 export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptions = DEFAULT_LAYOUT): PlacedLabel[] {
-  const { markerRadius, gap, pad, radii } = options;
+  const { markerRadius, gap, pad, radii, area } = options;
   const boxes: Box[] = [];
   const leaders: Segment[] = [];
   const out: PlacedLabel[] = [];
   const clearOfMarkers = (box: Box, own: LabelPoint) =>
     points.every((p) => p === own || !boxHitsCircle(box, p.x, p.y, markerRadius + pad)) &&
     !boxHitsCircle(box, own.x, own.y, markerRadius);
-  const free = (box: Box) => boxes.every((placed) => !overlaps(box, placed, pad));
+  const free = (box: Box) =>
+    (!area ||
+      (box.x >= pad && box.y >= pad && box.x + box.width <= area.width - pad && box.y + box.height <= area.height - pad)) &&
+    boxes.every((placed) => !overlaps(box, placed, pad));
 
   const near = options.crowdRadius;
   const touching = new Map(
