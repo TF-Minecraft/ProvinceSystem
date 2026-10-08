@@ -94,6 +94,9 @@ function InspectResultPanel({ result }: { result: InspectCodeResult }) {
           <dd className="mt-1 text-[var(--tfmc-cream)]">{kindsText}</dd>
         </div>
       </dl>
+      <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
+        Checking does not sign you in or use up the code.
+      </p>
     </div>
   );
 }

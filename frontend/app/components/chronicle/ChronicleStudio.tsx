@@ -440,7 +440,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           return;
         }
         setIndexError(
-          err instanceof Error ? err.message : "Failed to load the chronicle."
+          err instanceof Error ? err.message : "Couldn't load the map history."
         );
       })
       .finally(() => {
@@ -1899,7 +1899,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }
 
   const disabledReasons: Partial<Record<ChronicleToggleKey, string>> =
-    namesSupported ? {} : { nationNames: "Not available for this map." };
+    namesSupported ? {} : { nationNames: "Nation names aren't available for this map." };
 
   const emptyChronicle = !indexLoading && !indexError && days.length === 0;
   const layersOn = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).length;
@@ -1985,7 +1985,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       {indexError ? <ChronicleNotice>{indexError}</ChronicleNotice> : null}
       {emptyChronicle ? (
         <ChronicleNotice tone="quiet">
-          No history recorded yet.
+          No history available yet.
         </ChronicleNotice>
       ) : null}
       {layerError ? <ChronicleNotice>{layerError}</ChronicleNotice> : null}

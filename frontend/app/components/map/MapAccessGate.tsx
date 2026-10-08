@@ -24,7 +24,7 @@ export default function MapAccessGate({
     reason === "login"
       ? "Sign in with your profile code on the Profile page."
       : reason === "permission"
-        ? "This map is for staff only."
+        ? "If you should have access, ask staff."
         : `Something went wrong while loading ${mapDisplayName}. Please try again later.`;
 
   return (

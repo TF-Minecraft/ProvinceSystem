@@ -366,6 +366,13 @@ export function ChronicleTogglePanel({
         </section>
       ))}
 
+      {/* A tile's title tooltip is not reliable on touch or keyboard. */}
+      {Object.entries(disabledReasons).map(([key, reason]) => (
+        <ChronicleNotice key={key} tone="quiet">
+          {reason}
+        </ChronicleNotice>
+      ))}
+
       <section className={`${sectionRuleClass} pt-4`}>
         <label className="block">
           <SectionHeading title="Focus a nation" />

@@ -262,7 +262,7 @@ export default function ChronicleDayViewer({
         if (typeof index !== "object" || index === null) {
           setStatus({
             kind: "error",
-            message: "The chronicle index came back in an unreadable shape.",
+            message: "Couldn't load the map history.",
           });
           return;
         }
@@ -279,7 +279,7 @@ export default function ChronicleDayViewer({
           message:
             err instanceof Error
               ? err.message
-              : "Failed to load the chronicle index.",
+              : "Couldn't load the map history.",
         });
       });
 
@@ -326,9 +326,6 @@ export default function ChronicleDayViewer({
         </p>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           No record of {formatChronicleDay(activeDay)}
-        </p>
-        <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          Nothing was recorded for this day.
         </p>
         <ChronicleDayFallbackLinks mapId={mapId} />
       </div>

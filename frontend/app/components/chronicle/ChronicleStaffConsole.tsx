@@ -402,7 +402,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--tfmc-stone)]">
             A wipe moves days into a backup you can restore below. Both actions
-            are logged with your reason.
+            are logged against your profile with your reason.
           </p>
           <Link
             href={chronicleStudioHref(mapId)}

@@ -86,15 +86,15 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
-    setShareNote(`Exported ${paint.shapes.length} drawing(s).`);
+    setShareNote("Plan downloaded.");
   }
 
   async function handleImportFile(file: File) {
     const result = paint.importPlan(await file.text());
     setShareNote(
       result.ok
-        ? `Imported ${result.shapes.length} drawing(s)` +
-            (result.skipped ? `, skipped ${result.skipped} unreadable.` : ".")
+        ? "Plan opened." +
+            (result.skipped ? ` Skipped ${result.skipped} unreadable drawing(s).` : "")
         : result.reason
     );
   }
@@ -441,6 +441,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
       {paint.enabled ? (
         <p className="mt-2 px-1 text-[0.65rem] leading-tight text-[var(--tfmc-stone)]">
           Drag to draw. Select a drawing to move, resize or rotate it.
+          Middle-drag to pan; scroll to zoom.
         </p>
       ) : null}
     </div>

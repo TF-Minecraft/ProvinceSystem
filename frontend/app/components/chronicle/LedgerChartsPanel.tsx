@@ -414,7 +414,7 @@ const WealthChart = memo(function WealthChart({
         ))}
       </div>
       <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-        Server-wide money, for scale:
+        Server-wide money supply (separate scale):
       </p>
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${GLOBALS_STRIP_HEIGHT}`}
@@ -808,8 +808,9 @@ const IncomeChart = memo(function IncomeChart({
       </svg>
       <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
         <span className="text-[var(--tfmc-cream)]">—</span> net income,{" "}
-        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation,{" "}
-        <span className="text-[var(--tfmc-stone)]">· · ·</span> guild income (server)
+        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation adjustment
+        (this faction), <span className="text-[var(--tfmc-stone)]">· · ·</span>{" "}
+        guild income (server-wide)
       </p>
       {readout ? (
         <p
@@ -828,7 +829,7 @@ const IncomeChart = memo(function IncomeChart({
       ) : null}
       <div className="mt-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
         <p className="text-xs text-[var(--tfmc-stone)]">
-          Daily change
+          Daily wealth change
         </p>
         <svg viewBox={`0 0 ${CHART_WIDTH} 36`} className="mt-1 w-full">
           {(() => {
@@ -863,6 +864,10 @@ const IncomeChart = memo(function IncomeChart({
             strokeWidth={1}
           />
         </svg>
+        <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+          Actual change in wealth; lines above show daily forecasts. Gaps mean
+          missing records.
+        </p>
       </div>
     </div>
   );

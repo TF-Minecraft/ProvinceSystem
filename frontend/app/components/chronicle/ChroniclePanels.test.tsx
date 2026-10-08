@@ -89,7 +89,7 @@ describe("ChronicleTogglePanel", () => {
       <ChronicleTogglePanel
         toggles={{ ...CHRONICLE_TOGGLES_OFF, nationFill: true }}
         onToggle={onToggle}
-        disabledReasons={{ nationNames: "No geometry." }}
+        disabledReasons={{ nationNames: "Nation names aren't available for this map." }}
         notice={null}
         focusOptions={[]}
         focusNationId=""
@@ -105,9 +105,7 @@ describe("ChronicleTogglePanel", () => {
     expect(screen.getByRole("switch", { name: "Nation names" }).hasAttribute("disabled")).toBe(
       true
     );
-    expect(screen.getByRole("switch", { name: "Nation names" }).getAttribute("title")).toBe(
-      "No geometry."
-    );
+    expect(screen.getByText("Nation names aren't available for this map.")).toBeDefined();
   });
 });
 
