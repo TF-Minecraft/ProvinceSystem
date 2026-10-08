@@ -39,7 +39,7 @@ export default function ProfileSubmissionList({ kind, rows }: Props) {
               href={`/${kind}/${encodeURIComponent(row.id)}`}
               className="font-medium text-[var(--tfmc-cream)] hover:underline"
             >
-              {row.display_name || row.slug}
+              {row.display_name || (kind === "skins" ? "Untitled skin" : "Untitled drink")}
             </Link>
             <span
               className={`text-xs font-medium uppercase tracking-wide ${statusClass(row.status)}`}

@@ -42,9 +42,9 @@ export default function FarmingPage() {
         <>
           30 crops grow in watered <WikiItemLink name="Pot">pots</WikiItemLink>. Each is a small model in a{" "}
           <WikiItemLink name="Pot">pot</WikiItemLink>, not a vanilla crop block, and only grows while that{" "}
-          <WikiItemLink name="Pot">pot</WikiItemLink> is watered. Almost every fruit, vegetable and spice used by <Link href="/wiki/cooking" className="underline decoration-dotted">Cooking</Link>{" "}
-          and <Link href="/wiki/drink-builder" className="underline decoration-dotted">Drink Builder</Link>{" "}
-          comes from.
+          <WikiItemLink name="Pot">pot</WikiItemLink> is watered. These crops supply almost every fruit, vegetable and spice used in{" "}
+          <Link href="/wiki/cooking" className="underline decoration-dotted">Cooking</Link>{" "}
+          and <Link href="/wiki/drink-builder" className="underline decoration-dotted">Drink Builder</Link>.
         </>
       }
     >

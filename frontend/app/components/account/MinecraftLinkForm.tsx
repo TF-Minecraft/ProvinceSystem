@@ -118,7 +118,7 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
   return (
     <form onSubmit={onCheck} className="flex flex-col gap-4">
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Run <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> in game, then paste the code here.
+        Run <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> in game, click the code in chat to copy it, then paste it here.
       </p>
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">Link code</span>

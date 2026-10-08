@@ -5,7 +5,7 @@ import { allCommandRows, getNavItemByHref } from "../data";
 export default function CommandIndexPage() {
   const commands = allCommandRows.filter((entry) => (entry.row.access ?? "player") === "player");
   return (
-    <WikiPage lastModified="2026-09-12" title="Command Index" width="lg" intro="Every player command, A–Z.">
+    <WikiPage lastModified="2026-09-12" title="Command Index" width="lg" intro="Player commands covered in this guide, A–Z.">
       <WikiSectionHeading id="commands">
         Player commands
       </WikiSectionHeading>

@@ -118,7 +118,7 @@ export const advancedCraftingSection: WikiSection = {
     href: "/wiki/advanced-crafting",
     label: "Advanced Crafting",
     category: "professions",
-    blurb: "Hammer your own weapons and armor, then invent and name your own metal alloys.",
+    blurb: "Hammer your own weapons and armour, then invent and name your own metal alloys.",
   },
   recipes: advancedCraftingRecipes,
   commands: advancedCraftingCommands,

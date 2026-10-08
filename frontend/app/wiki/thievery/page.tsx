@@ -75,12 +75,12 @@ export default function ThieveryPage() {
         </li>
         <li>
           <strong>Containers and furniture</strong> do not hand you the contents directly on a
-          success: you get a Steal GUI instead. You click slots to probe them; each probe risks
+          success: you get a Steal menu instead. You click slots to probe them; each probe risks
           breaking your lockpick, and each item you take costs budget points from your loadout.
         </li>
         <li>
           <strong>Graves</strong> work the same way as containers: right-clicking another player&apos;s
-          grave opens the Steal GUI with a 10-point budget.
+          grave opens the Steal menu with a 10-point budget.
         </li>
       </ol>
 
@@ -90,7 +90,7 @@ export default function ThieveryPage() {
       <ul className="list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
           <strong>Pickpocketing</strong>: <code className="text-[var(--tfmc-accent)]">/pickpocket start</code>,
-          then right-click a target within 4 blocks. A Steal GUI of their inventory opens with a
+          then right-click a target within 4 blocks. A Steal menu of their inventory opens with a
           10-point budget. The victim sees a warning subtitle (a rarer &quot;critical&quot; version
           names your character directly). Moving too far away ends it.
         </li>

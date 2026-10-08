@@ -15,7 +15,7 @@ export default function GamesPage() {
       title="Games"
       intro={
         <>
-          Games turns any block into a card table. Place a deck, pick a game from a GUI, and bet real
+          Games turns any block into a card table. Place a deck, pick a game from a menu, and bet real
           denars against other players (or the house) at Blackjack, Tenceur Hold&apos;em, Five-Draw, or
           a no-rules Free play table. Cards float in front of you as 3-D displays that only nearby
           players can see, and money actually changes hands: winnings are taxed like any other
@@ -29,9 +29,9 @@ export default function GamesPage() {
       </WikiSectionHeading>
       <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Hold a <WikiItemLink name="Deck of Cards" />.</li>
-        <li>Right-click a block. A game-select GUI opens with four icons.</li>
+        <li>Right-click a block. A game-select menu opens with four icons.</li>
         <li>
-          Pick a game. Blackjack opens a table-options GUI (min bet, max bet, house settings) first;
+          Pick a game. Blackjack opens a table-options menu (min bet, max bet, house settings) first;
           Poker, Five-Draw and Free play go straight to placing the table.
         </li>
         <li>Click the spot to place the table. Sneak to cancel.</li>

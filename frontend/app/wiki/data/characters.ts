@@ -35,7 +35,7 @@ export const charactersCommands: WikiCommandSet = {
     },
     {
       command: "/rpcharacter wardrobe [slot]",
-      description: "Opens the wardrobe GUI, or equips a slot directly (base, extra_1, extra_2, or a saved name).",
+      description: "Opens the wardrobe menu, or equips a slot directly (base, extra_1, extra_2, or a saved name).",
     },
     {
       command: "/rpcharacter party create <name> | invite <player> | join | leave | kick <player> | info",

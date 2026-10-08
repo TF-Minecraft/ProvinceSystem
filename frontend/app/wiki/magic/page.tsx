@@ -151,12 +151,12 @@ export default function MagicPage() {
       />
       <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
-          <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armor
+          <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armour
           can take an Ascendant Armor Rune, but only if that piece came out Masterwork. A Tempered iron piece has a Minor
           socket, so a Minor Armor Rune is the most it will ever hold.
         </li>
-        <li>Armor runes go on Mage armor only. Every other armor piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
-        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armor.</li>
+        <li>Armor runes go on Mage armour only. Every other armour piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
+        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armour.</li>
         <li>A smaller rune in a bigger socket works, but it uses that socket up. If a piece has several sockets, the rune goes into the smallest one that can hold it.</li>
         <li>Check the socket line in the item&apos;s lore before you spend the dust. It names the biggest size the piece accepts.</li>
       </ul>

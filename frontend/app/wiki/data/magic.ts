@@ -87,7 +87,7 @@ export const magicCommands: WikiCommandSet = {
       description:
         "Opens your Resonance profile: a bar per element, your Equilibrium (Corruption vs Tranquility), your Mental Points, and the Surge / Flow cast-mode toggle.",
       notes:
-        'Permission magic.use, default true: every player already has it. Needs an active RP character, otherwise: "You need an active character to view resonance."',
+        "Requires an active character.",
     },
   ],
   excludedStaffCommands: [

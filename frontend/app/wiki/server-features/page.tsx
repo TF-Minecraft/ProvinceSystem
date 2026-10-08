@@ -103,7 +103,7 @@ export default function ServerFeaturesPage() {
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         Right-click (or shift-right-click, depending on the block) a station block, for
-        example, a brewing stand for the <StationLink name="Alchemy Station">alchemy station</StationLink>, and a custom crafting-station GUI
+        example, a brewing stand for the <StationLink name="Alchemy Station">alchemy station</StationLink>, and a custom crafting-station menu
         opens instead of the vanilla menu. See the{" "}
         <Link href="/wiki/stations" className="text-[var(--tfmc-accent)] hover:underline">
           Crafting Stations guide

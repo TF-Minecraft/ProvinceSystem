@@ -17,7 +17,7 @@ export default function GettingStartedPage() {
 
       <WikiSectionHeading id="choose-path">Choose your next guide</WikiSectionHeading>
       <DataTable columns={[{header:"If you want to…"},{header:"Start here"}]} rows={[
-        ["Craft weapons, armour, tools or consumables",<Link key="gear" href="/wiki/advanced-crafting" className="text-[var(--tfmc-accent)] hover:underline">Weapons and Armor</Link>],
+        ["Craft weapons, armour, tools or consumables",<Link key="gear" href="/wiki/advanced-crafting" className="text-[var(--tfmc-accent)] hover:underline">Weapons and armour</Link>],
         ["Farm crops, fish or collect materials",<Link key="farm" href="/wiki/farming" className="text-[var(--tfmc-accent)] hover:underline">Farming</Link>],
         ["Cook food or build drinks",<Link key="cook" href="/wiki/cooking" className="text-[var(--tfmc-accent)] hover:underline">Cooking</Link>],
         ["Learn magic and research",<Link key="magic" href="/wiki/magic" className="text-[var(--tfmc-accent)] hover:underline">Magic</Link>],

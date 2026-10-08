@@ -217,7 +217,7 @@ export default function AdvancedCraftingPage() {
       </Callout>
 
       <WikiSectionHeading id="crafting-a-weapon">
-        Crafting a weapon or piece of armor
+        Crafting a weapon or piece of armour
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Place a <StationLink name="Forging Station" />. Recipe below.</li>
@@ -302,7 +302,7 @@ export default function AdvancedCraftingPage() {
         rowKey={(_row, index) => bowRecipeTemplates[index].id}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Every weapon and bow, and all armor except Mage armor, takes Gemstone sockets. Mage armor
+        Every weapon and bow, and all armour except Mage armour, takes Gemstone sockets. Mage armour
         is the only recipe group on the Armor Rune track.
       </p>
       <WikiSectionHeading
@@ -321,7 +321,7 @@ export default function AdvancedCraftingPage() {
         rows={qualityTiers}
       />
       <Callout variant="note" className="mt-4">
-        Mage armor uses a separate socket track instead of the Gemstone track above: Minor /
+        Mage armour uses a separate socket track instead of the Gemstone track above: Minor /
         Lesser / Greater / Ascendant Armor Rune, at the same thresholds. In both tracks the
         lowest grade, Rusted, grants no socket at all, so only the top four grades give you one.
       </Callout>

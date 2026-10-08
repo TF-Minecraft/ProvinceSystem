@@ -144,7 +144,7 @@ export default function CharactersPage() {
         blindness: each comes with real stat penalties while it lasts. Two players can arrange a
         consensual roleplay injury with{" "}
         <code className="text-[var(--tfmc-accent)]">/rpcharacter injure &lt;player&gt;</code>: you
-        pick the injury from a GUI, then the target has to confirm it within 30 seconds. If your
+        pick the injury from a menu, then the target has to confirm it within 30 seconds. If your
         character dies, a grave chest appears with a hologram showing who killed you: right-click
         it to recover your things (or let someone else rob it). Graves never expire on their own.
         A <strong>Grave Insurance</strong> item, if you have one,

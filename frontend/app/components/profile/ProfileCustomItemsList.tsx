@@ -7,7 +7,7 @@ function statusLabel(item: ProfileCustomItem): string {
   const state = String(item.state || "").trim().toLowerCase();
   const sub = String(item.submission_status || "").trim().toLowerCase();
   if (state === "pending_skin") {
-    if (sub === "approved") return "Approved";
+    if (sub === "approved") return "Approved — not yet available";
     return "Awaiting approval";
   }
   switch (state) {
@@ -20,8 +20,19 @@ function statusLabel(item: ProfileCustomItem): string {
     case "draft":
       return "Draft";
     default:
-      return "In progress";
+      return "Status unavailable";
   }
+}
+
+// The backend falls back to kit_key when an item has no name; never show a raw key.
+const KEY_LIKE = /^[a-z0-9]+(?:[._:-][a-z0-9]+)+$/;
+
+function itemName(item: ProfileCustomItem): string {
+  const name = String(item.display_name || "").trim();
+  if (!name) return "Custom item";
+  if (name.toLowerCase() === String(item.kit_key || "").trim().toLowerCase()) return "Custom item";
+  if (KEY_LIKE.test(name)) return "Custom item";
+  return name;
 }
 
 type Props = {
@@ -51,7 +62,7 @@ export default function ProfileCustomItemsList({ items }: Props) {
                 href={href}
                 className="font-medium text-[var(--tfmc-cream)] hover:underline"
               >
-                {item.display_name || "Custom item"}
+                {itemName(item)}
               </Link>
               <span className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
                 {statusLabel(item)}
