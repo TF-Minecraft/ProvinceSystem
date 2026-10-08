@@ -73,7 +73,7 @@ export const CHRONICLE_TOGGLE_ORDER: {
   {
     key: "occupation",
     label: "Occupation",
-    detail: "Held land, greyed and seamed",
+    detail: "Occupied land",
   },
   {
     key: "tradeLeagues",
@@ -83,7 +83,7 @@ export const CHRONICLE_TOGGLE_ORDER: {
   {
     key: "prosperity",
     label: "Prosperity",
-    detail: "Per-province heat, over any fill",
+    detail: "Prosperity by province",
   },
   { key: "nationNames", label: "Nation names", detail: "Realm labels" },
   {
@@ -94,7 +94,7 @@ export const CHRONICLE_TOGGLE_ORDER: {
   {
     key: "markerNames",
     label: "Marker names",
-    detail: "Name chips under pins",
+    detail: "Names under pins",
   },
   { key: "forts", label: "Forts", detail: "Fort pins" },
   {

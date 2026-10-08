@@ -107,11 +107,11 @@ export default function PrecedentCaseModal({
         >
           {initial ? "Edit case" : "Log case"}
         </h2>
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          {initial
-            ? "Saving re-embeds the case so search matches the new wording."
-            : "Logged against your account. Staff searches will match on this text."}
-        </p>
+        {initial ? null : (
+          <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+            Logged against your account.
+          </p>
+        )}
 
         <div className="mt-4 space-y-3">
           <div>

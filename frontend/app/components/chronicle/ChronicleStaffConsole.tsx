@@ -401,10 +401,8 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
             Chronicle wipe and restore
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--tfmc-stone)]">
-            A wipe does not delete anything: the stored day folders are moved
-            aside into a timestamped backup and the index rows are archived, so
-            every wipe can be restored from the table below. Both actions are
-            recorded against your profile with the reason you give.
+            A wipe moves days into a backup you can restore below. Both actions
+            are logged with your reason.
           </p>
           <Link
             href={chronicleStudioHref(mapId)}
@@ -420,8 +418,6 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
           <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
             Type the map id <code className="text-[var(--tfmc-cream)]">{mapId}</code>{" "}
             exactly — no surrounding spaces, matching case — and give a reason.
-            The typed id is what stands in for shell access on the server, so it
-            is never filled in for you.
           </p>
 
           <label className="mt-4 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
@@ -498,13 +494,13 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         <section className={`${chroniclePanelClass} p-4`}>
           <SectionHeading title="Archive as…" />
           <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-            Copy this live map onto a frozen chapter id. The live socket stays
-            running. Type the dest id exactly. Extra confirm if the dest already
-            exists or is unknown. Do not use this on production this season.
+            Copy this live map onto a frozen chapter id. Type the destination id
+            exactly. Extra confirm if the destination already exists or is
+            unknown. Do not use this on production this season.
           </p>
 
           <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Dest id
+            Destination id
             <input
               className={`${inputClass} mt-1`}
               value={archiveDest}
@@ -524,13 +520,13 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
             />
           </label>
           <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Type the dest id to confirm
+            Type the destination id to confirm
             <input
               className={`${inputClass} mt-1`}
               value={archiveConfirm}
               autoComplete="off"
               spellCheck={false}
-              placeholder="type the dest id"
+              placeholder="type the destination id"
               onChange={(event) => setArchiveConfirm(event.target.value)}
             />
           </label>
@@ -705,9 +701,8 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
                                   Merge into the live chronicle. Live days win:
                                   any day that already exists is kept exactly as
                                   it is, its backup copy is left in the backup
-                                  directory, and its name comes back in{" "}
-                                  <code>skipped_days</code>. Nothing live is
-                                  overwritten.
+                                  directory, and it is listed as skipped. Nothing
+                                  live is overwritten.
                                 </span>
                               </label>
                               <label className="mt-2 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">

@@ -136,10 +136,11 @@ function ChronicleDayBar({
           <BackIcon size={18} />
         </Link>
         <div className="min-w-0 flex-1 text-center">
-          <p className="truncate text-xs text-[var(--tfmc-mist)]">
-            Stored day
-            {walk.total > 0 && walk.position > 0 ? ` · ${walk.position} of ${walk.total}` : ""}
-          </p>
+          {walk.total > 0 && walk.position > 0 ? (
+            <p className="truncate text-xs text-[var(--tfmc-mist)]">
+              Day {walk.position} of {walk.total}
+            </p>
+          ) : null}
           <p className="truncate font-[family-name:var(--font-fraunces)] text-xl leading-tight text-[var(--tfmc-cream)]">
             {formatChronicleDay(day)}
           </p>
@@ -177,14 +178,12 @@ function ChronicleDayBar({
       </div>
       {incomplete ? (
         <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
-          Some sources were missing when this day was captured, so parts of this
-          map may be blank.
+          Parts of this day may be missing.
         </p>
       ) : null}
       {staleGeometry ? (
         <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
-          The province map has been redrawn since this day was captured, so
-          borders may not line up.
+          Borders may not line up on this day.
         </p>
       ) : null}
     </div>
@@ -299,7 +298,7 @@ export default function ChronicleDayViewer({
     return (
       <div className={shellClass}>
         <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-          Looking up {activeDay} in the chronicle…
+          Loading…
         </p>
       </div>
     );
@@ -309,7 +308,7 @@ export default function ChronicleDayViewer({
     return (
       <div className={shellClass}>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          Could not read the chronicle
+          Couldn&rsquo;t load this day
         </p>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-accent)]">
           {status.message}
@@ -323,15 +322,13 @@ export default function ChronicleDayViewer({
     return (
       <div className={shellClass}>
         <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-          {displayName} chronicle
+          {displayName} timelapse
         </p>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          No record of {activeDay}
+          No record of {formatChronicleDay(activeDay)}
         </p>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          This map has no stored snapshot for that day — it was either never
-          captured or has since been removed. Showing nothing is deliberate: an
-          empty map under a real date would look like a real historical state.
+          Nothing was recorded for this day.
         </p>
         <ChronicleDayFallbackLinks mapId={mapId} />
       </div>

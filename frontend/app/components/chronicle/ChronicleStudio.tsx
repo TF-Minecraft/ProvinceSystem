@@ -1336,8 +1336,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const terrainBlock =
     sequenceNeedsTerrain && waterMaskStatus !== "ready"
       ? waterMaskStatus === "error"
-        ? "Prosperity and trade leagues skip water, and the province terrain could not be loaded."
-        : "Still loading which provinces are water."
+        ? "Couldn't load prosperity or trade leagues."
+        : "Loading…"
       : null;
 
   const buildBlockReason = useMemo(
@@ -1366,7 +1366,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   /** Step 1 only cares about the geometry; the range is not picked yet. */
   const composeBlockReason =
     toggles.nationNames && namesSupported && !geometryReady
-      ? "Still loading label geometry — nation names cannot be measured or drawn yet."
+      ? "Loading nation names…"
       : null;
 
   const discardFrames = useCallback(() => {
@@ -1387,18 +1387,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     if (!framesRef.current.length) return;
     discardFrames();
     setStage("compose");
-    setNotice(
-      "Layers changed, so the built frames were discarded. Build again when the look is right."
-    );
+    setNotice("Layers changed — build again.");
   }, [toggles, discardFrames]);
 
   useEffect(() => {
     if (!framesRef.current.length) return;
     discardFrames();
     setStage("compose");
-    setNotice(
-      "The sequence changed, so the built frames were discarded. Build again when the order is right."
-    );
+    setNotice("Sequence changed — build again.");
   }, [clipSignature, discardFrames]);
 
   // The focus is painted into every frame's pixels and filtered into every
@@ -1409,16 +1405,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     if (!framesRef.current.length) return;
     discardFrames();
     setStage("compose");
-    setNotice(
-      "The focused realm changed, so the built frames were discarded. Build again when the look is right."
-    );
+    setNotice("Focus changed — build again.");
   }, [activeFocusNationId, discardFrames]);
 
   useEffect(() => {
     if (!framesRef.current.length) return;
     discardFrames();
     setStage("range");
-    setNotice("The range changed, so the built frames were discarded.");
+    setNotice("Range changed — build again.");
   }, [rangeStart, rangeEnd, renderSize, discardFrames]);
 
   useEffect(() => {
@@ -1463,9 +1457,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       completed: 0,
       total: frameTotal,
       day: selection.days[0]!,
-      painted: 0,
-      reused: 0,
-      skipped: 0,
       look: looks[0]?.label ?? null,
     });
 
@@ -1475,8 +1466,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     let measuredPaint = false;
     const accumulated: StudioFrame[] = [];
     const skipped = new Set<string>();
-    let paintedTotal = 0;
-    let reusedTotal = 0;
 
     try {
       const sequenceNeedsGrid = looks.some(
@@ -1524,9 +1513,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               ...progress,
               completed: lookIndex * dayTotal + progress.completed,
               total: frameTotal,
-              painted: paintedTotal + progress.painted,
-              reused: reusedTotal + progress.reused,
-              skipped: skipped.size + progress.skipped,
               look: look.label,
             });
           },
@@ -1653,8 +1639,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           return;
         }
 
-        paintedTotal += result.paintedCount;
-        reusedTotal += result.reusedCount;
         for (const day of result.skippedDays) skipped.add(day);
         for (const frame of result.frames) {
           accumulated.push({ ...frame, clipLabel: look.label });
@@ -1857,7 +1841,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       );
       if (baseMapOmitted) {
         setGifNotice(
-          "Exported without the base map — the browser would not let its pixels be read."
+          "Exported without the base map."
         );
       }
     } catch (err) {
@@ -1915,9 +1899,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }
 
   const disabledReasons: Partial<Record<ChronicleToggleKey, string>> =
-    namesSupported
-      ? {}
-      : { nationNames: "Unavailable — label geometry only exists for the live map." };
+    namesSupported ? {} : { nationNames: "Not available for this map." };
 
   const emptyChronicle = !indexLoading && !indexError && days.length === 0;
   const layersOn = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).length;
@@ -2003,8 +1985,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       {indexError ? <ChronicleNotice>{indexError}</ChronicleNotice> : null}
       {emptyChronicle ? (
         <ChronicleNotice tone="quiet">
-          No days have been captured for this map yet. The timelapse starts once the
-          first daily snapshot lands.
+          No history recorded yet.
         </ChronicleNotice>
       ) : null}
       {layerError ? <ChronicleNotice>{layerError}</ChronicleNotice> : null}
@@ -2113,7 +2094,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         {layersLoading || indexLoading
           ? "Loading layers…"
           : composeBlockReason
-            ? "Waiting on label geometry…"
+            ? "Loading names…"
             : anyChronicleToggleOn(toggles) || hasQueuedLook
               ? "Next: choose the days"
               : "Switch on a layer first"}

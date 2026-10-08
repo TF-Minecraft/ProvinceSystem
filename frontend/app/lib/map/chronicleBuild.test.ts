@@ -512,7 +512,7 @@ describe("chronicleBuildBlockReason", () => {
       nationNames: true,
       geometryReady: false,
     });
-    expect(reason).toMatch(/label geometry/i);
+    expect(reason).toMatch(/loading nation names/i);
 
     // With names off the same un-ready geometry costs nothing.
     expect(
@@ -527,7 +527,7 @@ describe("chronicleBuildBlockReason", () => {
         nationNames: true,
         namesSupported: false,
       })
-    ).toMatch(/this map does not have/i);
+    ).toMatch(/aren't available for this map/i);
     expect(
       chronicleBuildBlockReason({
         ...buildable,
@@ -540,12 +540,12 @@ describe("chronicleBuildBlockReason", () => {
   it("re-asserts the memory ceiling and the range errors", () => {
     expect(
       chronicleBuildBlockReason({ ...buildable, overCeiling: true })
-    ).toMatch(/hold at once/i);
+    ).toMatch(/too many frames/i);
     expect(
       chronicleBuildBlockReason({ ...buildable, selectionError: "bad range" })
     ).toBe("bad range");
     expect(chronicleBuildBlockReason({ ...buildable, dayCount: 0 })).toMatch(
-      /at least one stored day/i
+      /at least one recorded day/i
     );
   });
 

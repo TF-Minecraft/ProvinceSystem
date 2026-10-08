@@ -15,16 +15,16 @@ export default function MapAccessGate({
 }: MapAccessGateProps) {
   const title =
     reason === "login"
-      ? "Profile login required"
+      ? "Sign in to view this map"
       : reason === "permission"
-        ? "Staff map permission required"
+        ? "Staff only"
         : "Unable to load map";
 
   const body =
     reason === "login"
-      ? `Sign in with your profile code on the Character page to view ${mapDisplayName}.`
+      ? "Sign in with your profile code on the Profile page."
       : reason === "permission"
-        ? `Your profile is signed in, but you do not have staff access to ${mapDisplayName}. Ask an operator to grant the tfmc.map.staff LuckPerms node, join lobby or survival once so meta syncs, then try again.`
+        ? "This map is for staff only."
         : `Something went wrong while loading ${mapDisplayName}. Please try again later.`;
 
   return (
@@ -38,10 +38,10 @@ export default function MapAccessGate({
         </p>
         {(reason === "login" || reason === "permission") && (
           <Link
-            href="/character"
+            href="/profile"
             className="mt-6 inline-flex rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_40%,var(--tfmc-forest-deep))] px-4 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition-colors hover:text-white"
           >
-            Go to Character
+            Go to Profile
           </Link>
         )}
       </div>

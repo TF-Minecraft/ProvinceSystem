@@ -94,9 +94,6 @@ function InspectResultPanel({ result }: { result: InspectCodeResult }) {
           <dd className="mt-1 text-[var(--tfmc-cream)]">{kindsText}</dd>
         </div>
       </dl>
-      <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
-        Read-only lookup. Does not log you in or consume the code.
-      </p>
     </div>
   );
 }

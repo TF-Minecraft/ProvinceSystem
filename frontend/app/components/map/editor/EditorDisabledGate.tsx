@@ -8,8 +8,7 @@ export default function EditorDisabledGate() {
           Map editor unavailable
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-          Title editing is temporarily disabled while we finish the new export
-          workflow. Map viewing is unchanged.
+          Title editing is temporarily off.
         </p>
         <Link
           href="/map"

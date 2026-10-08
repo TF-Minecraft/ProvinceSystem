@@ -105,7 +105,9 @@ describe("ChronicleTogglePanel", () => {
     expect(screen.getByRole("switch", { name: "Nation names" }).hasAttribute("disabled")).toBe(
       true
     );
-    expect(screen.getByText(/Nation names: No geometry\./)).toBeDefined();
+    expect(screen.getByRole("switch", { name: "Nation names" }).getAttribute("title")).toBe(
+      "No geometry."
+    );
   });
 });
 
@@ -154,7 +156,7 @@ describe("ChronicleBuildPanel", () => {
   it("shows how far the build has got", () => {
     render(
       <ChronicleBuildPanel
-        progress={{ completed: 5, total: 20, day: "2026-08-05", painted: 4, reused: 1, skipped: 0 }}
+        progress={{ completed: 5, total: 20, day: "2026-08-05" }}
         error={null}
       />
     );

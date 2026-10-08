@@ -414,9 +414,7 @@ const WealthChart = memo(function WealthChart({
         ))}
       </div>
       <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-        Server-wide money supply. It is <strong>not part of this faction&rsquo;s
-        wealth</strong>, never summed with the stack above. Shown on its own
-        axis below since it runs orders of magnitude larger.
+        Server-wide money, for scale:
       </p>
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${GLOBALS_STRIP_HEIGHT}`}
@@ -660,8 +658,8 @@ const PrestigeChart = memo(function PrestigeChart({
           {readout.hasData && cursor != null ? (
             <>
               {readout.day}: <strong>{faction.rank[cursor] ?? "unranked"}</strong>. Wealth is{" "}
-              {share == null ? "—" : `${(share * 100).toFixed(1)}%`} of the server&rsquo;s
-              faction wealth pool.
+              {share == null ? "—" : `${(share * 100).toFixed(1)}%`} of all faction
+              wealth.
             </>
           ) : (
             <>{readout.day}: no data</>
@@ -810,9 +808,8 @@ const IncomeChart = memo(function IncomeChart({
       </svg>
       <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
         <span className="text-[var(--tfmc-cream)]">—</span> net income,{" "}
-        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation delta
-        (this faction), <span className="text-[var(--tfmc-stone)]">· · ·</span>{" "}
-        guild income (server-wide)
+        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation,{" "}
+        <span className="text-[var(--tfmc-stone)]">· · ·</span> guild income (server)
       </p>
       {readout ? (
         <p
@@ -822,7 +819,7 @@ const IncomeChart = memo(function IncomeChart({
         >
           {readout.hasData && cursor != null ? (
             <>
-              {readout.day}: Net Income: {formatSignedMoney(netIncome[cursor] ?? null)} denar
+              {readout.day}: net income {formatSignedMoney(netIncome[cursor] ?? null)} denar
             </>
           ) : (
             <>{readout.day}: no data</>
@@ -831,7 +828,7 @@ const IncomeChart = memo(function IncomeChart({
       ) : null}
       <div className="mt-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
         <p className="text-xs text-[var(--tfmc-stone)]">
-          Observed change
+          Daily change
         </p>
         <svg viewBox={`0 0 ${CHART_WIDTH} 36`} className="mt-1 w-full">
           {(() => {
@@ -866,11 +863,6 @@ const IncomeChart = memo(function IncomeChart({
             strokeWidth={1}
           />
         </svg>
-        <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-          <strong className="block">wealth[today] - wealth[yesterday]</strong>
-          Different quantity from the projections above (an observed result
-          vs. a forecast). Blank on any day the ledger has a gap
-        </p>
       </div>
     </div>
   );
@@ -949,8 +941,7 @@ export default function LedgerChartsPanel({
       <div className={`${chroniclePanelClass} p-3`}>
         <SectionHeading title="Ledger" />
         <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-          No economy data has been captured for this map yet — a fresh season,
-          or SimpleFactions has not started posting snapshots here.
+          No economy data yet.
         </p>
       </div>
     );

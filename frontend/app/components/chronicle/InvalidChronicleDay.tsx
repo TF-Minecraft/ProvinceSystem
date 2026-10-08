@@ -22,14 +22,13 @@ export default function InvalidChronicleDay({ mapId }: { mapId: MapId }) {
   return (
     <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
       <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-        {mapDisplayName(mapId)} chronicle
+        {mapDisplayName(mapId)} timelapse
       </p>
       <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
         Not a valid date
       </p>
       <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-        Chronicle days are written as <code>YYYY-MM-DD</code>, for example{" "}
-        <code>2026-08-25</code>. Pick a stored day from the timelapse instead.
+        Pick a day from the timelapse instead.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
         <Link href={chronicleStudioHref(mapId)} className={linkClass}>

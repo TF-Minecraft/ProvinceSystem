@@ -8,7 +8,6 @@ export function buildRegionInfo(
   id: string,
   region: RegionRecord[string],
   mapType: MapMode,
-  mapDisplayName: string,
   regionData: RegionRecord
 ): RegionInfo {
   const tier = region.tier ?? capitalize(mapType);
@@ -25,9 +24,5 @@ export function buildRegionInfo(
     subject_size: region.subject_size ?? 0,
     overlord: overlordName,
     subjects: region.subjects ?? [],
-    description:
-      mapType === "trade"
-        ? `The area of ${mapDisplayName} where ${region.name ?? id} dominates trade`
-        : `A ${mapType === "nation" ? "Nation" : tier} in ${mapDisplayName}`,
   };
 }

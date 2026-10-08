@@ -49,7 +49,6 @@ type UseMapHoverProps = {
     region: Record<string, unknown> | null;
     overlay?: HoverOverlay["overlay"];
   };
-  mapDisplayName: string;
   mapObjects: MapObject[];
   markers?: MapMarker[];
   /** The region names drawn on the map: pointing at one is pointing at its region. */

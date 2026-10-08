@@ -136,9 +136,7 @@ export default function PrecedentPage() {
         Precedent
       </h1>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Every logged moderation case. Edit a case to correct it, or delete one
-        that should never have been logged. Both change what future searches
-        return.
+        Every logged moderation case.
       </p>
 
       <div className="mt-8">

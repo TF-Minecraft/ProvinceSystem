@@ -34,7 +34,7 @@ afterEach(() => {
 describe("ChronicleStaffConsole", () => {
   it("mounts signed out and shows the login gate instead of the wipe form", async () => {
     render(<ChronicleStaffConsole mapId="main" />);
-    await waitFor(() => expect(screen.getByText("Profile login required")).toBeDefined());
+    await waitFor(() => expect(screen.getByText("Sign in to view this map")).toBeDefined());
     expect(screen.queryByText(/Wipe the main chronicle/)).toBeNull();
   });
 
@@ -105,9 +105,9 @@ describe("ChronicleStaffConsole", () => {
     }));
     render(<ChronicleStaffConsole mapId="main" />);
     await waitFor(() => expect(screen.getByText("Backups")).toBeDefined());
-    fireEvent.change(screen.getByLabelText("Dest id"), { target: { value: "chapter" } });
+    fireEvent.change(screen.getByLabelText("Destination id"), { target: { value: "chapter" } });
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Chapter" } });
-    fireEvent.change(screen.getByLabelText("Type the dest id to confirm"), { target: { value: "chapter" } });
+    fireEvent.change(screen.getByLabelText("Type the destination id to confirm"), { target: { value: "chapter" } });
     fireEvent.change(screen.getByPlaceholderText("why this live map is being copied to a frozen id"), { target: { value: "Archive fixture" } });
     fireEvent.click(screen.getByRole("button", { name: "Archive as chapter" }));
     await waitFor(() => expect(screen.getByText("Copied main → chapter.")).toBeDefined());
