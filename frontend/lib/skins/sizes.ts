@@ -145,31 +145,6 @@ export function expectedSizeForField(
   return null;
 }
 
-export function sizeHint(kind: SkinKind): string {
-  if (kind === "armor_set") {
-    return "Icons must be 16×16; layers must be 64×32.";
-  }
-  if (kind === "large_bow") {
-    return "All four bow frames must be 32×32.";
-  }
-  if (kind === "bow") {
-    return "All four bow frames must be 16×16.";
-  }
-  if (kind === "crossbow") {
-    return "All five crossbow frames must be 16×16.";
-  }
-  if (isBookKind(kind)) {
-    return "Unsigned and signed covers must both be 16×16.";
-  }
-  if (isModel3dKind(kind) || isGunKind(kind)) {
-    return "";
-  }
-  if (isLargeTextureKind(kind)) {
-    return "Texture must be 32×32.";
-  }
-  return "Texture must be 16×16.";
-}
-
 /** Read PNG IHDR width/height from a File. */
 export function readPngSize(file: File): Promise<Size> {
   return new Promise((resolve, reject) => {
@@ -286,5 +261,8 @@ export function assert3dPairBudgets(
 /** Hint text when a pair budget is known from catalog/session. */
 export function pairBudgetHint(maxBytes: number | undefined): string {
   if (!maxBytes || maxBytes <= 0) return "";
-  return `Each texture + model pair must be ≤ ${maxBytes} bytes.`;
+  // Round down so the hint never overstates the limit.
+  const kb = Math.floor((maxBytes / 1024) * 10) / 10;
+  if (kb < 1) return `Model + texture: max ${maxBytes} bytes`;
+  return `Model + texture: max ${kb >= 10 ? Math.floor(kb) : kb} KB`;
 }

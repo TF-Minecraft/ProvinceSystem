@@ -147,11 +147,7 @@ export default function AgeStepper({
         </div>
         {birthdayError ? (
           <p className="text-xs text-[#e8a0a0]">{birthdayError}</p>
-        ) : (
-          <p className="text-xs text-[var(--tfmc-stone)]">
-            Format {birthdayHint}. Applying updates age.
-          </p>
-        )}
+        ) : null}
       </label>
 
       {toast ? (

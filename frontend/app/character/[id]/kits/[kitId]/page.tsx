@@ -244,17 +244,13 @@ export default function CharacterKitDetailPage() {
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
                         Not customisable
                       </p>
-                    ) : !kit.claimable ? (
-                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Claimed · editing closed
-                      </p>
-                    ) : awaitingApproval ? (
+                    ) : !kit.claimable ? null : awaitingApproval ? (
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
                         Awaiting approval
                       </p>
                     ) : awaitingPack ? (
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Pending pack (within 24 hours)
+                        Approved · live within 24 hours
                       </p>
                     ) : null}
                   </div>

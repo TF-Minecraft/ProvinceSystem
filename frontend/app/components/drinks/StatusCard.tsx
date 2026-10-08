@@ -15,13 +15,11 @@ function statusMessage(row: DrinkSubmissionPublic): string {
         ? `Denied: ${row.deny_reason.trim()}`
         : "Denied. No reason given.";
     case "pending_pack":
-      return (
-        "Approved. Waiting for the custom texture to be written to the pack."
-      );
+      return "Approved. Your icon goes live soon.";
     case "approved":
-      return "Approved. Your drink will be brewable after the next server apply.";
+      return "Approved. Your drink will be brewable after the next server update.";
     case "applied":
-      return "Live on the server. Brewable in BreweryX.";
+      return "Live. Brew it in-game.";
     default:
       return row.status;
   }
@@ -47,7 +45,7 @@ export default function StatusCard({ row }: Props) {
             {row.status === "pending"
               ? "Awaiting approval"
               : row.status === "pending_pack"
-                ? "Pending pack"
+                ? "Approved"
                 : row.status === "approved"
                   ? "Approved"
                   : row.status === "applied"
@@ -63,7 +61,7 @@ export default function StatusCard({ row }: Props) {
         </div>
         {color ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Color</dt>
+            <dt className="text-[var(--tfmc-stone)]">Colour</dt>
             <dd className="flex items-center gap-2 text-[var(--tfmc-cream)]">
               <span
                 className="inline-block h-4 w-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)]"
@@ -71,15 +69,6 @@ export default function StatusCard({ row }: Props) {
                 aria-hidden
               />
               {color}
-            </dd>
-          </div>
-        ) : null}
-        {row.texture_id ? (
-          <div>
-            <dt className="text-[var(--tfmc-stone)]">Texture</dt>
-            <dd className="break-all text-[var(--tfmc-mist)]">
-              {row.texture_id}
-              {row.new_texture ? " (new)" : " (reused)"}
             </dd>
           </div>
         ) : null}
@@ -105,10 +94,6 @@ export default function StatusCard({ row }: Props) {
             </dd>
           </div>
         ) : null}
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Drink id</dt>
-          <dd className="break-all text-[var(--tfmc-mist)]">{row.id}</dd>
-        </div>
       </dl>
     </div>
   );

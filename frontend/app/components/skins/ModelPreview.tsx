@@ -291,22 +291,6 @@ function isMannequinSlot(slot: PreviewSlot, gun: boolean): boolean {
   return true;
 }
 
-function slotStatusLabel(slot: PreviewSlot, gun: boolean): string {
-  if (gun) {
-    if (slot === "carry_right") return "carry (right hand)";
-    if (slot === "carry_left") return "carry (left hand)";
-    if (slot === "reload_right") return "reload (right hand)";
-    if (slot === "reload_left") return "reload (left hand)";
-    if (slot === "aim_right") return "aim (right, crossbow hold)";
-    if (slot === "aim_left") return "aim (left, crossbow hold)";
-    return "model";
-  }
-  if (slot === "thirdperson_lefthand") return "left hand";
-  if (slot === "thirdperson_righthand") return "right hand";
-  if (slot === "head") return "head";
-  return "model";
-}
-
 function resolveActiveModelFile(
   gun: boolean,
   slot: PreviewSlot,
@@ -572,7 +556,7 @@ export default function ModelPreview({
             drinkAssetsRef.current ?? (await loadDrinkAssetImages());
           drinkAssetsRef.current = assets;
           const canvas = composeTintedPotionCanvas(tintColor, assets);
-          if (!canvas) throw new Error("Invalid potion color");
+          if (!canvas) throw new Error("Invalid potion colour");
           const texture = textureFromCanvas(canvas);
           const imageData = canvasImageData(canvas);
           const root = buildExtrudedItemGroup(imageData, texture, {
@@ -962,7 +946,7 @@ export default function ModelPreview({
         content.itemTexture.needsUpdate = true;
         updateMeshTexture(content.itemRoot, content.itemTexture);
       } catch {
-        reportError("Could not update potion color");
+        reportError("Could not update potion colour");
       }
     })();
   }, [potionTintColor, potionTintMode, contentVersion, reportError]);
@@ -985,7 +969,7 @@ export default function ModelPreview({
       <div
         className={`rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)] px-4 py-8 text-center text-sm text-[var(--tfmc-mist)] ${className}`}
       >
-        No preview texture loaded.
+        Upload a texture to preview.
       </div>
     );
   }
@@ -1160,15 +1144,7 @@ export default function ModelPreview({
       ) : null}
       {status === "ready" ? (
         <p className="text-xs text-[var(--tfmc-mist)]">
-          {mannequinPreview
-            ? playerSkinFile
-              ? `Previewing on ${playerSkinFile.name}. Drag to orbit, scroll to zoom.`
-              : `Display: ${slotStatusLabel(slot, gun)}${
-                  showShieldMode ? ` · ${shieldMode}` : ""
-                }${
-                  showFrameChips ? ` · ${frame}` : ""
-                }. Optional: upload your skin PNG. Drag to orbit, scroll to zoom.`
-            : "Drag to orbit, scroll to zoom."}
+          Drag to rotate, scroll to zoom.
         </p>
       ) : null}
     </div>

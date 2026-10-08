@@ -26,7 +26,7 @@ import {
 } from "../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../lib/characters/sheetDev";
-import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { formatExpiresIn } from "../../lib/skins/formatTime";
 
 const PENDING_POLL_MS = 10_000;
 
@@ -92,7 +92,7 @@ export default function CharacterPage() {
             ? minGroup.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
             : "donator";
           setWebCreatorLockLabel(
-            `Web creator requires ${rank} rank or higher. Join the lobby once so your rank syncs, then try again.`
+            `Needs ${rank} rank or higher. Just ranked up? Join the server once, then refresh.`
           );
         } else {
           setWebCreatorLockLabel("");
@@ -235,7 +235,7 @@ export default function CharacterPage() {
           <p className="mt-3 text-sm text-[var(--tfmc-stone)]">
             {uiDev
               ? "UI-dev session - no redeem required."
-              : `Session expires ${formatExpiresIn(session.expires_at)} (${formatLocal(session.expires_at)})`}
+              : `Session expires ${formatExpiresIn(session.expires_at)}`}
           </p>
           {loadingList && characters.length === 0 ? (
             <p className="mt-8 text-[var(--tfmc-mist)]">Loading characters…</p>

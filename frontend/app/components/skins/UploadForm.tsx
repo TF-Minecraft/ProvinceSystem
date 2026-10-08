@@ -25,7 +25,6 @@ import {
   isModel3dKind,
   isGunKind,
   pairBudgetHint,
-  sizeHint,
   ARMOR_BODY_FIELDS,
   type SkinKind,
 } from "../../../lib/skins/sizes";
@@ -136,10 +135,12 @@ function slotLabel(kind: SkinKind, field: string): string {
   }
   const size = isLargeTextureKind(kind) ? "32×32" : "16×16";
   const base = fieldLabel[field] || field;
-  if (isBowFrameKind(kind) || field === "texture") {
-    if (field === "texture" && isBowFrameKind(kind)) {
-      return `Standby texture (${size})`;
-    }
+  if (field === "texture") {
+    return isBowFrameKind(kind)
+      ? `Standby texture (${size})`
+      : `Texture (${size})`;
+  }
+  if (isBowFrameKind(kind)) {
     return `${base} (${size})`;
   }
   return `Texture (${size})`;
@@ -396,7 +397,7 @@ export default function UploadForm({
 
     const name = itemName.trim();
     if (!name) {
-      setError("Item name is required (shown in ArmourShop)");
+      setError("Enter an item name.");
       return;
     }
     const nameErr = displayNameError(name, {
@@ -431,7 +432,7 @@ export default function UploadForm({
     }
 
     if (isArmor && tiers.length < 1) {
-      setError("Add at least 1 armor tier");
+      setError("Add at least 1 armour tier");
       return;
     }
 
@@ -631,9 +632,6 @@ export default function UploadForm({
             aria-hidden
           />
           <p className="text-lg text-[var(--tfmc-cream)]">Submitting…</p>
-          <p className="text-center text-sm text-[var(--tfmc-mist)]">
-            Uploading textures. Please wait.
-          </p>
         </div>
       ) : null}
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-6">
@@ -644,9 +642,6 @@ export default function UploadForm({
         allowedKinds={resolvedKinds}
       />
 
-      {sizeHint(kind) ? (
-        <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
-      ) : null}
       {pairHint &&
       (isModel3dKind(kind) || isGunKind(kind) || kind === "armor_set") ? (
         <p className="text-sm text-[var(--tfmc-mist)]">{pairHint}</p>
@@ -748,7 +743,7 @@ export default function UploadForm({
         <span className="text-xs text-[var(--tfmc-mist)]">
           {isArmor
             ? "Base name before the tier label (e.g. Norain becomes Norain Iron). Spaces and capitals are fine."
-            : "Shown in ArmourShop. Spaces and capitals are fine."}{" "}
+            : "Shown in the armour shop."}{" "}
           Allowed: {DISPLAY_NAME_HINT}.
         </span>
         <input
@@ -783,10 +778,9 @@ export default function UploadForm({
           onChange={setApplyName}
         />
         <span>
-          Apply name when equipped
+          Rename the item to this name
           <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
-            Keep the item&apos;s existing name on the skinned piece. Separate
-            from colours below.
+            When off, the item keeps its own name.
           </span>
         </span>
       </label>
@@ -835,9 +829,6 @@ export default function UploadForm({
           <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
             Grip height
           </legend>
-          <p className="text-xs text-[var(--tfmc-mist)]">
-            Slide to move where the item sits in the hand (preview updates live).
-          </p>
           <label className="flex items-center gap-3 text-sm text-[var(--tfmc-cream)]">
             <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">Low</span>
             <input
@@ -862,18 +853,11 @@ export default function UploadForm({
       {isArmor ? (
         <fieldset className="flex flex-col gap-4 border-0 p-0">
           <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
-            Armor tiers
+            Armour tiers
           </legend>
           <p className="text-xs text-[var(--tfmc-mist)]">
-            Add 1 to 6 tiers (Iron, Steel, Abyssalite, Mythril, Mage, Infantry).
-            Each tier needs chestplate, leggings, boots, and both layers. Helmet
-            is a 16×16 icon or a 3D model. Pack name example:{" "}
-            <span className="text-[var(--tfmc-cream)]">
-              {itemName.trim() || "Name"}{" "}
-              {tiers[0]?.alias.trim() ||
-                (tiers[0] ? baseSetLabel(tiers[0].tier) : "Iron")}
-            </span>{" "}
-            Helmet / Chestplate / …. Alias per tier is optional.
+            Add up to {MAX_TIERS} tiers. Each needs a helmet, chestplate,
+            leggings, boots and both layers.
           </p>
 
           {tiers.length > 0 ? (
@@ -903,7 +887,7 @@ export default function UploadForm({
                   </div>
                   <label className="flex flex-col gap-2 text-left">
                     <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                      Tier name alias (optional)
+                      Tier name (optional)
                     </span>
                     <input
                       type="text"
@@ -998,12 +982,6 @@ export default function UploadForm({
                         ) : null}
                       </label>
                     ))}
-                    {entry.helmet3d ? (
-                      <p className="text-xs text-[var(--tfmc-mist)]">
-                        3D helmet shows on the armor preview when this tier is
-                        selected below.
-                      </p>
-                    ) : null}
                   </div>
                 </div>
                 );
@@ -1194,7 +1172,7 @@ export default function UploadForm({
       <p className="text-sm text-[var(--tfmc-mist)]">
         {staff
           ? "Staff uploads auto-approve and land in the curated shop pack (no Discord review)."
-          : "After you submit, it can take up to 5 minutes for your request to enter the system. You will receive a Discord DM when it does."}
+          : "You'll get a Discord DM once it's in review."}
       </p>
 
       <button

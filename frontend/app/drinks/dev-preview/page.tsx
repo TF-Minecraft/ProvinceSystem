@@ -1,5 +1,6 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import { useState } from "react";
 import ModelPreview from "../../components/skins/ModelPreview";
 import { isCharacterUiDev } from "../../../lib/characters/uiDev";
@@ -9,11 +10,7 @@ export default function DrinksDevPreviewPage() {
   const [color, setColor] = useState("#C45A12");
 
   if (!isCharacterUiDev()) {
-    return (
-      <main className="mx-auto max-w-lg px-6 py-16 text-[var(--tfmc-mist)]">
-        Dev preview is disabled. Set NEXT_PUBLIC_CHARACTER_UI_DEV=1.
-      </main>
-    );
+    notFound();
   }
 
   return (

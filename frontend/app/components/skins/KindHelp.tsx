@@ -12,12 +12,12 @@ type KindGuide = {
 
 const GUIDES: Record<SkinKind, KindGuide> = {
   armor_set: {
-    title: "Armor set",
+    title: "Armour set",
     summary:
-      "Submit one or more armor tiers. Each tier becomes its own shop listing under your name.",
+      "Submit one or more armour tiers. Each tier becomes its own shop listing under your name.",
     steps: [
       "Add at least one tier (Iron, Steel, Abyssalite, Mythril, Mage, or Infantry).",
-      "Alias is optional if you want a custom name instead of the default tier label.",
+      "Tier name is optional if you want a custom name instead of the default tier label.",
       "Per tier, upload helmet, chestplate, leggings, and boots icons (16×16 PNG).",
       "Upload layer_1 and layer_2 body textures (64×32 PNG) for that tier.",
       "Optional: tick 3D Helmet and upload a Java Block/Item JSON + PNG instead of the flat helmet icon (File → Export → Export Block/Item Model; one-axis 22.5°/45° rotations only).",
@@ -29,12 +29,11 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   handheld: {
     title: "Handheld",
-    summary: "A single 16×16 item texture skinned onto a handheld base set.",
+    summary: "One 16×16 texture.",
     steps: [
       "Choose the base set this skin applies to.",
       "Upload one 16×16 PNG as texture.",
-      "Set the ArmourShop item name (and optional name colours/styles).",
-      "Submit.",
+      "Set the item name (and optional name colours/styles).",
     ],
   },
   large_handheld: {
@@ -82,7 +81,6 @@ const GUIDES: Record<SkinKind, KindGuide> = {
       "In Blockbench: File → Export → Export Block/Item Model as Java Block/Item (not Java Item, not a project file).",
       "Cubes may only rotate on one axis by 22.5° or 45°.",
       "Upload that model JSON and its texture PNG.",
-      "Display transforms are filled in if missing.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -113,7 +111,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   helmet_3d: {
     title: "Helmet 3D",
-    summary: "Standalone 3D helmet (model + texture), not a full armor set.",
+    summary: "Standalone 3D helmet (model + texture), not a full armour set.",
     steps: [
       "Choose the helmet base set.",
       "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
@@ -166,7 +164,7 @@ export function KindHelpToggle({ open, onToggle, panelId }: ToggleProps) {
           ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)] text-[var(--tfmc-forest-deep)]"
           : "border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] text-[var(--tfmc-stone)] hover:border-[color-mix(in_srgb,var(--tfmc-accent)_50%,var(--tfmc-cream))] hover:text-[var(--tfmc-cream)]"
       }`}
-      title={open ? "Hide kind guide" : "How this kind works"}
+      title={open ? "Hide help" : "How this works"}
     >
       ?
     </button>

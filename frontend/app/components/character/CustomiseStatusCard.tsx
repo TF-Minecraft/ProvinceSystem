@@ -19,7 +19,7 @@ function statusLabel(item: LoreItemRow): string {
   const state = customiseState(item);
   const sub = submissionStatus(item);
   if (state === "pending_skin") {
-    if (sub === "approved") return "Pending pack";
+    if (sub === "approved") return "Approved";
     return "Awaiting approval";
   }
   switch (state) {
@@ -43,7 +43,7 @@ function statusMessage(item: LoreItemRow): string {
   if (state === "pending_skin") {
     if (sub === "approved") {
       return (
-        "Your skin was approved. It will be added to the pack within 24 hours. " +
+        "Your skin was approved. It will be live within 24 hours. " +
         "After that, claim the kit in-game."
       );
     }
@@ -54,18 +54,15 @@ function statusMessage(item: LoreItemRow): string {
   }
   switch (state) {
     case "ready":
-      return (
-        "Your customise is ready. Claim the kit in-game when it is available " +
-        "for this character."
-      );
+      return "Ready. Claim the kit in-game.";
     case "denied":
       return deny
         ? `Denied: ${deny}`
         : "Denied. No reason given. Edit again to submit a different skin.";
     case "applied":
-      return "Applied on the server.";
+      return "Live in-game.";
     case "draft":
-      return "No customise submitted yet.";
+      return "Nothing submitted yet.";
     default:
       return state;
   }
@@ -96,21 +93,6 @@ export default function CustomiseStatusCard({ item }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Item</dt>
           <dd className="text-[var(--tfmc-cream)]">{previewName}</dd>
         </div>
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Kit key</dt>
-          <dd className="break-all text-[var(--tfmc-mist)]">{item.kit_key}</dd>
-        </div>
-        {item.draft?.submission_id ? (
-          <div>
-            <dt className="text-[var(--tfmc-stone)]">Skin submission</dt>
-            <dd className="break-all text-[var(--tfmc-mist)]">
-              {item.draft.submission_id}
-              {item.draft.submission_status
-                ? ` (${item.draft.submission_status})`
-                : ""}
-            </dd>
-          </div>
-        ) : null}
       </dl>
     </div>
   );

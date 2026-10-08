@@ -617,7 +617,7 @@ export default function LoreItemEditor({
       return;
     }
     if (!displayName.trim()) {
-      setLocalError("Display name is required");
+      setLocalError("Enter a name.");
       return;
     }
     if (submitBlocked) {
@@ -632,12 +632,12 @@ export default function LoreItemEditor({
     }
     if (skinMode === "upload" && isBook) {
       if (!unsignedFile || !signedFile) {
-        setLocalError("Book customise requires unsigned and signed covers");
+        setLocalError("Upload both covers.");
         return;
       }
     }
     if (skinMode === "upload" && allows3d && use3d && !modelFile) {
-      setLocalError("3D upload requires a model JSON file");
+      setLocalError("Add a model file.");
       return;
     }
     const effective3d = skinMode === "upload" && allows3d && use3d;
@@ -680,11 +680,8 @@ export default function LoreItemEditor({
       ) : null}
       {isDenied ? (
         <p className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_35%,transparent)] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] px-3 py-2 text-sm text-[#e8a0a0]">
-          Your custom skin was denied
-          {denyReason ? `: ${denyReason}` : "."} Name and lore are kept.
-          Choose a different skin (upload a new texture or pick an applied one)
-          and submit again. The kit is not ready to claim until a new skin is
-          accepted.
+          Skin denied{denyReason ? `: ${denyReason}` : ""}. Upload or pick a
+          different skin and resubmit.
         </p>
       ) : null}
 
@@ -693,9 +690,7 @@ export default function LoreItemEditor({
           Name
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          {DISPLAY_NAME_HINT}. Colour stops use your rank perk. You can also use
-          inline §l / &amp;l (bold), §o (italic), §n (underline), §m (strike) in
-          the name - preview shows them like lore.
+          Allowed: {DISPLAY_NAME_HINT}
         </p>
         <input
           type="text"
@@ -777,11 +772,6 @@ export default function LoreItemEditor({
         <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
           Skin
         </h2>
-        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          {isBook
-            ? "Pick an applied book skin from your account (works on any character), or upload new unsigned and signed covers for this kit item."
-            : "Pick an applied skin from your account (works on any character), or upload a new texture for this kit item."}
-        </p>
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <button
             type="button"
@@ -953,14 +943,12 @@ export default function LoreItemEditor({
           </div>
         ) : item.pickable_skins.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            No applied skins for this base set yet. Upload one here; after staff
-            approval you can reuse it on other characters.
+            No saved skins for this item yet.
           </p>
         ) : (
           <>
             <p className="mt-4 text-sm font-medium text-[var(--tfmc-stone)]">
-              Your skins ({item.pickable_skins.length}) — usable on any
-              character
+              Your skins
             </p>
             <ul className="mt-2 flex flex-col gap-2">
             {item.pickable_skins.map((skin) => {
@@ -1003,32 +991,26 @@ export default function LoreItemEditor({
         )}
 
         {isBook ? (
-          <div className="mt-6 grid gap-6 sm:grid-cols-2">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-                Unsigned (writable)
-              </p>
+          previewTexture || previewTextureSigned ? (
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
               {previewTexture ? (
-                <ModelPreview kind="book" textureFile={previewTexture} />
-              ) : (
-                <p className="text-sm text-[var(--tfmc-mist)]">
-                  Unsigned cover preview unavailable.
-                </p>
-              )}
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-                Signed (written)
-              </p>
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                    Unsigned (writable)
+                  </p>
+                  <ModelPreview kind="book" textureFile={previewTexture} />
+                </div>
+              ) : null}
               {previewTextureSigned ? (
-                <ModelPreview kind="book" textureFile={previewTextureSigned} />
-              ) : (
-                <p className="text-sm text-[var(--tfmc-mist)]">
-                  Signed cover preview unavailable.
-                </p>
-              )}
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                    Signed (written)
+                  </p>
+                  <ModelPreview kind="book" textureFile={previewTextureSigned} />
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : null
         ) : previewTexture ? (
           <div className="mt-6">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
@@ -1056,11 +1038,7 @@ export default function LoreItemEditor({
               textureFile={previewTexture}
             />
           </div>
-        ) : (
-          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            Default skin preview unavailable.
-          </p>
-        )}
+        ) : null}
       </section>
 
       <div className="flex flex-col gap-3">
@@ -1092,7 +1070,7 @@ export default function LoreItemEditor({
               disabled={submitting || deleting}
               className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-2 text-sm text-[#e8a0a0] disabled:opacity-50"
             >
-              {deleting ? "Deleting…" : "Delete customise"}
+              {deleting ? "Resetting…" : "Reset to default"}
             </button>
           ) : null}
           {onRefreshStatus ? (

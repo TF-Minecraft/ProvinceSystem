@@ -91,5 +91,5 @@ export function defaultBaseSet(kind: SkinKind): string {
 }
 
 export function baseSetPickerTitle(kind: SkinKind): string {
-  return kind === "armor_set" ? "Armor tier" : "Applicable type";
+  return kind === "armor_set" ? "Armour tier" : "Item type";
 }

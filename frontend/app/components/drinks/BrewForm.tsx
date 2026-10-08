@@ -19,7 +19,6 @@ import {
   WOOD_OPTIONS,
   effectLabel,
 } from "../../../lib/drinks/constants";
-import RankName from "../wiki/RankName";
 import {
   setLastSubmissionId,
   setSession,
@@ -190,7 +189,7 @@ export default function BrewForm({ session }: Props) {
   function validateClient(): string | null {
     if (!name.trim()) return "Enter a drink name";
     if (!catalog || catalog.ingredients.length === 0) {
-      return "Ingredient catalog is empty. Ask staff to sync DrinkBuilder.";
+      return "Drinks aren't available right now. Please let staff know.";
     }
     if (ingredients.length === 0) return "Add at least one ingredient";
     for (const row of ingredients) {
@@ -200,7 +199,7 @@ export default function BrewForm({ session }: Props) {
     }
     if (appearance === "color") {
       if (!/^#[0-9A-Fa-f]{6}$/.test(color.trim())) {
-        return "Color must be #RRGGBB";
+        return "Enter a colour like #C45A12";
       }
     } else if (!allowTexture) {
       return "Your rank cannot use custom textures";
@@ -306,7 +305,7 @@ export default function BrewForm({ session }: Props) {
 
   if (loadingCatalog) {
     return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading catalog…</p>
+      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
     );
   }
 
@@ -320,16 +319,9 @@ export default function BrewForm({ session }: Props) {
 
   if (!catalog || catalog.ingredients.length === 0) {
     return (
-      <div className="mt-8 space-y-2">
-        <p className="text-[var(--tfmc-cream)]">Ingredient catalog is empty.</p>
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Staff need to run{" "}
-          <code className="text-[var(--tfmc-accent)]">
-            /drinkbuilder catalog sync
-          </code>{" "}
-          on the server before drinks can be submitted.
-        </p>
-      </div>
+      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">
+        Drinks aren&apos;t available right now. Please let staff know.
+      </p>
     );
   }
 
@@ -390,7 +382,7 @@ export default function BrewForm({ session }: Props) {
           maxStops={colourStops}
           lockedMessage={
             !metaSynced && colourStops <= 0
-              ? "Join the server once to sync rank perks"
+              ? "Join the server once to unlock your rank perks."
               : "Name colours require a donator rank"
           }
         />
@@ -499,7 +491,6 @@ export default function BrewForm({ session }: Props) {
             checked={distillEnabled}
             onChange={setDistillEnabled}
             label="Distill"
-            description="Enable distillation runs for this recipe"
           />
           {distillEnabled ? (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -580,7 +571,7 @@ export default function BrewForm({ session }: Props) {
         />
         {appearance === "color" ? (
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs text-[var(--tfmc-mist)]">#RRGGBB</span>
+            <span className="text-xs text-[var(--tfmc-mist)]">Colour</span>
             <div className="flex gap-2">
               <input
                 type="color"
@@ -617,35 +608,23 @@ export default function BrewForm({ session }: Props) {
             ) : null}
           </div>
         ) : null}
+        {/* Reuse is locked in AppearancePicker when there are no textures. */}
         {appearance === "reuse" ? (
-          textures.length === 0 ? (
-            <p className="text-sm text-[var(--tfmc-mist)]">
-              You have no applied textures to reuse yet.
-            </p>
-          ) : (
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                Applied textures you own
-              </span>
-              <select
-                className={fieldClass}
-                value={existingTextureId}
-                onChange={(e) => setExistingTextureId(e.target.value)}
-              >
-                <option value="">Select…</option>
-                {textures.map((tex) => {
-                  const label =
-                    (tex.ia_item_id && tex.ia_item_id.trim()) ||
-                    tex.id.slice(0, 12);
-                  return (
-                    <option key={tex.id} value={tex.id}>
-                      {label} (CMD {tex.cmd})
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          )
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs text-[var(--tfmc-mist)]">Your icons</span>
+            <select
+              className={fieldClass}
+              value={existingTextureId}
+              onChange={(e) => setExistingTextureId(e.target.value)}
+            >
+              <option value="">Select…</option>
+              {textures.map((tex, i) => (
+                <option key={tex.id} value={tex.id}>
+                  Icon {i + 1}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
         {appearance === "color" || previewFile ? (
           <div className="space-y-2">
@@ -682,11 +661,8 @@ export default function BrewForm({ session }: Props) {
           locked={!allowDrinkMessage}
           label="Drink message"
           description="Show a short message when someone drinks your brew"
-          lockedDescription="Requires an eligible supporter rank"
+          lockedDescription="Requires Ascended rank"
         />
-        {!allowDrinkMessage ? (
-          <p className="text-xs text-[var(--tfmc-mist)]">Custom drink messages require <RankName rank="Ascended" /> rank.</p>
-        ) : null}
         {messageEnabled && allowDrinkMessage ? (
           <>
             <label className="flex flex-col gap-1.5">
@@ -705,7 +681,7 @@ export default function BrewForm({ session }: Props) {
               maxStops={colourStops}
               lockedMessage={
                 !metaSynced && colourStops <= 0
-                  ? "Join the server once to sync rank perks"
+                  ? "Join the server once to unlock your rank perks."
                   : "Message colours require a donator rank"
               }
             />

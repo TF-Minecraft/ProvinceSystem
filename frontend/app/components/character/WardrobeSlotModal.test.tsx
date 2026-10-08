@@ -54,7 +54,7 @@ it.each<ArmModel>(["default", "slim"])(
       onClose={vi.fn()} onSave={onSave}
     />);
     const file = new File(["png"], "replacement.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText("PNG file"), { target: { files: [file] } });
+    fireEvent.change(screen.getByLabelText("Skin file"), { target: { files: [file] } });
     await waitFor(() => expect(inferArmModel).toHaveBeenCalled());
     await waitFor(() => expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(false));
 

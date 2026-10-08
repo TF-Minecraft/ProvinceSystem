@@ -11,7 +11,7 @@ import {
   isSessionValid,
   type DrinksSession,
 } from "../../lib/drinks/session";
-import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { formatExpiresIn } from "../../lib/skins/formatTime";
 
 export default function DrinksPage() {
   const router = useRouter();
@@ -51,23 +51,15 @@ export default function DrinksPage() {
         Drinks
       </h1>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Redeem a drink token from{" "}
+        Redeem a drink code from{" "}
         <code className="text-[var(--tfmc-accent)]">/token create drink</code>,
-        then design a BreweryX recipe for staff review.
+        then design your drink for staff review.
       </p>
 
       {session && isSessionValid(session) ? (
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {formatExpiresIn(session.expires_at)} (
-            {formatLocal(session.expires_at)})
-            {session.allow_drink_texture ? (
-              <span className="ml-2 text-[var(--tfmc-accent)]">
-                · Texture allowed
-              </span>
-            ) : (
-              <span className="ml-2 text-[var(--tfmc-mist)]">· Color only</span>
-            )}
+            Session expires {formatExpiresIn(session.expires_at)}
           </p>
           <button
             type="button"

@@ -53,7 +53,7 @@ export function lockLabelForSlot(
 ): RankLockLabel {
   const minSlots = minSlotsForExtra(slot);
   if (minSlots <= 0) {
-    return { plain: "a higher rank+", runs: [{ text: "a higher rank+", color: "#e8a0a0" }] };
+    return { plain: "a higher rank", runs: [{ text: "a higher rank", color: "#e8a0a0" }] };
   }
   const group = groupUnlockingSlots(slotLimits, minSlots);
   const display = String(group?.display_name || "").trim();
@@ -72,8 +72,8 @@ export function lockLabelForSlot(
   }
   // Catalog missing / no group grants this many slots — do not invent rank names.
   return {
-    plain: "a higher rank+",
-    runs: [{ text: "a higher rank+", color: "#e8a0a0" }],
+    plain: "a higher rank",
+    runs: [{ text: "a higher rank", color: "#e8a0a0" }],
   };
 }
 

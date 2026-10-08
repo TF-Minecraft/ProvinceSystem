@@ -153,9 +153,12 @@ export default function CharacterSheet({
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
         {character.name || "Unnamed"}
       </h1>
-      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-        {status || "-"}
-      </p>
+      {/* Alive needs no label; pending has PendingServerBanner. */}
+      {status && !canEditGear ? (
+        <p className="mt-2 text-xs font-medium text-[var(--tfmc-stone)]">
+          {capitalizeKey(status.toLowerCase())}
+        </p>
+      ) : null}
 
       {identityBits.length > 0 ? (
         <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
@@ -261,47 +264,41 @@ export default function CharacterSheet({
         </SheetSection>
       ) : null}
 
-      <nav className="mt-10 flex flex-col gap-3">
-        {canEditGear ? (
-          <>
-            <Link
-              href={`/character/${encodeURIComponent(character.id)}/kits`}
-              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+      {canEditGear ? (
+        <nav className="mt-10 flex flex-col gap-3">
+          <Link
+            href={`/character/${encodeURIComponent(character.id)}/kits`}
+            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+          >
+            Kits
+          </Link>
+          <Link
+            href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
+            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+          >
+            Wardrobe
+          </Link>
+          {isPending && onCancelPending ? (
+            <button
+              type="button"
+              disabled={cancelling}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone."
+                  )
+                ) {
+                  return;
+                }
+                void onCancelPending();
+              }}
+              className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
             >
-              Kits
-            </Link>
-            <Link
-              href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
-              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-            >
-              Wardrobe
-            </Link>
-            {isPending && onCancelPending ? (
-              <button
-                type="button"
-                disabled={cancelling}
-                onClick={() => {
-                  if (
-                    !window.confirm(
-                      "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone."
-                    )
-                  ) {
-                    return;
-                  }
-                  void onCancelPending();
-                }}
-                className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
-              >
-                {cancelling ? "Cancelling…" : "Cancel submission"}
-              </button>
-            ) : null}
-          </>
-        ) : (
-          <p className="text-sm text-[var(--tfmc-mist)]">
-            Kits and wardrobe are available for alive and pending characters.
-          </p>
-        )}
-      </nav>
+              {cancelling ? "Cancelling…" : "Cancel submission"}
+            </button>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
 }

@@ -24,6 +24,7 @@ import WardrobeEditor, {
   type WardrobeDraftNames,
 } from "./WardrobeEditor";
 import { armModelToWardrobeModel } from "../../../lib/characters/wardrobeRanks";
+import { displayAttrName } from "../../../lib/characters/pointBuy";
 import {
   ageFromBirthday,
   fictionalBirthdayLabel,
@@ -597,7 +598,7 @@ function StageBody({
         <SummaryLine
           label="Attributes"
           value={Object.entries(draft.attributes)
-            .map(([k, v]) => `${k} +${v}`)
+            .map(([k, v]) => `${displayAttrName(k)} +${v}`)
             .join(", ")}
           onEdit={() => onJump("attributes")}
         />
@@ -622,7 +623,7 @@ function StageBody({
 
   return (
     <p className="text-[var(--tfmc-mist)]">
-      Unsupported stage type “{type}”. Continue to skip.
+      Nothing to fill in here. Press Next.
     </p>
   );
 }
@@ -712,6 +713,7 @@ export default function CreationWizard({
   const [dir, setDir] = useState<"forward" | "back">("forward");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uiDevDone, setUiDevDone] = useState(false);
 
   useEffect(() => {
@@ -792,7 +794,7 @@ export default function CreationWizard({
         );
         createId = String(created.id || "").trim();
         if (!createId) {
-          throw new Error("Create succeeded but no id returned");
+          throw new Error("Something went wrong. Please try again.");
         }
         setPendingCreateId(createId);
       }
@@ -824,7 +826,7 @@ export default function CreationWizard({
           // Server composes masked from base when create_masked is set
           continue;
         }
-        setError(`Signing skin (${slot})…`);
+        setUploadStatus(`Uploading ${wardrobeSlotLabel(slot)} skin…`);
         await uploadPendingCreateWardrobe(
           sessionToken,
           createId,
@@ -851,6 +853,7 @@ export default function CreationWizard({
             : "Create failed";
       setError(friendlyWardrobeUploadError(raw));
     } finally {
+      setUploadStatus(null);
       setSubmitting(false);
     }
   }
@@ -858,7 +861,7 @@ export default function CreationWizard({
   if (!stage) {
     return (
       <p className="mt-8 text-[var(--tfmc-mist)]">
-        Creation catalog has no stages.
+        Character creation is unavailable right now.
       </p>
     );
   }
@@ -932,6 +935,10 @@ export default function CreationWizard({
       {error ? (
         <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
           {error}
+        </p>
+      ) : uploadStatus ? (
+        <p className="mt-3 text-sm text-[var(--tfmc-mist)]" role="status">
+          {uploadStatus}
         </p>
       ) : null}
       {clueBlockReason && !canNext ? (

@@ -44,15 +44,12 @@ function Row({
           <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p>
         ) : null}
       </div>
-      <span
-        className={`text-xs font-medium uppercase tracking-wide ${
-          status === "REJECTED"
-            ? "text-[#e8a0a0]"
-            : "text-[var(--tfmc-stone)]"
-        }`}
-      >
-        {status}
-      </span>
+      {/* Section headings name the status; only Missing needs a badge. */}
+      {status === "MISSING" ? (
+        <span className="text-xs font-medium text-[var(--tfmc-stone)]">
+          Missing
+        </span>
+      ) : null}
     </>
   );
   if (linkable && item.id) {
@@ -151,13 +148,13 @@ export default function CharacterList({
   const creatorLocked = !webCreatorAllowed;
   const lockLabel =
     webCreatorLockLabel.trim() ||
-    "Web character creator is not available for your rank yet.";
+    "Not available for your rank yet.";
 
   return (
     <div className="char-rise mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
-          Alive slots {aliveCount} / {maxSlots}
+          Alive characters {aliveCount}/{maxSlots}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           {onRefresh ? (
@@ -223,7 +220,7 @@ export default function CharacterList({
             items={pending}
             hint={
               pending.length > 0
-                ? "Applying on the game server can take up to a minute. Use Refresh if it stays pending. You can still open the character to edit kits and wardrobe."
+                ? "This can take up to a minute. You can still edit kits and wardrobe."
                 : undefined
             }
             linkAlive

@@ -13,7 +13,7 @@ import {
   setSession,
   type SkinsSession,
 } from "../../lib/skins/session";
-import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { formatExpiresIn } from "../../lib/skins/formatTime";
 
 export default function SkinsPage() {
   const router = useRouter();
@@ -93,8 +93,7 @@ export default function SkinsPage() {
       {session && isSessionValid(session) ? (
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {formatExpiresIn(session.expires_at)} (
-            {formatLocal(session.expires_at)})
+            Session expires {formatExpiresIn(session.expires_at)}
             {session.staff ? (
               <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
             ) : null}
@@ -115,7 +114,7 @@ export default function SkinsPage() {
             allowArmor3dHelmet={session.allow_armor_3d_helmet === true}
             colourLockedMessage={
               !metaSynced && (session.name_colour_stops ?? 0) <= 0
-                ? "Join the server once to sync rank perks"
+                ? "Join the server once to unlock your rank perks."
                 : undefined
             }
           />
@@ -149,9 +148,8 @@ export default function SkinsPage() {
               Use a new code?
             </h2>
             <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-              This ends your current skins session. You will need to redeem
-              another in-game code. If you have not submitted yet, this upload
-              session is discarded.
+              You&apos;ll need a new code from in-game. Anything not submitted
+              will be lost.
             </p>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button

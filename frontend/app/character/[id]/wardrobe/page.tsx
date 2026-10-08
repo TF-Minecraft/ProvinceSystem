@@ -152,10 +152,6 @@ export default function CharacterWardrobePage() {
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--tfmc-cream)]">
             Wardrobe
           </h1>
-          <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-            Optional skins for this character. Masked applies automatically when
-            wearing a mask.
-          </p>
           {uiDev ? (
             <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
               UI-dev: 3 swappable frames ·{" "}
