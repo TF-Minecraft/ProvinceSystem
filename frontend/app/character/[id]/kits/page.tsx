@@ -24,9 +24,14 @@ import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
 function kitStatusLabel(kit: CharacterKit): string {
   if (!kit.claimable) return "Claimed";
   const status = String(kit.status || "").trim().toLowerCase() || "eligible";
-  if (status === "eligible") return "Ready to claim";
+  // Legacy "ineligible" kits are unclaimed and can still be claimed in-game.
+  if (status === "eligible" || status === "ineligible") return "Not yet claimed";
   if (status === "granted") return "Claimed";
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return status
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function uiDevSession(): CharacterSession {

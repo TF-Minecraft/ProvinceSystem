@@ -1172,7 +1172,7 @@ export default function UploadForm({
       <p className="text-sm text-[var(--tfmc-mist)]">
         {staff
           ? "Staff uploads auto-approve and land in the curated shop pack (no Discord review)."
-          : "You'll get a Discord DM once it's in review."}
+          : "You'll get a Discord DM within 5 minutes confirming it's in review."}
       </p>
 
       <button

@@ -14,28 +14,6 @@ function submissionStatus(item: LoreItemRow): string {
   );
 }
 
-/** Player-facing status label (approval vs pack are distinct). */
-function statusLabel(item: LoreItemRow): string {
-  const state = customiseState(item);
-  const sub = submissionStatus(item);
-  if (state === "pending_skin") {
-    if (sub === "approved") return "Approved";
-    return "Awaiting approval";
-  }
-  switch (state) {
-    case "ready":
-      return "Ready";
-    case "denied":
-      return "Denied";
-    case "applied":
-      return "Applied";
-    case "draft":
-      return "Draft";
-    default:
-      return state;
-  }
-}
-
 function statusMessage(item: LoreItemRow): string {
   const state = customiseState(item);
   const sub = submissionStatus(item);
@@ -54,7 +32,7 @@ function statusMessage(item: LoreItemRow): string {
   }
   switch (state) {
     case "ready":
-      return "Ready. Claim the kit in-game.";
+      return "Item ready. Claim the kit in-game when available.";
     case "denied":
       return deny
         ? `Denied: ${deny}`
@@ -73,22 +51,17 @@ type Props = {
 };
 
 export default function CustomiseStatusCard({ item }: Props) {
-  const label = statusLabel(item);
   const previewName =
     item.preview?.display_name?.trim() ||
     item.draft?.display_name?.trim() ||
     item.base_preview?.display_name ||
-    item.kit_key;
+    "Item";
 
   return (
     <div className="mt-8 space-y-6">
       <p className="text-lg text-[var(--tfmc-cream)]">{statusMessage(item)}</p>
 
       <dl className="space-y-3 text-sm">
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">{label}</dd>
-        </div>
         <div>
           <dt className="text-[var(--tfmc-stone)]">Item</dt>
           <dd className="text-[var(--tfmc-cream)]">{previewName}</dd>

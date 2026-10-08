@@ -680,8 +680,9 @@ export default function LoreItemEditor({
       ) : null}
       {isDenied ? (
         <p className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_35%,transparent)] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] px-3 py-2 text-sm text-[#e8a0a0]">
-          Skin denied{denyReason ? `: ${denyReason}` : ""}. Upload or pick a
-          different skin and resubmit.
+          Skin denied{denyReason ? `: ${denyReason}` : ""}. Your name and lore
+          are saved. The kit won&apos;t include them until a replacement skin is
+          accepted.
         </p>
       ) : null}
 

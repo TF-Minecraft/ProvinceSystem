@@ -17,7 +17,7 @@ function statusMessage(row: DrinkSubmissionPublic): string {
     case "pending_pack":
       return "Approved. Your icon goes live soon.";
     case "approved":
-      return "Approved. Your drink will be brewable after the next server update.";
+      return "Approved. Waiting to become available in-game.";
     case "applied":
       return "Live. Brew it in-game.";
     default:
@@ -39,22 +39,6 @@ export default function StatusCard({ row }: Props) {
       <p className="text-lg text-[var(--tfmc-cream)]">{statusMessage(row)}</p>
 
       <dl className="space-y-3 text-sm">
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">
-            {row.status === "pending"
-              ? "Awaiting approval"
-              : row.status === "pending_pack"
-                ? "Approved"
-                : row.status === "approved"
-                  ? "Approved"
-                  : row.status === "applied"
-                    ? "Live"
-                    : row.status === "denied"
-                      ? "Denied"
-                      : row.status}
-          </dd>
-        </div>
         <div>
           <dt className="text-[var(--tfmc-stone)]">Drink name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>

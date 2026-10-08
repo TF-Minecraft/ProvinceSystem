@@ -31,7 +31,9 @@ function statusMessage(row: SubmissionPublic): string {
   }
   switch (row.status) {
     case "pending":
-      return "Submitted. You'll get a Discord DM when staff start reviewing it.";
+      return (
+        "Submitted for staff review. Your confirmation DM can take up to 5 minutes."
+      );
     case "denied":
       return row.deny_reason?.trim()
         ? `Denied: ${row.deny_reason.trim()}`
@@ -131,22 +133,6 @@ export default function StatusCard({ row }: Props) {
 
       <dl className="space-y-3 text-sm">
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">
-            {row.status === "pending"
-              ? "Awaiting approval"
-              : row.status === "approved"
-                ? "Approved"
-                : row.status === "applied"
-                  ? "Live"
-                  : row.status === "denied"
-                    ? "Denied"
-                    : row.status === "revoked"
-                      ? "Removed"
-                      : row.status}
-          </dd>
-        </div>
-        <div>
           <dt className="text-[var(--tfmc-stone)]">Type</dt>
           <dd className="text-[var(--tfmc-cream)]">{kindLabel(row.kind)}</dd>
         </div>
@@ -154,7 +140,7 @@ export default function StatusCard({ row }: Props) {
           <div>
             <dt className="text-[var(--tfmc-stone)]">Armour tiers</dt>
             <dd className="text-[var(--tfmc-cream)]">
-              {row.tiers.join(", ")}
+              {row.tiers.map(baseSetLabel).join(", ")}
             </dd>
           </div>
         ) : row.base_set ? (
