@@ -257,7 +257,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
                   stroke={colour}
                   strokeWidth={2.5 * unit}
                 >
-                  <title>{`${label}: ${blocks(s.to - s.from)}, ${Math.round(s.from).toLocaleString("en-GB")} blocks along`}</title>
+                  <title>{`${label}: ${blocks(s.to - s.from)}`}</title>
                 </circle>
               </g>
             ))
@@ -310,9 +310,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
             const capital = stop.kind === "faction_capital";
             return (
               <g key={`stop:${i}`} opacity={dim(stop.line)} className="pointer-events-auto">
-                <title>{`${stop.name}${capital ? " (faction capital)" : ""}\n${Math.round(stop.along).toLocaleString(
-                  "en-GB"
-                )} blocks along the track · settlement ${blocks(stop.distance)} away`}</title>
+                <title>{`${stop.name}${capital ? " (faction capital)" : ""}\nSettlement ${blocks(stop.distance)} away`}</title>
                 <circle
                   cx={stop.at[0]}
                   cy={stop.at[1]}

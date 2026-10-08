@@ -152,9 +152,9 @@ function endpointLabels(trail: MovementTrail, mapWorld: string): { sample: Sampl
   const lastStretch = shown[shown.length - 1].samples;
   const last = lastStretch[lastStretch.length - 1];
   const start = first.estimated
-    ? `Shown from ${formatClock(first.time)} (estimated position)`
-    : `${first.action === ACTION_LOGIN ? "Logged in" : "First observation shown"} ${formatClock(first.time)}`;
-  const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "Last observation shown"} ${formatClock(last.time)}`;
+    ? `≈ Start ${formatClock(first.time)}`
+    : `${first.action === ACTION_LOGIN ? "Logged in" : "Start"} ${formatClock(first.time)}`;
+  const end = `${last.action === ACTION_LOGOUT ? "Logged out" : "End"} ${formatClock(last.time)}`;
   if (first === last) return [{ sample: first, text: start }];
   return [
     { sample: first, text: start },
@@ -677,8 +677,8 @@ export default function MovementMap({
         ) : null}
         {latest ? (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last recorded
-            position (once a minute)
+            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last
+            position
           </span>
         ) : (
           <>
@@ -694,10 +694,10 @@ export default function MovementMap({
             ) : null}
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
-              <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimate or last seen
+              <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimated or last seen
             </span>
             <span className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> unobserved transition
+              <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> route unknown
               <span className="ml-2 inline-block h-2 w-2 rounded-full bg-[#7fd18b]" /> logged in
               <span className="inline-block h-2 w-2 rounded-full bg-[#e8796f]" /> logged out
             </span>

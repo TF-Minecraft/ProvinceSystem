@@ -139,7 +139,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
                 `@${profile.discord.discord_username}`
               ) : (
                 <span className="text-[var(--tfmc-mist)]">
-                  Handle not known yet (filled in when they sign in to the website) · ID {profile.discord.discord_user_id}
+                  Not known yet · ID {profile.discord.discord_user_id}
                 </span>
               )}
             </dd>
@@ -310,7 +310,7 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
         </button>
       ) : rows.length && historyStart && state === "ready" ? (
         // The oldest session row CoreProtect still holds for anyone, not this player's first session.
-        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Retained session records start {formatDate(historyStart)}.</p>
+        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">History starts {formatDate(historyStart)}.</p>
       ) : null}
     </section>
   );

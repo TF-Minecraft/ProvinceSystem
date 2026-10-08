@@ -63,7 +63,7 @@ it("lists breaks, lines and stops, and frames what is picked", async () => {
   render(<RailOverview />);
   expect(await screen.findByText("Thalenthyr – Drammen")).toBeTruthy();
   expect(getRailNetwork).toHaveBeenCalledWith("main");
-  expect(screen.getByText(/last saved them, at Wed 7 Oct 2026, 20:30/)).toBeTruthy();
+  expect(screen.getByText(/Updated Wed 7 Oct 2026, 20:30/)).toBeTruthy();
   expect(screen.getByText("Broken: 22 blocks")).toBeTruthy();
   expect(screen.getByText("capital · 0, 0")).toBeTruthy();
   expect(screen.getByText("Unnamed line")).toBeTruthy();
@@ -88,7 +88,7 @@ it("says when nothing needs repair", async () => {
 it("explains a site that cannot read the tracks", async () => {
   vi.mocked(getRailNetwork).mockResolvedValue({ ...NETWORK, status: "not_configured", lines: [], tracks: [], stops: [] });
   render(<RailOverview />);
-  expect(await screen.findByText("This site isn’t set up to read the rail network yet.")).toBeTruthy();
+  expect(await screen.findByText("Rail data isn’t available on this site.")).toBeTruthy();
   expect(screen.queryByTestId("map")).toBeNull();
 });
 

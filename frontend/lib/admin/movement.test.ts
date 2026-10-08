@@ -225,9 +225,9 @@ describe("session labels", () => {
 
   it("says only what the record shows", () => {
     expect(sessionEndLabel(session("logout", at(14, 15), at(14, 15)))).toBe("Logged out 14:15");
-    expect(sessionEndLabel(session("open", null, at(14, 14)))).toBe("Probably online · last observed 14:14");
+    expect(sessionEndLabel(session("open", null, at(14, 14)))).toBe("Probably online · last seen 14:14");
     expect(sessionEndLabel(session("last_observed", at(14, 15), at(14, 15)))).toBe(
-      "Last observed 14:15 · logout not recorded"
+      "Last seen 14:15 · no logout recorded"
     );
     expect(sessionEndLabel(session("unknown", null, at(13, 2)))).toBe("End unknown");
     expect(sessionSpanLabel(session("logout", at(14, 15), at(14, 15)))).toBe("13:02 → 14:15");

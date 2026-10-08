@@ -49,7 +49,7 @@ function ChannelTag({ channel, inferred = false }: { channel: string; inferred?:
   const colour = CHANNEL_COLOURS[channel] ?? "var(--tfmc-mist)";
   return (
     <span
-      title={inferred ? "Their channel at the time, from their last /channel switch since logging in" : undefined}
+      title={inferred ? "Probably their channel at the time" : undefined}
       className="mr-1.5 inline-block rounded-full border px-1.5 align-[1px] text-[10px] font-semibold uppercase tracking-wide"
       style={{ color: colour, borderColor: `color-mix(in srgb, ${colour} 45%, transparent)` }}
     >
@@ -322,9 +322,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
     <section className={panelClass} aria-label="Recent activity">
       <h3 className={headingClass}>Recent activity</h3>
       <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-        {showsMessages
-          ? "From CoreProtect, including chat and whole commands. Your views of these are logged. Sign text is not shown."
-          : "From CoreProtect. Chat, command arguments and sign text are not shown."}
+        {showsMessages ? "Includes chat and full commands. Views are logged." : "Chat and command details are hidden."}
       </p>
       {/* One row that scrolls sideways on a phone; wraps where there is room. */}
       <div

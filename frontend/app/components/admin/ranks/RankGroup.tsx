@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AccountApiError } from "../../../../lib/account/api";
@@ -158,9 +157,7 @@ export default function RankGroup({ name }: { name: string }) {
           Players in {group.name}{" "}
           <span className="whitespace-nowrap text-[var(--tfmc-mist)]">· {(members?.total ?? group.members).toLocaleString()}</span>
         </h3>
-        <p className={`mt-1 ${mutedClass}`}>
-          Players with a direct {group.name} entry, in any context. Chips show their other directly held groups.
-        </p>
+        <p className={`mt-1 ${mutedClass}`}>Direct members only. Chips show their other groups.</p>
         {members ? (
           <PlayerResults
             page={members}
@@ -201,7 +198,7 @@ export default function RankGroup({ name }: { name: string }) {
                       Delete <strong>{group.name}</strong>.
                     </>
                   ),
-                  warning: `${group.members} players hold it directly and keep a dangling entry; ${group.children.length} groups inherit it. Remove it from tracks first.`,
+                  warning: `${group.members} players hold it directly and ${group.children.length} groups inherit it. Remove it from tracks first.`,
                   ops: [{ op: "delete_group" }],
                   label: "Delete group",
                 })
@@ -212,11 +209,6 @@ export default function RankGroup({ name }: { name: string }) {
           )}
         </section>
       ) : null}
-      <p className="mt-6 text-sm">
-        <Link href="/admin/ranks" className="text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
-          ← All groups
-        </Link>
-      </p>
     </>
   );
 }

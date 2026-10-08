@@ -99,7 +99,7 @@ afterEach(() => {
 
 it("opens the newest session and inspects where it ended", async () => {
   render(<PlayerMovementPage uuid={UUID} />);
-  await screen.findByText(/Inspecting 14:10:00 · recorded at 30, 64, 0/);
+  await screen.findByText(/14:10:00 · 30, 64, 0/);
   expect(nav.state.params.get("session")).toBe("s1");
   expect(getSessionMovement).toHaveBeenCalledWith(UUID, "s1");
   expect(screen.getAllByText("Logged out 14:10").length).toBeGreaterThan(0);
@@ -109,14 +109,14 @@ it("opens the newest session and inspects where it ended", async () => {
 
 it("steps between observations and explains estimates", async () => {
   render(<PlayerMovementPage uuid={UUID} />);
-  await screen.findByText(/recorded at 30, 64, 0/);
-  fireEvent.click(screen.getByRole("button", { name: "‹ Previous observation" }));
-  await screen.findByText(/Inspecting 14:02:00 · recorded at 20, 64, 0/);
+  await screen.findByText(/14:10:00 · 30, 64, 0/);
+  fireEvent.click(screen.getByRole("button", { name: "‹ Previous" }));
+  await screen.findByText(/14:02:00 · 20, 64, 0/);
   act(() => nav.go(`/x?session=s1&at=${T + 90}`));
-  await screen.findByText(/estimated between observations at 14:01:00 and 14:02:00: near 15, 0/);
+  await screen.findByText(/about 15, 0 \(estimated between 14:01:00 and 14:02:00\)/);
   // Between 14:02 and logout at 14:10 nothing was recorded for longer than a ping gap.
   act(() => nav.go(`/x?session=s1&at=${T + 400}`));
-  await screen.findByText(/not observed \(offline, or not recorded\); last observation 14:02:00/);
+  await screen.findByText(/not seen; last seen 14:02:00/);
 });
 
 it("applies a typed range and refuses times the clocks skip", async () => {
@@ -125,7 +125,7 @@ it("applies a typed range and refuses times the clocks skip", async () => {
     coreprotect: status,
   });
   render(<PlayerMovementPage uuid={UUID} />);
-  await screen.findByText(/recorded at 30/);
+  await screen.findByText(/· 30, 64, 0/);
   fireEvent.click(screen.getByRole("tab", { name: "Time range" }));
   fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-03-29T01:30" } });
   fireEvent.click(screen.getByRole("button", { name: "Apply range" }));
@@ -136,7 +136,7 @@ it("applies a typed range and refuses times the clocks skip", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Apply range" }));
   await waitFor(() => expect(getPlayerMovement).toHaveBeenCalledWith(UUID, T - 3600, T));
   expect(nav.state.params.get("session")).toBeNull();
-  await screen.findByText(/No observations between Tue 6 Oct 2026, 13:00 → 14:00/);
+  await screen.findByText(/Nothing recorded between Tue 6 Oct 2026, 13:00 → 14:00/);
 });
 
 it("tells non-admins the page is not for them", async () => {
@@ -147,7 +147,7 @@ it("tells non-admins the page is not for them", async () => {
 
 it("frames a new session only once its own answer is in", async () => {
   render(<PlayerMovementPage uuid={UUID} />);
-  await screen.findByText(/recorded at 30, 64, 0/);
+  await screen.findByText(/14:10:00 · 30, 64, 0/);
   expect(screen.getByTestId("map").dataset.fit).toBe("session:s1");
   let answer: (value: unknown) => void = () => undefined;
   vi.mocked(getSessionMovement).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)) as never);

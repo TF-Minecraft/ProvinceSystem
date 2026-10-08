@@ -25,7 +25,7 @@ import { buttonClass, chipClass, headingClass, inputClass, mutedClass, panelClas
 /** Servers that share this LuckPerms storage; a node may apply to just one. */
 export const SERVERS = ["main", "dev", "tutorial"] as const;
 const PATREON_NOTE =
-  "Patreon-managed: for a linked patron, the Patreon sync resets permanent all-server grants of this group within 30 minutes.";
+  "Patreon manages this group for linked patrons and may undo permanent changes within 30 minutes.";
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; data: LpPlayer };
 
@@ -203,7 +203,7 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
       <section className={panelClass} aria-label="Groups">
         <h3 className={headingClass}>Groups</h3>
         {player.inherits.length ? (
-          <p className={`mt-1 ${mutedClass}`}>With inheritance, everywhere: {player.inherits.join(", ")}.</p>
+          <p className={`mt-1 ${mutedClass}`}>Including inherited: {player.inherits.join(", ")}.</p>
         ) : null}
         {groupNodes.length ? (
           <ul className={`mt-2 ${rowClass}`}>
@@ -435,7 +435,7 @@ function PermissionsPanel({
     <section className={panelClass} aria-label="Permissions">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 className={headingClass}>Permissions</h3>
-        <span className="text-xs text-[var(--tfmc-stone)]">{nodes.length} of their own; groups add more</span>
+        <span className="text-xs text-[var(--tfmc-stone)]">{nodes.length} set directly</span>
       </div>
       {nodes.length > 8 ? (
         <input
