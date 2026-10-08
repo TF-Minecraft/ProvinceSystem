@@ -13,6 +13,7 @@ It connects the Minecraft world with a browser experience: players can explore t
 - **Character creation and profiles** — create characters and manage their profiles, wardrobes, and kits through the website.
 - **Custom skin submissions** — submit supported cosmetic skins through an in-game-code-linked workflow.
 - **Drink design** — create BreweryX recipes and submit custom drinks for staff review.
+- **Accounts and staff tools** — sign in with Discord, manage linked accounts and supporter status, and use role-controlled player, activity, rail, and permission panels.
 - **Player knowledge hub** — browse the wiki's guides to crafting, professions, equipment, economy, and other server features.
 
 ## Connected to the server
@@ -25,22 +26,22 @@ It connects the Minecraft world with a browser experience: players can explore t
 
 Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
 
-Each branch gets a preview at `https://<branch>.tfminecraft.net`, merging to `main`
-deploys `https://dev.tfminecraft.net`, and **Actions → Deploy** puts `main` live on
-`https://www.tfminecraft.net`. See [Previews and deploys](https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/DEPLOY.md).
+[Previews and deployment](https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/DEPLOY.md)
 
 ## Tests
 
-CI runs the frontend Vitest suite and the backend pytest suite, then builds the
-Next.js frontend. To run the same suites from the repository root:
+CI uses Node 22 and Python 3.12. From the repository root, install dependencies
+and run the frontend Vitest and backend pytest suites with the same JUnit output:
 
 ```sh
-(cd frontend && npm ci && npm test)
-(cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q)
+(cd frontend && npm ci && npm test -- --reporter=default --reporter=junit --outputFile.junit=../test-results/frontend.xml) &&
+(cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q --junitxml=../test-results/backend.xml)
 ```
 
-The suites cover the website and API in isolation; they do not run a Minecraft
-server or the companion plugins.
+CI uploads `test-results/frontend.xml` and `test-results/backend.xml`, then builds
+the Next.js frontend. No coverage threshold is enforced. The suites exercise
+website components, application logic, and APIs in isolation; they do not run a
+live Minecraft server, companion plugins, or real external-service flows.
 
 ## License
 
