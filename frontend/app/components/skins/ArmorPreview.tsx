@@ -243,7 +243,7 @@ export default function ArmorPreview({
   if (!hasLayers) {
     return (
       <p className={`text-xs text-[var(--tfmc-mist)] ${className}`}>
-        Upload layer_1 and/or layer_2 to preview armor on Steve.
+        Upload a layer to preview.
       </p>
     );
   }
@@ -319,8 +319,7 @@ export default function ArmorPreview({
       </div>
       {status === "ready" ? (
         <p className="text-xs text-[var(--tfmc-mist)]">
-          {use3dHelm ? "3D helmet on head. " : ""}
-          Drag to orbit, scroll to zoom.
+          Drag to rotate, scroll to zoom.
         </p>
       ) : null}
     </div>

@@ -74,7 +74,7 @@ export default function WardrobeSlotFrame({
           locked
             ? `${label} locked`
             : pending
-              ? `${label} pending server`
+              ? `${label} pending`
               : `${label}${slot.filled ? "" : " empty"} - edit`
         }
       >
@@ -88,7 +88,7 @@ export default function WardrobeSlotFrame({
               {lockRuns && lockRuns.length > 0 ? (
                 <FormattedMcRuns runs={lockRuns} />
               ) : (
-                lockPlain || "a higher rank+"
+                lockPlain || "a higher rank"
               )}
             </p>
           </div>
@@ -111,9 +111,6 @@ export default function WardrobeSlotFrame({
                 <span className="inline-flex items-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-[color-mix(in_srgb,#0c1218_80%,transparent)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--tfmc-mist)] pointer-events-none select-none">
                   Pending
                 </span>
-                <p className="text-center text-[10px] leading-snug text-[var(--tfmc-stone)]">
-                  Waiting for server
-                </p>
               </div>
             ) : null}
 

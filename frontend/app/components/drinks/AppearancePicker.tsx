@@ -30,7 +30,7 @@ export default function AppearancePicker({
   const options: Option[] = [
     {
       value: "color",
-      label: "Potion color",
+      label: "Potion colour",
       detail: "Tint the default bottle",
     },
     ...(allowTexture
@@ -43,9 +43,7 @@ export default function AppearancePicker({
           {
             value: "reuse" as const,
             label: "Reuse texture",
-            detail: reuseDisabled
-              ? "No applied textures yet"
-              : "Pick an owned applied texture",
+            detail: reuseDisabled ? "None yet" : "Use one you've made before",
             locked: Boolean(reuseDisabled),
           },
         ]
@@ -68,7 +66,7 @@ export default function AppearancePicker({
       </legend>
       {!allowTexture ? (
         <p className="text-xs text-[var(--tfmc-mist)]">
-          Your rank is color-only (no custom texture).
+          Your rank is colour-only (no custom texture).
         </p>
       ) : null}
       <div

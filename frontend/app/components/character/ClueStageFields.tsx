@@ -138,9 +138,6 @@ export default function ClueStageFields({
             >
               New clue
             </h3>
-            <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-              {minLen}–{maxLen} characters
-            </p>
             <input
               ref={inputRef}
               value={draft}

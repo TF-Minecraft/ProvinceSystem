@@ -79,7 +79,7 @@ export default function CharacterKitEditPage() {
         const match =
           data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
         setItem(match);
-        if (!match) setError("Editable item not found or kit not claimable.");
+        if (!match) setError("This item can't be edited.");
       } catch (err) {
         setError(
           err instanceof CharactersApiError
@@ -96,7 +96,7 @@ export default function CharacterKitEditPage() {
   useEffect(() => {
     if (!characterId || !kitKey) {
       setReady(true);
-      setError("Missing character or item key.");
+      setError("Item not found.");
       return;
     }
     if (uiDev) {

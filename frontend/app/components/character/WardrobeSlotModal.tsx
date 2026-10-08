@@ -238,14 +238,10 @@ export default function WardrobeSlotModal({
         >
           {slotLabel}
         </h2>
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          Upload a 64×64 PNG. Save signs the skin for in-game use.
-        </p>
+        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">64×64 PNG skin.</p>
         {slotId === "masked" ? (
           <p className="mt-2 text-sm text-[var(--tfmc-stone)]">
-            Tip: Prefer matching your Base head (TAB still shows it). Or upload
-            Base with &quot;Create masked version&quot; to paste your head onto
-            the shared masked body.
+            Tip: match your Base skin&apos;s head.
           </p>
         ) : null}
 
@@ -265,7 +261,7 @@ export default function WardrobeSlotModal({
             />
             {showMaskedToggle && maskedPreviewBusy ? (
               <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50 text-xs text-[var(--tfmc-mist)]">
-                Building masked…
+                Loading…
               </div>
             ) : null}
           </div>
@@ -378,7 +374,7 @@ export default function WardrobeSlotModal({
         </label>
 
         <label className="mt-4 flex flex-col gap-1.5 text-sm text-[var(--tfmc-cream)]">
-          PNG file
+          Skin file
           <input
             ref={inputRef}
             type="file"
@@ -415,14 +411,12 @@ export default function WardrobeSlotModal({
               }}
             />
             <span>
-              Create masked version
-              <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
-                Pastes this head onto the shared masked body
-                {defaultCreateMasked
-                  ? ""
-                  : " (replaces your current Masked skin)"}
-                .
-              </span>
+              Also make a Masked skin from this
+              {defaultCreateMasked ? null : (
+                <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
+                  (replaces your current Masked skin)
+                </span>
+              )}
             </span>
           </label>
         ) : null}
@@ -477,7 +471,7 @@ export default function WardrobeSlotModal({
                   className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--tfmc-ink)] border-t-transparent"
                   aria-hidden
                 />
-                {file ? "Signing skin…" : "Saving…"}
+                Saving…
               </>
             ) : (
               "Save"

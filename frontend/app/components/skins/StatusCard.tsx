@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import type { SubmissionPublic } from "../../../lib/skins/api";
 import { getReviewSheet, SkinsApiError } from "../../../lib/skins/api";
+import { baseSetLabel } from "../../../lib/skins/baseSets";
 import { formatLocal } from "../../../lib/skins/formatTime";
 import { getSession, isSessionValid } from "../../../lib/skins/session";
+import { kindLabel } from "./KindPicker";
 
 function statusMessage(row: SubmissionPublic): string {
   if (row.staff) {
@@ -30,18 +32,14 @@ function statusMessage(row: SubmissionPublic): string {
   switch (row.status) {
     case "pending":
       return (
-        "Submitted. It can take up to 5 minutes for your request to enter the " +
-        "review system. You will get a Discord DM when it does. After that, " +
-        "staff will review it."
+        "Submitted for staff review. Your confirmation DM can take up to 5 minutes."
       );
     case "denied":
       return row.deny_reason?.trim()
         ? `Denied: ${row.deny_reason.trim()}`
         : "Denied. No reason given.";
     case "approved":
-      return (
-        "Approved. Your skin will be added to the pack within 24 hours."
-      );
+      return "Approved. Your skin will be live within 24 hours.";
     case "applied":
       return "Live on the server.";
     case "revoked":
@@ -105,15 +103,10 @@ export default function StatusCard({ row }: Props) {
   return (
     <div className="mt-8 space-y-6">
       <p className="text-lg text-[var(--tfmc-cream)]">{statusMessage(row)}</p>
-      {row.upload_source === "kit" ? (
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Submitted via kit item customise
-        </p>
-      ) : null}
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Review preview
+          Preview
         </h2>
         {sheetLoading ? (
           <div className="flex items-center gap-3 py-8 text-sm text-[var(--tfmc-mist)]">
@@ -140,36 +133,22 @@ export default function StatusCard({ row }: Props) {
 
       <dl className="space-y-3 text-sm">
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">
-            {row.status === "pending"
-              ? "Awaiting approval"
-              : row.status === "approved"
-                ? "Pending pack"
-                : row.status === "applied"
-                  ? "Live"
-                  : row.status === "denied"
-                    ? "Denied"
-                    : row.status === "revoked"
-                      ? "Removed"
-                      : row.status}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Kind</dt>
-          <dd className="text-[var(--tfmc-cream)]">{row.kind}</dd>
+          <dt className="text-[var(--tfmc-stone)]">Type</dt>
+          <dd className="text-[var(--tfmc-cream)]">{kindLabel(row.kind)}</dd>
         </div>
         {row.tiers?.length ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Armor tiers</dt>
+            <dt className="text-[var(--tfmc-stone)]">Armour tiers</dt>
             <dd className="text-[var(--tfmc-cream)]">
-              {row.tiers.join(", ")}
+              {row.tiers.map(baseSetLabel).join(", ")}
             </dd>
           </div>
         ) : row.base_set ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Applicable type</dt>
-            <dd className="text-[var(--tfmc-cream)]">{row.base_set}</dd>
+            <dt className="text-[var(--tfmc-stone)]">Item type</dt>
+            <dd className="text-[var(--tfmc-cream)]">
+              {baseSetLabel(row.base_set)}
+            </dd>
           </div>
         ) : null}
         <div>
@@ -192,18 +171,6 @@ export default function StatusCard({ row }: Props) {
           </div>
         ) : null}
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Apply name</dt>
-          <dd className="text-[var(--tfmc-cream)]">
-            {row.add_name ? "Yes" : "No"}
-          </dd>
-        </div>
-        {row.grip_preset ? (
-          <div>
-            <dt className="text-[var(--tfmc-stone)]">Grip height</dt>
-            <dd className="text-[var(--tfmc-cream)]">{row.grip_preset}</dd>
-          </div>
-        ) : null}
-        <div>
           <dt className="text-[var(--tfmc-stone)]">Created</dt>
           <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.created_at)}</dd>
         </div>
@@ -219,10 +186,6 @@ export default function StatusCard({ row }: Props) {
             <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.applied_at)}</dd>
           </div>
         ) : null}
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Skin id</dt>
-          <dd className="break-all text-[var(--tfmc-mist)]">{row.id}</dd>
-        </div>
       </dl>
     </div>
   );

@@ -21,6 +21,19 @@ import {
 } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
 
+function kitStatusLabel(kit: CharacterKit): string {
+  if (!kit.claimable) return "Claimed";
+  const status = String(kit.status || "").trim().toLowerCase() || "eligible";
+  // Legacy "ineligible" kits are unclaimed and can still be claimed in-game.
+  if (status === "eligible" || status === "ineligible") return "Not yet claimed";
+  if (status === "granted") return "Claimed";
+  return status
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function uiDevSession(): CharacterSession {
   return {
     session_token: UI_DEV_SESSION_TOKEN,
@@ -133,7 +146,7 @@ export default function CharacterKitsPage() {
       {error ? (
         <p className="mt-4 text-sm text-[#e8a0a0]">{error}</p>
       ) : kits.length === 0 ? (
-        <p className="mt-6 text-sm text-[var(--tfmc-mist)]">No kits synced yet.</p>
+        <p className="mt-6 text-sm text-[var(--tfmc-mist)]">No kits yet.</p>
       ) : (
         <ul className="mt-8 flex flex-col gap-3">
           {kits.map((kit) => (
@@ -145,10 +158,8 @@ export default function CharacterKitsPage() {
                 <span className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
                   {kit.display_name || kit.id}
                 </span>
-                <span className="text-xs uppercase tracking-wide text-[var(--tfmc-stone)]">
-                  {kit.claimable
-                    ? kit.status || "claimable"
-                    : "claimed"}
+                <span className="text-xs text-[var(--tfmc-stone)]">
+                  {kitStatusLabel(kit)}
                 </span>
               </Link>
             </li>

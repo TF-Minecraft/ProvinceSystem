@@ -13,12 +13,12 @@ const OPTIONS: {
   label: string;
   detail: string;
 }[] = [
-  { value: "armor_set", label: "Armor set", detail: "Full set by tier" },
+  { value: "armor_set", label: "Armour set", detail: "Full set by tier" },
   { value: "handheld", label: "Handheld", detail: "16×16 texture" },
   {
     value: "large_handheld",
     label: "Large handheld",
-    detail: "32×32 + grip slider",
+    detail: "32×32",
   },
   { value: "bow", label: "Bow", detail: "16×16 · 4 frames" },
   { value: "large_bow", label: "Large bow", detail: "32×32 · 4 frames" },
@@ -34,6 +34,11 @@ const OPTIONS: {
     detail: "Unsigned + signed · 16×16",
   },
 ];
+
+/** Player-facing label for a skin kind. */
+export function kindLabel(kind: string): string {
+  return OPTIONS.find((opt) => opt.value === kind)?.label ?? kind;
+}
 
 type Props = {
   value: SkinKind;
@@ -62,7 +67,7 @@ export default function KindPicker({
     <fieldset className="flex flex-col gap-3 border-0 p-0">
       <div className="flex items-center gap-2">
         <legend className="float-none w-auto px-0 text-sm font-medium text-[var(--tfmc-stone)]">
-          Kind
+          Type
         </legend>
         <KindHelpToggle
           open={helpOpen}
@@ -73,12 +78,12 @@ export default function KindPicker({
 
       {options.length === 0 ? (
         <p className="text-sm text-[var(--tfmc-mist)]">
-          No upload kinds available for your rank.
+          Nothing available for your rank.
         </p>
       ) : (
       <div
         role="radiogroup"
-        aria-label="Skin kind"
+        aria-label="Skin type"
         className="grid grid-cols-1 gap-2 sm:grid-cols-2"
       >
         {options.map((opt) => {

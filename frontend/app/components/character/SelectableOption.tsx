@@ -149,7 +149,7 @@ export default function SelectableOption({
         <p className="mt-1 text-xs text-[#e8a0a0]">{disabledReason}</p>
       ) : null}
       {showConflict && !disabledReason ? (
-        <p className="mt-1 text-xs text-[#e8a0a0]">Incompatible with selection</p>
+        <p className="mt-1 text-xs text-[#e8a0a0]">Conflicts with a chosen trait</p>
       ) : null}
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
@@ -189,7 +189,7 @@ export default function SelectableOption({
               {exclusive.length ? (
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-[var(--tfmc-stone)]">
-                    Mutually exclusive with:
+                    Can&apos;t combine with:
                   </p>
                   {exclusive.map((name) => (
                     <p

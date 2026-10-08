@@ -12,14 +12,14 @@ type KindGuide = {
 
 const GUIDES: Record<SkinKind, KindGuide> = {
   armor_set: {
-    title: "Armor set",
+    title: "Armour set",
     summary:
-      "Submit one or more armor tiers. Each tier becomes its own shop listing under your name.",
+      "Submit one or more armour tiers. Each tier becomes its own shop listing under your name.",
     steps: [
       "Add at least one tier (Iron, Steel, Abyssalite, Mythril, Mage, or Infantry).",
-      "Alias is optional if you want a custom name instead of the default tier label.",
+      "Tier name is optional if you want a custom name instead of the default tier label.",
       "Per tier, upload helmet, chestplate, leggings, and boots icons (16×16 PNG).",
-      "Upload layer_1 and layer_2 body textures (64×32 PNG) for that tier.",
+      "Upload Layer 1 and Layer 2 body textures (64×32 PNG) for that tier.",
       "Optional: tick 3D Helmet and upload a Java Block/Item JSON + PNG instead of the flat helmet icon (File → Export → Export Block/Item Model; one-axis 22.5°/45° rotations only).",
       "Set the item name and colours/styles if you want, then submit.",
     ],
@@ -29,19 +29,18 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   handheld: {
     title: "Handheld",
-    summary: "A single 16×16 item texture skinned onto a handheld base set.",
+    summary: "One 16×16 texture.",
     steps: [
-      "Choose the base set this skin applies to.",
+      "Choose the item type this skin applies to.",
       "Upload one 16×16 PNG as texture.",
-      "Set the ArmourShop item name (and optional name colours/styles).",
-      "Submit.",
+      "Set the item name (and optional name colours/styles).",
     ],
   },
   large_handheld: {
     title: "Large handheld",
     summary: "A 32×32 handheld with a grip slider for how it sits in hand.",
     steps: [
-      "Choose the base set.",
+      "Choose the item type.",
       "Adjust the grip height slider while checking the preview.",
       "Upload one 32×32 PNG as texture.",
       "Set the item name / colours, then submit.",
@@ -51,8 +50,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Bow",
     summary: "Four 16×16 frames so the bow animates while drawing.",
     steps: [
-      "Choose the bow base set.",
-      "Upload texture (standby), then pull_0, pull_1, and pull_2. All must be 16×16 PNG.",
+      "Choose the item type.",
+      "Upload Standby texture, then Pull 0, Pull 1 and Pull 2. All must be 16×16 PNG.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -60,8 +59,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Large bow",
     summary: "Same as bow, but every frame is 32×32.",
     steps: [
-      "Choose the large-bow base set.",
-      "Upload texture, pull_0, pull_1, and pull_2. All must be 32×32 PNG.",
+      "Choose the item type.",
+      "Upload Standby texture, Pull 0, Pull 1 and Pull 2. All must be 32×32 PNG.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -69,8 +68,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Crossbow",
     summary: "Five 16×16 frames, including the charged look.",
     steps: [
-      "Choose the crossbow base set.",
-      "Upload texture, pull_0, pull_1, pull_2, and charged. All must be 16×16 PNG.",
+      "Choose the item type.",
+      "Upload Standby texture, Pull 0, Pull 1, Pull 2 and Charged. All must be 16×16 PNG.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -78,11 +77,10 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Item 3D",
     summary: "A custom Blockbench model used as a 3D item skin.",
     steps: [
-      "Choose the base set.",
+      "Choose the item type.",
       "In Blockbench: File → Export → Export Block/Item Model as Java Block/Item (not Java Item, not a project file).",
       "Cubes may only rotate on one axis by 22.5° or 45°.",
       "Upload that model JSON and its texture PNG.",
-      "Display transforms are filled in if missing.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -90,7 +88,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Shield 3D",
     summary: "3D shield model plus texture.",
     steps: [
-      "Choose the shield base set.",
+      "Choose the item type.",
       "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
       "Upload that JSON + texture PNG.",
       "Preview Idle / Blocking on Right and Left hands.",
@@ -102,7 +100,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     summary:
       "3D helmet model worn as an RP mask. Skin it onto a mask in the armour shop; wearing it hides your character name.",
     steps: [
-      "Choose the Masks base set.",
+      "Choose Masks as the item type.",
       "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
       "Upload that JSON + texture PNG.",
       "Set the item name / colours, then submit.",
@@ -113,9 +111,9 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   helmet_3d: {
     title: "Helmet 3D",
-    summary: "Standalone 3D helmet (model + texture), not a full armor set.",
+    summary: "Standalone 3D helmet (model + texture), not a full armour set.",
     steps: [
-      "Choose the helmet base set.",
+      "Choose the item type.",
       "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
       "Upload that JSON + texture PNG.",
       "Set the item name / colours, then submit.",
@@ -125,10 +123,10 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     title: "Gun",
     summary: "One texture and three Blockbench models: carry, reload, and aim.",
     steps: [
-      "Choose the gun base set.",
+      "Choose the item type.",
       "Upload one texture PNG used by all poses.",
       "Export carry, reload, and aim as Java Block/Item JSON (not Java Item; one-axis 22.5°/45° only).",
-      "Upload carry_model, reload_model, and aim_model.",
+      "Upload them as Carry model, Reload model and Aim model.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -137,7 +135,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     summary:
       "Two 16×16 covers: unsigned for the writable book, signed after the player signs it.",
     steps: [
-      "Choose the Books base set.",
+      "Choose Books as the item type.",
       "Upload unsigned (writable / closed look) as a 16×16 PNG.",
       "Upload signed (after the book is signed) as a 16×16 PNG.",
       "Set the item name / colours, then submit.",
@@ -166,7 +164,7 @@ export function KindHelpToggle({ open, onToggle, panelId }: ToggleProps) {
           ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)] text-[var(--tfmc-forest-deep)]"
           : "border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] text-[var(--tfmc-stone)] hover:border-[color-mix(in_srgb,var(--tfmc-accent)_50%,var(--tfmc-cream))] hover:text-[var(--tfmc-cream)]"
       }`}
-      title={open ? "Hide kind guide" : "How this kind works"}
+      title={open ? "Hide help" : "How this works"}
     >
       ?
     </button>

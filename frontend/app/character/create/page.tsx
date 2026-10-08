@@ -104,7 +104,7 @@ export default function CharacterCreatePage() {
           listCharacters(existing!.session_token),
         ]);
         if (!cat.updated_at || !(cat.stages || []).length) {
-          setError("Sync issue");
+          setError("Character creation is unavailable right now.");
         } else {
           setCatalog(cat);
         }
@@ -132,7 +132,7 @@ export default function CharacterCreatePage() {
             ? minGroup.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
             : "donator";
           setError(
-            `Web creator requires ${rank} rank or higher. Join the lobby once so your rank syncs, then try again.`
+            `Needs ${rank} rank or higher. Just ranked up? Join the server once, then refresh.`,
           );
           setCatalog(null);
           return;
@@ -143,7 +143,9 @@ export default function CharacterCreatePage() {
           router.replace("/character");
           return;
         }
-        setError(err instanceof Error ? err.message : "Failed to load catalog");
+        setError(
+          err instanceof Error ? err.message : "Couldn't load. Try again.",
+        );
       } finally {
         setReady(true);
       }
@@ -170,7 +172,7 @@ export default function CharacterCreatePage() {
   if (!ready) {
     return (
       <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col justify-center px-6 py-16">
-        <p className="text-[var(--tfmc-mist)]">Loading wizard…</p>
+        <p className="text-[var(--tfmc-mist)]">Loading…</p>
       </main>
     );
   }

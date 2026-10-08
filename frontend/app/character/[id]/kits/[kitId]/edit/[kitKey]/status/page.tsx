@@ -75,7 +75,7 @@ export default function CharacterKitCustomiseStatusPage() {
         const match =
           data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
         setItem(match);
-        if (!match) setError("Editable item not found or kit not claimable.");
+        if (!match) setError("This item can't be edited.");
       } catch (err) {
         setError(
           err instanceof CharactersApiError
@@ -92,7 +92,7 @@ export default function CharacterKitCustomiseStatusPage() {
   useEffect(() => {
     if (!characterId || !kitKey) {
       setReady(true);
-      setError("Missing character or item key.");
+      setError("Item not found.");
       return;
     }
     if (uiDev) {
@@ -164,7 +164,7 @@ export default function CharacterKitCustomiseStatusPage() {
       </div>
 
       <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Customise status
+        Item status
       </h1>
 
       {error ? (

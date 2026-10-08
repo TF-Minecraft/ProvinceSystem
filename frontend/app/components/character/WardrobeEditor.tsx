@@ -394,7 +394,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         if (modalSlot === "base" && input.createMasked) {
           const token = props.sessionToken;
           if (!token) {
-            setModalError("Session required to create masked skin");
+            setModalError("Please log in again.");
             return;
           }
           try {
@@ -651,8 +651,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           Masked
         </h2>
         <p className="mb-3 text-sm text-[var(--tfmc-mist)]">
-          Used while wearing an RP mask. Not selectable in{" "}
-          <span className="text-[var(--tfmc-cream)]">/rpcharacter wardrobe</span>.
+          Worn automatically while you wear a mask.
         </p>
         {(() => {
           const slot = slotsById.get("masked")!;

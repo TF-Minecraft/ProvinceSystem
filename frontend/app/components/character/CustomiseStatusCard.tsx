@@ -14,28 +14,6 @@ function submissionStatus(item: LoreItemRow): string {
   );
 }
 
-/** Player-facing status label (approval vs pack are distinct). */
-function statusLabel(item: LoreItemRow): string {
-  const state = customiseState(item);
-  const sub = submissionStatus(item);
-  if (state === "pending_skin") {
-    if (sub === "approved") return "Pending pack";
-    return "Awaiting approval";
-  }
-  switch (state) {
-    case "ready":
-      return "Ready";
-    case "denied":
-      return "Denied";
-    case "applied":
-      return "Applied";
-    case "draft":
-      return "Draft";
-    default:
-      return state;
-  }
-}
-
 function statusMessage(item: LoreItemRow): string {
   const state = customiseState(item);
   const sub = submissionStatus(item);
@@ -43,7 +21,7 @@ function statusMessage(item: LoreItemRow): string {
   if (state === "pending_skin") {
     if (sub === "approved") {
       return (
-        "Your skin was approved. It will be added to the pack within 24 hours. " +
+        "Your skin was approved. It will be live within 24 hours. " +
         "After that, claim the kit in-game."
       );
     }
@@ -54,18 +32,15 @@ function statusMessage(item: LoreItemRow): string {
   }
   switch (state) {
     case "ready":
-      return (
-        "Your customise is ready. Claim the kit in-game when it is available " +
-        "for this character."
-      );
+      return "Item ready. Claim the kit in-game when available.";
     case "denied":
       return deny
         ? `Denied: ${deny}`
         : "Denied. No reason given. Edit again to submit a different skin.";
     case "applied":
-      return "Applied on the server.";
+      return "Live in-game.";
     case "draft":
-      return "No customise submitted yet.";
+      return "Nothing submitted yet.";
     default:
       return state;
   }
@@ -76,12 +51,11 @@ type Props = {
 };
 
 export default function CustomiseStatusCard({ item }: Props) {
-  const label = statusLabel(item);
   const previewName =
     item.preview?.display_name?.trim() ||
     item.draft?.display_name?.trim() ||
     item.base_preview?.display_name ||
-    item.kit_key;
+    "Item";
 
   return (
     <div className="mt-8 space-y-6">
@@ -89,28 +63,9 @@ export default function CustomiseStatusCard({ item }: Props) {
 
       <dl className="space-y-3 text-sm">
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">{label}</dd>
-        </div>
-        <div>
           <dt className="text-[var(--tfmc-stone)]">Item</dt>
           <dd className="text-[var(--tfmc-cream)]">{previewName}</dd>
         </div>
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Kit key</dt>
-          <dd className="break-all text-[var(--tfmc-mist)]">{item.kit_key}</dd>
-        </div>
-        {item.draft?.submission_id ? (
-          <div>
-            <dt className="text-[var(--tfmc-stone)]">Skin submission</dt>
-            <dd className="break-all text-[var(--tfmc-mist)]">
-              {item.draft.submission_id}
-              {item.draft.submission_status
-                ? ` (${item.draft.submission_status})`
-                : ""}
-            </dd>
-          </div>
-        ) : null}
       </dl>
     </div>
   );
