@@ -89,7 +89,8 @@ function ModePreview({
   const overlay = useTileManifest(mapId, layer, enabled).manifest;
   const Glyph = MAP_MODE_ICONS[mode];
 
-  if (!enabled || !base || !layer || !overlay) {
+  // Plain has no layer of its own: its preview is the base map alone.
+  if (!enabled || !base || (layer && !overlay)) {
     return (
       <span className="flex h-full w-full items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-moss)_70%,var(--tfmc-forest-deep))] text-[var(--tfmc-cream)]">
         <Glyph size={26} />
@@ -105,18 +106,20 @@ function ModePreview({
         fetchPriority="low"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <img
-        src={wholeMapUrl(mapId, layer, overlay)}
-        alt=""
-        decoding="async"
-        fetchPriority="low"
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{
-          opacity: REGION_TILE_MODES.has(mode)
-            ? DRILL_STACK_OVERLAY_OPACITY
-            : PROVINCE_MODE_OVERLAY_OPACITY,
-        }}
-      />
+      {layer && overlay ? (
+        <img
+          src={wholeMapUrl(mapId, layer, overlay)}
+          alt=""
+          decoding="async"
+          fetchPriority="low"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{
+            opacity: REGION_TILE_MODES.has(mode)
+              ? DRILL_STACK_OVERLAY_OPACITY
+              : PROVINCE_MODE_OVERLAY_OPACITY,
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -32,6 +32,8 @@ const MODE_OPTIONS: MapModeOption[] = [
   { value: "trade", label: "Trade", group: "world" },
   { value: "prosperity", label: "Prosperity", group: "world" },
   { value: "infestation", label: "Infestation", group: "world" },
+  // The base map on its own: no colours, names, pins or routes.
+  { value: "plain", label: "Plain", group: "world" },
 ];
 
 export function mapModeOptions(): MapModeOption[] {
@@ -54,7 +56,7 @@ export const REGION_TILE_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
 
 /**
  * The tile pyramid that colours a mode on the live map: its flattened region
- * shapes or its province raster. Null for a mode drawn neither way.
+ * shapes or its province raster. Null for Plain, which draws only the base map.
  */
 export function mapModeTileLayer(mode: MapMode): string | null {
   if (REGION_TILE_MODES.has(mode)) return `regions-${mode}`;

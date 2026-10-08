@@ -630,8 +630,9 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     const drawImage = async () => {
       // The raster modes (prosperity, terrain, ...) hover provinces from the
       // province grid and never pick a region, so their full-size image would
-      // be downloaded and decoded only to sit unread.
-      if (provinceHoverBlocksRegionPick(mapType)) return;
+      // be downloaded and decoded only to sit unread. Plain has no pick map,
+      // and with none ready, hover and clicks stay inert.
+      if (provinceHoverBlocksRegionPick(mapType) || mapType === "plain") return;
 
       // Phones get a half-size pick map: decoding the full one, with the map,
       // was enough for iOS Safari to run out of memory and reload the page

@@ -16,10 +16,10 @@ import { buildProsperityColorLut } from "./chronicleProsperity";
  *    the live version of any of them under a past date would be fabricated
  *    history.
  *
- *  - **Static** - `terrain`, `fertility`, `province`. These are province
- *    geometry, not state: they are the same on every day, so the live source
- *    *is* the historical answer. Serving them live is correct, not a leak, and
- *    it is why they are not captured.
+ *  - **Static** - `terrain`, `fertility`, `province`, `plain`. These are
+ *    province geometry or the bare base map, not state: they are the same on
+ *    every day, so the live source *is* the historical answer. Serving them
+ *    live is correct, not a leak, and it is why they are not captured.
  *
  *  - Region-record vs province-quantity, which cuts across the first split and
  *    is what `CHRONICLE_PROVINCE_PAINT_SOURCE` below is about.
@@ -31,6 +31,7 @@ export const CHRONICLE_STATIC_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
   "terrain",
   "fertility",
   "province",
+  "plain",
 ]);
 
 /**

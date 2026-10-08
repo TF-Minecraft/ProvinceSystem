@@ -98,6 +98,14 @@ export const TerrainIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** A folded paper map. */
+export const PlainIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z" />
+    <path d="M9 4v13.5M15 6.5V20" />
+  </Icon>
+);
+
 export const FertilityIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M12 21V8" />
@@ -322,4 +330,5 @@ export const MAP_MODE_ICONS: Record<MapMode, (props: IconProps) => ReactNode> = 
   trade: TradeIcon,
   prosperity: ProsperityIcon,
   infestation: InfestationIcon,
+  plain: PlainIcon,
 };
