@@ -28,7 +28,10 @@ export default function CompanionPetGallery() {
       </select>
       <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-[var(--tfmc-mist)]">
         Hatch {pet.name} with a <ItemChip name={pet.egg} texture={pet.eggTexture} link={false} />. Craft it at the{" "}
-        <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>.
+        <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>.{" "}
+        {pet.unlock === "Pet Master"
+          ? <>Requires the <strong>Pet Master</strong> profession perk.</>
+          : <>Requires the <strong>{pet.unlock}</strong> donator rank or higher.</>}
       </p>
       <WikiModelViewer
         key={pet.id}

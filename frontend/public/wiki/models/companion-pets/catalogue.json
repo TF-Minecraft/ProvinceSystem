@@ -5,6 +5,18 @@
       "2": "/wiki/textures/companion-pets/beagle/2.png"
     }
   },
+  "bernesse": {
+    "modelUrl": "/wiki/models/companion-pets/bernesse.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/bernesse/2.png"
+    }
+  },
+  "bordercollie": {
+    "modelUrl": "/wiki/models/companion-pets/bordercollie.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/bordercollie/2.png"
+    }
+  },
   "catblack": {
     "modelUrl": "/wiki/models/companion-pets/catblack.json",
     "textures": {
@@ -18,10 +30,22 @@
       "9": "/wiki/textures/companion-pets/catfunny/9.png"
     }
   },
+  "catgray": {
+    "modelUrl": "/wiki/models/companion-pets/catgray.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/catgray/9.png"
+    }
+  },
   "catorange": {
     "modelUrl": "/wiki/models/companion-pets/catorange.json",
     "textures": {
       "9": "/wiki/textures/companion-pets/catorange/9.png"
+    }
+  },
+  "cattabby": {
+    "modelUrl": "/wiki/models/companion-pets/cattabby.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/cattabby/9.png"
     }
   },
   "chihuahua": {
@@ -60,10 +84,22 @@
       "2": "/wiki/textures/companion-pets/husky/2.png"
     }
   },
+  "lagottoromagnolo": {
+    "modelUrl": "/wiki/models/companion-pets/lagottoromagnolo.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/lagottoromagnolo/2.png"
+    }
+  },
   "mainecoon": {
     "modelUrl": "/wiki/models/companion-pets/mainecoon.json",
     "textures": {
       "9": "/wiki/textures/companion-pets/mainecoon/9.png"
+    }
+  },
+  "yorkshire": {
+    "modelUrl": "/wiki/models/companion-pets/yorkshire.json",
+    "textures": {
+      "3": "/wiki/textures/companion-pets/yorkshire/3.png"
     }
   }
 }

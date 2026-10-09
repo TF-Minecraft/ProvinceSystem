@@ -2,8 +2,8 @@ import type { WikiSection } from "./types";
 import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue.json";
 import housePreview from "../../../public/wiki/models/companion-pets/pet-house-preview.json";
 
-// Item names, roles and textures checked against TFMCDev01 on 2026-10-03;
-// Pet Medicine and its station recipe rechecked for the 2026-10-04 wiki update.
+// Pet types, egg names and crafting requirements checked against TFMCDev01
+// CompanionPets, MMOItems Animal Station and LuckPerms on 2026-10-09.
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
@@ -32,25 +32,34 @@ export const companionPetItems = {
 };
 
 // Configured eggs retain their vanilla material appearance: no pack overrides.
-// All eleven companions, including Husky and Maine Coon, are registered in TF Dev.
+// All seventeen modeled companions are registered in TF Dev.
 const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
   beagle: "wolf", chihuahua: "wolf", corgi: "wolf", golden: "wolf", husky: "wolf",
   mainecoon: "cat", catblack: "cat", catfunny: "cat", catorange: "cat",
   fox: "fox", frog: "frog",
+  bernesse: "wolf", bordercollie: "wolf", catgray: "cat", cattabby: "cat",
+  lagottoromagnolo: "wolf", yorkshire: "wolf",
 };
 
-const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string }> = {
-  beagle: { name: "Beagle", egg: "Beagle Companion Egg" },
-  chihuahua: { name: "Chihuahua", egg: "Chihuahua Companion Egg" },
-  corgi: { name: "Corgi", egg: "Corgi Companion Egg" },
-  golden: { name: "Golden Retriever", egg: "Golden Companion Egg" },
-  husky: { name: "Husky", egg: "Husky Companion Egg" },
-  mainecoon: { name: "Maine Coon", egg: "Maine Coon Companion Egg" },
-  catblack: { name: "Black cat", egg: "Catblack Companion Egg" },
-  catfunny: { name: "Funny cat", egg: "Catfunny Companion Egg" },
-  catorange: { name: "Orange cat", egg: "Catorange Companion Egg" },
-  fox: { name: "Fox", egg: "Fox Companion Egg" },
-  frog: { name: "Frog", egg: "Frog Companion Egg" },
+type PetUnlock = "Pet Master" | "Noble" | "Gilded" | "Ascended" | "Legacy";
+const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: string; unlock: PetUnlock }> = {
+  beagle: { name: "Beagle", egg: "Beagle Companion Egg", unlock: "Pet Master" },
+  chihuahua: { name: "Chihuahua", egg: "Chihuahua Companion Egg", unlock: "Pet Master" },
+  corgi: { name: "Corgi", egg: "Corgi Companion Egg", unlock: "Pet Master" },
+  golden: { name: "Golden Retriever", egg: "Golden Companion Egg", unlock: "Pet Master" },
+  husky: { name: "Husky", egg: "Husky Companion Egg", unlock: "Noble" },
+  mainecoon: { name: "Maine Coon", egg: "Maine Coon Companion Egg", unlock: "Noble" },
+  catblack: { name: "Black cat", egg: "Catblack Companion Egg", unlock: "Pet Master" },
+  catfunny: { name: "Funny cat", egg: "Catfunny Companion Egg", unlock: "Pet Master" },
+  catorange: { name: "Orange cat", egg: "Catorange Companion Egg", unlock: "Pet Master" },
+  fox: { name: "Fox", egg: "Fox Companion Egg", unlock: "Pet Master" },
+  frog: { name: "Frog", egg: "Frog Companion Egg", unlock: "Pet Master" },
+  bernesse: { name: "Bernese Mountain Dog", egg: "Bernese Mountain Dog Companion Egg", unlock: "Ascended" },
+  bordercollie: { name: "Border Collie", egg: "Border Collie Companion Egg", unlock: "Legacy" },
+  catgray: { name: "Gray cat", egg: "Gray Cat Companion Egg", unlock: "Gilded" },
+  cattabby: { name: "Tabby cat", egg: "Tabby Cat Companion Egg", unlock: "Gilded" },
+  lagottoromagnolo: { name: "Lagotto Romagnolo", egg: "Lagotto Romagnolo Companion Egg", unlock: "Noble" },
+  yorkshire: { name: "Yorkshire Terrier", egg: "Yorkshire Terrier Companion Egg", unlock: "Ascended" },
 };
 
 export const companionPetTypes = Object.entries(petDetails).map(([id, details]) => ({
