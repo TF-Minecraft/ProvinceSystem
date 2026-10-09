@@ -9,7 +9,7 @@ import {
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import WikiModelViewer from "@/app/components/wiki/WikiModelViewer";
-import { companionPetItems, petHousePreview } from "@/app/wiki/data/companion-pets";
+import { companionPetItems, companionPetTypes, petHousePreview } from "@/app/wiki/data/companion-pets";
 
 function PetItem({ id }: { id: keyof typeof companionPetItems }) {
   return <ItemChip {...companionPetItems[id]} link={false} />;
@@ -26,7 +26,7 @@ function MedicineStation() {
 export default function CompanionPetsPage() {
   return (
     <WikiPage
-      lastModified="2026-10-04"
+      lastModified="2026-10-10"
       title="Companion Pets"
       intro="A companion is a little personality to share your adventures with. Give it a name, look after it, play together and teach it tricks. The more time you spend together, the stronger your bond becomes."
     >
@@ -39,13 +39,32 @@ export default function CompanionPetsPage() {
         They keep their name, preferences and learned tricks as you spend time together.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Unlock the Pet Master perk in the Forager profession to craft companion eggs at the <AnimalStation />.
-        Right-click with it and follow the
+        Craft companion eggs at the <AnimalStation />. Most require the Pet Master perk in
+        the Forager profession; nine companions require a donator rank instead.
+        Their recipes appear in the station once you meet the requirement below.
+        Right-click with an egg and follow the
         naming prompts in chat to welcome your new pet. Once it is beside you,
         sneak-right-click it with an empty hand to open its care sheet. This is where you
         can see how it feels, its personality and your growing bond.
       </p>
       <CompanionPetGallery />
+      <DataTable
+        caption="Companion egg crafting requirements"
+        columns={[{ header: "Companion" }, { header: "Unlock" }]}
+        rows={companionPetTypes.map((pet) => [
+          pet.name,
+          pet.unlock === "Pet Master" ? "Pet Master perk" : `${pet.unlock} donator rank or higher`,
+        ])}
+      />
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Donator ranks inherit the egg recipes from lower ranks: Noble, Gilded, Ascended,
+        then Legacy. Donator eggs require the rank in place of Pet Master.
+      </p>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Ordinary wolves and cats are also supported as companions. They hatch from
+        Wolf Spawn Eggs and Cat Spawn Eggs, whose separate Animal Station recipes
+        use the Breeder I perk.
+      </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Each companion has its own egg. Craft eggs, food, grooming supplies, treats and toys at the{" "}
         <AnimalStation /> to prepare for your adventures together.
