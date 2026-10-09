@@ -40,7 +40,7 @@ export default function CompanionPetsPage() {
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Craft companion eggs at the <AnimalStation />. Most require the Pet Master perk in
-        the Forager profession; eight companions require a donator rank instead.
+        the Forager profession; nine companions require a donator rank instead.
         Their recipes appear in the station once you meet the requirement below.
         Right-click with an egg and follow the
         naming prompts in chat to welcome your new pet. Once it is beside you,

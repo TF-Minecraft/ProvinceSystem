@@ -15,7 +15,7 @@ it("lets readers choose any companion while mounting only its preview", () => {
   expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
     "Beagle", "Chihuahua", "Corgi", "Golden Retriever", "Husky", "Maine Coon",
     "Black cat", "Funny cat", "Orange cat", "Fox", "Frog",
-    "Bernese Mountain Dog", "Border Collie", "Gray cat", "Tabby cat",
+    "Bernese Mountain Dog", "Border Collie", "Gray Border Collie", "Gray cat", "Tabby cat",
     "Lagotto Romagnolo", "Yorkshire Terrier",
   ]);
   expect(screen.getByText("Beagle Companion Egg")).toBeTruthy();
@@ -36,10 +36,11 @@ it("lets readers choose any companion while mounting only its preview", () => {
     ["fox", "Fox", "Fox Companion Egg", "Pet Master"],
     ["frog", "Frog", "Frog Companion Egg", "Pet Master"],
     ["bernesse", "Bernese Mountain Dog", "Bernese Mountain Dog Companion Egg", "Ascended"],
-    ["bordercollie", "Border Collie", "Border Collie Companion Egg", "Legacy"],
+    ["bordercollie", "Border Collie", "Border Collie Companion Egg", "Noble"],
+    ["bordercolliegray", "Gray Border Collie", "Gray Border Collie Companion Egg", "Legacy"],
     ["catgray", "Gray cat", "Gray Cat Companion Egg", "Gilded"],
     ["cattabby", "Tabby cat", "Tabby Cat Companion Egg", "Gilded"],
-    ["lagottoromagnolo", "Lagotto Romagnolo", "Lagotto Romagnolo Companion Egg", "Noble"],
+    ["lagottoromagnolo", "Lagotto Romagnolo", "Lagotto Romagnolo Companion Egg", "Gilded"],
     ["yorkshire", "Yorkshire Terrier", "Yorkshire Terrier Companion Egg", "Ascended"],
   ]) {
     fireEvent.change(select, { target: { value: id } });

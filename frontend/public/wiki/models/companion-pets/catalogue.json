@@ -17,6 +17,12 @@
       "2": "/wiki/textures/companion-pets/bordercollie/2.png"
     }
   },
+  "bordercolliegray": {
+    "modelUrl": "/wiki/models/companion-pets/bordercolliegray.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/bordercolliegray/2.png"
+    }
+  },
   "catblack": {
     "modelUrl": "/wiki/models/companion-pets/catblack.json",
     "textures": {

@@ -3,7 +3,7 @@ import modelCatalogue from "../../../public/wiki/models/companion-pets/catalogue
 import housePreview from "../../../public/wiki/models/companion-pets/pet-house-preview.json";
 
 // Pet types, egg names and crafting requirements checked against TFMCDev01
-// CompanionPets, MMOItems Animal Station and LuckPerms on 2026-10-09.
+// CompanionPets, MMOItems Animal Station and LuckPerms on 2026-10-10.
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
@@ -32,12 +32,12 @@ export const companionPetItems = {
 };
 
 // Configured eggs retain their vanilla material appearance: no pack overrides.
-// All seventeen modeled companions are registered in TF Dev.
+// All eighteen modeled companions are registered in TF Dev.
 const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
   beagle: "wolf", chihuahua: "wolf", corgi: "wolf", golden: "wolf", husky: "wolf",
   mainecoon: "cat", catblack: "cat", catfunny: "cat", catorange: "cat",
   fox: "fox", frog: "frog",
-  bernesse: "wolf", bordercollie: "wolf", catgray: "cat", cattabby: "cat",
+  bernesse: "wolf", bordercollie: "wolf", bordercolliegray: "wolf", catgray: "cat", cattabby: "cat",
   lagottoromagnolo: "wolf", yorkshire: "wolf",
 };
 
@@ -55,10 +55,11 @@ const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: strin
   fox: { name: "Fox", egg: "Fox Companion Egg", unlock: "Pet Master" },
   frog: { name: "Frog", egg: "Frog Companion Egg", unlock: "Pet Master" },
   bernesse: { name: "Bernese Mountain Dog", egg: "Bernese Mountain Dog Companion Egg", unlock: "Ascended" },
-  bordercollie: { name: "Border Collie", egg: "Border Collie Companion Egg", unlock: "Legacy" },
+  bordercollie: { name: "Border Collie", egg: "Border Collie Companion Egg", unlock: "Noble" },
+  bordercolliegray: { name: "Gray Border Collie", egg: "Gray Border Collie Companion Egg", unlock: "Legacy" },
   catgray: { name: "Gray cat", egg: "Gray Cat Companion Egg", unlock: "Gilded" },
   cattabby: { name: "Tabby cat", egg: "Tabby Cat Companion Egg", unlock: "Gilded" },
-  lagottoromagnolo: { name: "Lagotto Romagnolo", egg: "Lagotto Romagnolo Companion Egg", unlock: "Noble" },
+  lagottoromagnolo: { name: "Lagotto Romagnolo", egg: "Lagotto Romagnolo Companion Egg", unlock: "Gilded" },
   yorkshire: { name: "Yorkshire Terrier", egg: "Yorkshire Terrier Companion Egg", unlock: "Ascended" },
 };
 
