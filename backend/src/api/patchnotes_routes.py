@@ -18,7 +18,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.api.map_access import require_site_staff
+from src.patchnotes.compose import (
+    POST_SCHEMA,
+    compose_prompt,
+    fallback_messages,
+    messages_from_response,
+)
 from src.patchnotes.db import (
+    POST_JOB_KINDS,
     BulletNotFound,
     BulletNotOpen,
     BulletNotPending,
@@ -34,6 +41,7 @@ from src.patchnotes.db import (
     apply_sort,
     approve_bullet,
     approve_pending_week,
+    approve_post,
     claim_job,
     create_job,
     current_week,
@@ -42,9 +50,12 @@ from src.patchnotes.db import (
     drop_bullet,
     ensure_folder,
     finish_job,
+    get_act,
     get_bullet,
+    get_facts,
     get_folder,
     get_job,
+    get_post,
     get_week_status,
     insert_bullet,
     insert_sourced_bullet,
@@ -62,6 +73,7 @@ from src.patchnotes.db import (
     migrate,
     observe_folder,
     parse_week,
+    patch_label,
     postpone_week,
     queue_sync_task,
     remove_added_folder,
@@ -70,6 +82,9 @@ from src.patchnotes.db import (
     reset_week,
     restore_bullet,
     revise_denied_bullet,
+    save_facts,
+    save_post,
+    set_act,
     undo_postpone,
     update_bullet,
 )
@@ -908,6 +923,8 @@ def staff_claim_job():
         job = claim_job()
         if job is None:
             return {"job": None}
+        if job["kind"] == "compose":
+            return {"job": _job_payload(job), "prompt": _post_prompt(job), "schema": POST_SCHEMA}
         lines = _job_lines(job)
         if job["kind"] == "feedback":
             prompt = feedback_prompt(lines, job.get("feedback") or "")
@@ -935,6 +952,8 @@ def staff_job_result(job_id: str, body: JobResultBody):
             raise HTTPException(status_code=404, detail="Job not found")
         if job["status"] != "running":
             raise JobNotRunning(job_id)
+        if job["kind"] == "compose":
+            return {"job": _job_payload(_finish_post_job(job, body))}
         try:
             if body.error is not None:
                 raise FeedbackError(body.error.strip()[:300] or "The rewrite agent failed.")
@@ -1026,3 +1045,200 @@ def staff_reset_week(week: str):
         logger.exception("staff_reset_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return result
+
+
+# The weekly Discord post. The host compares the week's first and last AMP
+# backups and sends the facts here; the rewrite agent writes the post from them.
+
+_DEFAULT_PAGE_URL = "https://www.tfminecraft.net/updates"
+_MAX_FACTS_BYTES = 2_000_000
+
+
+def _page_url() -> str:
+    return os.environ.get("PATCHNOTES_PAGE_URL", "").strip() or _DEFAULT_PAGE_URL
+
+
+def _post_prompt(job: dict[str, Any]) -> str:
+    week = job["week"]
+    stored = get_facts(week)
+    feedback = (job.get("feedback") or "").strip() or None
+    previous = None
+    if feedback:
+        post = get_post(week)
+        previous = list(post["messages"]) if post else None
+    return compose_prompt(
+        stored["facts"] if stored else {},
+        week=week,
+        label=patch_label(week),
+        act=get_act(week),
+        page_url=_page_url(),
+        previous=previous,
+        feedback=feedback,
+    )
+
+
+def _save_fallback(week: str) -> dict[str, Any] | None:
+    stored = get_facts(week)
+    if stored is None:
+        return None
+    messages = fallback_messages(
+        stored["facts"], week=week, label=patch_label(week), act=get_act(week), page_url=_page_url()
+    )
+    return save_post(week, messages, "fallback")
+
+
+def _finish_post_job(job: dict[str, Any], body: JobResultBody) -> dict[str, Any]:
+    """Store the writer's post. A failure keeps the last post, or a plain one from the facts."""
+    job_id = str(job["id"])
+    try:
+        if body.error is not None:
+            raise FeedbackError(body.error.strip()[:300] or "The rewrite agent failed.")
+        messages = messages_from_response(_json_object(body.output or ""))
+        save_post(job["week"], messages, "writer")
+        return finish_job(job_id, changed=len(messages))
+    except (FeedbackError, ValueError) as e:
+        row = finish_job(job_id, error=str(e)[:300])
+        if get_post(job["week"]) is None:
+            _save_fallback(job["week"])
+        return row
+
+
+def _post_payload(week: str, post: dict[str, Any] | None, job: dict[str, Any] | None) -> dict[str, Any]:
+    return {
+        "week": week,
+        "label": patch_label(week),
+        "act": get_act(week),
+        "messages": list(post["messages"]) if post else [],
+        "source": post["source"] if post else None,
+        "status": post["status"] if post else "composing",
+        "updated_at": _iso(post.get("updated_at")) if post else None,
+        "job": _job_payload(job) if job else None,
+    }
+
+
+def _start_post_job(week: str, feedback: str | None) -> dict[str, Any]:
+    try:
+        return create_job(week, "compose", feedback)
+    except JobActive as e:
+        raise HTTPException(status_code=409, detail="The post is already being written.") from e
+
+
+class FactsBody(BaseModel):
+    facts: dict[str, Any]
+
+
+class ActBody(BaseModel):
+    act: str | None = Field(default=None, max_length=60)
+
+
+@patchnotes_router.post("/staff/weeks/{week}/facts", dependencies=[Depends(_staff_guard)])
+def staff_week_facts(week: str, body: FactsBody):
+    """Store a closed week's comparison and start writing its post."""
+    week_key = _week_or_400(week)
+    if len(json.dumps(body.facts)) > _MAX_FACTS_BYTES:
+        raise HTTPException(status_code=413, detail="Facts are too large")
+    try:
+        migrate()
+        save_facts(week_key, body.facts)
+        try:
+            job = create_job(week_key, "compose")
+        except JobActive:
+            job = None
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_facts failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"week": week_key, "job": _job_payload(job) if job else None}
+
+
+@patchnotes_router.get("/staff/weeks/{week}/facts", dependencies=[Depends(_staff_guard)])
+def staff_get_week_facts(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        stored = get_facts(week_key)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_get_week_facts failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    if stored is None:
+        raise HTTPException(status_code=404, detail="No weekly comparison for this week yet.")
+    return {"week": week_key, "created_at": _iso(stored.get("created_at")), "facts": stored["facts"]}
+
+
+@patchnotes_router.get("/staff/weeks/{week}/post", dependencies=[Depends(_staff_guard)])
+def staff_week_post(week: str):
+    """The week's Discord post. It is empty while the first version is being written."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        post = get_post(week_key)
+        job = latest_job(week_key, POST_JOB_KINDS)
+        active = job is not None and job["status"] in {"queued", "running"}
+        if post is None and not active:
+            post = _save_fallback(week_key)
+        if post is None and job is None:
+            raise HTTPException(status_code=404, detail="No weekly comparison for this week yet.")
+        return _post_payload(week_key, post, job)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_post failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+
+
+@patchnotes_router.post(
+    "/staff/weeks/{week}/post/feedback", status_code=202, dependencies=[Depends(_staff_guard)]
+)
+def staff_week_post_feedback(week: str, body: FeedbackBody):
+    """Rewrite the whole post from staff feedback."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        if get_post(week_key) is None:
+            raise HTTPException(status_code=409, detail="This week has no post to rewrite yet.")
+        job = _start_post_job(week_key, body.feedback)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_post_feedback failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"job": _job_payload(job)}
+
+
+@patchnotes_router.post(
+    "/staff/weeks/{week}/post/compose", status_code=202, dependencies=[Depends(_staff_guard)]
+)
+def staff_week_post_compose(week: str):
+    """Write the post again from the facts, without the earlier feedback."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        if get_facts(week_key) is None:
+            raise HTTPException(status_code=404, detail="No weekly comparison for this week yet.")
+        job = _start_post_job(week_key, None)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_post_compose failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"job": _job_payload(job)}
+
+
+@patchnotes_router.post("/staff/weeks/{week}/post/approve", dependencies=[Depends(_staff_guard)])
+def staff_week_post_approve(week: str):
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        approved = approve_post(week_key)
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_post_approve failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+    return {"week": week_key, "approved": approved}
+
+
+@patchnotes_router.put("/staff/weeks/{week}/meta", dependencies=[Depends(_staff_guard)])
+def staff_week_meta(week: str, body: ActBody):
+    """Mark an act change week, or clear it with a null act."""
+    week_key = _week_or_400(week)
+    try:
+        migrate()
+        set_act(week_key, body.act)
+        return {"week": week_key, "act": get_act(week_key), "label": patch_label(week_key)}
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+        logger.exception("staff_week_meta failed")
+        raise HTTPException(status_code=502, detail=_client_detail(e)) from e

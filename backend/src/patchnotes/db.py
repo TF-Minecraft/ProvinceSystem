@@ -369,18 +369,57 @@ def migrate() -> None:
             )
             cur.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx
-                    ON patchnote_jobs (week) WHERE status IN ('queued', 'running')
-                """
-            )
-            cur.execute(
-                """
                 CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
                     folder_name TEXT NOT NULL,
                     week TEXT NOT NULL,
                     repo TEXT NOT NULL,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                     PRIMARY KEY (folder_name, week)
+                )
+                """
+            )
+            # The weekly Discord post has its own job slot beside the line jobs.
+            cur.execute("ALTER TABLE patchnote_jobs DROP CONSTRAINT IF EXISTS patchnote_jobs_kind_check")
+            cur.execute(
+                """
+                ALTER TABLE patchnote_jobs ADD CONSTRAINT patchnote_jobs_kind_check
+                    CHECK (kind IN ('feedback', 'sort', 'compose'))
+                """
+            )
+            cur.execute("DROP INDEX IF EXISTS patchnote_jobs_active_week_idx")
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_kind_idx
+                    ON patchnote_jobs (week, (kind = 'compose'))
+                    WHERE status IN ('queued', 'running')
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_week_facts (
+                    week TEXT PRIMARY KEY,
+                    facts JSONB NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_posts (
+                    week TEXT PRIMARY KEY,
+                    messages JSONB NOT NULL,
+                    source TEXT NOT NULL CHECK (source IN ('writer', 'fallback')),
+                    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved')),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS patchnote_week_meta (
+                    week TEXT PRIMARY KEY,
+                    act TEXT,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
                 """
             )
@@ -1208,9 +1247,13 @@ def _expire_jobs(cur) -> None:
     )
 
 
+LINE_JOB_KINDS = ("feedback", "sort")
+POST_JOB_KINDS = ("compose",)
+
+
 def create_job(week: str, kind: str, feedback: str | None = None) -> dict[str, Any]:
     week_key = parse_week(week)
-    if kind not in {"feedback", "sort"}:
+    if kind not in {*LINE_JOB_KINDS, *POST_JOB_KINDS}:
         raise ValueError("Invalid job kind")
     conn = _connect()
     try:
@@ -1220,7 +1263,7 @@ def create_job(week: str, kind: str, feedback: str | None = None) -> dict[str, A
                 f"""
                 INSERT INTO patchnote_jobs (week, kind, feedback)
                 VALUES (%s, %s, %s)
-                ON CONFLICT (week) WHERE status IN ('queued', 'running') DO NOTHING
+                ON CONFLICT (week, (kind = 'compose')) WHERE status IN ('queued', 'running') DO NOTHING
                 RETURNING {_JOB_COLUMNS}
                 """,
                 (week_key, kind, feedback),
@@ -1308,8 +1351,12 @@ def get_job(job_id: str) -> dict[str, Any] | None:
     return _read_job("WHERE id = %s", (job_id,))
 
 
-def latest_job(week: str) -> dict[str, Any] | None:
-    return _read_job("WHERE week = %s ORDER BY created_at DESC, id DESC LIMIT 1", (parse_week(week),))
+def latest_job(week: str, kinds: tuple[str, ...] = LINE_JOB_KINDS) -> dict[str, Any] | None:
+    """The newest job of these kinds. Line jobs and post jobs are tracked apart."""
+    return _read_job(
+        "WHERE week = %s AND kind = ANY(%s) ORDER BY created_at DESC, id DESC LIMIT 1",
+        (parse_week(week), list(kinds)),
+    )
 
 
 def _edit_bullet(bullet_id: str, fields: dict[str, Any], *, denied: bool = False) -> dict[str, Any]:
@@ -1450,3 +1497,124 @@ def apply_sort(week: str, edits: list[dict[str, Any]]) -> dict[str, Any]:
     finally:
         conn.close()
     return {"changed": changed, "bullets": bullets}
+
+
+def save_facts(week: str, facts: dict[str, Any]) -> None:
+    """Store a closed week's comparison. A later run replaces it."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_week_facts (week, facts) VALUES (%s, %s)
+                ON CONFLICT (week) DO UPDATE SET facts = EXCLUDED.facts, created_at = now()
+                """,
+                (parse_week(week), psycopg2.extras.Json(facts)),
+            )
+    finally:
+        conn.close()
+
+
+def get_facts(week: str) -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT week, facts, created_at FROM patchnote_week_facts WHERE week = %s",
+                (parse_week(week),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def save_post(week: str, messages: list[str], source: str) -> dict[str, Any]:
+    """Store the week's Discord post as a draft. A rewrite needs approving again."""
+    if source not in {"writer", "fallback"}:
+        raise ValueError("Invalid post source")
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_posts (week, messages, source, status) VALUES (%s, %s, %s, 'draft')
+                ON CONFLICT (week) DO UPDATE SET messages = EXCLUDED.messages, source = EXCLUDED.source,
+                    status = 'draft', updated_at = now()
+                RETURNING week, messages, source, status, updated_at
+                """,
+                (parse_week(week), psycopg2.extras.Json(messages), source),
+            )
+            return dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def get_post(week: str) -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT week, messages, source, status, updated_at FROM patchnote_posts WHERE week = %s",
+                (parse_week(week),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def approve_post(week: str) -> bool:
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE patchnote_posts SET status = 'approved', updated_at = now() WHERE week = %s",
+                (parse_week(week),),
+            )
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_act(week: str) -> str | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("SELECT act FROM patchnote_week_meta WHERE week = %s", (parse_week(week),))
+            row = cur.fetchone()
+            return row[0] if row and row[0] else None
+    finally:
+        conn.close()
+
+
+def set_act(week: str, act: str | None) -> None:
+    """Mark an act change week. Its post is titled with the act."""
+    text = (act or "").strip() or None
+    if text is not None and len(text) > 60:
+        raise ValueError("act is too long (max 60 chars)")
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO patchnote_week_meta (week, act) VALUES (%s, %s)
+                ON CONFLICT (week) DO UPDATE SET act = EXCLUDED.act, updated_at = now()
+                """,
+                (parse_week(week), text),
+            )
+    finally:
+        conn.close()
+
+
+def patch_label(week: str) -> str:
+    """`5.3`: the season, then this week's place among the season's published weeks.
+
+    PATCHNOTES_SEASON names the season and PATCHNOTES_SEASON_START is its first
+    patch week. Weeks with no published notes do not take a number.
+    """
+    week_key = parse_week(week)
+    season = os.environ.get("PATCHNOTES_SEASON", "").strip() or "5"
+    start = parse_week(os.environ.get("PATCHNOTES_SEASON_START", "").strip() or "2026-W39")
+    earlier = [item for item in list_published_weeks() if start <= item < week_key]
+    return f"{season}.{len(earlier) + 1}"
