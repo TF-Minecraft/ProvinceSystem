@@ -17,7 +17,16 @@ from typing import Any
 
 from .feedback import FeedbackError
 from .safety import hidden_knowledge_warning
-from .summarize import _COORDS, _DIFF, _EXPLOIT, _PERMISSION, _SECRET
+from .summarize import (
+    _COORDS,
+    _DIFF,
+    _EXPLOIT,
+    _KIND_SECTION,
+    _NOT_PLAYER_FACING,
+    _PERMISSION,
+    _SECRET,
+    _split_conventional,
+)
 
 DISCORD_LIMIT = 2000
 # The bot puts the role ping in front of the first message.
@@ -266,6 +275,17 @@ def messages_from_response(payload: dict[str, Any]) -> list[str]:
     return messages
 
 
+def _plain_subject(subject: str) -> str:
+    """A commit subject without its `fix:` prefix, or empty for technical work."""
+    kind, text = _split_conventional(subject)
+    if _KIND_SECTION.get(kind) == "technical" or _NOT_PLAYER_FACING.search(text) or _TEST_WORK.search(text):
+        return ""
+    return text[:1].upper() + text[1:]
+
+
+_TEST_WORK = re.compile(r"(?i)\b(coverage|tests?|ci|refactor)\b")
+
+
 _VAGUE_KEYS = frozenset({"base", "per-level", "value", "amount"})
 
 
@@ -282,7 +302,12 @@ def fallback_messages(facts: dict[str, Any], *, week: str, label: str, act: str 
     """A plain post straight from the facts, for when the writer is unavailable."""
     lines = title_lines(label, act) + [f"-# {week_line(week)}", "", "Here is what changed on the server this week."]
     plugins = [item for item in facts.get("plugins") or [] if isinstance(item, dict)]
-    subjects = [subject for item in plugins for subject in item.get("commits") or []]
+    subjects = [
+        _plain_subject(str(subject))
+        for item in plugins
+        for subject in item.get("commits") or []
+        if _plain_subject(str(subject))
+    ]
     if subjects:
         lines += ["", "## Changes"]
         lines += [f"- {subject}" for subject in subjects[:25]]

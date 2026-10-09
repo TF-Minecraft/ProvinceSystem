@@ -20,7 +20,11 @@ _FACTS = {
             "repo": "RPCharacters",
             "old": "2.11.0",
             "new": "2.12.6",
-            "commits": ["Make armour take time to put on"],
+            "commits": [
+                "Make armour take time to put on",
+                "fix: stop knocked-out players dying",
+                "Fix activity recovery and enforce 100% line coverage in the API",
+            ],
         }
     ],
     "files": [
@@ -112,6 +116,8 @@ class FallbackTest(unittest.TestCase):
         text = "\n".join(messages)
         self.assertTrue(text.startswith("# Update 5.3\n-# Week of 5 October 2026"))
         self.assertIn("- Make armour take time to put on", text)
+        self.assertIn("- Stop knocked-out players dying", text)
+        self.assertNotIn("coverage", text)
         self.assertIn("- **Juggernaut:** max health base: 30 --> 28", text)
         self.assertIn("new things to discover", text)
         self.assertIn("<https://example.net/updates/2026-W41>", text)
