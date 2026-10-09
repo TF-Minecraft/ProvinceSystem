@@ -1,0 +1,11 @@
+{
+  "author": ["TFMC"],
+  "bot_version": [3, 5, 0],
+  "description": "Staff review for the weekly update post. Approve posts it to #updates.",
+  "hidden": true,
+  "install_msg": "PatchNotes installed. Copy config.example.yml to config.yml and fill the staff key; use `/patchnotes ping`.",
+  "name": "PatchNotes",
+  "requirements": ["PyYAML"],
+  "short": "TFMC weekly patch note review",
+  "tags": ["patchnotes", "tfmc", "staff"]
+}

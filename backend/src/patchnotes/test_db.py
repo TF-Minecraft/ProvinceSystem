@@ -389,7 +389,10 @@ class JobStorageTest(unittest.TestCase):
         self.assertIn("interval '10 minutes'", calls[0].args[0])
         self.assertIn("The rewrite agent is not running.", calls[0].args[0])
         self.assertIn("The rewrite took too long.", calls[0].args[0])
-        self.assertIn("ON CONFLICT (week) WHERE status IN ('queued', 'running')", calls[1].args[0])
+        self.assertIn(
+            "ON CONFLICT (week, (kind = 'compose')) WHERE status IN ('queued', 'running')",
+            calls[1].args[0],
+        )
         self.assertEqual(calls[1].args[1], ("2026-W40", "feedback", "Shorten it."))
         self.cursor.fetchone.return_value = None
         with self.assertRaises(db.JobActive):
@@ -444,7 +447,14 @@ class JobStorageTest(unittest.TestCase):
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_jobs", sql)
         self.assertIn("CHECK (kind IN ('feedback', 'sort'))", sql)
         self.assertIn("CHECK (status IN ('queued', 'running', 'done', 'failed'))", sql)
-        self.assertIn("CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx", sql)
+        # Line jobs and the weekly post job each get one active slot per week.
+        self.assertIn("CHECK (kind IN ('feedback', 'sort', 'compose'))", sql)
+        self.assertIn("DROP INDEX IF EXISTS patchnote_jobs_active_week_idx", sql)
+        self.assertIn("ON patchnote_jobs (week, (kind = 'compose'))", sql)
+        self.assertNotIn("CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_facts", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_posts", sql)
+        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_meta", sql)
 
 
 class ReviewStorageTest(unittest.TestCase):

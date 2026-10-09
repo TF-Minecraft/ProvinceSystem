@@ -1,0 +1,19 @@
+# Copy to config.yml next to this file and fill in real values.
+# Do not commit config.yml (it may contain staff_key).
+
+api_base_url: "http://127.0.0.1:8000"
+staff_key: "dev-staff-key"
+# Staff review queue. Approve or deny here before anything reaches players.
+review_channel_id: 1232114215435894865
+# The weekly player-facing message is created and then edited in this channel.
+updates_channel_id: 1079697131213955122
+# The TFer role. Pinged once, in front of the first Friday 18:00 message.
+# Later edits do not ping, and test copies never ping.
+update_ping_role_id: 1124721131165847682
+# Pinged on the Friday 12:00 review notice.
+# staff_role_id: 1045375274528821318
+# Week closes Friday at 12:00 in this zone. The public post is at 18:00.
+# timezone: Europe/Berlin
+# Landing page. The weekly message links to this URL plus the week, /updates/2026-W39.
+page_url: "https://www.tfminecraft.net/updates"
+poll_interval_seconds: 120
