@@ -31,7 +31,9 @@ from .summarize import (
 DISCORD_LIMIT = 2000
 # The bot puts the role ping in front of the first message.
 FIRST_LIMIT = 1900
-MAX_MESSAGES = 10
+# The writer aims for TARGET_MESSAGES. A busy week may run longer, up to MAX_MESSAGES.
+TARGET_MESSAGES = 8
+MAX_MESSAGES = 15
 _FACTS_BUDGET = 60_000
 _MENTION = re.compile(r"@(everyone|here)|<@[!&]?\d+>")
 _FENCE = re.compile(r"^```[a-z]*\n?|\n?```$")
@@ -71,6 +73,8 @@ Rules:
   exact crafting recipes or hit counts, coordinates, commands, permissions or exploits.
 - Never write @everyone, @here or any mention. The bot adds the role ping itself.
 - Never use an em dash.
+- Keep the whole post to at most {target} messages. On a busy week, fold small related changes into
+  one short line each and leave minor ones to the website instead of listing everything.
 - Split the post into Discord messages in order. Each message must stay under 1900 characters.
   Start a new message at a heading, never in the middle of a list.
 - Section headings are fixed. Leave a section out only when nothing belongs in it.
@@ -204,6 +208,7 @@ def compose_prompt(
         title_rule=_title_rule(label, act),
         week_line=week_line(week),
         page_url=f"{page_url.rstrip('/')}/{week}",
+        target=TARGET_MESSAGES,
     )
     parts = [guide, _GLOSSARY, "Facts:", render_facts(facts)]
     if previous and feedback:

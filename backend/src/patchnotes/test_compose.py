@@ -101,6 +101,15 @@ class MessagesTest(unittest.TestCase):
         self.assertTrue(all(len(message) <= compose.DISCORD_LIMIT for message in messages))
         self.assertTrue(messages[-1].endswith("- one"))
 
+    def test_busy_weeks_may_run_past_the_target_but_not_the_cap(self) -> None:
+        prompt = compose.compose_prompt(_FACTS, week="2026-W41", label="5.3", act=None, page_url="x")
+        self.assertIn(f"at most {compose.TARGET_MESSAGES} messages", prompt)
+        twelve = [f"# Part {n}\n- line" for n in range(12)]
+        self.assertEqual(len(compose.messages_from_response({"messages": twelve})), 12)
+        too_many = [f"# Part {n}\n- line" for n in range(compose.MAX_MESSAGES + 1)]
+        with self.assertRaises(FeedbackError):
+            compose.messages_from_response({"messages": too_many})
+
     def test_empty_or_missing_posts_fail(self) -> None:
         with self.assertRaises(FeedbackError):
             compose.messages_from_response({"messages": ["   "]})
