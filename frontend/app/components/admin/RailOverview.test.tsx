@@ -18,6 +18,21 @@ vi.mock("./RailMap", () => ({
   ),
   pointFocus: (key: string) => ({ key, bounds: { x: 0, y: 0, w: 1, h: 1 } }),
 }));
+vi.mock("./RailTubeMap", () => ({
+  default: ({ focus }: { focus: { key: string } | null }) => <div data-testid="tube" data-focus={focus?.key ?? ""} />,
+  tubeColour: () => "#DC241F",
+}));
+const nav = vi.hoisted(() => ({ query: "", written: [] as string[] }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/admin/rail",
+  useSearchParams: () => new URLSearchParams(nav.query),
+}));
+vi.mock("../../../lib/admin/urlState", () => ({
+  writeUrl: (url: string) => {
+    nav.written.push(url);
+    nav.query = url.split("?")[1] ?? "";
+  },
+}));
 vi.mock("./MovementControls", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./MovementControls")>()),
   useLiveMapId: () => "main",
@@ -25,6 +40,8 @@ vi.mock("./MovementControls", async (importOriginal) => ({
 
 afterEach(() => {
   cleanup();
+  nav.query = "";
+  nav.written = [];
   vi.mocked(getRailNetwork).mockReset();
 });
 
@@ -74,6 +91,24 @@ it("lists breaks, lines and stops, and frames what is picked", async () => {
   expect(screen.getByTestId("map").dataset.focus).toMatch(/^stop:Oyfthyr:/);
   fireEvent.mouseEnter(screen.getByRole("region", { name: "Thalenthyr – Drammen" }));
   expect(screen.getByTestId("map").dataset.highlight).toBe("0");
+});
+
+it("switches to the tube map and back through the URL", async () => {
+  vi.mocked(getRailNetwork).mockResolvedValue(NETWORK);
+  const { rerender } = render(<RailOverview />);
+  expect(await screen.findByTestId("map")).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "Map" }).getAttribute("aria-selected")).toBe("true");
+
+  fireEvent.click(screen.getByRole("tab", { name: "Tube map" }));
+  expect(nav.written).toEqual(["/admin/rail?view=tube"]);
+  rerender(<RailOverview />);
+  expect(screen.getByTestId("tube")).toBeTruthy();
+  expect(screen.queryByTestId("map")).toBeNull();
+  fireEvent.click(screen.getByText("Oyfthyr"));
+  expect(screen.getByTestId("tube").dataset.focus).toMatch(/^stop:Oyfthyr:/);
+
+  fireEvent.click(screen.getByRole("tab", { name: "Map" }));
+  expect(nav.written.at(-1)).toBe("/admin/rail");
 });
 
 it("says when nothing needs repair", async () => {

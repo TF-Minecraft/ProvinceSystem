@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { adminErrorMessage } from "../../../lib/admin/api";
@@ -12,11 +13,13 @@ import {
   statusMessage,
   type RailNetwork,
 } from "../../../lib/admin/rail";
+import { writeUrl } from "../../../lib/admin/urlState";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import AdminColumn from "./AdminColumn";
 import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import RailMap, { pointFocus, type RailFocus } from "./RailMap";
-import { chipClass, chipOff, mutedClass, useLiveMapId } from "./MovementControls";
+import RailTubeMap, { tubeColour } from "./RailTubeMap";
+import { chipClass, chipOff, chipOn, mutedClass, useLiveMapId } from "./MovementControls";
 
 type Load =
   | { kind: "loading" }
@@ -27,9 +30,27 @@ type Load =
 const rowClass =
   "flex min-h-11 w-full items-center gap-2 rounded-sm px-1 py-1 text-left text-sm text-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]";
 
-/** The rail network as the server last saved it, on the live map, with its lines, stops and breaks listed. */
+const VIEWS = [
+  { id: "map", label: "Map" },
+  { id: "tube", label: "Tube map" },
+] as const;
+
+/**
+ * The rail network as the server last saved it, with its lines, stops and breaks listed: on the live map,
+ * or as an Underground-style diagram (`?view=tube`).
+ */
 export default function RailOverview() {
   const mapId = useLiveMapId();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const view = search.get("view") === "tube" ? "tube" : "map";
+  const setView = (next: "map" | "tube") => {
+    const params = new URLSearchParams(search.toString());
+    if (next === "tube") params.set("view", "tube");
+    else params.delete("view");
+    const query = params.toString();
+    writeUrl(query ? `${pathname}?${query}` : pathname, true);
+  };
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [retry, setRetry] = useState(0);
   const [highlight, setHighlight] = useState<number | null>(null);
@@ -124,6 +145,20 @@ export default function RailOverview() {
       mapFirst
       panel={
         <>
+          <div className="flex gap-2" role="tablist" aria-label="Map style">
+            {VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                role="tab"
+                aria-selected={view === v.id}
+                onClick={() => setView(v.id)}
+                className={`${chipClass} ${view === v.id ? chipOn : chipOff} flex-1`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
           <p className={mutedClass}>
             {data.updated_at ? `Updated ${formatMoment(data.updated_at)}. ` : ""}Stops are where a track passes closest to a
             settlement.
@@ -165,7 +200,11 @@ export default function RailOverview() {
         </>
       }
       map={
-        mapId ? <RailMap mapId={mapId} network={data} highlight={highlight} focus={focus} className={mapFrameClass} /> : null
+        view === "tube" ? (
+          <RailTubeMap network={data} highlight={highlight} focus={focus} className={mapFrameClass} />
+        ) : mapId ? (
+          <RailMap mapId={mapId} network={data} highlight={highlight} focus={focus} className={mapFrameClass} />
+        ) : null
       }
       inspector={
         <>
@@ -180,7 +219,7 @@ export default function RailOverview() {
                 onMouseLeave={() => setHighlight(null)}
               >
                 <button type="button" className={`${rowClass} font-semibold`} onClick={() => focusLine(line.id)}>
-                  <span className="h-1.5 w-6 shrink-0 rounded-full" style={{ background: lineColour(line) }} />
+                  <span className="h-1.5 w-6 shrink-0 rounded-full" style={{ background: view === "tube" ? tubeColour(line) : lineColour(line) }} />
                   <span className="truncate">{line.name}</span>
                   <span className="ml-auto shrink-0 text-xs font-normal text-[var(--tfmc-mist)]">
                     {blocks(line.length)}
