@@ -375,7 +375,7 @@ def post_review_controls(post: dict) -> str:
 def post_test_notice(week: str, post: dict) -> str:
     """The banner above a test copy. Test copies have no buttons and ping nobody."""
     lines = [
-        f"# 🧪 Test: {post_title(post)}",
+        f"# Test: {post_title(post)}",
         f"Draft for {week_label(week)}, for staff to read before approving.",
         "Nothing was posted to #updates and nobody was pinged. This copy has no buttons.",
     ]

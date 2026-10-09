@@ -36,6 +36,8 @@ TARGET_MESSAGES = 8
 MAX_MESSAGES = 15
 _FACTS_BUDGET = 60_000
 _MENTION = re.compile(r"@(everyone|here)|<@[!&]?\d+>")
+# Emoji and the joiners and variation selectors that build them. Plain symbols such as arrows stay.
+_EMOJI = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3]")
 _FENCE = re.compile(r"^```[a-z]*\n?|\n?```$")
 _MONTHS = (
     "January", "February", "March", "April", "May", "June", "July",
@@ -51,11 +53,11 @@ Structure, in this order:
 1. Title. {title_rule} Then `-# {week_line}` on its own line.
    Add a `## ` subtitle naming the biggest change only when one change clearly stands out. Most weeks need none.
    Then one or two sentences introducing the week.
-2. `# ⚔️ Balance Changes`: classes, attributes, skills and spells, new skills, and number changes that
+2. `# Balance Changes`: classes, attributes, skills and spells, new skills, and number changes that
    matter in a fight (damage, health, armour, cooldowns, weapon stats).
-3. `# ⚙️ Gameplay Changes`: anything that changes how an existing system works, such as a node producing
+3. `# Gameplay Changes`: anything that changes how an existing system works, such as a node producing
    faster, something dropping more, a new mechanic, crafting, professions, farming, animals, factions, trade.
-4. `# 🔧 Fixes`: only the fixes players will notice most, as short bullets.
+4. `# Fixes`: only the fixes players will notice most, as short bullets.
 5. End with exactly this line: `-# Smaller and technical changes are on the website: <{page_url}>`
 
 Rules:
@@ -72,7 +74,7 @@ Rules:
 - Never reveal lore items, codex or research entries, dungeon names or details, hidden magic schools,
   exact crafting recipes or hit counts, coordinates, commands, permissions or exploits.
 - Never write @everyone, @here or any mention. The bot adds the role ping itself.
-- Never use an em dash.
+- Never use an em dash or emojis.
 - Keep the whole post to at most {target} messages. On a busy week, fold small related changes into
   one short line each and leave minor ones to the website instead of listing everything.
 - Split the post into Discord messages in order. Each message must stay under 1900 characters.
@@ -236,6 +238,8 @@ def unsafe_line(line: str) -> bool:
 def clean_message(text: str) -> str:
     text = _FENCE.sub("", text.strip()).strip()
     text = _MENTION.sub("", text).replace("—", ", ").replace("–", "-")
+    text = _EMOJI.sub("", text)
+    text = re.sub(r"(?m)^(#+|-#) {2,}", r"\1 ", text)
     lines = [line.rstrip() for line in text.splitlines() if not unsafe_line(line)]
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 

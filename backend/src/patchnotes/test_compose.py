@@ -56,7 +56,8 @@ class PromptTest(unittest.TestCase):
         self.assertIn("Start with `# Update 5.3`.", prompt)
         self.assertIn("-# Week of 5 October 2026", prompt)
         self.assertIn("<https://example.net/updates/2026-W41>", prompt)
-        self.assertIn("# ⚔️ Balance Changes", prompt)
+        self.assertIn("# Balance Changes", prompt)
+        self.assertNotIn("⚔", prompt)
         self.assertIn("- Juggernaut (changed): attributes.max_health.base: 30 --> 28", prompt)
         self.assertIn("  - Make armour take time to put on", prompt)
         self.assertIn("- Codex: 3 changed entries", prompt)
@@ -86,6 +87,12 @@ class MessagesTest(unittest.TestCase):
             {"messages": ["```\n# Update 5.3\nHi @everyone <@&123> — enjoy\n```", "  "]}
         )
         self.assertEqual(messages, ["# Update 5.3\nHi   ,  enjoy"])
+
+    def test_emojis_are_removed(self) -> None:
+        messages = compose.messages_from_response(
+            {"messages": ["# ⚔️ Balance Changes\n- **Health:** 20 --> 22 ✅\n-# \U0001f527 Fixes → soon"]}
+        )
+        self.assertEqual(messages, ["# Balance Changes\n- **Health:** 20 --> 22\n-# Fixes → soon"])
 
     def test_unsafe_lines_are_dropped(self) -> None:
         messages = compose.messages_from_response(
