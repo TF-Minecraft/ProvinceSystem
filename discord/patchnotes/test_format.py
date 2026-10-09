@@ -242,9 +242,9 @@ class WeeklyPostTest(unittest.TestCase):
         self.assertEqual(messages, ["<@&42>\n# Update 5.3\nHi", "# 🔧 Fixes\n- One"])
         self.assertEqual(notes_format.post_messages(self.POST), self.POST["messages"])
 
-    def test_ping_is_left_off_when_it_would_overflow(self) -> None:
+    def test_ping_gets_its_own_message_when_it_would_overflow(self) -> None:
         full = {**self.POST, "messages": ["x" * DISCORD_LIMIT]}
-        self.assertEqual(notes_format.post_messages(full, "<@&42>"), ["x" * DISCORD_LIMIT])
+        self.assertEqual(notes_format.post_messages(full, "<@&42>"), ["<@&42>", "x" * DISCORD_LIMIT])
 
     def test_review_notice_explains_a_fallback(self) -> None:
         notice = notes_format.post_review_notice("2026-W41", {**self.POST, "source": "fallback"}, mention="<@&7>")

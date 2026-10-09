@@ -201,8 +201,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--backups-dir is required")
     if not args.dry_run and not args.staff_key:
         parser.error("--staff-key is required unless --dry-run")
-    print(json.dumps({"weekly": run(args)}), flush=True)
-    return 0
+    result = run(args)
+    print(json.dumps({"weekly": result}), flush=True)
+    # A rejected request shows in the cron log as a failed run.
+    return 1 if "API returned HTTP" in result else 0
 
 
 if __name__ == "__main__":

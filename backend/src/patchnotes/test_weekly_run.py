@@ -154,5 +154,14 @@ class RunTest(unittest.TestCase):
         self.assertTrue(sent[0]["facts"]["partial"])
 
 
+class MainTest(unittest.TestCase):
+    def test_a_rejected_request_fails_the_run(self) -> None:
+        argv = ["--backups-dir", "/backups", "--staff-key", "key"]
+        with mock.patch.object(weekly_run, "run", return_value="2026-W41: API returned HTTP 502"):
+            self.assertEqual(weekly_run.main(argv), 1)
+        with mock.patch.object(weekly_run, "run", return_value="2026-W41: facts already sent"):
+            self.assertEqual(weekly_run.main(argv), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

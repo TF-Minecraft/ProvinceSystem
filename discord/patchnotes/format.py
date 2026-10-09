@@ -323,11 +323,17 @@ def post_title(post: dict) -> str:
 
 
 def post_messages(post: dict, mention: str | None = None) -> list[str]:
-    """The post as Discord messages, with the ping in front of the first."""
+    """The post as Discord messages, with the ping in front of the first.
+
+    A first message too long to share with the ping gets the ping as a message of its own.
+    """
     messages = [str(item) for item in post.get("messages") or [] if str(item).strip()]
     if mention and messages:
         first = f"{mention}\n{messages[0]}"
-        messages[0] = first if len(first) <= DISCORD_LIMIT else messages[0]
+        if len(first) <= DISCORD_LIMIT:
+            messages[0] = first
+        else:
+            messages.insert(0, mention)
     return messages
 
 
