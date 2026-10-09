@@ -97,9 +97,9 @@ it("switches to the tube map and back through the URL", async () => {
   vi.mocked(getRailNetwork).mockResolvedValue(NETWORK);
   const { rerender } = render(<RailOverview />);
   expect(await screen.findByTestId("map")).toBeTruthy();
-  expect(screen.getByRole("tab", { name: "Map" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("button", { name: "Map", pressed: true })).toBeTruthy();
 
-  fireEvent.click(screen.getByRole("tab", { name: "Tube map" }));
+  fireEvent.click(screen.getByRole("button", { name: "Tube map", pressed: false }));
   expect(nav.written).toEqual(["/admin/rail?view=tube"]);
   rerender(<RailOverview />);
   expect(screen.getByTestId("tube")).toBeTruthy();
@@ -107,7 +107,7 @@ it("switches to the tube map and back through the URL", async () => {
   fireEvent.click(screen.getByText("Oyfthyr"));
   expect(screen.getByTestId("tube").dataset.focus).toMatch(/^stop:Oyfthyr:/);
 
-  fireEvent.click(screen.getByRole("tab", { name: "Map" }));
+  fireEvent.click(screen.getByRole("button", { name: "Map", pressed: false }));
   expect(nav.written.at(-1)).toBe("/admin/rail");
 });
 

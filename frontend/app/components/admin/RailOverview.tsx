@@ -145,13 +145,12 @@ export default function RailOverview() {
       mapFirst
       panel={
         <>
-          <div className="flex gap-2" role="tablist" aria-label="Map style">
+          <div className="flex gap-2" role="group" aria-label="Map style">
             {VIEWS.map((v) => (
               <button
                 key={v.id}
                 type="button"
-                role="tab"
-                aria-selected={view === v.id}
+                aria-pressed={view === v.id}
                 onClick={() => setView(v.id)}
                 className={`${chipClass} ${view === v.id ? chipOn : chipOff} flex-1`}
               >
@@ -175,7 +174,11 @@ export default function RailOverview() {
                     <button
                       type="button"
                       className={rowClass}
-                      onClick={() => setFocus(pointFocus(`problem:${i}:${Date.now()}`, p.points[0]))}
+                      onClick={() => {
+                        // The whole stretch, however long.
+                        const bounds = boundsOfPoints(p.points, 120);
+                        if (bounds) setFocus({ key: `problem:${i}:${Date.now()}`, bounds });
+                      }}
                       onMouseEnter={() => setHighlight(p.line)}
                       onMouseLeave={() => setHighlight(null)}
                     >
