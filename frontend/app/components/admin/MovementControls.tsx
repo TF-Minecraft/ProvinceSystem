@@ -36,6 +36,11 @@ const errorClass = "text-sm text-[#e8a0a0]";
 
 /** How often a range that follows the clock asks again: about one ping. */
 export const FOLLOW_REFRESH_MS = 60_000;
+/**
+ * Room under the everyone map for its timeline: up to eight rows of bands, its
+ * labels and its key. Now keeps the same room, so switching views leaves the map as it is.
+ */
+export const EVERYONE_STRIP_HEIGHT = "9rem";
 
 /** The map the site shows at /map: Main's on the public site, Dev's on the dev site, as CoreProtect is. */
 export function useLiveMapId(): string | null {

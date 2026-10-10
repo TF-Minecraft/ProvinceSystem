@@ -30,6 +30,7 @@ import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
   CopyButton,
+  EVERYONE_STRIP_HEIGHT,
   InspectBar,
   useLiveMoment,
   PinForm,
@@ -250,13 +251,12 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
 
   return (
     <MapWorkspace
-      // The timeline under the map: up to eight rows of bands, its labels and its key.
-      stripHeight="9rem"
+      stripHeight={EVERYONE_STRIP_HEIGHT}
       panel={
         <>
           {viewSwitch}
           <p className={mutedClass}>Lines between positions are estimates. Views are logged.</p>
-          {data ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
+          <CopyButton text={shareUrl()} label="Copy link to this view" />
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
           {load.kind === "failed" ? (
             <div className="flex flex-wrap items-center gap-3">
@@ -268,9 +268,6 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                 Retry
               </button>
             </div>
-          ) : null}
-          {load.kind === "loading" ? (
-            <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
           ) : null}
           <div className="border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
             <RangeForm
@@ -321,11 +318,16 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
       }
       inspector={
         <>
-          {data ? (
-            <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
-              {formatClock(moment, true)} · {seenNow} of {drawn.length} players seen or estimated
-            </InspectBar>
-          ) : null}
+          {/* Shown while loading too, saying so, so nothing below it moves when the answer comes. */}
+          <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
+            {load.kind === "loading"
+              ? data
+                ? "Loading… showing the previous results"
+                : "Loading…"
+              : data
+                ? `${formatClock(moment, true)} · ${seenNow} of ${drawn.length} players seen or estimated`
+                : "Nothing to show."}
+          </InspectBar>
           {data && completeFrom > since ? (
             <p className={mutedClass}>
               Too many positions to show; the range starts at {formatMoment(completeFrom)}.
