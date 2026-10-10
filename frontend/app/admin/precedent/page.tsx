@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import AdminColumn from "@/app/components/admin/AdminColumn";
 import { StaffGateMessage, gateKind, type GateKind } from "@/app/components/admin/StaffGate";
+import { buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass } from "@/app/components/admin/ui";
 import ConfirmDeleteDialog from "@/app/components/precedent/ConfirmDeleteDialog";
 import PrecedentCaseModal from "@/app/components/precedent/PrecedentCaseModal";
 import PrecedentSearchPanel from "@/app/components/precedent/PrecedentSearchPanel";
@@ -19,9 +20,6 @@ import {
 } from "@/lib/precedent/api";
 import { filterCases } from "@/lib/precedent/filter";
 import { collectKnownPlayers } from "@/lib/precedent/playerSuggest";
-
-const inputClass =
-  "w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-accent)] focus:outline-none";
 
 export default function AdminPrecedentPage() {
   // Nothing renders until the first list proves access.
@@ -106,7 +104,7 @@ export default function AdminPrecedentPage() {
       <AdminColumn>
         {gate === "checking" ? (
           loadError ? (
-            <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">{loadError}</p>
+            <p className={`mt-6 ${errorClass}`} role="alert">{loadError}</p>
           ) : (
             <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
           )
@@ -119,46 +117,48 @@ export default function AdminPrecedentPage() {
 
   return (
     <AdminColumn>
-      <p className="mt-6 text-sm text-[var(--tfmc-mist)]">
-        Every logged moderation case, as the Discord bot&rsquo;s /precedent searches them.
-      </p>
+      {/* The cases beside the search on wide screens, as Accounts lays out its roster; the search comes first on phones. */}
+      <div className="grid gap-x-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+        <PrecedentSearchPanel className="lg:col-start-2 lg:row-start-1" />
 
-      <div className="mt-8">
-        <PrecedentSearchPanel />
-      </div>
+        <section className={`${panelClass} lg:col-start-1 lg:row-start-1`} aria-label="Cases">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className={headingClass}>
+              Cases
+              {total ? <span className="ml-2 font-sans text-sm text-[var(--tfmc-stone)]">{total.toLocaleString()}</span> : null}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setSaveError(null);
+                setModalOpen(true);
+              }}
+              className={buttonClass}
+            >
+              Log case
+            </button>
+          </div>
+          <p className={`mt-1 ${mutedClass}`}>Every logged moderation case, newest first.</p>
 
-      <section className="mt-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-            All cases
-          </h2>
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setSaveError(null);
-              setModalOpen(true);
-            }}
-            className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
-          >
-            Log case
-          </button>
-        </div>
-
-        <div className="mt-3">
+          <label className="sr-only" htmlFor="precedent-filter">
+            Filter cases
+          </label>
           <input
-            className={inputClass}
+            id="precedent-filter"
+            className={`${inputClass} mt-3 w-full`}
             value={filter}
-            placeholder="Filter loaded cases by text"
+            placeholder="Filter by text, rule or player"
+            autoComplete="off"
             onChange={(e) => setFilter(e.target.value)}
           />
-        </div>
 
-        {loadError ? (
-          <p className="mt-3 text-xs text-[#e8a0a0]">{loadError}</p>
-        ) : null}
+          {loadError ? (
+            <p className={`mt-3 ${errorClass}`} role="alert">
+              {loadError}
+            </p>
+          ) : null}
 
-        <div className="mt-4">
           <PrecedentTable
             cases={visible}
             total={total}
@@ -173,8 +173,8 @@ export default function AdminPrecedentPage() {
               setDeleteError(null);
             }}
           />
-        </div>
-      </section>
+        </section>
+      </div>
 
       <PrecedentCaseModal
         open={modalOpen}

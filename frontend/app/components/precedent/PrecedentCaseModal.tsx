@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 
 import type { CaseInput, PrecedentCase } from "@/lib/precedent/api";
 import { parsePlayers } from "@/lib/precedent/filter";
+import { buttonClass, errorClass, headingClass, inputClass, mutedClass, quietButtonClass } from "@/app/components/admin/ui";
 import PlayerAutocomplete from "./PlayerAutocomplete";
 
 type Props = {
@@ -27,11 +28,9 @@ const MAX = {
   punishment: 200,
 };
 
-const inputClass =
-  "w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-accent)] focus:outline-none";
+const fieldClass = `${inputClass} w-full`;
 
-const labelClass =
-  "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]";
+const labelClass = "text-sm text-[var(--tfmc-stone)]";
 
 export default function PrecedentCaseModal({
   open,
@@ -98,17 +97,17 @@ export default function PrecedentCaseModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[var(--tfmc-forest)] p-4 shadow-lg"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[var(--tfmc-forest-deep)] p-5 shadow-lg sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2
           id={titleId}
-          className="font-[family-name:var(--font-display)] text-xl text-[var(--tfmc-cream)]"
+          className={headingClass}
         >
           {initial ? "Edit case" : "Log case"}
         </h2>
         {initial ? null : (
-          <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+          <p className={`mt-1 ${mutedClass}`}>
             Logged against your account.
           </p>
         )}
@@ -120,7 +119,7 @@ export default function PrecedentCaseModal({
             </label>
             <textarea
               id={`${titleId}-summary`}
-              className={`${inputClass} mt-1 min-h-24 resize-y`}
+              className={`${fieldClass} mt-1 min-h-24 resize-y`}
               maxLength={MAX.summary}
               value={summary}
               disabled={saving}
@@ -136,7 +135,7 @@ export default function PrecedentCaseModal({
               </label>
               <input
                 id={`${titleId}-rule`}
-                className={`${inputClass} mt-1`}
+                className={`${fieldClass} mt-1`}
                 maxLength={MAX.rule}
                 value={rule}
                 disabled={saving}
@@ -150,7 +149,7 @@ export default function PrecedentCaseModal({
               </label>
               <input
                 id={`${titleId}-punishment`}
-                className={`${inputClass} mt-1`}
+                className={`${fieldClass} mt-1`}
                 maxLength={MAX.punishment}
                 value={punishment}
                 disabled={saving}
@@ -166,7 +165,7 @@ export default function PrecedentCaseModal({
             </label>
             <textarea
               id={`${titleId}-ruling`}
-              className={`${inputClass} mt-1 min-h-16 resize-y`}
+              className={`${fieldClass} mt-1 min-h-16 resize-y`}
               maxLength={MAX.ruling}
               value={ruling}
               disabled={saving}
@@ -182,7 +181,7 @@ export default function PrecedentCaseModal({
             <div className="mt-1">
               <PlayerAutocomplete
                 id={`${titleId}-players`}
-                className={inputClass}
+                className={fieldClass}
                 value={players}
                 known={knownPlayers}
                 disabled={saving}
@@ -194,7 +193,7 @@ export default function PrecedentCaseModal({
         </div>
 
         {error ? (
-          <p className="mt-3 text-xs text-[#e8a0a0]">{error}</p>
+          <p className={`mt-3 ${errorClass}`} role="alert">{error}</p>
         ) : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
@@ -202,7 +201,7 @@ export default function PrecedentCaseModal({
             type="button"
             disabled={saving}
             onClick={onClose}
-            className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+            className={quietButtonClass}
           >
             Cancel
           </button>
@@ -210,7 +209,7 @@ export default function PrecedentCaseModal({
             type="button"
             disabled={!canSave}
             onClick={submit}
-            className="rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
+            className={buttonClass}
           >
             {saving ? "Saving…" : "Save"}
           </button>

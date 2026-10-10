@@ -10,7 +10,7 @@ import {
   type LpStatus,
 } from "../../../../lib/admin/luckperms";
 import { roleLabel } from "../../../../lib/admin/api";
-import { chipClass, mutedClass, rowClass, warnClass } from "./ui";
+import { chipClass, mutedClass, rowClass, warnClass } from "../ui";
 
 function seconds(stamp: string | null): number | null {
   return stamp ? Date.parse(stamp) / 1000 : null;

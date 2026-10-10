@@ -1,4 +1,4 @@
-/** Class names shared by the Ranks pages, matching the rest of the staff panel. */
+/** Class names shared by the staff panel pages. */
 export const panelClass =
   "mt-6 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] p-5 sm:p-6";
 export const headingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
