@@ -204,6 +204,28 @@ it("shows the account without the Profile counts if they are slow", async () => 
   }
 });
 
+it("shapes the outline like the page drawn last time", async () => {
+  vi.mocked(getAccount).mockReturnValue(new Promise(() => undefined));
+  const shape = { signedIn: true, subline: 0, chips: false, tiles: true, notes: false, rows: 2 } as const;
+  render(<AccountPanel signin={null} shape={shape} />);
+  expect(screen.getByText("Minecraft")).toBeTruthy();
+  expect(screen.queryByText("Patreon")).toBeNull();
+  cleanup();
+  render(<AccountPanel signin={null} shape={{ ...shape, signedIn: false }} />);
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Account");
+  expect(screen.queryByText("Linked accounts")).toBeNull();
+});
+
+it("remembers what it drew for the next outline", async () => {
+  const set = vi.spyOn(Document.prototype, "cookie", "set");
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  // No activity, rank or Patreon; the sample dashboard has waiting items.
+  await vi.waitFor(() => expect(set).toHaveBeenLastCalledWith(expect.stringMatching(/^tfmc_account_shape=100112;/)));
+  set.mockRestore();
+});
+
 it("still shows the account when the overview and Profile can't load", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getAccountOverview).mockRejectedValue(new AccountApiError("down", 500));
