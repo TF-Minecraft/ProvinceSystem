@@ -154,6 +154,17 @@ it("shows the linked player's head, rank, time on the server and Profile counts"
   expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
 });
 
+it("names the server a player was last on once", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getAccountOverview).mockResolvedValue({
+    activity: { first_seen: null, last_seen: Date.now() / 1000 - 86400 * 2, online: false, server_label: "Vardera" },
+    rank: null,
+  });
+  const { container } = render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  expect(container.querySelector("header")?.textContent).toContain("Last on Vardera 2 days ago");
+});
+
 it("reuses a stored Profile session for the same player", async () => {
   setSession({ session_token: "kept", player_uuid: UUID.toUpperCase(), expires_at: "2099-01-01T00:00:00Z" }, true);
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
@@ -161,6 +172,58 @@ it("reuses a stored Profile session for the same player", async () => {
   await screen.findByRole("navigation", { name: "Your Profile" });
   expect(startLinkedProfileSession).not.toHaveBeenCalled();
   expect(getProfileDashboard).toHaveBeenCalledWith("kept");
+});
+
+it("holds the outline until the overview and Profile counts arrive, then shows them together", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  let finish: (value: ProfileDashboard) => void = () => undefined;
+  vi.mocked(getProfileDashboard).mockReturnValue(new Promise((done) => { finish = done; }));
+  render(<AccountPanel signin={null} />);
+  await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
+  expect(screen.getByText("Loading your account…")).toBeTruthy();
+  expect(screen.queryByLabelText("Minecraft account")).toBeNull();
+  finish(dashboard());
+  expect(await screen.findByRole("navigation", { name: "Your Profile" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("SteveMC");
+  expect(screen.queryByText("Loading your account…")).toBeNull();
+});
+
+it("shows the account without the Profile counts if they are slow", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+    vi.mocked(getProfileDashboard).mockReturnValue(new Promise(() => undefined));
+    render(<AccountPanel signin={null} />);
+    await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
+    expect(screen.queryByLabelText("Minecraft account")).toBeNull();
+    await vi.advanceTimersByTimeAsync(2500);
+    expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
+    expect(screen.queryByRole("navigation", { name: "Your Profile" })).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("shapes the outline like the page drawn last time", async () => {
+  vi.mocked(getAccount).mockReturnValue(new Promise(() => undefined));
+  const shape = { signedIn: true, subline: 0, chips: false, tiles: true, notes: false, rows: 2 } as const;
+  render(<AccountPanel signin={null} shape={shape} />);
+  expect(screen.getByText("Minecraft")).toBeTruthy();
+  expect(screen.queryByText("Patreon")).toBeNull();
+  cleanup();
+  render(<AccountPanel signin={null} shape={{ ...shape, signedIn: false }} />);
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Account");
+  expect(screen.queryByText("Linked accounts")).toBeNull();
+});
+
+it("remembers what it drew for the next outline", async () => {
+  const set = vi.spyOn(Document.prototype, "cookie", "set");
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  // No activity, rank or Patreon; the sample dashboard has waiting items.
+  await vi.waitFor(() => expect(set).toHaveBeenLastCalledWith(expect.stringMatching(/^tfmc_account_shape=100112;/)));
+  set.mockRestore();
 });
 
 it("still shows the account when the overview and Profile can't load", async () => {

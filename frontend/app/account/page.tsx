@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import AccountPanel from "../components/account/AccountPanel";
+import { ACCOUNT_SHAPE_COOKIE, decodeAccountShape } from "../../lib/account/shape";
 
 type SearchParams = {
   signin?: string | string[];
@@ -13,6 +15,7 @@ export default async function AccountPage({
   const params = await searchParams;
   const signin = typeof params.signin === "string" ? params.signin : null;
   const minecraft = typeof params.minecraft === "string" ? params.minecraft : null;
+  const shape = decodeAccountShape((await cookies()).get(ACCOUNT_SHAPE_COOKIE)?.value);
 
   return (
     <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl flex-col px-6 py-16">
@@ -25,7 +28,7 @@ export default async function AccountPage({
           `,
         }}
       />
-      <AccountPanel signin={signin} minecraft={minecraft} />
+      <AccountPanel signin={signin} minecraft={minecraft} shape={shape} />
     </main>
   );
 }
