@@ -4,7 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccountApiError } from "../../../lib/account/api";
-import { adminErrorMessage, coreProtectMessage, getPlayer, type PlayerSession } from "../../../lib/admin/api";
+import { adminErrorMessage, coreProtectMessage, type PlayerSession } from "../../../lib/admin/api";
 import {
   ACTION_PING,
   PLAYER_WINDOW_SECONDS,
@@ -45,6 +45,7 @@ import {
   useMinuteClock,
   type Range,
 } from "./MovementControls";
+import { usePlayer } from "./PlayerFrame";
 import SessionList from "./SessionList";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 
@@ -130,22 +131,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     update({ at: String(time) }, true)
   );
 
-  const [name, setName] = useState<string | null>(null);
-  const [gate, setGate] = useState<GateKind | null>(null);
-  useEffect(() => {
-    let live = true;
-    getPlayer(uuid)
-      .then((profile) => live && setName(profile.minecraft_name ?? "Unknown name"))
-      .catch((err) => {
-        if (!live) return;
-        const status = err instanceof AccountApiError ? err.status : 0;
-        if (status === 400 || status === 404) setName("Unknown player");
-        else setGate(gateKind(err));
-      });
-    return () => {
-      live = false;
-    };
-  }, [uuid]);
+  const name = usePlayer()?.profile.minecraft_name ?? null;
 
   // The clock only ticks while something follows it.
   const now = useMinuteClock((mode === "range" && follow) || (mode === "session" && followSession));
@@ -234,13 +220,6 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     [parts, view]
   );
 
-  if (gate) {
-    return (
-      <AdminColumn>
-        <StaffGateMessage kind={gate} />
-      </AdminColumn>
-    );
-  }
   if (load.kind === "gate") {
     return (
       <AdminColumn>
@@ -291,15 +270,12 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
 
   return (
     <MapWorkspace
-      // The links and the player's tabs above.
-      above="6rem"
+      // The player's two-line header (PlayerFrame) and their tabs above.
+      above="8.5rem"
       // The timeline under the map: one row of bands, its labels and its key.
       stripHeight="6.75rem"
       panel={
         <>
-          <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-            {name ?? "…"}
-          </h2>
           <p className={mutedClass}>Lines between positions are estimates. Views are logged.</p>
           {view ? <CopyButton text={shareUrl()} label="Copy link to this view" /> : null}
           {notice ? <p className="text-sm text-[#e8c48a]">{notice}</p> : null}
