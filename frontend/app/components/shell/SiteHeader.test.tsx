@@ -58,7 +58,7 @@ it("closes on a link, the backdrop, Escape and navigation", () => {
   let { toggle, menu } = openMenu();
   // jsdom cannot follow a link, so keep the click on this page.
   document.addEventListener("click", (event) => event.preventDefault(), { once: true });
-  fireEvent.click(menu.querySelector('a[href="/skins"]')!);
+  fireEvent.click(menu.querySelector('a[href="/profile"]')!);
   expect(toggle.getAttribute("aria-expanded")).toBe("false");
 
   ({ toggle, menu } = openMenu());

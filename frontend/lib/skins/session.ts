@@ -1,3 +1,5 @@
+import type { RedeemResult } from "./api";
+
 const STORAGE_KEY = "tfmc_skins_session";
 
 export type SkinsSession = {
@@ -162,6 +164,31 @@ export function setLastSubmissionId(id: string): void {
     return;
   }
   writeStored({ ...stored, last_submission_id: trimmed });
+}
+
+/** The stored session for a redeemed code or a skin started from Profile. */
+export function skinsSessionFrom(result: RedeemResult): SkinsSession {
+  return {
+    session_token: result.session_token,
+    player_uuid: result.player_uuid,
+    expires_at: result.expires_at,
+    ...(result.staff ? { staff: true as const } : {}),
+    ...(result.scope ? { scope: result.scope } : {}),
+    ...(result.realm_id ? { realm_id: result.realm_id } : {}),
+    ...(result.name_colour_stops !== undefined
+      ? { name_colour_stops: result.name_colour_stops }
+      : {}),
+    ...(result.max_3d_pair_bytes !== undefined
+      ? { max_3d_pair_bytes: result.max_3d_pair_bytes }
+      : {}),
+    ...(result.skin_token_cooldown_days !== undefined
+      ? { skin_token_cooldown_days: result.skin_token_cooldown_days }
+      : {}),
+    ...(result.skin_kinds !== undefined ? { skin_kinds: result.skin_kinds } : {}),
+    ...(result.allow_armor_3d_helmet !== undefined
+      ? { allow_armor_3d_helmet: result.allow_armor_3d_helmet }
+      : {}),
+  };
 }
 
 /** New redeem: store session token fields only (no leftover last submission). */

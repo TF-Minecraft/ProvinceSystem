@@ -1,4 +1,5 @@
 import { getApiBase, detailMessage, parseJson } from "../site/api";
+import { readStartRefusal } from "../profile/start";
 
 export class DrinksApiError extends Error {
   status: number;
@@ -190,6 +191,26 @@ export async function redeemDrink(code: string): Promise<DrinkRedeemResult> {
       res.status
     );
   }
+  return readDrinkRedeemResult(res, data);
+}
+
+/** A drink upload session from Profile, under the same cooldown as /token create drink. */
+export async function startDrinkFromProfile(profileToken: string): Promise<DrinkRedeemResult> {
+  const res = await apiFetch(`${getApiBase()}/profile/drinks/start`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${profileToken}` },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw (
+      readStartRefusal(res.status, data) ??
+      new DrinksApiError(detailMessage(data, "Couldn’t start a drink. Please try again."), res.status)
+    );
+  }
+  return readDrinkRedeemResult(res, data);
+}
+
+function readDrinkRedeemResult(res: Response, data: unknown): DrinkRedeemResult {
   const body = data as Partial<DrinkRedeemResult>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
     throw new DrinksApiError("Invalid redeem response from API", res.status);

@@ -1,3 +1,5 @@
+import type { DrinkRedeemResult } from "./api";
+
 const STORAGE_KEY = "tfmc_drinks_session";
 
 export type DrinksSession = {
@@ -116,6 +118,23 @@ export function setLastSubmissionId(id: string): void {
     return;
   }
   writeStored({ ...stored, last_submission_id: trimmed });
+}
+
+/** The stored session for a redeemed code or a drink started from Profile. */
+export function drinksSessionFrom(result: DrinkRedeemResult): DrinksSession {
+  return {
+    session_token: result.session_token,
+    player_uuid: result.player_uuid,
+    expires_at: result.expires_at,
+    ...(result.scope ? { scope: result.scope } : {}),
+    ...(result.realm_id ? { realm_id: result.realm_id } : {}),
+    allow_drink_texture: result.allow_drink_texture === true,
+    allow_drink_message: result.allow_drink_message === true,
+    name_colour_stops:
+      typeof result.name_colour_stops === "number"
+        ? Math.max(0, Math.floor(result.name_colour_stops))
+        : 0,
+  };
 }
 
 export function setSession(session: DrinksSession): void {

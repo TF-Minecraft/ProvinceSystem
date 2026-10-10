@@ -166,6 +166,57 @@ def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
     )
 
 
+# A code Profile started for a skin or drink, rather than one made with /token create.
+MINTED_VIA_SITE = "site"
+
+# Site codes that lapsed unused never started anything, so they don't hold the clock.
+_COUNTS_TOWARD_COOLDOWN = """
+    NOT (
+        COALESCE(c.minted_via, '') = 'site'
+        AND c.expires_at <= ?
+        AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.code_id = c.id)
+        AND NOT EXISTS (SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id)
+    )
+"""
+
+
+def _last_cosmetic_mint(conn, uuid: str, now: datetime) -> str | None:
+    reset_row = conn.execute(
+        """
+        SELECT MAX(reset_at) AS reset_at
+        FROM cosmetic_mint_resets
+        WHERE LOWER(player_uuid) = LOWER(?)
+        """,
+        (uuid,),
+    ).fetchone()
+    reset_at = reset_row["reset_at"] if reset_row else None
+    if reset_at:
+        row = conn.execute(
+            f"""
+            SELECT MAX(c.created_at) AS last_at
+            FROM codes c
+            WHERE LOWER(c.player_uuid) = LOWER(?)
+              AND LOWER(c.scope) IN ('skin', 'drink')
+              AND c.created_at > ?
+              AND {_COUNTS_TOWARD_COOLDOWN}
+            """,
+            (uuid, str(reset_at), _iso(now)),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            f"""
+            SELECT MAX(c.created_at) AS last_at
+            FROM codes c
+            WHERE LOWER(c.player_uuid) = LOWER(?)
+              AND LOWER(c.scope) IN ('skin', 'drink')
+              AND {_COUNTS_TOWARD_COOLDOWN}
+            """,
+            (uuid, _iso(now)),
+        ).fetchone()
+    last_at = row["last_at"] if row else None
+    return str(last_at) if last_at is not None else None
+
+
 def get_cosmetic_mint_status(player_uuid: str) -> dict:
     """Last mint across shared cosmetic scopes (skin + drink) for TFMCWeb cooldown.
 
@@ -176,40 +227,8 @@ def get_cosmetic_mint_status(player_uuid: str) -> dict:
     if not uuid:
         raise CodeError("player_uuid is required")
     with connect() as conn:
-        reset_row = conn.execute(
-            """
-            SELECT MAX(reset_at) AS reset_at
-            FROM cosmetic_mint_resets
-            WHERE LOWER(player_uuid) = LOWER(?)
-            """,
-            (uuid,),
-        ).fetchone()
-        reset_at = reset_row["reset_at"] if reset_row else None
-        if reset_at:
-            row = conn.execute(
-                """
-                SELECT MAX(created_at) AS last_at
-                FROM codes
-                WHERE LOWER(player_uuid) = LOWER(?)
-                  AND LOWER(scope) IN ('skin', 'drink')
-                  AND created_at > ?
-                """,
-                (uuid, str(reset_at)),
-            ).fetchone()
-        else:
-            row = conn.execute(
-                """
-                SELECT MAX(created_at) AS last_at
-                FROM codes
-                WHERE LOWER(player_uuid) = LOWER(?)
-                  AND LOWER(scope) IN ('skin', 'drink')
-                """,
-                (uuid,),
-            ).fetchone()
-    last_at = row["last_at"] if row else None
-    if last_at is None:
-        return {"last_mint_at": None, "player_uuid": uuid}
-    return {"last_mint_at": str(last_at), "player_uuid": uuid}
+        last_at = _last_cosmetic_mint(conn, uuid, _utcnow())
+    return {"last_mint_at": last_at, "player_uuid": uuid}
 
 
 def reset_cosmetic_mint_cooldowns(
@@ -544,8 +563,13 @@ def redeem_code(plaintext: str) -> dict:
         )
         conn.commit()
 
+    return _skin_session_payload(row, session_token, session_expires_at)
+
+
+def _skin_session_payload(row, session_token: str, session_expires_at: str) -> dict:
     from src.characters.rpc_player_meta import resolve_web_entitlements
 
+    scope = str(row["scope"]).strip().lower()
     entitlements = resolve_web_entitlements(
         row["player_uuid"],
         staff=_is_staff_scope(scope),
@@ -690,8 +714,6 @@ def start_linked_profile_session(player_uuid: str) -> dict:
 
 def redeem_drink_code(plaintext: str) -> dict:
     """Consume a drink-scoped code and create a Bearer session."""
-    from src.characters.rpc_player_meta import resolve_web_entitlements
-
     code = (plaintext or "").strip()
     if not code:
         raise CodeError("code is required")
@@ -743,6 +765,12 @@ def redeem_drink_code(plaintext: str) -> dict:
         )
         conn.commit()
 
+    return _drink_session_payload(row, session_token, session_expires_at)
+
+
+def _drink_session_payload(row, session_token: str, session_expires_at: str) -> dict:
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+
     entitlements = resolve_web_entitlements(
         str(row["player_uuid"]),
         realm_id=str(row["realm_id"]).strip().lower(),
@@ -752,13 +780,162 @@ def redeem_drink_code(plaintext: str) -> dict:
         "player_uuid": row["player_uuid"],
         "expires_at": session_expires_at,
         "code_id": row["id"],
-        "scope": scope,
+        "scope": str(row["scope"]).strip().lower(),
         "realm_id": str(row["realm_id"]).strip().lower(),
         "allow_drink_texture": entitlements["allow_drink_texture"],
         "allow_drink_message": entitlements["allow_drink_message"],
         "name_colour_stops": entitlements["name_colour_stops"],
         "meta_synced": entitlements.get("meta_synced", False),
     }
+
+
+SITE_START_SCOPES = frozenset({"skin", "drink"})
+
+
+class SiteStartRefused(CodeError):
+    """Profile can't start a skin or drink right now; ``reason`` says why."""
+
+    def __init__(self, reason: str, next_at: str | None = None) -> None:
+        super().__init__(reason)
+        self.reason = reason
+        self.next_at = next_at
+
+
+def _open_code(conn, uuid: str, realm: str, scope: str, now: datetime):
+    """Newest unused, unexpired code of this scope, from Profile or /token create."""
+    consumed_by = "drink_submissions" if scope == "drink" else "submissions"
+    return conn.execute(
+        f"""
+        SELECT * FROM codes c
+        WHERE LOWER(c.player_uuid) = LOWER(?)
+          AND LOWER(c.scope) = ?
+          AND c.realm_id = ?
+          AND c.revoked = 0
+          AND c.expires_at > ?
+          AND NOT EXISTS (SELECT 1 FROM {consumed_by} x WHERE x.code_id = c.id)
+        ORDER BY c.created_at DESC
+        LIMIT 1
+        """,
+        (uuid, scope, realm, _iso(now)),
+    ).fetchone()
+
+
+def _cooldown_until(conn, uuid: str, days: int, now: datetime) -> str | None:
+    """When the shared skin and drink clock frees up, or None when it already has."""
+    if days <= 0:
+        return None
+    last_at = _last_cosmetic_mint(conn, uuid, now)
+    if last_at is None:
+        return None
+    unlock = _parse_iso(last_at) + timedelta(days=days)
+    return _iso(unlock) if unlock > now else None
+
+
+def _site_start_rules(uuid: str, realm: str) -> int:
+    """Cooldown days for this player, or SiteStartRefused when the rules forbid a start.
+
+    These mirror /token create: a Discord link in good standing, synced rank perks, and
+    the rank's cooldown (-1 means the rank can't make skins or drinks at all).
+    """
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from .discord_link import get_identity_status
+
+    if not get_identity_status(uuid).get("eligible"):
+        raise SiteStartRefused("discord")
+    entitlements = resolve_web_entitlements(uuid, realm_id=realm)
+    if not entitlements.get("meta_synced"):
+        raise SiteStartRefused("join_server")
+    days = int(entitlements["skin_token_cooldown_days"])
+    if days < 0:
+        raise SiteStartRefused("rank")
+    return days
+
+
+def site_start_allowance(player_uuid: str, realm_id: str | None) -> dict:
+    """Whether Profile can start a skin and a drink now, and if not, why and until when."""
+    uuid = (player_uuid or "").strip()
+    realm = normalize_realm_id(realm_id)
+    try:
+        days = _site_start_rules(uuid, realm)
+    except SiteStartRefused as e:
+        refused = {"can_start": False, "reason": e.reason, "next_at": None}
+        return {"skin": refused, "drink": dict(refused)}
+    now = _utcnow()
+    out: dict[str, dict] = {}
+    with connect() as conn:
+        until = _cooldown_until(conn, uuid, days, now)
+        for scope in ("skin", "drink"):
+            if until is None or _open_code(conn, uuid, realm, scope, now) is not None:
+                out[scope] = {"can_start": True, "reason": None, "next_at": None}
+            else:
+                out[scope] = {"can_start": False, "reason": "cooldown", "next_at": until}
+    return out
+
+
+def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> dict:
+    """A skin or drink upload session from Profile, in place of a /token create code.
+
+    Reuses an unused code when there is one; otherwise records a new site code, which
+    starts the shared cooldown just as /token create would.
+    """
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise CodeError("player_uuid is required")
+    scope = (scope or "").strip().lower()
+    if scope not in SITE_START_SCOPES:
+        raise CodeError("scope must be 'skin' or 'drink'")
+    realm = normalize_realm_id(realm_id)
+    days = _site_start_rules(uuid, realm)
+
+    now = _utcnow()
+    session_token = secrets.token_urlsafe(32)
+    session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
+    with connect() as conn:
+        # Holds the write lock so two clicks can't both pass the cooldown and mint twice.
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            row = _open_code(conn, uuid, realm, scope, now)
+            if row is None:
+                until = _cooldown_until(conn, uuid, days, now)
+                if until is not None:
+                    raise SiteStartRefused("cooldown", until)
+                cur = conn.execute(
+                    """
+                    INSERT INTO codes (
+                        code_hash, code_plaintext, player_uuid, scope, realm_id,
+                        created_at, expires_at, redeemed_at, revoked, minted_via
+                    ) VALUES (?, NULL, ?, ?, ?, ?, ?, NULL, 0, ?)
+                    """,
+                    (
+                        hash_secret(f"site-{scope}:{secrets.token_urlsafe(32)}"),
+                        uuid,
+                        scope,
+                        realm,
+                        _iso(now),
+                        _iso(now + timedelta(hours=_code_ttl_hours())),
+                        MINTED_VIA_SITE,
+                    ),
+                )
+                row = conn.execute(
+                    "SELECT * FROM codes WHERE id = ?", (cur.lastrowid,)
+                ).fetchone()
+            _prepare_skin_drink_redeem(conn, row["id"])
+            conn.execute(
+                """
+                INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (hash_secret(session_token), row["id"], row["player_uuid"],
+                 session_expires_at, _iso(now)),
+            )
+            conn.commit()
+        except BaseException:
+            conn.rollback()
+            raise
+
+    if scope == "drink":
+        return _drink_session_payload(row, session_token, session_expires_at)
+    return _skin_session_payload(row, session_token, session_expires_at)
 
 
 def revoke_session(token: str) -> dict:

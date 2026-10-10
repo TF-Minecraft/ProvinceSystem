@@ -5,8 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import CharacterList from "../components/character/CharacterList";
 import ProfileCustomItemsList from "../components/profile/ProfileCustomItemsList";
 import ProfileRedeemForm from "../components/profile/ProfileRedeemForm";
-import ProfileSubmissionList from "../components/profile/ProfileSubmissionList";
-import SupporterPanel from "../components/profile/SupporterPanel";
+import { DrinkWardrobe, SkinWardrobe } from "../components/profile/ProfileWardrobes";
 import { logoutCharacter } from "../../lib/characters/api";
 import {
   ProfileApiError,
@@ -25,8 +24,12 @@ import {
 } from "../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../lib/characters/sheetDev";
-import { formatExpiresIn } from "../../lib/skins/formatTime";
-import { discordSignInUrl, getAccount, signOut } from "../../lib/account/api";
+import {
+  discordSignInUrl,
+  getAccount,
+  minecraftHeadUrl,
+  type AccountMinecraft,
+} from "../../lib/account/api";
 import { linkedProfileSession } from "../../lib/account/profileSession";
 import { DiscordSignInLink } from "../components/account/BrandButtons";
 
@@ -60,6 +63,10 @@ function uiDevDashboard(): ProfileDashboard {
     skins: [],
     drinks: [],
     custom_items: [],
+    can_start: {
+      skin: { can_start: true, reason: null, next_at: null },
+      drink: { can_start: false, reason: "cooldown", next_at: new Date(Date.now() + 3 * 86400000).toISOString() },
+    },
   };
 }
 
@@ -96,6 +103,7 @@ export default function ProfilePage() {
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [tab, setTab] = useState<TabId>("characters");
   const [discord, setDiscord] = useState<DiscordState>("checking");
+  const [minecraft, setMinecraft] = useState<AccountMinecraft | null>(null);
 
   const loadDashboard = useCallback(
     async (token: string, opts?: { quiet?: boolean }) => {
@@ -141,6 +149,11 @@ export default function ProfilePage() {
       setSessionState(existing);
       void loadDashboard(existing!.session_token);
       setReady(true);
+      if (existing!.source === "discord") {
+        getAccount()
+          .then((account) => setMinecraft(account?.minecraft ?? null))
+          .catch(() => {});
+      }
       return;
     }
     if (existing) clearSession();
@@ -149,6 +162,7 @@ export default function ProfilePage() {
     (async () => {
       try {
         const account = await getAccount();
+        if (live) setMinecraft(account?.minecraft ?? null);
         const uuid = account?.minecraft?.player_uuid;
         if (!uuid) {
           if (live) setDiscord(account ? "not_linked" : "signed_out");
@@ -184,6 +198,7 @@ export default function ProfilePage() {
     void loadDashboard(next.session_token);
   }
 
+  /** Ends a code session. Discord sessions end with Sign out on Account. */
   async function onLogout() {
     if (uiDev) {
       setSessionState(null);
@@ -192,24 +207,14 @@ export default function ProfilePage() {
     }
     if (!session) return;
     setLoggingOut(true);
-    const fromDiscord = session.source === "discord";
     try {
       await logoutCharacter(session.session_token);
     } catch {
       // still clear locally
     }
-    // Opened through Discord: stay signed out rather than reopening on the next visit.
-    if (fromDiscord) {
-      try {
-        await signOut();
-      } catch {
-        // The Account page shows if the Discord session is still active.
-      }
-    }
     clearSession();
     setSessionState(null);
     setDashboard(null);
-    if (fromDiscord) setDiscord("signed_out");
     setLoggingOut(false);
   }
 
@@ -277,32 +282,37 @@ export default function ProfilePage() {
         </>
       ) : (
         <>
-          <SupporterPanel sessionToken={session!.session_token} />
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-stone)]">
-            {session!.source === "discord" ? (
-              <span>
-                Opened through your{" "}
-                <Link href="/account" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
-                  linked Discord account
-                </Link>
+          <div className="mt-3 flex min-h-8 flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-mist)]">
+            {minecraft?.player_uuid === session!.player_uuid ? (
+              <span className="flex items-center gap-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${minecraftHeadUrl()}?u=${encodeURIComponent(minecraft.player_uuid)}`}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 rounded-[3px] [image-rendering:pixelated]"
+                />
+                {minecraft.minecraft_name}
               </span>
             ) : (
-              <span>Session expires {formatExpiresIn(session!.expires_at)}</span>
+              <span />
             )}
-            <button
-              type="button"
-              onClick={() => void onLogout()}
-              disabled={loggingOut}
-              className="text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-            >
-              {session!.source === "discord"
-                ? loggingOut ? "Signing out…" : "Sign out"
-                : loggingOut ? "Logging out…" : "Log out"}
-            </button>
+            {/* Discord sign-out lives on Account; a code session has nowhere else to end. */}
+            {session!.source === "discord" ? null : (
+              <button
+                type="button"
+                onClick={() => void onLogout()}
+                disabled={loggingOut}
+                className="text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+              >
+                {loggingOut ? "Logging out…" : "Log out"}
+              </button>
+            )}
           </div>
 
           <nav
-            className="mt-8 flex flex-wrap gap-2 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pb-3"
+            className="mt-6 flex flex-wrap gap-2 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pb-3"
             aria-label="Profile sections"
           >
             {(
@@ -316,7 +326,11 @@ export default function ProfilePage() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setTab(id)}
+                onClick={() => {
+                  setTab(id);
+                  // Back from an upload page lands on the same tab.
+                  window.history.replaceState(null, "", id === "characters" ? "/profile" : `/profile?tab=${id}`);
+                }}
                 className={`rounded-sm px-3 py-1.5 text-sm font-medium transition-colors ${
                   tab === id
                     ? "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-cream)]"
@@ -337,31 +351,29 @@ export default function ProfilePage() {
           ) : dashboard ? (
             <div className="mt-6">
               {tab === "characters" ? (
-                <>
-                  <Link
-                    href="/character"
-                    className="mb-6 inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)]"
-                  >
-                    Open character hub
-                  </Link>
-                  <CharacterList
-                    characters={dashboard.characters}
-                    aliveCount={aliveCount}
-                    maxSlots={dashboard.max_alive_characters ?? 3}
-                    onLogout={() => void onLogout()}
-                    loggingOut={loggingOut}
-                    onRefresh={() =>
-                      void loadDashboard(session!.session_token)
-                    }
-                    refreshing={loadingDashboard}
-                  />
-                </>
+                <CharacterList
+                  characters={dashboard.characters}
+                  aliveCount={aliveCount}
+                  maxSlots={dashboard.max_alive_characters ?? 3}
+                  onRefresh={() =>
+                    void loadDashboard(session!.session_token)
+                  }
+                  refreshing={loadingDashboard}
+                />
               ) : null}
               {tab === "skins" ? (
-                <ProfileSubmissionList kind="skins" rows={dashboard.skins} />
+                <SkinWardrobe
+                  rows={dashboard.skins}
+                  allowance={dashboard.can_start?.skin}
+                  sessionToken={session!.session_token}
+                />
               ) : null}
               {tab === "drinks" ? (
-                <ProfileSubmissionList kind="drinks" rows={dashboard.drinks} />
+                <DrinkWardrobe
+                  rows={dashboard.drinks}
+                  allowance={dashboard.can_start?.drink}
+                  sessionToken={session!.session_token}
+                />
               ) : null}
               {tab === "items" ? (
                 <ProfileCustomItemsList items={dashboard.custom_items} />

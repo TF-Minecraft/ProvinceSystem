@@ -11,7 +11,8 @@ type Props = {
   catalog?: CreationCatalog | null;
   webCreatorAllowed?: boolean;
   webCreatorLockLabel?: string;
-  onLogout: () => void;
+  /** Omit to leave signing out to the page around the list. */
+  onLogout?: () => void;
   loggingOut?: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -181,14 +182,16 @@ export default function CharacterList({
               Create
             </Link>
           )}
-          <button
-            type="button"
-            onClick={onLogout}
-            disabled={loggingOut}
-            className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-          >
-            {loggingOut ? "Logging out…" : "Log out"}
-          </button>
+          {onLogout ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={loggingOut}
+              className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+            >
+              {loggingOut ? "Logging out…" : "Log out"}
+            </button>
+          ) : null}
         </div>
       </div>
 

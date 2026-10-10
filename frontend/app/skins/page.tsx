@@ -14,6 +14,12 @@ import {
   type SkinsSession,
 } from "../../lib/skins/session";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
+import {
+  getSession as getProfileSession,
+  isSessionValid as isProfileSessionValid,
+} from "../../lib/profile/session";
+import { canOpenProfile } from "../../lib/profile/redirect";
+import Link from "next/link";
 
 export default function SkinsPage() {
   const router = useRouter();
@@ -22,6 +28,7 @@ export default function SkinsPage() {
   const [session, setSessionState] = useState<SkinsSession | null>(null);
   const [metaSynced, setMetaSynced] = useState(true);
   const [confirmNewCode, setConfirmNewCode] = useState(false);
+  const [fromProfile, setFromProfile] = useState(false);
 
   useEffect(() => {
     const existing = getSession();
@@ -32,10 +39,21 @@ export default function SkinsPage() {
         return;
       }
       setSessionState(existing);
-    } else if (existing) {
-      clearSession();
+      setFromProfile(isProfileSessionValid(getProfileSession()));
+      setReady(true);
+      return;
     }
-    setReady(true);
+    if (existing) clearSession();
+    // Skins start from Profile now; this page stays for in-game codes.
+    let live = true;
+    void canOpenProfile().then((open) => {
+      if (!live) return;
+      if (open) router.replace("/profile?tab=skins");
+      else setReady(true);
+    });
+    return () => {
+      live = false;
+    };
   }, [router]);
 
   useEffect(() => {
@@ -92,19 +110,30 @@ export default function SkinsPage() {
 
       {session && isSessionValid(session) ? (
         <div className="mt-4">
-          <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {formatExpiresIn(session.expires_at)}
-            {session.staff ? (
-              <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
-            ) : null}
-          </p>
-          <button
-            type="button"
-            className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
-            onClick={() => setConfirmNewCode(true)}
-          >
-            Use a new code
-          </button>
+          {fromProfile ? (
+            <Link
+              href="/profile?tab=skins"
+              className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+            >
+              ← Profile
+            </Link>
+          ) : (
+            <>
+              <p className="text-sm text-[var(--tfmc-stone)]">
+                Session expires {formatExpiresIn(session.expires_at)}
+                {session.staff ? (
+                  <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
+                ) : null}
+              </p>
+              <button
+                type="button"
+                className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+                onClick={() => setConfirmNewCode(true)}
+              >
+                Use a new code
+              </button>
+            </>
+          )}
           <UploadForm
             sessionToken={session.session_token}
             staff={session.staff === true}

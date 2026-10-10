@@ -33,6 +33,7 @@ export default function SubmissionStatusPage() {
   const router = useRouter();
   const id = typeof params.id === "string" ? params.id : "";
   const [row, setRow] = useState<SubmissionPublic | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +56,7 @@ export default function SubmissionStatusPage() {
     try {
       const data = await getSubmission(id, token);
       setRow(data);
+      setToken(token);
     } catch (err) {
       const message =
         err instanceof SkinsApiError
@@ -98,9 +100,9 @@ export default function SubmissionStatusPage() {
             Back to skins
           </Link>
         </div>
-      ) : row ? (
+      ) : row && token ? (
         <>
-          <StatusCard row={row} />
+          <StatusCard row={row} sessionToken={token} />
           <div className="mt-8 flex flex-wrap gap-4">
             <button
               type="button"

@@ -14,8 +14,6 @@ const LOGO_SRC = "/logo-256.webp";
 const staticLinks = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Map" },
-  { href: "/skins", label: "Skins" },
-  { href: "/drinks", label: "Drinks" },
   { href: "/profile", label: "Profile" },
   { href: "/account", label: "Account" },
   { href: "/wiki", label: "Guide" },

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS codes (
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     redeemed_at TEXT,
-    revoked INTEGER NOT NULL DEFAULT 0
+    revoked INTEGER NOT NULL DEFAULT 0,
+    minted_via TEXT
 );
 
 CREATE TABLE IF NOT EXISTS submissions (
