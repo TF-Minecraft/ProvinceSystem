@@ -280,6 +280,23 @@ class PrecedentRoutesTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json(), {"ok": True})
 
+    # --- database errors ---
+
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": ""})
+    def test_list_cases_without_database_says_not_set_up(self) -> None:
+        res = self.client.get("/precedent/staff/cases", headers=_HEADERS)
+        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.json()["detail"], "Precedent isn't set up on this site.")
+
+    @mock.patch(
+        "src.api.precedent_routes.get_case",
+        side_effect=routes.PrecedentDBError("could not connect: secret host"),
+    )
+    def test_database_down_is_503_without_details(self, mock_get) -> None:
+        res = self.client.get("/precedent/staff/case/1", headers=_HEADERS)
+        self.assertEqual(res.status_code, 503)
+        self.assertNotIn("secret", res.json()["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()

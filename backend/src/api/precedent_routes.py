@@ -15,6 +15,7 @@ from src.precedent.db import (
     MAX_RELEVANT_DISTANCE,
     AuditActor,
     PrecedentDBError,
+    PrecedentNotConfiguredError,
     count_cases,
     delete_case,
     get_case,
@@ -52,6 +53,8 @@ def _check_search_rate(client_ip: str) -> None:
 
 def _client_detail(e: Exception) -> str:
     """Generic, non-leaky detail for the caller. Full exception is logged server-side."""
+    if isinstance(e, PrecedentNotConfiguredError):
+        return "Precedent isn't set up on this site."
     if isinstance(e, PrecedentDBError):
         return "Precedent database is unavailable. Check server logs."
     if isinstance(e, EmbeddingError):
@@ -59,6 +62,11 @@ def _client_detail(e: Exception) -> str:
     if isinstance(e, SynthesisError):
         return "Synthesis service is unavailable. Check server logs."
     return "Precedent request failed. Check server logs."
+
+
+def _unavailable(e: Exception) -> HTTPException:
+    # 503, not 502: Cloudflare replaces an origin 502 with its own error, hiding the detail.
+    return HTTPException(status_code=503, detail=_client_detail(e))
 
 
 def _require_staff(x_staff_key: str | None) -> None:
@@ -182,7 +190,7 @@ def staff_log_case(
         )
     except (PrecedentDBError, EmbeddingError) as e:
         logger.exception("staff_log_case failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     return {"id": case_id}
 
 
@@ -206,7 +214,7 @@ def staff_search_precedent(
         synthesis = synthesize(body.query, matches)
     except (PrecedentDBError, EmbeddingError, SynthesisError) as e:
         logger.exception("staff_search_precedent failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     return {
         "matches": [_serialize_match(m) for m in matches],
         "synthesis": synthesis,
@@ -231,7 +239,7 @@ def staff_list_cases(
         total = count_cases()
     except PrecedentDBError as e:
         logger.exception("staff_list_cases failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     return {"cases": [_serialize_match(c) for c in cases], "total": total}
 
 
@@ -262,7 +270,7 @@ def staff_update_case(
         raise HTTPException(status_code=400, detail="Invalid case id")
     except (PrecedentDBError, EmbeddingError) as e:
         logger.exception("staff_update_case failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     if not updated:
         raise HTTPException(status_code=404, detail="Case not found")
     return {"updated": True, "id": case_id}
@@ -282,7 +290,7 @@ def staff_get_case(
         raise HTTPException(status_code=400, detail="Invalid case id")
     except PrecedentDBError as e:
         logger.exception("staff_get_case failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found")
     return _serialize_match(case)
@@ -302,7 +310,7 @@ def staff_delete_case(
         raise HTTPException(status_code=400, detail="Invalid case id")
     except PrecedentDBError as e:
         logger.exception("staff_delete_case failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     if not deleted:
         raise HTTPException(status_code=404, detail="Case not found")
     return {"deleted": True, "id": case_id}
@@ -317,5 +325,5 @@ def staff_ping(
         ping_db()
     except PrecedentDBError as e:
         logger.exception("staff_ping failed")
-        raise HTTPException(status_code=502, detail=_client_detail(e)) from e
+        raise _unavailable(e) from e
     return {"ok": True}
