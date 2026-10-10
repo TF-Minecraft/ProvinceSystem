@@ -219,6 +219,32 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         self.assertEqual(400, res.status_code)
         self.assertIn("staff", res.json()["detail"].lower())
 
+    def test_legacy_unprefixed_armor_bare_metal_becomes_light_set(self) -> None:
+        from unittest import mock
+
+        from fastapi.testclient import TestClient
+        from src.skins.codes import issue_code, redeem_code
+
+        self._link_player()
+        issued = issue_code("player-1", "skin")
+        session = redeem_code(issued["code"])
+
+        import server
+        import src.api.skins_routes as routes
+
+        fields = ("helmet", "chestplate", "leggings", "boots", "layer_1", "layer_2")
+        with mock.patch.object(routes, "create_submission", return_value={"id": "x"}) as create,                 TestClient(server.app) as client:
+            res = client.post(
+                "/skins/submissions",
+                data={"kind": "armor_set", "display_name": "Old Client", "base_set": "Iron"},
+                files={field: ("f.png", TINY_PNG, "image/png") for field in fields},
+                headers={"Authorization": f"Bearer {session['session_token']}"},
+            )
+        self.assertEqual(200, res.status_code, res.text)
+        kwargs = create.call_args.kwargs
+        self.assertEqual(["light_iron"], kwargs["tiers"])
+        self.assertEqual({f"light_iron_{field}" for field in fields}, set(create.call_args.args[3]))
+
     def test_review_sheet_staff_header_and_player_omits(self) -> None:
         import importlib
 

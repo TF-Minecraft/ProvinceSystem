@@ -56,7 +56,7 @@ from src.skins.moderation import (
     record_warning,
 )
 from src.skins.catalog import CatalogError, get_catalog, replace_catalog
-from src.skins.naming import ARMOR_FIELDS, SlugError
+from src.skins.naming import ARMOR_FIELDS, ARMOR_METALS, SlugError
 from src.skins.notifications import (
     NotificationError,
     ack_notification,
@@ -636,6 +636,9 @@ async def post_submissions(
         has_unprefixed = any(field in files_bytes for field in ARMOR_FIELDS)
         if has_unprefixed:
             tier = (base_set or "light_iron").strip().lower()
+            # Older clients send a bare metal; their sets were light armour.
+            if tier in ARMOR_METALS:
+                tier = f"light_{tier}"
             tiers_list = [tier]
             remapped: dict[str, bytes] = {}
             remapped_names: dict[str, str | None] = {}

@@ -3,8 +3,9 @@
 Uses FastAPI TestClient (no separate uvicorn). Requires SKINS_DEV=1 or real keys.
 
 Step 11: submission ids are `{sanitized_ign}_{slugify(display_name)}` (no
-player_key, no filename-derived identity). Armor submissions carry 1–6 tiers
-in one row; upload filenames are freeform and ignored by the server.
+player_key, no filename-derived identity). Armor submissions carry one metal
+line of 1–5 sets (`light_steel`, …) in one row; upload filenames are freeform
+and ignored by the server.
 """
 
 from __future__ import annotations
@@ -323,12 +324,25 @@ def main() -> None:
         data={
             "kind": "armor_set",
             "display_name": "Bad Armor Dup Tier",
-            "tiers": json.dumps(["iron", "iron"]),
+            "tiers": json.dumps(["light_iron", "light_iron"]),
         },
         headers=auth,
     )
     if r.status_code != 400:
         fail(f"armor duplicate tier expected 400, got {r.status_code} {r.text}")
+
+    # Negative: one submission spanning two metals
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Bad Armor Two Metals",
+            "tiers": json.dumps(["light_iron", "heavy_steel"]),
+        },
+        headers=auth,
+    )
+    if r.status_code != 400 or "same metal" not in r.text:
+        fail(f"armor mixed metals expected 400, got {r.status_code} {r.text}")
 
     # Negative: same PNG bytes for the same slot across tiers
     r = client.post(
@@ -336,10 +350,10 @@ def main() -> None:
         data={
             "kind": "armor_set",
             "display_name": "Bad Armor Dup Texture",
-            "tiers": json.dumps(["iron", "steel"]),
+            "tiers": json.dumps(["light_steel", "heavy_steel"]),
         },
         files=armor_tier_files(
-            ["iron", "steel"], distinct=False, icon=icon, layer=layer
+            ["light_steel", "heavy_steel"], distinct=False, icon=icon, layer=layer
         ),
         headers=auth,
     )
@@ -354,7 +368,7 @@ def main() -> None:
     print("duplicate PNG bytes in submission rejected ok")
 
     # Multi-tier armor upload — colours without add_name; name_preview.png generated
-    armor_tiers = ["iron", "steel"]
+    armor_tiers = ["light_steel", "heavy_steel"]
     r = client.post(
         "/skins/submissions",
         data={
@@ -459,8 +473,8 @@ def main() -> None:
         fail(f"legacy armor upload: {r.status_code} {r.text}")
     legacy_armor = r.json()
     legacy_armor_id = legacy_armor["id"]
-    if legacy_armor.get("tiers") != ["iron"]:
-        fail(f"legacy armor tiers expected ['iron'], got {legacy_armor.get('tiers')}")
+    if legacy_armor.get("tiers") != ["light_iron"]:
+        fail(f"legacy armor tiers expected ['light_iron'], got {legacy_armor.get('tiers')}")
     if legacy_armor.get("base_set") is not None:
         fail(f"legacy armor base_set expected null, got {legacy_armor.get('base_set')}")
     print(f"legacy single-tier armor {legacy_armor_id} tiers={legacy_armor['tiers']} ok")
@@ -791,10 +805,11 @@ def main() -> None:
             f"armor tiers missing/incomplete on approved list: "
             f"{by_id[armor_id].get('tiers')}"
         )
-    if "iron" not in by_id[armor_id].get("tiers", []):
-        fail("armor approved tiers missing iron")
-    if "steel" not in by_id[armor_id].get("tiers", []):
-        fail("armor approved tiers missing steel")
+    if by_id[armor_id].get("tier_sets") != {
+        "light_steel": "light steel",
+        "heavy_steel": "heavy steel",
+    }:
+        fail(f"armor approved tier_sets wrong: {by_id[armor_id].get('tier_sets')}")
     if by_id[armor_id].get("base_set") is not None:
         fail("armor base_set expected null on approved list")
     if by_id[armor_id].get("name_colours") != ["#55ff55", "#5555ff"]:
@@ -1117,7 +1132,7 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"redeem skin_staff 2: {r.status_code} {r.text}")
     staff_auth2 = {"Authorization": f"Bearer {r.json()['session_token']}"}
-    staff_armor_tiers = ["iron"]
+    staff_armor_tiers = ["light_iron"]
     r = client.post(
         "/skins/submissions",
         data={
@@ -1126,7 +1141,7 @@ def main() -> None:
             "tiers": json.dumps(staff_armor_tiers),
             "category": "a_medieval",
             "tier_scrolls": json.dumps(
-                {"iron": "m.loot.iron_armor_scroll"}
+                {"light_iron": "m.loot.iron_armor_scroll"}
             ),
         },
         files=armor_tier_files(staff_armor_tiers),
@@ -1137,7 +1152,7 @@ def main() -> None:
     staff_armor = r.json()
     if staff_armor.get("status") != "approved":
         fail(f"staff armor status expected approved, got {staff_armor.get('status')}")
-    if staff_armor.get("tier_scrolls") != {"iron": "m.loot.iron_armor_scroll"}:
+    if staff_armor.get("tier_scrolls") != {"light_iron": "m.loot.iron_armor_scroll"}:
         fail(f"staff armor tier_scrolls wrong: {staff_armor.get('tier_scrolls')}")
     print(f"staff armor {staff_armor['id']} tier_scrolls ok")
 
