@@ -9,7 +9,8 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
-from src.api.map_access import get_skin_session, require_site_staff
+from src.api.map_access import get_skin_session
+from src.api.staff_access import require_staff_account
 from src.api.path_safety import is_safe_filename, is_safe_segment, resolve_within
 from src.skins.auth import (
     AuthError,
@@ -317,12 +318,11 @@ def plugin_codes_revoke(
 def post_codes_inspect(
     body: InspectCodeBody,
     request: Request,
-    authorization: str | None = Header(default=None),
 ):
-    """Read-only code lookup for dev gate tooling. Does not redeem or consume codes."""
+    """Staff panel code lookup. Does not redeem or consume codes."""
     client_ip = request.client.host if request.client else ""
     _check_inspect_rate(client_ip)
-    require_site_staff(authorization)
+    require_staff_account(request, "inspect_codes", write=True)
     try:
         return inspect_code(body.code)
     except CodeError as e:

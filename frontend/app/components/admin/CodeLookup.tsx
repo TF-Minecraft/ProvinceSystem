@@ -2,11 +2,8 @@
 
 import { FormEvent, useState } from "react";
 
-import {
-  inspectCode,
-  SkinsApiError,
-  type InspectCodeResult,
-} from "@/lib/skins/api";
+import { adminErrorMessage } from "@/lib/admin/api";
+import { inspectCode, type InspectCodeResult } from "@/lib/skins/api";
 
 function boolLabel(value: boolean): string {
   return value ? "Yes" : "No";
@@ -94,22 +91,12 @@ function InspectResultPanel({ result }: { result: InspectCodeResult }) {
           <dd className="mt-1 text-[var(--tfmc-cream)]">{kindsText}</dd>
         </div>
       </dl>
-      <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
-        Checking does not sign you in or use up the code.
-      </p>
     </div>
   );
 }
 
-type Props = {
-  className?: string;
-  showHeading?: boolean;
-};
-
-export default function CodeInspector({
-  className = "",
-  showHeading = true,
-}: Props) {
+/** Staff panel lookup of a skin or drink code: what it is and what it unlocks. */
+export default function CodeLookup() {
   const [inspectCodeInput, setInspectCodeInput] = useState("");
   const [inspecting, setInspecting] = useState(false);
   const [inspectResult, setInspectResult] = useState<InspectCodeResult | null>(
@@ -136,37 +123,20 @@ export default function CodeInspector({
         setInspectError(result.error);
       }
     } catch (err) {
-      const message =
-        err instanceof SkinsApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Inspect failed";
-      setInspectError(message);
+      setInspectError(adminErrorMessage(err));
     } finally {
       setInspecting(false);
     }
   }
 
   return (
-    <div className={className}>
-      {showHeading ? (
-        <>
-          <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]">
-            Token inspector
-          </p>
-          <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-            Read-only lookup. Does not log you in or consume the code.
-          </p>
-        </>
-      ) : null}
-
+    <div className="max-w-md">
       {inspecting ? (
-        <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Inspecting…</p>
+        <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Looking up…</p>
       ) : (
         <form
           onSubmit={onInspectSubmit}
-          className="mt-4 flex w-full flex-col gap-4"
+          className="mt-6 flex w-full flex-col gap-4"
         >
           <label className="flex flex-col gap-2 text-left">
             <span className="text-sm font-medium text-[var(--tfmc-stone)]">
@@ -190,7 +160,7 @@ export default function CodeInspector({
             disabled={inspecting}
             className="inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] disabled:opacity-50"
           >
-            Inspect
+            Look up
           </button>
         </form>
       )}

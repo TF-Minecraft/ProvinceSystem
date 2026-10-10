@@ -1,16 +1,4 @@
-import { getApiBase, detailMessage, parseJson } from "../site/api";
-import { getSession } from "@/lib/characters/session";
-import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "@/lib/characters/uiDev";
-
-export class PrecedentApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "PrecedentApiError";
-    this.status = status;
-  }
-}
+import { adminRequest } from "../admin/api";
 
 export type PrecedentCase = {
   id: string;
@@ -42,118 +30,34 @@ export type CaseInput = {
   punishment: string;
 };
 
-async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
-  try {
-    return await fetch(input, init);
-  } catch {
-    throw new Error("Could not reach the API. Please try again.");
-  }
-}
-
 /**
- * Bearer session headers. The precedent routes also accept the shared
- * X-Staff-Key, but that is a bot/plugin secret and must never reach a browser,
- * so the website always authenticates as the individual staff member.
+ * Staff panel calls, signed in by the Discord session cookie. The precedent
+ * routes also accept the shared X-Staff-Key, but that is a bot secret and must
+ * never reach a browser. Failures throw AccountApiError, as the panel's do.
  */
-function authHeaders(sessionToken?: string): Record<string, string> {
-  let token = (sessionToken || getSession()?.session_token || "").trim();
-  // Local UI iteration has no redeemed session; the backend accepts this token
-  // only when CHARACTER_UI_DEV=1 is also set there.
-  if (!token && isCharacterUiDev()) {
-    token = UI_DEV_SESSION_TOKEN;
-  }
-  if (!token) {
-    throw new PrecedentApiError("Sign in required", 401);
-  }
-  return { Authorization: `Bearer ${token}` };
+export function listCases(): Promise<{ cases: PrecedentCase[]; total: number }> {
+  return adminRequest("/precedent/staff/cases");
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit,
-  fallbackError: string,
-  sessionToken?: string
-): Promise<T> {
-  const res = await apiFetch(`${getApiBase()}${path}`, {
-    ...init,
-    headers: { ...authHeaders(sessionToken), ...(init.headers || {}) },
-  });
-  const data = await parseJson(res);
-  if (!res.ok) {
-    throw new PrecedentApiError(detailMessage(data, fallbackError), res.status);
-  }
-  return data as T;
+export function createCase(body: CaseInput): Promise<{ id: string }> {
+  return adminRequest("/precedent/staff/log", { method: "POST", body: JSON.stringify(body) });
 }
 
-function jsonBody(body: CaseInput): RequestInit {
-  return {
-    headers: { "Content-Type": "application/json" },
+export function updateCase(caseId: string, body: CaseInput): Promise<{ updated: boolean; id: string }> {
+  return adminRequest(`/precedent/staff/case/${encodeURIComponent(caseId)}`, {
+    method: "PUT",
     body: JSON.stringify(body),
-  };
+  });
 }
 
-export async function listCases(
-  sessionToken?: string
-): Promise<{ cases: PrecedentCase[]; total: number }> {
-  return request(
-    "/precedent/staff/cases",
-    { method: "GET" },
-    "Could not load precedent cases",
-    sessionToken
-  );
+export function deleteCase(caseId: string): Promise<{ deleted: boolean; id: string }> {
+  return adminRequest(`/precedent/staff/case/${encodeURIComponent(caseId)}`, { method: "DELETE" });
 }
 
-export async function createCase(
-  body: CaseInput,
-  sessionToken?: string
-): Promise<{ id: string }> {
-  return request(
-    "/precedent/staff/log",
-    { method: "POST", ...jsonBody(body) },
-    "Could not log the case",
-    sessionToken
-  );
-}
-
-export async function updateCase(
-  caseId: string,
-  body: CaseInput,
-  sessionToken?: string
-): Promise<{ updated: boolean; id: string }> {
-  return request(
-    `/precedent/staff/case/${encodeURIComponent(caseId)}`,
-    { method: "PUT", ...jsonBody(body) },
-    "Could not save the case",
-    sessionToken
-  );
-}
-
-export async function deleteCase(
-  caseId: string,
-  sessionToken?: string
-): Promise<{ deleted: boolean; id: string }> {
-  return request(
-    `/precedent/staff/case/${encodeURIComponent(caseId)}`,
-    { method: "DELETE" },
-    "Could not delete the case",
-    sessionToken
-  );
-}
-
-/** Costs a Voyage embed plus a Claude call server-side. Rate limited to 10/60s. */
-export async function searchPrecedent(
-  query: string,
-  players: string[] = [],
-  sessionToken?: string
-): Promise<PrecedentSearchResult> {
-  return request(
-    "/precedent/staff/search",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, players }),
-    },
-    "Precedent search failed",
-    sessionToken
-  );
+/** Costs a Voyage embed plus a Claude call server-side. Rate limited to 10/60s per staff member. */
+export function searchPrecedent(query: string, players: string[] = []): Promise<PrecedentSearchResult> {
+  return adminRequest("/precedent/staff/search", {
+    method: "POST",
+    body: JSON.stringify({ query, players }),
+  });
 }

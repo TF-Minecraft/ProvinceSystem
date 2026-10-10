@@ -5,12 +5,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import SiteHeader from "./SiteHeader";
 
 let pathname = "/map";
-let staffState = "unauthenticated";
 let accountRole: string | null = null;
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
-vi.mock("@/app/hooks/useSiteStaffAccess", () => ({
-  useSiteStaffAccess: () => ({ state: staffState, retry: () => {} }),
-}));
 vi.mock("@/lib/account/api", () => ({
   getAccount: () => Promise.resolve(accountRole ? { user: { role: accountRole } } : null),
 }));
@@ -25,7 +21,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   pathname = "/map";
-  staffState = "unauthenticated";
   accountRole = null;
 });
 
@@ -91,13 +86,13 @@ it("keeps Tab and Shift+Tab inside the open menu", () => {
   expect(document.activeElement).toBe(first);
 });
 
-it("marks the current section and adds staff and admin links", async () => {
+it("marks the current section and adds the staff panel for staff accounts", async () => {
   pathname = "/map/main/chronicle";
-  staffState = "staff";
-  accountRole = "admin";
+  accountRole = "mod";
   render(<SiteHeader />);
   const { menu } = openMenu();
   expect(menu.querySelector('a[aria-current="page"]')?.getAttribute("href")).toBe("/map");
-  expect(menu.querySelector('a[href="/inspect"]')).not.toBeNull();
   await waitFor(() => expect(menu.querySelector('a[href="/admin"]')).not.toBeNull());
+  // Staff tools sit inside the panel, not in the site header.
+  expect(menu.querySelector('a[href="/precedent"], a[href="/inspect"]')).toBeNull();
 });

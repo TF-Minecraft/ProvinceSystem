@@ -1,7 +1,7 @@
 import { getApiBase, detailMessage, parseJson } from "../site/api";
+import { adminRequest } from "../admin/api";
 import type { SkinsCatalog } from "./catalog";
 import { EMPTY_ENTITLEMENTS, parseEntitlements } from "./catalog";
-import { getSession } from "@/lib/characters/session";
 import { readStartRefusal } from "../profile/start";
 
 export type { CatalogCategory, CatalogScroll, SkinsCatalog } from "./catalog";
@@ -162,34 +162,12 @@ export type InspectCodeResult =
       entitlements: InspectCodeEntitlements;
     };
 
-export async function inspectCode(
-  code: string,
-  sessionToken?: string
-): Promise<InspectCodeResult> {
-  const token = (sessionToken || getSession()?.session_token || "").trim();
-  if (!token) {
-    throw new SkinsApiError("Sign in required to inspect codes", 401);
-  }
-
-  const res = await apiFetch(`${getApiBase()}/skins/codes/inspect`, {
+/** Staff panel lookup, signed in by the Discord session cookie; failures throw AccountApiError. */
+export async function inspectCode(code: string): Promise<InspectCodeResult> {
+  const body = await adminRequest<Record<string, unknown>>("/skins/codes/inspect", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify({ code: code.trim() }),
   });
-
-  const data = await parseJson(res);
-
-  if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Inspect failed (${res.status})`),
-      res.status
-    );
-  }
-
-  const body = data as Record<string, unknown>;
   if (body.valid === false) {
     return {
       valid: false,
@@ -198,7 +176,7 @@ export async function inspectCode(
   }
 
   if (body.valid !== true) {
-    throw new SkinsApiError("Invalid inspect response from API", res.status);
+    throw new Error("Invalid inspect response from API");
   }
 
   const entRaw =

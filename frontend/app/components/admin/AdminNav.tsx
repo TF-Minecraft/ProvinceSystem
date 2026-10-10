@@ -9,6 +9,8 @@ const LINKS = [
   { href: "/admin/movement", label: "Movement", key: "movement" },
   { href: "/admin/rail", label: "Rail", key: "rail" },
   { href: "/admin/ranks", label: "Ranks", key: "ranks" },
+  { href: "/admin/precedent", label: "Precedent", key: "precedent" },
+  { href: "/admin/codes", label: "Codes", key: "codes" },
 ] as const;
 
 export type AdminSection = (typeof LINKS)[number]["key"];

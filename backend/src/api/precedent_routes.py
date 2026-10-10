@@ -10,7 +10,7 @@ import psycopg2
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
-from src.api.map_access import require_site_staff
+from src.api.staff_access import require_staff_account, staff_name
 from src.precedent.db import (
     MAX_RELEVANT_DISTANCE,
     AuditActor,
@@ -28,7 +28,6 @@ from src.precedent.db import (
 from src.precedent.embeddings import EmbeddingError, embed
 from src.precedent.synthesis import SynthesisError, synthesize
 from src.skins.auth import HEADER_STAFF_KEY, require_staff_key
-from src.skins.codes import get_linked_minecraft_name
 
 logger = logging.getLogger("precedent.routes")
 
@@ -69,51 +68,49 @@ def _require_staff(x_staff_key: str | None) -> None:
         raise HTTPException(status_code=401, detail="Invalid or missing staff key") from e
 
 
-def _require_staff_or_session(
+def _require_staff_or_account(
+    request: Request,
     x_staff_key: str | None,
-    authorization: str | None,
+    *,
+    write: bool = False,
 ) -> dict | None:
-    """Accept either the shared bot key or a site-staff Bearer session.
+    """Accept either the shared bot key or a staff panel account.
 
     Two clients reach these routes: the Discord bot / plugins, which hold the
-    shared STAFF_KEY, and the website, which must never ship that secret to a
-    browser and instead authenticates the individual staff member. Returns the
-    session dict for the web path, None for the key path (which has no identity).
+    shared STAFF_KEY, and the staff panel, which must never ship that secret to a
+    browser and instead authenticates the individual staff member by their
+    website role. Returns the account for the panel path, None for the key path
+    (which has no identity).
     """
     if x_staff_key is not None:
         _require_staff(x_staff_key)
         return None
-    # No key at all: fall through to the session path, which raises 401/403 itself.
-    return require_site_staff(authorization)
+    # No key at all: fall through to the account path, which raises 401/403 itself.
+    return require_staff_account(request, "use_precedent", write=write)
 
 
-def _audit_actor(session: dict | None, fallback: str) -> AuditActor:
+def _audit_actor(user: dict | None, fallback: str) -> AuditActor:
     """Who to record for a write.
 
-    Web writes carry a verified player behind the session, so the audit trail
-    names them. Bot writes authenticate with the shared STAFF_KEY, which proves
-    only that the caller holds the key -- the name recorded there is
-    caller-supplied and marked `source='bot'` so it is not mistaken for proof.
+    Panel writes carry a verified staff account, so the audit trail names them.
+    Bot writes authenticate with the shared STAFF_KEY, which proves only that
+    the caller holds the key -- the name recorded there is caller-supplied and
+    marked `source='bot'` so it is not mistaken for proof.
     """
-    if session is None:
+    if user is None:
         return AuditActor(source="bot", actor=fallback)
-    uuid = str(session.get("player_uuid") or "").strip()
-    return AuditActor(
-        source="web",
-        actor=get_linked_minecraft_name(uuid) or uuid,
-        actor_uuid=uuid,
-    )
+    name, uuid = staff_name(user)
+    return AuditActor(source="web", actor=name, actor_uuid=uuid)
 
 
-def _session_logged_by(session: dict | None, fallback: str) -> str:
-    """Web callers get an authenticated logged_by; the bot keeps its own value.
+def _logged_by(user: dict | None, fallback: str) -> str:
+    """Panel callers get an authenticated logged_by; the bot keeps its own value.
 
     Prevents a signed-in staff member from attributing a case to someone else.
     """
-    if session is None:
+    if user is None:
         return fallback
-    uuid = str(session.get("player_uuid") or "").strip()
-    return get_linked_minecraft_name(uuid) or uuid or fallback
+    return staff_name(user)[0]
 
 
 class LogCaseBody(BaseModel):
@@ -166,22 +163,22 @@ def _serialize_match(row: dict) -> dict:
 @precedent_router.post("/staff/log")
 def staff_log_case(
     body: LogCaseBody,
+    request: Request,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
-    session = _require_staff_or_session(x_staff_key, authorization)
+    user = _require_staff_or_account(request, x_staff_key, write=True)
     try:
         migrate()
         vector = embed(_case_text(body))
         case_id = insert_case(
-            logged_by=_session_logged_by(session, body.logged_by),
+            logged_by=_logged_by(user, body.logged_by),
             players=body.players,
             summary=body.summary,
             rule=body.rule,
             ruling=body.ruling,
             punishment=body.punishment,
             embedding=vector,
-            actor=_audit_actor(session, body.logged_by),
+            actor=_audit_actor(user, body.logged_by),
         )
     except (PrecedentDBError, EmbeddingError) as e:
         logger.exception("staff_log_case failed")
@@ -194,13 +191,12 @@ def staff_search_precedent(
     body: SearchBody,
     request: Request,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
-    session = _require_staff_or_session(x_staff_key, authorization)
-    # Bucket web callers per staff member: behind a reverse proxy every browser
+    user = _require_staff_or_account(request, x_staff_key, write=True)
+    # Bucket panel callers per staff member: behind a reverse proxy every browser
     # shares one client IP and would otherwise contend for a single 10/60s budget.
-    if session is not None:
-        _check_search_rate(f"session:{session.get('player_uuid') or ''}")
+    if user is not None:
+        _check_search_rate(f"account:{user['user_id']}")
     else:
         _check_search_rate(request.client.host if request.client else "")
     try:
@@ -220,13 +216,13 @@ def staff_search_precedent(
 
 @precedent_router.get("/staff/cases")
 def staff_list_cases(
+    request: Request,
     limit: int = 500,
     offset: int = 0,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
     """Browse the corpus. Plain SELECT — no Voyage embed, no Claude call."""
-    _require_staff_or_session(x_staff_key, authorization)
+    _require_staff_or_account(request, x_staff_key)
     limit = max(1, min(int(limit), 1000))
     offset = max(0, int(offset))
     try:
@@ -243,24 +239,24 @@ def staff_list_cases(
 def staff_update_case(
     case_id: str,
     body: LogCaseBody,
+    request: Request,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
     """Full-row edit. Re-embeds so the stored vector matches the new text."""
-    session = _require_staff_or_session(x_staff_key, authorization)
+    user = _require_staff_or_account(request, x_staff_key, write=True)
     try:
         migrate()
         vector = embed(_case_text(body))
         updated = update_case(
             case_id,
-            logged_by=_session_logged_by(session, body.logged_by),
+            logged_by=_logged_by(user, body.logged_by),
             players=body.players,
             summary=body.summary,
             rule=body.rule,
             ruling=body.ruling,
             punishment=body.punishment,
             embedding=vector,
-            actor=_audit_actor(session, body.logged_by),
+            actor=_audit_actor(user, body.logged_by),
         )
     except psycopg2.Error:
         raise HTTPException(status_code=400, detail="Invalid case id")
@@ -275,10 +271,10 @@ def staff_update_case(
 @precedent_router.get("/staff/case/{case_id}")
 def staff_get_case(
     case_id: str,
+    request: Request,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
-    _require_staff_or_session(x_staff_key, authorization)
+    _require_staff_or_account(request, x_staff_key)
     try:
         migrate()
         case = get_case(case_id)
@@ -295,13 +291,13 @@ def staff_get_case(
 @precedent_router.delete("/staff/case/{case_id}")
 def staff_delete_case(
     case_id: str,
+    request: Request,
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
-    authorization: str | None = Header(default=None),
 ):
-    session = _require_staff_or_session(x_staff_key, authorization)
+    user = _require_staff_or_account(request, x_staff_key, write=True)
     try:
         migrate()
-        deleted = delete_case(case_id, actor=_audit_actor(session, ""))
+        deleted = delete_case(case_id, actor=_audit_actor(user, ""))
     except psycopg2.Error:
         raise HTTPException(status_code=400, detail="Invalid case id")
     except PrecedentDBError as e:
