@@ -86,7 +86,7 @@ class MessagesTest(unittest.TestCase):
         messages = compose.messages_from_response(
             {"messages": ["```\n# Update 5.3\nHi @everyone <@&123> — enjoy\n```", "  "]}
         )
-        self.assertEqual(messages, ["# Update 5.3\nHi   ,  enjoy"])
+        self.assertEqual(messages, ["# Update 5.3\nHi , enjoy"])
 
     def test_emojis_are_removed(self) -> None:
         messages = compose.messages_from_response(
@@ -97,6 +97,12 @@ class MessagesTest(unittest.TestCase):
     def test_clock_and_media_emojis_are_removed_but_technical_symbols_stay(self) -> None:
         self.assertEqual(compose.clean_message("⏰ Cooldown 10 --> 8 ⌛ ⏩"), "Cooldown 10 --> 8")
         self.assertEqual(compose.clean_message("Press ⌘ then ⏎"), "Press ⌘ then ⏎")
+
+    def test_plain_symbols_stay(self) -> None:
+        text = "- C♯ balance changes ★ ✓ → done"
+        self.assertEqual(compose.clean_message(text), text)
+        self.assertEqual(compose.clean_message("⚔️ Duels and ⭐ stars"), "Duels and stars")
+        self.assertEqual(compose.clean_message("- a\n  - nested"), "- a\n  - nested")
 
     def test_unsafe_lines_are_dropped(self) -> None:
         messages = compose.messages_from_response(

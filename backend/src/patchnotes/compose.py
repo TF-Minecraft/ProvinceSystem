@@ -36,11 +36,17 @@ TARGET_MESSAGES = 8
 MAX_MESSAGES = 15
 _FACTS_BUDGET = 60_000
 _MENTION = re.compile(r"@(everyone|here)|<@[!&]?\d+>")
-# Emoji and the joiners and variation selectors that build them. Plain symbols such as arrows stay.
+# Emoji only: pictographs, any symbol asking for emoji style (U+FE0F), the symbols
+# that always show as emoji, and leftover joiners. Plain symbols such as arrows,
+# stars, check marks and the music sharp stay.
 _EMOJI = re.compile(
-    r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF"
-    r"\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA"
-    r"\uFE0F\u200D\u20E3]"
+    r"[\U0001F000-\U0001FAFF]"
+    r"|[\u2000-\u2BFF\u3000-\u33FF]\uFE0F"
+    r"|[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653"
+    r"\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2"
+    r"\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757"
+    r"\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]"
+    r"|[\uFE0F\u200D\u20E3]"
 )
 _FENCE = re.compile(r"^```[a-z]*\n?|\n?```$")
 _MONTHS = (
@@ -243,7 +249,8 @@ def clean_message(text: str) -> str:
     text = _FENCE.sub("", text.strip()).strip()
     text = _MENTION.sub("", text).replace("—", ", ").replace("–", "-")
     text = _EMOJI.sub("", text)
-    text = re.sub(r"(?m)^(#+|-#) {2,}", r"\1 ", text)
+    # Removed emojis and mentions leave double spaces. Leading indentation stays for nested lists.
+    text = re.sub(r"(?<=\S) {2,}", " ", text)
     lines = [line.rstrip() for line in text.splitlines() if not unsafe_line(line)]
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
