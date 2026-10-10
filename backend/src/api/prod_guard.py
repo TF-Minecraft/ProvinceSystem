@@ -35,5 +35,13 @@ def assert_production_safe() -> None:
             errors.append(f"{name} is required when Discord sign-in is enabled in production")
         if not config.secure_cookies or not config.redirect_uri.startswith("https://"):
             errors.append("SITE_PUBLIC_URL and DISCORD_REDIRECT_URI must use https in production")
+    if os.environ.get("MICROSOFT_LINK_ENABLED", "").strip() == "1":
+        from src.auth.microsoft import MicrosoftConfig
+
+        microsoft = MicrosoftConfig.from_env()
+        for name in microsoft.problems():
+            errors.append(f"{name} is required when the Microsoft link is enabled in production")
+        if not microsoft.redirect_uri.startswith("https://"):
+            errors.append("MICROSOFT_REDIRECT_URI must use https in production")
     if errors:
         raise RuntimeError("Production startup refused: " + "; ".join(errors))

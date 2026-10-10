@@ -8,6 +8,7 @@ import {
   linkMinecraft,
   previewMinecraftLink,
   signOut,
+  startMicrosoftLink,
   type Account,
 } from "../../../lib/account/api";
 
@@ -19,6 +20,7 @@ vi.mock("../../../lib/account/api", async (importOriginal) => ({
   signOut: vi.fn(),
   unlinkMinecraft: vi.fn(),
   startAccountPatreonLink: vi.fn(),
+  startMicrosoftLink: vi.fn(),
 }));
 
 function account(overrides: Partial<Account> = {}): Account {
@@ -171,4 +173,52 @@ it("says when Patreon linking is unavailable", async () => {
   const row = await screen.findByLabelText("Patreon");
   expect(row.textContent).toContain("Unavailable");
   expect(row.textContent).not.toContain("isn’t available");
+});
+
+it("offers Microsoft first, with the in-game code as a fallback", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
+  vi.mocked(startMicrosoftLink).mockResolvedValue("https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?x=1");
+  const assign = vi.fn();
+  vi.stubGlobal("location", { ...window.location, assign });
+  render(<AccountPanel signin={null} />);
+  const row = await screen.findByLabelText("Minecraft account");
+  expect(within(row).getByText("Or use a code from in game")).toBeTruthy();
+  fireEvent.click(within(row).getByRole("button", { name: "Connect with Microsoft" }));
+  await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(
+    "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?x=1"
+  ));
+  vi.unstubAllGlobals();
+});
+
+it("keeps only the code form when Microsoft is not set up", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: false }));
+  render(<AccountPanel signin={null} />);
+  expect(await screen.findByLabelText("Link code")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Connect with Microsoft" })).toBeNull();
+});
+
+it("asks for a fresh Discord check before opening Microsoft", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
+  vi.mocked(startMicrosoftLink).mockRejectedValue(new AccountApiError("guild_check_stale", 403));
+  render(<AccountPanel signin={null} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Connect with Microsoft" }));
+  expect((await screen.findByRole("link", { name: "Confirm with Discord" })).getAttribute("href")).toContain(
+    "/auth/discord/start"
+  );
+});
+
+it("explains why a Microsoft link failed", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
+  render(<AccountPanel signin={null} minecraft="no_java_profile" />);
+  expect((await screen.findByRole("alert")).textContent).toContain("doesn’t own Minecraft: Java Edition");
+});
+
+it("confirms a Microsoft link from the account itself", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    microsoft_link: true,
+    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-10-10T09:00:00Z", in_grace: false, grace_until: null },
+  }));
+  render(<AccountPanel signin={null} minecraft="linked" />);
+  expect((await screen.findByRole("status")).textContent).toBe("Linked with Microsoft.");
+  expect(screen.queryByRole("alert")).toBeNull();
 });

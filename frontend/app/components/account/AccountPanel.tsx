@@ -5,9 +5,13 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   discordSignInUrl,
   getAccount,
+  isNotGuildMember,
+  minecraftLinkMessage,
+  needsGuildRecheck,
   signInMessage,
   signOut,
   startAccountPatreonLink,
+  startMicrosoftLink,
   unlinkMinecraft,
   AccountApiError,
   type Account,
@@ -49,12 +53,19 @@ function formatDeadline(value: string | null | undefined): string {
   }).format(date);
 }
 
-export default function AccountPanel({ signin }: { signin: string | null }) {
+export default function AccountPanel({
+  signin,
+  minecraft: minecraftStatus = null,
+}: {
+  signin: string | null;
+  minecraft?: string | null;
+}) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const notice = signInMessage(signin);
+  const [recheck, setRecheck] = useState(minecraftStatus === "guild_check_stale");
+  const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
 
   const refresh = useCallback(async () => {
     try {
@@ -104,6 +115,27 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
     } catch {
       setActionError("We couldn’t unlink your Minecraft account just now. Please try again.");
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onConnectMicrosoft() {
+    setBusy(true);
+    setActionError(null);
+    try {
+      window.location.assign(await startMicrosoftLink());
+    } catch (err) {
+      if (needsGuildRecheck(err)) {
+        setRecheck(true);
+      } else if (isNotGuildMember(err)) {
+        setActionError("Linking needs you to be in the TFMC Discord server.");
+      } else if (err instanceof AccountApiError && err.status === 409) {
+        await refresh();
+      } else if (err instanceof AccountApiError && err.status === 429) {
+        setActionError(err.message);
+      } else {
+        setActionError("We couldn’t open Microsoft sign-in just now. Please try again.");
+      }
       setBusy(false);
     }
   }
@@ -196,6 +228,11 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
                   <span className="text-[var(--tfmc-stone)]"> · linked {formatDate(minecraft.linked_at)}</span>
                 ) : null}
               </p>
+              {minecraftStatus === "linked" ? (
+                <p className="mt-2 text-sm text-[var(--tfmc-accent)]" role="status">
+                  Linked with Microsoft.
+                </p>
+              ) : null}
               {minecraft.in_grace ? (
                 <p className="mt-2 text-sm text-[#e8c9a0]">
                   You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or this
@@ -217,6 +254,30 @@ export default function AccountPanel({ signin }: { signin: string | null }) {
                   Unlink Minecraft account
                 </button>
               )}
+            </>
+          ) : guild.member && recheck ? (
+            <>
+              <p className="text-sm text-[var(--tfmc-mist)]">
+                Please confirm your Discord membership again before linking.
+              </p>
+              <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-3`}>
+                Confirm with Discord
+              </a>
+            </>
+          ) : guild.member && account.microsoft_link ? (
+            <>
+              <p className="text-sm text-[var(--tfmc-mist)]">
+                Sign in with the Microsoft account you play Minecraft with. We only read your Minecraft name and ID.
+              </p>
+              <button type="button" onClick={() => void onConnectMicrosoft()} disabled={busy} className={`${buttonClass} mt-3`}>
+                Connect with Microsoft
+              </button>
+              <details className="mt-5">
+                <summary className={`${quietButtonClass} cursor-pointer`}>Or use a code from in game</summary>
+                <div className="mt-3">
+                  <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
+                </div>
+              </details>
             </>
           ) : guild.member ? (
             <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />

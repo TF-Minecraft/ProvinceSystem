@@ -677,6 +677,17 @@ CREATE TABLE IF NOT EXISTS discord_oauth_states (
 
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);
 
+-- Single-use Microsoft link attempts, tied to the site session that started
+-- them. The PKCE verifier lives only until the callback spends the row.
+CREATE TABLE IF NOT EXISTS microsoft_link_states (
+    state_hash TEXT PRIMARY KEY,
+    session_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    code_verifier TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_microsoft_link_states_user ON microsoft_link_states(user_id);
+
 -- Append-only record of staff actions on website accounts, including refused
 -- attempts. No foreign keys: rows outlive the accounts they mention, so each
 -- row keeps the names it was written with.

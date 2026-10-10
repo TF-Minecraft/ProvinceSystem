@@ -4,10 +4,12 @@ import {
   discordSignInUrl,
   getAccount,
   linkMinecraft,
+  minecraftLinkMessage,
   needsGuildRecheck,
   signInMessage,
   signOut,
   startAccountPatreonLink,
+  startMicrosoftLink,
 } from "./api";
 
 const fetchMock = vi.fn();
@@ -78,5 +80,24 @@ describe("account api", () => {
     expect(signInMessage("toString")).toBe(signInMessage("error"));
     expect(signInMessage("denied")).toBe("Discord sign-in was cancelled.");
     expect(signInMessage("weird")).toBe(signInMessage("error"));
+  });
+
+  it("starts the Microsoft link and only follows a Microsoft sign-in URL", async () => {
+    const url = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?state=s";
+    fetchMock.mockReturnValueOnce(json(200, { authorize_url: url }));
+    await expect(startMicrosoftLink()).resolves.toBe(url);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://www.tfminecraft.net/api/account/minecraft/microsoft/start");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST", credentials: "include" });
+    fetchMock.mockReturnValueOnce(json(200, { authorize_url: "https://evil.example/" }));
+    await expect(startMicrosoftLink()).rejects.toBeInstanceOf(AccountApiError);
+  });
+
+  it("explains Microsoft link outcomes, defaulting to a generic error", () => {
+    expect(minecraftLinkMessage(null)).toBeNull();
+    expect(minecraftLinkMessage("linked")).toBeNull();
+    expect(minecraftLinkMessage("denied")).toBe("Microsoft sign-in was cancelled.");
+    expect(minecraftLinkMessage("minecraft_taken")).toContain("different Discord account");
+    expect(minecraftLinkMessage("toString")).toContain("couldn’t connect with Microsoft");
+    expect(minecraftLinkMessage("something")).toContain("couldn’t connect with Microsoft");
   });
 });

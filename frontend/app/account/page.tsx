@@ -2,6 +2,7 @@ import AccountPanel from "../components/account/AccountPanel";
 
 type SearchParams = {
   signin?: string | string[];
+  minecraft?: string | string[];
 };
 
 export default async function AccountPage({
@@ -11,6 +12,7 @@ export default async function AccountPage({
 }) {
   const params = await searchParams;
   const signin = typeof params.signin === "string" ? params.signin : null;
+  const minecraft = typeof params.minecraft === "string" ? params.minecraft : null;
 
   return (
     <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl flex-col px-6 py-16">
@@ -26,7 +28,7 @@ export default async function AccountPage({
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
         Account
       </h1>
-      <AccountPanel signin={signin} />
+      <AccountPanel signin={signin} minecraft={minecraft} />
     </main>
   );
 }
