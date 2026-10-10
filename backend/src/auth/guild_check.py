@@ -27,6 +27,10 @@ NOT_MEMBER_REUSE_SECONDS = 15
 UNCLEAR_RETRY_SECONDS = 60
 # Discord unreachable or failing: nobody is checked for this long.
 OUTAGE_PAUSE_SECONDS = 30
+# The bot itself is refused (bad token, no access, wrong server): nobody is checked for this long.
+BOT_REFUSED_PAUSE_SECONDS = 600
+# Longest a request waits for another request's check before giving up on asking.
+LOCK_WAIT_SECONDS = TIMEOUT_SECONDS + 1
 # Discord's "Unknown Member" and "Unknown User": not in the server.
 _NOT_MEMBER_CODES = {10007, 10013}
 _RECENT_MAX = 2000
@@ -65,7 +69,10 @@ def _ask(discord_user_id: str, http: httpx.Client | None) -> tuple[bool | None, 
         return None, max(wait, 1.0)
     if response.status_code == 404 and body.get("code") in _NOT_MEMBER_CODES:
         return False, 0.0
-    return None, OUTAGE_PAUSE_SECONDS if response.status_code >= 500 else 0.0
+    if response.status_code >= 500:
+        return None, OUTAGE_PAUSE_SECONDS
+    # 401, 403 or 404 Unknown Guild: wrong for every player, so stop asking for a while.
+    return None, BOT_REFUSED_PAUSE_SECONDS if response.status_code in (401, 403, 404) else 0.0
 
 
 def _json(response: httpx.Response) -> dict:
@@ -102,21 +109,19 @@ def check(user: dict, http: httpx.Client | None = None) -> tuple[dict, bool]:
     if users.guild_check_fresh(user):
         return user, True
     session_id = user["session_id"]
-    with _CHECK_LOCK:
-        # A check that finished while this request waited is used as it is.
-        state = users.guild_state(session_id)
-        if state is not None:
-            user = _with_check(user, bool(state["guild_member"]), state["guild_checked_at"])
-            if users.guild_check_fresh(user):
-                return user, True
-        now = time.monotonic()
-        with _STATE_LOCK:
-            _prune(now)
-            recent = _RECENT.get(session_id)
-            if recent is not None:
-                return user, recent[1]
-            if now < _paused_until:
-                return user, False
+    reused = _reuse(session_id)
+    if reused is not None:
+        return user, reused
+    # One check at a time, so a waiting request can use the answer it waited for.
+    if not _CHECK_LOCK.acquire(timeout=LOCK_WAIT_SECONDS):
+        return _stored(user)
+    try:
+        user, now_fresh = _stored(user)
+        if now_fresh:
+            return user, True
+        reused = _reuse(session_id)
+        if reused is not None:
+            return user, reused
         member, pause = _ask(user["discord_user_id"], http)
         now = time.monotonic()
         with _STATE_LOCK:
@@ -129,6 +134,29 @@ def check(user: dict, http: httpx.Client | None = None) -> tuple[dict, bool]:
                 _RECENT[session_id] = (now + NOT_MEMBER_REUSE_SECONDS, True)
         checked_at = users.record_guild_check(session_id, member)
         return _with_check(user, member, checked_at), True
+    finally:
+        _CHECK_LOCK.release()
+
+
+def _reuse(session_id: int) -> bool | None:
+    """A recent answer for this session, or the pause, without asking Discord; None to ask."""
+    now = time.monotonic()
+    with _STATE_LOCK:
+        _prune(now)
+        recent = _RECENT.get(session_id)
+        if recent is not None:
+            return recent[1]
+        if now < _paused_until:
+            return False
+    return None
+
+
+def _stored(user: dict) -> tuple[dict, bool]:
+    """The session's stored check, which another request may have just made."""
+    state = users.guild_state(user["session_id"])
+    if state is not None:
+        user = _with_check(user, bool(state["guild_member"]), state["guild_checked_at"])
+    return user, users.guild_check_fresh(user)
 
 
 def fresh(user: dict, http: httpx.Client | None = None) -> dict:

@@ -760,6 +760,9 @@ def test_old_answers_are_dropped(monkeypatch):
     (429, {"retry_after": 42.5, "global": False}, 42.5),
     (429, {}, guild_check.OUTAGE_PAUSE_SECONDS),
     (502, None, guild_check.OUTAGE_PAUSE_SECONDS),
+    (401, {"code": 0, "message": "401: Unauthorized"}, guild_check.BOT_REFUSED_PAUSE_SECONDS),
+    (403, {"code": 50001, "message": "Missing Access"}, guild_check.BOT_REFUSED_PAUSE_SECONDS),
+    (404, {"code": 10004, "message": "Unknown Guild"}, guild_check.BOT_REFUSED_PAUSE_SECONDS),
 ])
 def test_ask_pauses_for_rate_limits_and_outages(monkeypatch, status, body, pause):
     import httpx
@@ -780,3 +783,41 @@ def test_ask_pauses_when_discord_is_unreachable(monkeypatch):
 
     http = httpx.Client(transport=httpx.MockTransport(fail))
     assert guild_check._ask(DISCORD_ID, http) == (None, guild_check.OUTAGE_PAUSE_SECONDS)
+
+
+def test_a_refused_bot_pauses_checks_for_every_session(api, monkeypatch, env):
+    sign_in(api, monkeypatch)
+    make_stale(env)
+    asked = bot_says(monkeypatch, None, pause=guild_check.BOT_REFUSED_PAUSE_SECONDS)
+    for _ in range(3):
+        guild_check._RECENT.clear()  # each a different session as far as reuse goes
+        assert api.get("/account").json()["guild"]["can_recheck"] is False
+    assert asked == [DISCORD_ID]
+
+
+def test_cached_answers_do_not_wait_behind_another_check(env, monkeypatch, api):
+    sign_in(api, monkeypatch, Stub(member=False))
+    make_stale(env, member=False)
+    user = users.session_user(api.cookies.get(SESSION))
+    guild_check._RECENT[user["session_id"]] = (guild_check.time.monotonic() + 60, True)
+    assert guild_check._CHECK_LOCK.acquire()
+    try:
+        started = guild_check.time.monotonic()
+        assert guild_check.check(user)[1] is True
+        assert guild_check.time.monotonic() - started < 0.5
+    finally:
+        guild_check._CHECK_LOCK.release()
+
+
+def test_waiting_too_long_for_another_check_gives_up_on_asking(env, monkeypatch, api):
+    sign_in(api, monkeypatch)
+    make_stale(env)
+    user = users.session_user(api.cookies.get(SESSION))
+    monkeypatch.setattr(guild_check, "LOCK_WAIT_SECONDS", 0.05)
+    asked = bot_says(monkeypatch, True)
+    assert guild_check._CHECK_LOCK.acquire()
+    try:
+        checked, answered = guild_check.check(user)
+    finally:
+        guild_check._CHECK_LOCK.release()
+    assert answered is False and asked == [] and not users.guild_check_fresh(checked)

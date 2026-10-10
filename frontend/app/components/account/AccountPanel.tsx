@@ -646,7 +646,7 @@ function LinkActions({
 }) {
   if (!account.guild.member) {
     // Reloading the account asks Discord again, unless the site cannot reach it.
-    return account.guild.can_recheck === false ? (
+    return account.guild.can_recheck !== true ? (
       <a href={discordSignInUrl("/account")} className={quietButtonClass}>
         I’ve joined, check again
       </a>

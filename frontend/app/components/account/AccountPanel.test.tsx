@@ -217,7 +217,9 @@ it("shows code errors from the server", async () => {
 });
 
 it("asks non-members to join the Discord first", async () => {
-  vi.mocked(getAccount).mockResolvedValue(account({ guild: { member: false, checked_at: null, fresh: false } }));
+  vi.mocked(getAccount).mockResolvedValue(account({
+    guild: { member: false, checked_at: null, fresh: false, can_recheck: true },
+  }));
   render(<AccountPanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
   expect(within(row).getByRole("link", { name: "TFMC Discord" }).getAttribute("href")).toBe("https://discord.gg/tfmc");
@@ -403,7 +405,10 @@ it("keeps a pending code link's outcome when the form is closed and reopened", a
 
 it("checks again for a player who has joined without signing in again", async () => {
   vi.mocked(getAccount)
-    .mockResolvedValueOnce(account({ microsoft_link: true, guild: { member: false, checked_at: null, fresh: false } }))
+    .mockResolvedValueOnce(account({
+      microsoft_link: true,
+      guild: { member: false, checked_at: null, fresh: false, can_recheck: true },
+    }))
     .mockResolvedValueOnce(account({ microsoft_link: true }));
   render(<AccountPanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "I’ve joined, check again" }));
@@ -422,9 +427,9 @@ it("says when Discord still doesn't show the player in the server", async () => 
   expect((await screen.findByRole("alert")).textContent).toContain("doesn’t show you in the TFMC server yet");
 });
 
-it("falls back to a Discord sign-in when the site can't ask Discord", async () => {
+it.each([false, undefined])("falls back to a Discord sign-in when the site can't ask Discord (%s)", async (canRecheck) => {
   vi.mocked(getAccount).mockResolvedValue(account({
-    guild: { member: false, checked_at: null, fresh: false, can_recheck: false },
+    guild: { member: false, checked_at: null, fresh: false, can_recheck: canRecheck },
   }));
   render(<AccountPanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
