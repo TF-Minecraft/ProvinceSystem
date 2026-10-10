@@ -37,7 +37,11 @@ MAX_MESSAGES = 15
 _FACTS_BUDGET = 60_000
 _MENTION = re.compile(r"@(everyone|here)|<@[!&]?\d+>")
 # Emoji and the joiners and variation selectors that build them. Plain symbols such as arrows stay.
-_EMOJI = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3]")
+_EMOJI = re.compile(
+    r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF"
+    r"\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA"
+    r"\uFE0F\u200D\u20E3]"
+)
 _FENCE = re.compile(r"^```[a-z]*\n?|\n?```$")
 _MONTHS = (
     "January", "February", "March", "April", "May", "June", "July",

@@ -94,6 +94,10 @@ class MessagesTest(unittest.TestCase):
         )
         self.assertEqual(messages, ["# Balance Changes\n- **Health:** 20 --> 22\n-# Fixes → soon"])
 
+    def test_clock_and_media_emojis_are_removed_but_technical_symbols_stay(self) -> None:
+        self.assertEqual(compose.clean_message("⏰ Cooldown 10 --> 8 ⌛ ⏩"), "Cooldown 10 --> 8")
+        self.assertEqual(compose.clean_message("Press ⌘ then ⏎"), "Press ⌘ then ⏎")
+
     def test_unsafe_lines_are_dropped(self) -> None:
         messages = compose.messages_from_response(
             {"messages": ["# Fixes\n- Found the lore item at the old mill\n- Fixed knockouts"]}
