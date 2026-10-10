@@ -22,6 +22,10 @@ class PrecedentDBError(RuntimeError):
     """Raised when the precedent database is not reachable or not configured."""
 
 
+class PrecedentNotConfiguredError(PrecedentDBError):
+    """Raised when this site has no precedent database (SUPABASE_DB_URL unset)."""
+
+
 @dataclass(frozen=True)
 class AuditActor:
     """Who performed a write, for the precedent_audit trail.
@@ -85,7 +89,7 @@ def _write_audit(
 def _dsn() -> str:
     dsn = os.environ.get("SUPABASE_DB_URL", "").strip()
     if not dsn:
-        raise PrecedentDBError("SUPABASE_DB_URL is not set")
+        raise PrecedentNotConfiguredError("SUPABASE_DB_URL is not set")
     return dsn
 
 
