@@ -129,6 +129,7 @@ export default function AccountPanel({
   const [confirmPatreon, setConfirmPatreon] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [recheck, setRecheck] = useState(minecraftStatus === "guild_check_stale");
+  const [showCode, setShowCode] = useState(false);
   const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
 
   const refresh = useCallback(async () => {
@@ -339,27 +340,7 @@ export default function AccountPanel({
         </p>
       ) : null}
 
-      {minecraft ? (
-        dashboard ? (
-          <ProfileTiles dashboard={dashboard} />
-        ) : null
-      ) : (
-        <section className="mt-8" aria-labelledby="link-heading">
-          <h2 id="link-heading" className={`${sectionHeadingClass} mb-3`}>
-            Link your Minecraft account
-          </h2>
-          <div className={`${cardClass} p-5`}>
-            <LinkMinecraft
-              account={account}
-              recheck={recheck}
-              busy={busy}
-              discordHandle={discordHandle}
-              onConnectMicrosoft={() => void onConnectMicrosoft()}
-              onLinked={refresh}
-            />
-          </div>
-        </section>
-      )}
+      {minecraft && dashboard ? <ProfileTiles dashboard={dashboard} /> : null}
 
       <section className="mt-8" aria-labelledby="accounts-heading">
         <h2 id="accounts-heading" className={`${sectionHeadingClass} mb-3`}>
@@ -393,10 +374,26 @@ export default function AccountPanel({
             service="Minecraft"
             icon={minecraft ? <PlayerHead uuid={minecraft.player_uuid} fallback={null} size={32} /> : <EmptyIcon />}
             action={
-              minecraft && !confirmUnlink ? (
-                <button type="button" onClick={() => setConfirmUnlink(true)} className={quietButtonClass}>
-                  Unlink
-                </button>
+              minecraft ? (
+                confirmUnlink ? null : (
+                  <button type="button" onClick={() => setConfirmUnlink(true)} className={quietButtonClass}>
+                    Unlink
+                  </button>
+                )
+              ) : (
+                <LinkActions
+                  account={account}
+                  recheck={recheck}
+                  busy={busy}
+                  showCode={showCode}
+                  onConnectMicrosoft={() => void onConnectMicrosoft()}
+                  onToggleCode={() => setShowCode((open) => !open)}
+                />
+              )
+            }
+            below={
+              !minecraft && showCode && account.guild.member && !recheck ? (
+                <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
               ) : null
             }
           >
@@ -419,7 +416,20 @@ export default function AccountPanel({
                 ) : null}
               </>
             ) : (
-              <p className="text-[var(--tfmc-stone)]">Not linked</p>
+              <>
+                <p className="text-[var(--tfmc-stone)]">Not linked</p>
+                {!account.guild.member ? (
+                  <p className="text-sm text-[var(--tfmc-stone)]">
+                    Join the{" "}
+                    <a href={SITE_DISCORD_URL} className={accentLinkClass}>
+                      TFMC Discord
+                    </a>{" "}
+                    to link.
+                  </p>
+                ) : recheck ? (
+                  <p className="text-sm text-[var(--tfmc-stone)]">Confirm your Discord membership to link.</p>
+                ) : null}
+              </>
             )}
           </AccountRow>
 
@@ -437,23 +447,6 @@ export default function AccountPanel({
         </ul>
       </section>
 
-      {minecraft ? (
-        <p className="mt-8 text-sm text-[var(--tfmc-stone)]">
-          Your{" "}
-          <Link href="/profile" className={accentLinkClass}>
-            Profile
-          </Link>{" "}
-          opens straight away now your accounts are linked, with no code from in game.
-        </p>
-      ) : (
-        <p className="mt-8 text-sm text-[var(--tfmc-stone)]">
-          Once linked, your{" "}
-          <Link href="/profile" className={accentLinkClass}>
-            Profile
-          </Link>{" "}
-          opens without a code from in game.
-        </p>
-      )}
     </>
   );
 }
@@ -499,12 +492,15 @@ function AccountRow({
   service,
   icon,
   action,
+  below,
   children,
 }: {
   label: string;
   service: string;
   icon: ReactNode;
   action?: ReactNode;
+  /** Full-width content under the row, such as a form. */
+  below?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -518,6 +514,7 @@ function AccountRow({
         {children}
       </div>
       {action ? <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-3">{action}</div> : null}
+      {below ? <div className="basis-full sm:pl-12">{below}</div> : null}
     </li>
   );
 }
@@ -551,7 +548,6 @@ function PatreonRow({
         <PatreonConnectButton onClick={onConnect} disabled={busy} />
       }>
         <p className="text-[var(--tfmc-stone)]">Not connected</p>
-        <p className="text-sm text-[var(--tfmc-stone)]">Supporter perks on Discord and in game.</p>
       </AccountRow>
     );
   }
@@ -566,7 +562,7 @@ function PatreonRow({
           <>
             {!tier ? (
               <a href={PATREON_URL} target="_blank" rel="noopener noreferrer" className={`text-sm ${accentLinkClass}`}>
-                Become a supporter ↗
+                Become a supporter <ExternalArrow />
               </a>
             ) : null}
             <button type="button" onClick={onBegin} className={quietButtonClass}>
@@ -603,79 +599,49 @@ function PatreonRow({
   );
 }
 
-function LinkMinecraft({
+function LinkActions({
   account,
   recheck,
   busy,
-  discordHandle,
+  showCode,
   onConnectMicrosoft,
-  onLinked,
+  onToggleCode,
 }: {
   account: Account;
   recheck: boolean;
   busy: boolean;
-  discordHandle: string;
+  showCode: boolean;
   onConnectMicrosoft: () => void;
-  onLinked: () => void | Promise<void>;
+  onToggleCode: () => void;
 }) {
-  const intro = (
-    <p className="text-sm text-[var(--tfmc-mist)]">
-      Linking opens your characters, skins and drinks here, and brings your Patreon perks into the game.
-    </p>
-  );
   if (!account.guild.member) {
     return (
-      <>
-        {intro}
-        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-          Linking needs you to be in the TFMC Discord server.{" "}
-          <a href={SITE_DISCORD_URL} className={accentLinkClass}>
-            Join it
-          </a>
-          , then check again.
-        </p>
-        <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-4`}>
-          I’ve joined, check again
-        </a>
-      </>
+      <a href={discordSignInUrl("/account")} className={quietButtonClass}>
+        I’ve joined, check again
+      </a>
     );
   }
-  if (recheck) {
-    return (
-      <>
-        <p className="text-sm text-[var(--tfmc-mist)]">Please confirm your Discord membership again before linking.</p>
-        <div className="mt-4 flex">
-          <DiscordSignInLink href={discordSignInUrl("/account")} />
-        </div>
-      </>
-    );
-  }
-  if (!account.microsoft_link) {
-    return (
-      <>
-        {intro}
-        <div className="mt-4">
-          <MinecraftLinkForm discordName={discordHandle} onLinked={onLinked} />
-        </div>
-      </>
-    );
-  }
+  if (recheck) return <DiscordSignInLink href={discordSignInUrl("/account")} />;
+  const codeToggle = (
+    <button type="button" onClick={onToggleCode} aria-expanded={showCode} className={quietButtonClass}>
+      {account.microsoft_link ? "Use a code" : "Link with a code from in game"}
+    </button>
+  );
+  if (!account.microsoft_link) return codeToggle;
   return (
     <>
-      {intro}
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Sign in with the Microsoft account you play Minecraft with. We only read your Minecraft name and ID.
-      </p>
-      <div className="mt-4 flex">
-        <MicrosoftSignInButton onClick={onConnectMicrosoft} disabled={busy} />
-      </div>
-      <details className="mt-5">
-        <summary className={`${quietButtonClass} cursor-pointer`}>Or use a code from in game</summary>
-        <div className="mt-3">
-          <MinecraftLinkForm discordName={discordHandle} onLinked={onLinked} />
-        </div>
-      </details>
+      {codeToggle}
+      <MicrosoftSignInButton onClick={onConnectMicrosoft} disabled={busy} />
     </>
+  );
+}
+
+/** A text arrow: the ↗ character turns into an emoji on some systems. */
+function ExternalArrow() {
+  return (
+    <svg aria-hidden viewBox="0 0 12 12" width={10} height={10} className="ml-0.5 inline-block align-baseline">
+      <path d="M3.5 2.5h6v6M9.5 2.5l-7 7" fill="none" stroke="currentColor" strokeWidth={1.5} />
+    </svg>
   );
 }
 
