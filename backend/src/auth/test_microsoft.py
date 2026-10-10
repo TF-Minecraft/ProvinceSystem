@@ -437,3 +437,46 @@ def test_state_validation():
     assert not microsoft_link.valid_state(None)
     assert not microsoft_link.valid_state("a" * 200)
     assert not microsoft_link.valid_state("é")
+
+
+def test_unlink_cancels_a_pending_attempt(api, monkeypatch, ms_env):
+    sign_in(api, monkeypatch)
+    seen = use_chain(monkeypatch)
+    state, _ = ms_start(api)
+    # Linked by code meanwhile, then unlinked: the old Microsoft attempt must not bring it back.
+    discord_link.complete_link(link_code(), DISCORD_ID)
+    assert api.post("/account/minecraft/unlink", headers=ORIGIN).status_code == 200
+    assert outcome(ms_callback(api, state)) == "expired" and seen == []
+    assert discord_link.get_discord_id_for_uuid(PLAYER) is None
+
+
+@pytest.mark.parametrize("unlink", ["discord", "uuid"])
+def test_unlink_during_the_chain_cancels_the_attempt(api, monkeypatch, ms_env, unlink):
+    sign_in(api, monkeypatch)
+    discord_link.complete_link(link_code(OTHER_PLAYER), DISCORD_ID)
+
+    def profile_after_unlink(request):
+        if unlink == "discord":
+            discord_link.unlink_by_discord_id(DISCORD_ID)
+        else:
+            discord_link.unlink_by_uuid(OTHER_PLAYER)
+        return httpx.Response(200, json={"id": PROFILE_ID, "name": "SteveMC"})
+
+    use_chain(monkeypatch, {microsoft.MC_PROFILE_URL: profile_after_unlink})
+    # Start is refused while linked, so open the attempt directly.
+    user = users.session_user(api.cookies.get("__Host-tfmc_session"))
+    state, _ = microsoft_link.start(MicrosoftConfig.from_env(), user)
+    api.cookies.set(MS_STATE, state, domain="testserver.local")
+    assert outcome(ms_callback(api, state)) == "expired"
+    assert discord_link.get_link_for_discord_id(DISCORD_ID) is None
+    with ms_env.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
+
+
+def test_finished_attempts_leave_no_state(api, monkeypatch, ms_env):
+    sign_in(api, monkeypatch)
+    use_chain(monkeypatch, {microsoft.MC_PROFILE_URL: lambda r: httpx.Response(404)})
+    state, _ = ms_start(api)
+    ms_callback(api, state)
+    with ms_env.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0

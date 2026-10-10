@@ -350,6 +350,13 @@ def _microsoft_outcome(request, config, code, state, error, cookie_state) -> str
     saved = microsoft_link.consume(state)
     if saved is None:
         return "expired"
+    try:
+        return _finish_microsoft_link(request, config, code, error, saved)
+    finally:
+        microsoft_link.finish(saved)
+
+
+def _finish_microsoft_link(request, config, code, error, saved) -> str:
     user = users.session_user(request.cookies.get(session_cookie(config)))
     if user is None or user["session_id"] != saved["session_id"]:
         return "expired"
@@ -378,7 +385,7 @@ def _microsoft_outcome(request, config, code, state, error, cookie_state) -> str
             profile["minecraft_name"],
             user["discord_user_id"],
             user["discord_username"],
-            still_allowed=lambda conn: microsoft_link.session_still_valid(conn, saved["session_id"]),
+            still_allowed=lambda conn: microsoft_link.still_valid(conn, saved),
         )
     except LinkError as exc:
         return _LINK_CONFLICTS.get(str(exc), "error")

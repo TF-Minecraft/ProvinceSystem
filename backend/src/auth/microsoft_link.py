@@ -50,24 +50,47 @@ def start(config: MicrosoftConfig, user: dict) -> tuple[str, str]:
 
 
 def consume(state: str | None) -> dict | None:
-    """Spend a state once; return its session, user and verifier, or None if unknown or expired."""
+    """Spend a state once; return its session, user and verifier, or None if unknown, used or expired.
+
+    The row stays, marked used, until finish(): unlinking deletes it meanwhile.
+    """
     if not valid_state(state):
         return None
     digest = hash_secret(state)
     with connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute(
-            "SELECT session_id, user_id, code_verifier, expires_at FROM microsoft_link_states WHERE state_hash = ?",
+            """
+            SELECT session_id, user_id, code_verifier, expires_at FROM microsoft_link_states
+            WHERE state_hash = ? AND used_at IS NULL
+            """,
             (digest,),
         ).fetchone()
-        conn.execute("DELETE FROM microsoft_link_states WHERE state_hash = ?", (digest,))
+        conn.execute(
+            "UPDATE microsoft_link_states SET used_at = ? WHERE state_hash = ?", (_iso(_utcnow()), digest)
+        )
         conn.commit()
     if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
         return None
-    return {"session_id": row["session_id"], "user_id": row["user_id"], "code_verifier": row["code_verifier"]}
+    return {
+        "state_hash": digest,
+        "session_id": row["session_id"],
+        "user_id": row["user_id"],
+        "code_verifier": row["code_verifier"],
+    }
 
 
-def session_still_valid(conn, session_id: int) -> bool:
-    """Checked inside the link write, so signing out mid-attempt stops the link."""
-    row = conn.execute("SELECT expires_at FROM user_sessions WHERE id = ?", (session_id,)).fetchone()
+def finish(saved: dict) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM microsoft_link_states WHERE state_hash = ?", (saved["state_hash"],))
+        conn.commit()
+
+
+def still_valid(conn, saved: dict) -> bool:
+    """Checked inside the link write: signing out or unlinking mid-attempt stops the link."""
+    if conn.execute(
+        "SELECT 1 FROM microsoft_link_states WHERE state_hash = ?", (saved["state_hash"],)
+    ).fetchone() is None:
+        return False
+    row = conn.execute("SELECT expires_at FROM user_sessions WHERE id = ?", (saved["session_id"],)).fetchone()
     return row is not None and _parse_iso(row["expires_at"]) > _utcnow()

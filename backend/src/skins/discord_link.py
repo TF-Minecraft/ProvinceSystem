@@ -565,6 +565,14 @@ def record_guild_joined(discord_user_id: str) -> dict:
     return _status_from_row(refreshed, now=now)
 
 
+def _cancel_microsoft_attempts(conn, discord_id: str) -> None:
+    """Unlinking cancels Microsoft link attempts still open for that Discord account."""
+    conn.execute(
+        "DELETE FROM microsoft_link_states WHERE user_id IN (SELECT id FROM users WHERE discord_user_id = ?)",
+        (discord_id,),
+    )
+
+
 def expire_due_graces() -> int:
     """Delete links whose grace_until has passed; enqueue grace_expired. Returns count."""
     now = _utcnow()
@@ -586,6 +594,7 @@ def expire_due_graces() -> int:
                 "DELETE FROM discord_links WHERE player_uuid = ?",
                 (uuid,),
             )
+            _cancel_microsoft_attempts(conn, discord_id)
             enqueue_plugin_notice(
                 "grace_expired",
                 uuid,
@@ -629,9 +638,10 @@ def unlink_by_uuid(player_uuid: str) -> dict:
         ).fetchone()
         if row is None:
             raise LinkError("No Discord link for this Minecraft player")
-        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
-        conn.commit()
         discord_id = str(row["discord_user_id"])
+        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
+        _cancel_microsoft_attempts(conn, discord_id)
+        conn.commit()
 
     return {
         "ok": True,
@@ -657,6 +667,7 @@ def unlink_by_discord_id(discord_user_id: str) -> dict:
             "DELETE FROM discord_links WHERE discord_user_id = ?",
             (discord_id,),
         )
+        _cancel_microsoft_attempts(conn, discord_id)
         conn.commit()
 
     return {

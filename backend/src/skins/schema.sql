@@ -678,13 +678,15 @@ CREATE TABLE IF NOT EXISTS discord_oauth_states (
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);
 
 -- Single-use Microsoft link attempts, tied to the site session that started
--- them. The PKCE verifier lives only until the callback spends the row.
+-- them. The callback marks a row used and deletes it once done; unlinking
+-- deletes the user's rows, which cancels any attempt still in flight.
 CREATE TABLE IF NOT EXISTS microsoft_link_states (
     state_hash TEXT PRIMARY KEY,
     session_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     code_verifier TEXT NOT NULL,
-    expires_at TEXT NOT NULL
+    expires_at TEXT NOT NULL,
+    used_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_microsoft_link_states_user ON microsoft_link_states(user_id);
 
