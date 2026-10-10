@@ -3,25 +3,21 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AccountApiError } from "../../../lib/account/api";
 import {
   adminErrorMessage,
   coreProtectMessage,
-  getAdminMe,
-  getPlayer,
   getPlayerSessions,
   canManage,
   roleLabel,
   type AdminAccount,
-  type AdminMe,
   type PlayerProfile as Profile,
   type PlayerSession,
 } from "../../../lib/admin/api";
 import { formatLocal } from "../../../lib/skins/formatTime";
-import { formatAgo, formatDate, formatEpoch } from "../../../lib/admin/time";
+import { formatDate } from "../../../lib/admin/time";
 import { groupByDay, sessionRow } from "../../../lib/admin/sessionDays";
-import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
-import PlayerTabs, { profileTab } from "./PlayerTabs";
+import { usePlayer } from "./PlayerFrame";
+import { profileTab } from "./PlayerTabs";
 import AccountActions from "./AccountActions";
 import PlayerActivity from "./PlayerActivity";
 import {
@@ -35,89 +31,16 @@ import {
   type Failure,
 } from "./profileParts";
 
-type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; profile: Profile };
-
-export default function PlayerProfile({ uuid }: { uuid: string }) {
-  const [load, setLoad] = useState<Load>({ kind: "loading" });
-  const [me, setMe] = useState<AdminMe | null>(null);
+export default function PlayerProfile() {
+  // Only ever rendered inside the player's frame.
+  const { profile, me, movement, reload } = usePlayer()!;
   const tab = profileTab(useSearchParams().get("tab"));
   // Tabs open once stay mounted (hidden), so going back keeps their pages, filters and scroll.
   const [opened, setOpened] = useState<Set<string>>(() => new Set([tab]));
   if (!opened.has(tab)) setOpened(new Set(opened).add(tab));
-  // Movement is for admins and the owner; mods see the profile without it.
-  const movement = me?.capabilities.includes("view_player_movement") ?? false;
-
-  useEffect(() => {
-    let live = true;
-    getAdminMe()
-      .then((value) => live && setMe(value))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  const loadProfile = useCallback(() => {
-    let live = true;
-    getPlayer(uuid)
-      .then((profile) => live && setLoad({ kind: "ready", profile }))
-      .catch((err) => {
-        if (!live) return;
-        const status = err instanceof AccountApiError ? err.status : 0;
-        setLoad(status === 400 || status === 404 ? { kind: "failed", message: adminErrorMessage(err) } : { kind: gateKind(err) });
-      });
-    return () => {
-      live = false;
-    };
-  }, [uuid]);
-
-  useEffect(() => loadProfile(), [loadProfile]);
-
-  if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
-  if (load.kind === "failed") {
-    return (
-      <p className="mt-6 text-[var(--tfmc-mist)]" role="alert">
-        {load.message}
-      </p>
-    );
-  }
-  if (load.kind !== "ready") return <StaffGateMessage kind={load.kind} />;
-
-  const { profile } = load;
-  const notice = coreProtectMessage(profile.coreprotect);
-  const label = profile.coreprotect.server_label;
 
   return (
     <>
-      <header className="mt-6">
-        <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          {profile.minecraft_name ?? "Unknown name"}
-        </h2>
-        <p className="mt-1 font-mono text-xs text-[var(--tfmc-stone)]">{profile.uuid}</p>
-        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          {profile.online ? "Seen just now" : `Last seen ${formatAgo(profile.last_seen).toLowerCase()}`}
-          {profile.first_seen ? ` · first seen ${formatEpoch(profile.first_seen)}` : ""}
-          {label ? ` · ${label}` : ""}
-        </p>
-        {profile.past_names.length ? (
-          <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
-            Previously {profile.past_names.map((n) => n.name).join(", ")}
-          </p>
-        ) : null}
-        <p className="mt-2 text-sm">
-          <Link href={`/admin/ranks/players/${profile.uuid}`} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
-            In-game ranks and permissions →
-          </Link>
-        </p>
-        {notice ? (
-          <p className="mt-3 text-sm text-[#e8c48a]" role="status">
-            {notice}
-          </p>
-        ) : null}
-      </header>
-
-      <PlayerTabs uuid={profile.uuid} current={tab} movement={movement} />
-
       {opened.has("activity") ? (
         <div hidden={tab !== "activity"}>
           <PlayerActivity uuid={profile.uuid} />
@@ -168,7 +91,7 @@ export default function PlayerProfile({ uuid }: { uuid: string }) {
         ) : null}
         {me && profile.discord && profile.account && canManage(me, websiteAccount(profile)) ? (
           <AccountActions me={me} account={websiteAccount(profile)} onChanged={async () => {
-            loadProfile();
+            reload();
           }} />
         ) : null}
         {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}

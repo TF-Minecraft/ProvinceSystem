@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import PlayerMovementPage from "./PlayerMovementPage";
 import { AccountApiError } from "../../../lib/account/api";
-import { getPlayer, getPlayerSessions, type PlayerSession } from "../../../lib/admin/api";
+import { getPlayerSessions, type PlayerSession } from "../../../lib/admin/api";
 import { getPlayerMovement, getSessionMovement } from "../../../lib/admin/movement";
 
 process.env.TZ = "Europe/London";
@@ -38,7 +38,6 @@ vi.mock("next/navigation", async () => {
 vi.mock("../../../lib/admin/urlState", () => ({ writeUrl: (url: string) => nav.go(url) }));
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/admin/api")>()),
-  getPlayer: vi.fn(),
   getPlayerSessions: vi.fn(),
 }));
 vi.mock("../../../lib/admin/movement", async (importOriginal) => ({
@@ -72,7 +71,6 @@ const SESSION: PlayerSession = {
 
 beforeEach(() => {
   nav.state.params = new URLSearchParams();
-  vi.mocked(getPlayer).mockResolvedValue({ minecraft_name: "MrEnzo99" } as never);
   vi.mocked(getPlayerSessions).mockResolvedValue({ sessions: [SESSION], next: null, coreprotect: { status: "available" } });
   vi.mocked(getSessionMovement).mockResolvedValue({
     session: SESSION,
