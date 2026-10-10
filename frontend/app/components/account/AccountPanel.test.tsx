@@ -181,7 +181,8 @@ it("previews then links a code, naming both accounts", async () => {
   vi.mocked(previewMinecraftLink).mockResolvedValue({ player_uuid: "u", minecraft_name: "SteveMC", expires_at: "z" });
   vi.mocked(linkMinecraft).mockResolvedValue(null);
   render(<AccountPanel signin={null} />);
-  fireEvent.change(await screen.findByLabelText("Link code"), { target: { value: "abcd1234ef56" } });
+  fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
+  fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "abcd1234ef56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   expect((await screen.findByText(/Link Minecraft account/)).textContent).toBe(
     "Link Minecraft account SteveMC to Discord @steve_tfmc?"
@@ -196,7 +197,8 @@ it("asks for a fresh Discord check when the guild check is stale", async () => {
   vi.mocked(previewMinecraftLink).mockResolvedValue({ player_uuid: "u", minecraft_name: "SteveMC", expires_at: "z" });
   vi.mocked(linkMinecraft).mockRejectedValue(new AccountApiError("guild_check_stale", 403));
   render(<AccountPanel signin={null} />);
-  fireEvent.change(await screen.findByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
+  fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
+  fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   fireEvent.click(await screen.findByRole("button", { name: "Link account" }));
   expect((await screen.findByRole("link", { name: "Confirm with Discord" })).getAttribute("href")).toContain(
@@ -208,7 +210,8 @@ it("shows code errors from the server", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
   vi.mocked(previewMinecraftLink).mockRejectedValue(new AccountApiError("Link code has expired", 400));
   render(<AccountPanel signin={null} />);
-  fireEvent.change(await screen.findByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
+  fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
+  fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   expect((await screen.findByRole("alert")).textContent).toBe("Link code has expired");
 });
@@ -216,8 +219,10 @@ it("shows code errors from the server", async () => {
 it("asks non-members to join the Discord first", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ guild: { member: false, checked_at: null, fresh: false } }));
   render(<AccountPanel signin={null} />);
-  expect(await screen.findByRole("link", { name: "Join it" })).toBeTruthy();
-  expect(screen.queryByLabelText("Link code")).toBeNull();
+  const row = await screen.findByLabelText("Minecraft account");
+  expect(within(row).getByRole("link", { name: "TFMC Discord" }).getAttribute("href")).toBe("https://discord.gg/tfmc");
+  expect(within(row).getByRole("link", { name: "I’ve joined, check again" })).toBeTruthy();
+  expect(within(row).queryByRole("button", { name: /code/ })).toBeNull();
 });
 
 it("offers Patreon when enabled and unlinked", async () => {
@@ -319,9 +324,14 @@ it("offers Microsoft first, with the in-game code as a fallback", async () => {
   const assign = vi.fn();
   vi.stubGlobal("location", { ...window.location, assign });
   render(<AccountPanel signin={null} />);
-  const section = await screen.findByRole("region", { name: "Link your Minecraft account" });
-  expect(within(section).getByText("Or use a code from in game")).toBeTruthy();
-  fireEvent.click(within(section).getByRole("button", { name: "Sign in with Microsoft" }));
+  const row = await screen.findByLabelText("Minecraft account");
+  const toggle = within(row).getByRole("button", { name: "Use a code" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  expect(within(row).getByLabelText("Link code").closest("[hidden]")).not.toBeNull();
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(within(row).getByLabelText("Link code").closest("[hidden]")).toBeNull();
+  fireEvent.click(within(row).getByRole("button", { name: "Sign in with Microsoft" }));
   await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(
     "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?x=1"
   ));
@@ -331,7 +341,8 @@ it("offers Microsoft first, with the in-game code as a fallback", async () => {
 it("keeps only the code form when Microsoft is not set up", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: false }));
   render(<AccountPanel signin={null} />);
-  expect(await screen.findByLabelText("Link code")).toBeTruthy();
+  fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
+  expect(screen.getByLabelText("Link code")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Sign in with Microsoft" })).toBeNull();
 });
 
@@ -371,4 +382,21 @@ it("drops a Profile session opened through Discord even when the account then fa
   fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
   expect(await screen.findByText(/couldn’t load your account/)).toBeTruthy();
   expect(getSession()).toBeNull();
+});
+
+it("keeps a pending code link's outcome when the form is closed and reopened", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
+  vi.mocked(previewMinecraftLink).mockResolvedValue({ player_uuid: "u", minecraft_name: "SteveMC", expires_at: "z" });
+  let reject: (err: unknown) => void = () => undefined;
+  vi.mocked(linkMinecraft).mockReturnValue(new Promise((_, no) => { reject = no; }));
+  render(<AccountPanel signin={null} />);
+  const toggle = await screen.findByRole("button", { name: "Use a code" });
+  fireEvent.click(toggle);
+  fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Link account" }));
+  fireEvent.click(toggle);
+  fireEvent.click(toggle);
+  reject(new AccountApiError("guild_check_stale", 403));
+  expect(await screen.findByRole("link", { name: "Confirm with Discord" })).toBeTruthy();
 });
