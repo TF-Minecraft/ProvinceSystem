@@ -40,6 +40,10 @@ const cardClass =
 const sectionHeadingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 const titleClass = "font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl";
 const chipClass = "rounded-sm border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider";
+const placeholderClass = "rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]";
+
+/** Longest the page waits for the activity line and Profile counts before showing without them. */
+const EXTRAS_WAIT_MS = 2500;
 
 type Load =
   | { kind: "loading" }
@@ -124,6 +128,8 @@ export default function AccountPanel({
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [overview, setOverview] = useState<AccountOverview | null>(null);
   const [dashboard, setDashboard] = useState<ProfileDashboard | null>(null);
+  const [extrasFor, setExtrasFor] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
   const [confirmPatreon, setConfirmPatreon] = useState(false);
@@ -153,17 +159,30 @@ export default function AccountPanel({
     setDashboard(null);
     if (!playerUuid) return;
     let live = true;
-    getAccountOverview()
+    const overviewDone = getAccountOverview()
       .then((next) => live && setOverview(next))
       .catch(() => undefined);
-    linkedProfileSession(playerUuid)
+    const dashboardDone = linkedProfileSession(playerUuid)
       .then((session) => getProfileDashboard(session.session_token))
       .then((next) => live && setDashboard(next))
       .catch(() => undefined);
+    void Promise.all([overviewDone, dashboardDone]).then(() => live && setExtrasFor(playerUuid));
     return () => {
       live = false;
     };
   }, [playerUuid]);
+
+  // The first view waits for the extras so the page doesn't shift as each one arrives.
+  const holding =
+    !revealed && (load.kind === "loading" || (playerUuid !== null && extrasFor !== playerUuid));
+  useEffect(() => {
+    if (!holding) setRevealed(true);
+  }, [holding]);
+  useEffect(() => {
+    if (!holding || load.kind === "loading") return;
+    const timer = setTimeout(() => setRevealed(true), EXTRAS_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [holding, load.kind]);
 
   async function onSignOut() {
     setBusy(true);
@@ -270,11 +289,12 @@ export default function AccountPanel({
     }
   }
 
+  if (holding) return <AccountPlaceholder />;
+
   if (load.kind !== "ready") {
     return (
       <>
         <h1 className={titleClass}>Account</h1>
-        {load.kind === "loading" ? <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p> : null}
         {load.kind === "unavailable" ? (
           <p className="mt-6 text-[var(--tfmc-mist)]">Discord sign-in isn’t available yet.</p>
         ) : null}
@@ -468,6 +488,45 @@ export default function AccountPanel({
       </section>
 
     </>
+  );
+}
+
+/** The signed-in layout's outline, sized to its lines, so the page keeps its shape when the account arrives. */
+function AccountPlaceholder() {
+  const bar = (className: string) => <span className={`${placeholderClass} block ${className}`} />;
+  return (
+    <div aria-busy="true">
+      <p className="sr-only">Loading your account…</p>
+      <div aria-hidden className="animate-pulse">
+        <div className="flex items-center gap-5">
+          {bar("h-[72px] w-[72px] shrink-0")}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-accent)]">Account</p>
+            <span className="flex h-9 items-center sm:h-10">{bar("h-7 w-56 max-w-full sm:h-8")}</span>
+            <span className="mt-1 flex h-5 items-center">{bar("h-3.5 w-72 max-w-full")}</span>
+            {bar("mt-2 h-[22px] w-16")}
+          </div>
+        </div>
+        <div className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={`${cardClass} block h-[78px]`} />
+          ))}
+        </div>
+        <p className={`${sectionHeadingClass} mt-8 mb-3`}>Linked accounts</p>
+        <div className={`${cardClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`}>
+          {["Discord", "Minecraft", "Patreon"].map((service) => (
+            <div key={service} className="flex items-center gap-4 px-4 py-3.5">
+              {bar("h-8 w-8 shrink-0 rounded-full")}
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{service}</p>
+                <span className="flex h-6 items-center">{bar("h-4 w-40 max-w-full")}</span>
+                <span className="flex h-5 items-center">{bar("h-3.5 w-56 max-w-full")}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

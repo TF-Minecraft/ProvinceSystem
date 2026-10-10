@@ -163,6 +163,36 @@ it("reuses a stored Profile session for the same player", async () => {
   expect(getProfileDashboard).toHaveBeenCalledWith("kept");
 });
 
+it("holds the outline until the overview and Profile counts arrive, then shows them together", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  let finish: (value: ProfileDashboard) => void = () => undefined;
+  vi.mocked(getProfileDashboard).mockReturnValue(new Promise((done) => { finish = done; }));
+  render(<AccountPanel signin={null} />);
+  await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
+  expect(screen.getByText("Loading your account…")).toBeTruthy();
+  expect(screen.queryByLabelText("Minecraft account")).toBeNull();
+  finish(dashboard());
+  expect(await screen.findByRole("navigation", { name: "Your Profile" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("SteveMC");
+  expect(screen.queryByText("Loading your account…")).toBeNull();
+});
+
+it("shows the account without the Profile counts if they are slow", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+    vi.mocked(getProfileDashboard).mockReturnValue(new Promise(() => undefined));
+    render(<AccountPanel signin={null} />);
+    await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
+    expect(screen.queryByLabelText("Minecraft account")).toBeNull();
+    await vi.advanceTimersByTimeAsync(2500);
+    expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
+    expect(screen.queryByRole("navigation", { name: "Your Profile" })).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 it("still shows the account when the overview and Profile can't load", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getAccountOverview).mockRejectedValue(new AccountApiError("down", 500));
