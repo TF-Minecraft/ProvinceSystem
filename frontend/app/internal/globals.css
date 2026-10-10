@@ -34,6 +34,13 @@ body {
   font-family: var(--font-source-sans), system-ui, sans-serif;
 }
 
+/* Dropdown lists. Boxes are transparent, so Chrome and Firefox open the list
+   on their default white while each option keeps the box's cream text. */
+select option {
+  background-color: var(--tfmc-forest-deep);
+  color: var(--tfmc-cream);
+}
+
 /* Staff pages keep the scrollbar's room even when nothing scrolls, so the
    frame does not shift sideways as a list loads or a tab changes length. */
 html:has(.staff-panel) {
