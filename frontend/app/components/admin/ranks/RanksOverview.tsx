@@ -18,7 +18,7 @@ import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import ChangeConfirm from "./ChangeConfirm";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
 import McText from "./McText";
-import { badgeClass, buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass } from "./ui";
+import { badgeClass, buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass } from "../ui";
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "ready"; data: LpOverview };
 

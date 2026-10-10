@@ -20,7 +20,7 @@ import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import ChangeConfirm from "./ChangeConfirm";
 import McText from "./McText";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
-import { buttonClass, chipClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "./ui";
+import { buttonClass, chipClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "../ui";
 
 /** Servers that share this LuckPerms storage; a node may apply to just one. */
 export const SERVERS = ["main", "dev", "tutorial"] as const;

@@ -11,7 +11,7 @@ import {
   type LpOp,
   type LpTargetType,
 } from "../../../../lib/admin/luckperms";
-import { buttonClass, errorClass, inputClass, mutedClass, quietButtonClass, warnClass } from "./ui";
+import { buttonClass, errorClass, inputClass, mutedClass, quietButtonClass, warnClass } from "../ui";
 
 /**
  * Asks for a reason, queues the change, then follows it until the server has

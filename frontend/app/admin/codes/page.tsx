@@ -25,12 +25,7 @@ export default function AdminCodesPage() {
       {gate === "loading" ? (
         <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
       ) : gate === "ready" ? (
-        <>
-          <p className="mt-6 text-sm text-[var(--tfmc-mist)]">
-            What a skin or drink code is and what it unlocks. Looking it up does not use it.
-          </p>
-          <CodeLookup />
-        </>
+        <CodeLookup />
       ) : (
         <StaffGateMessage kind={gate} />
       )}

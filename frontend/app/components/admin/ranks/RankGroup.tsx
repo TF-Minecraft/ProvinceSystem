@@ -23,7 +23,7 @@ import McText from "./McText";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
 import { PlayerResults } from "./RanksOverview";
 import { SERVERS } from "./RankPlayer";
-import { badgeClass, buttonClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "./ui";
+import { badgeClass, buttonClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "../ui";
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; data: LpGroupDetail };
 type Pending = { key: string; summary: ReactNode; ops: LpOp[]; label?: string; warning?: string };
