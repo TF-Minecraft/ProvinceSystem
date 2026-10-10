@@ -173,6 +173,7 @@ export default function AccountPanel({
     } catch {
       failed = true;
     }
+    if (!failed) await endLinkedProfileSession();
     // The cookie may already be gone, so reload state either way.
     let account: Account | null;
     try {
@@ -182,7 +183,7 @@ export default function AccountPanel({
       setBusy(false);
       return;
     }
-    if (!account) await endLinkedProfileSession();
+    if (failed && !account) await endLinkedProfileSession();
     setLoad(account ? { kind: "ready", account } : { kind: "signed_out" });
     if (failed && account) {
       setActionError("We couldn’t sign you out just now. Please try again.");

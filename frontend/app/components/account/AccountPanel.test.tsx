@@ -360,3 +360,15 @@ it("confirms a Microsoft link from the account itself", async () => {
   expect((await screen.findByRole("status")).textContent).toBe("Linked SteveMC with Microsoft.");
   expect(screen.queryByRole("alert")).toBeNull();
 });
+
+it("drops a Profile session opened through Discord even when the account then fails to reload", async () => {
+  vi.mocked(getAccount)
+    .mockResolvedValueOnce(account({ minecraft: linked() }))
+    .mockRejectedValueOnce(new AccountApiError("down", 500));
+  vi.mocked(signOut).mockResolvedValue({ ok: true });
+  render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
+  expect(await screen.findByText(/couldn’t load your account/)).toBeTruthy();
+  expect(getSession()).toBeNull();
+});
