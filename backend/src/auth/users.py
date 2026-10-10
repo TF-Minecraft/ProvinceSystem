@@ -14,7 +14,7 @@ from .discord import SCOPES
 
 STATE_TTL = timedelta(minutes=10)
 SESSION_TTL = timedelta(days=30)
-# Linking trusts a guild check this recent; older sessions sign in again.
+# Linking trusts a guild check this recent; older ones are checked again with the bot.
 GUILD_CHECK_MAX_AGE = timedelta(minutes=15)
 RETURN_DEFAULT = "/account"
 _RETURN_MAX = 512
@@ -160,6 +160,18 @@ def session_user_in(conn, token: str | None) -> dict | None:
     if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
         return None
     return dict(row)
+
+
+def record_guild_check(session_id: int, member: bool) -> str:
+    """Store a membership check made after sign-in; returns its time."""
+    stamp = _iso(_utcnow())
+    with connect() as conn:
+        conn.execute(
+            "UPDATE user_sessions SET guild_member = ?, guild_checked_at = ? WHERE id = ?",
+            (1 if member else 0, stamp, session_id),
+        )
+        conn.commit()
+    return stamp
 
 
 def guild_check_fresh(user: dict) -> bool:

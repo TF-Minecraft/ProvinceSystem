@@ -221,7 +221,7 @@ it("asks non-members to join the Discord first", async () => {
   render(<AccountPanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
   expect(within(row).getByRole("link", { name: "TFMC Discord" }).getAttribute("href")).toBe("https://discord.gg/tfmc");
-  expect(within(row).getByRole("link", { name: "I’ve joined, check again" })).toBeTruthy();
+  expect(within(row).getByRole("button", { name: "I’ve joined, check again" })).toBeTruthy();
   expect(within(row).queryByRole("button", { name: /code/ })).toBeNull();
 });
 
@@ -399,4 +399,15 @@ it("keeps a pending code link's outcome when the form is closed and reopened", a
   fireEvent.click(toggle);
   reject(new AccountApiError("guild_check_stale", 403));
   expect(await screen.findByRole("link", { name: "Confirm with Discord" })).toBeTruthy();
+});
+
+it("checks again for a player who has joined without signing in again", async () => {
+  vi.mocked(getAccount)
+    .mockResolvedValueOnce(account({ microsoft_link: true, guild: { member: false, checked_at: null, fresh: false } }))
+    .mockResolvedValueOnce(account({ microsoft_link: true }));
+  render(<AccountPanel signin={null} />);
+  fireEvent.click(await screen.findByRole("button", { name: "I’ve joined, check again" }));
+  expect(await screen.findByRole("button", { name: "Sign in with Microsoft" })).toBeTruthy();
+  expect(getAccount).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole("link", { name: "Sign in with Discord" })).toBeNull();
 });

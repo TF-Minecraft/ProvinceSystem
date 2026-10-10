@@ -228,6 +228,14 @@ export default function AccountPanel({
     }
   }
 
+  async function onRecheckGuild() {
+    setBusy(true);
+    setActionError(null);
+    setRecheck(false);
+    await refresh();
+    setBusy(false);
+  }
+
   async function onConnectPatreon() {
     setBusy(true);
     setActionError(null);
@@ -388,6 +396,7 @@ export default function AccountPanel({
                   showCode={showCode}
                   onConnectMicrosoft={() => void onConnectMicrosoft()}
                   onToggleCode={() => setShowCode((open) => !open)}
+                  onRecheck={() => void onRecheckGuild()}
                 />
               )
             }
@@ -616,6 +625,7 @@ function LinkActions({
   showCode,
   onConnectMicrosoft,
   onToggleCode,
+  onRecheck,
 }: {
   account: Account;
   recheck: boolean;
@@ -623,12 +633,14 @@ function LinkActions({
   showCode: boolean;
   onConnectMicrosoft: () => void;
   onToggleCode: () => void;
+  onRecheck: () => void;
 }) {
   if (!account.guild.member) {
+    // Reloading the account asks Discord again, without signing in.
     return (
-      <a href={discordSignInUrl("/account")} className={quietButtonClass}>
+      <button type="button" onClick={onRecheck} disabled={busy} className={quietButtonClass}>
         I’ve joined, check again
-      </a>
+      </button>
     );
   }
   if (recheck) return <DiscordSignInLink href={discordSignInUrl("/account")} />;
