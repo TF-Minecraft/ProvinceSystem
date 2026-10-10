@@ -93,7 +93,8 @@ def test_preview_sites(site, monkeypatch):
     "https://my-branch.tfminecraft.net:8443", "https://my-branch.tfminecraft.net/x",
     "https://my-branch.tfminecraft.net?x=1", "https://user@my-branch.tfminecraft.net",
     "https://-branch.tfminecraft.net", "https://MY-BRANCH.tfminecraft.net",
-    "https://" + "a" * 41 + ".tfminecraft.net",
+    "https://" + "a" * 41 + ".tfminecraft.net", "https://my-branch.tfminecraft.net.",
+    "https://[", "https://a\uff03b.tfminecraft.net", "https://my-br\u0430nch.tfminecraft.net",
 ])
 def test_other_sites_are_refused(site, monkeypatch):
     monkeypatch.setenv("PREVIEW_SIGN_IN_DOMAIN", "tfminecraft.net")
@@ -246,6 +247,49 @@ def test_dev_start_hands_a_signed_in_player_to_the_preview(dev):
 def test_dev_start_refuses_other_sites_and_bad_states(dev, params):
     _dev_session(dev)
     assert dev.get("/auth/preview/start", params=params, follow_redirects=False).status_code == 404
+
+
+def test_dev_start_refuses_a_malformed_site_without_failing(dev):
+    response = dev.get("/auth/preview/start", params={"site": "https://[", "state": "s" * 43}, follow_redirects=False)
+    assert response.status_code == 404
+    assert dev.post("/auth/preview/redeem", json={"ticket": "t" * 43, "site": "https://["}).status_code == 404
+
+
+def _age_check(minutes):
+    stamp = users._iso(users._utcnow() - timedelta(minutes=minutes))
+    with connect() as conn:
+        conn.execute("UPDATE user_sessions SET guild_checked_at = ?", (stamp,))
+        conn.commit()
+    return stamp
+
+
+def _start(dev):
+    return dev.get("/auth/preview/start", params={"site": PREVIEW, "state": "s" * 43}, follow_redirects=False)
+
+
+def test_dev_start_signs_in_again_when_a_stale_check_cannot_be_refreshed(dev):
+    _dev_session(dev)
+    _age_check(60)
+    response = _start(dev)
+    assert response.headers["location"].startswith("https://discord.com/oauth2/authorize?")
+    assert users.consume_state(_query(response)["state"]).startswith(routes.PREVIEW_START_PATH)
+
+
+def test_dev_start_refreshes_a_stale_check_with_the_bot(dev, monkeypatch):
+    monkeypatch.setattr(guild_check, "_ask", lambda discord_id, http: (True, 0.0))
+    _dev_session(dev)
+    old = _age_check(60)
+    response = _start(dev)
+    assert response.headers["location"].startswith(PREVIEW + "/api/auth/preview/callback?")
+    player = preview_sign_in.redeem(_query(response)["ticket"], PREVIEW)
+    assert player["guild_member"] is True and player["guild_checked_at"] > old
+
+
+def test_dev_start_hands_over_a_recent_non_member_without_looping(dev):
+    _dev_session(dev, guild_member=False)
+    response = _start(dev)
+    assert response.headers["location"].startswith(PREVIEW + "/api/auth/preview/callback?")
+    assert preview_sign_in.redeem(_query(response)["ticket"], PREVIEW)["guild_member"] is False
 
 
 def test_dev_start_is_off_without_the_setting(dev, monkeypatch):

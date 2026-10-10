@@ -118,4 +118,6 @@ def test_access_log_filter_redacts_callback_queries():
 
     assert "secret" not in record("/auth/discord/callback?code=secret&state=s")
     assert "secret" not in record("/patreon/oauth/callback?code=secret")
+    assert "secret" not in record("/auth/preview/start?site=x&state=secret")
+    assert "secret" not in record("/auth/preview/callback?ticket=secret&state=s")
     assert "?q=keep" in record("/maps?q=keep")

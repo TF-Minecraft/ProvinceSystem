@@ -47,8 +47,11 @@ def preview_site(value: str | None) -> str | None:
     domain = os.getenv("PREVIEW_SIGN_IN_DOMAIN", "").strip().lower()
     if not domain or not value:
         return None
-    parts = urlsplit(value)
-    host = parts.hostname or ""
+    try:
+        parts = urlsplit(value)
+        host = parts.hostname or ""
+    except ValueError:
+        return None
     slug, _, rest = host.partition(".")
     if (
         parts.scheme != "https"

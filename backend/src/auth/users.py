@@ -198,11 +198,14 @@ def record_guild_check(session_id: int, member: bool) -> str:
     return stamp
 
 
-def guild_check_fresh(user: dict) -> bool:
+def guild_check_recent(user: dict) -> bool:
+    """The session's membership check, member or not, is recent enough to act on."""
     checked = user.get("guild_checked_at")
-    if not user.get("guild_member") or not checked:
-        return False
-    return _utcnow() - _parse_iso(checked) <= GUILD_CHECK_MAX_AGE
+    return bool(checked) and _utcnow() - _parse_iso(checked) <= GUILD_CHECK_MAX_AGE
+
+
+def guild_check_fresh(user: dict) -> bool:
+    return bool(user.get("guild_member")) and guild_check_recent(user)
 
 
 def revoke_session(token: str | None) -> None:

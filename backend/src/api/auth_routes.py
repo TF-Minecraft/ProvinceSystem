@@ -253,15 +253,18 @@ def preview_start(request: Request, site: str | None = None, state: str | None =
     if config.via_site or target is None or not preview_sign_in.valid_token(state):
         raise HTTPException(404, detail="Not Found")
     back = users.clean_return_to(return_to)
+    # Discord's callback returns the browser here, now signed in.
+    again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state, "return_to": back})
+    if users.clean_return_to(again) != again:
+        again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state})
     user = users.session_user(request.cookies.get(session_cookie(config)))
     if user is None:
-        # Discord's callback returns the browser here, now signed in.
-        again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state, "return_to": back})
-        if users.clean_return_to(again) != again:
-            again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state})
         return discord_start(again)
-    # Linking on the preview needs a recent check, and only dev has the bot to make one.
-    user, _ = guild_check.check(user)
+    # Linking on the preview needs a recent check, and only dev can make one: with the
+    # bot, or else by signing in again. A sign-in's own check is recent, so this ends.
+    user, answered = guild_check.check(user)
+    if not answered and not users.guild_check_recent(user):
+        return discord_start(again)
     ticket = preview_sign_in.issue(target, user)
     logger.info("Preview sign-in ticket user_id=%s site=%s", user["user_id"], target)
     query = urlencode({"ticket": ticket, "state": state, "return_to": back})
