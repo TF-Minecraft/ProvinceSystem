@@ -13,16 +13,20 @@ from .db import SKINS_DIR, connect
 from .codes import SCOPE_LORE_UPLOAD
 from .discord_link import get_link_for_uuid
 from .naming import (
-    ARMOR_TIER_LABELS,
-    ARMOR_TIERS,
+    ARMOR_METALS,
+    ARMOR_TYPES,
     BOOK_FIELDS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
+    MAX_ARMOR_SETS,
     MAX_TIER_ALIAS_LEN,
     SlugError,
+    armor_tier_base_set,
+    armor_tier_label,
     build_staff_submission_id,
     build_submission_id,
     build_submission_id_for_realm,
+    parse_armor_tier,
     slugify_display_name,
 )
 from .notifications import enqueue_submitted
@@ -79,10 +83,8 @@ ALLOWED_KINDS = frozenset(
         "book",
     }
 )
+# Armour has no base_set: its sets come from tiers (see _validate_tiers).
 BASE_SETS: dict[str, frozenset[str]] = {
-    "armor_set": frozenset(
-        {"iron", "steel", "abyssalite", "mythril", "mage", "infantry"}
-    ),
     "handheld": _HANDHELD_BASES,
     "large_handheld": _LARGE_HANDHELD_BASES,
     "bow": frozenset({"shortbows"}),
@@ -227,6 +229,15 @@ def _upload_source_for_code_id(code_id: int | None) -> str:
     return "skins"
 
 
+def _row_tier_sets(row: sqlite3.Row) -> dict[str, str]:
+    """ArmourShop base set per armour tier; a stored entry overrides the default."""
+    stored = _row_json_object(row, "tier_sets")
+    return {
+        tier: stored.get(tier) or armor_tier_base_set(tier)
+        for tier in _row_json_list(row, "tiers")
+    }
+
+
 def _public_row(row: sqlite3.Row) -> dict:
     is_staff = bool(row["staff"]) if "staff" in row.keys() else False
     out = {
@@ -239,6 +250,7 @@ def _public_row(row: sqlite3.Row) -> dict:
         "tiers": _row_json_list(row, "tiers"),
         "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
         "tier_aliases": _row_json_object(row, "tier_aliases"),
+        "tier_sets": _row_tier_sets(row),
         "add_name": _row_add_name(row),
         "name_colours": _row_json_list(row, "name_colours"),
         "name_styles": _row_json_list(row, "name_styles"),
@@ -284,32 +296,38 @@ def _validate_base_set(kind: str, base_set: str | None) -> str:
 
 
 def _validate_tiers(raw: list[str] | None) -> list[str]:
+    """One metal line: ``{type}_{metal}`` tiers, at most one per type, one metal."""
     if not raw:
-        raise SubmissionError("armor_set requires 1–6 tiers")
-    if len(raw) > 6:
-        raise SubmissionError("at most 6 armor tiers")
+        raise SubmissionError(f"armor_set requires 1–{MAX_ARMOR_SETS} sets")
+    if len(raw) > MAX_ARMOR_SETS:
+        raise SubmissionError(f"at most {MAX_ARMOR_SETS} armor sets")
     out: list[str] = []
-    seen: set[str] = set()
-    tier_names = ", ".join(sorted(ARMOR_TIERS))
+    metals: set[str] = set()
     for item in raw:
         tier = (item or "").strip().lower()
         if not tier:
             raise SubmissionError("empty tier name")
-        if tier not in ARMOR_TIERS:
+        parsed = parse_armor_tier(tier)
+        if parsed is None:
             raise SubmissionError(
-                f"tier '{tier}' is not valid (must be one of: {tier_names})"
+                f"tier '{tier}' is not valid (must be <type>_<metal>, type one of: "
+                f"{', '.join(ARMOR_TYPES)}; metal one of: {', '.join(ARMOR_METALS)})"
             )
-        if tier in seen:
+        if tier in out:
             raise SubmissionError(f"duplicate tier '{tier}'")
-        seen.add(tier)
+        metals.add(parsed[1])
         out.append(tier)
+    if len(metals) > 1:
+        raise SubmissionError(
+            "all sets in one armor submission must use the same metal"
+        )
     return out
 
 
 def _validate_tier_aliases(
     tiers: list[str], raw: dict[str, str] | None
 ) -> dict[str, str]:
-    """Per-tier display suffix. Missing → default Iron/Steel/… labels."""
+    """Per-tier display suffix. Missing → default Light Iron/Heavy Steel/… labels."""
     incoming: dict[str, str] = {}
     if raw:
         for key, value in raw.items():
@@ -332,9 +350,7 @@ def _validate_tier_aliases(
                 raise SubmissionError(str(e)) from e
     out: dict[str, str] = {}
     for tier in tiers:
-        out[tier] = incoming.get(tier) or ARMOR_TIER_LABELS.get(
-            tier, tier.capitalize()
-        )
+        out[tier] = incoming.get(tier) or armor_tier_label(tier)
     return out
 
 
@@ -1248,6 +1264,7 @@ def list_pending() -> list[dict]:
                 "tiers": _row_json_list(row, "tiers"),
                 "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
                 "tier_aliases": _row_json_object(row, "tier_aliases"),
+        "tier_sets": _row_tier_sets(row),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),
@@ -1306,6 +1323,7 @@ def list_approved_pending_apply(
             "tiers": _row_json_list(row, "tiers"),
             "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
             "tier_aliases": _row_json_object(row, "tier_aliases"),
+        "tier_sets": _row_tier_sets(row),
             "add_name": _row_add_name(row),
             "name_colours": _row_json_list(row, "name_colours"),
             "name_styles": _row_json_list(row, "name_styles"),
@@ -1354,6 +1372,7 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
         "status": row["status"],
         "base_set": _row_base_set(row),
         "tiers": _row_json_list(row, "tiers"),
+        "tier_sets": _row_tier_sets(row),
         "minecraft_name": names.get("minecraft_name"),
         "staff": is_staff,
         "category": None,

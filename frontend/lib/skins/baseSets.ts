@@ -1,14 +1,39 @@
 import type { SkinKind } from "./sizes";
 
-/** Armour tiers. Mirrors backend ARMOR_TIERS. */
-export const ARMOR_TIERS = [
+/**
+ * One armour submission is one metal line: up to one set per type, all the same
+ * metal. Mirrors backend ARMOR_TYPES / ARMOR_METALS.
+ */
+export const ARMOR_TYPES = [
+  "light",
+  "medium",
+  "heavy",
+  "infantry",
+  "mage",
+] as const;
+
+export type ArmorType = (typeof ARMOR_TYPES)[number];
+
+export const ARMOR_METALS = [
   "iron",
   "steel",
+  "bronze",
   "abyssalite",
   "mythril",
-  "mage",
-  "infantry",
 ] as const;
+
+/** Tier id sent to the backend: `light_iron`. Its shop base set is `light iron`. */
+export function armorTier(type: string, metal: string): string {
+  return `${type}_${metal}`;
+}
+
+/** `light_iron` → "Light Iron"; older bare tiers (`iron`, `mage`) → "Iron", "Mage". */
+export function armorTierLabel(tier: string): string {
+  return tier
+    .split("_")
+    .map((part) => (part ? part[0]!.toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
 
 const HANDHELD = [
   "swords",
@@ -29,9 +54,9 @@ const LARGE_HANDHELD = [
   "staffs",
 ] as const;
 
-/** Mirrors backend BASE_SETS. */
+/** Mirrors backend BASE_SETS; armour picks its metal here. */
 export const BASE_SETS: Record<SkinKind, readonly string[]> = {
-  armor_set: ["iron", "steel", "abyssalite", "mythril", "mage", "infantry"],
+  armor_set: ARMOR_METALS,
   handheld: HANDHELD,
   large_handheld: LARGE_HANDHELD,
   bow: ["shortbows"],
@@ -48,10 +73,9 @@ export const BASE_SETS: Record<SkinKind, readonly string[]> = {
 const LABELS: Record<string, string> = {
   iron: "Iron",
   steel: "Steel",
+  bronze: "Bronze",
   abyssalite: "Abyssalite",
   mythril: "Mythril",
-  mage: "Mage",
-  infantry: "Infantry",
   swords: "Swords",
   lutes: "Lutes",
   battleaxes: "Battleaxes",
@@ -91,5 +115,5 @@ export function defaultBaseSet(kind: SkinKind): string {
 }
 
 export function baseSetPickerTitle(kind: SkinKind): string {
-  return kind === "armor_set" ? "Armour tier" : "Item type";
+  return kind === "armor_set" ? "Metal" : "Item type";
 }

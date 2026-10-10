@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SubmissionPublic } from "../../../lib/skins/api";
 import { getReviewSheet, SkinsApiError } from "../../../lib/skins/api";
-import { baseSetLabel } from "../../../lib/skins/baseSets";
+import { armorTierLabel, baseSetLabel } from "../../../lib/skins/baseSets";
 import { formatLocal } from "../../../lib/skins/formatTime";
 import { getSession, isSessionValid } from "../../../lib/skins/session";
 import { kindLabel } from "./KindPicker";
@@ -138,9 +138,9 @@ export default function StatusCard({ row }: Props) {
         </div>
         {row.tiers?.length ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Armour tiers</dt>
+            <dt className="text-[var(--tfmc-stone)]">Armour sets</dt>
             <dd className="text-[var(--tfmc-cream)]">
-              {row.tiers.map(baseSetLabel).join(", ")}
+              {row.tiers.map(armorTierLabel).join(", ")}
             </dd>
           </div>
         ) : row.base_set ? (
