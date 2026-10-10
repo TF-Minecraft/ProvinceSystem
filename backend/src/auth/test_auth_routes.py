@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from src.api import auth_routes as routes
 from src.auth import users
 from src.auth.discord import DiscordError
-from src.skins import discord_link
+from src.skins import codes, discord_link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -518,3 +518,75 @@ def test_failed_link_notice_rolls_back_link_and_code(env, monkeypatch):
             discord_link.complete_link(code, DISCORD_ID)
     assert discord_link.get_discord_id_for_uuid(PLAYER) is None
     assert discord_link.complete_link(code, DISCORD_ID)["player_uuid"] == PLAYER
+
+
+# --------------------
+# Account hub: Profile without a code, overview, head, Patreon unlink
+# --------------------
+
+def test_profile_session_needs_a_linked_minecraft_account(api, monkeypatch, env):
+    sign_in(api, monkeypatch)
+    response = api.post("/account/profile-session", headers=ORIGIN)
+    assert response.status_code == 409 and response.json()["detail"] == "minecraft_not_linked"
+    discord_link.complete_link(link_code(), DISCORD_ID)
+    assert api.post("/account/profile-session").status_code == 403
+    response = api.post("/account/profile-session", headers=ORIGIN)
+    assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+    body = response.json()
+    assert body["player_uuid"] == PLAYER and body["scope"] == "profile" and body["realm_id"] == "main"
+    session = codes.get_session(body["session_token"])
+    assert session["player_uuid"] == PLAYER and session["scope"] == "profile"
+    with env.connect() as conn:
+        assert conn.execute("SELECT code_plaintext FROM codes WHERE id=?", (session["code_id"],)).fetchone()[0] is None
+
+
+def test_profile_session_uses_the_site_realm(api, monkeypatch):
+    monkeypatch.setenv("PROFILE_REALM_ID", "dev")
+    sign_in(api, monkeypatch)
+    discord_link.complete_link(link_code(), DISCORD_ID)
+    token = api.post("/account/profile-session", headers=ORIGIN).json()["session_token"]
+    assert codes.get_session(token)["realm_id"] == "dev"
+
+
+def test_profile_session_signed_out(api):
+    assert api.post("/account/profile-session", headers=ORIGIN).status_code == 401
+
+
+def test_account_shows_how_minecraft_was_linked(api, monkeypatch):
+    sign_in(api, monkeypatch)
+    discord_link.complete_link(link_code(), DISCORD_ID)
+    assert api.get("/account").json()["minecraft"]["link_method"] == "code"
+
+
+def test_overview_and_head_need_a_link(api, monkeypatch):
+    sign_in(api, monkeypatch)
+    assert api.get("/account/overview").json() == {"activity": None, "rank": None}
+    assert api.get("/account/minecraft/head").status_code == 409
+
+
+def test_overview_and_head_for_the_linked_player(api, monkeypatch):
+    sign_in(api, monkeypatch)
+    discord_link.complete_link(link_code(), DISCORD_ID)
+    asked = []
+    monkeypatch.setattr(routes.account_overview, "activity", lambda uuid: asked.append(uuid) or {"online": True})
+    monkeypatch.setattr(routes.account_overview, "rank", lambda uuid: "Noble")
+    monkeypatch.setattr(routes.account_overview, "head", lambda uuid: asked.append(uuid) or b"\x89PNG")
+    assert api.get("/account/overview").json() == {"activity": {"online": True}, "rank": "Noble"}
+    head = api.get("/account/minecraft/head")
+    assert head.status_code == 200 and head.content == b"\x89PNG" and head.headers["content-type"] == "image/png"
+    assert head.headers["cache-control"] == "private, max-age=3600"
+    assert asked == [PLAYER, PLAYER]
+    monkeypatch.setattr(routes.account_overview, "head", lambda uuid: None)
+    assert api.get("/account/minecraft/head").status_code == 404
+
+
+def test_patreon_unlink_uses_signed_in_discord_account(api, monkeypatch):
+    sign_in(api, monkeypatch)
+    assert api.post("/account/patreon/unlink", headers=ORIGIN).status_code == 503
+    monkeypatch.setenv("PATREON_ENABLED", "1")
+    assert api.post("/account/patreon/unlink").status_code == 403
+    seen = {}
+    monkeypatch.setattr(routes.patreon_service, "unlink", lambda **kw: seen.update(kw) or {"unlinked": True})
+    response = api.post("/account/patreon/unlink", headers=ORIGIN)
+    assert response.status_code == 200 and response.json() == {"unlinked": True}
+    assert seen == {"discord_user_id": DISCORD_ID}

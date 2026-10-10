@@ -25,9 +25,6 @@ export default async function AccountPage({
           `,
         }}
       />
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Account
-      </h1>
       <AccountPanel signin={signin} minecraft={minecraft} />
     </main>
   );

@@ -7,6 +7,8 @@ export type ProfileSession = {
   scope?: string;
   realm_id?: string;
   remember_me?: boolean;
+  /** "discord" when opened through a linked Discord sign-in rather than an in-game code. */
+  source?: "discord";
 };
 
 type StoredSession = ProfileSession;
@@ -35,6 +37,9 @@ function parseStored(raw: string | null): StoredSession | null {
     }
     if (parsed.remember_me === true) {
       out.remember_me = true;
+    }
+    if (parsed.source === "discord") {
+      out.source = "discord";
     }
     return out;
   } catch {
@@ -78,6 +83,7 @@ export function setSession(session: ProfileSession, rememberMe = false): void {
   if (session.scope) stored.scope = session.scope;
   if (session.realm_id) stored.realm_id = session.realm_id;
   if (rememberMe) stored.remember_me = true;
+  if (session.source === "discord") stored.source = "discord";
   writeStored(stored, rememberMe);
 }
 

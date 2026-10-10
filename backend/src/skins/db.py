@@ -98,6 +98,8 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         if "discord_nickname" not in links:
             conn.execute("ALTER TABLE discord_links ADD COLUMN discord_nickname TEXT")
             _move_nicknames_out_of_usernames(conn)
+        if "link_method" not in links:
+            conn.execute("ALTER TABLE discord_links ADD COLUMN link_method TEXT")
         submissions = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)")}
         if "tier_sets" not in submissions:
             conn.execute("ALTER TABLE submissions ADD COLUMN tier_sets TEXT")

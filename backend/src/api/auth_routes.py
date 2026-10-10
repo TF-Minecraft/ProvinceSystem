@@ -19,7 +19,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from src.api.prod_guard import is_production
-from src.auth import users
+from src.auth import account_overview, users
 from src.auth.config import AuthConfig
 from src.auth import microsoft_link
 from src.auth.discord import DiscordClient, DiscordError
@@ -27,6 +27,7 @@ from src.auth.microsoft import MicrosoftClient, MicrosoftConfig, MicrosoftError
 from src.patreon import linking as patreon_linking
 from src.patreon import service as patreon_service
 from src.patreon.config import Config as PatreonConfig
+from src.skins.codes import start_linked_profile_session
 from src.skins.discord_link import (
     LinkError,
     complete_link,
@@ -145,7 +146,8 @@ def _minecraft(user: dict) -> dict | None:
     link = get_link_for_discord_id(user["discord_user_id"])
     if link is None:
         return None
-    return {key: link[key] for key in ("player_uuid", "minecraft_name", "linked_at", "in_grace", "grace_until")}
+    return {key: link.get(key) for key in
+            ("player_uuid", "minecraft_name", "linked_at", "in_grace", "grace_until", "link_method")}
 
 
 def _patreon(user: dict) -> dict | None:
@@ -261,6 +263,52 @@ def get_account(request: Request, response: Response):
         "microsoft_link": MicrosoftConfig.from_env().usable,
         "patreon": _patreon(user),
     }
+
+
+def _linked_player(user: dict) -> str:
+    link = get_link_for_discord_id(user["discord_user_id"])
+    if link is None:
+        raise HTTPException(409, detail="minecraft_not_linked")
+    return link["player_uuid"]
+
+
+@auth_router.get("/account/overview")
+def get_account_overview(request: Request, response: Response):
+    """Rank and time on the server for the linked Minecraft account; parts are null when unknown."""
+    config = _config()
+    user = current_user(request, config)
+    _no_store(response)
+    link = get_link_for_discord_id(user["discord_user_id"])
+    if link is None:
+        return {"activity": None, "rank": None}
+    return {
+        "activity": account_overview.activity(link["player_uuid"]),
+        "rank": account_overview.rank(link["player_uuid"]),
+    }
+
+
+@auth_router.get("/account/minecraft/head")
+def get_minecraft_head(request: Request):
+    """The linked player's skin face. Only your own, so the site is no open Mojang proxy."""
+    config = _config()
+    user = current_user(request, config)
+    png = account_overview.head(_linked_player(user))
+    if png is None:
+        raise HTTPException(404, detail="head_unavailable")
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@auth_router.post("/account/profile-session")
+def profile_session(request: Request, response: Response):
+    """Open Profile for the linked Minecraft account, in place of an in-game code."""
+    config = _config()
+    require_same_origin(request, config)
+    user = current_user(request, config)
+    _no_store(response)
+    player_uuid = _linked_player(user)
+    _check_link_rate(user["user_id"])
+    logger.info("Profile session from Discord user_id=%s player_uuid=%s", user["user_id"], player_uuid)
+    return start_linked_profile_session(player_uuid)
 
 
 @auth_router.post("/account/minecraft/preview")
@@ -404,6 +452,20 @@ def minecraft_unlink(request: Request, response: Response):
     except LinkError as e:
         raise HTTPException(400, detail=str(e)) from e
     return {"minecraft": None}
+
+
+@auth_router.post("/account/patreon/unlink")
+def patreon_unlink(request: Request, response: Response):
+    config = _config()
+    require_same_origin(request, config)
+    user = current_user(request, config)
+    if not PatreonConfig.from_env().enabled:
+        raise HTTPException(503, detail="patreon_disabled")
+    _no_store(response)
+    try:
+        return patreon_service.unlink(discord_user_id=user["discord_user_id"])
+    except patreon_service.ServiceError as e:
+        raise HTTPException(400, detail=str(e)) from e
 
 
 @auth_router.post("/account/patreon/start")

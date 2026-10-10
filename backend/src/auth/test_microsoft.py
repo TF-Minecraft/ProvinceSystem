@@ -409,6 +409,7 @@ def test_link_verified_profile_rejects_conflicts(ms_env):
     discord_link.link_verified_profile(PLAYER, "SteveRenamed", DISCORD_ID)
     link = discord_link.get_link_for_discord_id(DISCORD_ID)
     assert link["linked_at"] == before and link["minecraft_name"] == "SteveRenamed"
+    assert link["link_method"] == "microsoft"
 
 
 def test_concurrent_verified_links_link_once(ms_env):

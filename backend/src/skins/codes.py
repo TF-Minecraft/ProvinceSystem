@@ -634,6 +634,60 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
     }
 
 
+def site_profile_realm() -> str:
+    """The realm this site's Profile shows when opened through a linked Discord account."""
+    try:
+        return normalize_realm_id(os.environ.get("PROFILE_REALM_ID"))
+    except CodeError:
+        return DEFAULT_REALM_ID
+
+
+def start_linked_profile_session(player_uuid: str) -> dict:
+    """A profile session for a player whose Discord account is linked, without an in-game code.
+
+    Sessions belong to a code, so this records a profile code that is spent at once and
+    has no plaintext. The caller has already checked the Discord sign-in and the link.
+    """
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise CodeError("player_uuid is required")
+    realm = site_profile_realm()
+    now = _utcnow()
+    created_at = _iso(now)
+    session_token = secrets.token_urlsafe(32)
+    session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
+
+    with connect() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO codes (
+                code_hash, code_plaintext, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
+            ) VALUES (?, NULL, ?, 'profile', ?, ?, ?, ?, 0)
+            """,
+            (hash_secret(f"discord-profile:{secrets.token_urlsafe(32)}"), uuid, realm,
+             created_at, created_at, created_at),
+        )
+        code_id = cur.lastrowid
+        conn.execute(
+            """
+            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (hash_secret(session_token), code_id, uuid, session_expires_at, created_at),
+        )
+        conn.commit()
+
+    return {
+        "session_token": session_token,
+        "player_uuid": uuid,
+        "expires_at": session_expires_at,
+        "scope": "profile",
+        "realm_id": realm,
+        "remember_me": False,
+    }
+
+
 def redeem_drink_code(plaintext: str) -> dict:
     """Consume a drink-scoped code and create a Bearer session."""
     from src.characters.rpc_player_meta import resolve_web_entitlements

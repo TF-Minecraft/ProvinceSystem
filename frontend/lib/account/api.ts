@@ -17,6 +17,21 @@ export type AccountMinecraft = {
   linked_at: string;
   in_grace: boolean;
   grace_until: string | null;
+  /** How ownership was proved; null for links made before this was recorded. */
+  link_method?: "code" | "microsoft" | null;
+};
+
+export type AccountActivity = {
+  first_seen: number | null;
+  last_seen: number | null;
+  online: boolean;
+  server_label: string | null;
+};
+
+/** Each part is null when the site can't read it. */
+export type AccountOverview = {
+  activity: AccountActivity | null;
+  rank: string | null;
 };
 
 export type Account = {
@@ -101,6 +116,32 @@ export async function linkMinecraft(code: string): Promise<AccountMinecraft | nu
 
 export function unlinkMinecraft(): Promise<unknown> {
   return accountRequest("/account/minecraft/unlink", { method: "POST" });
+}
+
+export function getAccountOverview(): Promise<AccountOverview> {
+  return accountRequest("/account/overview");
+}
+
+/** The linked player's skin face, served by our API so Mojang never sees the visitor. */
+export function minecraftHeadUrl(): string {
+  return `${getApiBase()}/account/minecraft/head`;
+}
+
+export type LinkedProfileSession = {
+  session_token: string;
+  player_uuid: string;
+  expires_at: string;
+  scope: string;
+  realm_id: string;
+};
+
+/** A Profile session for the linked Minecraft account, in place of an in-game code. */
+export function startLinkedProfileSession(): Promise<LinkedProfileSession> {
+  return accountRequest("/account/profile-session", { method: "POST" });
+}
+
+export function unlinkAccountPatreon(): Promise<unknown> {
+  return accountRequest("/account/patreon/unlink", { method: "POST" });
 }
 
 /** The Microsoft sign-in page that proves which Minecraft account you own. */
