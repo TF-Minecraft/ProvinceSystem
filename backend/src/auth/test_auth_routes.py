@@ -228,7 +228,8 @@ def test_guild_check_failure_still_signs_in_without_membership(api, monkeypatch,
     response, _ = sign_in(api, monkeypatch, Stub(fail="guild"))
     assert response.headers["location"] == SITE + "/account"
     account = api.get("/account").json()
-    assert account["guild"] == {"member": False, "checked_at": account["guild"]["checked_at"], "fresh": False}
+    assert account["guild"] == {"member": False, "checked_at": account["guild"]["checked_at"], "fresh": False,
+                                "can_recheck": False}
 
 
 def test_account_requires_session(api):
@@ -606,9 +607,9 @@ def make_stale(env, member=True):
         conn.commit()
 
 
-def bot_says(monkeypatch, answer):
+def bot_says(monkeypatch, answer, pause=0.0):
     asked = []
-    monkeypatch.setattr(guild_check, "member_now", lambda discord_id, http=None: asked.append(discord_id) or answer)
+    monkeypatch.setattr(guild_check, "_ask", lambda discord_id, http=None: asked.append(discord_id) or (answer, pause))
     return asked
 
 
@@ -636,7 +637,7 @@ def test_bot_sees_a_player_who_joined_after_signing_in(api, monkeypatch, env):
     make_stale(env, member=False)
     bot_says(monkeypatch, True)
     guild = api.get("/account").json()["guild"]
-    assert guild["member"] is True and guild["fresh"] is True
+    assert guild["member"] is True and guild["fresh"] is True and guild["can_recheck"] is True
 
 
 def test_unclear_bot_answer_keeps_the_stale_check_and_waits_before_asking_again(api, monkeypatch, env):
@@ -645,7 +646,7 @@ def test_unclear_bot_answer_keeps_the_stale_check_and_waits_before_asking_again(
     asked = bot_says(monkeypatch, None)
     response = api.post("/account/minecraft/link", json={"code": link_code()}, headers=ORIGIN)
     assert response.status_code == 403 and response.json()["detail"] == "guild_check_stale"
-    api.get("/account")
+    assert api.get("/account").json()["guild"]["can_recheck"] is False
     assert asked == [DISCORD_ID]
 
 
@@ -684,3 +685,98 @@ def test_member_now_reads_discord(monkeypatch, status, body, answer):
 def test_member_now_without_a_bot_token(monkeypatch):
     monkeypatch.delenv("DISCORD_BOT_TOKEN", raising=False)
     assert guild_check.member_now(DISCORD_ID) is None
+
+
+def test_without_a_bot_the_account_offers_a_new_sign_in(api, monkeypatch, env):
+    sign_in(api, monkeypatch, Stub(member=False))
+    make_stale(env, member=False)
+    assert api.get("/account").json()["guild"]["can_recheck"] is False
+
+
+def test_a_not_member_answer_is_reused_briefly(api, monkeypatch, env):
+    sign_in(api, monkeypatch, Stub(member=False))
+    make_stale(env, member=False)
+    asked = bot_says(monkeypatch, False)
+    for _ in range(5):
+        guild = api.get("/account").json()["guild"]
+        assert guild["member"] is False and guild["can_recheck"] is True
+    assert asked == [DISCORD_ID]
+    clock = guild_check.time.monotonic() + guild_check.NOT_MEMBER_REUSE_SECONDS + 1
+    monkeypatch.setattr(guild_check.time, "monotonic", lambda: clock)
+    api.get("/account")
+    assert asked == [DISCORD_ID, DISCORD_ID]
+
+
+def test_a_discord_rate_limit_pauses_every_session(api, monkeypatch, env):
+    sign_in(api, monkeypatch)
+    make_stale(env)
+    asked = bot_says(monkeypatch, None, pause=120.0)
+    api.get("/account")
+    guild_check._RECENT.clear()  # another session, same pause
+    assert api.get("/account").json()["guild"]["can_recheck"] is False
+    assert asked == [DISCORD_ID]
+    clock = guild_check.time.monotonic() + 121
+    monkeypatch.setattr(guild_check.time, "monotonic", lambda: clock)
+    guild_check._RECENT.clear()
+    api.get("/account")
+    assert asked == [DISCORD_ID, DISCORD_ID]
+
+
+def test_a_request_waiting_on_another_check_uses_its_answer(env, monkeypatch, api):
+    import threading
+    sign_in(api, monkeypatch)
+    make_stale(env)
+    user = users.session_user(api.cookies.get(SESSION))
+    started, release, asked = threading.Event(), threading.Event(), []
+
+    def slow(discord_id, http=None):
+        asked.append(discord_id)
+        started.set()
+        release.wait(5)
+        return True, 0.0
+
+    monkeypatch.setattr(guild_check, "_ask", slow)
+    results = []
+    first = threading.Thread(target=lambda: results.append(guild_check.check(user)))
+    first.start()
+    started.wait(5)
+    second = threading.Thread(target=lambda: results.append(guild_check.check(user)))
+    second.start()
+    release.set()
+    first.join(5)
+    second.join(5)
+    assert asked == [DISCORD_ID]
+    assert [answered for _, answered in results] == [True, True]
+    assert all(users.guild_check_fresh(checked) for checked, _ in results)
+
+
+def test_old_answers_are_dropped(monkeypatch):
+    guild_check._RECENT.update({1: (0.0, True), 2: (10**12, False)})
+    guild_check._prune(1.0)
+    assert list(guild_check._RECENT) == [2]
+
+
+@pytest.mark.parametrize("status,body,pause", [
+    (429, {"retry_after": 42.5, "global": False}, 42.5),
+    (429, {}, guild_check.OUTAGE_PAUSE_SECONDS),
+    (502, None, guild_check.OUTAGE_PAUSE_SECONDS),
+])
+def test_ask_pauses_for_rate_limits_and_outages(monkeypatch, status, body, pause):
+    import httpx
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("DISCORD_GUILD_ID", "999999999999999999")
+    http = httpx.Client(transport=httpx.MockTransport(
+        lambda request: httpx.Response(status, json=body) if body is not None else httpx.Response(status)))
+    assert guild_check._ask(DISCORD_ID, http) == (None, pause)
+
+
+def test_ask_pauses_when_discord_is_unreachable(monkeypatch):
+    import httpx
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("DISCORD_GUILD_ID", "999999999999999999")
+
+    def fail(request):
+        raise httpx.ConnectTimeout("slow")
+
+    http = httpx.Client(transport=httpx.MockTransport(fail))
+    assert guild_check._ask(DISCORD_ID, http) == (None, guild_check.OUTAGE_PAUSE_SECONDS)

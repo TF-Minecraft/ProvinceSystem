@@ -42,7 +42,13 @@ export type Account = {
     avatar_url: string;
     role?: string;
   };
-  guild: { member: boolean; checked_at: string | null; fresh: boolean };
+  guild: {
+    member: boolean;
+    checked_at: string | null;
+    fresh: boolean;
+    /** False when the site could not ask Discord, so only a new sign-in shows a change. */
+    can_recheck?: boolean;
+  };
   minecraft: AccountMinecraft | null;
   /** True when "Connect with Microsoft" is set up on this site. */
   microsoft_link?: boolean;

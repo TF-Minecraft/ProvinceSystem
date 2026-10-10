@@ -411,3 +411,24 @@ it("checks again for a player who has joined without signing in again", async ()
   expect(getAccount).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole("link", { name: "Sign in with Discord" })).toBeNull();
 });
+
+it("says when Discord still doesn't show the player in the server", async () => {
+  const outside = { member: false, checked_at: null, fresh: false, can_recheck: true };
+  vi.mocked(getAccount)
+    .mockResolvedValueOnce(account({ guild: outside }))
+    .mockResolvedValueOnce(account({ guild: outside }));
+  render(<AccountPanel signin={null} />);
+  fireEvent.click(await screen.findByRole("button", { name: "I’ve joined, check again" }));
+  expect((await screen.findByRole("alert")).textContent).toContain("doesn’t show you in the TFMC server yet");
+});
+
+it("falls back to a Discord sign-in when the site can't ask Discord", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    guild: { member: false, checked_at: null, fresh: false, can_recheck: false },
+  }));
+  render(<AccountPanel signin={null} />);
+  const row = await screen.findByLabelText("Minecraft account");
+  expect(within(row).getByRole("link", { name: "I’ve joined, check again" }).getAttribute("href")).toContain(
+    "/auth/discord/start"
+  );
+});

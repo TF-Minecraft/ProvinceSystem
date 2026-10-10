@@ -162,6 +162,15 @@ def session_user_in(conn, token: str | None) -> dict | None:
     return dict(row)
 
 
+def guild_state(session_id: int) -> dict | None:
+    """The session's stored membership check, as another request may have just updated it."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT guild_member, guild_checked_at FROM user_sessions WHERE id = ?", (session_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def record_guild_check(session_id: int, member: bool) -> str:
     """Store a membership check made after sign-in; returns its time."""
     stamp = _iso(_utcnow())

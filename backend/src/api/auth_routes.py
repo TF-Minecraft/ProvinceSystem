@@ -247,9 +247,8 @@ def get_account(request: Request, response: Response):
     user = current_user(request, config)
     _no_store(response)
     minecraft = _minecraft(user)
-    if minecraft is None:
-        # Only linking needs a recent check, so only unlinked players wait for one.
-        user = guild_check.fresh(user)
+    # Only linking needs a recent check, so only unlinked players wait for one.
+    user, answered = guild_check.check(user) if minecraft is None else (user, True)
     return {
         "user": {
             "discord_user_id": user["discord_user_id"],
@@ -262,6 +261,8 @@ def get_account(request: Request, response: Response):
             "member": bool(user["guild_member"]),
             "checked_at": user["guild_checked_at"],
             "fresh": users.guild_check_fresh(user),
+            # False when Discord could not be asked: only a new sign-in can show a change.
+            "can_recheck": answered,
         },
         "minecraft": minecraft,
         "microsoft_link": MicrosoftConfig.from_env().usable,

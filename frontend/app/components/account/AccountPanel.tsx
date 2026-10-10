@@ -232,8 +232,17 @@ export default function AccountPanel({
     setBusy(true);
     setActionError(null);
     setRecheck(false);
-    await refresh();
-    setBusy(false);
+    try {
+      const account = await getAccount();
+      setLoad(account ? { kind: "ready", account } : { kind: "signed_out" });
+      if (account && !account.guild.member) {
+        setActionError("Discord doesn’t show you in the TFMC server yet. Try again in a moment.");
+      }
+    } catch {
+      setActionError("We couldn’t check with Discord just now. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onConnectPatreon() {
@@ -636,8 +645,12 @@ function LinkActions({
   onRecheck: () => void;
 }) {
   if (!account.guild.member) {
-    // Reloading the account asks Discord again, without signing in.
-    return (
+    // Reloading the account asks Discord again, unless the site cannot reach it.
+    return account.guild.can_recheck === false ? (
+      <a href={discordSignInUrl("/account")} className={quietButtonClass}>
+        I’ve joined, check again
+      </a>
+    ) : (
       <button type="button" onClick={onRecheck} disabled={busy} className={quietButtonClass}>
         I’ve joined, check again
       </button>
