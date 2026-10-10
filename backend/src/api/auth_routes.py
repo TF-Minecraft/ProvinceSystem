@@ -6,6 +6,7 @@ Requests that change state must come from the site's own origin.
 from __future__ import annotations
 
 import hmac
+import json
 import logging
 import os
 import re
@@ -20,7 +21,9 @@ from pydantic import BaseModel, Field
 from src.api.prod_guard import is_production
 from src.auth import users
 from src.auth.config import AuthConfig
+from src.auth import microsoft_link
 from src.auth.discord import DiscordClient, DiscordError
+from src.auth.microsoft import MicrosoftClient, MicrosoftConfig, MicrosoftError
 from src.patreon import linking as patreon_linking
 from src.patreon import service as patreon_service
 from src.patreon.config import Config as PatreonConfig
@@ -28,6 +31,7 @@ from src.skins.discord_link import (
     LinkError,
     complete_link,
     get_link_for_discord_id,
+    link_verified_profile,
     preview_link,
     unlink_by_discord_id,
 )
@@ -52,8 +56,16 @@ def state_cookie(config: AuthConfig) -> str:
     return "__Host-tfmc_discord_state" if config.secure_cookies else "tfmc_discord_state"
 
 
+def microsoft_state_cookie(config: AuthConfig) -> str:
+    return "__Host-tfmc_microsoft_state" if config.secure_cookies else "tfmc_microsoft_state"
+
+
 def build_client(config: AuthConfig) -> DiscordClient:
     return DiscordClient(config)
+
+
+def build_microsoft_client(config: MicrosoftConfig) -> MicrosoftClient:
+    return MicrosoftClient(config)
 
 
 def _config() -> AuthConfig:
@@ -246,6 +258,7 @@ def get_account(request: Request, response: Response):
             "fresh": users.guild_check_fresh(user),
         },
         "minecraft": _minecraft(user),
+        "microsoft_link": MicrosoftConfig.from_env().usable,
         "patreon": _patreon(user),
     }
 
@@ -280,6 +293,104 @@ def minecraft_link(request: Request, body: CodeBody, response: Response):
     except LinkError as e:
         raise HTTPException(400, detail=str(e)) from e
     return {"minecraft": _minecraft(user)}
+
+
+# Callback outcomes the account page explains; anything else reads as "error".
+_MICROSOFT_OUTCOMES = {
+    "no_xbox_profile", "xbox_child_account", "xbox_region_blocked", "xbox_adult_verification", "no_java_profile",
+}
+_LINK_CONFLICTS = {
+    "This Discord account is already linked to a different Minecraft player": "discord_taken",
+    "This Minecraft account is already linked to a different Discord account": "minecraft_taken",
+    "This link attempt is no longer valid": "expired",
+}
+
+
+@auth_router.post("/account/minecraft/microsoft/start")
+def minecraft_microsoft_start(request: Request):
+    config = _config()
+    require_same_origin(request, config)
+    user = current_user(request, config)
+    microsoft = MicrosoftConfig.from_env()
+    if not microsoft.usable:
+        raise HTTPException(503, detail="microsoft_link_disabled")
+    _check_link_rate(user["user_id"])
+    if not user["guild_member"]:
+        raise HTTPException(403, detail="not_guild_member")
+    if not users.guild_check_fresh(user):
+        raise HTTPException(403, detail="guild_check_stale")
+    if get_link_for_discord_id(user["discord_user_id"]) is not None:
+        raise HTTPException(409, detail="already_linked")
+    state, url = microsoft_link.start(microsoft, user)
+    response = _no_store(Response(content=json.dumps({"authorize_url": url}), media_type="application/json"))
+    _set_cookie(response, config, microsoft_state_cookie(config), state, int(microsoft_link.STATE_TTL.total_seconds()))
+    return response
+
+
+@auth_router.get("/auth/microsoft/callback")
+def microsoft_callback(request: Request, code: str | None = None, state: str | None = None, error: str | None = None):
+    config = _config()
+    cookie_state = request.cookies.get(microsoft_state_cookie(config)) or ""
+    outcome = _microsoft_outcome(request, config, code, state, error, cookie_state)
+    logger.info("Microsoft link callback outcome=%s", outcome)
+    response = _site_redirect(config, users.RETURN_DEFAULT, minecraft=outcome)
+    # The authorisation code is in this URL; keep it out of the next page's Referer.
+    response.headers["Referrer-Policy"] = "no-referrer"
+    _clear_cookie(response, config, microsoft_state_cookie(config))
+    return response
+
+
+def _microsoft_outcome(request, config, code, state, error, cookie_state) -> str:
+    if not (
+        microsoft_link.valid_state(state)
+        and microsoft_link.valid_state(cookie_state)
+        and hmac.compare_digest(cookie_state, state)
+    ):
+        return "expired"
+    saved = microsoft_link.consume(state)
+    if saved is None:
+        return "expired"
+    try:
+        return _finish_microsoft_link(request, config, code, error, saved)
+    finally:
+        microsoft_link.finish(saved)
+
+
+def _finish_microsoft_link(request, config, code, error, saved) -> str:
+    user = users.session_user(request.cookies.get(session_cookie(config)))
+    if user is None or user["session_id"] != saved["session_id"]:
+        return "expired"
+    if error is not None:
+        return "denied"
+    microsoft = MicrosoftConfig.from_env()
+    if not microsoft.usable:
+        return "unavailable"
+    if not user["guild_member"]:
+        return "not_guild_member"
+    if not users.guild_check_fresh(user):
+        return "guild_check_stale"
+    if not code or len(code) > 2048 or not code.isascii() or not code.isprintable() or " " in code:
+        return "error"
+    client = build_microsoft_client(microsoft)
+    try:
+        profile = client.java_profile(code, saved["code_verifier"])
+    except MicrosoftError as exc:
+        logger.warning("Microsoft link failed code=%s", exc)
+        return str(exc) if str(exc) in _MICROSOFT_OUTCOMES else "error"
+    finally:
+        client.close()
+    try:
+        link_verified_profile(
+            profile["player_uuid"],
+            profile["minecraft_name"],
+            user["discord_user_id"],
+            user["discord_username"],
+            still_allowed=lambda conn: microsoft_link.still_valid(conn, saved),
+        )
+    except LinkError as exc:
+        return _LINK_CONFLICTS.get(str(exc), "error")
+    logger.info("Minecraft linked by Microsoft user_id=%s player_uuid=%s", user["user_id"], profile["player_uuid"])
+    return "linked"
 
 
 @auth_router.post("/account/minecraft/unlink")

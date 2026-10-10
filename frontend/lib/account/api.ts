@@ -29,6 +29,8 @@ export type Account = {
   };
   guild: { member: boolean; checked_at: string | null; fresh: boolean };
   minecraft: AccountMinecraft | null;
+  /** True when "Connect with Microsoft" is set up on this site. */
+  microsoft_link?: boolean;
   patreon: PatreonStatus | null;
 };
 
@@ -101,6 +103,17 @@ export function unlinkMinecraft(): Promise<unknown> {
   return accountRequest("/account/minecraft/unlink", { method: "POST" });
 }
 
+/** The Microsoft sign-in page that proves which Minecraft account you own. */
+export async function startMicrosoftLink(): Promise<string> {
+  const data = await accountRequest<{ authorize_url?: unknown }>("/account/minecraft/microsoft/start", {
+    method: "POST",
+  });
+  if (typeof data.authorize_url !== "string" || !data.authorize_url.startsWith("https://login.microsoftonline.com/")) {
+    throw new AccountApiError("Microsoft link unavailable", 502);
+  }
+  return data.authorize_url;
+}
+
 export async function startAccountPatreonLink(): Promise<string> {
   const data = await accountRequest<{ authorize_url?: unknown }>("/account/patreon/start", {
     method: "POST",
@@ -120,6 +133,32 @@ const SIGN_IN_MESSAGES: Record<string, string> = {
 export function signInMessage(status: string | null): string | null {
   if (!status) return null;
   return Object.hasOwn(SIGN_IN_MESSAGES, status) ? SIGN_IN_MESSAGES[status] : SIGN_IN_MESSAGES.error;
+}
+
+const IN_GAME_FALLBACK = "You can link with a code from in game instead.";
+
+const MINECRAFT_MESSAGES: Record<string, string> = {
+  denied: "Microsoft sign-in was cancelled.",
+  expired: "That Microsoft sign-in took too long or was opened in another browser. Please try again.",
+  guild_check_stale: "Please confirm your Discord membership again, then connect with Microsoft.",
+  not_guild_member: "Linking needs you to be in the TFMC Discord server.",
+  no_xbox_profile:
+    "That Microsoft account has no Xbox profile yet. Sign in once at xbox.com to create one, then try again.",
+  xbox_child_account: `That Microsoft account is a child account, so an adult has to add it to a Microsoft family first. ${IN_GAME_FALLBACK}`,
+  xbox_region_blocked: `Xbox isn’t available in that Microsoft account’s country, so we can’t check it. ${IN_GAME_FALLBACK}`,
+  xbox_adult_verification: `That Microsoft account needs age verification at xbox.com first. ${IN_GAME_FALLBACK}`,
+  no_java_profile:
+    "That Microsoft account doesn’t own Minecraft: Java Edition. If you have another Microsoft account, try that one.",
+  minecraft_taken: "That Minecraft account is already linked to a different Discord account. Ask staff if this is wrong.",
+  discord_taken: "Your Discord account is already linked to a different Minecraft account. Unlink it first.",
+  unavailable: `Connecting with Microsoft isn’t available right now. ${IN_GAME_FALLBACK}`,
+  error: `We couldn’t connect with Microsoft just now. Please try again. ${IN_GAME_FALLBACK}`,
+};
+
+/** The notice for /account?minecraft=…; "linked" is confirmed from the account itself. */
+export function minecraftLinkMessage(status: string | null): string | null {
+  if (!status || status === "linked") return null;
+  return Object.hasOwn(MINECRAFT_MESSAGES, status) ? MINECRAFT_MESSAGES[status] : MINECRAFT_MESSAGES.error;
 }
 
 /** Link refusals that need the person to sign in with Discord again. */

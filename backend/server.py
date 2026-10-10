@@ -28,7 +28,7 @@ logger = logging.getLogger("startup")
 class _OAuthQueryFilter(logging.Filter):
     """Drop OAuth codes and states from access log lines for callback routes."""
 
-    PATHS = ("/auth/discord/callback", "/patreon/oauth/callback")
+    PATHS = ("/auth/discord/callback", "/auth/microsoft/callback", "/patreon/oauth/callback")
 
     def filter(self, record: logging.LogRecord) -> bool:
         args = record.args

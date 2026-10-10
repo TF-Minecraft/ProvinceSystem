@@ -314,69 +314,104 @@ def complete_link(
 
     username = _sanitize_discord_username(discord_username)
     now = _utcnow()
-    linked_at = _iso(now)
 
     with connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = _usable_code_row(conn, code, now)
-        player_uuid = row["player_uuid"]
-        minecraft_name = row["minecraft_name"]
+        result = _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now)
+        conn.commit()
+    return result
 
-        existing = conn.execute(
-            "SELECT player_uuid FROM discord_links WHERE discord_user_id = ?",
-            (discord_id,),
-        ).fetchone()
-        if existing is not None and existing["player_uuid"] != player_uuid:
-            raise LinkError(
-                "This Discord account is already linked to a different Minecraft player"
-            )
-        if existing is None and conn.execute(
-            "SELECT 1 FROM discord_links WHERE player_uuid = ?",
-            (player_uuid,),
-        ).fetchone() is not None:
-            raise LinkError(
-                "This Minecraft account is already linked to a different Discord account"
-            )
 
-        if existing is None:
-            conn.execute(
-                """
-                INSERT INTO discord_links (
-                    player_uuid, discord_user_id, minecraft_name,
-                    discord_username, linked_at, left_guild_at, grace_until
-                ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
-                """,
-                (player_uuid, discord_id, minecraft_name, username, linked_at),
-            )
-        else:
-            # Same pair again: refresh names, keep the original link and grace.
-            conn.execute(
-                """
-                UPDATE discord_links
-                SET minecraft_name = COALESCE(?, minecraft_name),
-                    discord_username = COALESCE(?, discord_username)
-                WHERE player_uuid = ?
-                """,
-                (minecraft_name, username, player_uuid),
-            )
-            linked_at = conn.execute(
-                "SELECT linked_at FROM discord_links WHERE player_uuid = ?",
-                (player_uuid,),
-            ).fetchone()["linked_at"]
+def link_verified_profile(
+    player_uuid: str,
+    minecraft_name: str,
+    discord_user_id: str,
+    discord_username: str | None = None,
+    still_allowed=None,
+) -> dict:
+    """Bind a Minecraft account whose ownership Microsoft has just confirmed.
+
+    Same rules as a code: never replaces an existing link in either direction.
+    `still_allowed(conn)` runs inside the write; returning False refuses the link.
+    """
+    uuid = (player_uuid or "").strip().lower()
+    discord_id = (discord_user_id or "").strip()
+    if not uuid:
+        raise LinkError("player_uuid is required")
+    if not discord_id:
+        raise LinkError("discord_user_id is required")
+    try:
+        name = assert_optional_display_name(minecraft_name, field="minecraft_name", max_len=_MC_NAME_MAX)
+    except TextValidationError as exc:
+        raise LinkError(str(exc)) from exc
+
+    username = _sanitize_discord_username(discord_username)
+    with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        if still_allowed is not None and not still_allowed(conn):
+            raise LinkError("This link attempt is no longer valid")
+        result = _bind(conn, uuid, name, discord_id, username, _utcnow())
+        conn.commit()
+    return result
+
+
+def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, username: str | None, now: datetime) -> dict:
+    """Write the link inside the caller's immediate transaction."""
+    linked_at = _iso(now)
+    existing = conn.execute(
+        "SELECT player_uuid FROM discord_links WHERE discord_user_id = ?",
+        (discord_id,),
+    ).fetchone()
+    if existing is not None and existing["player_uuid"] != player_uuid:
+        raise LinkError(
+            "This Discord account is already linked to a different Minecraft player"
+        )
+    if existing is None and conn.execute(
+        "SELECT 1 FROM discord_links WHERE player_uuid = ?",
+        (player_uuid,),
+    ).fetchone() is not None:
+        raise LinkError(
+            "This Minecraft account is already linked to a different Discord account"
+        )
+
+    if existing is None:
         conn.execute(
             """
-            UPDATE discord_link_codes SET used_at = ?
-            WHERE player_uuid = ? AND used_at IS NULL
+            INSERT INTO discord_links (
+                player_uuid, discord_user_id, minecraft_name,
+                discord_username, linked_at, left_guild_at, grace_until
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
             """,
-            (_iso(now), player_uuid),
+            (player_uuid, discord_id, minecraft_name, username, linked_at),
         )
-        enqueue_link_success(
-            player_uuid,
-            discord_username=username,
-            conn=conn,
+    else:
+        # Same pair again: refresh names, keep the original link and grace.
+        conn.execute(
+            """
+            UPDATE discord_links
+            SET minecraft_name = COALESCE(?, minecraft_name),
+                discord_username = COALESCE(?, discord_username)
+            WHERE player_uuid = ?
+            """,
+            (minecraft_name, username, player_uuid),
         )
-        conn.commit()
-
+        linked_at = conn.execute(
+            "SELECT linked_at FROM discord_links WHERE player_uuid = ?",
+            (player_uuid,),
+        ).fetchone()["linked_at"]
+    conn.execute(
+        """
+        UPDATE discord_link_codes SET used_at = ?
+        WHERE player_uuid = ? AND used_at IS NULL
+        """,
+        (_iso(now), player_uuid),
+    )
+    enqueue_link_success(
+        player_uuid,
+        discord_username=username,
+        conn=conn,
+    )
     return {
         "player_uuid": player_uuid,
         "discord_user_id": discord_id,
@@ -530,6 +565,14 @@ def record_guild_joined(discord_user_id: str) -> dict:
     return _status_from_row(refreshed, now=now)
 
 
+def _cancel_microsoft_attempts(conn, discord_id: str) -> None:
+    """Unlinking cancels Microsoft link attempts still open for that Discord account."""
+    conn.execute(
+        "DELETE FROM microsoft_link_states WHERE user_id IN (SELECT id FROM users WHERE discord_user_id = ?)",
+        (discord_id,),
+    )
+
+
 def expire_due_graces() -> int:
     """Delete links whose grace_until has passed; enqueue grace_expired. Returns count."""
     now = _utcnow()
@@ -551,6 +594,7 @@ def expire_due_graces() -> int:
                 "DELETE FROM discord_links WHERE player_uuid = ?",
                 (uuid,),
             )
+            _cancel_microsoft_attempts(conn, discord_id)
             enqueue_plugin_notice(
                 "grace_expired",
                 uuid,
@@ -594,9 +638,10 @@ def unlink_by_uuid(player_uuid: str) -> dict:
         ).fetchone()
         if row is None:
             raise LinkError("No Discord link for this Minecraft player")
-        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
-        conn.commit()
         discord_id = str(row["discord_user_id"])
+        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
+        _cancel_microsoft_attempts(conn, discord_id)
+        conn.commit()
 
     return {
         "ok": True,
@@ -622,6 +667,7 @@ def unlink_by_discord_id(discord_user_id: str) -> dict:
             "DELETE FROM discord_links WHERE discord_user_id = ?",
             (discord_id,),
         )
+        _cancel_microsoft_attempts(conn, discord_id)
         conn.commit()
 
     return {
