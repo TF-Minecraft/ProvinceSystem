@@ -13,7 +13,7 @@ const OPTIONS: {
   label: string;
   detail: string;
 }[] = [
-  { value: "armor_set", label: "Armour set", detail: "Full set by tier" },
+  { value: "armor_set", label: "Armour set", detail: "One metal, up to 5 sets" },
   { value: "handheld", label: "Handheld", detail: "16×16 texture" },
   {
     value: "large_handheld",
