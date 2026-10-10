@@ -1,5 +1,6 @@
 import { logoutCharacter } from "../characters/api";
 import { clearSession, getSession, setSession, type ProfileSession } from "../profile/session";
+import { endProfileUploads } from "../profile/uploads";
 import { startLinkedProfileSession } from "./api";
 
 /** Reuse a stored session with at least this long left before asking for a new one. */
@@ -30,6 +31,7 @@ export async function linkedProfileSession(playerUuid: string): Promise<ProfileS
 
 /** Drop a Profile session opened through Discord, after signing out or unlinking. */
 export async function endLinkedProfileSession(): Promise<void> {
+  await endProfileUploads();
   const existing = getSession();
   if (!existing || existing.source !== "discord") return;
   clearSession();

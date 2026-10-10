@@ -8,11 +8,11 @@ import {
   CharactersApiError,
   getCreationCatalog,
   listCharacters,
-  logoutCharacter,
   maxAliveSlots,
   type CharacterListItem,
   type CreationCatalog,
 } from "../../lib/characters/api";
+import { logoutProfile } from "../../lib/profile/uploads";
 import creationCatalogDev from "../../lib/characters/fixtures/creationCatalog.dev.json";
 import {
   clearSession,
@@ -178,7 +178,7 @@ export default function CharacterPage() {
     if (!session) return;
     setLoggingOut(true);
     try {
-      await logoutCharacter(session.session_token);
+      await logoutProfile(session.session_token);
     } catch {
       // still clear locally
     } finally {

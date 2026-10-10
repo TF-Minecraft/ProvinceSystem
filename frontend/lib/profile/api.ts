@@ -1,5 +1,6 @@
 import { authHeaders, getApiBase, parseJson } from "../site/api";
 import type { CharacterListItem } from "../characters/api";
+import { readAllowances, type StartAllowances } from "./start";
 
 export class ProfileApiError extends Error {
   status: number;
@@ -35,6 +36,8 @@ export type ProfileDrinkSubmission = {
   id: string;
   slug: string;
   display_name: string;
+  /** The brew; only its colour is read here, for the wardrobe picture. */
+  recipe?: { color?: string | null } | null;
   status: string;
   deny_reason?: string | null;
   created_at: string;
@@ -63,6 +66,8 @@ export type ProfileDashboard = {
   skins: ProfileSkinSubmission[];
   drinks: ProfileDrinkSubmission[];
   custom_items: ProfileCustomItem[];
+  /** Whether a skin or drink can be started here without a code. */
+  can_start?: StartAllowances;
 };
 
 export async function getProfileDashboard(
@@ -88,5 +93,6 @@ export async function getProfileDashboard(
     skins: Array.isArray(body.skins) ? body.skins : [],
     drinks: Array.isArray(body.drinks) ? body.drinks : [],
     custom_items: Array.isArray(body.custom_items) ? body.custom_items : [],
+    can_start: readAllowances(body.can_start),
   };
 }

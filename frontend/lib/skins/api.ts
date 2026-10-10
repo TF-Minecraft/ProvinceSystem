@@ -2,6 +2,7 @@ import { getApiBase, detailMessage, parseJson } from "../site/api";
 import type { SkinsCatalog } from "./catalog";
 import { EMPTY_ENTITLEMENTS, parseEntitlements } from "./catalog";
 import { getSession } from "@/lib/characters/session";
+import { readStartRefusal } from "../profile/start";
 
 export type { CatalogCategory, CatalogScroll, SkinsCatalog } from "./catalog";
 
@@ -57,7 +58,26 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
       res.status
     );
   }
+  return readRedeemResult(res, data);
+}
 
+/** A skin upload session from Profile, under the same cooldown as /token create skin. */
+export async function startSkinFromProfile(profileToken: string): Promise<RedeemResult> {
+  const res = await apiFetch(`${getApiBase()}/profile/skins/start`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${profileToken}` },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw (
+      readStartRefusal(res.status, data) ??
+      new SkinsApiError(detailMessage(data, "Couldn’t start a skin. Please try again."), res.status)
+    );
+  }
+  return readRedeemResult(res, data);
+}
+
+function readRedeemResult(res: Response, data: unknown): RedeemResult {
   const body = data as Partial<RedeemResult> & Record<string, unknown>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
     throw new SkinsApiError("Invalid redeem response from API", res.status);
@@ -481,6 +501,19 @@ export async function getReviewSheet(
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+/** Object URL of the owner's wardrobe picture, or null when there is none yet. */
+export async function getSkinThumbnail(
+  id: string,
+  sessionToken: string
+): Promise<string | null> {
+  const res = await apiFetch(
+    `${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/thumbnail`,
+    { headers: { Authorization: `Bearer ${sessionToken}` } }
+  );
+  if (!res.ok) return null;
+  return URL.createObjectURL(await res.blob());
 }
 
 export async function getSubmission(

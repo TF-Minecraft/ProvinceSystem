@@ -67,6 +67,7 @@ from src.skins.db import SKINS_DIR
 from src.skins.preview_3d import read_preview_render_error
 from src.skins.review_sheet import ReviewSheetError, build_review_sheet
 from src.skins.storage import StorageError
+from src.skins.thumbnail import skin_thumbnail
 from src.skins.submissions import (
     SlugConflictError,
     SubmissionError,
@@ -769,6 +770,26 @@ def get_review_sheet(
         if render_err:
             headers[SHEET_RENDER_ERROR_HEADER] = render_err
     return Response(content=data, media_type="image/png", headers=headers)
+
+
+@skins_router.get("/submissions/{submission_id}/thumbnail")
+def get_thumbnail(
+    submission_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """The owner's wardrobe picture of their skin."""
+    session = _session_from_auth(authorization)
+    row = get_submission_for_owner(submission_id, session["player_uuid"])
+    if row is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    data = skin_thumbnail(submission_id, row["slug"])
+    if data is None:
+        raise HTTPException(status_code=404, detail="No preview yet")
+    return Response(
+        content=data,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 @skins_router.post("/submissions/{submission_id}/approve")

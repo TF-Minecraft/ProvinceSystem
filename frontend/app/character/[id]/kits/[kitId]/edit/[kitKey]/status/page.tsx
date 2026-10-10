@@ -7,9 +7,9 @@ import CustomiseStatusCard from "../../../../../../../components/character/Custo
 import {
   CharactersApiError,
   listLoreItems,
-  logoutCharacter,
   type LoreItemRow,
 } from "../../../../../../../../lib/characters/api";
+import { logoutProfile } from "../../../../../../../../lib/profile/uploads";
 import {
   UI_DEV_LORE_CHARACTER_ID,
   uiDevLoreItemsResponse,
@@ -125,7 +125,7 @@ export default function CharacterKitCustomiseStatusPage() {
     if (!session || loggingOut) return;
     setLoggingOut(true);
     try {
-      if (!uiDev) await logoutCharacter(session.session_token);
+      if (!uiDev) await logoutProfile(session.session_token);
     } catch {
       /* clear */
     } finally {

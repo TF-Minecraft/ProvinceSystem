@@ -5,7 +5,6 @@ import type { SubmissionPublic } from "../../../lib/skins/api";
 import { getReviewSheet, SkinsApiError } from "../../../lib/skins/api";
 import { armorTierLabel, baseSetLabel } from "../../../lib/skins/baseSets";
 import { formatLocal } from "../../../lib/skins/formatTime";
-import { getSession, isSessionValid } from "../../../lib/skins/session";
 import { kindLabel } from "./KindPicker";
 
 function statusMessage(row: SubmissionPublic): string {
@@ -51,9 +50,11 @@ function statusMessage(row: SubmissionPublic): string {
 
 type Props = {
   row: SubmissionPublic;
+  /** The owner's skins or Profile session. */
+  sessionToken: string;
 };
 
-export default function StatusCard({ row }: Props) {
+export default function StatusCard({ row, sessionToken }: Props) {
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [sheetLoading, setSheetLoading] = useState(true);
@@ -65,14 +66,8 @@ export default function StatusCard({ row }: Props) {
     async function loadSheet() {
       setSheetLoading(true);
       setSheetError(null);
-      const session = getSession();
-      if (!isSessionValid(session) || !session) {
-        setSheetError("Session expired. Cannot load preview.");
-        setSheetLoading(false);
-        return;
-      }
       try {
-        const url = await getReviewSheet(row.id, session.session_token);
+        const url = await getReviewSheet(row.id, sessionToken);
         if (revoked) {
           URL.revokeObjectURL(url);
           return;
@@ -98,7 +93,7 @@ export default function StatusCard({ row }: Props) {
       revoked = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [row.id]);
+  }, [row.id, sessionToken]);
 
   return (
     <div className="mt-8 space-y-6">

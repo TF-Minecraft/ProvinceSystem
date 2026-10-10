@@ -12,11 +12,14 @@ import {
   type DrinksSession,
 } from "../../lib/drinks/session";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
+import { canOpenProfile } from "../../lib/profile/redirect";
+import Link from "next/link";
 
 export default function DrinksPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<DrinksSession | null>(null);
+  const [fromProfile, setFromProfile] = useState(false);
 
   useEffect(() => {
     const existing = getSession();
@@ -27,10 +30,21 @@ export default function DrinksPage() {
         return;
       }
       setSessionState(existing);
-    } else if (existing) {
-      clearSession();
+      setFromProfile(existing!.from_profile === true);
+      setReady(true);
+      return;
     }
-    setReady(true);
+    if (existing) clearSession();
+    // Drinks start from Profile now; this page stays for in-game codes.
+    let live = true;
+    void canOpenProfile().then((open) => {
+      if (!live) return;
+      if (open) router.replace("/profile?tab=drinks");
+      else setReady(true);
+    });
+    return () => {
+      live = false;
+    };
   }, [router]);
 
   function onRedeemed(next: DrinksSession) {
@@ -50,31 +64,43 @@ export default function DrinksPage() {
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
         Drinks
       </h1>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Redeem a drink code from{" "}
-        <code className="text-[var(--tfmc-accent)]">/token create drink</code>,
-        then design your drink for staff review.
-      </p>
-
       {session && isSessionValid(session) ? (
         <div className="mt-4">
-          <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {formatExpiresIn(session.expires_at)}
-          </p>
-          <button
-            type="button"
-            className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
-            onClick={() => {
-              clearSession();
-              setSessionState(null);
-            }}
-          >
-            End session
-          </button>
+          {fromProfile ? (
+            <Link
+              href="/profile?tab=drinks"
+              className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+            >
+              ← Profile
+            </Link>
+          ) : (
+            <>
+              <p className="text-sm text-[var(--tfmc-stone)]">
+                Session expires {formatExpiresIn(session.expires_at)}
+              </p>
+              <button
+                type="button"
+                className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+                onClick={() => {
+                  clearSession();
+                  setSessionState(null);
+                }}
+              >
+                End session
+              </button>
+            </>
+          )}
           <BrewForm session={session} />
         </div>
       ) : (
-        <RedeemForm onRedeemed={onRedeemed} />
+        <>
+          <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+            Redeem a drink code from{" "}
+            <code className="text-[var(--tfmc-accent)]">/token create drink</code>,
+            then design your drink for staff review.
+          </p>
+          <RedeemForm onRedeemed={onRedeemed} />
+        </>
       )}
     </main>
   );

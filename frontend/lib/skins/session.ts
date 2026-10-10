@@ -1,3 +1,5 @@
+import type { RedeemResult } from "./api";
+
 const STORAGE_KEY = "tfmc_skins_session";
 
 export type SkinsSession = {
@@ -7,6 +9,8 @@ export type SkinsSession = {
   /** True when code scope is skin_staff. */
   staff?: boolean;
   scope?: string;
+  /** Started from Profile rather than redeemed from an in-game code. */
+  from_profile?: boolean;
   /** Server realm stamped on the mint code. */
   realm_id?: string;
   /** Rank colour stops for name picker (clamped by API to web hard cap). */
@@ -76,6 +80,7 @@ function readStored(): StoredSession | null {
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
     }
+    if (parsed.from_profile === true) out.from_profile = true;
     if (typeof parsed.realm_id === "string" && parsed.realm_id.trim()) {
       out.realm_id = parsed.realm_id.trim().toLowerCase();
     }
@@ -142,6 +147,7 @@ export function getSession(): SkinsSession | null {
   };
   if (stored.staff) out.staff = true;
   if (stored.scope) out.scope = stored.scope;
+  if (stored.from_profile) out.from_profile = true;
   copyEntitlements(stored, out);
   return out;
 }
@@ -164,6 +170,31 @@ export function setLastSubmissionId(id: string): void {
   writeStored({ ...stored, last_submission_id: trimmed });
 }
 
+/** The stored session for a redeemed code or a skin started from Profile. */
+export function skinsSessionFrom(result: RedeemResult): SkinsSession {
+  return {
+    session_token: result.session_token,
+    player_uuid: result.player_uuid,
+    expires_at: result.expires_at,
+    ...(result.staff ? { staff: true as const } : {}),
+    ...(result.scope ? { scope: result.scope } : {}),
+    ...(result.realm_id ? { realm_id: result.realm_id } : {}),
+    ...(result.name_colour_stops !== undefined
+      ? { name_colour_stops: result.name_colour_stops }
+      : {}),
+    ...(result.max_3d_pair_bytes !== undefined
+      ? { max_3d_pair_bytes: result.max_3d_pair_bytes }
+      : {}),
+    ...(result.skin_token_cooldown_days !== undefined
+      ? { skin_token_cooldown_days: result.skin_token_cooldown_days }
+      : {}),
+    ...(result.skin_kinds !== undefined ? { skin_kinds: result.skin_kinds } : {}),
+    ...(result.allow_armor_3d_helmet !== undefined
+      ? { allow_armor_3d_helmet: result.allow_armor_3d_helmet }
+      : {}),
+  };
+}
+
 /** New redeem: store session token fields only (no leftover last submission). */
 export function setSession(session: SkinsSession): void {
   if (!canUseStorage()) return;
@@ -174,6 +205,7 @@ export function setSession(session: SkinsSession): void {
   };
   if (session.staff) stored.staff = true;
   if (session.scope) stored.scope = session.scope;
+  if (session.from_profile) stored.from_profile = true;
   copyEntitlements(session, stored);
   writeStored(stored);
 }
