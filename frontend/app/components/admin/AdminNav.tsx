@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 const LINKS = [
   { href: "/admin", label: "Accounts", key: "accounts" },
@@ -28,14 +29,26 @@ export function adminSection(pathname: string): AdminSection | null {
 /** Rendered once by the staff layout, so it stays mounted and in place as the tabs change. */
 export default function AdminNav() {
   const current = adminSection(usePathname() ?? "");
+  const navRef = useRef<HTMLElement>(null);
+
+  // On phones the tabs scroll sideways; keep the current one in view.
+  useEffect(() => {
+    navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [current]);
+
   return (
-    <nav aria-label="Staff panel" className="flex gap-4 sm:gap-5">
+    // Sits 1px low so the current tab's underline covers the row's border inside the scroll box.
+    <nav
+      ref={navRef}
+      aria-label="Staff panel"
+      className="-mb-px flex max-w-full gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-5"
+    >
       {LINKS.map((link) => (
         <Link
           key={link.key}
           href={link.href}
           aria-current={link.key === current ? "page" : undefined}
-          className={`-mb-px border-b-2 pb-2 text-sm font-semibold transition-colors ${
+          className={`shrink-0 border-b-2 pb-2 text-sm font-semibold transition-colors ${
             link.key === current
               ? "border-[var(--tfmc-accent)] text-[var(--tfmc-cream)]"
               : "border-transparent text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
