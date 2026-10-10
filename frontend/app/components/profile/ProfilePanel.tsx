@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import CharacterList from "../character/CharacterList";
 import ProfileCustomItemsList from "./ProfileCustomItemsList";
 import ProfileRedeemForm from "./ProfileRedeemForm";
@@ -185,6 +185,8 @@ export default function ProfilePanel({
   const [tab, setTab] = useState<ProfileTab | null>(initialTab);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const codeId = useId();
   const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
 
   const refresh = useCallback(async () => {
@@ -335,6 +337,8 @@ export default function ProfilePanel({
   if (holding) return <ProfilePlaceholder shape={shape} tab={initialTab} />;
 
   if (!account && !session) {
+    // Without Discord sign-in the code is the only way in, so it shows open.
+    const codeOpen = showCode || load.kind !== "signed_out";
     return (
       <>
         <h1 className={titleClass}>Profile</h1>
@@ -356,16 +360,26 @@ export default function ProfilePanel({
                 {notice}
               </p>
             ) : null}
-            <div className="mt-8 flex">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <DiscordSignInLink href={discordSignInUrl(tab ? `/profile?tab=${tab}` : "/profile")} />
+              <button
+                type="button"
+                onClick={() => setShowCode((open) => !open)}
+                aria-expanded={showCode}
+                aria-controls={codeId}
+                className={quietButtonClass}
+              >
+                Use a code
+              </button>
             </div>
           </>
         ) : null}
-        <p className="mt-8 text-sm text-[var(--tfmc-mist)]">
-          {load.kind === "signed_out" ? "Or run " : "Run "}
-          <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game, then enter the code below.
-        </p>
-        <ProfileRedeemForm onRedeemed={onRedeemed} />
+        <div id={codeId} hidden={!codeOpen} className="mt-8 max-w-md">
+          <p className="text-sm text-[var(--tfmc-mist)]">
+            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game, then enter the code.
+          </p>
+          <ProfileRedeemForm onRedeemed={onRedeemed} variant="compact" />
+        </div>
       </>
     );
   }

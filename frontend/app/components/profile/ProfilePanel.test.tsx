@@ -586,20 +586,27 @@ it("leaves no Log out for a session opened through Discord", async () => {
   expect(screen.queryByRole("button", { name: /Log out/ })).toBeNull();
 });
 
-it("opens with an in-game code when signed out", async () => {
+it("keeps the in-game code behind Use a code when signed out", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
   render(<ProfilePanel />);
   const link = await screen.findByRole("link", { name: "Sign in with Discord" });
   expect(link.getAttribute("href")).toContain("return_to=%2Fprofile");
-  expect(screen.getByText(/Or run/).textContent).toContain("/token create profile");
+  const toggle = screen.getByRole("button", { name: "Use a code" });
+  const form = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+  expect(form.hidden).toBe(true);
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(form.hidden).toBe(false);
+  expect(form.textContent).toContain("/token create profile");
   expect(startLinkedProfileSession).not.toHaveBeenCalled();
 });
 
-it("keeps the code form alone when Discord sign-in is unavailable", async () => {
+it("shows the code form open when Discord sign-in is unavailable", async () => {
   vi.mocked(getAccount).mockRejectedValue(new AccountApiError("discord_auth_disabled", 503));
   render(<ProfilePanel />);
-  expect((await screen.findByText(/token create profile/)).closest("p")?.textContent).toMatch(/^Run/);
+  expect((await screen.findByText(/token create profile/)).closest("[hidden]")).toBeNull();
   expect(screen.queryByRole("link", { name: "Sign in with Discord" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Use a code" })).toBeNull();
 });
 
 it("lays skins out as a wardrobe and starts a new one without a code", async () => {
