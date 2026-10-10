@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import type { MapPin } from "./MovementMap";
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
@@ -271,11 +271,23 @@ export function RangeForm({
 /** A stretch of observation; `row` stacks one row per player when several are compared. */
 export type TimelineBand = { from: number; to: number; colour?: string; row?: number };
 
+/** Within this many pixels of a band's edge, a drag lands on the edge: the moment they were first or last seen. */
+const SNAP_PX = 6;
+/** How far a finger moves sideways before it scrubs; a tap without moving still jumps there. */
+const TOUCH_SLOP_PX = 4;
+/** Room for about one tick label in this many pixels. */
+const TICK_LABEL_PX = 80;
+const chipBase = "absolute top-0 whitespace-nowrap rounded-sm px-1.5 text-[11px] leading-5 tabular-nums";
+
 /**
  * The whole span left to right, with what is known about it: bands where a
  * player was observed, hatching where nothing could have been (before the
  * available observations, or rows left out), and the inspected moment.
  * A gap between bands is "not observed", which is not proof of offline.
+ *
+ * Press or drag anywhere on it to move the moment; a finger scrubs sideways and
+ * still scrolls the page up and down. Arrow keys step a minute, Page Up and
+ * Page Down a tenth of the span.
  */
 export function Timeline({
   since,
@@ -295,26 +307,196 @@ export function Timeline({
   cursor: number;
   onCursor: (time: number) => void;
 }) {
+  const track = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  const [hover, setHover] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<{ id: number; x: number; touch: boolean; moved: boolean } | null>(null);
+  const frame = useRef<number | null>(null);
+  const pending = useRef(0);
+  const emit = useRef(onCursor);
+  emit.current = onCursor;
+
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    setWidth(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
+
   const span = Math.max(1, until - since);
-  const pct = (t: number) => `${(Math.min(Math.max(t, since), until) - since) / span * 100}%`;
-  const ticks = timelineTicks(since, until);
+  const clamp = (t: number) => Math.min(Math.max(t, since), until);
+  const pct = (t: number) => `${(clamp(t) - since) / span * 100}%`;
+  const px = (t: number) => (clamp(t) - since) / span * width;
+  const most = width ? Math.max(2, Math.floor(width / TICK_LABEL_PX)) : 8;
+  const ticks = timelineTicks(since, until, most);
+  const minor = timelineTicks(since, until, most * 5).filter((t) => !ticks.includes(t));
   const daily = ticks.length > 1 && ticks[1] - ticks[0] >= 86400;
   const multiDay = formatDay(since) !== formatDay(until);
   const hatchEnd = unknownUntil !== null && unknownUntil > since ? Math.min(unknownUntil, until) : null;
   const rows = Math.max(1, ...bands.map((band) => (band.row ?? 0) + 1));
   const rowHeight = rows === 1 ? 20 : Math.max(4, Math.min(10, 40 / rows));
-  const barHeight = rows === 1 ? 36 : rows * (rowHeight + 2) + 8;
+  const barHeight = rows === 1 ? 40 : rows * (rowHeight + 2) + 8;
+  const at = clamp(cursor);
+  const label = (t: number) =>
+    `${multiDay ? `${formatDay(t)}, ` : ""}${formatClock(t, span <= 3 * 3600)}`;
+
+  /** The time under a pointer, drawn to a nearby band edge when `snap`. */
+  const timeAt = (clientX: number, snap: boolean) => {
+    const rect = track.current!.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    let time = since + (x / Math.max(1, rect.width)) * span;
+    if (snap) {
+      let reach = (SNAP_PX / Math.max(1, rect.width)) * span;
+      for (const band of bands) {
+        for (const edge of [band.from, band.to]) {
+          if (edge >= since && edge <= until && Math.abs(edge - time) <= reach) {
+            reach = Math.abs(edge - time);
+            time = edge;
+          }
+        }
+      }
+    }
+    return Math.round(time);
+  };
+  // At most once a frame, however fast the pointer moves: the map redraws on each.
+  const moveTo = (time: number) => {
+    pending.current = time;
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      emit.current(pending.current);
+    });
+  };
+  const endDrag = () => {
+    drag.current = null;
+    setDragging(false);
+  };
+  const keyStep = (key: string, shift: boolean): number | null => {
+    const minute = shift ? 600 : 60;
+    switch (key) {
+      case "ArrowLeft":
+      case "ArrowDown":
+        return at - minute;
+      case "ArrowRight":
+      case "ArrowUp":
+        return at + minute;
+      case "PageDown":
+        return at - span / 10;
+      case "PageUp":
+        return at + span / 10;
+      case "Home":
+        return since;
+      case "End":
+        return until;
+      default:
+        return null;
+    }
+  };
+
+  const showHover = hover !== null && !dragging && width > 0;
+
+  // The time labels above the bar sit over their moment, kept inside the bar's ends; the hover
+  // label gives way to the moment's, and the span's ends give way to both.
+  useLayoutEffect(() => {
+    const row = header.current;
+    if (!row) return;
+    const [start, end, ...chips] = Array.from(row.children) as HTMLElement[];
+    const placed: [number, number][] = [];
+    for (const chip of chips) {
+      const w = chip.offsetWidth;
+      const left = Math.min(Math.max(Number(chip.dataset.x) - w / 2, 0), Math.max(0, width - w));
+      chip.style.left = `${left}px`;
+      const clash = placed.some(([a, b]) => left < b + 4 && left + w > a - 4);
+      chip.style.visibility = clash ? "hidden" : "";
+      if (!clash) placed.unshift([left, left + w]);
+    }
+    for (const [label, a, b] of [[start, 0, start.offsetWidth], [end, width - end.offsetWidth, width]] as const) {
+      label.style.visibility = placed.some(([l, r]) => l < b + 8 && r > a - 8) ? "hidden" : "";
+    }
+  });
 
   return (
     <div className="flex flex-col gap-1 select-none">
-      <div className="flex justify-between text-xs text-[var(--tfmc-mist)]">
-        <span>{formatMoment(since)}</span>
-        <span>{formatMoment(until)}</span>
+      {/* Placed by the layout effect above: the span's ends, the moment's label, then the hover's. */}
+      <div ref={header} className="relative h-5 text-xs text-[var(--tfmc-mist)]">
+        <span className="absolute left-0 top-0 leading-5">{formatMoment(since)}</span>
+        <span className="absolute right-0 top-0 leading-5">{formatMoment(until)}</span>
+        {width ? (
+          <span className={`${chipBase} bg-[var(--tfmc-cream)] font-medium text-[var(--tfmc-forest-deep)]`} data-x={px(at)}>
+            {label(at)}
+          </span>
+        ) : null}
+        {showHover ? (
+          <span
+            className={`${chipBase} border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] bg-[var(--tfmc-forest-deep)] leading-[18px] text-[var(--tfmc-cream)]`}
+            data-x={px(hover!)}
+          >
+            {label(hover!)}
+          </span>
+        ) : null}
       </div>
-      <div className="relative rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]" style={{ height: barHeight }}>
+      <div
+        ref={track}
+        role="slider"
+        tabIndex={0}
+        aria-label="Inspected moment"
+        aria-valuemin={since}
+        aria-valuemax={until}
+        aria-valuenow={at}
+        aria-valuetext={formatMoment(at, true)}
+        className={`relative touch-pan-y rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--tfmc-accent)] ${
+          dragging ? "cursor-grabbing" : "cursor-pointer"
+        }`}
+        style={{ height: barHeight }}
+        onKeyDown={(event) => {
+          const next = keyStep(event.key, event.shiftKey);
+          if (next === null) return;
+          event.preventDefault();
+          onCursor(Math.round(clamp(next)));
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          const touch = event.pointerType !== "mouse";
+          drag.current = { id: event.pointerId, x: event.clientX, touch, moved: !touch };
+          // A finger waits to see whether it is scrolling the page; a mouse takes hold at once.
+          if (touch) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setDragging(true);
+          setHover(null);
+          moveTo(timeAt(event.clientX, true));
+        }}
+        onPointerMove={(event) => {
+          if (event.pointerType === "mouse" && !drag.current) setHover(timeAt(event.clientX, false));
+          const d = drag.current;
+          if (!d || d.id !== event.pointerId) return;
+          if (!d.moved) {
+            if (Math.abs(event.clientX - d.x) < TOUCH_SLOP_PX) return;
+            d.moved = true;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setDragging(true);
+          }
+          moveTo(timeAt(event.clientX, true));
+        }}
+        onPointerUp={(event) => {
+          const d = drag.current;
+          if (!d || d.id !== event.pointerId) return;
+          if (!d.moved) moveTo(timeAt(event.clientX, true));
+          endDrag();
+        }}
+        onPointerCancel={endDrag}
+        onPointerLeave={() => setHover(null)}
+      >
         {hatchEnd !== null ? (
           <div
-            className="absolute inset-y-0 left-0"
+            className="absolute inset-y-0 left-0 rounded-l-sm"
             title={unknownLabel}
             style={{
               width: pct(hatchEnd),
@@ -323,41 +505,45 @@ export function Timeline({
             }}
           />
         ) : null}
-        {bands.map((band, i) => (
-          <div
-            key={i}
-            className="absolute rounded-sm"
-            style={{
-              top: rows === 1 ? 8 : 4 + (band.row ?? 0) * (rowHeight + 2),
-              height: rowHeight,
-              left: pct(band.from),
-              width: `max(3px, calc(${pct(band.to)} - ${pct(band.from)}))`,
-              background: band.colour ?? "var(--tfmc-accent)",
-              opacity: 0.85,
-            }}
-          />
+        {minor.map((t) => (
+          <div key={t} className="absolute bottom-0 h-1 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]" style={{ left: pct(t) }} />
         ))}
         {ticks.map((t) => (
           <div key={t} className="absolute bottom-0 h-2 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)]" style={{ left: pct(t) }} />
         ))}
-        <input
-          type="range"
-          aria-label="Inspected moment"
-          aria-valuetext={formatMoment(cursor, true)}
-          min={since}
-          max={until}
-          step={60}
-          value={Math.min(until, Math.max(since, cursor))}
-          onChange={(event) => onCursor(Number(event.target.value))}
-          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-        />
-        {/* The input is invisible, so its keyboard focus is drawn here. */}
-        <div className="pointer-events-none absolute inset-0 rounded-sm peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--tfmc-accent)]" />
-        <div className="pointer-events-none absolute inset-y-[-3px] w-0.5 bg-white shadow" style={{ left: pct(cursor) }} />
+        {bands.map((band, i) => (
+          <div
+            key={i}
+            className="absolute rounded-sm transition-opacity"
+            style={{
+              top: rows === 1 ? 10 : 4 + (band.row ?? 0) * (rowHeight + 2),
+              height: rowHeight,
+              left: pct(band.from),
+              width: `max(3px, calc(${pct(band.to)} - ${pct(band.from)}))`,
+              background: band.colour ?? "var(--tfmc-accent)",
+              // The stretch under the moment stands out.
+              opacity: band.from <= at && at <= band.to ? 1 : 0.7,
+            }}
+          />
+        ))}
+        {showHover ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 w-px -translate-x-1/2 bg-[color-mix(in_srgb,var(--tfmc-cream)_55%,transparent)]"
+            style={{ left: pct(hover!) }}
+          />
+        ) : null}
+        {/* The playhead: a line through the bar with a grip on top, outside the bar's clipping. */}
+        <div className="pointer-events-none absolute -bottom-1 -top-1 w-0.5 -translate-x-1/2 bg-[var(--tfmc-cream)] shadow-[0_0_0_1px_rgba(15,28,22,0.6)]" style={{ left: pct(at) }}>
+          <div className="absolute -top-0.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-[2px] bg-[var(--tfmc-cream)]" />
+        </div>
       </div>
       <div className="relative h-4 text-[11px] text-[var(--tfmc-mist)]">
         {ticks.map((t) => (
-          <span key={t} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(t) }}>
+          <span
+            key={t}
+            className={`absolute whitespace-nowrap ${px(t) < 24 ? "" : width - px(t) < 24 ? "-translate-x-full" : "-translate-x-1/2"}`}
+            style={{ left: pct(t) }}
+          >
             {daily ? formatDay(t) : multiDay && formatClock(t) === "00:00" ? formatDay(t) : formatClock(t)}
           </span>
         ))}
@@ -367,7 +553,7 @@ export function Timeline({
           <span className="inline-block h-2 w-4 rounded-sm bg-[var(--tfmc-accent)]" /> seen
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]" /> not
+          <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" /> not
           seen (not proof of offline)
         </span>
         {hatchEnd !== null ? (
