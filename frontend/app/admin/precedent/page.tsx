@@ -24,7 +24,8 @@ const inputClass =
   "w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-accent)] focus:outline-none";
 
 export default function AdminPrecedentPage() {
-  const [gate, setGate] = useState<GateKind | null>(null);
+  // Nothing renders until the first list proves access.
+  const [gate, setGate] = useState<GateKind | "checking" | "ready">("checking");
   const [cases, setCases] = useState<PrecedentCase[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ export default function AdminPrecedentPage() {
       const data = await listCases();
       setCases(data.cases);
       setTotal(data.total);
+      setGate("ready");
     } catch (err) {
       const kind = gateKind(err);
       if (kind === "error") setLoadError(adminErrorMessage(err));
@@ -99,10 +101,18 @@ export default function AdminPrecedentPage() {
     }
   }
 
-  if (gate) {
+  if (gate !== "ready") {
     return (
       <AdminColumn>
-        <StaffGateMessage kind={gate} />
+        {gate === "checking" ? (
+          loadError ? (
+            <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">{loadError}</p>
+          ) : (
+            <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+          )
+        ) : (
+          <StaffGateMessage kind={gate} />
+        )}
       </AdminColumn>
     );
   }
