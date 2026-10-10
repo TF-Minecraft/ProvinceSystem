@@ -97,31 +97,38 @@ def test_plugin_gets_base_set_per_tier(database):
     assert get_submission_for_plugin("p_set")["tier_sets"] == {"iron": "heavy iron"}
 
 
-def test_thalendorian_metal_sets_are_light(database):
+def test_legacy_armor_gets_its_shop_sets(database):
     from src.skins.submissions import get_submission_for_plugin
 
     with database.connect() as conn:
-        _insert_armor(
-            conn,
-            "geofflive_thalendorian_armor",
-            ["iron", "steel", "abyssalite", "mythril", "mage"],
-        )
+        _insert_armor(conn, "archbishqp_crusader", ["iron"])
+        _insert_armor(conn, "estiennehavenga_priestess_armour", ["mage"])
+        for sid in ("geofflive_thalendorian_armor", "dev_geofflive_thalendorian_armor"):
+            _insert_armor(conn, sid, ["iron", "steel", "abyssalite", "mythril", "mage"])
         conn.commit()
     database.migrate()
-    assert get_submission_for_plugin("geofflive_thalendorian_armor")["tier_sets"] == {
+
+    def sets(sid):
+        return get_submission_for_plugin(sid)["tier_sets"]
+
+    assert sets("archbishqp_crusader") == {"iron": "medium steel"}
+    assert sets("estiennehavenga_priestess_armour") == {"mage": "mage steel"}
+    thalendorian = {
         "iron": "light iron",
         "steel": "light steel",
         "abyssalite": "light abyssalite",
         "mythril": "light mythril",
-        "mage": "mage",
+        "mage": "mage steel",
     }
+    assert sets("geofflive_thalendorian_armor") == thalendorian
+    assert sets("dev_geofflive_thalendorian_armor") == thalendorian
 
     # Staff edits made after the upgrade are kept on later starts.
     with database.connect() as conn:
         conn.execute(
-            "UPDATE submissions SET tier_sets = '{\"iron\": \"medium iron\"}' "
-            "WHERE id = 'geofflive_thalendorian_armor'"
+            "UPDATE submissions SET tier_sets = '{\"iron\": \"heavy steel\"}' "
+            "WHERE id = 'archbishqp_crusader'"
         )
         conn.commit()
     database.migrate()
-    assert get_submission_for_plugin("geofflive_thalendorian_armor")["tier_sets"]["iron"] == "medium iron"
+    assert sets("archbishqp_crusader") == {"iron": "heavy steel"}

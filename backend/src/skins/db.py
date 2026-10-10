@@ -58,28 +58,32 @@ def _move_nicknames_out_of_usernames(conn: sqlite3.Connection) -> None:
             )
 
 
-_THALENDORIAN_ID = "geofflive_thalendorian_armor"
-_THALENDORIAN_SETS = json.dumps(
-    {
+# Player armour approved before metal lines stored bare tiers (``iron``, ``mage``).
+# These are the shop sets staff gave them, keyed by submission id (main and dev).
+_LEGACY_ARMOR_SETS = {
+    "archbishqp_crusader": {"iron": "medium steel"},
+    "estiennehavenga_priestess_armour": {"mage": "mage steel"},
+    "geofflive_thalendorian_armor": {
         "iron": "light iron",
         "steel": "light steel",
         "abyssalite": "light abyssalite",
         "mythril": "light mythril",
-        "mage": "mage",
-    }
-)
+        "mage": "mage steel",
+    },
+}
 
 
-def _set_thalendorian_light_sets(conn: sqlite3.Connection) -> None:
-    """Thalendorian Armor predates metal lines: its metal sets are light armour.
+def _set_legacy_armor_sets(conn: sqlite3.Connection) -> None:
+    """Store the shop sets of armour approved before metal lines.
 
-    Staff set ``light <metal>`` in the shop by hand; storing it here keeps a
-    re-apply from writing the bare metal back. Only an unset row is touched.
+    Keeps a re-apply from writing the bare metal back over the shop. Only an
+    unset row is touched, so later edits are kept.
     """
-    conn.execute(
-        "UPDATE submissions SET tier_sets = ? WHERE id = ? AND tier_sets IS NULL",
-        (_THALENDORIAN_SETS, _THALENDORIAN_ID),
-    )
+    for submission_id, sets in _LEGACY_ARMOR_SETS.items():
+        conn.execute(
+            "UPDATE submissions SET tier_sets = ? WHERE id IN (?, ?) AND tier_sets IS NULL",
+            (json.dumps(sets), submission_id, f"dev_{submission_id}"),
+        )
 
 
 def _upgrade(conn: sqlite3.Connection) -> None:
@@ -97,7 +101,7 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         submissions = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)")}
         if "tier_sets" not in submissions:
             conn.execute("ALTER TABLE submissions ADD COLUMN tier_sets TEXT")
-        _set_thalendorian_light_sets(conn)
+        _set_legacy_armor_sets(conn)
         conn.commit()
     except BaseException:
         conn.rollback()
