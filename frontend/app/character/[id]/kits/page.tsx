@@ -6,9 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CharactersApiError,
   listCharacterKits,
-  logoutCharacter,
   type CharacterKit,
 } from "../../../../lib/characters/api";
+import { logoutProfile } from "../../../../lib/profile/uploads";
 import {
   clearSession,
   getSession,
@@ -105,7 +105,7 @@ export default function CharacterKitsPage() {
     if (!session || loggingOut) return;
     setLoggingOut(true);
     try {
-      if (!uiDev) await logoutCharacter(session.session_token);
+      if (!uiDev) await logoutProfile(session.session_token);
     } catch {
       /* clear anyway */
     } finally {

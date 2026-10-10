@@ -32,3 +32,8 @@ export async function endProfileUploads(): Promise<void> {
     )
   );
 }
+
+/** Revoke a Profile session along with the uploads started from it. */
+export async function logoutProfile(sessionToken: string): Promise<void> {
+  await Promise.all([endProfileUploads(), logoutCharacter(sessionToken)]);
+}

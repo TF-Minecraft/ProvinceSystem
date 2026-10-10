@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   getCreationCatalog,
-  logoutCharacter,
   type CreationCatalog,
   type SlotLimits,
 } from "../../../../lib/characters/api";
+import { logoutProfile } from "../../../../lib/profile/uploads";
 import {
   clearSession,
   getSession,
@@ -117,7 +117,7 @@ export default function CharacterWardrobePage() {
     if (!session || loggingOut) return;
     setLoggingOut(true);
     try {
-      if (!uiDev) await logoutCharacter(session.session_token);
+      if (!uiDev) await logoutProfile(session.session_token);
     } catch {
       /* still clear local */
     }

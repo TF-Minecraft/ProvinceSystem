@@ -6,7 +6,7 @@ import CharacterList from "../components/character/CharacterList";
 import ProfileCustomItemsList from "../components/profile/ProfileCustomItemsList";
 import ProfileRedeemForm from "../components/profile/ProfileRedeemForm";
 import { DrinkWardrobe, SkinWardrobe } from "../components/profile/ProfileWardrobes";
-import { logoutCharacter } from "../../lib/characters/api";
+import { logoutProfile } from "../../lib/profile/uploads";
 import {
   ProfileApiError,
   getProfileDashboard,
@@ -31,7 +31,6 @@ import {
   type AccountMinecraft,
 } from "../../lib/account/api";
 import { linkedProfileSession } from "../../lib/account/profileSession";
-import { endProfileUploads } from "../../lib/profile/uploads";
 import { DiscordSignInLink } from "../components/account/BrandButtons";
 
 type TabId = "characters" | "skins" | "drinks" | "items";
@@ -209,11 +208,10 @@ export default function ProfilePage() {
     if (!session) return;
     setLoggingOut(true);
     try {
-      await logoutCharacter(session.session_token);
+      await logoutProfile(session.session_token);
     } catch {
       // still clear locally
     }
-    await endProfileUploads();
     clearSession();
     setSessionState(null);
     setDashboard(null);

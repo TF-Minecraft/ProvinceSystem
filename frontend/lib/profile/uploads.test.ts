@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { logoutCharacter } from "../characters/api";
 import { getSession as getDrinksSession, setSession as setDrinksSession } from "../drinks/session";
 import { getSession as getSkinsSession, setSession as setSkinsSession } from "../skins/session";
-import { endProfileUploads } from "./uploads";
+import { endProfileUploads, logoutProfile } from "./uploads";
 
 vi.mock("../characters/api", () => ({ logoutCharacter: vi.fn().mockResolvedValue(undefined) }));
 afterEach(() => { sessionStorage.clear(); vi.clearAllMocks(); });
@@ -24,4 +24,11 @@ it("leaves uploads redeemed from an in-game code", async () => {
   await endProfileUploads();
   expect(getSkinsSession()?.session_token).toBe("code-skin");
   expect(logoutCharacter).not.toHaveBeenCalled();
+});
+
+it("ends Profile uploads with the Profile session on any log out", async () => {
+  setSkinsSession({ ...BASE, session_token: "skin", from_profile: true });
+  await logoutProfile("profile-token");
+  expect(getSkinsSession()).toBeNull();
+  expect(vi.mocked(logoutCharacter).mock.calls.map(([t]) => t).sort()).toEqual(["profile-token", "skin"]);
 });

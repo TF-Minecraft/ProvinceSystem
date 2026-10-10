@@ -9,10 +9,10 @@ import {
   deletePendingCreate,
   getCreationCatalog,
   listCharacters,
-  logoutCharacter,
   type CharacterListItem,
   type CreationCatalog,
 } from "../../../lib/characters/api";
+import { logoutProfile } from "../../../lib/profile/uploads";
 import {
   clearSession,
   getSession,
@@ -107,7 +107,7 @@ export default function CharacterDetailPage() {
     setLoggingOut(true);
     try {
       if (!uiDev) {
-        await logoutCharacter(session.session_token);
+        await logoutProfile(session.session_token);
       }
     } catch {
       /* still clear local */

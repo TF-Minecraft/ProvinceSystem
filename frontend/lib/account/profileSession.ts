@@ -31,10 +31,10 @@ export async function linkedProfileSession(playerUuid: string): Promise<ProfileS
 
 /** Drop a Profile session opened through Discord, after signing out or unlinking. */
 export async function endLinkedProfileSession(): Promise<void> {
+  await endProfileUploads();
   const existing = getSession();
   if (!existing || existing.source !== "discord") return;
   clearSession();
-  await endProfileUploads();
   try {
     await logoutCharacter(existing.session_token);
   } catch {
