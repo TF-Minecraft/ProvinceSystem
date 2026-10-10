@@ -75,7 +75,7 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
         <p className="text-sm text-[var(--tfmc-mist)]">
           Please confirm your Discord membership again before linking.
         </p>
-        <a href={discordSignInUrl("/account")} className={`${buttonClass} mt-4`}>
+        <a href={discordSignInUrl("/profile?tab=accounts")} className={`${buttonClass} mt-4`}>
           Confirm with Discord
         </a>
       </>

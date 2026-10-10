@@ -13,7 +13,7 @@ export function StaffGateMessage({ kind }: { kind: GateKind }) {
   if (kind === "signed_out") {
     return (
       <p className="mt-6 text-[var(--tfmc-mist)]">
-        <Link href="/account" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+        <Link href="/profile" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
           Sign in with Discord
         </Link>{" "}
         to use the staff panel.

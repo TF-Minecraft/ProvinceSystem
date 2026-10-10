@@ -20,9 +20,11 @@ const nextConfig: NextConfig = {
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },
-  // Staff tools that moved into the staff panel.
   async redirects() {
     return [
+      // Account became Profile's Linked accounts tab; Next carries the query (sign-in and link notices) across.
+      { source: "/account", destination: "/profile?tab=accounts", permanent: false },
+      // Staff tools that moved into the staff panel.
       { source: "/precedent", destination: "/admin/precedent", permanent: false },
       { source: "/inspect", destination: "/admin/codes", permanent: false },
     ];

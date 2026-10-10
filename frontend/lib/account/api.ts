@@ -87,7 +87,7 @@ async function accountRequest<T>(
   return data as T;
 }
 
-export function discordSignInUrl(returnTo = "/account"): string {
+export function discordSignInUrl(returnTo = "/profile"): string {
   return `${getApiBase()}/auth/discord/start?return_to=${encodeURIComponent(returnTo)}`;
 }
 
@@ -202,7 +202,7 @@ const MINECRAFT_MESSAGES: Record<string, string> = {
   error: `We couldn’t connect with Microsoft just now. Please try again. ${IN_GAME_FALLBACK}`,
 };
 
-/** The notice for /account?minecraft=…; "linked" is confirmed from the account itself. */
+/** The notice for Profile’s ?minecraft=…; "linked" is confirmed from the account itself. */
 export function minecraftLinkMessage(status: string | null): string | null {
   if (!status || status === "linked") return null;
   return Object.hasOwn(MINECRAFT_MESSAGES, status) ? MINECRAFT_MESSAGES[status] : MINECRAFT_MESSAGES.error;
