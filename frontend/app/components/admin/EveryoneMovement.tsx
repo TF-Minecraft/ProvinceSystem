@@ -251,7 +251,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
   return (
     <MapWorkspace
       // The timeline under the map: up to eight rows of bands, its labels and its key.
-      stripHeight="8.5rem"
+      stripHeight="9rem"
       panel={
         <>
           {viewSwitch}

@@ -294,7 +294,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
       // The links and the player's tabs above.
       above="6rem"
       // The timeline under the map: one row of bands, its labels and its key.
-      stripHeight="6.75rem"
+      stripHeight="7.25rem"
       panel={
         <>
           <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
