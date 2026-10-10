@@ -19,7 +19,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from src.api.prod_guard import is_production
-from src.auth import account_overview, users
+from src.auth import account_overview, guild_check, users
 from src.auth.config import AuthConfig
 from src.auth import microsoft_link
 from src.auth.discord import DiscordClient, DiscordError
@@ -246,6 +246,9 @@ def get_account(request: Request, response: Response):
     config = _config()
     user = current_user(request, config)
     _no_store(response)
+    minecraft = _minecraft(user)
+    # Only linking needs a recent check, so only unlinked players wait for one.
+    user, answered = guild_check.check(user) if minecraft is None else (user, True)
     return {
         "user": {
             "discord_user_id": user["discord_user_id"],
@@ -258,8 +261,10 @@ def get_account(request: Request, response: Response):
             "member": bool(user["guild_member"]),
             "checked_at": user["guild_checked_at"],
             "fresh": users.guild_check_fresh(user),
+            # False when Discord could not be asked: only a new sign-in can show a change.
+            "can_recheck": answered,
         },
-        "minecraft": _minecraft(user),
+        "minecraft": minecraft,
         "microsoft_link": MicrosoftConfig.from_env().usable,
         "patreon": _patreon(user),
     }
@@ -331,6 +336,7 @@ def minecraft_link(request: Request, body: CodeBody, response: Response):
     user = current_user(request, config)
     _check_link_rate(user["user_id"])
     # A link grants server access, so it needs proof of current membership.
+    user = guild_check.fresh(user)
     if not user["guild_member"]:
         raise HTTPException(403, detail="not_guild_member")
     if not users.guild_check_fresh(user):
@@ -363,6 +369,7 @@ def minecraft_microsoft_start(request: Request):
     if not microsoft.usable:
         raise HTTPException(503, detail="microsoft_link_disabled")
     _check_link_rate(user["user_id"])
+    user = guild_check.fresh(user)
     if not user["guild_member"]:
         raise HTTPException(403, detail="not_guild_member")
     if not users.guild_check_fresh(user):
@@ -413,6 +420,7 @@ def _finish_microsoft_link(request, config, code, error, saved) -> str:
     microsoft = MicrosoftConfig.from_env()
     if not microsoft.usable:
         return "unavailable"
+    user = guild_check.fresh(user)
     if not user["guild_member"]:
         return "not_guild_member"
     if not users.guild_check_fresh(user):
