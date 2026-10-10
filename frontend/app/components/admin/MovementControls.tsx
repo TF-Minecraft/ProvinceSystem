@@ -468,8 +468,6 @@ export function Timeline({
           drag.current = { id: event.pointerId, x: event.clientX, touch, moved: !touch };
           // A finger waits to see whether it is scrolling the page; a mouse takes hold at once.
           if (touch) return;
-          event.preventDefault();
-          event.currentTarget.focus({ preventScroll: true });
           event.currentTarget.setPointerCapture(event.pointerId);
           setDragging(true);
           setHover(null);
