@@ -44,6 +44,10 @@ RUN npm run build
 
 WORKDIR /app
 
+# Previews sign in through dev (src/auth/preview_sign_in.py); empty everywhere else.
+ARG SIGN_IN_SITE=""
+ENV SIGN_IN_SITE=${SIGN_IN_SITE}
+
 EXPOSE 8000
 
 CMD ["python3", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]

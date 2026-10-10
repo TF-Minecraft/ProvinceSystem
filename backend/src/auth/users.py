@@ -87,8 +87,18 @@ def consume_state(state: str | None) -> str | None:
     return row["return_to"]
 
 
-def sign_in(identity: dict, *, guild_member: bool, member: dict | None = None) -> str:
-    """Upsert the user, open a session and return its plaintext token."""
+def sign_in(
+    identity: dict,
+    *,
+    guild_member: bool,
+    member: dict | None = None,
+    guild_checked_at: str | None = None,
+    role: str | None = None,
+) -> str:
+    """Upsert the user, open a session and return its plaintext token.
+
+    A preview passes the membership check and role dev already holds for the user.
+    """
     token = secrets.token_urlsafe(32)
     now = _utcnow()
     stamp = _iso(now)
@@ -115,13 +125,18 @@ def sign_in(identity: dict, *, guild_member: bool, member: dict | None = None) -
         user_id = conn.execute(
             "SELECT id FROM users WHERE discord_user_id = ?", (identity["discord_user_id"],)
         ).fetchone()["id"]
+        if role is not None:
+            conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
         conn.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (stamp,))
         conn.execute(
             """
             INSERT INTO user_sessions (token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (hash_secret(token), user_id, 1 if guild_member else 0, stamp, stamp, _iso(now + SESSION_TTL)),
+            (
+                hash_secret(token), user_id, 1 if guild_member else 0, guild_checked_at or stamp, stamp,
+                _iso(now + SESSION_TTL),
+            ),
         )
         conn.commit()
     if identity["discord_username"]:
@@ -183,11 +198,14 @@ def record_guild_check(session_id: int, member: bool) -> str:
     return stamp
 
 
-def guild_check_fresh(user: dict) -> bool:
+def guild_check_recent(user: dict) -> bool:
+    """The session's membership check, member or not, is recent enough to act on."""
     checked = user.get("guild_checked_at")
-    if not user.get("guild_member") or not checked:
-        return False
-    return _utcnow() - _parse_iso(checked) <= GUILD_CHECK_MAX_AGE
+    return bool(checked) and _utcnow() - _parse_iso(checked) <= GUILD_CHECK_MAX_AGE
+
+
+def guild_check_fresh(user: dict) -> bool:
+    return bool(user.get("guild_member")) and guild_check_recent(user)
 
 
 def revoke_session(token: str | None) -> None:
