@@ -134,6 +134,13 @@ def test_preview_start_sends_the_browser_to_dev(preview):
     assert response.cookies[STATE] == query["state"]
 
 
+def test_preview_start_asks_for_a_recheck_when_signed_in(preview):
+    assert "recheck" not in _query(preview.get("/auth/discord/start", follow_redirects=False))
+    token = preview_sign_in.sign_in(_player())
+    preview.cookies.set(SESSION, token, domain="my-branch.tfminecraft.net")
+    assert _query(preview.get("/auth/discord/start", follow_redirects=False))["recheck"] == "1"
+
+
 def test_preview_start_drops_an_offsite_return(preview):
     response = preview.get("/auth/discord/start?return_to=//evil.com", follow_redirects=False)
     assert _query(response)["return_to"] == users.RETURN_DEFAULT
@@ -283,6 +290,23 @@ def test_dev_start_refreshes_a_stale_check_with_the_bot(dev, monkeypatch):
     assert response.headers["location"].startswith(PREVIEW + "/api/auth/preview/callback?")
     player = preview_sign_in.redeem(_query(response)["ticket"], PREVIEW)
     assert player["guild_member"] is True and player["guild_checked_at"] > old
+
+
+def test_dev_start_rechecks_a_recent_non_member_once(dev):
+    _dev_session(dev, guild_member=False)
+    params = {"site": PREVIEW, "state": "s" * 43, "recheck": "1"}
+    response = dev.get("/auth/preview/start", params=params, follow_redirects=False)
+    assert response.headers["location"].startswith("https://discord.com/oauth2/authorize?")
+    saved = users.consume_state(_query(response)["state"])
+    assert saved.startswith(routes.PREVIEW_START_PATH) and "recheck" not in saved
+
+
+def test_dev_start_trusts_the_bot_on_a_recheck(dev, monkeypatch):
+    monkeypatch.setattr(guild_check, "_ask", lambda discord_id, http: (True, 0.0))
+    _dev_session(dev, guild_member=False)
+    params = {"site": PREVIEW, "state": "s" * 43, "recheck": "1"}
+    response = dev.get("/auth/preview/start", params=params, follow_redirects=False)
+    assert preview_sign_in.redeem(_query(response)["ticket"], PREVIEW)["guild_member"] is True
 
 
 def test_dev_start_hands_over_a_recent_non_member_without_looping(dev):

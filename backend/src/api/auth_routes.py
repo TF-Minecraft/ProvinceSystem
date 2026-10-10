@@ -162,10 +162,10 @@ def _patreon(user: dict) -> dict | None:
 # --------------------
 
 @auth_router.get("/auth/discord/start")
-def discord_start(return_to: str | None = None):
+def discord_start(request: Request, return_to: str | None = None):
     config = _config()
     if config.via_site:
-        return _preview_start(config, return_to)
+        return _preview_start(request, config, return_to)
     state, url = users.start_sign_in(config, return_to)
     response = _no_store(RedirectResponse(url, status_code=302))
     _set_cookie(response, config, state_cookie(config), state, int(users.STATE_TTL.total_seconds()))
@@ -236,35 +236,48 @@ PREVIEW_START_PATH = "/api/auth/preview/start"
 PREVIEW_CALLBACK_PATH = "/api/auth/preview/callback"
 
 
-def _preview_start(config: AuthConfig, return_to: str | None) -> Response:
-    """On a preview: send the browser to the sign-in site, which returns it with a ticket."""
+def _preview_start(request: Request, config: AuthConfig, return_to: str | None) -> Response:
+    """On a preview: send the browser to the sign-in site, which returns it with a ticket.
+
+    Signing in again while signed in is "I've joined, check again", so dev must not hand
+    back the check it already has.
+    """
     state = secrets.token_urlsafe(32)
-    query = urlencode({"site": config.site_origin, "state": state, "return_to": users.clean_return_to(return_to)})
+    params = {"site": config.site_origin, "state": state, "return_to": users.clean_return_to(return_to)}
+    if users.session_user(request.cookies.get(session_cookie(config))) is not None:
+        params["recheck"] = "1"
+    query = urlencode(params)
     response = _no_store(RedirectResponse(f"{config.sign_in_site}{PREVIEW_START_PATH}?{query}", status_code=302))
     _set_cookie(response, config, state_cookie(config), state, int(users.STATE_TTL.total_seconds()))
     return response
 
 
 @auth_router.get("/auth/preview/start")
-def preview_start(request: Request, site: str | None = None, state: str | None = None, return_to: str | None = None):
+def preview_start(
+    request: Request,
+    site: str | None = None,
+    state: str | None = None,
+    return_to: str | None = None,
+    recheck: str | None = None,
+):
     """On dev: hand the signed-in player to a preview, signing them in here first if needed."""
     config = _config()
     target = preview_sign_in.preview_site(site)
     if config.via_site or target is None or not preview_sign_in.valid_token(state):
         raise HTTPException(404, detail="Not Found")
     back = users.clean_return_to(return_to)
-    # Discord's callback returns the browser here, now signed in.
+    # Discord's callback returns the browser here, now signed in and freshly checked.
     again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state, "return_to": back})
     if users.clean_return_to(again) != again:
         again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state})
     user = users.session_user(request.cookies.get(session_cookie(config)))
     if user is None:
-        return discord_start(again)
+        return discord_start(request, again)
     # Linking on the preview needs a recent check, and only dev can make one: with the
-    # bot, or else by signing in again. A sign-in's own check is recent, so this ends.
+    # bot, or else by signing in again. `again` drops recheck, so this ends.
     user, answered = guild_check.check(user)
-    if not answered and not users.guild_check_recent(user):
-        return discord_start(again)
+    if not answered and (recheck == "1" or not users.guild_check_recent(user)):
+        return discord_start(request, again)
     ticket = preview_sign_in.issue(target, user)
     logger.info("Preview sign-in ticket user_id=%s site=%s", user["user_id"], target)
     query = urlencode({"ticket": ticket, "state": state, "return_to": back})
