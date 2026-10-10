@@ -56,7 +56,8 @@ class PromptTest(unittest.TestCase):
         self.assertIn("Start with `# Update 5.3`.", prompt)
         self.assertIn("-# Week of 5 October 2026", prompt)
         self.assertIn("<https://example.net/updates/2026-W41>", prompt)
-        self.assertIn("# ⚔️ Balance Changes", prompt)
+        self.assertIn("# Balance Changes", prompt)
+        self.assertNotIn("⚔", prompt)
         self.assertIn("- Juggernaut (changed): attributes.max_health.base: 30 --> 28", prompt)
         self.assertIn("  - Make armour take time to put on", prompt)
         self.assertIn("- Codex: 3 changed entries", prompt)
@@ -85,7 +86,23 @@ class MessagesTest(unittest.TestCase):
         messages = compose.messages_from_response(
             {"messages": ["```\n# Update 5.3\nHi @everyone <@&123> — enjoy\n```", "  "]}
         )
-        self.assertEqual(messages, ["# Update 5.3\nHi   ,  enjoy"])
+        self.assertEqual(messages, ["# Update 5.3\nHi , enjoy"])
+
+    def test_emojis_are_removed(self) -> None:
+        messages = compose.messages_from_response(
+            {"messages": ["# ⚔️ Balance Changes\n- **Health:** 20 --> 22 ✅\n-# \U0001f527 Fixes → soon"]}
+        )
+        self.assertEqual(messages, ["# Balance Changes\n- **Health:** 20 --> 22\n-# Fixes → soon"])
+
+    def test_clock_and_media_emojis_are_removed_but_technical_symbols_stay(self) -> None:
+        self.assertEqual(compose.clean_message("⏰ Cooldown 10 --> 8 ⌛ ⏩"), "Cooldown 10 --> 8")
+        self.assertEqual(compose.clean_message("Press ⌘ then ⏎"), "Press ⌘ then ⏎")
+
+    def test_plain_symbols_stay(self) -> None:
+        text = "- C♯ balance changes ★ ✓ → done"
+        self.assertEqual(compose.clean_message(text), text)
+        self.assertEqual(compose.clean_message("⚔️ Duels and ⭐ stars"), "Duels and stars")
+        self.assertEqual(compose.clean_message("- a\n  - nested"), "- a\n  - nested")
 
     def test_unsafe_lines_are_dropped(self) -> None:
         messages = compose.messages_from_response(

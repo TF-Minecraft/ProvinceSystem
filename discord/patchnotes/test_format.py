@@ -231,7 +231,7 @@ class FoldersMessageTest(unittest.TestCase):
 
 
 class WeeklyPostTest(unittest.TestCase):
-    POST = {"label": "5.3", "act": None, "messages": ["# Update 5.3\nHi", "# 🔧 Fixes\n- One"], "source": "writer"}
+    POST = {"label": "5.3", "act": None, "messages": ["# Update 5.3\nHi", "# Fixes\n- One"], "source": "writer"}
 
     def test_title_names_the_act_on_act_weeks(self) -> None:
         self.assertEqual(notes_format.post_title(self.POST), "Update 5.3")
@@ -239,7 +239,7 @@ class WeeklyPostTest(unittest.TestCase):
 
     def test_ping_goes_in_front_of_the_first_message_only(self) -> None:
         messages = notes_format.post_messages(self.POST, "<@&42>")
-        self.assertEqual(messages, ["<@&42>\n# Update 5.3\nHi", "# 🔧 Fixes\n- One"])
+        self.assertEqual(messages, ["<@&42>\n# Update 5.3\nHi", "# Fixes\n- One"])
         self.assertEqual(notes_format.post_messages(self.POST), self.POST["messages"])
 
     def test_ping_gets_its_own_message_when_it_would_overflow(self) -> None:
@@ -254,7 +254,7 @@ class WeeklyPostTest(unittest.TestCase):
 
     def test_test_copy_says_nothing_was_posted(self) -> None:
         notice = notes_format.post_test_notice("2026-W41", self.POST)
-        self.assertTrue(notice.startswith("# 🧪 Test: Update 5.3"))
+        self.assertTrue(notice.startswith("# Test: Update 5.3"))
         self.assertIn("nobody was pinged", notice)
         self.assertIn("no buttons", notice)
 

@@ -192,7 +192,7 @@ class PostRoutesTest(unittest.TestCase):
                 headers=_HEADERS,
             )
         self.assertEqual(response.status_code, 200)
-        save.assert_called_once_with("2026-W41", ["# Update 5.3\nHi", "# 🔧 Fixes\n- Fixed knockouts"], "writer")
+        save.assert_called_once_with("2026-W41", ["# Update 5.3\nHi", "# Fixes\n- Fixed knockouts"], "writer")
         finish.assert_called_once_with("22222222-2222-2222-2222-222222222222", changed=2)
 
     def test_writer_failure_keeps_a_plain_post(self) -> None:

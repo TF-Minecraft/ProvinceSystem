@@ -36,6 +36,18 @@ TARGET_MESSAGES = 8
 MAX_MESSAGES = 15
 _FACTS_BUDGET = 60_000
 _MENTION = re.compile(r"@(everyone|here)|<@[!&]?\d+>")
+# Emoji only: pictographs, any symbol asking for emoji style (U+FE0F), the symbols
+# that always show as emoji, and leftover joiners. Plain symbols such as arrows,
+# stars, check marks and the music sharp stay.
+_EMOJI = re.compile(
+    r"[\U0001F000-\U0001FAFF]"
+    r"|[\u2000-\u2BFF\u3000-\u33FF]\uFE0F"
+    r"|[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653"
+    r"\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2"
+    r"\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757"
+    r"\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]"
+    r"|[\uFE0F\u200D\u20E3]"
+)
 _FENCE = re.compile(r"^```[a-z]*\n?|\n?```$")
 _MONTHS = (
     "January", "February", "March", "April", "May", "June", "July",
@@ -51,11 +63,11 @@ Structure, in this order:
 1. Title. {title_rule} Then `-# {week_line}` on its own line.
    Add a `## ` subtitle naming the biggest change only when one change clearly stands out. Most weeks need none.
    Then one or two sentences introducing the week.
-2. `# ⚔️ Balance Changes`: classes, attributes, skills and spells, new skills, and number changes that
+2. `# Balance Changes`: classes, attributes, skills and spells, new skills, and number changes that
    matter in a fight (damage, health, armour, cooldowns, weapon stats).
-3. `# ⚙️ Gameplay Changes`: anything that changes how an existing system works, such as a node producing
+3. `# Gameplay Changes`: anything that changes how an existing system works, such as a node producing
    faster, something dropping more, a new mechanic, crafting, professions, farming, animals, factions, trade.
-4. `# 🔧 Fixes`: only the fixes players will notice most, as short bullets.
+4. `# Fixes`: only the fixes players will notice most, as short bullets.
 5. End with exactly this line: `-# Smaller and technical changes are on the website: <{page_url}>`
 
 Rules:
@@ -72,7 +84,7 @@ Rules:
 - Never reveal lore items, codex or research entries, dungeon names or details, hidden magic schools,
   exact crafting recipes or hit counts, coordinates, commands, permissions or exploits.
 - Never write @everyone, @here or any mention. The bot adds the role ping itself.
-- Never use an em dash.
+- Never use an em dash or emojis.
 - Keep the whole post to at most {target} messages. On a busy week, fold small related changes into
   one short line each and leave minor ones to the website instead of listing everything.
 - Split the post into Discord messages in order. Each message must stay under 1900 characters.
@@ -236,6 +248,9 @@ def unsafe_line(line: str) -> bool:
 def clean_message(text: str) -> str:
     text = _FENCE.sub("", text.strip()).strip()
     text = _MENTION.sub("", text).replace("—", ", ").replace("–", "-")
+    text = _EMOJI.sub("", text)
+    # Removed emojis and mentions leave double spaces. Leading indentation stays for nested lists.
+    text = re.sub(r"(?<=\S) {2,}", " ", text)
     lines = [line.rstrip() for line in text.splitlines() if not unsafe_line(line)]
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
