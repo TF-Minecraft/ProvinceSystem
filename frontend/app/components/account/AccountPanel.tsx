@@ -392,10 +392,12 @@ export default function AccountPanel({
               )
             }
             below={
-              !minecraft && showCode && account.guild.member && !recheck ? (
+              !minecraft && account.guild.member && !recheck ? (
                 <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
               ) : null
             }
+            // Hidden rather than unmounted, so closing it mid-request keeps the request's outcome.
+            belowOpen={showCode}
           >
             {minecraft ? (
               <>
@@ -493,6 +495,7 @@ function AccountRow({
   icon,
   action,
   below,
+  belowOpen = true,
   children,
 }: {
   label: string;
@@ -501,6 +504,7 @@ function AccountRow({
   action?: ReactNode;
   /** Full-width content under the row, such as a form. */
   below?: ReactNode;
+  belowOpen?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -513,8 +517,14 @@ function AccountRow({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{service}</p>
         {children}
       </div>
-      {action ? <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-3">{action}</div> : null}
-      {below ? <div className="basis-full sm:pl-12">{below}</div> : null}
+      {action ? (
+        <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">{action}</div>
+      ) : null}
+      {below ? (
+        <div hidden={!belowOpen} className="basis-full sm:pl-12">
+          {below}
+        </div>
+      ) : null}
     </li>
   );
 }
