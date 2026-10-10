@@ -57,7 +57,8 @@ jobs:
           push: ${{ env.IS_MAIN != 'true' }}
           provenance: false
           # The browser calls the preview's own /api, which the router sends to its backend.
-          build-args: ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_API_URL={0}/api', steps.slug.outputs.url) || '' }}
+          # The backend signs players in through dev, as Discord only returns them to registered sites.
+          build-args: ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_API_URL={0}/api', steps.slug.outputs.url) || 'SIGN_IN_SITE=https://dev.tfminecraft.net' }}
           tags: ${{ env.IS_MAIN != 'true' && format('{0}-{1}:{2}', env.IMAGE_PREFIX, matrix.service, steps.slug.outputs.slug) || '' }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           # Branches cannot read each other's Actions cache, so main keeps a registry cache they all share.

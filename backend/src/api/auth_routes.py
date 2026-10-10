@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import time
 from collections import defaultdict
 from urllib.parse import urlencode, urlsplit
@@ -19,7 +20,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from src.api.prod_guard import is_production
-from src.auth import account_overview, guild_check, users
+from src.auth import account_overview, guild_check, preview_sign_in, users
 from src.auth.config import AuthConfig
 from src.auth import microsoft_link
 from src.auth.discord import DiscordClient, DiscordError
@@ -71,7 +72,7 @@ def build_microsoft_client(config: MicrosoftConfig) -> MicrosoftClient:
 
 def _config() -> AuthConfig:
     config = AuthConfig.from_env()
-    if not config.enabled or config.problems():
+    if not (config.enabled or config.via_site) or config.problems():
         raise HTTPException(503, detail="discord_auth_disabled")
     return config
 
@@ -163,6 +164,8 @@ def _patreon(user: dict) -> dict | None:
 @auth_router.get("/auth/discord/start")
 def discord_start(return_to: str | None = None):
     config = _config()
+    if config.via_site:
+        return _preview_start(config, return_to)
     state, url = users.start_sign_in(config, return_to)
     response = _no_store(RedirectResponse(url, status_code=302))
     _set_cookie(response, config, state_cookie(config), state, int(users.STATE_TTL.total_seconds()))
@@ -172,6 +175,8 @@ def discord_start(return_to: str | None = None):
 @auth_router.get("/auth/discord/callback")
 def discord_callback(request: Request, code: str | None = None, state: str | None = None, error: str | None = None):
     config = _config()
+    if config.via_site:
+        raise HTTPException(404, detail="Not Found")
     cookie_state = request.cookies.get(state_cookie(config)) or ""
     status, return_to, token = "error", users.RETURN_DEFAULT, None
     if state and cookie_state and hmac.compare_digest(cookie_state, state):
@@ -221,6 +226,99 @@ def _finish_sign_in(config: AuthConfig, code: str | None) -> str | None:
     finally:
         client.close()
     return users.sign_in(identity, guild_member=guild_member, member=member)
+
+
+# --------------------
+# Branch previews sign in through dev (src/auth/preview_sign_in.py)
+# --------------------
+
+PREVIEW_START_PATH = "/api/auth/preview/start"
+PREVIEW_CALLBACK_PATH = "/api/auth/preview/callback"
+
+
+def _preview_start(config: AuthConfig, return_to: str | None) -> Response:
+    """On a preview: send the browser to the sign-in site, which returns it with a ticket."""
+    state = secrets.token_urlsafe(32)
+    query = urlencode({"site": config.site_origin, "state": state, "return_to": users.clean_return_to(return_to)})
+    response = _no_store(RedirectResponse(f"{config.sign_in_site}{PREVIEW_START_PATH}?{query}", status_code=302))
+    _set_cookie(response, config, state_cookie(config), state, int(users.STATE_TTL.total_seconds()))
+    return response
+
+
+@auth_router.get("/auth/preview/start")
+def preview_start(request: Request, site: str | None = None, state: str | None = None, return_to: str | None = None):
+    """On dev: hand the signed-in player to a preview, signing them in here first if needed."""
+    config = _config()
+    target = preview_sign_in.preview_site(site)
+    if config.via_site or target is None or not preview_sign_in.valid_token(state):
+        raise HTTPException(404, detail="Not Found")
+    back = users.clean_return_to(return_to)
+    user = users.session_user(request.cookies.get(session_cookie(config)))
+    if user is None:
+        # Discord's callback returns the browser here, now signed in.
+        again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state, "return_to": back})
+        if users.clean_return_to(again) != again:
+            again = PREVIEW_START_PATH + "?" + urlencode({"site": target, "state": state})
+        return discord_start(again)
+    # Linking on the preview needs a recent check, and only dev has the bot to make one.
+    user, _ = guild_check.check(user)
+    ticket = preview_sign_in.issue(target, user)
+    logger.info("Preview sign-in ticket user_id=%s site=%s", user["user_id"], target)
+    query = urlencode({"ticket": ticket, "state": state, "return_to": back})
+    response = _no_store(RedirectResponse(f"{target}{PREVIEW_CALLBACK_PATH}?{query}", status_code=302))
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+class RedeemBody(BaseModel):
+    ticket: str = Field(..., max_length=256)
+    site: str = Field(..., max_length=256)
+
+
+@auth_router.post("/auth/preview/redeem")
+def preview_redeem(body: RedeemBody, response: Response):
+    """On dev: the preview's backend trades a ticket for the player it carries."""
+    config = _config()
+    site = preview_sign_in.preview_site(body.site)
+    if config.via_site or site is None:
+        raise HTTPException(404, detail="Not Found")
+    player = preview_sign_in.redeem(body.ticket, site)
+    if player is None:
+        raise HTTPException(410, detail="ticket_invalid")
+    _no_store(response)
+    return player
+
+
+@auth_router.get("/auth/preview/callback")
+def preview_callback(
+    request: Request, ticket: str | None = None, state: str | None = None, return_to: str | None = None
+):
+    """On a preview: open a session for the player dev's ticket carries."""
+    config = _config()
+    if not config.via_site:
+        raise HTTPException(404, detail="Not Found")
+    cookie_state = request.cookies.get(state_cookie(config)) or ""
+    status, token = "expired", None
+    if (
+        preview_sign_in.valid_token(state)
+        and preview_sign_in.valid_token(cookie_state)
+        and hmac.compare_digest(cookie_state, state)
+        and preview_sign_in.valid_token(ticket)
+    ):
+        player = preview_sign_in.fetch_player(config, ticket)
+        token = preview_sign_in.sign_in(player) if player else None
+        status = "ok" if token else "error"
+    logger.info("Preview sign-in callback status=%s", status)
+    response = (
+        _site_redirect(config, users.clean_return_to(return_to)) if token
+        else _site_redirect(config, users.RETURN_DEFAULT, signin=status)
+    )
+    # The ticket is in this URL; keep it out of the next page's Referer.
+    response.headers["Referrer-Policy"] = "no-referrer"
+    _clear_cookie(response, config, state_cookie(config))
+    if token:
+        _set_cookie(response, config, session_cookie(config), token, int(users.SESSION_TTL.total_seconds()))
+    return response
 
 
 @auth_router.post("/auth/logout")

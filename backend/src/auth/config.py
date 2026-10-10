@@ -30,6 +30,8 @@ class AuthConfig:
     guild_id: str
     site_url: str
     api_base: str
+    # A branch preview signs in through this site instead of with Discord; see preview_sign_in.py.
+    sign_in_site: str = ""
 
     @classmethod
     def from_env(cls) -> AuthConfig:
@@ -44,7 +46,13 @@ class AuthConfig:
             guild_id=os.getenv("DISCORD_GUILD_ID", "").strip(),
             site_url=site,
             api_base=(os.getenv("DISCORD_API_BASE", API_BASE_DEFAULT).strip() or API_BASE_DEFAULT).rstrip("/"),
+            sign_in_site=os.getenv("SIGN_IN_SITE", "").strip().rstrip("/"),
         )
+
+    @property
+    def via_site(self) -> bool:
+        """True on a branch preview, which has no Discord settings of its own."""
+        return bool(self.sign_in_site)
 
     @property
     def site_origin(self) -> str:
@@ -59,15 +67,19 @@ class AuthConfig:
     def problems(self) -> list[str]:
         """Settings that stop sign-in from working; empty when usable."""
         errors = []
+        site = _origin(self.site_url)
+        if site is None or urlsplit(self.site_url).path not in {"", "/"}:
+            errors.append("SITE_PUBLIC_URL")
+        if self.via_site:
+            if _origin(self.sign_in_site) != self.sign_in_site or self.sign_in_site == site:
+                errors.append("SIGN_IN_SITE")
+            return errors
         if not self.client_id or any(ch.isspace() for ch in self.client_id):
             errors.append("DISCORD_CLIENT_ID")
         if not self.client_secret:
             errors.append("DISCORD_CLIENT_SECRET")
         if not self.guild_id.isdigit() or len(self.guild_id) > SNOWFLAKE_MAX_LEN:
             errors.append("DISCORD_GUILD_ID")
-        site = _origin(self.site_url)
-        if site is None or urlsplit(self.site_url).path not in {"", "/"}:
-            errors.append("SITE_PUBLIC_URL")
         if not _callback_matches_site(self.redirect_uri, site) or not urlsplit(self.redirect_uri).path.endswith(
             CALLBACK_ROUTE
         ):

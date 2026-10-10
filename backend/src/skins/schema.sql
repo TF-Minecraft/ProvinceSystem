@@ -680,6 +680,17 @@ CREATE TABLE IF NOT EXISTS discord_oauth_states (
 
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);
 
+-- Single-use tickets that carry a dev sign-in to a branch preview, which
+-- redeems one with dev within two minutes (src/auth/preview_sign_in.py).
+CREATE TABLE IF NOT EXISTS preview_sign_in_tickets (
+    ticket_hash TEXT PRIMARY KEY,
+    site TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    guild_member INTEGER NOT NULL,
+    guild_checked_at TEXT,
+    expires_at TEXT NOT NULL
+);
+
 -- Single-use Microsoft link attempts, tied to the site session that started
 -- them. The callback marks a row used and deletes it once done; unlinking
 -- deletes the user's rows, which cancels any attempt still in flight.

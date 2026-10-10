@@ -87,8 +87,18 @@ def consume_state(state: str | None) -> str | None:
     return row["return_to"]
 
 
-def sign_in(identity: dict, *, guild_member: bool, member: dict | None = None) -> str:
-    """Upsert the user, open a session and return its plaintext token."""
+def sign_in(
+    identity: dict,
+    *,
+    guild_member: bool,
+    member: dict | None = None,
+    guild_checked_at: str | None = None,
+    role: str | None = None,
+) -> str:
+    """Upsert the user, open a session and return its plaintext token.
+
+    A preview passes the membership check and role dev already holds for the user.
+    """
     token = secrets.token_urlsafe(32)
     now = _utcnow()
     stamp = _iso(now)
@@ -115,13 +125,18 @@ def sign_in(identity: dict, *, guild_member: bool, member: dict | None = None) -
         user_id = conn.execute(
             "SELECT id FROM users WHERE discord_user_id = ?", (identity["discord_user_id"],)
         ).fetchone()["id"]
+        if role is not None:
+            conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
         conn.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (stamp,))
         conn.execute(
             """
             INSERT INTO user_sessions (token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (hash_secret(token), user_id, 1 if guild_member else 0, stamp, stamp, _iso(now + SESSION_TTL)),
+            (
+                hash_secret(token), user_id, 1 if guild_member else 0, guild_checked_at or stamp, stamp,
+                _iso(now + SESSION_TTL),
+            ),
         )
         conn.commit()
     if identity["discord_username"]:
