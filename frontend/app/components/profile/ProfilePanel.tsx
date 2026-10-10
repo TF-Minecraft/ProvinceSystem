@@ -175,6 +175,9 @@ export default function ProfilePanel({
   const [load, setLoad] = useState<Load>(uiDev ? { kind: "signed_out" } : { kind: "loading" });
   const [session, setSessionState] = useState<ProfileSession | null>(uiDev ? uiDevSession() : null);
   const [sessionChecked, setSessionChecked] = useState(uiDev);
+  // Bumped once when the server refuses a stored Discord session, so a fresh one is asked for.
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const sessionRetried = useRef(false);
   const [dashboard, setDashboard] = useState<ProfileDashboard | null>(uiDev ? uiDevDashboard() : null);
   const [dashboardFor, setDashboardFor] = useState<string | null>(uiDev ? UI_DEV_SESSION_TOKEN : null);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
@@ -187,6 +190,7 @@ export default function ProfilePanel({
   const [loggingOut, setLoggingOut] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const codeId = useId();
+  const panelId = useId();
   const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
 
   const refresh = useCallback(async () => {
@@ -222,7 +226,7 @@ export default function ProfilePanel({
     return () => {
       live = false;
     };
-  }, [load.kind, playerUuid, uiDev]);
+  }, [load.kind, playerUuid, sessionAttempt, uiDev]);
 
   const loadDashboard = useCallback(
     async (token: string, opts?: { quiet?: boolean }) => {
@@ -233,9 +237,16 @@ export default function ProfilePanel({
         setDashboard(await getProfileDashboard(token));
       } catch (err) {
         if (err instanceof ProfileApiError && err.status === 401) {
+          const stored = getSession();
+          const linked = stored?.source === "discord" && stored.session_token === token;
           clearSession();
           setSessionState(null);
           setDashboard(null);
+          if (linked && !sessionRetried.current) {
+            sessionRetried.current = true;
+            setSessionChecked(false);
+            setSessionAttempt((n) => n + 1);
+          }
         } else {
           setLoadError(err instanceof Error ? err.message : "Could not load profile");
         }
@@ -460,24 +471,32 @@ export default function ProfilePanel({
       ) : null}
 
       {tabs.length > 1 ? (
-        <nav className={tabBarClass} aria-label="Profile sections">
+        <div className={tabBarClass} role="tablist" aria-label="Profile sections">
           {tabs.map(([id, label]) => (
             <button
               key={id}
+              id={`${panelId}-${id}`}
               type="button"
+              role="tab"
               onClick={() => chooseTab(id)}
-              aria-current={shown === id ? "page" : undefined}
+              aria-selected={shown === id}
+              aria-controls={panelId}
               className={`${tabClass} ${shown === id ? activeTabClass : idleTabClass}`}
             >
               {label}
             </button>
           ))}
-        </nav>
+        </div>
       ) : (
         <h2 className={`${sectionHeadingClass} mt-8 mb-3`}>Linked accounts</h2>
       )}
 
-      <div className={tabs.length > 1 ? "mt-6" : undefined}>
+      <div
+        id={panelId}
+        role={tabs.length > 1 ? "tabpanel" : undefined}
+        aria-labelledby={tabs.length > 1 ? `${panelId}-${shown}` : undefined}
+        className={tabs.length > 1 ? "mt-6" : undefined}
+      >
         {shown === "accounts" ? (
           account ? (
             <LinkedAccounts

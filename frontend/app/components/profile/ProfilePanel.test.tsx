@@ -15,7 +15,7 @@ import {
   type Account,
   type AccountMinecraft,
 } from "../../../lib/account/api";
-import { getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
+import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
 import { logoutCharacter } from "../../../lib/characters/api";
@@ -158,9 +158,10 @@ it("shows the linked player's head, rank, time on the server and Profile's tabs"
   expect(container.querySelector("header")?.textContent).toMatch(/Online now on Vardera · playing since/);
   const head = container.querySelector("header img");
   expect(head?.getAttribute("src")).toBe(`https://www.tfminecraft.net/api/account/minecraft/head?u=${UUID}`);
-  const tabs = within(screen.getByRole("navigation", { name: "Profile sections" })).getAllByRole("button");
+  const tabs = within(screen.getByRole("tablist", { name: "Profile sections" })).getAllByRole("tab");
   expect(tabs.map((t) => t.textContent)).toEqual(["Characters", "Skins", "Drinks", "Custom items", "Linked accounts"]);
-  expect(tabs[4].getAttribute("aria-current")).toBe("page");
+  expect(tabs[4].getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(tabs[4].id);
   // The Profile session is kept for later visits, marked as opened through Discord.
   expect(getSession()).toMatchObject({ session_token: "linked-token", source: "discord" });
   expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
@@ -173,7 +174,7 @@ it("names the server a player was last on once", async () => {
     rank: null,
   });
   const { container } = render(<ProfilePanel tab="accounts" signin={null} />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   expect(container.querySelector("header")?.textContent).toContain("Last on Vardera 2 days ago");
 });
 
@@ -181,7 +182,7 @@ it("reuses a stored Profile session for the same player", async () => {
   setSession({ session_token: "kept", player_uuid: UUID.toUpperCase(), expires_at: "2099-01-01T00:00:00Z" }, true);
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   render(<ProfilePanel tab="accounts" signin={null} />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   expect(startLinkedProfileSession).not.toHaveBeenCalled();
   expect(getProfileDashboard).toHaveBeenCalledWith("kept");
 });
@@ -195,7 +196,7 @@ it("holds the outline until the overview and Profile arrive, then shows them tog
   expect(screen.getByText("Loading your profile…")).toBeTruthy();
   expect(screen.queryByLabelText("Minecraft account")).toBeNull();
   finish(dashboard());
-  expect(await screen.findByRole("navigation", { name: "Profile sections" })).toBeTruthy();
+  expect(await screen.findByRole("tablist", { name: "Profile sections" })).toBeTruthy();
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("SteveMC");
   expect(screen.queryByText("Loading your profile…")).toBeNull();
 });
@@ -210,7 +211,7 @@ it("shows the account while Profile is still loading if it is slow", async () =>
     expect(screen.queryByLabelText("Minecraft account")).toBeNull();
     await vi.advanceTimersByTimeAsync(2500);
     expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
-    fireEvent.click(screen.getByRole("button", { name: "Skins" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Skins" }));
     expect(screen.getByText("Loading…")).toBeTruthy();
   } finally {
     vi.useRealTimers();
@@ -239,7 +240,7 @@ it("remembers what it drew for the next outline", async () => {
   const set = vi.spyOn(Document.prototype, "cookie", "set");
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   render(<ProfilePanel tab="accounts" signin={null} />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   // No activity, rank or Patreon; Profile's tabs are open.
   await vi.waitFor(() => expect(set).toHaveBeenLastCalledWith(expect.stringMatching(/^tfmc_profile_shape=10012[-;]/)));
   set.mockRestore();
@@ -252,7 +253,7 @@ it("still shows the account when the overview and Profile can't load, without Pr
   render(<ProfilePanel tab="accounts" signin={null} />);
   expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
   await vi.waitFor(() => expect(startLinkedProfileSession).toHaveBeenCalled());
-  expect(screen.queryByRole("navigation", { name: "Profile sections" })).toBeNull();
+  expect(screen.queryByRole("tablist", { name: "Profile sections" })).toBeNull();
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
@@ -395,7 +396,7 @@ it("drops a Profile session opened through Discord when signing out", async () =
   vi.mocked(getAccount).mockResolvedValueOnce(account({ minecraft: linked() })).mockResolvedValueOnce(null);
   vi.mocked(signOut).mockResolvedValue({ ok: true });
   render(<ProfilePanel tab="accounts" signin={null} />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   expect(getSession()?.source).toBe("discord");
   fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
   expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
@@ -462,7 +463,7 @@ it("drops a Profile session opened through Discord even when the account then fa
     .mockRejectedValueOnce(new AccountApiError("down", 500));
   vi.mocked(signOut).mockResolvedValue({ ok: true });
   render(<ProfilePanel tab="accounts" signin={null} />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
   expect(await screen.findByText(/couldn’t load your account/)).toBeTruthy();
   expect(getSession()).toBeNull();
@@ -538,7 +539,7 @@ const SKIN = {
 it("opens on Characters without a code for a linked Discord account", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   render(<ProfilePanel />);
-  expect((await screen.findByRole("button", { name: "Characters" })).getAttribute("aria-current")).toBe("page");
+  expect((await screen.findByRole("tab", { name: "Characters" })).getAttribute("aria-selected")).toBe("true");
   expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
   expect(screen.queryByText(/token create profile/)).toBeNull();
   expect(screen.queryByLabelText("Minecraft account")).toBeNull();
@@ -547,12 +548,12 @@ it("opens on Characters without a code for a linked Discord account", async () =
 it("opens on the tab in the address and keeps the address in step with the tabs", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   render(<ProfilePanel tab="skins" />);
-  expect((await screen.findByRole("button", { name: "Skins" })).className).toContain("bg-");
-  expect(screen.getByRole("button", { name: "Characters" }).className).not.toContain("bg-");
-  fireEvent.click(screen.getByRole("button", { name: "Linked accounts" }));
+  expect((await screen.findByRole("tab", { name: "Skins" })).className).toContain("bg-");
+  expect(screen.getByRole("tab", { name: "Characters" }).className).not.toContain("bg-");
+  fireEvent.click(screen.getByRole("tab", { name: "Linked accounts" }));
   expect(window.location.search).toBe("?tab=accounts");
   expect(screen.getByLabelText("Minecraft account")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Characters" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Characters" }));
   expect(window.location.pathname + window.location.search).toBe("/profile");
 });
 
@@ -560,7 +561,7 @@ it("shows only Linked accounts to a Discord account without a Minecraft link", a
   vi.mocked(getAccount).mockResolvedValue(account());
   render(<ProfilePanel tab="skins" />);
   expect(await screen.findByRole("heading", { level: 2, name: "Linked accounts" })).toBeTruthy();
-  expect(screen.queryByRole("navigation", { name: "Profile sections" })).toBeNull();
+  expect(screen.queryByRole("tablist", { name: "Profile sections" })).toBeNull();
   expect(screen.getByRole("button", { name: "Link with a code from in game" })).toBeTruthy();
   expect(startLinkedProfileSession).not.toHaveBeenCalled();
 });
@@ -579,10 +580,32 @@ it("ends a code session with Log out, and offers Discord under Linked accounts",
   expect(getSession()).toBeNull();
 });
 
+it("asks for a fresh linked session once when the server refuses the stored one", async () => {
+  setSession({ session_token: "revoked", player_uuid: UUID, expires_at: "2099-01-01T00:00:00Z", source: "discord" }, true);
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockImplementation(async (token) => {
+    if (token === "revoked") throw new ProfileApiError("expired", 401);
+    return dashboard();
+  });
+  render(<ProfilePanel />);
+  await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalledWith("linked-token"));
+  expect((await screen.findByRole("tab", { name: "Characters" })).getAttribute("aria-selected")).toBe("true");
+  expect(startLinkedProfileSession).toHaveBeenCalledTimes(1);
+});
+
+it("stops after one fresh linked session if the server refuses that too", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockRejectedValue(new ProfileApiError("expired", 401));
+  render(<ProfilePanel />);
+  await screen.findByRole("heading", { level: 2, name: "Linked accounts" });
+  expect(startLinkedProfileSession).toHaveBeenCalledTimes(2);
+  expect(getProfileDashboard).toHaveBeenCalledTimes(2);
+});
+
 it("leaves no Log out for a session opened through Discord", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   render(<ProfilePanel />);
-  await screen.findByRole("navigation", { name: "Profile sections" });
+  await screen.findByRole("tablist", { name: "Profile sections" });
   expect(screen.queryByRole("button", { name: /Log out/ })).toBeNull();
 });
 
