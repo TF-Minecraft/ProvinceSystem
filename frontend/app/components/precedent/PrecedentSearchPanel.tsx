@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 
-import {
-  PrecedentApiError,
-  searchPrecedent,
-  type PrecedentSearchResult,
-} from "@/lib/precedent/api";
+import { AccountApiError } from "@/lib/account/api";
+import { adminErrorMessage } from "@/lib/admin/api";
+import { searchPrecedent, type PrecedentSearchResult } from "@/lib/precedent/api";
 import {
   cleanSynthesis,
   punishmentTone,
@@ -37,10 +35,10 @@ export default function PrecedentSearchPanel() {
       setResult(await searchPrecedent(q));
     } catch (err) {
       setResult(null);
-      if (err instanceof PrecedentApiError && err.status === 429) {
+      if (err instanceof AccountApiError && err.status === 429) {
         setError("Too many searches. Wait a minute and try again.");
       } else {
-        setError(err instanceof Error ? err.message : "Precedent search failed");
+        setError(adminErrorMessage(err));
       }
     } finally {
       setRunning(false);

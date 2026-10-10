@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 import { getAccount } from "@/lib/account/api";
 import { isStaffRole } from "@/lib/admin/api";
 
@@ -20,11 +19,6 @@ const staticLinks = [
   { href: "/updates", label: "Updates" },
 ] as const;
 
-const staffLinks = [
-  { href: "/precedent", label: "Precedent" },
-  { href: "/inspect", label: "Inspect" },
-] as const;
-
 const adminLink = { href: "/admin", label: "Admin" } as const;
 
 // Matches Tailwind's `lg` breakpoint, where the inline links replace the menu button.
@@ -35,12 +29,10 @@ function isActive(pathname: string, href: string) {
 }
 
 export default function SiteHeader() {
-  const { state } = useSiteStaffAccess({ enabled: true });
   // Only a hint for showing the link: the panel and its API check the role.
   const [isAdmin, setIsAdmin] = useState(false);
   const links = [
     ...staticLinks,
-    ...(state === "staff" ? staffLinks : []),
     ...(isAdmin ? [adminLink] : []),
   ];
   const pathname = usePathname() ?? "";

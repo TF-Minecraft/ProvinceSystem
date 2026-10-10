@@ -1,13 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import AdminColumn from "@/app/components/admin/AdminColumn";
+import { StaffGateMessage, gateKind, type GateKind } from "@/app/components/admin/StaffGate";
 import ConfirmDeleteDialog from "@/app/components/precedent/ConfirmDeleteDialog";
 import PrecedentCaseModal from "@/app/components/precedent/PrecedentCaseModal";
 import PrecedentSearchPanel from "@/app/components/precedent/PrecedentSearchPanel";
 import PrecedentTable from "@/app/components/precedent/PrecedentTable";
-import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
+import { adminErrorMessage } from "@/lib/admin/api";
 import {
   createCase,
   deleteCase,
@@ -22,10 +23,9 @@ import { collectKnownPlayers } from "@/lib/precedent/playerSuggest";
 const inputClass =
   "w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-accent)] focus:outline-none";
 
-export default function PrecedentPage() {
-  const router = useRouter();
-  const { state } = useSiteStaffAccess({ enabled: true });
-
+export default function AdminPrecedentPage() {
+  // Nothing renders until the first list proves access.
+  const [gate, setGate] = useState<GateKind | "checking" | "ready">("checking");
   const [cases, setCases] = useState<PrecedentCase[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -41,12 +41,6 @@ export default function PrecedentPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state === "unauthenticated" || state === "denied") {
-      router.replace("/");
-    }
-  }, [state, router]);
-
   const reload = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -54,19 +48,19 @@ export default function PrecedentPage() {
       const data = await listCases();
       setCases(data.cases);
       setTotal(data.total);
+      setGate("ready");
     } catch (err) {
-      setLoadError(
-        err instanceof Error ? err.message : "Could not load precedent cases"
-      );
+      const kind = gateKind(err);
+      if (kind === "error") setLoadError(adminErrorMessage(err));
+      else setGate(kind);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (state !== "staff") return;
     void reload();
-  }, [state, reload]);
+  }, [reload]);
 
   const visible = useMemo(() => filterCases(cases, filter), [cases, filter]);
   // Autocomplete source: every name already in the corpus. Derived from the
@@ -86,7 +80,7 @@ export default function PrecedentPage() {
       setEditing(null);
       await reload();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Could not save the case");
+      setSaveError(adminErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -101,42 +95,32 @@ export default function PrecedentPage() {
       setDeleteTarget(null);
       await reload();
     } catch (err) {
-      setDeleteError(
-        err instanceof Error ? err.message : "Could not delete the case"
-      );
+      setDeleteError(adminErrorMessage(err));
     } finally {
       setDeleting(false);
     }
   }
 
-  if (state === "loading") {
+  if (gate !== "ready") {
     return (
-      <main className="mx-auto w-full max-w-md px-6 py-10">
-        <p className="text-sm text-[var(--tfmc-mist)]">Checking access…</p>
-      </main>
+      <AdminColumn>
+        {gate === "checking" ? (
+          loadError ? (
+            <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">{loadError}</p>
+          ) : (
+            <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+          )
+        ) : (
+          <StaffGateMessage kind={gate} />
+        )}
+      </AdminColumn>
     );
   }
 
-  if (state !== "staff") {
-    return null;
-  }
-
   return (
-    <main className="relative mx-auto w-full max-w-5xl px-6 py-10">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-80"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in srgb, var(--tfmc-moss) 35%, transparent), transparent 65%)",
-        }}
-      />
-
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Precedent
-      </h1>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Every logged moderation case.
+    <AdminColumn>
+      <p className="mt-6 text-sm text-[var(--tfmc-mist)]">
+        Every logged moderation case, as the Discord bot&rsquo;s /precedent searches them.
       </p>
 
       <div className="mt-8">
@@ -213,6 +197,6 @@ export default function PrecedentPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => void handleDelete()}
       />
-    </main>
+    </AdminColumn>
   );
 }

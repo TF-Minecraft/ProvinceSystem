@@ -20,6 +20,10 @@ CAPABILITIES = {
     # change, beyond viewing, is decided per node by src/luckperms/policy.py.
     "view_luckperms": "mod",
     "change_luckperms": "admin",
+    # Moderation case log; the Discord bot reaches it with its own key.
+    "use_precedent": "mod",
+    # Read-only lookup of skin and drink codes.
+    "inspect_codes": "mod",
 }
 
 

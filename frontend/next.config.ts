@@ -20,6 +20,13 @@ const nextConfig: NextConfig = {
   typescript: {
     tsconfigPath: "tsconfig.build.json",
   },
+  // Staff tools that moved into the staff panel.
+  async redirects() {
+    return [
+      { source: "/precedent", destination: "/admin/precedent", permanent: false },
+      { source: "/inspect", destination: "/admin/codes", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

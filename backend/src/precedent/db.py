@@ -26,7 +26,7 @@ class PrecedentDBError(RuntimeError):
 class AuditActor:
     """Who performed a write, for the precedent_audit trail.
 
-    `source` is "web" for a site-staff Bearer session and "bot" for the shared
+    `source` is "web" for a staff panel account and "bot" for the shared
     STAFF_KEY. Only the web path carries a verified identity: the bot's key is
     shared, so `actor` there is whatever the caller supplied and must not be
     treated as proof of who acted.

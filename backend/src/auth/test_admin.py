@@ -84,7 +84,8 @@ def test_role_rules():
     # Roots may act on other roots; cannot_act_on_self still covers their own account.
     assert roles.outranks("root", "root") and not roles.outranks("admin", "root")
     assert not roles.is_staff("player") and not roles.is_staff("wizard") and roles.is_staff("mod")
-    assert roles.capabilities("mod") == ["view_admin", "view_players", "revoke_sessions", "view_luckperms"]
+    assert roles.capabilities("mod") == ["view_admin", "view_players", "revoke_sessions", "view_luckperms",
+                                        "use_precedent", "inspect_codes"]
     assert roles.capabilities("bogus") == []
 
 
@@ -161,7 +162,7 @@ def test_panel_reads_need_staff(app, env):
     _, mod = account(env, "mona", "mod")
     me = client(app, mod).get("/admin/me")
     assert me.status_code == 200 and me.headers["cache-control"] == "no-store"
-    assert me.json()["capabilities"] == ["view_admin", "view_players", "revoke_sessions", "view_luckperms"]
+    assert me.json()["capabilities"] == roles.capabilities("mod")
     assert me.json()["assignable_roles"] == []
 
 
