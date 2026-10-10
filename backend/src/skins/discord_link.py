@@ -66,6 +66,7 @@ def _row_to_link(row) -> dict:
         "linked_at": row["linked_at"],
         "left_guild_at": left,
         "grace_until": grace,
+        "link_method": row["link_method"] if "link_method" in row.keys() else None,
     }
 
 
@@ -90,6 +91,7 @@ def _status_from_row(row, *, now: datetime | None = None) -> dict:
         "linked_at": link["linked_at"],
         "left_guild_at": link.get("left_guild_at"),
         "grace_until": grace_until,
+        "link_method": link.get("link_method"),
     }
 
 
@@ -318,7 +320,7 @@ def complete_link(
     with connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = _usable_code_row(conn, code, now)
-        result = _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now)
+        result = _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now, "code")
         conn.commit()
     return result
 
@@ -351,12 +353,13 @@ def link_verified_profile(
         conn.execute("BEGIN IMMEDIATE")
         if still_allowed is not None and not still_allowed(conn):
             raise LinkError("This link attempt is no longer valid")
-        result = _bind(conn, uuid, name, discord_id, username, _utcnow())
+        result = _bind(conn, uuid, name, discord_id, username, _utcnow(), "microsoft")
         conn.commit()
     return result
 
 
-def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, username: str | None, now: datetime) -> dict:
+def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, username: str | None, now: datetime,
+          method: str) -> dict:
     """Write the link inside the caller's immediate transaction."""
     linked_at = _iso(now)
     existing = conn.execute(
@@ -380,10 +383,10 @@ def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, u
             """
             INSERT INTO discord_links (
                 player_uuid, discord_user_id, minecraft_name,
-                discord_username, linked_at, left_guild_at, grace_until
-            ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
+                discord_username, linked_at, left_guild_at, grace_until, link_method
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)
             """,
-            (player_uuid, discord_id, minecraft_name, username, linked_at),
+            (player_uuid, discord_id, minecraft_name, username, linked_at, method),
         )
     else:
         # Same pair again: refresh names, keep the original link and grace.

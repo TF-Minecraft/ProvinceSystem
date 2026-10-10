@@ -5,23 +5,70 @@ import AccountPanel from "./AccountPanel";
 import {
   AccountApiError,
   getAccount,
+  getAccountOverview,
   linkMinecraft,
   previewMinecraftLink,
   signOut,
+  startLinkedProfileSession,
   startMicrosoftLink,
+  unlinkAccountPatreon,
   type Account,
+  type AccountMinecraft,
 } from "../../../lib/account/api";
+import { getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
+import { getSession, setSession } from "../../../lib/profile/session";
 
 vi.mock("../../../lib/account/api", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../lib/account/api")>(),
   getAccount: vi.fn(),
+  getAccountOverview: vi.fn(),
   previewMinecraftLink: vi.fn(),
   linkMinecraft: vi.fn(),
   signOut: vi.fn(),
   unlinkMinecraft: vi.fn(),
   startAccountPatreonLink: vi.fn(),
+  startLinkedProfileSession: vi.fn(),
   startMicrosoftLink: vi.fn(),
+  unlinkAccountPatreon: vi.fn(),
 }));
+vi.mock("../../../lib/profile/api", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../../lib/profile/api")>(),
+  getProfileDashboard: vi.fn(),
+}));
+vi.mock("../../../lib/characters/api", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../../lib/characters/api")>(),
+  logoutCharacter: vi.fn(),
+}));
+
+const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
+
+function linked(overrides: Partial<AccountMinecraft> = {}): AccountMinecraft {
+  return {
+    player_uuid: UUID,
+    minecraft_name: "SteveMC",
+    linked_at: "2026-09-01T00:00:00Z",
+    in_grace: false,
+    grace_until: null,
+    ...overrides,
+  };
+}
+
+function dashboard(): ProfileDashboard {
+  return {
+    characters: [
+      { status: "ALIVE" },
+      { status: "dead" },
+      { status: "pending" },
+    ] as unknown as ProfileDashboard["characters"],
+    max_alive_characters: 5,
+    skins: [
+      { id: "a", kind: "armor", slug: "a", display_name: "A", status: "pending", created_at: "z" },
+      { id: "b", kind: "armor", slug: "b", display_name: "B", status: "approved", created_at: "z" },
+    ],
+    drinks: [],
+    custom_items: [],
+  };
+}
 
 function account(overrides: Partial<Account> = {}): Account {
   return {
@@ -38,9 +85,18 @@ function account(overrides: Partial<Account> = {}): Account {
   };
 }
 
-beforeEach(() => vi.stubEnv("NEXT_PUBLIC_API_URL", "https://www.tfminecraft.net/api"));
+beforeEach(() => {
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "https://www.tfminecraft.net/api");
+  vi.mocked(getAccountOverview).mockResolvedValue({ activity: null, rank: null });
+  vi.mocked(startLinkedProfileSession).mockResolvedValue({
+    session_token: "linked-token", player_uuid: UUID, expires_at: "2099-01-01T00:00:00Z", scope: "profile", realm_id: "main",
+  });
+  vi.mocked(getProfileDashboard).mockResolvedValue(dashboard());
+});
 afterEach(() => {
   cleanup();
+  localStorage.clear();
+  sessionStorage.clear();
   vi.clearAllMocks();
   vi.unstubAllEnvs();
 });
@@ -62,12 +118,60 @@ it("says when sign-in is not configured", async () => {
 });
 
 it("shows an existing Minecraft link", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked({ link_method: "microsoft" }) }));
+  render(<AccountPanel signin={null} />);
+  const row = await screen.findByLabelText("Minecraft account");
+  expect(row.textContent).toContain("SteveMC");
+  expect(row.textContent).toContain("Linked with Microsoft");
+  expect(within(row).getByRole("button", { name: "Unlink" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("SteveMC");
+});
+
+it("shows the linked player's head, rank, time on the server and Profile counts", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({
-    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-09-01T00:00:00Z", in_grace: false, grace_until: null },
+    minecraft: linked(),
+    patreon: { linked: true, tier_name: "Noble" },
   }));
+  vi.mocked(getAccountOverview).mockResolvedValue({
+    activity: { first_seen: 1_740_960_000, last_seen: 1_790_000_000, online: true, server_label: "Vardera" },
+    rank: "Builder",
+  });
+  const { container } = render(<AccountPanel signin={null} />);
+  expect(await screen.findByText("Builder")).toBeTruthy();
+  expect(screen.getByText("Noble supporter")).toBeTruthy();
+  expect(container.querySelector("header")?.textContent).toMatch(/Online now on Vardera · playing since/);
+  const head = container.querySelector("header img");
+  expect(head?.getAttribute("src")).toBe(`https://www.tfminecraft.net/api/account/minecraft/head?u=${UUID}`);
+  const tiles = await screen.findByRole("navigation", { name: "Your Profile" });
+  const links = within(tiles).getAllByRole("link");
+  expect(links.map((l) => l.getAttribute("href"))).toEqual([
+    "/profile?tab=characters", "/profile?tab=skins", "/profile?tab=drinks", "/profile?tab=items",
+  ]);
+  expect(links[0].textContent).toBe("1 / 5Characters1 waiting");
+  expect(links[1].textContent).toBe("2Skins1 waiting");
+  // The Profile session is kept for the Profile page, marked as opened through Discord.
+  expect(getSession()).toMatchObject({ session_token: "linked-token", source: "discord" });
+  expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
+});
+
+it("reuses a stored Profile session for the same player", async () => {
+  setSession({ session_token: "kept", player_uuid: UUID.toUpperCase(), expires_at: "2099-01-01T00:00:00Z" }, true);
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  expect(startLinkedProfileSession).not.toHaveBeenCalled();
+  expect(getProfileDashboard).toHaveBeenCalledWith("kept");
+});
+
+it("still shows the account when the overview and Profile can't load", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getAccountOverview).mockRejectedValue(new AccountApiError("down", 500));
+  vi.mocked(startLinkedProfileSession).mockRejectedValue(new AccountApiError("down", 500));
   render(<AccountPanel signin={null} />);
   expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
-  expect(screen.getByRole("button", { name: "Unlink Minecraft account" })).toBeTruthy();
+  await vi.waitFor(() => expect(startLinkedProfileSession).toHaveBeenCalled());
+  expect(screen.queryByRole("navigation", { name: "Your Profile" })).toBeNull();
+  expect(screen.queryByRole("alert")).toBeNull();
 });
 
 it("previews then links a code, naming both accounts", async () => {
@@ -83,7 +187,7 @@ it("previews then links a code, naming both accounts", async () => {
     "Link Minecraft account SteveMC to Discord @steve_tfmc?"
   );
   fireEvent.click(screen.getByRole("button", { name: "Link account" }));
-  expect(await screen.findByRole("button", { name: "Unlink Minecraft account" })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: "Unlink" })).toBeTruthy();
   expect(linkMinecraft).toHaveBeenCalledWith("abcd1234ef56");
 });
 
@@ -153,26 +257,60 @@ it("shows the grace deadline with a time", async () => {
   expect(text).toMatch(/\d{1,2}:\d{2}/);
 });
 
-it("lists Discord, Minecraft and Patreon as steps with their status", async () => {
-  vi.mocked(getAccount).mockResolvedValue(account({
-    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-09-01T00:00:00Z", in_grace: false, grace_until: null },
-    patreon: { linked: false },
-  }));
+it("lists Discord, Minecraft and Patreon in one card", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked(), patreon: { linked: false } }));
   render(<AccountPanel signin={null} />);
-  const steps = within(await screen.findByRole("list", { name: "Connected accounts" })).getAllByRole("listitem");
-  expect(steps.map((step) => step.getAttribute("aria-label"))).toEqual(["Discord account", "Minecraft account", "Patreon"]);
-  expect(steps[0].textContent).toContain("Signed in");
-  expect(steps[1].textContent).toContain("SteveMC");
-  expect(steps[1].textContent).not.toContain("Mojang");
-  expect(steps[2].textContent).toContain("Not connected");
+  const rows = within(await screen.findByRole("list", { name: "Connected accounts" })).getAllByRole("listitem");
+  expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual(["Discord account", "Minecraft account", "Patreon"]);
+  expect(rows[0].textContent).toContain("@steve_tfmc");
+  expect(within(rows[0]).getByRole("button", { name: "Sign out" })).toBeTruthy();
+  expect(rows[1].textContent).toContain("SteveMC");
+  expect(rows[2].textContent).toContain("Not connected");
 });
 
-it("says when Patreon linking is unavailable", async () => {
+it("leaves Patreon out when Patreon linking is off", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
   render(<AccountPanel signin={null} />);
+  await screen.findByLabelText("Minecraft account");
+  expect(screen.queryByLabelText("Patreon")).toBeNull();
+});
+
+it("invites a connected Patreon without a tier to support, and disconnects after confirming", async () => {
+  vi.mocked(getAccount)
+    .mockResolvedValueOnce(account({ patreon: { linked: true, patreon_name: "Wonder" } }))
+    .mockResolvedValueOnce(account({ patreon: { linked: false } }));
+  vi.mocked(unlinkAccountPatreon).mockResolvedValue({ unlinked: true });
+  render(<AccountPanel signin={null} />);
   const row = await screen.findByLabelText("Patreon");
-  expect(row.textContent).toContain("Unavailable");
-  expect(row.textContent).not.toContain("isn’t available");
+  expect(row.textContent).toContain("No active tier");
+  expect(row.textContent).toContain("Connected as Wonder");
+  expect(within(row).getByRole("link", { name: /Become a supporter/ }).getAttribute("href")).toBe(
+    "https://www.patreon.com/c/tfmcrp"
+  );
+  fireEvent.click(within(row).getByRole("button", { name: "Disconnect" }));
+  expect(unlinkAccountPatreon).not.toHaveBeenCalled();
+  fireEvent.click(within(row).getByRole("button", { name: "Disconnect" }));
+  expect(await screen.findByRole("button", { name: "Connect Patreon" })).toBeTruthy();
+  expect(unlinkAccountPatreon).toHaveBeenCalledTimes(1);
+});
+
+it("thanks a supporter by tier and skips the supporter link", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ patreon: { linked: true, tier_name: "Gilded" } }));
+  render(<AccountPanel signin={null} />);
+  const row = await screen.findByLabelText("Patreon");
+  expect(row.textContent).toContain("Supporting as Gilded. Thank you!");
+  expect(within(row).queryByRole("link")).toBeNull();
+});
+
+it("drops a Profile session opened through Discord when signing out", async () => {
+  vi.mocked(getAccount).mockResolvedValueOnce(account({ minecraft: linked() })).mockResolvedValueOnce(null);
+  vi.mocked(signOut).mockResolvedValue({ ok: true });
+  render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  expect(getSession()?.source).toBe("discord");
+  fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
+  expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
+  expect(getSession()).toBeNull();
 });
 
 it("offers Microsoft first, with the in-game code as a fallback", async () => {
@@ -181,9 +319,9 @@ it("offers Microsoft first, with the in-game code as a fallback", async () => {
   const assign = vi.fn();
   vi.stubGlobal("location", { ...window.location, assign });
   render(<AccountPanel signin={null} />);
-  const row = await screen.findByLabelText("Minecraft account");
-  expect(within(row).getByText("Or use a code from in game")).toBeTruthy();
-  fireEvent.click(within(row).getByRole("button", { name: "Connect with Microsoft" }));
+  const section = await screen.findByRole("region", { name: "Link your Minecraft account" });
+  expect(within(section).getByText("Or use a code from in game")).toBeTruthy();
+  fireEvent.click(within(section).getByRole("button", { name: "Sign in with Microsoft" }));
   await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(
     "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?x=1"
   ));
@@ -194,15 +332,15 @@ it("keeps only the code form when Microsoft is not set up", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: false }));
   render(<AccountPanel signin={null} />);
   expect(await screen.findByLabelText("Link code")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Connect with Microsoft" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign in with Microsoft" })).toBeNull();
 });
 
 it("asks for a fresh Discord check before opening Microsoft", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
   vi.mocked(startMicrosoftLink).mockRejectedValue(new AccountApiError("guild_check_stale", 403));
   render(<AccountPanel signin={null} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Connect with Microsoft" }));
-  expect((await screen.findByRole("link", { name: "Confirm with Discord" })).getAttribute("href")).toContain(
+  fireEvent.click(await screen.findByRole("button", { name: "Sign in with Microsoft" }));
+  expect((await screen.findByRole("link", { name: "Sign in with Discord" })).getAttribute("href")).toContain(
     "/auth/discord/start"
   );
 });
@@ -216,9 +354,9 @@ it("explains why a Microsoft link failed", async () => {
 it("confirms a Microsoft link from the account itself", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({
     microsoft_link: true,
-    minecraft: { player_uuid: "u", minecraft_name: "SteveMC", linked_at: "2026-10-10T09:00:00Z", in_grace: false, grace_until: null },
+    minecraft: linked({ linked_at: "2026-10-10T09:00:00Z", link_method: "microsoft" }),
   }));
   render(<AccountPanel signin={null} minecraft="linked" />);
-  expect((await screen.findByRole("status")).textContent).toBe("Linked with Microsoft.");
+  expect((await screen.findByRole("status")).textContent).toBe("Linked SteveMC with Microsoft.");
   expect(screen.queryByRole("alert")).toBeNull();
 });

@@ -26,8 +26,21 @@ import {
 import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../lib/characters/sheetDev";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
+import { discordSignInUrl, getAccount, signOut } from "../../lib/account/api";
+import { linkedProfileSession } from "../../lib/account/profileSession";
+import { DiscordSignInLink } from "../components/account/BrandButtons";
 
 type TabId = "characters" | "skins" | "drinks" | "items";
+
+const TABS: readonly TabId[] = ["characters", "skins", "drinks", "items"];
+
+function tabFromUrl(): TabId {
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return TABS.find((t) => t === tab) ?? "characters";
+}
+
+/** What a visitor without a Profile session can do instead of entering a code. */
+type DiscordState = "checking" | "signed_out" | "not_linked" | "unavailable";
 
 const PENDING_POLL_MS = 10_000;
 
@@ -82,6 +95,7 @@ export default function ProfilePage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [tab, setTab] = useState<TabId>("characters");
+  const [discord, setDiscord] = useState<DiscordState>("checking");
 
   const loadDashboard = useCallback(
     async (token: string, opts?: { quiet?: boolean }) => {
@@ -121,14 +135,38 @@ export default function ProfilePage() {
       setReady(true);
       return;
     }
+    setTab(tabFromUrl());
     const existing = getSession();
     if (isSessionValid(existing)) {
       setSessionState(existing);
       void loadDashboard(existing!.session_token);
-    } else if (existing) {
-      clearSession();
+      setReady(true);
+      return;
     }
-    setReady(true);
+    if (existing) clearSession();
+    // A Discord sign-in with a linked Minecraft account opens Profile without a code.
+    let live = true;
+    (async () => {
+      try {
+        const account = await getAccount();
+        const uuid = account?.minecraft?.player_uuid;
+        if (!uuid) {
+          if (live) setDiscord(account ? "not_linked" : "signed_out");
+          return;
+        }
+        const next = await linkedProfileSession(uuid);
+        if (!live) return;
+        setSessionState(next);
+        void loadDashboard(next.session_token);
+      } catch {
+        if (live) setDiscord("unavailable");
+      } finally {
+        if (live) setReady(true);
+      }
+    })();
+    return () => {
+      live = false;
+    };
   }, [loadDashboard, uiDev]);
 
   useEffect(() => {
@@ -154,16 +192,25 @@ export default function ProfilePage() {
     }
     if (!session) return;
     setLoggingOut(true);
+    const fromDiscord = session.source === "discord";
     try {
       await logoutCharacter(session.session_token);
     } catch {
       // still clear locally
-    } finally {
-      clearSession();
-      setSessionState(null);
-      setDashboard(null);
-      setLoggingOut(false);
     }
+    // Opened through Discord: stay signed out rather than reopening on the next visit.
+    if (fromDiscord) {
+      try {
+        await signOut();
+      } catch {
+        // The Account page shows if the Discord session is still active.
+      }
+    }
+    clearSession();
+    setSessionState(null);
+    setDashboard(null);
+    if (fromDiscord) setDiscord("signed_out");
+    setLoggingOut(false);
   }
 
   if (!ready) {
@@ -203,8 +250,27 @@ export default function ProfilePage() {
 
       {!valid ? (
         <>
-          <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game,
+          {discord === "signed_out" ? (
+            <>
+              <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+                Sign in with the Discord account linked to your Minecraft account.
+              </p>
+              <div className="mt-6 flex">
+                <DiscordSignInLink href={discordSignInUrl("/profile")} />
+              </div>
+            </>
+          ) : null}
+          {discord === "not_linked" ? (
+            <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+              <Link href="/account" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+                Link your Minecraft account
+              </Link>{" "}
+              to open your Profile without a code.
+            </p>
+          ) : null}
+          <p className="mt-6 text-sm text-[var(--tfmc-mist)]">
+            {discord === "signed_out" || discord === "not_linked" ? "Or run " : "Run "}
+            <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game,
             then enter the code below.
           </p>
           <ProfileRedeemForm onRedeemed={onRedeemed} />
@@ -213,14 +279,25 @@ export default function ProfilePage() {
         <>
           <SupporterPanel sessionToken={session!.session_token} />
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-stone)]">
-            <span>Session expires {formatExpiresIn(session!.expires_at)}</span>
+            {session!.source === "discord" ? (
+              <span>
+                Opened through your{" "}
+                <Link href="/account" className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+                  linked Discord account
+                </Link>
+              </span>
+            ) : (
+              <span>Session expires {formatExpiresIn(session!.expires_at)}</span>
+            )}
             <button
               type="button"
               onClick={() => void onLogout()}
               disabled={loggingOut}
               className="text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
             >
-              {loggingOut ? "Logging out…" : "Log out"}
+              {session!.source === "discord"
+                ? loggingOut ? "Signing out…" : "Sign out"
+                : loggingOut ? "Logging out…" : "Log out"}
             </button>
           </div>
 
