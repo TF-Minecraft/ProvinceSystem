@@ -14,7 +14,6 @@ const staticLinks = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Map" },
   { href: "/profile", label: "Profile" },
-  { href: "/account", label: "Account" },
   { href: "/wiki", label: "Guide" },
   { href: "/updates", label: "Updates" },
 ] as const;
