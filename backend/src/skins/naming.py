@@ -21,19 +21,32 @@ RESERVED = frozenset(
     }
 )
 
-ARMOR_TIERS = frozenset(
-    {"iron", "steel", "abyssalite", "mythril", "mage", "infantry"}
-)
+# One armour submission is one metal line: up to one set of each type, all the
+# same metal. Each set's tier id is ``{type}_{metal}`` (slug-safe: it is part of
+# the shop key and IA ids) and its ArmourShop base set is ``{type} {metal}``.
+ARMOR_TYPES = ("light", "medium", "heavy", "infantry", "mage")
+ARMOR_METALS = ("iron", "steel", "bronze", "abyssalite", "mythril")
+MAX_ARMOR_SETS = len(ARMOR_TYPES)
 
-# Default display suffix per tier (matches hand-authored shop YAML: "Osenic Iron").
-ARMOR_TIER_LABELS: dict[str, str] = {
-    "iron": "Iron",
-    "steel": "Steel",
-    "abyssalite": "Abyssalite",
-    "mythril": "Mythril",
-    "mage": "Mage",
-    "infantry": "Infantry",
-}
+
+def parse_armor_tier(tier: str) -> tuple[str, str] | None:
+    """``light_iron`` → ``("light", "iron")``; None for anything else."""
+    armor_type, _, metal = (tier or "").partition("_")
+    if armor_type in ARMOR_TYPES and metal in ARMOR_METALS:
+        return armor_type, metal
+    return None
+
+
+def armor_tier_base_set(tier: str) -> str:
+    """ArmourShop base set for a tier. Older bare tiers (``iron``, ``mage``) are their own set."""
+    parsed = parse_armor_tier(tier)
+    return f"{parsed[0]} {parsed[1]}" if parsed else tier
+
+
+def armor_tier_label(tier: str) -> str:
+    """Default display suffix: ``Light Iron`` (matches shop YAML like "Osenic Iron")."""
+    return " ".join(part.capitalize() for part in armor_tier_base_set(tier).split())
+
 
 MAX_TIER_ALIAS_LEN = 32
 

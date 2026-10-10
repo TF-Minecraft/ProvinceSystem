@@ -635,7 +635,7 @@ async def post_submissions(
     if kind == "armor_set" and not tiers_list:
         has_unprefixed = any(field in files_bytes for field in ARMOR_FIELDS)
         if has_unprefixed:
-            tier = (base_set or "iron").strip().lower()
+            tier = (base_set or "light_iron").strip().lower()
             tiers_list = [tier]
             remapped: dict[str, bytes] = {}
             remapped_names: dict[str, str | None] = {}

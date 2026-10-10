@@ -8,7 +8,9 @@ import { filterStaffCategories } from "../../../lib/skins/catalog";
 import { DEV_CATALOG_ENTITLEMENTS, DEV_SESSION_SKIN_KINDS } from "../../../lib/skins/entitlementsDev";
 import { setLastSubmissionId } from "../../../lib/skins/session";
 import {
-  ARMOR_TIERS,
+  ARMOR_TYPES,
+  armorTier,
+  armorTierLabel,
   baseSetLabel,
   baseSetPickerTitle,
   baseSetsForKind,
@@ -49,7 +51,7 @@ import {
 } from "../../../lib/skins/flatItemDisplay";
 import { assertVanillaJavaBlockModelFile } from "../../../lib/skins/javaModel";
 
-const MAX_TIERS = ARMOR_TIERS.length;
+const MAX_SETS = ARMOR_TYPES.length;
 
 function isFlatPreviewKind(kind: SkinKind): boolean {
   return (
@@ -94,12 +96,13 @@ type Props = {
 };
 
 type TierEntry = {
-  tier: string;
-  /** Display suffix for this tier (default Iron/Steel/…). */
+  /** Armour type (light, medium, …); the tier id adds the chosen metal. */
+  type: string;
+  /** Display suffix for this set; empty means the default (Light Iron, …). */
   alias: string;
   /** When true, helmet is model+texture instead of 16×16 icon. */
   helmet3d: boolean;
-  /** Staff only: scroll id for this tier. */
+  /** Staff only: scroll id for this set. */
   scroll: string;
   files: Record<string, File | null>;
 };
@@ -188,7 +191,7 @@ export default function UploadForm({
   const canUseArmor3dHelmet = staff || allowArmor3dHelmet;
   const [tiers, setTiers] = useState<TierEntry[]>([]);
   const [tierToAdd, setTierToAdd] = useState<string>("");
-  /** Which added tier the armor mannequin preview shows. */
+  /** Which added set (by type) the armor mannequin preview shows. */
   const [previewArmorTier, setPreviewArmorTier] = useState<string>("");
   const [itemName, setItemName] = useState("");
   const [applyName, setApplyName] = useState(true);
@@ -291,15 +294,18 @@ export default function UploadForm({
   const staffScrolls = catalog?.scrolls ?? [];
   const previewFiles = resolveModelPreviewFiles(kind, files);
 
-  const remainingTiers: string[] = ARMOR_TIERS.filter(
-    (t) => !tiers.some((entry) => entry.tier === t)
+  /** Armour's base-set picker is the metal; every set in the line uses it. */
+  const tierId = (entry: TierEntry) => armorTier(entry.type, baseSet);
+  const tierLabel = (entry: TierEntry) => armorTierLabel(tierId(entry));
+  const remainingTiers: string[] = ARMOR_TYPES.filter(
+    (t) => !tiers.some((entry) => entry.type === t)
   );
   const effectiveTierToAdd = remainingTiers.includes(tierToAdd)
     ? tierToAdd
     : remainingTiers[0] ?? "";
 
   const previewTierEntry =
-    tiers.find((e) => e.tier === previewArmorTier) ?? tiers[0] ?? null;
+    tiers.find((e) => e.type === previewArmorTier) ?? tiers[0] ?? null;
 
   useEffect(() => {
     if (!isArmor) {
@@ -310,8 +316,8 @@ export default function UploadForm({
       setPreviewArmorTier("");
       return;
     }
-    if (!tiers.some((e) => e.tier === previewArmorTier)) {
-      setPreviewArmorTier(tiers[0]!.tier);
+    if (!tiers.some((e) => e.type === previewArmorTier)) {
+      setPreviewArmorTier(tiers[0]!.type);
     }
   }, [isArmor, tiers, previewArmorTier]);
 
@@ -328,14 +334,14 @@ export default function UploadForm({
     if (file) apply(file);
   }
 
-  function addTier(tier: string) {
-    if (!tier || tiers.some((entry) => entry.tier === tier)) return;
-    if (tiers.length >= MAX_TIERS) return;
+  function addTier(type: string) {
+    if (!type || tiers.some((entry) => entry.type === type)) return;
+    if (tiers.length >= MAX_SETS) return;
     setTiers((prev) => [
       ...prev,
       {
-        tier,
-        alias: baseSetLabel(tier),
+        type,
+        alias: "",
         helmet3d: false,
         scroll: "",
         files: {},
@@ -345,30 +351,30 @@ export default function UploadForm({
     setError(null);
   }
 
-  function removeTier(tier: string) {
-    setTiers((prev) => prev.filter((entry) => entry.tier !== tier));
+  function removeTier(type: string) {
+    setTiers((prev) => prev.filter((entry) => entry.type !== type));
   }
 
-  function setTierAlias(tier: string, alias: string) {
+  function setTierAlias(type: string, alias: string) {
     setTiers((prev) =>
       prev.map((entry) =>
-        entry.tier === tier ? { ...entry, alias } : entry
+        entry.type === type ? { ...entry, alias } : entry
       )
     );
   }
 
-  function setTierScroll(tier: string, scrollId: string) {
+  function setTierScroll(type: string, scrollId: string) {
     setTiers((prev) =>
       prev.map((entry) =>
-        entry.tier === tier ? { ...entry, scroll: scrollId } : entry
+        entry.type === type ? { ...entry, scroll: scrollId } : entry
       )
     );
   }
 
-  function setTierHelmet3d(tier: string, helmet3d: boolean) {
+  function setTierHelmet3d(type: string, helmet3d: boolean) {
     setTiers((prev) =>
       prev.map((entry) => {
-        if (entry.tier !== tier) return entry;
+        if (entry.type !== type) return entry;
         const files = { ...entry.files };
         if (helmet3d) {
           delete files.helmet;
@@ -381,10 +387,10 @@ export default function UploadForm({
     );
   }
 
-  function setTierFile(tier: string, field: string, file: File | null) {
+  function setTierFile(type: string, field: string, file: File | null) {
     setTiers((prev) =>
       prev.map((entry) =>
-        entry.tier === tier
+        entry.type === type
           ? { ...entry, files: { ...entry.files, [field]: file } }
           : entry
       )
@@ -417,7 +423,7 @@ export default function UploadForm({
         const aliasErr = displayNameError(alias, {
           minLen: 1,
           maxLen: 32,
-          field: `tier alias for ${baseSetLabel(entry.tier)}`,
+          field: `set name for ${tierLabel(entry)}`,
         });
         if (aliasErr) {
           setError(aliasErr);
@@ -426,13 +432,13 @@ export default function UploadForm({
       }
     }
 
-    if (!isArmor && (!baseSet || !baseOptions.includes(baseSet))) {
+    if (!baseSet || !baseOptions.includes(baseSet)) {
       setError(`Choose a ${baseSetPickerTitle(kind).toLowerCase()}`);
       return;
     }
 
     if (isArmor && tiers.length < 1) {
-      setError("Add at least 1 armour tier");
+      setError("Add at least 1 armour set");
       return;
     }
 
@@ -453,8 +459,8 @@ export default function UploadForm({
         const missing = tiers.filter((e) => !e.scroll.trim());
         if (missing.length) {
           setError(
-            `Choose a scroll for each armor tier (${missing
-              .map((e) => baseSetLabel(e.tier))
+            `Choose a scroll for each armour set (${missing
+              .map(tierLabel)
               .join(", ")})`
           );
           return;
@@ -481,7 +487,7 @@ export default function UploadForm({
     if (isArmor) {
       try {
         for (const entry of tiers) {
-          const tierLabel = baseSetLabel(entry.tier);
+          const setLabel = tierLabel(entry);
           const helmetFields = entry.helmet3d
             ? (["helmet_model", "helmet_texture"] as const)
             : (["helmet"] as const);
@@ -490,19 +496,19 @@ export default function UploadForm({
             const file = entry.files[field];
             const label = fieldLabel[field] || field;
             if (!file) {
-              throw new Error(`Missing ${label} for the ${tierLabel} tier`);
+              throw new Error(`Missing ${label} for the ${setLabel} set`);
             }
             const expected = expectedSizeForField(kind, field);
             if (expected) {
-              await assertFileSize(file, expected, `${tierLabel} ${label}`);
+              await assertFileSize(file, expected, `${setLabel} ${label}`);
             }
             if (field === "helmet_model") {
               await assertVanillaJavaBlockModelFile(file);
             }
-            uploadFiles[`${entry.tier}_${field}`] = file;
+            uploadFiles[`${tierId(entry)}_${field}`] = file;
           }
         }
-        const h3d = tiers.filter((t) => t.helmet3d).map((t) => t.tier);
+        const h3d = tiers.filter((t) => t.helmet3d).map(tierId);
         assert3dPairBudgets(kind, uploadFiles, resolvedPairBytes, h3d);
       } catch (err) {
         setError(err instanceof Error ? err.message : "File validation failed");
@@ -569,17 +575,17 @@ export default function UploadForm({
         kind,
         display_name: name,
         base_set: isArmor ? null : baseSet,
-        tiers: isArmor ? tiers.map((entry) => entry.tier) : undefined,
+        tiers: isArmor ? tiers.map(tierId) : undefined,
         tier_aliases: isArmor
           ? Object.fromEntries(
               tiers.map((entry) => [
-                entry.tier,
-                entry.alias.trim() || baseSetLabel(entry.tier),
+                tierId(entry),
+                entry.alias.trim() || tierLabel(entry),
               ])
             )
           : undefined,
         helmet_3d_tiers: isArmor
-          ? tiers.filter((e) => e.helmet3d).map((e) => e.tier)
+          ? tiers.filter((e) => e.helmet3d).map(tierId)
           : undefined,
         grip_preset: kind === "large_handheld" ? gripY.toFixed(1) : null,
         add_name: applyName,
@@ -590,7 +596,7 @@ export default function UploadForm({
         tier_scrolls:
           staff && isArmor
             ? Object.fromEntries(
-                tiers.map((entry) => [entry.tier, entry.scroll.trim()])
+                tiers.map((entry) => [tierId(entry), entry.scroll.trim()])
               )
             : undefined,
         files: uploadFiles,
@@ -707,7 +713,7 @@ export default function UploadForm({
                 </label>
               ) : (
                 <p className="text-xs text-[var(--tfmc-mist)]">
-                  Choose a scroll on each armor tier below.
+                  Choose a scroll on each armour set below.
                 </p>
               )}
             </>
@@ -715,26 +721,30 @@ export default function UploadForm({
         </fieldset>
       ) : null}
 
-      {!isArmor ? (
-        <label className="flex flex-col gap-2 text-left">
-          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-            {baseSetPickerTitle(kind)}
+      <label className="flex flex-col gap-2 text-left">
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+          {baseSetPickerTitle(kind)}
+        </span>
+        {isArmor ? (
+          <span className="text-xs text-[var(--tfmc-mist)]">
+            One submission is one metal&apos;s skin line. Every set below
+            uses this metal.
           </span>
-          <select
-            value={baseSet}
-            disabled={loading}
-            onChange={(e) => setBaseSet(e.target.value)}
-            className={inputClass}
-            required
-          >
-            {baseOptions.map((id) => (
-              <option key={id} value={id}>
-                {baseSetLabel(id)}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+        ) : null}
+        <select
+          value={baseSet}
+          disabled={loading}
+          onChange={(e) => setBaseSet(e.target.value)}
+          className={inputClass}
+          required
+        >
+          {baseOptions.map((id) => (
+            <option key={id} value={id}>
+              {baseSetLabel(id)}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
@@ -742,7 +752,7 @@ export default function UploadForm({
         </span>
         <span className="text-xs text-[var(--tfmc-mist)]">
           {isArmor
-            ? "Base name before the tier label (e.g. Norain becomes Norain Iron). Spaces and capitals are fine."
+            ? "Base name before the set label (e.g. Norain becomes Norain Light Iron). Spaces and capitals are fine."
             : "Shown in the armour shop."}{" "}
           Allowed: {DISPLAY_NAME_HINT}.
         </span>
@@ -853,11 +863,12 @@ export default function UploadForm({
       {isArmor ? (
         <fieldset className="flex flex-col gap-4 border-0 p-0">
           <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
-            Armour tiers
+            Armour sets
           </legend>
           <p className="text-xs text-[var(--tfmc-mist)]">
-            Add up to {MAX_TIERS} tiers. Each needs a helmet, chestplate,
-            leggings, boots and both layers.
+            Add up to {MAX_SETS} sets, one of each type, all in{" "}
+            {baseSetLabel(baseSet)}. Each needs a helmet, chestplate, leggings,
+            boots and both layers.
           </p>
 
           {tiers.length > 0 ? (
@@ -869,34 +880,34 @@ export default function UploadForm({
                 const tierFields = [...helmetFields, ...ARMOR_BODY_FIELDS];
                 return (
                 <div
-                  key={entry.tier}
+                  key={entry.type}
                   className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-[var(--tfmc-cream)]">
-                      {baseSetLabel(entry.tier)}
+                      {tierLabel(entry)}
                     </span>
                     <button
                       type="button"
                       disabled={loading}
-                      onClick={() => removeTier(entry.tier)}
+                      onClick={() => removeTier(entry.type)}
                       className="text-xs text-[#e8a0a0] hover:underline"
                     >
-                      Remove tier
+                      Remove set
                     </button>
                   </div>
                   <label className="flex flex-col gap-2 text-left">
                     <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                      Tier name (optional)
+                      Set name (optional)
                     </span>
                     <input
                       type="text"
                       value={entry.alias}
                       disabled={loading}
                       maxLength={32}
-                      placeholder={baseSetLabel(entry.tier)}
+                      placeholder={tierLabel(entry)}
                       onChange={(e) =>
-                        setTierAlias(entry.tier, e.target.value)
+                        setTierAlias(entry.type, e.target.value)
                       }
                       className={inputClass}
                     />
@@ -904,20 +915,20 @@ export default function UploadForm({
                       In-game:{" "}
                       {(itemName.trim() || "Name") +
                         " " +
-                        (entry.alias.trim() || baseSetLabel(entry.tier))}{" "}
+                        (entry.alias.trim() || tierLabel(entry))}{" "}
                       Chestplate
                     </span>
                     {entry.alias.trim() &&
                     displayNameError(entry.alias, {
                       minLen: 1,
                       maxLen: 32,
-                      field: "tier alias",
+                      field: "set name",
                     }) ? (
                       <span className="text-xs text-[#e8a0a0]">
                         {displayNameError(entry.alias, {
                           minLen: 1,
                           maxLen: 32,
-                          field: "tier alias",
+                          field: "set name",
                         })}
                       </span>
                     ) : null}
@@ -931,7 +942,7 @@ export default function UploadForm({
                         value={entry.scroll}
                         disabled={loading || staffScrolls.length < 1}
                         onChange={(e) =>
-                          setTierScroll(entry.tier, e.target.value)
+                          setTierScroll(entry.type, e.target.value)
                         }
                         className={inputClass}
                         required
@@ -951,7 +962,7 @@ export default function UploadForm({
                       checked={entry.helmet3d}
                       disabled={loading}
                       onChange={(checked) =>
-                        setTierHelmet3d(entry.tier, checked)
+                        setTierHelmet3d(entry.type, checked)
                       }
                       className="mt-0"
                     />
@@ -970,7 +981,7 @@ export default function UploadForm({
                           disabled={loading}
                           onChange={(e) =>
                             onPickedFile(e.target.files, (file) =>
-                              setTierFile(entry.tier, field, file)
+                              setTierFile(entry.type, field, file)
                             )
                           }
                           className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
@@ -990,18 +1001,18 @@ export default function UploadForm({
                 <div className="flex flex-col gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4">
                   <label className="flex flex-col gap-1 text-left sm:max-w-xs">
                     <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                      Preview tier
+                      Preview set
                     </span>
                     <select
-                      value={previewTierEntry.tier}
+                      value={previewTierEntry.type}
                       disabled={loading}
                       onChange={(e) => setPreviewArmorTier(e.target.value)}
                       className={inputClass}
                     >
                       {tiers.map((e) => (
-                        <option key={e.tier} value={e.tier}>
-                          {baseSetLabel(e.tier)}
-                          {e.alias.trim() && e.alias.trim() !== baseSetLabel(e.tier)
+                        <option key={e.type} value={e.type}>
+                          {tierLabel(e)}
+                          {e.alias.trim() && e.alias.trim() !== tierLabel(e)
                             ? ` (${e.alias.trim()})`
                             : ""}
                         </option>
@@ -1022,7 +1033,7 @@ export default function UploadForm({
             </div>
           ) : (
             <p className="text-sm text-[var(--tfmc-mist)]">
-              No tiers added yet.
+              No sets added yet.
             </p>
           )}
 
@@ -1036,7 +1047,7 @@ export default function UploadForm({
               >
                 {remainingTiers.map((t) => (
                   <option key={t} value={t}>
-                    {baseSetLabel(t)}
+                    {armorTierLabel(armorTier(t, baseSet))}
                   </option>
                 ))}
               </select>
@@ -1046,12 +1057,12 @@ export default function UploadForm({
                 onClick={() => addTier(effectiveTierToAdd)}
                 className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)]"
               >
-                Add tier
+                Add set
               </button>
             </div>
           ) : (
             <p className="text-xs text-[var(--tfmc-mist)]">
-              All {MAX_TIERS} tiers added.
+              All {MAX_SETS} sets added.
             </p>
           )}
         </fieldset>

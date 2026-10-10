@@ -14,17 +14,19 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   armor_set: {
     title: "Armour set",
     summary:
-      "Submit one or more armour tiers. Each tier becomes its own shop listing under your name.",
+      "Submit one metal's skin line: up to 5 sets (Light, Medium, Heavy, Infantry and Mage) of that metal. Each set becomes its own shop listing under your name.",
     steps: [
-      "Add at least one tier (Iron, Steel, Abyssalite, Mythril, Mage, or Infantry).",
-      "Tier name is optional if you want a custom name instead of the default tier label.",
-      "Per tier, upload helmet, chestplate, leggings, and boots icons (16×16 PNG).",
-      "Upload Layer 1 and Layer 2 body textures (64×32 PNG) for that tier.",
+      "Choose the metal (Iron, Steel, Bronze, Abyssalite or Mythril). Every set in the submission uses it.",
+      "Add at least one set type (Light, Medium, Heavy, Infantry or Mage).",
+      "Set name is optional if you want a custom name instead of the default label (e.g. Light Iron).",
+      "Per set, upload helmet, chestplate, leggings, and boots icons (16×16 PNG).",
+      "Upload Layer 1 and Layer 2 body textures (64×32 PNG) for that set.",
       "Optional: tick 3D Helmet and upload a Java Block/Item JSON + PNG instead of the flat helmet icon (File → Export → Export Block/Item Model; one-axis 22.5°/45° rotations only).",
       "Set the item name and colours/styles if you want, then submit.",
     ],
     notes: [
-      "In-game name looks like: Item name + tier label + piece (e.g. Norain Iron Chestplate).",
+      "In-game name looks like: Item name + set label + piece (e.g. Norain Light Iron Chestplate).",
+      "For another metal, make another submission.",
     ],
   },
   handheld: {

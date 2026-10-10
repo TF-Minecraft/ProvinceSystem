@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     scroll TEXT,
     tier_scrolls TEXT,
     realm_id TEXT NOT NULL DEFAULT 'main',
+    tier_sets TEXT,
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 

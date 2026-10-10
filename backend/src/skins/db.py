@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from pathlib import Path
 
@@ -57,6 +58,30 @@ def _move_nicknames_out_of_usernames(conn: sqlite3.Connection) -> None:
             )
 
 
+_THALENDORIAN_ID = "geofflive_thalendorian_armor"
+_THALENDORIAN_SETS = json.dumps(
+    {
+        "iron": "light iron",
+        "steel": "light steel",
+        "abyssalite": "light abyssalite",
+        "mythril": "light mythril",
+        "mage": "mage",
+    }
+)
+
+
+def _set_thalendorian_light_sets(conn: sqlite3.Connection) -> None:
+    """Thalendorian Armor predates metal lines: its metal sets are light armour.
+
+    Staff set ``light <metal>`` in the shop by hand; storing it here keeps a
+    re-apply from writing the bare metal back. Only an unset row is touched.
+    """
+    conn.execute(
+        "UPDATE submissions SET tier_sets = ? WHERE id = ? AND tier_sets IS NULL",
+        (_THALENDORIAN_SETS, _THALENDORIAN_ID),
+    )
+
+
 def _upgrade(conn: sqlite3.Connection) -> None:
     """Add columns that CREATE TABLE IF NOT EXISTS cannot add to old tables."""
     conn.execute("BEGIN IMMEDIATE")
@@ -69,6 +94,10 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         if "discord_nickname" not in links:
             conn.execute("ALTER TABLE discord_links ADD COLUMN discord_nickname TEXT")
             _move_nicknames_out_of_usernames(conn)
+        submissions = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)")}
+        if "tier_sets" not in submissions:
+            conn.execute("ALTER TABLE submissions ADD COLUMN tier_sets TEXT")
+        _set_thalendorian_light_sets(conn)
         conn.commit()
     except BaseException:
         conn.rollback()
