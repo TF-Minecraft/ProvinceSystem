@@ -9,6 +9,8 @@ export type SkinsSession = {
   /** True when code scope is skin_staff. */
   staff?: boolean;
   scope?: string;
+  /** Started from Profile rather than redeemed from an in-game code. */
+  from_profile?: boolean;
   /** Server realm stamped on the mint code. */
   realm_id?: string;
   /** Rank colour stops for name picker (clamped by API to web hard cap). */
@@ -78,6 +80,7 @@ function readStored(): StoredSession | null {
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
     }
+    if (parsed.from_profile === true) out.from_profile = true;
     if (typeof parsed.realm_id === "string" && parsed.realm_id.trim()) {
       out.realm_id = parsed.realm_id.trim().toLowerCase();
     }
@@ -144,6 +147,7 @@ export function getSession(): SkinsSession | null {
   };
   if (stored.staff) out.staff = true;
   if (stored.scope) out.scope = stored.scope;
+  if (stored.from_profile) out.from_profile = true;
   copyEntitlements(stored, out);
   return out;
 }
@@ -201,6 +205,7 @@ export function setSession(session: SkinsSession): void {
   };
   if (session.staff) stored.staff = true;
   if (session.scope) stored.scope = session.scope;
+  if (session.from_profile) stored.from_profile = true;
   copyEntitlements(session, stored);
   writeStored(stored);
 }

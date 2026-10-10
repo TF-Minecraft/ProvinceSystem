@@ -12,10 +12,6 @@ import {
   type DrinksSession,
 } from "../../lib/drinks/session";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
-import {
-  getSession as getProfileSession,
-  isSessionValid as isProfileSessionValid,
-} from "../../lib/profile/session";
 import { canOpenProfile } from "../../lib/profile/redirect";
 import Link from "next/link";
 
@@ -34,7 +30,7 @@ export default function DrinksPage() {
         return;
       }
       setSessionState(existing);
-      setFromProfile(isProfileSessionValid(getProfileSession()));
+      setFromProfile(existing!.from_profile === true);
       setReady(true);
       return;
     }

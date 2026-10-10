@@ -29,7 +29,8 @@ export function SkinWardrobe({ rows, allowance, sessionToken }: Props<ProfileSki
       noun="skin"
       allowance={allowance}
       onStart={async () => {
-        setSkinsSession(skinsSessionFrom(await startSkinFromProfile(sessionToken)));
+        const result = await startSkinFromProfile(sessionToken);
+        setSkinsSession({ ...skinsSessionFrom(result), from_profile: true });
         router.push("/skins");
       }}
       codeForm={<SkinRedeemForm compact onRedeemed={() => router.push("/skins")} />}
@@ -53,7 +54,8 @@ export function DrinkWardrobe({ rows, allowance, sessionToken }: Props<ProfileDr
       noun="drink"
       allowance={allowance}
       onStart={async () => {
-        setDrinksSession(drinksSessionFrom(await startDrinkFromProfile(sessionToken)));
+        const result = await startDrinkFromProfile(sessionToken);
+        setDrinksSession({ ...drinksSessionFrom(result), from_profile: true });
         router.push("/drinks");
       }}
       codeForm={<DrinkRedeemForm compact onRedeemed={() => router.push("/drinks")} />}

@@ -31,6 +31,7 @@ import {
   type AccountMinecraft,
 } from "../../lib/account/api";
 import { linkedProfileSession } from "../../lib/account/profileSession";
+import { endProfileUploads } from "../../lib/profile/uploads";
 import { DiscordSignInLink } from "../components/account/BrandButtons";
 
 type TabId = "characters" | "skins" | "drinks" | "items";
@@ -212,6 +213,7 @@ export default function ProfilePage() {
     } catch {
       // still clear locally
     }
+    await endProfileUploads();
     clearSession();
     setSessionState(null);
     setDashboard(null);

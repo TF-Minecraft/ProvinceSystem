@@ -170,10 +170,13 @@ def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
 MINTED_VIA_SITE = "site"
 
 # Site codes that lapsed unused never started anything, so they don't hold the clock.
+# A session outlives its code by up to SESSION_TTL_HOURS and can still submit, so the
+# code keeps counting until that session ends too.
 _COUNTS_TOWARD_COOLDOWN = """
     NOT (
         COALESCE(c.minted_via, '') = 'site'
-        AND c.expires_at <= ?
+        AND c.expires_at <= :now
+        AND NOT EXISTS (SELECT 1 FROM sessions se WHERE se.code_id = c.id AND se.expires_at > :now)
         AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.code_id = c.id)
         AND NOT EXISTS (SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id)
     )
@@ -195,23 +198,23 @@ def _last_cosmetic_mint(conn, uuid: str, now: datetime) -> str | None:
             f"""
             SELECT MAX(c.created_at) AS last_at
             FROM codes c
-            WHERE LOWER(c.player_uuid) = LOWER(?)
+            WHERE LOWER(c.player_uuid) = LOWER(:uuid)
               AND LOWER(c.scope) IN ('skin', 'drink')
-              AND c.created_at > ?
+              AND c.created_at > :reset_at
               AND {_COUNTS_TOWARD_COOLDOWN}
             """,
-            (uuid, str(reset_at), _iso(now)),
+            {"uuid": uuid, "reset_at": str(reset_at), "now": _iso(now)},
         ).fetchone()
     else:
         row = conn.execute(
             f"""
             SELECT MAX(c.created_at) AS last_at
             FROM codes c
-            WHERE LOWER(c.player_uuid) = LOWER(?)
+            WHERE LOWER(c.player_uuid) = LOWER(:uuid)
               AND LOWER(c.scope) IN ('skin', 'drink')
               AND {_COUNTS_TOWARD_COOLDOWN}
             """,
-            (uuid, _iso(now)),
+            {"uuid": uuid, "now": _iso(now)},
         ).fetchone()
     last_at = row["last_at"] if row else None
     return str(last_at) if last_at is not None else None

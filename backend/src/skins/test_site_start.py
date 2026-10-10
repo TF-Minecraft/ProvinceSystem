@@ -160,6 +160,20 @@ class SiteStartTest(unittest.TestCase):
         self.assertIsNone(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"])
         self.assertTrue(self.codes.site_start_allowance(PLAYER, "main")["skin"]["can_start"])
 
+    def test_a_lapsed_site_code_counts_while_its_session_can_still_submit(self) -> None:
+        created = datetime.now(timezone.utc) - timedelta(hours=49)
+        code_id = self.add_code("drink", created, via="site", expires=created + timedelta(hours=48))
+        with self.db.connect() as conn:
+            conn.execute(
+                "INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
+                "VALUES ('h', ?, ?, ?, ?)",
+                (code_id, PLAYER, _iso(datetime.now(timezone.utc) + timedelta(hours=6)), _iso(created)),
+            )
+            conn.commit()
+        self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], _iso(created))
+        with self.assertRaises(self.codes.SiteStartRefused):
+            self.codes.start_site_session(PLAYER, "main", "skin")
+
     def test_a_used_site_code_still_counts_after_it_expires(self) -> None:
         created = datetime.now(timezone.utc) - timedelta(days=3)
         code_id = self.add_code("skin", created, via="site", expires=created + timedelta(hours=48))

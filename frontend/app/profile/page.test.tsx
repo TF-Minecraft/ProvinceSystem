@@ -125,7 +125,7 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
   fireEvent.click(screen.getByRole("button", { name: "New skin" }));
   await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/skins"));
   expect(startSkinFromProfile).toHaveBeenCalledWith("linked-token");
-  expect(getSkinsSession()?.session_token).toBe("skin-token");
+  expect(getSkinsSession()).toMatchObject({ session_token: "skin-token", from_profile: true });
 });
 
 it("shows when the next skin is ready and keeps codes behind Use a code", async () => {

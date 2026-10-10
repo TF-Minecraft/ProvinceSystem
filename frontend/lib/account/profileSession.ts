@@ -1,5 +1,6 @@
 import { logoutCharacter } from "../characters/api";
 import { clearSession, getSession, setSession, type ProfileSession } from "../profile/session";
+import { endProfileUploads } from "../profile/uploads";
 import { startLinkedProfileSession } from "./api";
 
 /** Reuse a stored session with at least this long left before asking for a new one. */
@@ -33,6 +34,7 @@ export async function endLinkedProfileSession(): Promise<void> {
   const existing = getSession();
   if (!existing || existing.source !== "discord") return;
   clearSession();
+  await endProfileUploads();
   try {
     await logoutCharacter(existing.session_token);
   } catch {
