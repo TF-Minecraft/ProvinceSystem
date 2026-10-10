@@ -40,7 +40,7 @@ const cardClass =
 const sectionHeadingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 const titleClass = "font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl";
 const chipClass = "rounded-sm border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider";
-const placeholderClass = "rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]";
+const placeholderClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]";
 
 /** Longest the page waits for the activity line and Profile counts before showing without them. */
 const EXTRAS_WAIT_MS = 2500;
@@ -100,7 +100,10 @@ function activityLine(overview: AccountOverview | null): ReactNode {
       </span>
     );
   } else if (activity.last_seen) {
-    parts.push(<span key="seen">Last on{where} {formatAgo(activity.last_seen)}</span>);
+    const ago = formatAgo(activity.last_seen);
+    parts.push(
+      <span key="seen">{activity.server_label ? `Last on ${activity.server_label} ${ago}` : `Last seen ${ago}`}</span>
+    );
   }
   if (activity.first_seen) parts.push(<span key="since">playing since {formatDate(activity.first_seen)}</span>);
   if (!parts.length) return null;
@@ -493,7 +496,9 @@ export default function AccountPanel({
 
 /** The signed-in layout's outline, sized to its lines, so the page keeps its shape when the account arrives. */
 function AccountPlaceholder() {
-  const bar = (className: string) => <span className={`${placeholderClass} block ${className}`} />;
+  const bar = (className: string, round = "rounded-sm") => (
+    <span className={`${placeholderClass} block ${round} ${className}`} />
+  );
   return (
     <div aria-busy="true">
       <p className="sr-only">Loading your account…</p>
@@ -516,7 +521,7 @@ function AccountPlaceholder() {
         <div className={`${cardClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`}>
           {["Discord", "Minecraft", "Patreon"].map((service) => (
             <div key={service} className="flex items-center gap-4 px-4 py-3.5">
-              {bar("h-8 w-8 shrink-0 rounded-full")}
+              {bar("h-8 w-8 shrink-0", "rounded-full")}
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{service}</p>
                 <span className="flex h-6 items-center">{bar("h-4 w-40 max-w-full")}</span>

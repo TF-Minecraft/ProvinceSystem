@@ -154,6 +154,17 @@ it("shows the linked player's head, rank, time on the server and Profile counts"
   expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
 });
 
+it("names the server a player was last on once", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getAccountOverview).mockResolvedValue({
+    activity: { first_seen: null, last_seen: Date.now() / 1000 - 86400 * 2, online: false, server_label: "Vardera" },
+    rank: null,
+  });
+  const { container } = render(<AccountPanel signin={null} />);
+  await screen.findByRole("navigation", { name: "Your Profile" });
+  expect(container.querySelector("header")?.textContent).toContain("Last on Vardera 2 days ago");
+});
+
 it("reuses a stored Profile session for the same player", async () => {
   setSession({ session_token: "kept", player_uuid: UUID.toUpperCase(), expires_at: "2099-01-01T00:00:00Z" }, true);
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
