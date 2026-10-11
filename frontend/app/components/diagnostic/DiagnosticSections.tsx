@@ -48,7 +48,10 @@ export default function DiagnosticSections({
               {section.rows.map((row) => {
                 const m = MARKS[row.status];
                 return (
-                  <div key={row.label} className="grid grid-cols-[1.25rem_7.5rem_1fr] gap-x-3 py-2 sm:grid-cols-[1.25rem_11rem_1fr]">
+                  <div
+                    key={row.label}
+                    className="grid grid-cols-[1.25rem_7.5rem_1fr] gap-x-3 py-2 sm:grid-cols-[1.25rem_11rem_1fr]"
+                  >
                     <span className={`text-center font-bold ${m.className}`} title={m.label} aria-label={m.label}>
                       {m.mark}
                     </span>
