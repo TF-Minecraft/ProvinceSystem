@@ -175,8 +175,9 @@
 
   /* Pages keep the scrollbar's room even when nothing scrolls, so the layout
      does not shift sideways as a page grows past the screen. The full-screen
-     map never scrolls, so it gets the whole width. */
-  html:not(.map-fullscreen) {
+     map never scrolls, so it gets the whole width, from its first frame: the
+     `map-fullscreen` class arrives after the map has measured itself. */
+  html:not(:has(.map-shell)) {
     scrollbar-gutter: stable;
   }
 

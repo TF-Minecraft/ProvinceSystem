@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
@@ -84,9 +84,8 @@ export default function MapShell({
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
   // scrolled or rubber-banded it, sliding them under the header. Scrolling
-  // inside the panels is unaffected. Set before paint, as it also drops the
-  // scrollbar's gutter: after it, the map opened 8px narrow for one frame.
-  useLayoutEffect(() => {
+  // inside the panels is unaffected.
+  useEffect(() => {
     const root = document.documentElement;
     root.classList.add("map-fullscreen");
     return () => root.classList.remove("map-fullscreen");
@@ -95,7 +94,7 @@ export default function MapShell({
   return (
     // pan-x pan-y: panels still scroll, but a pinch on them cannot zoom the
     // page (the map handles its own pinch).
-    <div className="relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)] [touch-action:pan-x_pan-y]">
+    <div className="map-shell relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)] [touch-action:pan-x_pan-y]">
       <div className="absolute inset-0">{children}</div>
 
       {/* Left column: plaque on top, details under it on desktop; on mobile
