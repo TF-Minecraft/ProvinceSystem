@@ -6,9 +6,22 @@ import SiteHeader from "./SiteHeader";
 
 let pathname = "/map";
 let accountRole: string | null = null;
+let viewingAs: { staff_name: string; expires_at: string } | null = null;
+const leaveView = vi.fn();
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 vi.mock("@/lib/account/api", () => ({
-  getAccount: () => Promise.resolve(accountRole ? { user: { role: accountRole } } : null),
+  getAccount: () =>
+    Promise.resolve(
+      accountRole
+        ? { user: { role: accountRole, discord_global_name: "Steve", discord_username: "steve" }, viewing_as: viewingAs }
+        : null
+    ),
+}));
+const leaveExpiredView = vi.fn();
+vi.mock("@/lib/account/viewAs", () => ({
+  leaveView: () => leaveView(),
+  leaveExpiredView: (expiresAt: string) => leaveExpiredView(expiresAt),
+  onViewSwitch: () => () => undefined,
 }));
 
 beforeEach(() => {
@@ -22,6 +35,9 @@ afterEach(() => {
   cleanup();
   pathname = "/map";
   accountRole = null;
+  viewingAs = null;
+  leaveView.mockReset();
+  leaveExpiredView.mockReset();
 });
 
 function openMenu() {
@@ -95,4 +111,34 @@ it("marks the current section and adds the staff panel for staff accounts", asyn
   await waitFor(() => expect(menu.querySelector('a[href="/admin"]')).not.toBeNull());
   // Staff tools sit inside the panel, not in the site header.
   expect(menu.querySelector('a[href="/precedent"], a[href="/inspect"]')).toBeNull();
+});
+
+it("shows a bar back to the admin's account while viewing as a player", async () => {
+  accountRole = "player";
+  viewingAs = { staff_name: "boss", expires_at: new Date(Date.now() + 60_000).toISOString() };
+  leaveView.mockResolvedValue(undefined);
+  render(<SiteHeader />);
+  const bar = await screen.findByRole("status");
+  expect(bar.textContent).toContain("Viewing as Steve · view only");
+  fireEvent.click(screen.getByRole("button", { name: "Back to my account" }));
+  expect(leaveView).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Switching back…" })).toBeTruthy();
+});
+
+it("switches back by itself when the view runs out", async () => {
+  accountRole = "player";
+  viewingAs = { staff_name: "boss", expires_at: new Date(Date.now() - 1000).toISOString() };
+  leaveExpiredView.mockResolvedValue(undefined);
+  render(<SiteHeader />);
+  await screen.findByRole("status");
+  await waitFor(() => expect(leaveExpiredView).toHaveBeenCalledWith(viewingAs!.expires_at));
+  expect(leaveView).not.toHaveBeenCalled();
+});
+
+it("shows no bar for a player's own sign-in", async () => {
+  accountRole = "player";
+  render(<SiteHeader />);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(screen.queryByRole("status")).toBeNull();
 });

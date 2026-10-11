@@ -1,4 +1,4 @@
-import { authHeaders, getApiBase, parseJson } from "../site/api";
+import { VIEW_ONLY_MESSAGE, authHeaders, getApiBase, parseJson } from "../site/api";
 import type { CharacterListItem } from "../characters/api";
 import { readAllowances, type StartAllowances } from "./start";
 
@@ -15,6 +15,7 @@ export class ProfileApiError extends Error {
 function detailMessage(data: unknown, fallback: string): string {
   if (data && typeof data === "object" && "detail" in data) {
     const detail = (data as { detail: unknown }).detail;
+    if (detail === "viewing_as_player") return VIEW_ONLY_MESSAGE;
     if (typeof detail === "string") return detail;
   }
   return fallback;

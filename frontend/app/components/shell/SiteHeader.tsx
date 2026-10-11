@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { getAccount } from "@/lib/account/api";
+import { getAccount, type Account } from "@/lib/account/api";
+import { onViewSwitch } from "@/lib/account/viewAs";
 import { isStaffRole } from "@/lib/admin/api";
+import ViewingAsBar from "./ViewingAsBar";
 
 /** public/logo.png downscaled; the 1024 px original is 1 MB. */
 const LOGO_SRC = "/logo-256.webp";
@@ -27,9 +29,19 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function viewingAs(account: Account | null): { name: string; expiresAt: string } | null {
+  if (!account?.viewing_as) return null;
+  const { user } = account;
+  return {
+    name: user.discord_global_name || user.discord_username || "this player",
+    expiresAt: account.viewing_as.expires_at,
+  };
+}
+
 export default function SiteHeader() {
   // Only a hint for showing the link: the panel and its API check the role.
   const [isAdmin, setIsAdmin] = useState(false);
+  const [viewing, setViewing] = useState<{ name: string; expiresAt: string } | null>(null);
   const links = [
     ...staticLinks,
     ...(isAdmin ? [adminLink] : []),
@@ -45,13 +57,18 @@ export default function SiteHeader() {
     let active = true;
     getAccount()
       .then((account) => {
-        if (active) setIsAdmin(isStaffRole(account?.user.role));
+        if (!active) return;
+        setIsAdmin(isStaffRole(account?.user.role));
+        setViewing(viewingAs(account));
       })
       .catch(() => {});
     return () => {
       active = false;
     };
   }, []);
+
+  // Another tab has started or left a view, so this page shows the wrong account.
+  useEffect(() => onViewSwitch(() => window.location.reload()), []);
 
   // The closed menu is inert, so hand focus to whichever header control is showing first.
   const closeMenu = useCallback(() => {
@@ -198,6 +215,7 @@ export default function SiteHeader() {
           })}
         </nav>
       </div>
+      {viewing ? <ViewingAsBar name={viewing.name} expiresAt={viewing.expiresAt} /> : null}
     </>
   );
 }

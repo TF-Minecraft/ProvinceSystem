@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { AccountApiError } from "../../../lib/account/api";
+import { viewSiteAs } from "../../../lib/account/viewAs";
 import {
   adminErrorMessage,
   coreProtectMessage,
@@ -97,6 +98,9 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
   const { profile } = load;
   const movement = me?.capabilities.includes("view_player_movement") ?? false;
   const notice = coreProtectMessage(profile.coreprotect);
+  // The server views players only, never staff accounts.
+  const viewAs =
+    me?.capabilities.includes("view_as_player") && profile.account?.role === "player" ? profile.account.user_id : null;
   const label = profile.coreprotect.server_label;
   const seen = [
     profile.online ? "Seen just now" : `Last seen ${formatAgo(profile.last_seen).toLowerCase()}`,
@@ -123,6 +127,12 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
             <Link href={`/admin/ranks/players/${profile.uuid}`} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
               In-game ranks and permissions →
             </Link>
+            {viewAs !== null ? (
+              <>
+                {" · "}
+                <ViewAsButton userId={viewAs} />
+              </>
+            ) : null}
           </p>
           {notice ? (
             <p className="mt-2 text-sm text-[#e8c48a]" role="status">
@@ -133,6 +143,36 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
         <PlayerTabs uuid={profile.uuid} current={current} movement={movement} />
       </AdminColumn>
       <PlayerContext.Provider value={{ profile, me, movement, reload: loadProfile }}>{children}</PlayerContext.Provider>
+    </>
+  );
+}
+
+/** Opens the site as this player, view only; the bar at the bottom of each page switches back. */
+function ViewAsButton({ userId }: { userId: number }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          setError(null);
+          viewSiteAs(userId).catch((err) => {
+            setBusy(false);
+            setError(adminErrorMessage(err));
+          });
+        }}
+        className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline disabled:opacity-60"
+      >
+        {busy ? "Opening…" : "View the site as them →"}
+      </button>
+      {error ? (
+        <span className="ml-2 text-[#e8c48a]" role="alert">
+          {error}
+        </span>
+      ) : null}
     </>
   );
 }

@@ -21,6 +21,24 @@ _RETURN_MAX = 512
 _TOKEN_MAX = 256
 
 
+# codes.minted_via for a Profile session opened during a view: this prefix and the view's session id.
+VIEW_PROFILE_PREFIX = "staff_view:"
+
+
+def drop_orphan_view_profiles(conn) -> None:
+    """Delete Profile sessions opened during views that no longer exist, however they ended."""
+    conn.execute(
+        """
+        DELETE FROM sessions WHERE code_id IN (
+            SELECT id FROM codes
+            WHERE minted_via LIKE 'staff_view:%'
+              AND CAST(substr(minted_via, length('staff_view:') + 1) AS INTEGER)
+                  NOT IN (SELECT id FROM user_sessions)
+        )
+        """
+    )
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -127,7 +145,9 @@ def sign_in(
         ).fetchone()["id"]
         if role is not None:
             conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
-        conn.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (stamp,))
+        # Views that ran out are left for src/auth/view_as.py to end and audit.
+        conn.execute("DELETE FROM user_sessions WHERE expires_at <= ? AND acting_user_id IS NULL", (stamp,))
+        drop_orphan_view_profiles(conn)
         conn.execute(
             """
             INSERT INTO user_sessions (token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at)
@@ -165,16 +185,22 @@ def session_user_in(conn, token: str | None) -> dict | None:
     row = conn.execute(
         """
         SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,
+               s.acting_user_id, COALESCE(a.discord_username, a.discord_global_name) AS acting_name,
                u.id AS user_id, u.discord_user_id, u.discord_username,
                u.discord_global_name, u.discord_avatar, u.created_at, u.role
         FROM user_sessions s JOIN users u ON u.id = s.user_id
+        LEFT JOIN users a ON a.id = s.acting_user_id
         WHERE s.token_hash = ?
         """,
         (hash_secret(token),),
     ).fetchone()
     if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
         return None
-    return dict(row)
+    user = dict(row)
+    if user["acting_user_id"] is not None:
+        # Someone viewing the site as this user holds no staff rights, whatever their role.
+        user["role"] = "player"
+    return user
 
 
 def guild_state(session_id: int) -> dict | None:

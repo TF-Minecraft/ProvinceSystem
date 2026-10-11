@@ -55,6 +55,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   cannot_act_on_self: "You can’t do that to your own account.",
   account_not_found: "That account no longer exists.",
   forbidden: "Your role doesn’t allow that.",
+  target_is_staff: "You can only view the site as players, not staff.",
+  already_viewing: "You’re already viewing the site as a player.",
   not_signed_in: "Your session has ended. Sign in again.",
   bad_origin: "That request was blocked. Reload the page and try again.",
   player_not_found: "No player with that UUID has been seen.",
@@ -119,6 +121,12 @@ export function revokeSessions(userId: number, reason: string): Promise<unknown>
     method: "POST",
     body: JSON.stringify({ reason }),
   });
+}
+
+/** View the site as a player (view only); returns where to go next. */
+export async function startViewingAs(userId: number): Promise<string> {
+  const data = await adminRequest<{ return_to?: unknown }>(`/admin/accounts/${userId}/view-as`, { method: "POST" });
+  return typeof data.return_to === "string" && data.return_to.startsWith("/") ? data.return_to : "/profile";
 }
 
 // --------------------

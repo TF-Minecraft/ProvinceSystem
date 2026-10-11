@@ -91,6 +91,11 @@ origins = [
     "http://127.0.0.1:13001",
 ]
 
+# Inside CORS, so its refusals carry CORS headers too.
+from src.api.view_as_guard import ViewAsGuard
+
+app.add_middleware(ViewAsGuard)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

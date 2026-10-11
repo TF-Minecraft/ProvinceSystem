@@ -657,6 +657,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- Cookie sessions for users. Separate from `sessions`, which belong to
 -- in-game codes and carry a scope and realm. guild_member records the TFMC
 -- Discord membership seen at sign-in; linking requires a recent check.
+-- acting_user_id is the admin viewing the site as this user (view only,
+-- src/auth/view_as.py). Databases created before it gain it in db.migrate().
 CREATE TABLE IF NOT EXISTS user_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_hash TEXT NOT NULL UNIQUE,
@@ -664,7 +666,8 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     guild_member INTEGER NOT NULL DEFAULT 0,
     guild_checked_at TEXT,
     created_at TEXT NOT NULL,
-    expires_at TEXT NOT NULL
+    expires_at TEXT NOT NULL,
+    acting_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);

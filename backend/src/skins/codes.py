@@ -669,11 +669,19 @@ def site_profile_realm() -> str:
         return DEFAULT_REALM_ID
 
 
-def start_linked_profile_session(player_uuid: str) -> dict:
+def start_linked_profile_session(
+    player_uuid: str,
+    *,
+    minted_via: str | None = None,
+    expires_at: str | None = None,
+    still_allowed=None,
+) -> dict:
     """A profile session for a player whose Discord account is linked, without an in-game code.
 
     Sessions belong to a code, so this records a profile code that is spent at once and
     has no plaintext. The caller has already checked the Discord sign-in and the link.
+    An admin viewing as the player passes their view's tag and end, and a check
+    that the view still exists, made inside the write (src/auth/view_as.py).
     """
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -682,18 +690,22 @@ def start_linked_profile_session(player_uuid: str) -> dict:
     now = _utcnow()
     created_at = _iso(now)
     session_token = secrets.token_urlsafe(32)
-    session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
+    session_expires_at = expires_at or _iso(now + timedelta(hours=SESSION_TTL_HOURS))
 
     with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        if still_allowed is not None and not still_allowed(conn):
+            conn.rollback()
+            raise CodeError("session_ended")
         cur = conn.execute(
             """
             INSERT INTO codes (
                 code_hash, code_plaintext, player_uuid, scope, realm_id,
-                created_at, expires_at, redeemed_at, revoked
-            ) VALUES (?, NULL, ?, 'profile', ?, ?, ?, ?, 0)
+                created_at, expires_at, redeemed_at, revoked, minted_via
+            ) VALUES (?, NULL, ?, 'profile', ?, ?, ?, ?, 0, ?)
             """,
             (hash_secret(f"discord-profile:{secrets.token_urlsafe(32)}"), uuid, realm,
-             created_at, created_at, created_at),
+             created_at, created_at, created_at, minted_via),
         )
         code_id = cur.lastrowid
         conn.execute(

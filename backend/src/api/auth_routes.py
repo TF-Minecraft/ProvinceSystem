@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from src.api.prod_guard import is_production
-from src.auth import account_overview, guild_check, preview_sign_in, users
+from src.auth import account_overview, guild_check, preview_sign_in, users, view_as
 from src.auth.config import AuthConfig
 from src.auth import microsoft_link
 from src.auth.discord import DiscordClient, DiscordError
@@ -28,7 +28,7 @@ from src.auth.microsoft import MicrosoftClient, MicrosoftConfig, MicrosoftError
 from src.patreon import linking as patreon_linking
 from src.patreon import service as patreon_service
 from src.patreon.config import Config as PatreonConfig
-from src.skins.codes import start_linked_profile_session
+from src.skins.codes import CodeError, start_linked_profile_session
 from src.skins.discord_link import (
     LinkError,
     complete_link,
@@ -60,6 +60,15 @@ def state_cookie(config: AuthConfig) -> str:
 
 def microsoft_state_cookie(config: AuthConfig) -> str:
     return "__Host-tfmc_microsoft_state" if config.secure_cookies else "tfmc_microsoft_state"
+
+
+def staff_cookie(config: AuthConfig) -> str:
+    """An admin's own session, kept while they view the site as a player."""
+    return "__Host-tfmc_staff_session" if config.secure_cookies else "tfmc_staff_session"
+
+
+def seconds_left(expires_at: str) -> int:
+    return max(0, int((users._parse_iso(expires_at) - users._utcnow()).total_seconds()))
 
 
 def build_client(config: AuthConfig) -> DiscordClient:
@@ -198,8 +207,19 @@ def discord_callback(request: Request, code: str | None = None, state: str | Non
     )
     _clear_cookie(response, config, state_cookie(config))
     if token:
-        _set_cookie(response, config, session_cookie(config), token, int(users.SESSION_TTL.total_seconds()))
+        _open_session(request, response, config, token)
     return response
+
+
+def _open_session(request: Request, response: Response, config: AuthConfig, token: str) -> None:
+    """Set a new sign-in's cookie, ending any view in this browser and the admin session it kept."""
+    view_as.end(request.cookies.get(session_cookie(config)))
+    staff = request.cookies.get(staff_cookie(config))
+    if staff:
+        view_as.end_lapsed(staff)
+        users.revoke_session(staff)
+        _clear_cookie(response, config, staff_cookie(config))
+    _set_cookie(response, config, session_cookie(config), token, int(users.SESSION_TTL.total_seconds()))
 
 
 def _finish_sign_in(config: AuthConfig, code: str | None) -> str | None:
@@ -273,6 +293,9 @@ def preview_start(
     user = users.session_user(request.cookies.get(session_cookie(config)))
     if user is None:
         return discord_start(request, again)
+    if user["acting_user_id"] is not None:
+        # A preview session would be a real one, not view only.
+        raise HTTPException(403, detail="viewing_as_player")
     # Linking on the preview needs a recent check, and only dev can make one: with the
     # bot, or else by signing in again. `again` drops recheck, so this ends.
     user, answered = guild_check.check(user)
@@ -333,18 +356,87 @@ def preview_callback(
     response.headers["Referrer-Policy"] = "no-referrer"
     _clear_cookie(response, config, state_cookie(config))
     if token:
-        _set_cookie(response, config, session_cookie(config), token, int(users.SESSION_TTL.total_seconds()))
+        _open_session(request, response, config, token)
     return response
 
 
 @auth_router.post("/auth/logout")
 def logout(request: Request):
+    """Sign out; during a view, that ends the view and signs the admin out too."""
     config = _config()
     require_same_origin(request, config)
-    users.revoke_session(request.cookies.get(session_cookie(config)))
+    token = request.cookies.get(session_cookie(config))
+    staff = request.cookies.get(staff_cookie(config))
+    view_as.end(token)
+    users.revoke_session(token)
+    if staff:
+        view_as.end_lapsed(staff)
+        users.revoke_session(staff)
     response = _no_store(Response(content='{"ok":true}', media_type="application/json"))
     _clear_cookie(response, config, session_cookie(config))
+    _clear_cookie(response, config, staff_cookie(config))
     return response
+
+
+# --------------------
+# Admins viewing the site as a player (src/auth/view_as.py)
+# --------------------
+
+def _back_to_staff(response: Response, config: AuthConfig, result: dict, staff: str | None) -> None:
+    """Put the admin's own session back in place of the view, or sign the browser out."""
+    if result["restored"]:
+        _set_cookie(response, config, session_cookie(config), staff, seconds_left(result["staff_expires_at"]))
+    else:
+        _clear_cookie(response, config, session_cookie(config))
+    _clear_cookie(response, config, staff_cookie(config))
+
+
+@auth_router.post("/auth/view-as/stop")
+def view_as_stop(request: Request):
+    config = _config()
+    require_same_origin(request, config)
+    token = request.cookies.get(session_cookie(config))
+    staff = request.cookies.get(staff_cookie(config))
+    current = users.session_user(token)
+    if current is not None and current["acting_user_id"] is None:
+        # Signed in as themselves already; only drop a leftover admin cookie.
+        response = _no_store(Response(content='{"detail":"not_viewing"}', status_code=409,
+                                      media_type="application/json"))
+        _clear_cookie(response, config, staff_cookie(config))
+        return response
+    result = view_as.stop(token, staff)
+    if not (result["ended"] or result["restored"]):
+        # Another tab, or the view running out, has already ended it.
+        response = _no_store(Response(content='{"detail":"not_viewing"}', status_code=409,
+                                      media_type="application/json"))
+        _back_to_staff(response, config, result, staff)
+        return response
+    if result["restored"]:
+        uuid = result["player_uuid"]
+        return_to = f"/admin/players/{uuid}" if uuid else "/admin/players"
+    else:
+        return_to = users.RETURN_DEFAULT
+    response = _no_store(Response(content=json.dumps({"restored": result["restored"], "return_to": return_to}),
+                                  media_type="application/json"))
+    _back_to_staff(response, config, result, staff)
+    return response
+
+
+def _account_user(request: Request, response: Response, config: AuthConfig) -> dict:
+    """The signed-in user. Once a view has run out, this restores the admin who opened it."""
+    user = users.session_user(request.cookies.get(session_cookie(config)))
+    if user is not None:
+        return user
+    staff = request.cookies.get(staff_cookie(config))
+    if not staff:
+        raise HTTPException(401, detail="not_signed_in")
+    result = view_as.stop(request.cookies.get(session_cookie(config)), staff)
+    _back_to_staff(response, config, result, staff)
+    user = users.session_user(staff) if result["restored"] else None
+    if user is None:
+        # Raising would drop the cookie changes above, so answer 401 directly.
+        response.status_code = 401
+    return user
 
 
 # --------------------
@@ -358,8 +450,10 @@ class CodeBody(BaseModel):
 @auth_router.get("/account")
 def get_account(request: Request, response: Response):
     config = _config()
-    user = current_user(request, config)
     _no_store(response)
+    user = _account_user(request, response, config)
+    if user is None:
+        return {"detail": "not_signed_in"}
     minecraft = _minecraft(user)
     # Only linking needs a recent check, so only unlinked players wait for one.
     user, answered = guild_check.check(user) if minecraft is None else (user, True)
@@ -381,6 +475,10 @@ def get_account(request: Request, response: Response):
         "minecraft": minecraft,
         "microsoft_link": MicrosoftConfig.from_env().usable,
         "patreon": _patreon(user),
+        "viewing_as": (
+            {"staff_name": user["acting_name"], "expires_at": user["expires_at"]}
+            if user["acting_user_id"] is not None else None
+        ),
     }
 
 
@@ -425,8 +523,21 @@ def profile_session(request: Request, response: Response):
     user = current_user(request, config)
     _no_store(response)
     player_uuid = _linked_player(user)
-    _check_link_rate(user["user_id"])
+    # During a view, the admin's opens count against the admin, not the player.
+    _check_link_rate(user["acting_user_id"] or user["user_id"])
     logger.info("Profile session from Discord user_id=%s player_uuid=%s", user["user_id"], player_uuid)
+    minted_via = view_as.profile_minted_via(user)
+    if minted_via is not None:
+        # Tagged so the guard refuses its writes; it ends with the view.
+        try:
+            return start_linked_profile_session(
+                player_uuid, minted_via=minted_via, expires_at=user["expires_at"],
+                still_allowed=view_as.view_still_open(user["session_id"]),
+            )
+        except CodeError as exc:
+            if str(exc) != "session_ended":
+                raise
+            raise HTTPException(401, detail="not_signed_in") from None
     return start_linked_profile_session(player_uuid)
 
 

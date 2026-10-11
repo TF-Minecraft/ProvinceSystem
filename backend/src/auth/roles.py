@@ -16,6 +16,8 @@ CAPABILITIES = {
     "view_rail": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
+    # Open a view-only session as a player, to see the site as they do; audited.
+    "view_as_player": "admin",
     # In-game LuckPerms ranks: everyone on staff sees them; what an admin may
     # change, beyond viewing, is decided per node by src/luckperms/policy.py.
     "view_luckperms": "mod",
