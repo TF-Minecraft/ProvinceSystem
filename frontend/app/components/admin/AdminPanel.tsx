@@ -14,10 +14,8 @@ import {
 } from "../../../lib/admin/api";
 import AccountActions from "./AccountActions";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import { headingClass, panelClass } from "./ui";
 
-const panelClass =
-  "mt-6 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] p-5 sm:p-6";
-const headingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 const buttonClass =
   "inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50";
 const inputClass =

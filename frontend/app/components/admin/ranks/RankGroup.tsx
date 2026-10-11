@@ -10,6 +10,8 @@ import {
   getLpGroup,
   getLpPlayers,
   lpRequestMessage,
+  nodeKey,
+  plainNode,
   STATUS_LABELS,
   type LpGroupDetail,
   type LpNode,
@@ -27,14 +29,6 @@ import { badgeClass, buttonClass, headingClass, inputClass, mutedClass, panelCla
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; data: LpGroupDetail };
 type Pending = { key: string; summary: ReactNode; ops: LpOp[]; label?: string; warning?: string };
-
-function plain(node: LpShownNode): LpNode {
-  return { key: node.key, value: node.value, contexts: node.contexts, expiry: node.expiry };
-}
-
-function nodeKey(node: LpNode): string {
-  return `${node.key}|${node.value}|${contextLabel(node.contexts)}|${node.expiry}`;
-}
 
 export default function RankGroup({ name }: { name: string }) {
   const router = useRouter();
@@ -237,11 +231,11 @@ function SettingsForm({
   function save() {
     const ops: LpOp[] = [];
     if (weight !== currentWeight) {
-      if (weightNode) ops.push({ op: "remove_node", node: plain(weightNode) });
+      if (weightNode) ops.push({ op: "remove_node", node: plainNode(weightNode) });
       if (weight) ops.push({ op: "add_node", node: { key: `weight.${weight}` } });
     }
     if (prefixChanged) {
-      if (prefixNode) ops.push({ op: "remove_node", node: plain(prefixNode) });
+      if (prefixNode) ops.push({ op: "remove_node", node: plainNode(prefixNode) });
       if (prefix) ops.push({ op: "add_node", node: { key: `prefix.${priority || "0"}.${prefix}` } });
     }
     if (!ops.length) return;
@@ -361,7 +355,7 @@ function NodesPanel({
                         Remove <span className="font-mono">{node.key}</span> from {group}.
                       </>
                     ),
-                    ops: [{ op: "remove_node", node: plain(node) }],
+                    ops: [{ op: "remove_node", node: plainNode(node) }],
                     label: "Remove",
                   })
                 }

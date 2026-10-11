@@ -11,16 +11,8 @@ import {
 import { groupActivity, placeName, targetName, type ActivityRow, type WorldNames } from "../../../lib/admin/activity";
 import { formatClock } from "../../../lib/admin/movement";
 import { formatEpoch } from "../../../lib/admin/time";
-import {
-  Retry,
-  dayHeadingClass,
-  dividerClass,
-  headingClass,
-  moreClass,
-  mutedClass,
-  panelClass,
-  type Failure,
-} from "./profileParts";
+import { Retry, dayHeadingClass, moreClass, type Failure } from "./profileParts";
+import { headingClass, mutedClass, panelClass, rowClass } from "./ui";
 
 export const KIND_LABELS: Record<string, string> = {
   block: "Blocks",
@@ -355,7 +347,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
             {days.map((day) => (
               <div key={day.key}>
                 <h4 className={dayHeadingClass}>{day.label}</h4>
-                <ul aria-label={day.label} className={`mt-1 text-sm ${dividerClass}`}>
+                <ul aria-label={day.label} className={`mt-1 text-sm ${rowClass}`}>
                   {day.rows.map((row) => (
                     <Row key={row.key} row={row} names={names} />
                   ))}
