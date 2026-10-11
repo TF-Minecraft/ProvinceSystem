@@ -1,9 +1,31 @@
-import { insetLabelEndpoints, type ProvinceLabelGrid } from "./labelBlobGeometry";
+import {
+  LABEL_ARC_BULGE_RATIO,
+  LABEL_GLYPH_WIDTH_EM,
+  LABEL_TEXT_CENTER_OFFSET_EM,
+  fontSizeForLabel,
+  insetLabelEndpoints,
+  labelArcQuadratic,
+  orientLabelEndpoints,
+  segmentPixelLength,
+  type LabelArcQuadratic,
+  type ProvinceLabelGrid,
+} from "./labelBlobGeometry";
 import type { MapMode } from "../components/map/types";
 import {
   resolveTitleProvinces,
   type TitleLayers,
 } from "./titleProvinces";
+
+export {
+  LABEL_ARC_BULGE_RATIO,
+  LABEL_GLYPH_WIDTH_EM,
+  LABEL_TEXT_CENTER_OFFSET_EM,
+  fontSizeForLabel,
+  labelArcQuadratic,
+  orientLabelEndpoints,
+  segmentPixelLength,
+  type LabelArcQuadratic,
+};
 
 export const LABEL_MAP_MODES = new Set<MapMode>([
   "nation",
@@ -23,10 +45,6 @@ export const TITLE_LABEL_MODES = new Set<MapMode>([
 
 export const MIN_PROVINCES = 1;
 export const MIN_PIXEL_AREA = 15000;
-/** Average glyph width as a fraction of font size (Fraunces 500). */
-export const LABEL_GLYPH_WIDTH_EM = 0.58;
-/** Quadratic arc bulge as a fraction of chord length (screen-up). */
-export const LABEL_ARC_BULGE_RATIO = 0.08;
 /**
  * Extra baseline length, as a fraction of the chord, for the `<textPath>` a
  * name is set along.
@@ -43,13 +61,9 @@ export const LABEL_ARC_BULGE_RATIO = 0.08;
  * the midpoint the text is centred on exactly where it was.
  */
 export const LABEL_PATH_OVERSHOOT_RATIO = 0.3;
-/** Cap-center offset from baseline as a fraction of font size. */
-export const LABEL_TEXT_CENTER_OFFSET_EM = 0.38;
 export const LABEL_INK = "#2a1f14";
 export const LABEL_HALO = "#e8e4d9";
-export const LABEL_STROKE_WIDTH = 4;
 export const LABEL_FONT_WEIGHT = 500;
-export const DEFAULT_MAP_ZOOM = 1;
 /** Minimum on-screen font size (px) for a label to appear. */
 export const LABEL_MIN_SCREEN_PX = 6;
 /**
@@ -229,15 +243,6 @@ export function graphDiameterEndpoints(
   return a <= b ? [a, b] : [b, a];
 }
 
-export function segmentPixelLength(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): number {
-  return Math.hypot(x2 - x1, y2 - y1);
-}
-
 export function pixelDiameterEndpoints(
   componentIds: number[],
   centroids: ProvinceCentroids
@@ -295,12 +300,6 @@ export function estimatedLabelWidthPx(fontSize: number, text: string): number {
   return fontSize * units * LABEL_GLYPH_WIDTH_EM;
 }
 
-export function fontSizeForLabel(segmentPx: number, text: string): number {
-  const units = text.trim().length || 1;
-  if (segmentPx <= 0) return 1;
-  return Math.round(segmentPx / (units * LABEL_GLYPH_WIDTH_EM));
-}
-
 export function componentPixelArea(
   provinceIds: number[],
   centroids: ProvinceCentroids
@@ -325,20 +324,6 @@ export function labelAngleDeg(
   if (deg <= -90) deg += 180;
   else if (deg > 90) deg -= 180;
   return deg;
-}
-
-export function orientLabelEndpoints(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): { x1: number; y1: number; x2: number; y2: number } {
-  const rad = Math.atan2(y2 - y1, x2 - x1);
-  let deg = (rad * 180) / Math.PI;
-  if (deg <= -90 || deg > 90) {
-    return { x1: x2, y1: y2, x2: x1, y2: y1 };
-  }
-  return { x1, y1, x2, y2 };
 }
 
 /**
@@ -369,47 +354,6 @@ export function extendLabelEndpoints(
     x2: x2 + ux * grow,
     y2: y2 + uy * grow,
   };
-}
-
-export type LabelArcQuadratic = {
-  ax: number;
-  ay: number;
-  cx: number;
-  cy: number;
-  bx: number;
-  by: number;
-};
-
-/**
- * The quadratic the on-screen `<textPath>` follows. A zero-length chord
- * collapses to a point so callers can still place a single glyph.
- */
-export function labelArcQuadratic(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
-): LabelArcQuadratic {
-  const oriented = orientLabelEndpoints(x1, y1, x2, y2);
-  const ax = oriented.x1;
-  const ay = oriented.y1;
-  const bx = oriented.x2;
-  const by = oriented.y2;
-
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) {
-    return { ax, ay, cx: ax, cy: ay, bx, by };
-  }
-
-  const mx = (ax + bx) / 2;
-  const my = (ay + by) / 2;
-  const nx = dy / len;
-  const ny = -dx / len;
-  const bulge = len * bulgeRatio;
-  return { ax, ay, cx: mx + nx * bulge, cy: my + ny * bulge, bx, by };
 }
 
 export function labelArcPathD(
@@ -845,42 +789,6 @@ export function cleanRegionName(name: string): string {
     .replace(/§/g, "")
     .replace(/#(?:[0-9a-fA-F]{6})/g, "")
     .trim();
-}
-
-export function provincesForRegionLabel(
-  regionId: string,
-  mapType: MapMode,
-  regionData: Record<string, NationRegionInput>,
-  titleLayers: TitleLayers | null,
-  mapObjects: LabelMapObject[]
-): { provinces: number[]; scope: NationLabelScope } | null {
-  if (mapType === "nation") {
-    return provincesForNationLabel(regionId, regionData, mapObjects);
-  }
-
-  if (mapType === "trade") {
-    if (!titleLayers) return null;
-    const provinces = resolveTitleProvinces(regionId, "trade", titleLayers);
-    if (!provinces.length) return null;
-    return { provinces, scope: "full" };
-  }
-
-  if (mapType === "county") {
-    const provinces = regionData[regionId]?.provinces ?? [];
-    if (!provinces.length) return null;
-    return { provinces, scope: "full" };
-  }
-
-  if (!TITLE_LABEL_MODES.has(mapType)) {
-    return null;
-  }
-
-  if (!titleLayers) return null;
-
-  const provinces = resolveTitleProvinces(regionId, mapType, titleLayers);
-  if (!provinces.length) return null;
-
-  return { provinces, scope: "full" };
 }
 
 export type NationLabelGeometry = {

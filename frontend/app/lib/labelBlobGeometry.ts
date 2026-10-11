@@ -3,8 +3,11 @@ export const LABEL_INSET_PADDING_PX = 8;
 export const LABEL_GRID_MAX_CANDIDATES = 150;
 export const LABEL_CORRIDOR_SAMPLE_STEP_PX = 6;
 export const LABEL_RADIAL_ANGLE_STEPS = 12;
+/** Average glyph width as a fraction of font size (Fraunces 500). */
 export const LABEL_GLYPH_WIDTH_EM = 0.58;
+/** Quadratic arc bulge as a fraction of chord length (screen-up). */
 export const LABEL_ARC_BULGE_RATIO = 0.08;
+/** Cap-center offset from baseline as a fraction of font size. */
 export const LABEL_TEXT_CENTER_OFFSET_EM = 0.38;
 
 export type ProvinceLabelGridMeta = {
@@ -46,7 +49,7 @@ export function parseProvinceLabelGrid(
   };
 }
 
-function segmentPixelLength(
+export function segmentPixelLength(
   x1: number,
   y1: number,
   x2: number,
@@ -55,7 +58,7 @@ function segmentPixelLength(
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
-function fontSizeForLabel(segmentPx: number, text: string): number {
+export function fontSizeForLabel(segmentPx: number, text: string): number {
   const units = text.trim().length || 1;
   if (segmentPx <= 0) return 1;
   return Math.round(segmentPx / (units * LABEL_GLYPH_WIDTH_EM));
@@ -322,7 +325,7 @@ function clearanceAt(
   return dist[idx];
 }
 
-function orientLabelEndpoints(
+export function orientLabelEndpoints(
   x1: number,
   y1: number,
   x2: number,
@@ -352,29 +355,45 @@ function quadraticPoint(
   };
 }
 
-function arcControlPoint(
+export type LabelArcQuadratic = {
+  ax: number;
+  ay: number;
+  cx: number;
+  cy: number;
+  bx: number;
+  by: number;
+};
+
+/**
+ * The quadratic the on-screen `<textPath>` follows. A zero-length chord
+ * collapses to a point so callers can still place a single glyph.
+ */
+export function labelArcQuadratic(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
-): { cx: number; cy: number } {
+  y2: number,
+  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
+): LabelArcQuadratic {
   const oriented = orientLabelEndpoints(x1, y1, x2, y2);
   const ax = oriented.x1;
   const ay = oriented.y1;
   const bx = oriented.x2;
   const by = oriented.y2;
+
   const dx = bx - ax;
   const dy = by - ay;
   const len = Math.hypot(dx, dy);
   if (len === 0) {
-    return { cx: ax, cy: ay };
+    return { ax, ay, cx: ax, cy: ay, bx, by };
   }
+
   const mx = (ax + bx) / 2;
   const my = (ay + by) / 2;
   const nx = dy / len;
   const ny = -dx / len;
-  const bulge = len * LABEL_ARC_BULGE_RATIO;
-  return { cx: mx + nx * bulge, cy: my + ny * bulge };
+  const bulge = len * bulgeRatio;
+  return { ax, ay, cx: mx + nx * bulge, cy: my + ny * bulge, bx, by };
 }
 
 export function corridorClear(
@@ -396,7 +415,7 @@ export function corridorClear(
     Math.min(grid.scaleX, grid.scaleY) * 0.5
   );
   const steps = Math.max(2, Math.ceil(len / step));
-  const { cx, cy } = arcControlPoint(x1, y1, x2, y2);
+  const { cx, cy } = labelArcQuadratic(x1, y1, x2, y2);
 
   for (let i = 0; i <= steps; i += 1) {
     const t = i / steps;

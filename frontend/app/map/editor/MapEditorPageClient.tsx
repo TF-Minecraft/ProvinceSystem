@@ -106,7 +106,6 @@ export default function MapEditorPageClient() {
       mapId={mapId}
       initialTier={initialTier}
       sessionToken={sessionToken}
-      onAccessLost={(reason) => setGateReason(reason)}
     />
   );
 }

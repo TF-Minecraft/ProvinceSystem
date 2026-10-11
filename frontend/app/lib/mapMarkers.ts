@@ -313,15 +313,6 @@ export function pickMapMarkerAt(
   return null;
 }
 
-export function markerHoverTransform(
-  mapX: number,
-  mapY: number,
-  hovered: boolean
-): string {
-  const scale = hovered ? MARKER_HOVER_SCALE : 1;
-  return `translate(${mapX} ${mapY}) scale(${scale}) translate(${-mapX} ${-mapY})`;
-}
-
 const EMPTY_SET: ReadonlySet<string> = new Set();
 
 const SIZE_RANK: Record<MapMarkerSize, number> = { large: 0, medium: 1, small: 2 };

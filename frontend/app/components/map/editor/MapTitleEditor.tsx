@@ -4,11 +4,9 @@ import { useCallback, useEffect, useRef } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import { mapDisplayName } from "@/app/components/map/types";
-import type { MapAccessGateReason } from "@/app/components/map/MapAccessGate";
 import { useEditorLoadProgress } from "@/app/hooks/useEditorLoadProgress";
 import { useEditorProvinceIndex } from "@/app/hooks/useEditorProvinceIndex";
 import { useEditorExport } from "@/app/hooks/useEditorExport";
-import { useEditorRegen } from "@/app/hooks/useEditorRegen";
 import { useEditorDraft } from "@/app/hooks/useEditorDraft";
 import { useTitleTierEditor } from "@/app/hooks/useTitleTierEditor";
 import {
@@ -34,14 +32,12 @@ type MapTitleEditorProps = {
   mapId: MapId;
   initialTier: EditorTier;
   sessionToken: string;
-  onAccessLost?: (reason: MapAccessGateReason) => void;
 };
 
 export default function MapTitleEditor({
   mapId,
   initialTier,
   sessionToken,
-  onAccessLost,
 }: MapTitleEditorProps) {
   const editor = useEditorDraft({
     mapId,
@@ -86,28 +82,11 @@ export default function MapTitleEditor({
     editor,
   });
 
-  const handleAccessLost = useCallback(
-    (reason: MapAccessGateReason) => {
-      if (onAccessLost) {
-        onAccessLost(reason);
-      }
-    },
-    [onAccessLost]
-  );
-
   const editorExport = useEditorExport({
     mapId,
     sessionToken,
     getTierDraftsForExport: editor.getTierDraftsForExport,
     anyTierDirty: editor.anyTierDirty,
-  });
-
-  const editorRegen = useEditorRegen({
-    mapId,
-    tier: editor.tier,
-    sessionToken,
-    dirty: editor.dirty,
-    onAccessLost: handleAccessLost,
   });
 
   const prevTierRef = useRef(editor.tier);
@@ -258,10 +237,6 @@ export default function MapTitleEditor({
           exportError={editorExport.exportError}
           canExport={editorExport.canExport}
           onExport={editorExport.exportZip}
-          regenState={editorRegen.regenState}
-          regenMessage={editorRegen.regenMessage}
-          canRegen={editorRegen.canRegen}
-          onRegen={editorRegen.regen}
         />
 
         {editor.error ? (

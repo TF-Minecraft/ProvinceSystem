@@ -4,7 +4,6 @@ import type { MapId } from "@/app/components/map/types";
 import { liveMapHref } from "@/app/lib/map/chronicleDayRoute";
 
 import type { ExportState } from "@/app/hooks/useEditorExport";
-import type { RegenState } from "@/app/hooks/useEditorRegen";
 
 const buttonClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)] transition hover:brightness-110 hover:border-[var(--tfmc-accent)] active:scale-[0.98] disabled:opacity-60";
@@ -22,10 +21,6 @@ type EditorSaveBarProps = {
   exportError: string | null;
   canExport: boolean;
   onExport: () => void;
-  regenState: RegenState;
-  regenMessage: string | null;
-  canRegen: boolean;
-  onRegen: () => void;
 };
 
 export default function EditorSaveBar({
@@ -34,10 +29,6 @@ export default function EditorSaveBar({
   exportError,
   canExport,
   onExport,
-  regenState,
-  regenMessage,
-  canRegen,
-  onRegen,
 }: EditorSaveBarProps) {
   const viewerPath = mapViewerPath(mapId);
 
@@ -54,14 +45,6 @@ export default function EditorSaveBar({
         >
           {exportState === "exporting" ? "Preparing ZIP..." : "Download ZIP"}
         </button>
-        <button
-          type="button"
-          className={buttonClass}
-          disabled={!canRegen}
-          onClick={() => void onRegen()}
-        >
-          {regenState === "running" ? "Regenerating..." : "Regenerate"}
-        </button>
         <a
           href={viewerPath}
           target="_blank"
@@ -74,19 +57,6 @@ export default function EditorSaveBar({
 
       {exportError ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">{exportError}</p>
-      ) : null}
-
-      {regenMessage ? (
-        <p
-          className={`text-sm ${
-            regenState === "error"
-              ? "text-[#e8a0a0]"
-              : "text-[var(--tfmc-cream)]"
-          }`}
-          role="status"
-        >
-          {regenMessage}
-        </p>
       ) : null}
     </div>
   );

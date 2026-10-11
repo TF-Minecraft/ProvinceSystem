@@ -41,10 +41,6 @@ function emptyTierDraftMap(): TierDraftMap {
   };
 }
 
-export function isEditorTier(value: string): value is EditorTier {
-  return EDITOR_TIERS.includes(value as EditorTier);
-}
-
 function cloneDraft(data: TitleDraft): TitleDraft {
   return JSON.parse(JSON.stringify(data)) as TitleDraft;
 }
@@ -248,32 +244,6 @@ export function useEditorDraft({
     []
   );
 
-  const toggleDuchyCounty = useCallback(
-    (duchyId: string, countyId: string, options?: ToggleChildInParentOptions) => {
-      toggleChildMember(duchyId, countyId, options);
-    },
-    [toggleChildMember]
-  );
-
-  const toggleKingdomDuchy = useCallback(
-    (kingdomId: string, duchyId: string, options?: ToggleChildInParentOptions) => {
-      toggleChildMember(kingdomId, duchyId, options);
-    },
-    [toggleChildMember]
-  );
-
-  const toggleEmpireKingdom = useCallback(
-    (empireId: string, kingdomId: string, options?: ToggleChildInParentOptions) => {
-      toggleChildMember(empireId, kingdomId, options);
-    },
-    [toggleChildMember]
-  );
-
-  const resetToServer = useCallback(() => {
-    setDraft(cloneDraft(serverSnapshot));
-    setSelectedId(null);
-  }, [serverSnapshot]);
-
   const getTierDraftsForExport = useCallback((): TierDraftMap => {
     return {
       ...tierDrafts,
@@ -281,25 +251,11 @@ export function useEditorDraft({
     };
   }, [tier, draft, tierDrafts]);
 
-  const markSaved = useCallback(
-    (snapshot: TitleDraft) => {
-      const cloned = cloneDraft(snapshot);
-      setServerSnapshot(cloned);
-      setTierSnapshots((current) => ({ ...current, [tier]: cloned }));
-      if (tier === "county") setCountyTierDirty(false);
-      if (tier === "duchy") setDuchyTierDirty(false);
-      if (tier === "kingdom") setKingdomTierDirty(false);
-    },
-    [tier]
-  );
-
   return {
     mapId,
     tier,
     draft,
-    serverSnapshot,
     selectedId,
-    dirty,
     anyTierDirty,
     countyTierDirty,
     duchyTierDirty,
@@ -313,11 +269,6 @@ export function useEditorDraft({
     removeTitle,
     toggleCountyProvince,
     toggleChildMember,
-    toggleDuchyCounty,
-    toggleKingdomDuchy,
-    toggleEmpireKingdom,
-    resetToServer,
-    markSaved,
     getTierDraftsForExport,
   };
 }
