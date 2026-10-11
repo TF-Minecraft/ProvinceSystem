@@ -107,5 +107,17 @@
     "textures": {
       "3": "/wiki/textures/companion-pets/yorkshire/3.png"
     }
+  },
+  "cavalier_king_charles_spaniel": {
+    "modelUrl": "/wiki/models/companion-pets/cavalier_king_charles_spaniel.json",
+    "textures": {
+      "2": "/wiki/textures/companion-pets/cavalier_king_charles_spaniel/2.png"
+    }
+  },
+  "sphynx": {
+    "modelUrl": "/wiki/models/companion-pets/sphynx.json",
+    "textures": {
+      "9": "/wiki/textures/companion-pets/sphynx/9.png"
+    }
   }
 }

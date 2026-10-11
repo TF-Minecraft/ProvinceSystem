@@ -31,6 +31,8 @@ it("lets readers choose any companion while mounting only its preview", () => {
     "Tabby cat",
     "Lagotto Romagnolo",
     "Yorkshire Terrier",
+    "Cavalier King Charles Spaniel",
+    "Sphynx Cat",
   ]);
   expect(screen.getByText("Beagle Companion Egg")).toBeTruthy();
   expect(screen.getByText("Pet Master")).toBeTruthy();
@@ -58,6 +60,13 @@ it("lets readers choose any companion while mounting only its preview", () => {
     ["cattabby", "Tabby cat", "Tabby Cat Companion Egg", "Gilded"],
     ["lagottoromagnolo", "Lagotto Romagnolo", "Lagotto Romagnolo Companion Egg", "Gilded"],
     ["yorkshire", "Yorkshire Terrier", "Yorkshire Terrier Companion Egg", "Ascended"],
+    [
+      "cavalier_king_charles_spaniel",
+      "Cavalier King Charles Spaniel",
+      "Cavalier King Charles Spaniel Companion Egg",
+      "Pet Master",
+    ],
+    ["sphynx", "Sphynx Cat", "Sphynx Cat Companion Egg", "Ascended"],
   ]) {
     fireEvent.change(select, { target: { value: id } });
     expect(screen.getAllByRole("img")).toHaveLength(1);
@@ -68,7 +77,7 @@ it("lets readers choose any companion while mounting only its preview", () => {
     expect(screen.getByText(unlock)).toBeTruthy();
     if (unlock !== "Pet Master") expect(screen.queryByText("Pet Master")).toBeNull();
     const eggIcon = screen.getByText(egg).parentElement?.querySelector("img");
-    const family = ["catblack", "catfunny", "catorange", "mainecoon", "catgray", "cattabby"].includes(id)
+    const family = ["catblack", "catfunny", "catorange", "mainecoon", "catgray", "cattabby", "sphynx"].includes(id)
       ? "cat"
       : id === "frog"
         ? "frog"
