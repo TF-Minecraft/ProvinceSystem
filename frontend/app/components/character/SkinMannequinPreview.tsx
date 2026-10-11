@@ -18,7 +18,6 @@ type Props = {
   className?: string;
   /** When set, use this arm model instead of inferring from the texture. */
   armModel?: ArmModel | null;
-  onModelDetected?: (model: ArmModel) => void;
   /**
    * When set and a source is available, show a bottom-right download control
    * that saves the current skin PNG (e.g. auto-masked preview for editing).
@@ -59,14 +58,11 @@ export default function SkinMannequinPreview({
   source,
   className = "",
   armModel = null,
-  onModelDetected,
   downloadFilename = null,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
-  const onModelRef = useRef(onModelDetected);
-  onModelRef.current = onModelDetected;
 
   useEffect(() => {
     const hostEl = hostRef.current;
@@ -107,9 +103,7 @@ export default function SkinMannequinPreview({
           return;
         }
 
-        const detected = inferArmModelFromTexture(steveTexture);
-        onModelRef.current?.(detected);
-        const previewModel = armModel ?? detected;
+        const previewModel = armModel ?? inferArmModelFromTexture(steveTexture);
         steveRoot = createSteveMannequin(steveTexture, previewModel);
         applySteveArmPose(steveRoot, "idle");
         setSteveOuterLayerVisible(steveRoot, true);

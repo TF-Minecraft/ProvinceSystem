@@ -15,10 +15,7 @@ import {
   isSessionValid,
   type CharacterSession,
 } from "../../../../lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "../../../../lib/characters/uiDev";
+import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
 
 function kitStatusLabel(kit: CharacterKit): string {
@@ -32,15 +29,6 @@ function kitStatusLabel(kit: CharacterKit): string {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-}
-
-function uiDevSession(): CharacterSession {
-  return {
-    session_token: UI_DEV_SESSION_TOKEN,
-    player_uuid: "00000000-0000-4000-8000-ui0000000001",
-    expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "profile",
-  };
 }
 
 export default function CharacterKitsPage() {
