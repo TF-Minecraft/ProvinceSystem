@@ -518,8 +518,6 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
 
   async function handleEquip(slot: string) {
     if (isDraft || slot === "masked") return;
-    const data = slotsById.get(slot);
-    if (data?.apply_pending) return;
     const { characterId, sessionToken, uiDev } = props;
     if (uiDev) return;
     setEquipping(slot);
@@ -564,11 +562,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                 lockRuns={lock?.runs}
                 lockPlain={lock?.plain}
                 onOpen={() => tryOpenSlot(id)}
-                onEquip={
-                  !isDraft && slot.filled && slot.unlocked && !slot.apply_pending
-                    ? () => void handleEquip(id)
-                    : undefined
-                }
+                onEquip={!isDraft && slot.filled && slot.unlocked ? () => void handleEquip(id) : undefined}
                 equipping={equipping === id}
               />
             );

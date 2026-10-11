@@ -42,6 +42,26 @@ it("renders the stored slim model in the wardrobe card", () => {
   expect(screen.getByTestId("preview").getAttribute("data-model")).toBe("slim");
 });
 
+it("lets a signed skin be equipped and edited before the server syncs it", () => {
+  const onOpen = vi.fn();
+  const onEquip = vi.fn();
+  render(
+    <WardrobeSlotFrame
+      slot={{ slot: "extra_1", filled: true, unlocked: true, model: "classic", apply_pending: true }}
+      label="Ball suit"
+      active={false}
+      textureSrc="blob:stored"
+      onOpen={onOpen}
+      onEquip={onEquip}
+    />,
+  );
+  expect(screen.getByText("Syncing")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Ball suit syncing - edit" }));
+  fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+  expect(onOpen).toHaveBeenCalledOnce();
+  expect(onEquip).toHaveBeenCalledOnce();
+});
+
 it("re-signs the stored PNG when only its arm model changes", async () => {
   vi.stubGlobal(
     "URL",
