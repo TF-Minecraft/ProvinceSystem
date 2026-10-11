@@ -509,7 +509,7 @@ export const stations: StationInfo[] = [
   {
     slug: "magic-station",
     name: "Magic Station",
-    blurb: "Magical handles, tomes, and cores: Mage class required.",
+    blurb: "Builds mage staffs, wands and blades from handles, tomes and cores.",
     icon: T("magic_crafting/heavy_magical_core.png"),
     interaction: "Right click",
     model: magicModel,

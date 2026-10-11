@@ -22,12 +22,6 @@
     "Drag & Click onto an item to unsocket",
     "its upgrade item, Gemstone, or Rune."
   ],
-  "mmoitem:CONSUMABLES:MAJOR_MANA_POTION": [
-    "■ Restores 20% Mana if Max > 50"
-  ],
-  "mmoitem:CONSUMABLES:GREATER_MANA_POTION": [
-    "■ Restores 20% Mana if Max > 50"
-  ],
   "mmoitem:CURRENCY:GOLD_COIN": [
     "Currency of a fallen empire.",
     "Worth: 1d"
@@ -90,17 +84,20 @@
   "mmoitem:KEYS:IRON_KEY": [
     "Requires a Basic Lockpicking Set to be Lockpicked."
   ],
-  "mmoitem:LOCKPICKS:BASIC_LOCKPICK_SET": [
+  "mmoitem:KEYS:KEY_CHAIN": [
+    "Can hold up to five keys."
+  ],
+  "mmoitem:LOCKPICKS:BASIC_LOCKPICK": [
     "Success Chance: 5%",
     "Break Chance: 40%",
-    "Left Click on a locked door to attempt a Lockpick.",
+    "Left Click on a locked door or chest to attempt a Lockpick.",
     "HINT: Using this item will consume the entire",
     "stack. Make sure to unstack before using."
   ],
-  "mmoitem:LOCKPICKS:STRONG_LOCKPICK_SET": [
+  "mmoitem:LOCKPICKS:STRONG_LOCKPICK": [
     "Success Chance: 5%",
     "Break Chance: 50%",
-    "Left Click on a locked door to attempt a Lockpick.",
+    "Left Click on a locked door or chest to attempt a Lockpick.",
     "HINT: Using this item will consume the entire",
     "stack. Make sure to unstack before using."
   ],
@@ -109,6 +106,30 @@
     "Gemstones in an Enchanting Table.",
     "HINT: The more Gemstones you infuse at a time,",
     "the lower the average Success Chance of each."
+  ],
+  "mmoitem:LOOT:MINOR_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:LESSER_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:GREATER_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:ASCENDANT_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
+  ],
+  "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE": [
+    "Research this Rune to unlock its Spell!"
   ],
   "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL": [
     "Used to Reskin an item.",
@@ -165,14 +186,29 @@
     "A crystal found deep below the",
     "earth, but not of this Plane..."
   ],
-  "mmoitem:MATERIALS:RARE_FEATHER": [
-    "Used to make weapons and armor on the Anvil."
+  "mmoitem:MATERIALS:RAWIRON_FRAGMENT": [
+    "Crafted into Iron Ingots",
+    "in a Fishing Station."
   ],
-  "mmoitem:MATERIALS:EPIC_FEATHER": [
-    "Used to make weapons and armor on the Anvil."
+  "mmoitem:MATERIALS:RAWGOLD_FRAGMENT": [
+    "Crafted into Gold Ingots",
+    "in a Fishing Station."
   ],
-  "mmoitem:MATERIALS:LEGENDARY_FEATHER": [
-    "Used to make weapons and armor on the Anvil."
+  "mmoitem:MATERIALS:DIAMOND_FRAGMENT": [
+    "Crafted into Diamonds",
+    "in a Fishing Station."
+  ],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_1": [
+    "Use on a magic weapon to imbue resonance"
+  ],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_2": [
+    "Use on a magic weapon to imbue resonance"
+  ],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_3": [
+    "Use on a magic weapon to imbue resonance"
+  ],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_4": [
+    "Use on a magic weapon to imbue resonance"
   ],
   "mmoitem:MEDICINES:MINOR_FOCUS_POTION": [
     "Restores 50 Mental Points."
@@ -222,6 +258,53 @@
   "mmoitem:MEDICINES:COUGH_SYRUP": [
     "Calms an irritated throat."
   ],
+  "mmoitem:MUSIC:DISC_FRAGMENT": [
+    "The broken piece of a Music Disc."
+  ],
+  "mmoitem:MUSIC:BROKEN_DISC": [
+    "Can become any Music Disc."
+  ],
+  "mmoitem:MUSIC:DISC1": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC2": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC3": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC4": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC5": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC6": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC7": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC8": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC9": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC10": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC11": [
+    "Right Click to play without a Jukebox!"
+  ],
+  "mmoitem:MUSIC:DISC12": [
+    "Right Click to play without a Jukebox!",
+    "The TFMC: Season 5 Combat Theme"
+  ],
+  "mmoitem:MUSIC:DISC13": [
+    "Right Click to play without a Jukebox!",
+    "The TFMC: Season 5 Main Theme"
+  ],
   "mmoitem:PETS:TAMING_ITEM": [
     "Used to tame an animal.",
     "Right Click an animal to tame it."
@@ -236,42 +319,132 @@
     "Used to find mounts.",
     "Right Click to locate nearby mounts."
   ],
-  "mmoitem:PETS:UNIVERSAL_FEED": [
-    "Used daily to feed your animals.",
-    "Right Click an animal to",
-    "boost its happiness."
-  ],
   "mmoitem:PETS:CARING_ITEM": [
     "Used daily to pet your animals.",
     "Right Click an animal to",
     "boost its happiness."
   ],
-  "mmoitem:PETS:FARMREPORT_ITEM": [
-    "Right Click to check the",
-    "status of your animals."
-  ],
-  "mmoitem:PETS:STABLECHUNK_ITEM": [
-    "Right Click in a chunk to turn it",
-    "into a stable chunk for animals.",
-    "HINT: Holding F3 and pressing",
-    "G shows chunk borders."
-  ],
-  "mmoitem:PETS:COLLECTOR_ITEM": [
-    "Used to collect animal goods.",
-    "Right Click an animal",
-    "to collect its Bundle."
-  ],
-  "mmoitem:PETS:GREEN_CONCOCTION": [
-    "Grants a little EXP boost to your pets"
-  ],
-  "mmoitem:PETS:RED_CONCOCTION": [
-    "Grants a little EXP boost to your pets"
+  "mmoitem:PETS:NEUTERING_ITEM": [
+    "Right Click to neuter",
+    "an animal."
   ],
   "mmoitem:PETS:MEAT_TREAT": [
-    "Delicious treat with healing properties"
+    "A meat meal for any companion pet.",
+    "Right-click a companion to restore 35 hunger."
   ],
   "mmoitem:PETS:FISH_TREAT": [
-    "Delicious treat with healing properties"
+    "A fish meal for any companion pet.",
+    "Right-click a companion to restore 35 hunger."
+  ],
+  "mmoitem:PETS:PET_BEAGLE_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CHIHUAHUA_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CORGI_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_GOLDEN_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CATBLACK_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CATFUNNY_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CATORANGE_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_FOX_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_FROG_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_BALL": [
+    "A soft fabric ball for companion pets.",
+    "Throw it for your companion to fetch."
+  ],
+  "mmoitem:PETS:PET_CHEW_BONE": [
+    "A bone-shaped fabric toy for companion pets.",
+    "Throw it for your companion to fetch."
+  ],
+  "mmoitem:PETS:PET_TUG_ROPE": [
+    "A knotted rope toy for companion pets.",
+    "Throw it for your companion to fetch."
+  ],
+  "mmoitem:PETS:PET_MOUSE_PLUSH": [
+    "A soft mouse toy for companion pets.",
+    "Throw it for your companion to fetch."
+  ],
+  "mmoitem:PETS:PET_TEDDY_PLUSH": [
+    "A little teddy bear for companion pets.",
+    "Throw it for your companion to fetch."
+  ],
+  "mmoitem:PETS:FISH_SNACK": [
+    "A fish-shaped crunchy treat for any companion.",
+    "Hold to train; right-click to give the reward."
+  ],
+  "mmoitem:PETS:BISCUIT_TREAT": [
+    "A crunchy biscuit treat for any companion.",
+    "Hold to train; right-click to give the reward."
+  ],
+  "mmoitem:PETS:PET_BRUSH": [
+    "A grooming brush for any companion pet.",
+    "Right-click a companion to clean it.",
+    "The brush is not consumed."
+  ],
+  "mmoitem:PETS:PET_MEDICINE": [
+    "A herbal medicine for companion pets.",
+    "Right-click a sick companion to treat it.",
+    "One dose is consumed per treatment."
+  ],
+  "mmoitem:PETS:PET_HUSKY_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_MAINECOON_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_BERNESSE_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_BORDERCOLLIE_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CATGRAY_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_CATTABBY_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_LAGOTTOROMAGNOLO_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_YORKSHIRE_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
+  ],
+  "mmoitem:PETS:PET_BORDERCOLLIEGRAY_EGG": [
+    "Right-click to hatch your companion.",
+    "Choose its name in chat."
   ],
   "mmoitem:RESEARCH:SCRIBE_PAPER": [
     "Used to create various Research",
@@ -349,59 +522,78 @@
     "Research this paper in a Lectern",
     "to unlock its secrets and gain EXP!"
   ],
+  "mmoitem:RESEARCH:R_ALCHEMY": [
+    "Study: Alchemy",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_TRACE_DETECTION": [
+    "Study: Arcane Trace Detection",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
   "mmoitem:SURGERY:DEFIBRILLATOR": [
-    "If a patients heart stops,",
-    "(which can happen when they are anesthetized)",
-    "zap then with this to fire it up again."
+    "A sharp whiff revives a",
+    "patient who has collapsed",
+    "on the table."
   ],
   "mmoitem:SURGERY:PINS": [
-    "When a bone is absolutely shattered,",
-    "you need to use pins to put it back together.",
-    "Only once you have opened an incision, of course."
+    "Binds the pieces of a shattered",
+    "bone together so it can be set."
   ],
   "mmoitem:SURGERY:SURGICAL_GLOVE": [
-    "Once you find the problem, just fix it."
+    "Dresses the injury once it",
+    "has been set and treated."
   ],
   "mmoitem:SURGERY:ANTIBIOTICS": [
-    "If someone gets an infection,",
-    "antibiotics should clear it up."
+    "A bitter tincture that brings",
+    "a fever down."
   ],
   "mmoitem:SURGERY:CLAMP": [
-    "This can reduce a patients bleeding significantly,",
-    "but only when you have open incisions."
+    "Spencer Wells forceps. Clamp a",
+    "bleeding vessel while the",
+    "wound is open."
   ],
   "mmoitem:SURGERY:ULTRASOUND": [
-    "This detailed scan can inform you of any broken bones,",
-    "tumors, or other physical issues within the pateints body."
+    "A turned-wood tube for listening",
+    "to the chest. Examine the patient",
+    "to learn what must be done."
   ],
   "mmoitem:SURGERY:LAB_KIT": [
-    "This kit will identify different microbes",
-    "that could be present in the patient."
+    "Takes the patient's temperature",
+    "so a fever can be treated."
   ],
   "mmoitem:SURGERY:TRANSFUSION": [
-    "If a patients blood supply gets",
-    "dangerously low, this will fill it up."
+    "A brass syringe for giving",
+    "blood. Strengthens a weak pulse."
   ],
   "mmoitem:SURGERY:SCALPEL": [
-    "Use this to cut people open."
+    "Ebony handle, steel blade.",
+    "Only ever cut a patient",
+    "who is under chloroform."
   ],
   "mmoitem:SURGERY:STITCHES": [
-    "Use this to close incisions and remove bleeding."
+    "A curved needle and gut thread",
+    "for closing incisions."
   ],
   "mmoitem:SURGERY:ANESTHETIC": [
-    "You probably dont want to operate on somebody",
-    "unless they are unconcious.",
-    "Use this to knock them out."
+    "A few drops on a cloth put",
+    "the patient under. Too much,",
+    "too soon, and they never wake."
   ],
   "mmoitem:SURGERY:ANTISEPTIC": [
-    "This is used for cleaning an area before you cut it open."
+    "Lister's antiseptic. Cleans the",
+    "operation site and keeps",
+    "fever from setting in."
   ],
   "mmoitem:SURGERY:SPLINT": [
-    "If somebody has a broken bone,",
-    "you better splint it up or it will heal all crooked."
+    "Wooden boards and linen strips",
+    "to set a broken bone."
   ],
   "mmoitem:SURGERY:SPONGE": [
-    "If you make a mess, a sponge can suck it up easily."
+    "Mops up blood so you can see",
+    "what you are doing, steadying",
+    "your next move."
   ],
   "mmoitem:TOOLS:IRON_HUNTING_KNIFE": [
     "Concealable during an RP search."
@@ -446,52 +638,97 @@
     "A tool used in Goldsmithing at a Smithing Table.",
     "Left Click to peform a tinkering smithing hit."
   ],
+  "mmoitem:TOOLS:FORGING_BRANDING_TOOL": [
+    "A tool used in Forging at a Forging Station.",
+    "Right Click to start a project.",
+    "Left Click to finish a project.",
+    "Shift-Right Click to check a project progress.",
+    "Shift-Left Click to cancel and refund a project."
+  ],
+  "mmoitem:TOOLS:FORGING_HAMMER": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a regular hammer hit."
+  ],
+  "mmoitem:TOOLS:FORGING_SMALL_HAMMER": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a small hammer hit."
+  ],
+  "mmoitem:TOOLS:FORGING_ENGRAVING_TOOL": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a regular engrave hit."
+  ],
+  "mmoitem:TOOLS:FORGING_WHITTLING_TOOL": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a regular whittle hit."
+  ],
+  "mmoitem:TOOLS:FORGING_ETCHING_TOOL": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a regular etching hit."
+  ],
+  "mmoitem:TOOLS:FORGING_SEWING_NEEDLE": [
+    "A tool used in Forging at a Forging Station.",
+    "Left Click to peform a regular sewing hit."
+  ],
   "mmoitem:TOOLS:SKIN_BRANDING_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Right Click to start a project.",
     "Left Click to finish a project.",
     "Shift-Right Click to check a project progress.",
     "Shift-Left Click to cancel and refund a project."
   ],
   "mmoitem:TOOLS:HAMMER_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular hammer hit."
   ],
   "mmoitem:TOOLS:SMALL_HAMMER_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a small hammer hit."
   ],
   "mmoitem:TOOLS:ENGRAVING_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular engrave hit."
   ],
   "mmoitem:TOOLS:WHITTLING_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular whittle hit."
   ],
   "mmoitem:TOOLS:ETCHING_TOOL": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular etching hit."
   ],
   "mmoitem:TOOLS:SEWING_NEEDLE": [
-    "A tool used in Artisanship and Forging",
-    "at a Woodworking Table or Anvil.",
+    "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular sewing hit."
-  ],
-  "mmoitem:TOOLS:LOCKPICK": [
-    "Shift Right Click any chest to lockpick it."
   ],
   "mmoitem:TOOLS:GEIGER_COUNTER": [
     "A device that detects traces of Arcanum"
   ],
   "mmoitem:TOOLS:DEAD_GEIGER_COUNTER": [
     "A device that detects traces of Arcanum"
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_KNIFE": [
+    "Hold Left Click fill to cut.",
+    "Most delicate. Late release stays tight."
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_SPOON": [
+    "Hold Left Click fill to cut.",
+    "Most delicate. Late release stays tight."
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_HANDPICK": [
+    "Hold Left Click fill to cut.",
+    "Working cut. Late opens a wider face."
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_TROWEL": [
+    "Hold Left Click fill to cut.",
+    "Working cut. Late opens a wider face."
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_PICK": [
+    "Hold Left Click fill to cut.",
+    "Most powerful. Late strips a lot of fill."
+  ],
+  "mmoitem:TOOLS:ARCHEOLOGY_SHOVEL": [
+    "Hold Left Click fill to cut.",
+    "Most powerful. Late strips a lot of fill."
   ],
   "mmoitem:UTILS:THERMOMETER": [
     "Right Click to check someone's body temperature.",
@@ -503,8 +740,8 @@
   "mmoitem:UTILS:NAMESTONE": [
     "Drag & Click onto an item to give it a custom name."
   ],
-  "mmoitem:UTILS:INSURANCE_TICKET": [
-    "Allows you to fetch your Angel",
+  "mmoitem:UTILS:GRAVE_INSURANCE": [
+    "Allows you to fetch your Grave",
     "Chest from anywhere in the world.",
     "WARNING: Usage in PvP or RP is strictly forbidden!"
   ]

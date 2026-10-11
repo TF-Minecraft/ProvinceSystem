@@ -1,35 +1,35 @@
 {
-  "copied": 10,
-  "existing": 453,
+  "copied": 0,
+  "existing": 466,
   "unresolved": [],
   "items": {
     "acacia_leaves": {
       "texture": "vanilla/acacia_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/acacia_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/acacia_leaves.png"
     },
     "acacia_log": {
       "texture": "vanilla/acacia_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/acacia_log.json",
       "sourceTexture": "assets/minecraft/textures/block/acacia_log.png"
     },
     "allium": {
       "texture": "vanilla/allium.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/allium.json",
       "sourceTexture": "assets/minecraft/textures/block/allium.png"
     },
     "amethyst_block": {
       "texture": "vanilla/amethyst_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/amethyst_block.json",
       "sourceTexture": "assets/minecraft/textures/block/amethyst_block.png"
     },
     "amethyst_cluster": {
       "texture": "vanilla/amethyst_cluster.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/amethyst_cluster.json",
       "sourceTexture": "assets/minecraft/textures/block/amethyst_cluster.png"
     },
@@ -39,121 +39,121 @@
     },
     "andesite": {
       "texture": "vanilla/andesite.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/andesite.json",
       "sourceTexture": "assets/minecraft/textures/block/andesite.png"
     },
     "arrow": {
       "texture": "vanilla/arrow.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/arrow.json",
       "sourceTexture": "assets/minecraft/textures/item/arrow.png"
     },
     "axolotl_spawn_egg": {
       "texture": "vanilla/axolotl_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/axolotl_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/axolotl_spawn_egg.png"
     },
     "azalea": {
       "texture": "vanilla/azalea.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/azalea.json",
       "sourceTexture": "assets/minecraft/textures/block/azalea_side.png"
     },
     "azalea_leaves": {
       "texture": "vanilla/azalea_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/azalea_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/azalea_leaves.png"
     },
     "azure_bluet": {
       "texture": "vanilla/azure_bluet.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/azure_bluet.json",
       "sourceTexture": "assets/minecraft/textures/block/azure_bluet.png"
     },
     "bamboo": {
       "texture": "vanilla/bamboo.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bamboo.json",
       "sourceTexture": "assets/minecraft/textures/item/bamboo.png"
     },
     "bamboo_block": {
       "texture": "vanilla/bamboo_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/bamboo_block.json",
       "sourceTexture": "assets/minecraft/textures/block/bamboo_block.png"
     },
     "basalt": {
       "texture": "vanilla/basalt.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/basalt.json",
       "sourceTexture": "assets/minecraft/textures/block/basalt_side.png"
     },
     "bee_nest": {
       "texture": "vanilla/bee_nest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/bee_nest_empty.json",
       "sourceTexture": "assets/minecraft/textures/block/bee_nest_side.png"
     },
     "bee_spawn_egg": {
       "texture": "vanilla/bee_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bee_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/bee_spawn_egg.png"
     },
     "beef": {
       "texture": "vanilla/beef.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/beef.json",
       "sourceTexture": "assets/minecraft/textures/item/beef.png"
     },
     "beehive": {
       "texture": "vanilla/beehive.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/beehive_empty.json",
       "sourceTexture": "assets/minecraft/textures/block/beehive_side.png"
     },
     "bell": {
       "texture": "vanilla/bell.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bell.json",
       "sourceTexture": "assets/minecraft/textures/item/bell.png"
     },
     "big_dripleaf": {
       "texture": "vanilla/big_dripleaf.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/big_dripleaf.json",
       "sourceTexture": "assets/minecraft/textures/block/big_dripleaf_side.png"
     },
     "birch_leaves": {
       "texture": "vanilla/birch_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/birch_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/birch_leaves.png"
     },
     "birch_log": {
       "texture": "vanilla/birch_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/birch_log.json",
       "sourceTexture": "assets/minecraft/textures/block/birch_log.png"
     },
     "black_concrete": {
       "texture": "vanilla/black_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/black_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/black_concrete.png"
     },
     "black_dye": {
       "texture": "vanilla/black_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/black_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/black_dye.png"
     },
     "black_wool": {
       "texture": "vanilla/black_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/black_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/black_wool.png"
     },
@@ -163,37 +163,37 @@
     },
     "blaze_rod": {
       "texture": "vanilla/blaze_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/blaze_rod.json",
       "sourceTexture": "assets/minecraft/textures/item/blaze_rod.png"
     },
     "blue_concrete": {
       "texture": "vanilla/blue_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/blue_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/blue_concrete.png"
     },
     "blue_dye": {
       "texture": "vanilla/blue_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/blue_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/blue_dye.png"
     },
     "blue_ice": {
       "texture": "vanilla/blue_ice.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/blue_ice.json",
       "sourceTexture": "assets/minecraft/textures/block/blue_ice.png"
     },
     "blue_orchid": {
       "texture": "vanilla/blue_orchid.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/blue_orchid.json",
       "sourceTexture": "assets/minecraft/textures/block/blue_orchid.png"
     },
     "blue_wool": {
       "texture": "vanilla/blue_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/blue_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/blue_wool.png"
     },
@@ -203,7 +203,7 @@
     },
     "bone_meal": {
       "texture": "vanilla/bone_meal.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bone_meal.json",
       "sourceTexture": "assets/minecraft/textures/item/bone_meal.png"
     },
@@ -213,205 +213,193 @@
     },
     "bookshelf": {
       "texture": "vanilla/bookshelf.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/bookshelf.json",
       "sourceTexture": "assets/minecraft/textures/block/bookshelf.png"
     },
     "brain_coral": {
       "texture": "vanilla/brain_coral.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/brain_coral.json",
       "sourceTexture": "assets/minecraft/textures/block/brain_coral.png"
     },
     "brain_coral_block": {
       "texture": "vanilla/brain_coral_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/brain_coral_block.json",
       "sourceTexture": "assets/minecraft/textures/block/brain_coral_block.png"
     },
     "brain_coral_fan": {
       "texture": "vanilla/brain_coral_fan.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/brain_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/brain_coral_fan.png"
     },
     "breeze_rod": {
       "texture": "vanilla/breeze_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/breeze_rod.json",
       "sourceTexture": "assets/minecraft/textures/item/breeze_rod.png"
     },
     "bricks": {
       "texture": "vanilla/bricks.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/bricks.json",
       "sourceTexture": "assets/minecraft/textures/block/bricks.png"
     },
     "brown_concrete": {
       "texture": "vanilla/brown_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/brown_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/brown_concrete.png"
     },
     "brown_dye": {
       "texture": "vanilla/brown_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/brown_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/brown_dye.png"
     },
     "brown_mushroom_block": {
       "texture": "vanilla/brown_mushroom_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/brown_mushroom_block_inventory.json",
       "sourceTexture": "assets/minecraft/textures/block/brown_mushroom_block.png"
     },
     "brown_wool": {
       "texture": "vanilla/brown_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/brown_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/brown_wool.png"
     },
     "brush": {
       "texture": "vanilla/brush.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/brush.json",
       "sourceTexture": "assets/minecraft/textures/item/brush.png"
     },
     "bubble_coral": {
       "texture": "vanilla/bubble_coral.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bubble_coral.json",
       "sourceTexture": "assets/minecraft/textures/block/bubble_coral.png"
     },
     "bubble_coral_block": {
       "texture": "vanilla/bubble_coral_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/bubble_coral_block.json",
       "sourceTexture": "assets/minecraft/textures/block/bubble_coral_block.png"
     },
     "bubble_coral_fan": {
       "texture": "vanilla/bubble_coral_fan.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bubble_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/bubble_coral_fan.png"
     },
     "bundle": {
       "texture": "vanilla/bundle.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bundle.json",
       "sourceTexture": "assets/minecraft/textures/item/bundle.png"
     },
     "bush": {
       "texture": "vanilla/bush.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/bush.json",
       "sourceTexture": "assets/minecraft/textures/block/bush.png"
     },
     "cactus": {
       "texture": "vanilla/cactus.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cactus.json",
       "sourceTexture": "assets/minecraft/textures/block/cactus_side.png"
     },
     "cactus_flower": {
       "texture": "vanilla/cactus_flower.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/cactus_flower.json",
       "sourceTexture": "assets/minecraft/textures/block/cactus_flower.png"
     },
     "calcite": {
       "texture": "vanilla/calcite.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/calcite.json",
       "sourceTexture": "assets/minecraft/textures/block/calcite.png"
     },
     "camel_spawn_egg": {
       "texture": "vanilla/camel_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/camel_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/camel_spawn_egg.png"
     },
     "campfire": {
       "texture": "vanilla/campfire.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/campfire.json",
       "sourceTexture": "assets/minecraft/textures/item/campfire.png"
     },
+    "carrot": {
+      "texture": "vanilla/carrot.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/carrot.json",
+      "sourceTexture": "assets/minecraft/textures/item/carrot.png"
+    },
     "cat_spawn_egg": {
       "texture": "vanilla/cat_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/cat_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/cat_spawn_egg.png"
     },
     "charcoal": {
       "texture": "vanilla/charcoal.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/charcoal.json",
       "sourceTexture": "assets/minecraft/textures/item/charcoal.png"
     },
     "cherry_leaves": {
       "texture": "vanilla/cherry_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cherry_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/cherry_leaves.png"
     },
     "cherry_log": {
       "texture": "vanilla/cherry_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cherry_log.json",
       "sourceTexture": "assets/minecraft/textures/block/cherry_log.png"
     },
     "chicken_spawn_egg": {
       "texture": "vanilla/chicken_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/chicken_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/chicken_spawn_egg.png"
     },
     "chiseled_copper": {
       "texture": "vanilla/chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/chiseled_copper.png"
     },
     "chorus_flower": {
       "texture": "vanilla/chorus_flower.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/chorus_flower.json",
       "sourceTexture": "assets/minecraft/textures/block/chorus_flower.png"
     },
-    "cyan_concrete": {
-      "texture": "vanilla/cyan_concrete.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/cyan_concrete.json",
-      "sourceTexture": "assets/minecraft/textures/block/cyan_concrete.png"
-    },
-    "cyan_dye": {
-      "texture": "vanilla/cyan_dye.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/cyan_dye.json",
-      "sourceTexture": "assets/minecraft/textures/item/cyan_dye.png"
-    },
-    "cyan_wool": {
-      "texture": "vanilla/cyan_wool.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/cyan_wool.json",
-      "sourceTexture": "assets/minecraft/textures/block/cyan_wool.png"
-    },
     "clay": {
       "texture": "vanilla/clay.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/clay.json",
       "sourceTexture": "assets/minecraft/textures/block/clay.png"
     },
     "closed_eyeblossom": {
       "texture": "vanilla/closed_eyeblossom.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/closed_eyeblossom.json",
       "sourceTexture": "assets/minecraft/textures/block/closed_eyeblossom.png"
     },
     "coal": {
       "texture": "vanilla/coal.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/coal.json",
       "sourceTexture": "assets/minecraft/textures/item/coal.png"
     },
@@ -421,25 +409,25 @@
     },
     "coarse_dirt": {
       "texture": "vanilla/coarse_dirt.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/coarse_dirt.json",
       "sourceTexture": "assets/minecraft/textures/block/coarse_dirt.png"
     },
     "cobblestone": {
       "texture": "vanilla/cobblestone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cobblestone.json",
       "sourceTexture": "assets/minecraft/textures/block/cobblestone.png"
     },
     "cobweb": {
       "texture": "vanilla/cobweb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/cobweb.json",
       "sourceTexture": "assets/minecraft/textures/block/cobweb.png"
     },
     "copper_bars": {
       "texture": "vanilla/copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_bars.png"
     },
@@ -449,43 +437,43 @@
     },
     "copper_bulb": {
       "texture": "vanilla/copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_bulb.png"
     },
     "copper_chain": {
       "texture": "vanilla/copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_chain.png"
     },
     "copper_chest": {
       "texture": "vanilla/copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "copper_door": {
       "texture": "vanilla/copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_door.png"
     },
     "copper_golem_statue": {
       "texture": "vanilla/copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "copper_grate": {
       "texture": "vanilla/copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_grate.png"
     },
     "copper_horse_armor": {
       "texture": "vanilla/copper_horse_armor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_horse_armor.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_horse_armor.png"
     },
@@ -495,37 +483,31 @@
     },
     "copper_lantern": {
       "texture": "vanilla/copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_lantern.png"
     },
     "copper_trapdoor": {
       "texture": "vanilla/copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_trapdoor.png"
     },
     "cornflower": {
       "texture": "vanilla/cornflower.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/cornflower.json",
       "sourceTexture": "assets/minecraft/textures/block/cornflower.png"
     },
     "cow_spawn_egg": {
       "texture": "vanilla/cow_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/cow_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/cow_spawn_egg.png"
     },
-    "crying_obsidian": {
-      "texture": "vanilla/crying_obsidian.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/crying_obsidian.json",
-      "sourceTexture": "assets/minecraft/textures/block/crying_obsidian.png"
-    },
     "crimson_fungus": {
       "texture": "vanilla/crimson_fungus.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/crimson_fungus.json",
       "sourceTexture": "assets/minecraft/textures/block/crimson_fungus.png"
     },
@@ -535,67 +517,91 @@
     },
     "crimson_roots": {
       "texture": "vanilla/crimson_roots.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/crimson_roots.json",
       "sourceTexture": "assets/minecraft/textures/block/crimson_roots.png"
     },
     "crimson_stem": {
       "texture": "vanilla/crimson_stem.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/crimson_stem.json",
       "sourceTexture": "assets/minecraft/textures/block/crimson_stem.png"
     },
+    "crying_obsidian": {
+      "texture": "vanilla/crying_obsidian.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/crying_obsidian.json",
+      "sourceTexture": "assets/minecraft/textures/block/crying_obsidian.png"
+    },
     "cut_copper": {
       "texture": "vanilla/cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
     "cut_copper_slab": {
       "texture": "vanilla/cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
     "cut_copper_stairs": {
       "texture": "vanilla/cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
+    "cyan_concrete": {
+      "texture": "vanilla/cyan_concrete.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/cyan_concrete.json",
+      "sourceTexture": "assets/minecraft/textures/block/cyan_concrete.png"
+    },
+    "cyan_dye": {
+      "texture": "vanilla/cyan_dye.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/cyan_dye.json",
+      "sourceTexture": "assets/minecraft/textures/item/cyan_dye.png"
+    },
+    "cyan_wool": {
+      "texture": "vanilla/cyan_wool.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/cyan_wool.json",
+      "sourceTexture": "assets/minecraft/textures/block/cyan_wool.png"
+    },
     "dandelion": {
       "texture": "vanilla/dandelion.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/dandelion.json",
       "sourceTexture": "assets/minecraft/textures/block/dandelion.png"
     },
     "dark_oak_leaves": {
       "texture": "vanilla/dark_oak_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/dark_oak_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/dark_oak_leaves.png"
     },
     "dark_oak_log": {
       "texture": "vanilla/dark_oak_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/dark_oak_log.json",
       "sourceTexture": "assets/minecraft/textures/block/dark_oak_log.png"
     },
     "dark_prismarine": {
       "texture": "vanilla/dark_prismarine.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/dark_prismarine.json",
       "sourceTexture": "assets/minecraft/textures/block/dark_prismarine.png"
     },
     "dead_bush": {
       "texture": "vanilla/dead_bush.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/dead_bush.json",
       "sourceTexture": "assets/minecraft/textures/block/dead_bush.png"
     },
     "deepslate": {
       "texture": "vanilla/deepslate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/deepslate.json",
       "sourceTexture": "assets/minecraft/textures/block/deepslate.png"
     },
@@ -605,283 +611,289 @@
     },
     "diamond_axe": {
       "texture": "vanilla/diamond_axe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/diamond_axe.json",
       "sourceTexture": "assets/minecraft/textures/item/diamond_axe.png"
     },
     "diamond_hoe": {
       "texture": "vanilla/diamond_hoe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/diamond_hoe.json",
       "sourceTexture": "assets/minecraft/textures/item/diamond_hoe.png"
     },
     "diamond_horse_armor": {
       "texture": "vanilla/diamond_horse_armor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/diamond_horse_armor.json",
       "sourceTexture": "assets/minecraft/textures/item/diamond_horse_armor.png"
     },
     "diamond_pickaxe": {
       "texture": "vanilla/diamond_pickaxe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/diamond_pickaxe.json",
       "sourceTexture": "assets/minecraft/textures/item/diamond_pickaxe.png"
     },
     "diamond_shovel": {
       "texture": "vanilla/diamond_shovel.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/diamond_shovel.json",
       "sourceTexture": "assets/minecraft/textures/item/diamond_shovel.png"
     },
     "diorite": {
       "texture": "vanilla/diorite.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/diorite.json",
       "sourceTexture": "assets/minecraft/textures/block/diorite.png"
     },
     "dirt": {
       "texture": "vanilla/dirt.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/dirt.json",
       "sourceTexture": "assets/minecraft/textures/block/dirt.png"
     },
     "donkey_spawn_egg": {
       "texture": "vanilla/donkey_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/donkey_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/donkey_spawn_egg.png"
     },
     "dripstone_block": {
       "texture": "vanilla/dripstone_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/dripstone_block.json",
       "sourceTexture": "assets/minecraft/textures/block/dripstone_block.png"
     },
     "echo_shard": {
       "texture": "vanilla/echo_shard.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/echo_shard.json",
       "sourceTexture": "assets/minecraft/textures/item/echo_shard.png"
     },
+    "egg": {
+      "texture": "vanilla/egg.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/egg.json",
+      "sourceTexture": "assets/minecraft/textures/item/egg.png"
+    },
     "emerald": {
       "texture": "vanilla/emerald.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/emerald.json",
       "sourceTexture": "assets/minecraft/textures/item/emerald.png"
     },
     "end_rod": {
       "texture": "vanilla/end_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/end_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/end_rod.png"
     },
     "end_stone": {
       "texture": "vanilla/end_stone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/end_stone.json",
       "sourceTexture": "assets/minecraft/textures/block/end_stone.png"
     },
     "exposed_chiseled_copper": {
       "texture": "vanilla/exposed_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_chiseled_copper.png"
     },
     "exposed_copper": {
       "texture": "vanilla/exposed_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper.png"
     },
     "exposed_copper_bars": {
       "texture": "vanilla/exposed_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_bars.png"
     },
     "exposed_copper_bulb": {
       "texture": "vanilla/exposed_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_bulb.png"
     },
     "exposed_copper_chain": {
       "texture": "vanilla/exposed_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_chain.png"
     },
     "exposed_copper_chest": {
       "texture": "vanilla/exposed_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper.png"
     },
     "exposed_copper_door": {
       "texture": "vanilla/exposed_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_door.png"
     },
     "exposed_copper_golem_statue": {
       "texture": "vanilla/exposed_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "exposed_copper_grate": {
       "texture": "vanilla/exposed_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_grate.png"
     },
     "exposed_copper_lantern": {
       "texture": "vanilla/exposed_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_lantern.png"
     },
     "exposed_copper_trapdoor": {
       "texture": "vanilla/exposed_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_trapdoor.png"
     },
     "exposed_cut_copper": {
       "texture": "vanilla/exposed_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "exposed_cut_copper_slab": {
       "texture": "vanilla/exposed_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "exposed_cut_copper_stairs": {
       "texture": "vanilla/exposed_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "exposed_lightning_rod": {
       "texture": "vanilla/exposed_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_lightning_rod.png"
     },
     "feather": {
       "texture": "vanilla/feather.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/feather.json",
       "sourceTexture": "assets/minecraft/textures/item/feather.png"
     },
     "fern": {
       "texture": "vanilla/fern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/fern.json",
       "sourceTexture": "assets/minecraft/textures/block/fern.png"
     },
     "fire_coral": {
       "texture": "vanilla/fire_coral.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/fire_coral.json",
       "sourceTexture": "assets/minecraft/textures/block/fire_coral.png"
     },
     "fire_coral_block": {
       "texture": "vanilla/fire_coral_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/fire_coral_block.json",
       "sourceTexture": "assets/minecraft/textures/block/fire_coral_block.png"
     },
     "fire_coral_fan": {
       "texture": "vanilla/fire_coral_fan.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/fire_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/fire_coral_fan.png"
     },
     "firefly_bush": {
       "texture": "vanilla/firefly_bush.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/firefly_bush.json",
       "sourceTexture": "assets/minecraft/textures/item/firefly_bush.png"
     },
     "fishing_rod": {
       "texture": "vanilla/fishing_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/fishing_rod.json",
       "sourceTexture": "assets/minecraft/textures/item/fishing_rod.png"
     },
     "flint": {
       "texture": "vanilla/flint.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/flint.json",
       "sourceTexture": "assets/minecraft/textures/item/flint.png"
     },
     "flowering_azalea": {
       "texture": "vanilla/flowering_azalea.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/flowering_azalea.json",
       "sourceTexture": "assets/minecraft/textures/block/flowering_azalea_side.png"
     },
     "flowering_azalea_leaves": {
       "texture": "vanilla/flowering_azalea_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/flowering_azalea_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/flowering_azalea_leaves.png"
     },
     "fox_spawn_egg": {
       "texture": "vanilla/fox_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/fox_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/fox_spawn_egg.png"
     },
     "frog_spawn_egg": {
       "texture": "vanilla/frog_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/frog_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/frog_spawn_egg.png"
     },
     "gilded_blackstone": {
       "texture": "vanilla/gilded_blackstone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/gilded_blackstone.json",
       "sourceTexture": "assets/minecraft/textures/block/gilded_blackstone.png"
     },
     "glass": {
       "texture": "vanilla/glass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/glass.json",
       "sourceTexture": "assets/minecraft/textures/block/glass.png"
     },
     "glass_bottle": {
       "texture": "vanilla/glass_bottle.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/glass_bottle.json",
       "sourceTexture": "assets/minecraft/textures/item/glass_bottle.png"
     },
     "glow_ink_sac": {
       "texture": "vanilla/glow_ink_sac.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/glow_ink_sac.json",
       "sourceTexture": "assets/minecraft/textures/item/glow_ink_sac.png"
     },
     "glow_lichen": {
       "texture": "vanilla/glow_lichen.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/glow_lichen.json",
       "sourceTexture": "assets/minecraft/textures/block/glow_lichen.png"
     },
     "glowstone_dust": {
       "texture": "vanilla/glowstone_dust.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/glowstone_dust.json",
       "sourceTexture": "assets/minecraft/textures/item/glowstone_dust.png"
     },
     "goat_spawn_egg": {
       "texture": "vanilla/goat_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/goat_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/goat_spawn_egg.png"
     },
@@ -891,163 +903,145 @@
     },
     "gold_nugget": {
       "texture": "vanilla/gold_nugget.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/gold_nugget.json",
       "sourceTexture": "assets/minecraft/textures/item/gold_nugget.png"
     },
     "golden_horse_armor": {
       "texture": "vanilla/golden_horse_armor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/golden_horse_armor.json",
       "sourceTexture": "assets/minecraft/textures/item/golden_horse_armor.png"
     },
-    "gray_concrete": {
-      "texture": "vanilla/gray_concrete.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/gray_concrete.json",
-      "sourceTexture": "assets/minecraft/textures/block/gray_concrete.png"
-    },
-    "gray_dye": {
-      "texture": "vanilla/gray_dye.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/gray_dye.json",
-      "sourceTexture": "assets/minecraft/textures/item/gray_dye.png"
-    },
-    "gray_wool": {
-      "texture": "vanilla/gray_wool.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/gray_wool.json",
-      "sourceTexture": "assets/minecraft/textures/block/gray_wool.png"
-    },
     "granite": {
       "texture": "vanilla/granite.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/granite.json",
       "sourceTexture": "assets/minecraft/textures/block/granite.png"
     },
     "grass_block": {
       "texture": "vanilla/grass_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/grass_block.json",
       "sourceTexture": "assets/minecraft/textures/block/grass_block_side.png"
     },
     "gravel": {
       "texture": "vanilla/gravel.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/gravel.json",
       "sourceTexture": "assets/minecraft/textures/block/gravel.png"
     },
+    "gray_concrete": {
+      "texture": "vanilla/gray_concrete.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/gray_concrete.json",
+      "sourceTexture": "assets/minecraft/textures/block/gray_concrete.png"
+    },
+    "gray_dye": {
+      "texture": "vanilla/gray_dye.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/gray_dye.json",
+      "sourceTexture": "assets/minecraft/textures/item/gray_dye.png"
+    },
+    "gray_wool": {
+      "texture": "vanilla/gray_wool.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/gray_wool.json",
+      "sourceTexture": "assets/minecraft/textures/block/gray_wool.png"
+    },
     "green_concrete": {
       "texture": "vanilla/green_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/green_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/green_concrete.png"
     },
     "green_dye": {
       "texture": "vanilla/green_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/green_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/green_dye.png"
     },
     "green_wool": {
       "texture": "vanilla/green_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/green_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/green_wool.png"
     },
     "gunpowder": {
       "texture": "vanilla/gunpowder.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/gunpowder.json",
       "sourceTexture": "assets/minecraft/textures/item/gunpowder.png"
     },
     "hanging_roots": {
       "texture": "vanilla/hanging_roots.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/hanging_roots.json",
       "sourceTexture": "assets/minecraft/textures/block/hanging_roots.png"
     },
     "heavy_core": {
       "texture": "vanilla/heavy_core.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/heavy_core.json",
       "sourceTexture": "assets/minecraft/textures/block/heavy_core.png"
     },
     "honey_block": {
       "texture": "vanilla/honey_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/honey_block.json",
       "sourceTexture": "assets/minecraft/textures/block/honey_block_side.png"
     },
     "honeycomb": {
       "texture": "vanilla/honeycomb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/honeycomb.json",
       "sourceTexture": "assets/minecraft/textures/item/honeycomb.png"
     },
     "honeycomb_block": {
       "texture": "vanilla/honeycomb_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/honeycomb_block.json",
       "sourceTexture": "assets/minecraft/textures/block/honeycomb_block.png"
     },
     "horn_coral": {
       "texture": "vanilla/horn_coral.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/horn_coral.json",
       "sourceTexture": "assets/minecraft/textures/block/horn_coral.png"
     },
     "horn_coral_block": {
       "texture": "vanilla/horn_coral_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/horn_coral_block.json",
       "sourceTexture": "assets/minecraft/textures/block/horn_coral_block.png"
     },
     "horn_coral_fan": {
       "texture": "vanilla/horn_coral_fan.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/horn_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/horn_coral_fan.png"
     },
     "horse_spawn_egg": {
       "texture": "vanilla/horse_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/horse_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/horse_spawn_egg.png"
     },
     "ice": {
       "texture": "vanilla/ice.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/ice.json",
       "sourceTexture": "assets/minecraft/textures/block/ice.png"
     },
-    "yellow_concrete": {
-      "texture": "vanilla/yellow_concrete.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/yellow_concrete.json",
-      "sourceTexture": "assets/minecraft/textures/block/yellow_concrete.png"
-    },
-    "yellow_dye": {
-      "texture": "vanilla/yellow_dye.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/item/yellow_dye.json",
-      "sourceTexture": "assets/minecraft/textures/item/yellow_dye.png"
-    },
-    "yellow_wool": {
-      "texture": "vanilla/yellow_wool.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/yellow_wool.json",
-      "sourceTexture": "assets/minecraft/textures/block/yellow_wool.png"
-    },
     "ink_sac": {
       "texture": "vanilla/ink_sac.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/ink_sac.json",
       "sourceTexture": "assets/minecraft/textures/item/ink_sac.png"
     },
     "iron_axe": {
       "texture": "vanilla/iron_axe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_axe.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_axe.png"
     },
@@ -1057,13 +1051,13 @@
     },
     "iron_hoe": {
       "texture": "vanilla/iron_hoe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_hoe.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_hoe.png"
     },
     "iron_horse_armor": {
       "texture": "vanilla/iron_horse_armor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_horse_armor.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_horse_armor.png"
     },
@@ -1077,61 +1071,61 @@
     },
     "iron_pickaxe": {
       "texture": "vanilla/iron_pickaxe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_pickaxe.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_pickaxe.png"
     },
     "iron_shovel": {
       "texture": "vanilla/iron_shovel.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_shovel.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_shovel.png"
     },
     "iron_sword": {
       "texture": "vanilla/iron_sword.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/iron_sword.json",
       "sourceTexture": "assets/minecraft/textures/item/iron_sword.png"
     },
     "jungle_leaves": {
       "texture": "vanilla/jungle_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/jungle_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/jungle_leaves.png"
     },
     "jungle_log": {
       "texture": "vanilla/jungle_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/jungle_log.json",
       "sourceTexture": "assets/minecraft/textures/block/jungle_log.png"
     },
     "kelp": {
       "texture": "vanilla/kelp.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/kelp.json",
       "sourceTexture": "assets/minecraft/textures/item/kelp.png"
     },
     "lapis_block": {
       "texture": "vanilla/lapis_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lapis_block.json",
       "sourceTexture": "assets/minecraft/textures/block/lapis_block.png"
     },
     "large_fern": {
       "texture": "vanilla/large_fern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/large_fern.json",
       "sourceTexture": "assets/minecraft/textures/block/large_fern_top.png"
     },
     "lead": {
       "texture": "vanilla/lead.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/lead.json",
       "sourceTexture": "assets/minecraft/textures/item/lead.png"
     },
     "leaf_litter": {
       "texture": "vanilla/leaf_litter.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/leaf_litter.json",
       "sourceTexture": "assets/minecraft/textures/item/leaf_litter.png"
     },
@@ -1141,205 +1135,205 @@
     },
     "leather_boots": {
       "texture": "vanilla/leather_boots.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/leather_boots.json",
       "sourceTexture": "assets/minecraft/textures/item/leather_boots.png"
     },
     "leather_chestplate": {
       "texture": "vanilla/leather_chestplate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/leather_chestplate.json",
       "sourceTexture": "assets/minecraft/textures/item/leather_chestplate.png"
     },
     "leather_horse_armor": {
       "texture": "vanilla/leather_horse_armor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/leather_horse_armor.json",
       "sourceTexture": "assets/minecraft/textures/item/leather_horse_armor.png"
     },
     "leather_leggings": {
       "texture": "vanilla/leather_leggings.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/leather_leggings.json",
       "sourceTexture": "assets/minecraft/textures/item/leather_leggings.png"
     },
     "light_blue_concrete": {
       "texture": "vanilla/light_blue_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/light_blue_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/light_blue_concrete.png"
     },
     "light_blue_dye": {
       "texture": "vanilla/light_blue_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/light_blue_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/light_blue_dye.png"
     },
     "light_blue_wool": {
       "texture": "vanilla/light_blue_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/light_blue_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/light_blue_wool.png"
     },
     "light_gray_concrete": {
       "texture": "vanilla/light_gray_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/light_gray_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/light_gray_concrete.png"
     },
     "light_gray_dye": {
       "texture": "vanilla/light_gray_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/light_gray_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/light_gray_dye.png"
     },
     "light_gray_wool": {
       "texture": "vanilla/light_gray_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/light_gray_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/light_gray_wool.png"
     },
     "lightning_rod": {
       "texture": "vanilla/lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/lightning_rod.png"
     },
     "lilac": {
       "texture": "vanilla/lilac.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/lilac.json",
       "sourceTexture": "assets/minecraft/textures/block/lilac_top.png"
     },
     "lily_of_the_valley": {
       "texture": "vanilla/lily_of_the_valley.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/lily_of_the_valley.json",
       "sourceTexture": "assets/minecraft/textures/block/lily_of_the_valley.png"
     },
     "lily_pad": {
       "texture": "vanilla/lily_pad.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/lily_pad.json",
       "sourceTexture": "assets/minecraft/textures/block/lily_pad.png"
     },
     "lime_concrete": {
       "texture": "vanilla/lime_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lime_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/lime_concrete.png"
     },
     "lime_dye": {
       "texture": "vanilla/lime_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/lime_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/lime_dye.png"
     },
     "lime_wool": {
       "texture": "vanilla/lime_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lime_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/lime_wool.png"
     },
     "llama_spawn_egg": {
       "texture": "vanilla/llama_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/llama_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/llama_spawn_egg.png"
     },
     "lodestone": {
       "texture": "vanilla/lodestone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lodestone.json",
       "sourceTexture": "assets/minecraft/textures/block/lodestone_side.png"
     },
     "magenta_concrete": {
       "texture": "vanilla/magenta_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/magenta_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/magenta_concrete.png"
     },
     "magenta_dye": {
       "texture": "vanilla/magenta_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/magenta_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/magenta_dye.png"
     },
     "magenta_wool": {
       "texture": "vanilla/magenta_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/magenta_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/magenta_wool.png"
     },
     "magma_block": {
       "texture": "vanilla/magma_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/magma_block.json",
       "sourceTexture": "assets/minecraft/textures/block/magma.png"
     },
     "mangrove_leaves": {
       "texture": "vanilla/mangrove_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/mangrove_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/mangrove_leaves.png"
     },
     "mangrove_log": {
       "texture": "vanilla/mangrove_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/mangrove_log.json",
       "sourceTexture": "assets/minecraft/textures/block/mangrove_log.png"
     },
     "mangrove_roots": {
       "texture": "vanilla/mangrove_roots.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/mangrove_roots.json",
       "sourceTexture": "assets/minecraft/textures/block/mangrove_roots_side.png"
     },
-    "mycelium": {
-      "texture": "vanilla/mycelium.png",
-      "sourceJar": "1.21.10.jar",
-      "sourceModel": "assets/minecraft/models/block/mycelium.json",
-      "sourceTexture": "assets/minecraft/textures/block/mycelium_side.png"
-    },
     "moss_block": {
       "texture": "vanilla/moss_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/moss_block.json",
       "sourceTexture": "assets/minecraft/textures/block/moss_block.png"
     },
     "mud": {
       "texture": "vanilla/mud.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/mud.json",
       "sourceTexture": "assets/minecraft/textures/block/mud.png"
     },
     "mushroom_stem": {
       "texture": "vanilla/mushroom_stem.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/mushroom_stem_inventory.json",
       "sourceTexture": "assets/minecraft/textures/block/mushroom_stem.png"
     },
+    "mycelium": {
+      "texture": "vanilla/mycelium.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/mycelium.json",
+      "sourceTexture": "assets/minecraft/textures/block/mycelium_side.png"
+    },
     "name_tag": {
       "texture": "vanilla/name_tag.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/name_tag.json",
       "sourceTexture": "assets/minecraft/textures/item/name_tag.png"
     },
     "nautilus_shell": {
       "texture": "vanilla/nautilus_shell.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/nautilus_shell.json",
       "sourceTexture": "assets/minecraft/textures/item/nautilus_shell.png"
     },
     "nether_bricks": {
       "texture": "vanilla/nether_bricks.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/nether_bricks.json",
       "sourceTexture": "assets/minecraft/textures/block/nether_bricks.png"
     },
     "nether_sprouts": {
       "texture": "vanilla/nether_sprouts.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/nether_sprouts.json",
       "sourceTexture": "assets/minecraft/textures/item/nether_sprouts.png"
     },
@@ -1349,49 +1343,49 @@
     },
     "nether_wart_block": {
       "texture": "vanilla/nether_wart_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/nether_wart_block.json",
       "sourceTexture": "assets/minecraft/textures/block/nether_wart_block.png"
     },
     "netherite_axe": {
       "texture": "vanilla/netherite_axe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/netherite_axe.json",
       "sourceTexture": "assets/minecraft/textures/item/netherite_axe.png"
     },
     "netherite_block": {
       "texture": "vanilla/netherite_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/netherite_block.json",
       "sourceTexture": "assets/minecraft/textures/block/netherite_block.png"
     },
     "netherite_hoe": {
       "texture": "vanilla/netherite_hoe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/netherite_hoe.json",
       "sourceTexture": "assets/minecraft/textures/item/netherite_hoe.png"
     },
     "netherite_pickaxe": {
       "texture": "vanilla/netherite_pickaxe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/netherite_pickaxe.json",
       "sourceTexture": "assets/minecraft/textures/item/netherite_pickaxe.png"
     },
     "netherite_scrap": {
       "texture": "vanilla/netherite_scrap.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/netherite_scrap.json",
       "sourceTexture": "assets/minecraft/textures/item/netherite_scrap.png"
     },
     "netherite_shovel": {
       "texture": "vanilla/netherite_shovel.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/netherite_shovel.json",
       "sourceTexture": "assets/minecraft/textures/item/netherite_shovel.png"
     },
     "netherrack": {
       "texture": "vanilla/netherrack.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/netherrack.json",
       "sourceTexture": "assets/minecraft/textures/block/netherrack.png"
     },
@@ -1401,7 +1395,7 @@
     },
     "oak_leaves": {
       "texture": "vanilla/oak_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oak_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/oak_leaves.png"
     },
@@ -1415,175 +1409,175 @@
     },
     "obsidian": {
       "texture": "vanilla/obsidian.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/obsidian.json",
       "sourceTexture": "assets/minecraft/textures/block/obsidian.png"
     },
     "ochre_froglight": {
       "texture": "vanilla/ochre_froglight.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/ochre_froglight.json",
       "sourceTexture": "assets/minecraft/textures/block/ochre_froglight_side.png"
     },
     "orange_concrete": {
       "texture": "vanilla/orange_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/orange_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/orange_concrete.png"
     },
     "orange_dye": {
       "texture": "vanilla/orange_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/orange_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/orange_dye.png"
     },
     "orange_tulip": {
       "texture": "vanilla/orange_tulip.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/orange_tulip.json",
       "sourceTexture": "assets/minecraft/textures/block/orange_tulip.png"
     },
     "orange_wool": {
       "texture": "vanilla/orange_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/orange_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/orange_wool.png"
     },
     "oxeye_daisy": {
       "texture": "vanilla/oxeye_daisy.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxeye_daisy.json",
       "sourceTexture": "assets/minecraft/textures/block/oxeye_daisy.png"
     },
     "oxidized_chiseled_copper": {
       "texture": "vanilla/oxidized_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_chiseled_copper.png"
     },
     "oxidized_copper": {
       "texture": "vanilla/oxidized_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper.png"
     },
     "oxidized_copper_bars": {
       "texture": "vanilla/oxidized_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_bars.png"
     },
     "oxidized_copper_bulb": {
       "texture": "vanilla/oxidized_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_bulb.png"
     },
     "oxidized_copper_chain": {
       "texture": "vanilla/oxidized_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_chain.png"
     },
     "oxidized_copper_chest": {
       "texture": "vanilla/oxidized_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper.png"
     },
     "oxidized_copper_door": {
       "texture": "vanilla/oxidized_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_door.png"
     },
     "oxidized_copper_golem_statue": {
       "texture": "vanilla/oxidized_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "oxidized_copper_grate": {
       "texture": "vanilla/oxidized_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_grate.png"
     },
     "oxidized_copper_lantern": {
       "texture": "vanilla/oxidized_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_lantern.png"
     },
     "oxidized_copper_trapdoor": {
       "texture": "vanilla/oxidized_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_trapdoor.png"
     },
     "oxidized_cut_copper": {
       "texture": "vanilla/oxidized_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "oxidized_cut_copper_slab": {
       "texture": "vanilla/oxidized_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "oxidized_cut_copper_stairs": {
       "texture": "vanilla/oxidized_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "oxidized_lightning_rod": {
       "texture": "vanilla/oxidized_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_lightning_rod.png"
     },
     "packed_ice": {
       "texture": "vanilla/packed_ice.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/packed_ice.json",
       "sourceTexture": "assets/minecraft/textures/block/packed_ice.png"
     },
     "packed_mud": {
       "texture": "vanilla/packed_mud.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/packed_mud.json",
       "sourceTexture": "assets/minecraft/textures/block/packed_mud.png"
     },
     "pale_hanging_moss": {
       "texture": "vanilla/pale_hanging_moss.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pale_hanging_moss.json",
       "sourceTexture": "assets/minecraft/textures/block/pale_hanging_moss.png"
     },
     "pale_moss_block": {
       "texture": "vanilla/pale_moss_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pale_moss_block.json",
       "sourceTexture": "assets/minecraft/textures/block/pale_moss_block.png"
     },
     "pale_oak_leaves": {
       "texture": "vanilla/pale_oak_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pale_oak_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/pale_oak_leaves.png"
     },
     "pale_oak_log": {
       "texture": "vanilla/pale_oak_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pale_oak_log.json",
       "sourceTexture": "assets/minecraft/textures/block/pale_oak_log.png"
     },
     "panda_spawn_egg": {
       "texture": "vanilla/panda_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/panda_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/panda_spawn_egg.png"
     },
@@ -1593,169 +1587,169 @@
     },
     "parrot_spawn_egg": {
       "texture": "vanilla/parrot_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/parrot_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/parrot_spawn_egg.png"
     },
     "pearlescent_froglight": {
       "texture": "vanilla/pearlescent_froglight.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pearlescent_froglight.json",
       "sourceTexture": "assets/minecraft/textures/block/pearlescent_froglight_side.png"
     },
     "peony": {
       "texture": "vanilla/peony.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/peony.json",
       "sourceTexture": "assets/minecraft/textures/block/peony_top.png"
     },
     "pig_spawn_egg": {
       "texture": "vanilla/pig_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pig_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/pig_spawn_egg.png"
     },
     "pink_concrete": {
       "texture": "vanilla/pink_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pink_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/pink_concrete.png"
     },
     "pink_dye": {
       "texture": "vanilla/pink_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pink_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/pink_dye.png"
     },
     "pink_petals": {
       "texture": "vanilla/pink_petals.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pink_petals.json",
       "sourceTexture": "assets/minecraft/textures/item/pink_petals.png"
     },
     "pink_tulip": {
       "texture": "vanilla/pink_tulip.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pink_tulip.json",
       "sourceTexture": "assets/minecraft/textures/block/pink_tulip.png"
     },
     "pink_wool": {
       "texture": "vanilla/pink_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/pink_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/pink_wool.png"
     },
     "pitcher_plant": {
       "texture": "vanilla/pitcher_plant.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pitcher_plant.json",
       "sourceTexture": "assets/minecraft/textures/item/pitcher_plant.png"
     },
     "player_head": {
       "texture": "vanilla/player_head.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_skull.json",
       "sourceTexture": "assets/minecraft/textures/block/soul_sand.png"
     },
     "podzol": {
       "texture": "vanilla/podzol.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/podzol.json",
       "sourceTexture": "assets/minecraft/textures/block/podzol_side.png"
     },
     "pointed_dripstone": {
       "texture": "vanilla/pointed_dripstone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/pointed_dripstone.json",
       "sourceTexture": "assets/minecraft/textures/item/pointed_dripstone.png"
     },
     "poppy": {
       "texture": "vanilla/poppy.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/poppy.json",
       "sourceTexture": "assets/minecraft/textures/block/poppy.png"
     },
     "prismarine": {
       "texture": "vanilla/prismarine.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/prismarine.json",
       "sourceTexture": "assets/minecraft/textures/block/prismarine.png"
     },
     "prismarine_bricks": {
       "texture": "vanilla/prismarine_bricks.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/prismarine_bricks.json",
       "sourceTexture": "assets/minecraft/textures/block/prismarine_bricks.png"
     },
     "purple_concrete": {
       "texture": "vanilla/purple_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/purple_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/purple_concrete.png"
     },
     "purple_dye": {
       "texture": "vanilla/purple_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/purple_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/purple_dye.png"
     },
     "purple_wool": {
       "texture": "vanilla/purple_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/purple_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/purple_wool.png"
     },
     "purpur_block": {
       "texture": "vanilla/purpur_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/purpur_block.json",
       "sourceTexture": "assets/minecraft/textures/block/purpur_block.png"
     },
     "quartz": {
       "texture": "vanilla/quartz.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/quartz.json",
       "sourceTexture": "assets/minecraft/textures/item/quartz.png"
     },
     "quartz_block": {
       "texture": "vanilla/quartz_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/quartz_block.json",
       "sourceTexture": "assets/minecraft/textures/block/quartz_block_side.png"
     },
     "rabbit_foot": {
       "texture": "vanilla/rabbit_foot.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/rabbit_foot.json",
       "sourceTexture": "assets/minecraft/textures/item/rabbit_foot.png"
     },
     "rabbit_hide": {
       "texture": "vanilla/rabbit_hide.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/rabbit_hide.json",
       "sourceTexture": "assets/minecraft/textures/item/rabbit_hide.png"
     },
     "rabbit_spawn_egg": {
       "texture": "vanilla/rabbit_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/rabbit_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/rabbit_spawn_egg.png"
     },
     "raw_copper_block": {
       "texture": "vanilla/raw_copper_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/raw_copper_block.json",
       "sourceTexture": "assets/minecraft/textures/block/raw_copper_block.png"
     },
     "raw_gold": {
       "texture": "vanilla/raw_gold.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/raw_gold.json",
       "sourceTexture": "assets/minecraft/textures/item/raw_gold.png"
     },
     "raw_iron": {
       "texture": "vanilla/raw_iron.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/raw_iron.json",
       "sourceTexture": "assets/minecraft/textures/item/raw_iron.png"
     },
@@ -1765,247 +1759,247 @@
     },
     "red_concrete": {
       "texture": "vanilla/red_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/red_concrete.png"
     },
     "red_dye": {
       "texture": "vanilla/red_dye.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/red_dye.json",
       "sourceTexture": "assets/minecraft/textures/item/red_dye.png"
     },
     "red_mushroom_block": {
       "texture": "vanilla/red_mushroom_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_mushroom_block_inventory.json",
       "sourceTexture": "assets/minecraft/textures/block/red_mushroom_block.png"
     },
     "red_nether_bricks": {
       "texture": "vanilla/red_nether_bricks.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_nether_bricks.json",
       "sourceTexture": "assets/minecraft/textures/block/red_nether_bricks.png"
     },
     "red_sand": {
       "texture": "vanilla/red_sand.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_sand.json",
       "sourceTexture": "assets/minecraft/textures/block/red_sand.png"
     },
     "red_sandstone": {
       "texture": "vanilla/red_sandstone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_sandstone.json",
       "sourceTexture": "assets/minecraft/textures/block/red_sandstone.png"
     },
     "red_tulip": {
       "texture": "vanilla/red_tulip.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/red_tulip.json",
       "sourceTexture": "assets/minecraft/textures/block/red_tulip.png"
     },
     "red_wool": {
       "texture": "vanilla/red_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/red_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/red_wool.png"
     },
     "redstone_block": {
       "texture": "vanilla/redstone_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/redstone_block.json",
       "sourceTexture": "assets/minecraft/textures/block/redstone_block.png"
     },
     "redstone_lamp": {
       "texture": "vanilla/redstone_lamp.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/redstone_lamp.json",
       "sourceTexture": "assets/minecraft/textures/block/redstone_lamp.png"
     },
     "redstone_torch": {
       "texture": "vanilla/redstone_torch.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/redstone_torch.json",
       "sourceTexture": "assets/minecraft/textures/block/redstone_torch.png"
     },
     "reinforced_deepslate": {
       "texture": "vanilla/reinforced_deepslate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/reinforced_deepslate.json",
       "sourceTexture": "assets/minecraft/textures/block/reinforced_deepslate_side.png"
     },
     "resin_clump": {
       "texture": "vanilla/resin_clump.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/resin_clump.json",
       "sourceTexture": "assets/minecraft/textures/item/resin_clump.png"
     },
     "rooted_dirt": {
       "texture": "vanilla/rooted_dirt.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/rooted_dirt.json",
       "sourceTexture": "assets/minecraft/textures/block/rooted_dirt.png"
     },
     "rose_bush": {
       "texture": "vanilla/rose_bush.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/rose_bush.json",
       "sourceTexture": "assets/minecraft/textures/block/rose_bush_top.png"
     },
     "saddle": {
       "texture": "vanilla/saddle.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/saddle.json",
       "sourceTexture": "assets/minecraft/textures/item/saddle.png"
     },
     "salmon": {
       "texture": "vanilla/salmon.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/salmon.json",
       "sourceTexture": "assets/minecraft/textures/item/salmon.png"
     },
     "sand": {
       "texture": "vanilla/sand.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sand.json",
       "sourceTexture": "assets/minecraft/textures/block/sand.png"
     },
     "sandstone": {
       "texture": "vanilla/sandstone.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sandstone.json",
       "sourceTexture": "assets/minecraft/textures/block/sandstone.png"
     },
     "scaffolding": {
       "texture": "vanilla/scaffolding.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/scaffolding_stable.json",
       "sourceTexture": "assets/minecraft/textures/block/scaffolding_side.png"
     },
     "sculk": {
       "texture": "vanilla/sculk.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sculk.json",
       "sourceTexture": "assets/minecraft/textures/block/sculk.png"
     },
     "sculk_catalyst": {
       "texture": "vanilla/sculk_catalyst.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sculk_catalyst.json",
       "sourceTexture": "assets/minecraft/textures/block/sculk_catalyst_side.png"
     },
     "sculk_sensor": {
       "texture": "vanilla/sculk_sensor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sculk_sensor_inactive.json",
       "sourceTexture": "assets/minecraft/textures/block/sculk_sensor_side.png"
     },
     "sculk_shrieker": {
       "texture": "vanilla/sculk_shrieker.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sculk_shrieker.json",
       "sourceTexture": "assets/minecraft/textures/block/sculk_shrieker_side.png"
     },
     "sculk_vein": {
       "texture": "vanilla/sculk_vein.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/sculk_vein.json",
       "sourceTexture": "assets/minecraft/textures/block/sculk_vein.png"
     },
     "sea_lantern": {
       "texture": "vanilla/sea_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/sea_lantern.json",
       "sourceTexture": "assets/minecraft/textures/block/sea_lantern.png"
     },
     "sea_pickle": {
       "texture": "vanilla/sea_pickle.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/sea_pickle.json",
       "sourceTexture": "assets/minecraft/textures/item/sea_pickle.png"
     },
     "seagrass": {
       "texture": "vanilla/seagrass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/seagrass.json",
       "sourceTexture": "assets/minecraft/textures/item/seagrass.png"
     },
     "shears": {
       "texture": "vanilla/shears.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/shears.json",
       "sourceTexture": "assets/minecraft/textures/item/shears.png"
     },
     "sheep_spawn_egg": {
       "texture": "vanilla/sheep_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/sheep_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/sheep_spawn_egg.png"
     },
     "short_dry_grass": {
       "texture": "vanilla/short_dry_grass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/short_dry_grass.json",
       "sourceTexture": "assets/minecraft/textures/block/short_dry_grass.png"
     },
     "short_grass": {
       "texture": "vanilla/short_grass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/short_grass.json",
       "sourceTexture": "assets/minecraft/textures/block/short_grass.png"
     },
     "shroomlight": {
       "texture": "vanilla/shroomlight.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/shroomlight.json",
       "sourceTexture": "assets/minecraft/textures/block/shroomlight.png"
     },
     "slime_ball": {
       "texture": "vanilla/slime_ball.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/slime_ball.json",
       "sourceTexture": "assets/minecraft/textures/item/slime_ball.png"
     },
     "small_dripleaf": {
       "texture": "vanilla/small_dripleaf.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/small_dripleaf.json",
       "sourceTexture": "assets/minecraft/textures/block/small_dripleaf_side.png"
     },
     "snow_block": {
       "texture": "vanilla/snow_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/snow_block.json",
       "sourceTexture": "assets/minecraft/textures/block/snow.png"
     },
     "soul_sand": {
       "texture": "vanilla/soul_sand.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/soul_sand.json",
       "sourceTexture": "assets/minecraft/textures/block/soul_sand.png"
     },
     "soul_soil": {
       "texture": "vanilla/soul_soil.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/soul_soil.json",
       "sourceTexture": "assets/minecraft/textures/block/soul_soil.png"
     },
     "spore_blossom": {
       "texture": "vanilla/spore_blossom.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/spore_blossom.json",
       "sourceTexture": "assets/minecraft/textures/block/spore_blossom.png"
     },
     "spruce_leaves": {
       "texture": "vanilla/spruce_leaves.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/spruce_leaves.json",
       "sourceTexture": "assets/minecraft/textures/block/spruce_leaves.png"
     },
     "spruce_log": {
       "texture": "vanilla/spruce_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/spruce_log.json",
       "sourceTexture": "assets/minecraft/textures/block/spruce_log.png"
     },
@@ -2019,7 +2013,7 @@
     },
     "stone_hoe": {
       "texture": "vanilla/stone_hoe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/stone_hoe.json",
       "sourceTexture": "assets/minecraft/textures/item/stone_hoe.png"
     },
@@ -2029,145 +2023,145 @@
     },
     "stripped_acacia_log": {
       "texture": "vanilla/stripped_acacia_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_acacia_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_acacia_log.png"
     },
     "stripped_bamboo_block": {
       "texture": "vanilla/stripped_bamboo_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_bamboo_block.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_bamboo_block.png"
     },
     "stripped_birch_log": {
       "texture": "vanilla/stripped_birch_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_birch_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_birch_log.png"
     },
     "stripped_cherry_log": {
       "texture": "vanilla/stripped_cherry_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_cherry_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_cherry_log.png"
     },
     "stripped_crimson_stem": {
       "texture": "vanilla/stripped_crimson_stem.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_crimson_stem.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_crimson_stem.png"
     },
     "stripped_dark_oak_log": {
       "texture": "vanilla/stripped_dark_oak_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_dark_oak_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_dark_oak_log.png"
     },
     "stripped_jungle_log": {
       "texture": "vanilla/stripped_jungle_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_jungle_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_jungle_log.png"
     },
     "stripped_mangrove_log": {
       "texture": "vanilla/stripped_mangrove_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_mangrove_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_mangrove_log.png"
     },
     "stripped_oak_log": {
       "texture": "vanilla/stripped_oak_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_oak_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_oak_log.png"
     },
     "stripped_pale_oak_log": {
       "texture": "vanilla/stripped_pale_oak_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_pale_oak_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_pale_oak_log.png"
     },
     "stripped_spruce_log": {
       "texture": "vanilla/stripped_spruce_log.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_spruce_log.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_spruce_log.png"
     },
     "stripped_warped_stem": {
       "texture": "vanilla/stripped_warped_stem.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/stripped_warped_stem.json",
       "sourceTexture": "assets/minecraft/textures/block/stripped_warped_stem.png"
     },
     "sunflower": {
       "texture": "vanilla/sunflower.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/sunflower.json",
       "sourceTexture": "assets/minecraft/textures/block/sunflower_front.png"
     },
     "sweet_berries": {
       "texture": "vanilla/sweet_berries.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/sweet_berries.json",
       "sourceTexture": "assets/minecraft/textures/item/sweet_berries.png"
     },
     "tall_dry_grass": {
       "texture": "vanilla/tall_dry_grass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/tall_dry_grass.json",
       "sourceTexture": "assets/minecraft/textures/block/tall_dry_grass.png"
     },
     "tall_grass": {
       "texture": "vanilla/tall_grass.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/tall_grass.json",
       "sourceTexture": "assets/minecraft/textures/block/tall_grass_top.png"
     },
     "terracotta": {
       "texture": "vanilla/terracotta.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/terracotta.json",
       "sourceTexture": "assets/minecraft/textures/block/terracotta.png"
     },
     "torchflower": {
       "texture": "vanilla/torchflower.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/torchflower.json",
       "sourceTexture": "assets/minecraft/textures/block/torchflower.png"
     },
     "tropical_fish": {
       "texture": "vanilla/tropical_fish.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/tropical_fish.json",
       "sourceTexture": "assets/minecraft/textures/item/tropical_fish.png"
     },
     "tube_coral": {
       "texture": "vanilla/tube_coral.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/tube_coral.json",
       "sourceTexture": "assets/minecraft/textures/block/tube_coral.png"
     },
     "tube_coral_block": {
       "texture": "vanilla/tube_coral_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/tube_coral_block.json",
       "sourceTexture": "assets/minecraft/textures/block/tube_coral_block.png"
     },
     "tube_coral_fan": {
       "texture": "vanilla/tube_coral_fan.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/tube_coral_fan.json",
       "sourceTexture": "assets/minecraft/textures/block/tube_coral_fan.png"
     },
     "tuff": {
       "texture": "vanilla/tuff.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/tuff.json",
       "sourceTexture": "assets/minecraft/textures/block/tuff.png"
     },
     "turtle_spawn_egg": {
       "texture": "vanilla/turtle_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/turtle_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/turtle_spawn_egg.png"
     },
@@ -2177,19 +2171,19 @@
     },
     "verdant_froglight": {
       "texture": "vanilla/verdant_froglight.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/verdant_froglight.json",
       "sourceTexture": "assets/minecraft/textures/block/verdant_froglight_side.png"
     },
     "vine": {
       "texture": "vanilla/vine.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/vine.json",
       "sourceTexture": "assets/minecraft/textures/block/vine.png"
     },
     "warped_fungus": {
       "texture": "vanilla/warped_fungus.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/warped_fungus.json",
       "sourceTexture": "assets/minecraft/textures/block/warped_fungus.png"
     },
@@ -2199,469 +2193,469 @@
     },
     "warped_roots": {
       "texture": "vanilla/warped_roots.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/warped_roots.json",
       "sourceTexture": "assets/minecraft/textures/block/warped_roots.png"
     },
     "warped_stem": {
       "texture": "vanilla/warped_stem.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/warped_stem.json",
       "sourceTexture": "assets/minecraft/textures/block/warped_stem.png"
     },
     "warped_wart_block": {
       "texture": "vanilla/warped_wart_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/warped_wart_block.json",
       "sourceTexture": "assets/minecraft/textures/block/warped_wart_block.png"
     },
     "waxed_chiseled_copper": {
       "texture": "vanilla/waxed_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/chiseled_copper.png"
     },
     "waxed_copper_bars": {
       "texture": "vanilla/waxed_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_bars.png"
     },
     "waxed_copper_block": {
       "texture": "vanilla/waxed_copper_block.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_block.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_copper_bulb": {
       "texture": "vanilla/waxed_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_bulb.png"
     },
     "waxed_copper_chain": {
       "texture": "vanilla/waxed_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_chain.png"
     },
     "waxed_copper_chest": {
       "texture": "vanilla/waxed_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_copper_door": {
       "texture": "vanilla/waxed_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_door.png"
     },
     "waxed_copper_golem_statue": {
       "texture": "vanilla/waxed_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_copper_grate": {
       "texture": "vanilla/waxed_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_grate.png"
     },
     "waxed_copper_lantern": {
       "texture": "vanilla/waxed_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/copper_lantern.png"
     },
     "waxed_copper_trapdoor": {
       "texture": "vanilla/waxed_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_trapdoor.png"
     },
     "waxed_cut_copper": {
       "texture": "vanilla/waxed_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
     "waxed_cut_copper_slab": {
       "texture": "vanilla/waxed_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
     "waxed_cut_copper_stairs": {
       "texture": "vanilla/waxed_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/cut_copper.png"
     },
     "waxed_exposed_chiseled_copper": {
       "texture": "vanilla/waxed_exposed_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_chiseled_copper.png"
     },
     "waxed_exposed_copper": {
       "texture": "vanilla/waxed_exposed_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper.png"
     },
     "waxed_exposed_copper_bars": {
       "texture": "vanilla/waxed_exposed_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_bars.png"
     },
     "waxed_exposed_copper_bulb": {
       "texture": "vanilla/waxed_exposed_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_bulb.png"
     },
     "waxed_exposed_copper_chain": {
       "texture": "vanilla/waxed_exposed_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_chain.png"
     },
     "waxed_exposed_copper_chest": {
       "texture": "vanilla/waxed_exposed_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper.png"
     },
     "waxed_exposed_copper_door": {
       "texture": "vanilla/waxed_exposed_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_door.png"
     },
     "waxed_exposed_copper_golem_statue": {
       "texture": "vanilla/waxed_exposed_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_exposed_copper_grate": {
       "texture": "vanilla/waxed_exposed_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_grate.png"
     },
     "waxed_exposed_copper_lantern": {
       "texture": "vanilla/waxed_exposed_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/exposed_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/exposed_copper_lantern.png"
     },
     "waxed_exposed_copper_trapdoor": {
       "texture": "vanilla/waxed_exposed_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_copper_trapdoor.png"
     },
     "waxed_exposed_cut_copper": {
       "texture": "vanilla/waxed_exposed_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "waxed_exposed_cut_copper_slab": {
       "texture": "vanilla/waxed_exposed_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "waxed_exposed_cut_copper_stairs": {
       "texture": "vanilla/waxed_exposed_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_cut_copper.png"
     },
     "waxed_exposed_lightning_rod": {
       "texture": "vanilla/waxed_exposed_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/exposed_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/exposed_lightning_rod.png"
     },
     "waxed_lightning_rod": {
       "texture": "vanilla/waxed_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/lightning_rod.png"
     },
     "waxed_oxidized_chiseled_copper": {
       "texture": "vanilla/waxed_oxidized_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_chiseled_copper.png"
     },
     "waxed_oxidized_copper": {
       "texture": "vanilla/waxed_oxidized_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper.png"
     },
     "waxed_oxidized_copper_bars": {
       "texture": "vanilla/waxed_oxidized_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_bars.png"
     },
     "waxed_oxidized_copper_bulb": {
       "texture": "vanilla/waxed_oxidized_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_bulb.png"
     },
     "waxed_oxidized_copper_chain": {
       "texture": "vanilla/waxed_oxidized_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_chain.png"
     },
     "waxed_oxidized_copper_chest": {
       "texture": "vanilla/waxed_oxidized_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper.png"
     },
     "waxed_oxidized_copper_door": {
       "texture": "vanilla/waxed_oxidized_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_door.png"
     },
     "waxed_oxidized_copper_golem_statue": {
       "texture": "vanilla/waxed_oxidized_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_oxidized_copper_grate": {
       "texture": "vanilla/waxed_oxidized_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_grate.png"
     },
     "waxed_oxidized_copper_lantern": {
       "texture": "vanilla/waxed_oxidized_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/oxidized_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/oxidized_copper_lantern.png"
     },
     "waxed_oxidized_copper_trapdoor": {
       "texture": "vanilla/waxed_oxidized_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_copper_trapdoor.png"
     },
     "waxed_oxidized_cut_copper": {
       "texture": "vanilla/waxed_oxidized_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "waxed_oxidized_cut_copper_slab": {
       "texture": "vanilla/waxed_oxidized_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "waxed_oxidized_cut_copper_stairs": {
       "texture": "vanilla/waxed_oxidized_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_cut_copper.png"
     },
     "waxed_oxidized_lightning_rod": {
       "texture": "vanilla/waxed_oxidized_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/oxidized_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/oxidized_lightning_rod.png"
     },
     "waxed_weathered_chiseled_copper": {
       "texture": "vanilla/waxed_weathered_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_chiseled_copper.png"
     },
     "waxed_weathered_copper": {
       "texture": "vanilla/waxed_weathered_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper.png"
     },
     "waxed_weathered_copper_bars": {
       "texture": "vanilla/waxed_weathered_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_bars.png"
     },
     "waxed_weathered_copper_bulb": {
       "texture": "vanilla/waxed_weathered_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_bulb.png"
     },
     "waxed_weathered_copper_chain": {
       "texture": "vanilla/waxed_weathered_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_chain.png"
     },
     "waxed_weathered_copper_chest": {
       "texture": "vanilla/waxed_weathered_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper.png"
     },
     "waxed_weathered_copper_door": {
       "texture": "vanilla/waxed_weathered_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_door.png"
     },
     "waxed_weathered_copper_golem_statue": {
       "texture": "vanilla/waxed_weathered_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "waxed_weathered_copper_grate": {
       "texture": "vanilla/waxed_weathered_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_grate.png"
     },
     "waxed_weathered_copper_lantern": {
       "texture": "vanilla/waxed_weathered_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_lantern.png"
     },
     "waxed_weathered_copper_trapdoor": {
       "texture": "vanilla/waxed_weathered_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_trapdoor.png"
     },
     "waxed_weathered_cut_copper": {
       "texture": "vanilla/waxed_weathered_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "waxed_weathered_cut_copper_slab": {
       "texture": "vanilla/waxed_weathered_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "waxed_weathered_cut_copper_stairs": {
       "texture": "vanilla/waxed_weathered_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "waxed_weathered_lightning_rod": {
       "texture": "vanilla/waxed_weathered_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_lightning_rod.png"
     },
     "weathered_chiseled_copper": {
       "texture": "vanilla/weathered_chiseled_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_chiseled_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_chiseled_copper.png"
     },
     "weathered_copper": {
       "texture": "vanilla/weathered_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper.png"
     },
     "weathered_copper_bars": {
       "texture": "vanilla/weathered_copper_bars.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_bars.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_bars.png"
     },
     "weathered_copper_bulb": {
       "texture": "vanilla/weathered_copper_bulb.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_bulb.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_bulb.png"
     },
     "weathered_copper_chain": {
       "texture": "vanilla/weathered_copper_chain.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_chain.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_chain.png"
     },
     "weathered_copper_chest": {
       "texture": "vanilla/weathered_copper_chest.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_chest.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper.png"
     },
     "weathered_copper_door": {
       "texture": "vanilla/weathered_copper_door.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_door.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_door.png"
     },
     "weathered_copper_golem_statue": {
       "texture": "vanilla/weathered_copper_golem_statue.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/template_copper_golem_statue.json",
       "sourceTexture": "assets/minecraft/textures/block/copper_block.png"
     },
     "weathered_copper_grate": {
       "texture": "vanilla/weathered_copper_grate.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_grate.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_grate.png"
     },
     "weathered_copper_lantern": {
       "texture": "vanilla/weathered_copper_lantern.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/weathered_copper_lantern.json",
       "sourceTexture": "assets/minecraft/textures/item/weathered_copper_lantern.png"
     },
     "weathered_copper_trapdoor": {
       "texture": "vanilla/weathered_copper_trapdoor.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_copper_trapdoor_bottom.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_copper_trapdoor.png"
     },
     "weathered_cut_copper": {
       "texture": "vanilla/weathered_cut_copper.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "weathered_cut_copper_slab": {
       "texture": "vanilla/weathered_cut_copper_slab.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper_slab.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "weathered_cut_copper_stairs": {
       "texture": "vanilla/weathered_cut_copper_stairs.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_cut_copper_stairs.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_cut_copper.png"
     },
     "weathered_lightning_rod": {
       "texture": "vanilla/weathered_lightning_rod.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/weathered_lightning_rod.json",
       "sourceTexture": "assets/minecraft/textures/block/weathered_lightning_rod.png"
     },
@@ -2669,65 +2663,89 @@
       "texture": "vanilla/weeping_vines.png",
       "source": "existing checked-in asset"
     },
+    "wheat": {
+      "texture": "vanilla/wheat.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/wheat.json",
+      "sourceTexture": "assets/minecraft/textures/item/wheat.png"
+    },
     "wheat_seeds": {
       "texture": "vanilla/wheat_seeds.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wheat_seeds.json",
       "sourceTexture": "assets/minecraft/textures/item/wheat_seeds.png"
     },
     "white_concrete": {
       "texture": "vanilla/white_concrete.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/white_concrete.json",
       "sourceTexture": "assets/minecraft/textures/block/white_concrete.png"
     },
     "white_tulip": {
       "texture": "vanilla/white_tulip.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/white_tulip.json",
       "sourceTexture": "assets/minecraft/textures/block/white_tulip.png"
     },
     "white_wool": {
       "texture": "vanilla/white_wool.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/white_wool.json",
       "sourceTexture": "assets/minecraft/textures/block/white_wool.png"
     },
     "wildflowers": {
       "texture": "vanilla/wildflowers.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wildflowers.json",
       "sourceTexture": "assets/minecraft/textures/item/wildflowers.png"
     },
     "wither_rose": {
       "texture": "vanilla/wither_rose.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wither_rose.json",
       "sourceTexture": "assets/minecraft/textures/block/wither_rose.png"
     },
     "wolf_spawn_egg": {
       "texture": "vanilla/wolf_spawn_egg.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wolf_spawn_egg.json",
       "sourceTexture": "assets/minecraft/textures/item/wolf_spawn_egg.png"
     },
     "wooden_pickaxe": {
       "texture": "vanilla/wooden_pickaxe.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wooden_pickaxe.json",
       "sourceTexture": "assets/minecraft/textures/item/wooden_pickaxe.png"
     },
     "wooden_shovel": {
       "texture": "vanilla/wooden_shovel.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/wooden_shovel.json",
       "sourceTexture": "assets/minecraft/textures/item/wooden_shovel.png"
     },
     "writable_book": {
       "texture": "vanilla/writable_book.png",
-      "sourceJar": "1.21.10.jar",
+      "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/item/writable_book.json",
       "sourceTexture": "assets/minecraft/textures/item/writable_book.png"
+    },
+    "yellow_concrete": {
+      "texture": "vanilla/yellow_concrete.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/yellow_concrete.json",
+      "sourceTexture": "assets/minecraft/textures/block/yellow_concrete.png"
+    },
+    "yellow_dye": {
+      "texture": "vanilla/yellow_dye.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/item/yellow_dye.json",
+      "sourceTexture": "assets/minecraft/textures/item/yellow_dye.png"
+    },
+    "yellow_wool": {
+      "texture": "vanilla/yellow_wool.png",
+      "sourceJar": "minecraft-client.jar",
+      "sourceModel": "assets/minecraft/models/block/yellow_wool.json",
+      "sourceTexture": "assets/minecraft/textures/block/yellow_wool.png"
     }
   }
 }

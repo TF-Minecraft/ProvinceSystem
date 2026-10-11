@@ -49,6 +49,7 @@ const FURNITURE_MODELS: Record<string, NonNullable<Slot["model"]>> = {
   "itemsadder:bowl": furnitureModel("bowl", "plate"),
   "itemsadder:tool_shelf": furnitureModel("tool_shelf"),
   "itemsadder:trough": furnitureModel("trough"),
+  "itemsadder:pet_house": { url: "/wiki/models/companion-pets/pethouse.json", textures: { "0": "/wiki/textures/companion-pets/pethouse/0.png" } },
   "itemsadder:meat_hook": furnitureModel("meat_hook"),
   "itemsadder:sausage_maker": furnitureModel("sausage_maker"),
   "itemsadder:liquid_container": furnitureModel("liquid_container"),

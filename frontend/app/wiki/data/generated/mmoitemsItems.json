@@ -287,6 +287,14 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb22.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon22.png"
   },
+  "BISCUIT_TREAT": {
+    "name": "Biscuit Treat",
+    "material": "RABBIT_FOOT",
+    "customModelData": 17,
+    "texture": "mmoitems/biscuit_treat.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/biscuit_treat.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/biscuit_treat.png"
+  },
   "BOOK": {
     "material": "BOOK"
   },
@@ -522,22 +530,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/diamond_fragment.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/diamond_fragment.png"
   },
-  "DYING_LEAF": {
-    "name": "Dying Leaf",
-    "material": "KELP",
-    "customModelData": 29,
-    "texture": "mmoitems/dying_leaf.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb29.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon29.png"
-  },
-  "DYNAMITE": {
-    "name": "Dynamite",
-    "material": "NAUTILUS_SHELL",
-    "customModelData": 10,
-    "texture": "mmoitems/dynamite.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/dynamite.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/dynamite.png"
-  },
   "DISC_FRAGMENT": {
     "name": "Music Disc Fragment",
     "material": "RECOVERY_COMPASS",
@@ -682,6 +674,22 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb46.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon46.png"
   },
+  "DYING_LEAF": {
+    "name": "Dying Leaf",
+    "material": "KELP",
+    "customModelData": 29,
+    "texture": "mmoitems/dying_leaf.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb29.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon29.png"
+  },
+  "DYNAMITE": {
+    "name": "Dynamite",
+    "material": "NAUTILUS_SHELL",
+    "customModelData": 10,
+    "texture": "mmoitems/dynamite.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/dynamite.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/dynamite.png"
+  },
   "ELDERWOOD": {
     "name": "Elderwood",
     "material": "STICK",
@@ -778,13 +786,21 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_111.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_111.png"
   },
+  "FISH_SNACK": {
+    "name": "Fish Snack",
+    "material": "RABBIT_FOOT",
+    "customModelData": 16,
+    "texture": "mmoitems/fish_snack.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/fish_snack.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/fish_snack.png"
+  },
   "FISH_TREAT": {
-    "name": "Fish Treat",
+    "name": "Fish Meal",
     "material": "RABBIT_FOOT",
     "customModelData": 4,
     "texture": "mmoitems/fish_treat.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/fishtreat.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/fishtreat.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/fish_meal.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/fish_meal.png"
   },
   "FISHING_ROD": {
     "name": "Iron Rod",
@@ -958,14 +974,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/cerrith_rune_3.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/cerrith_rune_3.png"
   },
-  "GREEN_CONCOCTION": {
-    "name": "Green Concoction",
-    "material": "RABBIT_FOOT",
-    "customModelData": 1,
-    "texture": "mmoitems/green_concoction.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/greenconcoction.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/greenconcoction.png"
-  },
   "HAMMER_TOOL": {
     "name": "Hammer Tool",
     "material": "BREEZE_ROD",
@@ -1138,14 +1146,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/instruments/kalimba.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/instruments/kalimba.png"
   },
-  "KEY_CHAIN": {
-    "name": "Key Chain",
-    "material": "GOLD_NUGGET",
-    "customModelData": 57,
-    "texture": "mmoitems/key_chain.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/thievery/key_chain_0.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/thievery/key_chain_0.png"
-  },
   "KELPBERRY": {
     "name": "Kelpberry",
     "material": "KELP",
@@ -1153,6 +1153,14 @@
     "texture": "mmoitems/kelpberry.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/medicine/herbs/herb37.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/medicine/herbs/icon37.png"
+  },
+  "KEY_CHAIN": {
+    "name": "Key Chain",
+    "material": "GOLD_NUGGET",
+    "customModelData": 57,
+    "texture": "mmoitems/key_chain.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/thievery/key_chain_0.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/thievery/key_chain_0.png"
   },
   "LAB_KIT": {
     "name": "Clinical Thermometer",
@@ -1258,12 +1266,12 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/maplewood.png"
   },
   "MEAT_TREAT": {
-    "name": "Meat Treat",
+    "name": "Meat Meal",
     "material": "RABBIT_FOOT",
     "customModelData": 3,
     "texture": "mmoitems/meat_treat.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/meattreat.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/meattreat.png"
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/meat_meal.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/meat_meal.png"
   },
   "MINOR_ARMOR_RUNESTONE": {
     "name": "Minor Armor Runestone",
@@ -1304,6 +1312,14 @@
     "texture": "mmoitems/minor_runestone.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/magic_runes/cerrith_rune_1.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/magic_runes/cerrith_rune_1.png"
+  },
+  "MUSCLE_STIMULATOR": {
+    "name": "Muscle Stimulant",
+    "material": "SLIME_BALL",
+    "customModelData": 12,
+    "texture": "mmoitems/muscle_stimulator.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_12.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_12.png"
   },
   "MYTHRIL_ALCHEMY_COLLECTOR": {
     "name": "Mythril Alchemist Collector",
@@ -1433,14 +1449,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/guns/icons/mythril_spreadshot.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/guns/mythrilspreadshot.png"
   },
-  "MUSCLE_STIMULATOR": {
-    "name": "Muscle Stimulant",
-    "material": "SLIME_BALL",
-    "customModelData": 12,
-    "texture": "mmoitems/muscle_stimulator.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/potions/potion_12.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/potions/potion_12.png"
-  },
   "NAMESTONE": {
     "name": "Namestone",
     "material": "IRON_NUGGET"
@@ -1492,6 +1500,152 @@
     "texture": "mmoitems/pearl.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/gems/pearl.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/gems/pearl.png"
+  },
+  "PET_BALL": {
+    "name": "Pet Ball",
+    "material": "RABBIT_FOOT",
+    "customModelData": 11,
+    "texture": "mmoitems/pet_ball.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_ball.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_ball.png"
+  },
+  "PET_BEAGLE_EGG": {
+    "name": "Beagle Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12001
+  },
+  "PET_BERNESSE_EGG": {
+    "name": "Bernese Mountain Dog Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12012
+  },
+  "PET_BORDERCOLLIE_EGG": {
+    "name": "Border Collie Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12013
+  },
+  "PET_BORDERCOLLIEGRAY_EGG": {
+    "name": "Gray Border Collie Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12018
+  },
+  "PET_BRUSH": {
+    "name": "Pet Brush",
+    "material": "RABBIT_FOOT",
+    "customModelData": 18,
+    "texture": "mmoitems/pet_brush.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_brush.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_brush.png"
+  },
+  "PET_CATBLACK_EGG": {
+    "name": "Black Cat Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12005
+  },
+  "PET_CATFUNNY_EGG": {
+    "name": "Funny Cat Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12006
+  },
+  "PET_CATGRAY_EGG": {
+    "name": "Gray Cat Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12014
+  },
+  "PET_CATORANGE_EGG": {
+    "name": "Orange Cat Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12007
+  },
+  "PET_CATTABBY_EGG": {
+    "name": "Tabby Cat Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12015
+  },
+  "PET_CHEW_BONE": {
+    "name": "Bone Plush",
+    "material": "RABBIT_FOOT",
+    "customModelData": 12,
+    "texture": "mmoitems/pet_chew_bone.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_chew_bone.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_chew_bone.png"
+  },
+  "PET_CHIHUAHUA_EGG": {
+    "name": "Chihuahua Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12002
+  },
+  "PET_CORGI_EGG": {
+    "name": "Corgi Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12003
+  },
+  "PET_FOX_EGG": {
+    "name": "Fox Companion Egg",
+    "material": "FOX_SPAWN_EGG",
+    "customModelData": 12008
+  },
+  "PET_FROG_EGG": {
+    "name": "Frog Companion Egg",
+    "material": "FROG_SPAWN_EGG",
+    "customModelData": 12009
+  },
+  "PET_GOLDEN_EGG": {
+    "name": "Golden Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12004
+  },
+  "PET_HUSKY_EGG": {
+    "name": "Husky Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12010
+  },
+  "PET_LAGOTTOROMAGNOLO_EGG": {
+    "name": "Lagotto Romagnolo Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12016
+  },
+  "PET_MAINECOON_EGG": {
+    "name": "Maine Coon Companion Egg",
+    "material": "CAT_SPAWN_EGG",
+    "customModelData": 12011
+  },
+  "PET_MEDICINE": {
+    "name": "Pet Medicine",
+    "material": "RABBIT_FOOT",
+    "customModelData": 19,
+    "texture": "mmoitems/pet_medicine.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_medicine.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_medicine.png"
+  },
+  "PET_MOUSE_PLUSH": {
+    "name": "Mouse Plush",
+    "material": "RABBIT_FOOT",
+    "customModelData": 14,
+    "texture": "mmoitems/pet_mouse_plush.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_mouse_plush.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_mouse_plush.png"
+  },
+  "PET_TEDDY_PLUSH": {
+    "name": "Teddy Bear Plush",
+    "material": "RABBIT_FOOT",
+    "customModelData": 15,
+    "texture": "mmoitems/pet_teddy_plush.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_teddy_plush.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_teddy_plush.png"
+  },
+  "PET_TUG_ROPE": {
+    "name": "Tug Rope",
+    "material": "RABBIT_FOOT",
+    "customModelData": 13,
+    "texture": "mmoitems/pet_tug_rope.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/tfmc/models/item/pets/pet_tug_rope.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/tfmc/textures/item/pets/pet_tug_rope.png"
+  },
+  "PET_YORKSHIRE_EGG": {
+    "name": "Yorkshire Terrier Companion Egg",
+    "material": "WOLF_SPAWN_EGG",
+    "customModelData": 12017
   },
   "PINS": {
     "name": "Silver Wire",
@@ -1669,14 +1823,6 @@
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/rawiron_fragment.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/rawiron_fragment.png"
   },
-  "RED_CONCOCTION": {
-    "name": "Red Concoction",
-    "material": "RABBIT_FOOT",
-    "customModelData": 2,
-    "texture": "mmoitems/red_concoction.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/pets/redconcoction.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/pets/redconcoction.png"
-  },
   "REFINED_BARKWOOD": {
     "name": "Refined Barkwood",
     "material": "STICK",
@@ -1796,14 +1942,6 @@
     "texture": "mmoitems/silver_coin5.png",
     "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/denar/silver_coin_handful.json",
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/denar/silver_coin_handful.png"
-  },
-  "SYNTHETIC_INK": {
-    "name": "Synthetic Ink",
-    "material": "INK_SAC",
-    "customModelData": 1,
-    "texture": "mmoitems/synthetic_ink.png",
-    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/synthetic_ink.json",
-    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/synthetic_ink.png"
   },
   "SKILL_REALLOCATION_BOOK": {
     "name": "Skill Retraining Manual",
@@ -2045,6 +2183,14 @@
     "sourceModel": "tfmc_surgery/resourcepack/assets/tfmc_surgery/models/item/linen_dressing.json",
     "sourceTexture": "tfmc_surgery/resourcepack/assets/tfmc_surgery/textures/item/linen_dressing.png"
   },
+  "SYNTHETIC_INK": {
+    "name": "Synthetic Ink",
+    "material": "INK_SAC",
+    "customModelData": 1,
+    "texture": "mmoitems/synthetic_ink.png",
+    "sourceModel": "tfmc_pack/resourcepack/assets/minecraft/models/item/materials/synthetic_ink.json",
+    "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/synthetic_ink.png"
+  },
   "TAMING_ITEM": {
     "name": "Ownership Token",
     "material": "NAME_TAG",
@@ -2238,6 +2384,7 @@
     "sourceTexture": "tfmc_pack/resourcepack/assets/minecraft/textures/item/materials/wood_core.png"
   },
   "WRITABLE_BOOK": {
+    "name": "Book and Quill",
     "material": "WRITABLE_BOOK"
   }
 }

@@ -78,6 +78,11 @@ const STATION_NAME_BY_FILE = {
 /** `class{list=Bard}` carries no `display`, so its player-facing label is written here. */
 const CLASS_REQUIREMENT_LABELS = { Bard: "Bard class" };
 
+/** Outputs staff asked to keep off the wiki, by item identity. */
+export const HIDDEN_OUTPUTS = new Set([
+  "itemsadder:yellow_chip", "itemsadder:red_chip", "itemsadder:blue_chip", "itemsadder:green_chip",
+]);
+
 /** Resolve item references from the server configuration to available pack assets. */
 const ITEMSADDER_ID_ALIASES = {
   // Dev block-station.yml uses singular `marauder_goldbar`; the pack declares the plural id.
@@ -89,14 +94,17 @@ const ITEMSADDER_ID_ALIASES = {
 
 /**
  * Parses just the `recipes:` block of an MMOItems station config. This is not a
- * general YAML parser; it handles exactly the shape these 14 files use:
+ * general YAML parser; it handles exactly the shape these files use:
  *
  *   recipes:
- *       <recipe-key>:            # 4 spaces
- *           <field>: <scalar>    # 8 spaces
- *           <field>:             # 8 spaces, then either
+ *       <recipe-key>:            # key indent (4 spaces in most files)
+ *           <field>: <scalar>    # field indent (8)
+ *           <field>:             # field indent, then either
  *           - <list item>        #   a list at the SAME indent, or
- *               <k>: <v>         #   a nested map at 12 spaces
+ *               <k>: <v>         #   a nested map one level deeper (12)
+ *
+ * Each recipe sets its own field and nested levels from the first lines that
+ * use them, because some recipes indent 4/6/8 rather than 4/8/12.
  *
  * Any line inside `recipes:` matching none of those forms is returned in
  * `unparsed`, so a config change cannot be dropped silently.
@@ -107,6 +115,9 @@ export function parseStationRecipes(text) {
   let inRecipes = false;
   let recipe = null;
   let field = null;
+  let keyIndent = null;
+  let fieldIndent = null;
+  let nestedIndent = null;
 
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
@@ -119,17 +130,22 @@ export function parseStationRecipes(text) {
     const indent = raw.length - raw.trimStart().length;
     const body = stripComment(raw.trim());
 
-    if (indent === 4) {
+    keyIndent ??= indent;
+    if (indent === keyIndent) {
       const m = body.match(/^([^:]+):\s*$/);
       if (!m) { unparsed.push({ line: i + 1, text: raw }); continue; }
       recipe = { key: m[1].trim(), fields: {} };
       field = null;
+      fieldIndent = null;
+      nestedIndent = null;
       recipes.push(recipe);
       continue;
     }
     if (!recipe) { unparsed.push({ line: i + 1, text: raw }); continue; }
+    if (indent > keyIndent) fieldIndent ??= indent;
+    if (indent > fieldIndent) nestedIndent ??= indent;
 
-    if (indent === 8 && body.startsWith("- ")) {
+    if (indent === fieldIndent && body.startsWith("- ")) {
       if (!field) { unparsed.push({ line: i + 1, text: raw }); continue; }
       const item = unquote(body.slice(2).trim());
       const existing = recipe.fields[field];
@@ -137,14 +153,14 @@ export function parseStationRecipes(text) {
       else recipe.fields[field] = [item];
       continue;
     }
-    if (indent === 8) {
+    if (indent === fieldIndent) {
       const m = body.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
       if (!m) { unparsed.push({ line: i + 1, text: raw }); continue; }
       field = m[1];
       recipe.fields[field] = m[2] === "" ? {} : unquote(m[2]);
       continue;
     }
-    if (indent === 12) {
+    if (indent === nestedIndent) {
       const m = body.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
       const target = field ? recipe.fields[field] : undefined;
       if (m && target && typeof target === "object" && !Array.isArray(target)) target[m[1]] = unquote(m[2]);
@@ -514,7 +530,24 @@ function refIdentity(ref) {
   if (ref.kind === "mmoitem") return `mmoitem:${ref.attrs.type}:${ref.attrs.id}`;
   // ItemsAdder ids may carry a pack namespace or not; both name the same item.
   if (ref.kind === "itemsadder") return `itemsadder:${bareItemsAdderId(ref)}`;
+  // A Cooking food is the vanilla item it came from as far as the wiki goes.
+  if (ref.kind === "cooking") return `vanilla:${(cookingOrigin(ref) ?? "").toLowerCase()}`;
   return `${ref.kind}:${(ref.attrs.id ?? "").toLowerCase()}`;
+}
+
+/**
+ * Cooking food refs name the vanilla item they came from:
+ * `cooking{item="seafood(type=seafood_whole;origin=Salmon)",display="Salmon"}`.
+ */
+export function cookingOrigin(ref) {
+  const m = (ref.attrs.item ?? "").match(/origin=([^;)]+)/);
+  return m ? m[1].trim().replace(/\s+/g, "_") : undefined;
+}
+
+/** True for a recipe `output:` that must stay off the wiki. */
+export function isHiddenOutput(value) {
+  const ref = outputRef(value);
+  return Boolean(ref && HIDDEN_OUTPUTS.has(refIdentity(ref)));
 }
 
 /** Normalises `output:`, which is either a ref string or a `{type,id,amount}` map. */
@@ -576,7 +609,8 @@ export function build({
     for (const r of recipes) {
       for (const raw of asList(r.fields.ingredients)) {
         const ref = parseRef(raw);
-        if (!ref?.attrs.display) continue;
+        // A Cooking `display` names the food ("Beef Steak"), not its vanilla origin.
+        if (!ref?.attrs.display || ref.kind === "cooking") continue;
         const id = refIdentity(ref);
         if (!displayByIdentity.has(id)) displayByIdentity.set(id, stripColours(ref.attrs.display));
       }
@@ -598,6 +632,8 @@ export function build({
     }
     const recovered = displayByIdentity.get(refIdentity(ref));
     if (recovered) return recovered;
+    if (ref.kind === "itemsadder") return titleCase(bareItemsAdderId(ref));
+    if (ref.kind === "cooking") return titleCase(cookingOrigin(ref) ?? "");
     return titleCase(ref.kind === "vanilla" ? ref.attrs.type ?? "" : ref.attrs.id ?? "");
   };
 
@@ -632,6 +668,7 @@ export function build({
   // found above.
   const textureFor = (ref, name) => {
     if (ref.kind === "vanilla") return vanillaTexture(ref.attrs.type);
+    if (ref.kind === "cooking") return vanillaTexture(cookingOrigin(ref));
     // MMOItems custom-model-data is authoritative. The base material is only a
     // carrier for that model and must not masquerade as the item's real icon.
     if (ref.kind === "mmoitem") {
@@ -675,6 +712,7 @@ export function build({
     for (const r of fileRecipes) {
       const output = outputRef(r.fields.output);
       if (!output) { stats.badRefs.push(`${file}:${r.key} output`); continue; }
+      if (isHiddenOutput(r.fields.output)) continue;
       const ingredients = [];
       for (const raw of asList(r.fields.ingredients)) {
         const ref = parseRef(raw);

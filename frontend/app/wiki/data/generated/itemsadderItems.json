@@ -242,6 +242,10 @@
     "name": "Pedestal",
     "material": "PAPER"
   },
+  "pet_house": {
+    "name": "Pet House",
+    "material": "PAPER"
+  },
   "plate": {
     "name": "Plate",
     "material": "PAPER"
