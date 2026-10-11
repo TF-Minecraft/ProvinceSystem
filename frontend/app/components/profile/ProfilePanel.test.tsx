@@ -18,7 +18,7 @@ import {
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
-import { logoutCharacter } from "../../../lib/characters/api";
+import { getCreationCatalog, logoutCharacter, type CreationCatalog } from "../../../lib/characters/api";
 import { getSkinThumbnail, startSkinFromProfile } from "../../../lib/skins/api";
 import { getSession as getSkinsSession } from "../../../lib/skins/session";
 
@@ -51,6 +51,7 @@ vi.mock("../../../lib/skins/api", async (importOriginal) => ({
 }));
 vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../lib/characters/api")>(),
+  getCreationCatalog: vi.fn(),
   logoutCharacter: vi.fn(),
 }));
 
@@ -107,6 +108,7 @@ beforeEach(() => {
   });
   vi.mocked(getProfileDashboard).mockResolvedValue(dashboard());
   vi.mocked(getSkinThumbnail).mockResolvedValue(null);
+  vi.mocked(getCreationCatalog).mockRejectedValue(new Error("offline"));
 });
 afterEach(() => {
   cleanup();
@@ -543,6 +545,32 @@ it("opens on Characters without a code for a linked Discord account", async () =
   expect(getProfileDashboard).toHaveBeenCalledWith("linked-token");
   expect(screen.queryByText(/token create profile/)).toBeNull();
   expect(screen.queryByLabelText("Minecraft account")).toBeNull();
+});
+
+it("locks Create below the creator's rank and names races from the catalogue", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(
+    wardrobe({
+      characters: [{ id: "c1", status: "rejected", name: "Brin", race: "half_orc", error: "slot full" }] as unknown as ProfileDashboard["characters"],
+      web_creator_allowed: false,
+      web_creator_min_group_id: "high_noble",
+    })
+  );
+  vi.mocked(getCreationCatalog).mockResolvedValue({ races: [{ id: "half_orc", name: "Half-Orc" }] } as unknown as CreationCatalog);
+  render(<ProfilePanel />);
+  expect(await screen.findByText(/Needs High Noble rank or higher/)).toBeTruthy();
+  expect(screen.queryByRole("link", { name: "Create" })).toBeNull();
+  expect(await screen.findByText("Half-Orc")).toBeTruthy();
+});
+
+it("reloads characters when the page comes back into view", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe());
+  render(<ProfilePanel />);
+  await screen.findByRole("tab", { name: "Characters" });
+  const before = vi.mocked(getProfileDashboard).mock.calls.length;
+  fireEvent(document, new Event("visibilitychange"));
+  await vi.waitFor(() => expect(vi.mocked(getProfileDashboard).mock.calls.length).toBe(before + 1));
 });
 
 it("opens on the tab in the address and keeps the address in step with the tabs", async () => {

@@ -22,6 +22,7 @@ import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
 } from "../../../lib/characters/uiDev";
+import { webCreatorLockLabel } from "../../../lib/characters/webCreatorLock";
 
 export default function CharacterCreatePage() {
   const router = useRouter();
@@ -127,13 +128,7 @@ export default function CharacterCreatePage() {
           Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1))
         );
         if (list.web_creator_allowed === false) {
-          const minGroup = (list.web_creator_min_group_id || "").trim();
-          const rank = minGroup
-            ? minGroup.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-            : "donator";
-          setError(
-            `Needs ${rank} rank or higher. Just ranked up? Join the server once, then refresh.`,
-          );
+          setError(webCreatorLockLabel(false, list.web_creator_min_group_id));
           setCatalog(null);
           return;
         }
