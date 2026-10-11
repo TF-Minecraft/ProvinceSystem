@@ -9,15 +9,7 @@ import { tileUrl, useTileManifest } from "../../hooks/useTileManifest";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { mapApiUrl } from "@/lib/map/api";
 import { DEFAULT_LAYOUT, layoutLabels } from "../../../lib/admin/labelLayout";
-import {
-  blocks,
-  boundsOfPoints,
-  lineColour,
-  terminals,
-  type Bounds,
-  type RailNetwork,
-  type RailPoint,
-} from "../../../lib/admin/rail";
+import { blocks, lineColour, terminals, type Bounds, type RailNetwork, type RailPoint } from "../../../lib/admin/rail";
 import { LABEL_BASELINE, LABEL_FONT_PX, LABEL_HEIGHT_PX, labelWidth, niceLength } from "./MovementMap";
 
 /** How close staff can zoom: screen pixels per block. */
@@ -50,13 +42,6 @@ type Props = {
 
 function pathOf(points: RailPoint[]): string {
   return points.map(([x, z], i) => `${i ? "L" : "M"}${x} ${z}`).join("");
-}
-
-export function networkBounds(network: RailNetwork): Bounds | null {
-  return boundsOfPoints(
-    network.tracks.flatMap((t) => t.points),
-    MIN_FRAME,
-  );
 }
 
 export function pointFocus(key: string, [x, z]: RailPoint): RailFocus {
@@ -98,22 +83,20 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
   const colourOf = (line: number) => lineColour(lines.get(line));
   const dim = (line: number) => (highlight !== null && highlight !== line ? 0.3 : 1);
   const ends = useMemo(() => terminals(network), [network]);
-  const bounds = useMemo(() => networkBounds(network), [network]);
 
-  const fitNetwork = () => (bounds ? focusMapRect(bounds, FOCUS_INSET, FRAMING) : resetViewport({ animated: true }));
-
-  // Frame the network once the map's real size is known (a size change refits the whole map),
+  // Show the whole map once its real size is known (a size change refits the whole map),
   // then whatever is picked from the list, even over the preview when the tiles fail to load.
   const framedRef = useRef<string | null>(null);
-  const target = focus ?? (bounds ? { key: "network", bounds } : null);
+  const targetKey = focus?.key ?? "whole";
   useEffect(() => {
-    if (!ready || !target || framedRef.current === target.key || (!focus && !manifest)) return;
+    if (!ready || framedRef.current === targetKey || (!focus && !manifest)) return;
     // The first framing jumps there, as on the movement map (blurry tiles after a long first zoom).
     const animated = framedRef.current !== null;
-    framedRef.current = target.key;
-    focusMapRect(target.bounds, FOCUS_INSET, FRAMING, { animated });
+    framedRef.current = targetKey;
+    if (focus) focusMapRect(focus.bounds, FOCUS_INSET, FRAMING, { animated });
+    else resetViewport({ animated });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, manifest, target?.key]);
+  }, [ready, manifest, targetKey]);
 
   // Stop names, laid out in screen pixels from the map's origin like the movement map's.
   const anchors = network.stops.map((stop, i) => ({
@@ -142,7 +125,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
   const controls = [
     { label: "+", title: "Zoom in", run: () => zoomBy(1.6) },
     { label: "−", title: "Zoom out", run: () => zoomBy(1 / 1.6) },
-    { label: "⤢", title: "Fit the network", run: fitNetwork },
+    { label: "⤢", title: "Show the whole map", run: () => resetViewport({ animated: true }) },
   ];
 
   return (

@@ -184,6 +184,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
             hold={hold}
             highlight={highlight}
             fitKey={data ? "now" : null}
+            wholeMap
             latest
             className={mapFrameClass}
           />
