@@ -95,7 +95,17 @@ class CreateHoldTests(unittest.TestCase):
         from src.skins import db
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("ALTER TABLE character_creates DROP COLUMN held_until")
+            conn.executescript(
+                """
+                DROP TABLE character_creates;
+                CREATE TABLE character_creates (
+                    id TEXT PRIMARY KEY, player_uuid TEXT NOT NULL, client_request_id TEXT,
+                    payload TEXT NOT NULL, status TEXT NOT NULL, character_id TEXT, error TEXT,
+                    created_at TEXT NOT NULL, applied_at TEXT,
+                    realm_id TEXT NOT NULL DEFAULT 'main', wardrobe_active_slot TEXT
+                );
+                """
+            )
         db.migrate()
         with sqlite3.connect(self.db_path) as conn:
             columns = {row[1] for row in conn.execute("PRAGMA table_info(character_creates)")}

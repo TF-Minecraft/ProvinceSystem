@@ -39,8 +39,9 @@ class CreateError(ValueError):
         self.status_code = status_code
 
 
-# Long enough to sign and upload every wardrobe skin; a hold the browser never
-# releases (closed tab, lost connection) lapses on its own.
+# character_creates.held_until keeps a create from RPCharacters while its skins
+# upload. Long enough to sign and upload every wardrobe skin; a hold the browser
+# never releases (closed tab, lost connection) lapses on its own.
 HOLD_FOR_UPLOADS = timedelta(minutes=10)
 
 

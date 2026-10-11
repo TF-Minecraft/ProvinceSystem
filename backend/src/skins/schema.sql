@@ -571,7 +571,6 @@ CREATE TABLE IF NOT EXISTS character_creates (
     applied_at TEXT,
     realm_id TEXT NOT NULL DEFAULT 'main',
     wardrobe_active_slot TEXT,
-    -- RPCharacters skips the create until this time, so its skins can upload first.
     held_until TEXT
 );
 
