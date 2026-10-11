@@ -3,24 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  CharactersApiError,
-  listCharacterKits,
-  type CharacterKit,
-} from "../../../../lib/characters/api";
+import { CharactersApiError, listCharacterKits, type CharacterKit } from "../../../../lib/characters/api";
 import { logoutProfile } from "../../../../lib/profile/uploads";
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  type CharacterSession,
-} from "../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
 
 function kitStatusLabel(kit: CharacterKit): string {
   if (!kit.claimable) return "Claimed";
-  const status = String(kit.status || "").trim().toLowerCase() || "eligible";
+  const status =
+    String(kit.status || "")
+      .trim()
+      .toLowerCase() || "eligible";
   // Legacy "ineligible" kits are unclaimed and can still be claimed in-game.
   if (status === "eligible" || status === "ineligible") return "Not yet claimed";
   if (status === "granted") return "Claimed";
@@ -56,15 +50,11 @@ export default function CharacterKitsPage() {
         setKits(data.kits);
       } catch (err) {
         setError(
-          err instanceof CharactersApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Failed to load kits"
+          err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Failed to load kits",
         );
       }
     },
-    [characterId, uiDev]
+    [characterId, uiDev],
   );
 
   useEffect(() => {
@@ -103,9 +93,7 @@ export default function CharacterKitsPage() {
   }
 
   if (!ready) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   return (
@@ -127,9 +115,7 @@ export default function CharacterKitsPage() {
         </button>
       </div>
 
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Kits
-      </h1>
+      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Kits</h1>
 
       {error ? (
         <p className="mt-4 text-sm text-[#e8a0a0]">{error}</p>
@@ -146,9 +132,7 @@ export default function CharacterKitsPage() {
                 <span className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
                   {kit.display_name || kit.id}
                 </span>
-                <span className="text-xs text-[var(--tfmc-stone)]">
-                  {kitStatusLabel(kit)}
-                </span>
+                <span className="text-xs text-[var(--tfmc-stone)]">{kitStatusLabel(kit)}</span>
               </Link>
             </li>
           ))}

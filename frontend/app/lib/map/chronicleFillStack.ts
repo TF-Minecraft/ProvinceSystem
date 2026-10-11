@@ -47,15 +47,12 @@ export function blendPackedRgbaOver(dst: number, src: number): number {
   const da = ad / 255;
   const outA = sa + da * (1 - sa);
   // `outA` cannot be 0 here: `sa > 0` was established above.
-  const mix = (sc: number, dc: number) =>
-    Math.round((sc * sa + dc * da * (1 - sa)) / outA);
+  const mix = (sc: number, dc: number) => Math.round((sc * sa + dc * da * (1 - sa)) / outA);
 
   const r = mix((src >>> 24) & 0xff, (dst >>> 24) & 0xff);
   const g = mix((src >>> 16) & 0xff, (dst >>> 16) & 0xff);
   const b = mix((src >>> 8) & 0xff, (dst >>> 8) & 0xff);
-  return (
-    ((r << 24) | (g << 16) | (b << 8) | Math.round(outA * 255)) >>> 0
-  );
+  return ((r << 24) | (g << 16) | (b << 8) | Math.round(outA * 255)) >>> 0;
 }
 
 /**
@@ -69,12 +66,8 @@ export function blendPackedRgbaOver(dst: number, src: number): number {
  * case (nation fill alone, which is what the studio has always drawn) this
  * keeps the whole module out of the hot path and off the allocator.
  */
-export function stackChronicleFillLuts(
-  layers: readonly (NationColorLut | null | undefined)[]
-): NationColorLut {
-  const present = layers.filter(
-    (lut): lut is NationColorLut => lut != null && lut.length > 0
-  );
+export function stackChronicleFillLuts(layers: readonly (NationColorLut | null | undefined)[]): NationColorLut {
+  const present = layers.filter((lut): lut is NationColorLut => lut != null && lut.length > 0);
   if (present.length === 0) return new Uint32Array(0);
   if (present.length === 1) return present[0]!;
 
@@ -117,10 +110,7 @@ export function desaturatePackedRgba(packed: number): number {
   const g = (packed >>> 16) & 0xff;
   const b = (packed >>> 8) & 0xff;
   const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-  const grey = Math.max(
-    0,
-    Math.min(255, Math.round(FOCUS_GREY_FLOOR + luma * FOCUS_GREY_SPAN))
-  );
+  const grey = Math.max(0, Math.min(255, Math.round(FOCUS_GREY_FLOOR + luma * FOCUS_GREY_SPAN)));
   return ((grey << 24) | (grey << 16) | (grey << 8) | a) >>> 0;
 }
 
@@ -144,7 +134,7 @@ export function desaturatePackedRgba(packed: number): number {
  */
 export function focusChronicleFillLut(
   lut: NationColorLut,
-  focusProvinceIds: ReadonlySet<number> | null
+  focusProvinceIds: ReadonlySet<number> | null,
 ): NationColorLut {
   if (!focusProvinceIds) return lut;
   const out = new Uint32Array(lut.length);

@@ -1,12 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from "vitest";
 
-import {
-  EMPTY_PICK_SURFACE,
-  PickSurfaceBuilder,
-  pickSurfaceFromImage,
-  pickSurfaceFromImageData,
-} from "./pickSurface";
+import { EMPTY_PICK_SURFACE, PickSurfaceBuilder, pickSurfaceFromImage, pickSurfaceFromImageData } from "./pickSurface";
 
 function image(rows: [number, number, number, number][][]) {
   const height = rows.length;
@@ -27,7 +22,7 @@ describe("PickSurface", () => {
         [A, A, B, B, A],
         [B, B, B, B, B],
         [CLEAR, A, A, CLEAR, B],
-      ])
+      ]),
     );
     expect([0, 1, 2, 3, 4].map((x) => surface.rgbAt(x, 0))).toEqual([
       "10,20,30",
@@ -106,7 +101,7 @@ describe("PickSurface", () => {
         async () => {
           yields += 1;
         },
-        () => clock
+        () => clock,
       );
       expect(draws).toEqual([0, 64, 128, 192, 256, 320, 384, 448, 512, 576]);
       expect(yields).toBe(5);
@@ -123,7 +118,7 @@ describe("PickSurface", () => {
         async () => {
           frames += 1;
         },
-        () => clock
+        () => clock,
       );
       expect(stopped).toBeNull();
     } finally {

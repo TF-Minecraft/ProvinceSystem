@@ -2,14 +2,7 @@
 
 import type { CatalogEntitlements } from "./catalog";
 
-const NOBLE_KINDS = [
-  "handheld",
-  "large_handheld",
-  "bow",
-  "large_bow",
-  "crossbow",
-  "book",
-];
+const NOBLE_KINDS = ["handheld", "large_handheld", "bow", "large_bow", "crossbow", "book"];
 
 /** Matches ArmourShop permission-groups.yml (ui-dev uses ascended-level unlock). */
 export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
@@ -69,12 +62,4 @@ export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
 };
 
 /** Resolved ascended-level kinds for local upload smoke without a redeem. */
-export const DEV_SESSION_SKIN_KINDS = [
-  ...NOBLE_KINDS,
-  "armor_set",
-  "item_3d",
-  "shield",
-  "helmet_3d",
-  "mask",
-  "gun",
-];
+export const DEV_SESSION_SKIN_KINDS = [...NOBLE_KINDS, "armor_set", "item_3d", "shield", "helmet_3d", "mask", "gun"];

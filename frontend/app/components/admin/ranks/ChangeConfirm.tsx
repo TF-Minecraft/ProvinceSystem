@@ -82,7 +82,10 @@ export default function ChangeConfirm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-3">
+    <form
+      onSubmit={onSubmit}
+      className="mt-3 flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-3"
+    >
       <div className="text-sm text-[var(--tfmc-cream)]">{summary}</div>
       {warning ? <p className={warnClass}>{warning}</p> : null}
       <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-stone)]">

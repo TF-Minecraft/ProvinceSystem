@@ -62,9 +62,7 @@ export default function MapViewport({
   const { w: mapW, h: mapH } = mapSize;
 
   const outerStyle: CSSProperties | undefined =
-    !fill && mapW > 0 && mapH > 0
-      ? { aspectRatio: `${mapW} / ${mapH}` }
-      : undefined;
+    !fill && mapW > 0 && mapH > 0 ? { aspectRatio: `${mapW} / ${mapH}` } : undefined;
 
   // The transform moves (and, mid-gesture, scales) the zoomed content; the
   // map itself is laid out at its size on screen.

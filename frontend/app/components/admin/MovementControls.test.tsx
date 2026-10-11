@@ -21,7 +21,17 @@ beforeEach(() => {
   };
   vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => frames.push(run));
   HTMLElement.prototype.setPointerCapture = () => {};
-  HTMLElement.prototype.getBoundingClientRect = () => ({ left, width, top: 0, height: 40, right: left + width, bottom: 40, x: left, y: 0, toJSON: () => ({}) });
+  HTMLElement.prototype.getBoundingClientRect = () => ({
+    left,
+    width,
+    top: 0,
+    height: 40,
+    right: left + width,
+    bottom: 40,
+    x: left,
+    y: 0,
+    toJSON: () => ({}),
+  });
 });
 afterEach(() => {
   cleanup();
@@ -31,7 +41,17 @@ afterEach(() => {
 
 function setup(bands = [{ from: since + 300, to: since + 600 }]) {
   const onCursor = vi.fn();
-  render(<Timeline since={since} until={until} unknownUntil={null} unknownLabel="" bands={bands} cursor={since} onCursor={onCursor} />);
+  render(
+    <Timeline
+      since={since}
+      until={until}
+      unknownUntil={null}
+      unknownLabel=""
+      bands={bands}
+      cursor={since}
+      onCursor={onCursor}
+    />,
+  );
   return { onCursor, bar: screen.getByRole("slider", { name: "Inspected moment" }) };
 }
 

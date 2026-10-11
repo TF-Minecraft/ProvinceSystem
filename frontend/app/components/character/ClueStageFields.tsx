@@ -12,27 +12,16 @@ type Props = {
   onChange: (clues: string[]) => void;
 };
 
-export default function ClueStageFields({
-  clues,
-  required,
-  minLen,
-  maxLen,
-  maxClues,
-  onChange,
-}: Props) {
+export default function ClueStageFields({ clues, required, minLen, maxLen, maxClues, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const trimmed = draft.trim();
   const n = trimmed.length;
-  const charsetErr =
-    n > 0
-      ? proseError(trimmed, { minLen, maxLen, field: "clue" })
-      : null;
+  const charsetErr = n > 0 ? proseError(trimmed, { minLen, maxLen, field: "clue" }) : null;
   const lengthOk = n >= minLen && n <= maxLen;
-  const canAdd =
-    lengthOk && charsetErr === null && clues.length < maxClues;
+  const canAdd = lengthOk && charsetErr === null && clues.length < maxClues;
   const atMax = clues.length >= maxClues;
 
   useEffect(() => {
@@ -92,9 +81,7 @@ export default function ClueStageFields({
               key={`${i}-${clue.slice(0, 12)}`}
               className="flex items-start justify-between gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-3 py-2.5"
             >
-              <p className="text-sm leading-relaxed text-[var(--tfmc-cream)]">
-                {clue}
-              </p>
+              <p className="text-sm leading-relaxed text-[var(--tfmc-cream)]">{clue}</p>
               <button
                 type="button"
                 onClick={() => removeClue(i)}
@@ -132,10 +119,7 @@ export default function ClueStageFields({
             className="w-full max-w-md rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[var(--tfmc-forest)] p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3
-              id={titleId}
-              className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]"
-            >
+            <h3 id={titleId} className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
               New clue
             </h3>
             <input
@@ -153,9 +137,7 @@ export default function ClueStageFields({
             />
             <p
               className={`mt-1.5 text-xs tabular-nums ${
-                n > 0 && (n < minLen || n > maxLen || charsetErr)
-                  ? "text-[#e8a0a0]"
-                  : "text-[var(--tfmc-stone)]"
+                n > 0 && (n < minLen || n > maxLen || charsetErr) ? "text-[#e8a0a0]" : "text-[var(--tfmc-stone)]"
               }`}
             >
               {n}/{maxLen}

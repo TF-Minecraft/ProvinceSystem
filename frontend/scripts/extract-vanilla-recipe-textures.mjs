@@ -10,7 +10,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { unzipSync } from "fflate";
-import { buildItemIndex, cookingOrigin, isHiddenOutput, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
+import {
+  buildItemIndex,
+  cookingOrigin,
+  isHiddenOutput,
+  parseRef,
+  parseStationRecipes,
+} from "./build-station-recipes.mjs";
 
 const FRONTEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_JAR = "C:/Users/MSI/AppData/Roaming/.minecraft/versions/1.21.10/1.21.10.jar";
@@ -33,13 +39,17 @@ function collectVanillaTypes(stationsDir, itemDir) {
     else if (ref?.kind === "mmoitem") addType(items.get(ref.attrs.id)?.material);
     else if (ref?.kind === "cooking") addType(cookingOrigin(ref));
   };
-  for (const file of readdirSync(stationsDir).filter((name) => name.endsWith(".yml")).sort()) {
+  for (const file of readdirSync(stationsDir)
+    .filter((name) => name.endsWith(".yml"))
+    .sort()) {
     const { recipes } = parseStationRecipes(readFileSync(path.join(stationsDir, file), "utf8"));
     for (const recipe of recipes) {
       if (isHiddenOutput(recipe.fields.output)) continue;
       const ingredients = Array.isArray(recipe.fields.ingredients)
         ? recipe.fields.ingredients
-        : typeof recipe.fields.ingredients === "string" ? [recipe.fields.ingredients] : [];
+        : typeof recipe.fields.ingredients === "string"
+          ? [recipe.fields.ingredients]
+          : [];
       for (const raw of ingredients) add(parseRef(raw));
       if (typeof recipe.fields.output === "string") add(parseRef(recipe.fields.output));
       else if (recipe.fields.output && typeof recipe.fields.output === "object") {
@@ -67,8 +77,11 @@ function readModel(files, ref, seen = new Set()) {
   if (seen.has(key) || !files[key]) return { textures: {} };
   seen.add(key);
   let model;
-  try { model = JSON.parse(decoder.decode(files[key])); }
-  catch { return { textures: {} }; }
+  try {
+    model = JSON.parse(decoder.decode(files[key]));
+  } catch {
+    return { textures: {} };
+  }
   const parent = typeof model.parent === "string" ? readModel(files, model.parent, seen) : { textures: {} };
   return {
     modelEntry: key,
@@ -97,8 +110,11 @@ function resolveVanillaTexture(files, type) {
     const itemEntry = `assets/minecraft/items/${type}.json`;
     if (files[itemEntry]) {
       let definition;
-      try { definition = JSON.parse(decoder.decode(files[itemEntry])); }
-      catch { definition = null; }
+      try {
+        definition = JSON.parse(decoder.decode(files[itemEntry]));
+      } catch {
+        definition = null;
+      }
       const findModel = (node) => {
         if (!node || typeof node !== "object") return null;
         if (node.type === "minecraft:model" && typeof node.model === "string") return node.model;
@@ -117,8 +133,9 @@ function resolveVanillaTexture(files, type) {
       if (modelRef) model = readModel(files, modelRef);
     }
   }
-  const keys = ["layer0", "all", "side", "top", "front", "particle", ...Object.keys(model.textures).sort()]
-    .filter((key, index, all) => all.indexOf(key) === index);
+  const keys = ["layer0", "all", "side", "top", "front", "particle", ...Object.keys(model.textures).sort()].filter(
+    (key, index, all) => all.indexOf(key) === index,
+  );
   for (const key of keys) {
     const textureRef = resolveVariable(model.textures, key);
     if (!textureRef) continue;
@@ -132,7 +149,10 @@ function resolveVanillaTexture(files, type) {
 const jar = process.argv[2] ?? DEFAULT_JAR;
 const stationsDir = process.argv[3] ?? DEFAULT_STATIONS;
 const itemDir = process.argv[4] ?? path.join(stationsDir, "..", "item");
-for (const [label, source] of [["client jar", jar], ["crafting stations", stationsDir]]) {
+for (const [label, source] of [
+  ["client jar", jar],
+  ["crafting stations", stationsDir],
+]) {
   if (!existsSync(source) || (label === "crafting stations" && !statSync(source).isDirectory())) {
     console.error(`extract-vanilla-recipe-textures: ${label} not found: ${source}`);
     process.exit(1);

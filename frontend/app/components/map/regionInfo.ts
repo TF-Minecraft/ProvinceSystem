@@ -8,13 +8,11 @@ export function buildRegionInfo(
   id: string,
   region: RegionRecord[string],
   mapType: MapMode,
-  regionData: RegionRecord
+  regionData: RegionRecord,
 ): RegionInfo {
   const tier = region.tier ?? capitalize(mapType);
   const overlordId = region.overlord;
-  const overlordName = overlordId
-    ? regionData[overlordId]?.name ?? overlordId
-    : "";
+  const overlordName = overlordId ? (regionData[overlordId]?.name ?? overlordId) : "";
 
   return {
     title: region.name ?? id,

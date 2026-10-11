@@ -1,14 +1,6 @@
-import {
-  isSectionName,
-  isWeekKey,
-  weekLabel,
-  type PublicBullet,
-  type WeekNotes,
-} from "./notes";
+import { isSectionName, isWeekKey, weekLabel, type PublicBullet, type WeekNotes } from "./notes";
 
-export type PublishedNotes =
-  | { ok: true; weeks: WeekNotes[]; hasMore: boolean }
-  | { ok: false };
+export type PublishedNotes = { ok: true; weeks: WeekNotes[]; hasMore: boolean } | { ok: false };
 
 const REQUEST_TIMEOUT_MS = 5000;
 
@@ -40,20 +32,14 @@ function readWeek(value: unknown): WeekNotes | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
   if (typeof row.week !== "string" || !isWeekKey(row.week) || !Array.isArray(row.bullets)) return null;
-  const bullets = row.bullets
-    .map(readBullet)
-    .filter((bullet): bullet is PublicBullet => bullet !== null);
+  const bullets = row.bullets.map(readBullet).filter((bullet): bullet is PublicBullet => bullet !== null);
   if (bullets.length === 0) return null;
   return { week: row.week, label: weekLabel(row.week), bullets };
 }
 
-export type PublishedWeek =
-  | { ok: true; week: WeekNotes }
-  | { ok: false; missing: boolean };
+export type PublishedWeek = { ok: true; week: WeekNotes } | { ok: false; missing: boolean };
 
-export type PublishedWeekIndex =
-  | { ok: true; weeks: { week: string; label: string }[] }
-  | { ok: false };
+export type PublishedWeekIndex = { ok: true; weeks: { week: string; label: string }[] } | { ok: false };
 
 /** Weeks that have published notes, newest first. The index does not need the lines. */
 export async function loadPublishedWeekIndex(): Promise<PublishedWeekIndex> {
@@ -81,10 +67,7 @@ export async function loadPublishedWeekIndex(): Promise<PublishedWeekIndex> {
 }
 
 /** Approved weeks, newest first. One bounded request. Any failure becomes an unavailable page. */
-export async function loadPublishedNotes(options?: {
-  limit?: number;
-  before?: string;
-}): Promise<PublishedNotes> {
+export async function loadPublishedNotes(options?: { limit?: number; before?: string }): Promise<PublishedNotes> {
   const base = apiBase();
   if (!base) return { ok: false };
   const params = new URLSearchParams();

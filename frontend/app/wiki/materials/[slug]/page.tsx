@@ -8,11 +8,7 @@ export function generateStaticParams() {
   return Array.from(materialCatalog.values()).map((m) => ({ slug: m.slug }));
 }
 
-export default async function MaterialDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function MaterialDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const material = getMaterialBySlug(slug);
   if (!material) notFound();
@@ -21,36 +17,50 @@ export default async function MaterialDetailPage({
     <WikiPage
       lastModified="2026-10-11"
       title={material.name}
-      beforeTitle={<Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
-        &larr; Back to Materials
-      </Link>}
-      titleVisual={material.texture ? (
+      beforeTitle={
+        <Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
+          &larr; Back to Materials
+        </Link>
+      }
+      titleVisual={
+        material.texture ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={material.texture}
-            alt={material.name}
-            className="h-16 w-16 [image-rendering:pixelated]"
-          />
-        ): undefined}
-      intro={material.lore ? <em><WikiItemText text={material.lore} excludeHref={`/wiki/materials/${material.slug}`} /></em> : undefined}
+          <img src={material.texture} alt={material.name} className="h-16 w-16 [image-rendering:pixelated]" />
+        ) : undefined
+      }
+      intro={
+        material.lore ? (
+          <em>
+            <WikiItemText text={material.lore} excludeHref={`/wiki/materials/${material.slug}`} />
+          </em>
+        ) : undefined
+      }
     >
-
       <WikiSectionHeading id="acquisition">How to acquire</WikiSectionHeading>
       {material.acquisition?.length ? (
         <div className="mt-4 space-y-4">
           {material.acquisition.map((source) => (
-            <section key={source.method} className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-4">
-              <h3 className="font-semibold text-[var(--tfmc-cream)]"><WikiItemText text={source.method} excludeHref={`/wiki/materials/${material.slug}`} /></h3>
-              <p className="mt-1 text-sm text-[var(--tfmc-mist)]"><WikiItemText text={source.detail} excludeHref={`/wiki/materials/${material.slug}`} /></p>
+            <section
+              key={source.method}
+              className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-4"
+            >
+              <h3 className="font-semibold text-[var(--tfmc-cream)]">
+                <WikiItemText text={source.method} excludeHref={`/wiki/materials/${material.slug}`} />
+              </h3>
+              <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+                <WikiItemText text={source.detail} excludeHref={`/wiki/materials/${material.slug}`} />
+              </p>
             </section>
           ))}
         </div>
       ) : null}
       {material.recipes.length ? (
         <div className="mt-4 space-y-4">
-          {material.recipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+          {material.recipes.map((recipe) => (
+            <CraftingGrid key={recipe.key} recipe={recipe} />
+          ))}
         </div>
-      ): !material.acquisition?.length ? (
+      ) : !material.acquisition?.length ? (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
           Acquisition details have not yet been verified for this material.
         </p>
@@ -58,9 +68,13 @@ export default async function MaterialDetailPage({
 
       {material.unpackingRecipes.length ? (
         <section>
-          <WikiSectionHeading intro="Recover material from a storage block you already own.">Block unpacking</WikiSectionHeading>
+          <WikiSectionHeading intro="Recover material from a storage block you already own.">
+            Block unpacking
+          </WikiSectionHeading>
           <div className="mt-4 space-y-4">
-            {material.unpackingRecipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+            {material.unpackingRecipes.map((recipe) => (
+              <CraftingGrid key={recipe.key} recipe={recipe} />
+            ))}
           </div>
         </section>
       ) : null}
@@ -72,10 +86,8 @@ export default async function MaterialDetailPage({
             <CraftingGrid key={r.key} recipe={r} />
           ))}
         </div>
-      ): (
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          Not used in any recipe here.
-        </p>
+      ) : (
+        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">Not used in any recipe here.</p>
       )}
     </WikiPage>
   );

@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import StatusCard from "../../components/drinks/StatusCard";
-import {
-  getSubmission,
-  DrinksApiError,
-  type DrinkSubmissionPublic,
-} from "../../../lib/drinks/api";
+import { getSubmission, DrinksApiError, type DrinkSubmissionPublic } from "../../../lib/drinks/api";
 import {
   clearSession as clearDrinksSession,
   getSession as getDrinksSession,
@@ -49,11 +45,7 @@ export default function DrinkStatusPage() {
       setRow(data);
     } catch (err) {
       const message =
-        err instanceof DrinksApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Failed to load";
+        err instanceof DrinksApiError ? err.message : err instanceof Error ? err.message : "Failed to load";
       setError(message);
       setRow(null);
     } finally {
@@ -72,9 +64,7 @@ export default function DrinkStatusPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-16">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Drink submission
-      </h1>
+      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Drink submission</h1>
 
       {loading ? (
         <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
@@ -83,10 +73,7 @@ export default function DrinkStatusPage() {
           <p className="text-sm text-[#e8a0a0]" role="alert">
             {error}
           </p>
-          <Link
-            href="/drinks"
-            className="mt-4 inline-block text-sm text-[var(--tfmc-accent)] hover:underline"
-          >
+          <Link href="/drinks" className="mt-4 inline-block text-sm text-[var(--tfmc-accent)] hover:underline">
             Back to drinks
           </Link>
         </div>

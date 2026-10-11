@@ -4,7 +4,14 @@ import { useEffect, useId, useState } from "react";
 
 import type { CaseInput, PrecedentCase } from "@/lib/precedent/api";
 import { parsePlayers } from "@/lib/precedent/filter";
-import { buttonClass, errorClass, headingClass, inputClass, mutedClass, quietButtonClass } from "@/app/components/admin/ui";
+import {
+  buttonClass,
+  errorClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  quietButtonClass,
+} from "@/app/components/admin/ui";
 import PlayerAutocomplete from "./PlayerAutocomplete";
 
 type Props = {
@@ -32,15 +39,7 @@ const fieldClass = `${inputClass} w-full`;
 
 const labelClass = "text-sm text-[var(--tfmc-stone)]";
 
-export default function PrecedentCaseModal({
-  open,
-  initial,
-  knownPlayers,
-  saving,
-  error,
-  onClose,
-  onSave,
-}: Props) {
+export default function PrecedentCaseModal({ open, initial, knownPlayers, saving, error, onClose, onSave }: Props) {
   const titleId = useId();
   const [summary, setSummary] = useState("");
   const [rule, setRule] = useState("");
@@ -100,17 +99,10 @@ export default function PrecedentCaseModal({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[var(--tfmc-forest-deep)] p-5 shadow-lg sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2
-          id={titleId}
-          className={headingClass}
-        >
+        <h2 id={titleId} className={headingClass}>
           {initial ? "Edit case" : "Log case"}
         </h2>
-        {initial ? null : (
-          <p className={`mt-1 ${mutedClass}`}>
-            Logged against your account.
-          </p>
-        )}
+        {initial ? null : <p className={`mt-1 ${mutedClass}`}>Logged against your account.</p>}
 
         <div className="mt-4 space-y-3">
           <div>
@@ -193,24 +185,16 @@ export default function PrecedentCaseModal({
         </div>
 
         {error ? (
-          <p className={`mt-3 ${errorClass}`} role="alert">{error}</p>
+          <p className={`mt-3 ${errorClass}`} role="alert">
+            {error}
+          </p>
         ) : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onClose}
-            className={quietButtonClass}
-          >
+          <button type="button" disabled={saving} onClick={onClose} className={quietButtonClass}>
             Cancel
           </button>
-          <button
-            type="button"
-            disabled={!canSave}
-            onClick={submit}
-            className={buttonClass}
-          >
+          <button type="button" disabled={!canSave} onClick={submit} className={buttonClass}>
             {saving ? "Saving…" : "Save"}
           </button>
         </div>

@@ -17,11 +17,7 @@ export default function BackToGateButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={returnToGate}
-      className={hubOutlineButtonClass}
-    >
+    <button type="button" onClick={returnToGate} className={hubOutlineButtonClass}>
       Back to gate
     </button>
   );

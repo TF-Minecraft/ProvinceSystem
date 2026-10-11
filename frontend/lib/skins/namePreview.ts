@@ -2,12 +2,7 @@ import type { LoreRun } from "../characters/lorePreview";
 
 /** Approximate TLibs / Minecraft name colour preview for the upload form. */
 
-export const NAME_STYLES = [
-  "bold",
-  "italic",
-  "underline",
-  "strikethrough",
-] as const;
+export const NAME_STYLES = ["bold", "italic", "underline", "strikethrough"] as const;
 
 export type NameStyle = (typeof NAME_STYLES)[number];
 
@@ -53,38 +48,20 @@ function parseRgb(hex: string): [number, number, number] {
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    "#" +
-    [r, g, b]
-      .map((n) => Math.round(n).toString(16).padStart(2, "0"))
-      .join("")
-  );
+  return "#" + [r, g, b].map((n) => Math.round(n).toString(16).padStart(2, "0")).join("");
 }
 
-function lerp(
-  from: [number, number, number],
-  to: [number, number, number],
-  t: number
-): string {
+function lerp(from: [number, number, number], to: [number, number, number], t: number): string {
   const c = Math.max(0, Math.min(1, t));
-  return rgbToHex(
-    from[0] + (to[0] - from[0]) * c,
-    from[1] + (to[1] - from[1]) * c,
-    from[2] + (to[2] - from[2]) * c
-  );
+  return rgbToHex(from[0] + (to[0] - from[0]) * c, from[1] + (to[1] - from[1]) * c, from[2] + (to[2] - from[2]) * c);
 }
 
 export type PreviewSpan = { char: string; color: string };
 
 /** Per-character colours matching TLibs applyColourGradient. */
-export function previewSpans(
-  text: string,
-  colourTokens: string[]
-): PreviewSpan[] {
+export function previewSpans(text: string, colourTokens: string[]): PreviewSpan[] {
   const plain = text || "";
-  const hexes = colourTokens
-    .map(normalizePreviewHex)
-    .filter((h): h is string => Boolean(h));
+  const hexes = colourTokens.map(normalizePreviewHex).filter((h): h is string => Boolean(h));
   if (!plain) return [];
   if (hexes.length === 0) {
     return [...plain].map((char) => ({ char, color: "#ffffff" }));
@@ -101,11 +78,7 @@ export function previewSpans(
     const localT = t * (stops - 1) - segment;
     return {
       char,
-      color: lerp(
-        parseRgb(hexes[segment]!),
-        parseRgb(hexes[segment + 1]!),
-        localT
-      ),
+      color: lerp(parseRgb(hexes[segment]!), parseRgb(hexes[segment + 1]!), localT),
     };
   });
 }
@@ -114,11 +87,7 @@ export function previewSpans(
  * Colour-stop gradient preview as LoreRun[] for FormattedMcRuns.
  * Optional styles apply to every character (picker / kit name styles).
  */
-export function previewColourStopRuns(
-  text: string,
-  colourTokens: string[],
-  styles: string[] = []
-): LoreRun[] {
+export function previewColourStopRuns(text: string, colourTokens: string[], styles: string[] = []): LoreRun[] {
   const set = new Set(styles.map((s) => s.toLowerCase()));
   const bold = set.has("bold");
   const italic = set.has("italic");

@@ -28,7 +28,7 @@ function addVec3(a: Vec3, b: Vec3): Vec3 {
 
 function resolveIdleTab(
   json: { display?: Record<string, unknown>; elements?: unknown },
-  tabName: "thirdperson_righthand" | "thirdperson_lefthand"
+  tabName: "thirdperson_righthand" | "thirdperson_lefthand",
 ): Required<DisplayTab> {
   const fallback = ROUND_IDLE_TP[tabName];
   const raw = json.display?.[tabName];
@@ -53,7 +53,7 @@ function resolveIdleTab(
  */
 export function resolveShieldBlockingTab(
   json: { display?: Record<string, unknown>; elements?: unknown },
-  tabName: "thirdperson_righthand" | "thirdperson_lefthand" = "thirdperson_righthand"
+  tabName: "thirdperson_righthand" | "thirdperson_lefthand" = "thirdperson_righthand",
 ): Required<DisplayTab> {
   const idle = resolveIdleTab(json, tabName);
   const delta = ROUND_BLOCKING_DELTA_TP[tabName];

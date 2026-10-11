@@ -51,8 +51,7 @@ export class PickSurfaceBuilder {
       for (let x = 0; x < width; x++) {
         const i = base + x * 4;
         // Transparent reads back as 0,0,0 from a canvas, whatever was put there.
-        const colour =
-          data[i + 3] === 0 ? 0 : (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+        const colour = data[i + 3] === 0 ? 0 : (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
         if (colour === previous) continue;
         previous = colour;
         this.push(x, colour);
@@ -132,9 +131,8 @@ export async function pickSurfaceFromImage(
   width: number,
   height: number,
   cancelled: () => boolean,
-  nextFrame: () => Promise<unknown> = () =>
-    new Promise((resolve) => requestAnimationFrame(resolve)),
-  now: () => number = () => performance.now()
+  nextFrame: () => Promise<unknown> = () => new Promise((resolve) => requestAnimationFrame(resolve)),
+  now: () => number = () => performance.now(),
 ): Promise<PickSurface | null> {
   const band = document.createElement("canvas");
   band.width = width;

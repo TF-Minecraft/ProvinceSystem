@@ -55,7 +55,7 @@ function pathOf(points: RailPoint[]): string {
 export function networkBounds(network: RailNetwork): Bounds | null {
   return boundsOfPoints(
     network.tracks.flatMap((t) => t.points),
-    MIN_FRAME
+    MIN_FRAME,
   );
 }
 
@@ -91,7 +91,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
       viewportW: viewport.viewportSize.w,
       viewportH: viewport.viewportSize.h,
     }),
-    [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h]
+    [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h],
   );
 
   const lines = useMemo(() => new Map(network.lines.map((l) => [l.id, l])), [network.lines]);
@@ -100,8 +100,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
   const ends = useMemo(() => terminals(network), [network]);
   const bounds = useMemo(() => networkBounds(network), [network]);
 
-  const fitNetwork = () =>
-    bounds ? focusMapRect(bounds, FOCUS_INSET, FRAMING) : resetViewport({ animated: true });
+  const fitNetwork = () => (bounds ? focusMapRect(bounds, FOCUS_INSET, FRAMING) : resetViewport({ animated: true }));
 
   // Frame the network once the map's real size is known (a size change refits the whole map),
   // then whatever is picked from the list, even over the preview when the tiles fail to load.
@@ -129,10 +128,10 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
     () =>
       layoutLabels(
         anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX })),
-        { ...DEFAULT_LAYOUT, area }
+        { ...DEFAULT_LAYOUT, area },
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layoutKey]
+    [layoutKey],
   );
   const hiddenNames = anchors.length - placed.length;
   const halo = { stroke: CASING, strokeWidth: 3 * unit, paintOrder: "stroke" as const };
@@ -204,7 +203,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
                   strokeWidth={1.25 * unit}
                 />
               </g>
-            ) : null
+            ) : null,
           )}
           {/* Every track: a dark casing so the line reads over snow, sand and forest alike. */}
           {network.tracks.map((track) => (
@@ -236,13 +235,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
           ].map(({ list, colour, dash, label }) =>
             list.map((s, i) => (
               <g key={`${label}:${i}`} opacity={dim(s.line)}>
-                <path
-                  d={pathOf(s.points)}
-                  fill="none"
-                  stroke={CASING}
-                  strokeWidth={9 * unit}
-                  strokeLinecap="round"
-                />
+                <path d={pathOf(s.points)} fill="none" stroke={CASING} strokeWidth={9 * unit} strokeLinecap="round" />
                 <path
                   d={pathOf(s.points)}
                   fill="none"
@@ -262,7 +255,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
                   <title>{`${label}: ${blocks(s.to - s.from)}`}</title>
                 </circle>
               </g>
-            ))
+            )),
           )}
           {/* End of track: a bar across the line, as on an Underground map. */}
           {ends.map(({ at, towards, line }, i) => {
@@ -321,9 +314,7 @@ export default function RailMap({ mapId, network, highlight = null, focus = null
                   stroke={CASING}
                   strokeWidth={(capital ? 3 : 2.5) * unit}
                 />
-                {capital ? (
-                  <circle cx={stop.at[0]} cy={stop.at[1]} r={3 * unit} fill={colourOf(stop.line)} />
-                ) : null}
+                {capital ? <circle cx={stop.at[0]} cy={stop.at[1]} r={3 * unit} fill={colourOf(stop.line)} /> : null}
               </g>
             );
           })}

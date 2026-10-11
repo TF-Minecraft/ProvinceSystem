@@ -28,12 +28,7 @@ type PaintTextEditorProps = {
  * is sized in map pixels, so — like everything else in the paint layer — it
  * keeps a constant on-screen size at any zoom level.
  */
-export default function PaintTextEditor({
-  editor,
-  onChange,
-  onCommit,
-  onCancel,
-}: PaintTextEditorProps) {
+export default function PaintTextEditor({ editor, onChange, onCommit, onCancel }: PaintTextEditorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { shape } = editor;
 
@@ -75,12 +70,8 @@ export default function PaintTextEditor({
       style={{
         left,
         top,
-        transform: rotation
-          ? `rotate(${rotation}deg)`
-          : undefined,
-        transformOrigin: rotation
-          ? `${centre.x - left}px ${centre.y - top}px`
-          : undefined,
+        transform: rotation ? `rotate(${rotation}deg)` : undefined,
+        transformOrigin: rotation ? `${centre.x - left}px ${centre.y - top}px` : undefined,
         // Roughly track the label's own width so the editor doesn't sit in a
         // plate far wider than the text, with room left to keep typing.
         width: Math.max(fontSize * 4, (editor.value.length + 3) * fontSize * 0.58),
@@ -94,10 +85,9 @@ export default function PaintTextEditor({
         textDecoration: css.textDecoration,
         color: PAINT_COLORS[shape.color],
         background: "rgba(10, 21, 18, 0.85)",
-        boxShadow: `inset 0 0 0 999px ${paintTextBgColor(
-          textStyle.bgColor,
-          shape.color
-        )}${Math.round(textStyle.bgOpacity * 255)
+        boxShadow: `inset 0 0 0 999px ${paintTextBgColor(textStyle.bgColor, shape.color)}${Math.round(
+          textStyle.bgOpacity * 255,
+        )
           .toString(16)
           .padStart(2, "0")}`,
         border: `${paintMapPx(1.5)}px dashed ${PAINT_COLORS[shape.color]}`,

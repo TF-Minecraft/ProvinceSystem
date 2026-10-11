@@ -138,7 +138,9 @@ function stretch(values: number[], out: number): (v: number) => number {
   const lo = sorted[0];
   const hi = sorted[sorted.length - 1];
   if (sorted.length < 2 || hi === lo) return () => out / 2;
-  const targets = sorted.map((v, i) => out * (SPREAD * ((v - lo) / (hi - lo)) + (1 - SPREAD) * (i / (sorted.length - 1))));
+  const targets = sorted.map(
+    (v, i) => out * (SPREAD * ((v - lo) / (hi - lo)) + (1 - SPREAD) * (i / (sorted.length - 1))),
+  );
   return (v) => {
     if (v <= lo) return targets[0] + ((v - lo) / (hi - lo)) * out * SPREAD;
     if (v >= hi) return targets[targets.length - 1] + ((v - hi) / (hi - lo)) * out * SPREAD;
@@ -200,7 +202,10 @@ function pointOn(m: Measured, along: number): Pt {
     if (m.along[i] >= along) {
       const span = m.along[i] - m.along[i - 1] || 1;
       const t = (along - m.along[i - 1]) / span;
-      return [m.path[i - 1][0] + (m.path[i][0] - m.path[i - 1][0]) * t, m.path[i - 1][1] + (m.path[i][1] - m.path[i - 1][1]) * t];
+      return [
+        m.path[i - 1][0] + (m.path[i][0] - m.path[i - 1][0]) * t,
+        m.path[i - 1][1] + (m.path[i][1] - m.path[i - 1][1]) * t,
+      ];
     }
   }
   return m.path[n - 1];
@@ -233,7 +238,8 @@ export function buildSchematic(network: RailNetwork): Schematic {
     }
     for (const junction of network.junctions) {
       const hit = project(track.points, cum, junction.at);
-      if (hit.distance <= SAME_PLACE) list.push({ along: hit.along, at: pointAlong(track.points, cum, hit.along), node: null });
+      if (hit.distance <= SAME_PLACE)
+        list.push({ along: hit.along, at: pointAlong(track.points, cum, hit.along), node: null });
     }
     marks.set(track.id, list);
   }
@@ -308,9 +314,7 @@ export function buildSchematic(network: RailNetwork): Schematic {
       if (k > 0) {
         // The bigger bends between this node and the last, as extra points.
         const prev = keys[k - 1];
-        const inner = track.points
-          .map((p, i) => ({ p, s: cum[i] }))
-          .filter(({ s }) => s > prev.along && s < key.along);
+        const inner = track.points.map((p, i) => ({ p, s: cum[i] })).filter(({ s }) => s > prev.along && s < key.along);
         const run: RailPoint[] = [nodes[prev.node].at, ...inner.map((q) => q.p), nodes[key.node].at];
         const kept = simplify(run, tolerance).slice(1, -1);
         for (const i of kept) {

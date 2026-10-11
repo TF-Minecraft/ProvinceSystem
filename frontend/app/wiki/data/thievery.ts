@@ -12,7 +12,12 @@ export type ThieveryKeyCopy = { pickUp: string; clickOnto: string; result: strin
 export const thieveryKeyCopies: ThieveryKeyCopy[] = [
   { pickUp: "Clay Ball", clickOnto: "a master key", result: "Key Mold", message: "Key mold created." },
   { pickUp: "Copper Ingot", clickOnto: "a key mold", result: "Copper Key (permanent)", message: "Key copy created." },
-  { pickUp: "Paper", clickOnto: "a master key or copper copy", result: "Paper Key (single-use, doors only)", message: "Paper key created." },
+  {
+    pickUp: "Paper",
+    clickOnto: "a master key or copper copy",
+    result: "Paper Key (single-use, doors only)",
+    message: "Paper key created.",
+  },
 ];
 
 export const thieveryCommands: CommandRow[] = [
@@ -66,7 +71,8 @@ export const thieverySection: WikiSection = {
     href: "/wiki/thievery",
     label: "Thievery",
     category: "combat",
-    blurb: "Lock your doors and chests, or break into someone else's: lockpicking, pickpocketing, and consensual robbery.",
+    blurb:
+      "Lock your doors and chests, or break into someone else's: lockpicking, pickpocketing, and consensual robbery.",
   },
   commands: thieveryCommandSet,
 };

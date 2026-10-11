@@ -7,15 +7,9 @@ import {
   stackChronicleFillLuts,
 } from "./chronicleFillStack";
 
-const pack = (r: number, g: number, b: number, a: number) =>
-  ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
+const pack = (r: number, g: number, b: number, a: number) => ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
 
-const unpack = (value: number) => [
-  (value >>> 24) & 0xff,
-  (value >>> 16) & 0xff,
-  (value >>> 8) & 0xff,
-  value & 0xff,
-];
+const unpack = (value: number) => [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
 
 describe("blendPackedRgbaOver", () => {
   it("leaves the layer beneath alone where the layer above is empty", () => {
@@ -59,8 +53,7 @@ describe("stackChronicleFillLuts", () => {
   });
 
   it("is empty when nothing is switched on", () => {
-    expect(stackChronicleFillLuts([null, undefined, new Uint32Array(0)]))
-      .toHaveLength(0);
+    expect(stackChronicleFillLuts([null, undefined, new Uint32Array(0)])).toHaveLength(0);
   });
 
   it("sizes itself to the longest layer and keeps ids past a short one", () => {
@@ -82,11 +75,7 @@ describe("stackChronicleFillLuts", () => {
   it("does not let a sparse upper layer erase the fill under it", () => {
     // The trade-league case: a league covers one province of a nation's two,
     // and the province it does not cover must keep the nation's colour.
-    const nation = Uint32Array.of(
-      0,
-      pack(10, 20, 30, 255),
-      pack(10, 20, 30, 255)
-    );
+    const nation = Uint32Array.of(0, pack(10, 20, 30, 255), pack(10, 20, 30, 255));
     const league = Uint32Array.of(0, pack(200, 200, 0, 140));
     const out = stackChronicleFillLuts([nation, league]);
     expect(out[2]).toBe(nation[2]);
@@ -132,12 +121,7 @@ describe("desaturatePackedRgba", () => {
 });
 
 describe("focusChronicleFillLut", () => {
-  const lut = Uint32Array.of(
-    0,
-    pack(200, 40, 40, 255),
-    pack(40, 40, 200, 255),
-    0
-  );
+  const lut = Uint32Array.of(0, pack(200, 40, 40, 255), pack(40, 40, 200, 255), 0);
 
   it("hands the table straight back when nothing is focused", () => {
     expect(focusChronicleFillLut(lut, null)).toBe(lut);
@@ -177,8 +161,6 @@ describe("focusChronicleFillLut", () => {
   });
 
   it("is empty for an empty table", () => {
-    expect(focusChronicleFillLut(new Uint32Array(0), new Set([1]))).toHaveLength(
-      0
-    );
+    expect(focusChronicleFillLut(new Uint32Array(0), new Set([1]))).toHaveLength(0);
   });
 });

@@ -70,9 +70,23 @@ beforeEach(() => {
     as_of: T,
     worlds: ["TFMC_Map", "TFMC_Map_nether"],
     players: [
-      { uuid: A, minecraft_name: "Alice", points: [[T - 100, 0, 10, 64, 20, 2], [T - 40, 0, 11, 64, 21, 2]] },
+      {
+        uuid: A,
+        minecraft_name: "Alice",
+        points: [
+          [T - 100, 0, 10, 64, 20, 2],
+          [T - 40, 0, 11, 64, 21, 2],
+        ],
+      },
       { uuid: B, minecraft_name: "Bob", points: [[T - 90, 1, 5, 64, 5, 2]] },
-      { uuid: C, minecraft_name: "Carol", points: [[T - 120, 0, 0, 64, 0, 2], [T - 20, 0, 0, 64, 0, 0]] },
+      {
+        uuid: C,
+        minecraft_name: "Carol",
+        points: [
+          [T - 120, 0, 0, 64, 0, 2],
+          [T - 20, 0, 0, 64, 0, 0],
+        ],
+      },
     ],
     complete_from: T - 150,
     pings_since: T - 86400,

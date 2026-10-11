@@ -14,9 +14,9 @@ for (const recipe of generatedStationRecipes) {
 
 /** Hand-authored material records are curated custom-item provenance. */
 const materialNames = new Set([
-  ...materialRecipes.map(recipe => recipe.output.name),
-  ...serverCraftedMaterials.map(item => item.name),
-  ...dropOnlyMaterials.map(item => item.name),
+  ...materialRecipes.map((recipe) => recipe.output.name),
+  ...serverCraftedMaterials.map((item) => item.name),
+  ...dropOnlyMaterials.map((item) => item.name),
 ]);
 
 // These objects are defined by the corresponding hand-authored station recipes.
@@ -30,8 +30,8 @@ const recipeObjects: Record<string, string> = {
   "Archeology Table": "itemsadder:archeology_station",
   "Market Block": "tfmc:market_block",
   "Engineering Table": "itemsadder:engineering_table",
-  "Dockyard": "itemsadder:dockyard",
-  "Letter": "tfmc:letter",
+  Dockyard: "itemsadder:dockyard",
+  Letter: "tfmc:letter",
 };
 
 /** Explicit vanilla provenance always wins, even when a custom item shares its name. */

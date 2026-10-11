@@ -30,10 +30,7 @@ type BlockModel = {
 
 const faceOrder: Array<keyof Element["faces"]> = ["east", "west", "up", "down", "south", "north"];
 
-export function textureMaterialIndices(
-  faces: Element["faces"],
-  textureKeys: string[],
-): number[] {
+export function textureMaterialIndices(faces: Element["faces"], textureKeys: string[]): number[] {
   return faceOrder.map((dir) => {
     const key = faces[dir]?.texture.replace(/^#/, "");
     return key ? textureKeys.indexOf(key) : -1;
@@ -54,7 +51,7 @@ export async function loadTextureBindings<T>(
   load: (url: string) => Promise<T>,
 ): Promise<Array<T | null>> {
   const results = await Promise.allSettled(urls.map((url) => load(url)));
-  return results.map((result) => result.status === "fulfilled" ? result.value : null);
+  return results.map((result) => (result.status === "fulfilled" ? result.value : null));
 }
 
 /** UV samples for Three's per-face vertex order: top-left, top-right, bottom-left, bottom-right. */
@@ -64,7 +61,12 @@ export function faceUvCoordinates(face: Face): Array<[number, number]> {
   const b = 1 - v1 / 16;
   const c = u2 / 16;
   const d = 1 - v2 / 16;
-  const corners: Array<[number, number]> = [[a, b], [c, b], [a, d], [c, d]];
+  const corners: Array<[number, number]> = [
+    [a, b],
+    [c, b],
+    [a, d],
+    [c, d],
+  ];
 
   // Minecraft/Blockbench face rotations are clockwise. Preserve the original
   // corner values so reversed UV rectangles continue to mirror correctly.
@@ -208,9 +210,10 @@ export default function StationModelViewer({
       mount.appendChild(renderer.domElement);
 
       const texLoader = new THREE.TextureLoader();
-      const loadTexture = (url: string) => new Promise<THREE.Texture>((resolve, reject) => {
-        texLoader.load(url, resolve, undefined, reject);
-      });
+      const loadTexture = (url: string) =>
+        new Promise<THREE.Texture>((resolve, reject) => {
+          texLoader.load(url, resolve, undefined, reject);
+        });
       const textureKeys = Object.keys(textureUrls ?? {});
       const [texture] = textureUrl ? await loadTextureBindings([textureUrl], loadTexture) : [null];
       const keyedTextures = await loadTextureBindings(
@@ -218,7 +221,9 @@ export default function StationModelViewer({
         loadTexture,
       );
       if (texture) loadedTextures.add(texture);
-      keyedTextures.forEach((value) => { if (value) loadedTextures.add(value); });
+      keyedTextures.forEach((value) => {
+        if (value) loadedTextures.add(value);
+      });
       if (disposed) {
         loadedTextures.forEach((value) => value.dispose());
         loadedTextures.clear();
@@ -262,7 +267,7 @@ export default function StationModelViewer({
         return value;
       };
       const fallbackMaterial = makeMaterial(texture);
-      const keyedMaterials = keyedTextures.map((value) => value ? makeMaterial(value) : fallbackMaterial);
+      const keyedMaterials = keyedTextures.map((value) => (value ? makeMaterial(value) : fallbackMaterial));
       const doubleSidedMaterials = [...keyedMaterials, fallbackMaterial];
       const frontSidedMaterials = doubleSidedMaterials.map((source) => {
         const value = source.clone();
@@ -290,9 +295,9 @@ export default function StationModelViewer({
           const axis =
             el.rotation.axis === "x"
               ? new THREE.Vector3(1, 0, 0)
-             : el.rotation.axis === "y"
+              : el.rotation.axis === "y"
                 ? new THREE.Vector3(0, 1, 0)
-               : new THREE.Vector3(0, 0, 1);
+                : new THREE.Vector3(0, 0, 1);
           const rad = (el.rotation.angle * Math.PI) / 180;
 
           const pivot = new THREE.Object3D();
@@ -331,7 +336,7 @@ export default function StationModelViewer({
       controls.dampingFactor = 0.08;
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       controls.autoRotate = !reducedMotion;
-      controls.autoRotateSpeed = variant === "thumb" ? 3: 1.2;
+      controls.autoRotateSpeed = variant === "thumb" ? 3 : 1.2;
       controls.minDistance = maxDim * 0.6;
       controls.maxDistance = maxDim * 4;
       if (variant === "thumb") {
@@ -413,7 +418,7 @@ export default function StationModelViewer({
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">
             :
           </span>
-        ): null}
+        ) : null}
       </div>
     );
   }
@@ -424,10 +429,8 @@ export default function StationModelViewer({
       className={`relative w-full overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] ${wikiBlockPreviewHeight}`}
     >
       {error ? (
-        <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">
-          {error}
-        </p>
-      ): null}
+        <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">{error}</p>
+      ) : null}
     </div>
   );
 }

@@ -11,7 +11,7 @@ export function useEditorChildLayer(
   mapId: MapId,
   sessionToken: string | null,
   childTier: EditorTier | null,
-  enabled = true
+  enabled = true,
 ): {
   childDraft: TitleDraft;
   loading: boolean;
@@ -36,10 +36,7 @@ export function useEditorChildLayer(
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchMapJson<TitleDraft>(
-          `/${mapId}/data/${childTier}`,
-          { sessionToken }
-        );
+        const data = await fetchMapJson<TitleDraft>(`/${mapId}/data/${childTier}`, { sessionToken });
         if (!cancelled) {
           setChildDraft(data);
           setLoading(false);
@@ -48,11 +45,7 @@ export function useEditorChildLayer(
         if (!cancelled) {
           setChildDraft({});
           setLoading(false);
-          setError(
-            err instanceof Error
-              ? err.message
-              : `Failed to load ${childTier} data`
-          );
+          setError(err instanceof Error ? err.message : `Failed to load ${childTier} data`);
         }
       }
     };

@@ -4,13 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
-import {
-  MapAccessError,
-  fetchMapApi,
-  fetchMapJson,
-  isAbortError,
-  staffMapAccessReason,
-} from "@/lib/map/api";
+import { MapAccessError, fetchMapApi, fetchMapJson, isAbortError, staffMapAccessReason } from "@/lib/map/api";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
 import { mapDisplayName, type MapId } from "../map/types";
 import { isArchivedMap } from "@/app/lib/map/archiveMaps";
@@ -44,12 +38,7 @@ import {
   type ChronicleStaffFailure,
   type ChronicleWipeResponse,
 } from "../../lib/map/chronicleStaff";
-import {
-  SectionHeading,
-  chroniclePanelClass,
-  primaryButtonClass,
-  quietButtonClass,
-} from "./ChroniclePanels";
+import { SectionHeading, chroniclePanelClass, primaryButtonClass, quietButtonClass } from "./ChroniclePanels";
 
 /**
  * `/map/{map}/chronicle/staff` — wipe, list backups, restore.
@@ -70,8 +59,7 @@ const dangerButtonClass =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,#7f1d1d_70%,var(--tfmc-forest-deep))] px-3 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
 
 const cellClass = "px-3 py-2 align-top text-sm text-[var(--tfmc-cream)]";
-const headCellClass =
-  "px-3 py-2 text-left text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
+const headCellClass = "px-3 py-2 text-left text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
 
 type StaffRequestFailure = {
   status: number;
@@ -85,11 +73,7 @@ type StaffRequestFailure = {
  * `fetchMapApi` (which still carries the bearer header) rather than
  * `fetchMapJson`, whose `MapAccessError` keeps only the detail string.
  */
-async function postStaffJson<T>(
-  path: string,
-  body: unknown,
-  sessionToken: string
-): Promise<T> {
+async function postStaffJson<T>(path: string, body: unknown, sessionToken: string): Promise<T> {
   let res: Response;
   try {
     res = await fetchMapApi(path, {
@@ -123,10 +107,7 @@ async function postStaffJson<T>(
   } as StaffRequestFailure;
 }
 
-function asFailure(
-  err: unknown,
-  action: "wipe" | "restore" | "load" | "archive"
-): ChronicleStaffFailure {
+function asFailure(err: unknown, action: "wipe" | "restore" | "load" | "archive"): ChronicleStaffFailure {
   if (err instanceof MapAccessError) {
     return chronicleStaffFailure(err.status, err.detail, null, action);
   }
@@ -134,12 +115,7 @@ function asFailure(
     const failure = err as StaffRequestFailure;
     return chronicleStaffFailure(failure.status, failure.detail, failure.code, action);
   }
-  return chronicleStaffFailure(
-    -1,
-    err instanceof Error ? err.message : "The request failed.",
-    null,
-    action
-  );
+  return chronicleStaffFailure(-1, err instanceof Error ? err.message : "The request failed.", null, action);
 }
 
 function FailureNotice({ failure }: { failure: ChronicleStaffFailure }) {
@@ -149,9 +125,7 @@ function FailureNotice({ failure }: { failure: ChronicleStaffFailure }) {
       className="rounded-md border border-[color-mix(in_srgb,#f87171_45%,transparent)] bg-[color-mix(in_srgb,#7f1d1d_30%,transparent)] px-3 py-2"
     >
       <p className="text-sm font-medium text-[var(--tfmc-cream)]">{failure.title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--tfmc-stone)]">
-        {failure.message}
-      </p>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--tfmc-stone)]">{failure.message}</p>
     </div>
   );
 }
@@ -201,34 +175,26 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
   const [archiveAllowUnknown, setArchiveAllowUnknown] = useState(false);
   const [archiveReplace, setArchiveReplace] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
-  const [archiveFailure, setArchiveFailure] = useState<ChronicleStaffFailure | null>(
-    null
-  );
-  const [archiveResult, setArchiveResult] = useState<ChronicleArchiveResponse | null>(
-    null
-  );
+  const [archiveFailure, setArchiveFailure] = useState<ChronicleStaffFailure | null>(null);
+  const [archiveResult, setArchiveResult] = useState<ChronicleArchiveResponse | null>(null);
 
   // Restore form — one row at a time, opened from the table.
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState("");
   const [restoreMerge, setRestoreMerge] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
-  const [restoreFailure, setRestoreFailure] = useState<ChronicleStaffFailure | null>(
-    null
-  );
-  const [restoreResult, setRestoreResult] = useState<ChronicleRestoreResponse | null>(
-    null
-  );
+  const [restoreFailure, setRestoreFailure] = useState<ChronicleStaffFailure | null>(null);
+  const [restoreResult, setRestoreResult] = useState<ChronicleRestoreResponse | null>(null);
 
   const loadBackups = useCallback(async () => {
     if (!sessionToken) return;
     setLoading(true);
     setLoadFailure(null);
     try {
-      const data = await fetchMapJson<ChronicleBackupsResponse>(
-        chronicleBackupsPath(mapId),
-        { sessionToken, cache: "no-store" }
-      );
+      const data = await fetchMapJson<ChronicleBackupsResponse>(chronicleBackupsPath(mapId), {
+        sessionToken,
+        cache: "no-store",
+      });
       setBackups(data.backups ?? []);
       setGateReason(null);
     } catch (err) {
@@ -254,9 +220,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
 
   const wipeReady = canSubmitChronicleWipe(wipeConfirm, wipeReason, mapId);
   const archived = isArchivedMap(mapId, maps);
-  const destExists = maps.some(
-    (entry) => entry.id === archiveDest && entry.id !== mapId
-  );
+  const destExists = maps.some((entry) => entry.id === archiveDest && entry.id !== mapId);
   const archiveReady = canSubmitChronicleArchive({
     destId: archiveDest,
     confirm: archiveConfirm,
@@ -283,7 +247,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
       const result = await postStaffJson<ChronicleWipeResponse>(
         chronicleWipePath(mapId),
         buildChronicleWipeRequest(mapId, wipeReason),
-        sessionToken
+        sessionToken,
       );
       setWipeResult(result);
       // The typed confirmation is per-action: never carry it to the next one.
@@ -312,7 +276,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
           replace: archiveReplace,
           allowUnknown: archiveAllowUnknown,
         }),
-        sessionToken
+        sessionToken,
       );
       invalidateAccessibleMaps();
       setArchiveResult(result);
@@ -338,16 +302,13 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
     sessionToken,
   ]);
 
-  const openRestore = useCallback(
-    (row: ChronicleBackupRow) => {
-      setRestoreId((current) => (current === row.id ? null : row.id));
-      setRestoreConfirm("");
-      setRestoreMerge(false);
-      setRestoreFailure(null);
-      setRestoreResult(null);
-    },
-    []
-  );
+  const openRestore = useCallback((row: ChronicleBackupRow) => {
+    setRestoreId((current) => (current === row.id ? null : row.id));
+    setRestoreConfirm("");
+    setRestoreMerge(false);
+    setRestoreFailure(null);
+    setRestoreResult(null);
+  }, []);
 
   const runRestore = useCallback(
     async (row: ChronicleBackupRow) => {
@@ -363,7 +324,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         const result = await postStaffJson<ChronicleRestoreResponse>(
           chronicleRestorePath(mapId),
           buildChronicleRestoreRequest(mapId, row.id, restoreMerge),
-          sessionToken
+          sessionToken,
         );
         setRestoreResult(result);
         setRestoreConfirm("");
@@ -375,13 +336,11 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         setRestoreBusy(false);
       }
     },
-    [loadBackups, mapId, restoreBusy, restoreConfirm, restoreMerge, sessionToken]
+    [loadBackups, mapId, restoreBusy, restoreConfirm, restoreMerge, sessionToken],
   );
 
   if (!sessionChecked) {
-    return (
-      <main className="min-h-[calc(100dvh-var(--tfmc-header-h))] bg-[var(--tfmc-forest-deep)] px-4 py-8" />
-    );
+    return <main className="min-h-[calc(100dvh-var(--tfmc-header-h))] bg-[var(--tfmc-forest-deep)] px-4 py-8" />;
   }
   if (!sessionToken) {
     return <MapAccessGate reason="login" mapDisplayName={displayName} />;
@@ -394,20 +353,15 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
     <main className="min-h-[calc(100dvh-var(--tfmc-header-h))] bg-[var(--tfmc-forest-deep)] px-4 py-8 sm:px-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-5">
         <header>
-          <p className="text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Staff operations · {displayName}
-          </p>
+          <p className="text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">Staff operations · {displayName}</p>
           <h1 className="mt-1 font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)]">
             Chronicle wipe and restore
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--tfmc-stone)]">
-            A wipe moves days into a backup you can restore below. Both actions
-            are logged against your profile with your reason.
+            A wipe moves days into a backup you can restore below. Both actions are logged against your profile with
+            your reason.
           </p>
-          <Link
-            href={chronicleStudioHref(mapId)}
-            className={`${quietButtonClass} mt-3 inline-flex`}
-          >
+          <Link href={chronicleStudioHref(mapId)} className={`${quietButtonClass} mt-3 inline-flex`}>
             Back to the timelapse studio
           </Link>
         </header>
@@ -416,8 +370,8 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         <section className={`${chroniclePanelClass} p-4`}>
           <SectionHeading title="Wipe this map's chronicle" />
           <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-            Type the map id <code className="text-[var(--tfmc-cream)]">{mapId}</code>{" "}
-            exactly — no surrounding spaces, matching case — and give a reason.
+            Type the map id <code className="text-[var(--tfmc-cream)]">{mapId}</code> exactly — no surrounding spaces,
+            matching case — and give a reason.
           </p>
 
           <label className="mt-4 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
@@ -461,17 +415,13 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
             <div className="mt-3">
               {isNothingToWipe(wipeResult) ? (
                 <Notice tone="info">
-                  <span className="font-medium">Nothing to wipe.</span> This map
-                  has no stored chronicle days, so nothing was moved and no
-                  backup or audit row was written.
+                  <span className="font-medium">Nothing to wipe.</span> This map has no stored chronicle days, so
+                  nothing was moved and no backup or audit row was written.
                 </Notice>
               ) : (
                 <Notice tone="ok">
-                  <span className="font-medium">
-                    Wiped {formatDayCount(wipeResult.day_count)}.
-                  </span>{" "}
-                  Backup #{wipeResult.wipe_id} taken at{" "}
-                  {formatUnixSeconds(wipeResult.wiped_at)}
+                  <span className="font-medium">Wiped {formatDayCount(wipeResult.day_count)}.</span> Backup #
+                  {wipeResult.wipe_id} taken at {formatUnixSeconds(wipeResult.wiped_at)}
                   {/* A file name, not a path — the backend sends a basename
                       and `backupFileName` strips a directory if one ever
                       shows up, so this never echoes the server's layout. */}
@@ -491,124 +441,116 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
         </section>
 
         {!archived && (
-        <section className={`${chroniclePanelClass} p-4`}>
-          <SectionHeading title="Archive as…" />
-          <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-            Copy this live map onto a frozen chapter id. Type the destination id
-            exactly. Extra confirm if the destination already exists or is
-            unknown. Do not use this on production this season.
-          </p>
+          <section className={`${chroniclePanelClass} p-4`}>
+            <SectionHeading title="Archive as…" />
+            <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
+              Copy this live map onto a frozen chapter id. Type the destination id exactly. Extra confirm if the
+              destination already exists or is unknown. Do not use this on production this season.
+            </p>
 
-          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Destination id
-            <input
-              className={`${inputClass} mt-1`}
-              value={archiveDest}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setArchiveDest(event.target.value)}
-            />
-          </label>
-          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Display name
-            <input
-              className={`${inputClass} mt-1`}
-              value={archiveName}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setArchiveName(event.target.value)}
-            />
-          </label>
-          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Type the destination id to confirm
-            <input
-              className={`${inputClass} mt-1`}
-              value={archiveConfirm}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="type the destination id"
-              onChange={(event) => setArchiveConfirm(event.target.value)}
-            />
-          </label>
-          {archiveConfirm.length > 0 &&
-            !chronicleConfirmMatches(archiveConfirm, archiveDest) && (
+            <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+              Destination id
+              <input
+                className={`${inputClass} mt-1`}
+                value={archiveDest}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(event) => setArchiveDest(event.target.value)}
+              />
+            </label>
+            <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+              Display name
+              <input
+                className={`${inputClass} mt-1`}
+                value={archiveName}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(event) => setArchiveName(event.target.value)}
+              />
+            </label>
+            <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+              Type the destination id to confirm
+              <input
+                className={`${inputClass} mt-1`}
+                value={archiveConfirm}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="type the destination id"
+                onChange={(event) => setArchiveConfirm(event.target.value)}
+              />
+            </label>
+            {archiveConfirm.length > 0 && !chronicleConfirmMatches(archiveConfirm, archiveDest) && (
               <p className="mt-1 text-xs text-[color-mix(in_srgb,#fca5a5_85%,transparent)]">
                 Does not match “{archiveDest}” exactly.
               </p>
             )}
 
-          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Reason (required, up to {CHRONICLE_WIPE_REASON_MAX_LENGTH} characters)
-            <textarea
-              className={`${inputClass} mt-1 h-20 resize-y`}
-              value={archiveReason}
-              maxLength={CHRONICLE_WIPE_REASON_MAX_LENGTH}
-              placeholder="why this live map is being copied to a frozen id"
-              onChange={(event) => setArchiveReason(event.target.value)}
-            />
-          </label>
-
-          {archiveDest === "unknown" && (
-            <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={archiveAllowUnknown}
-                onChange={(event) => setArchiveAllowUnknown(event.target.checked)}
+            <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+              Reason (required, up to {CHRONICLE_WIPE_REASON_MAX_LENGTH} characters)
+              <textarea
+                className={`${inputClass} mt-1 h-20 resize-y`}
+                value={archiveReason}
+                maxLength={CHRONICLE_WIPE_REASON_MAX_LENGTH}
+                placeholder="why this live map is being copied to a frozen id"
+                onChange={(event) => setArchiveReason(event.target.value)}
               />
-              Dest is unknown — extra confirm (overwrite hazard)
             </label>
-          )}
-          {destExists && (
-            <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={archiveReplace}
-                onChange={(event) => setArchiveReplace(event.target.checked)}
-              />
-              Dest already exists — replace that chapter
-            </label>
-          )}
 
-          <button
-            type="button"
-            className={`${dangerButtonClass} mt-3`}
-            disabled={!archiveReady || archiveBusy}
-            onClick={() => void runArchive()}
-          >
-            {archiveBusy ? "Archiving…" : `Archive as ${archiveDest || "…"}`}
-          </button>
+            {archiveDest === "unknown" && (
+              <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={archiveAllowUnknown}
+                  onChange={(event) => setArchiveAllowUnknown(event.target.checked)}
+                />
+                Dest is unknown — extra confirm (overwrite hazard)
+              </label>
+            )}
+            {destExists && (
+              <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={archiveReplace}
+                  onChange={(event) => setArchiveReplace(event.target.checked)}
+                />
+                Dest already exists — replace that chapter
+              </label>
+            )}
 
-          {archiveResult && (
-            <div className="mt-3">
-              <Notice tone="ok">
-                <span className="font-medium">
-                  Copied {mapId} → {archiveResult.dest}.
-                </span>{" "}
-                {formatDayCount(archiveResult.days.length)} indexed. Source was
-                not wiped.
-              </Notice>
-            </div>
-          )}
-          {archiveFailure && (
-            <div className="mt-3">
-              <FailureNotice failure={archiveFailure} />
-            </div>
-          )}
-        </section>
+            <button
+              type="button"
+              className={`${dangerButtonClass} mt-3`}
+              disabled={!archiveReady || archiveBusy}
+              onClick={() => void runArchive()}
+            >
+              {archiveBusy ? "Archiving…" : `Archive as ${archiveDest || "…"}`}
+            </button>
+
+            {archiveResult && (
+              <div className="mt-3">
+                <Notice tone="ok">
+                  <span className="font-medium">
+                    Copied {mapId} → {archiveResult.dest}.
+                  </span>{" "}
+                  {formatDayCount(archiveResult.days.length)} indexed. Source was not wiped.
+                </Notice>
+              </div>
+            )}
+            {archiveFailure && (
+              <div className="mt-3">
+                <FailureNotice failure={archiveFailure} />
+              </div>
+            )}
+          </section>
         )}
 
         {/* ------------------------------------------------------------- */}
         <section className={`${chroniclePanelClass} p-4`}>
           <div className="flex items-center justify-between gap-3">
             <SectionHeading title="Backups" />
-            <button
-              type="button"
-              className={quietButtonClass}
-              disabled={loading}
-              onClick={() => void loadBackups()}
-            >
+            <button type="button" className={quietButtonClass} disabled={loading} onClick={() => void loadBackups()}>
               {loading ? "Loading…" : "Reload"}
             </button>
           </div>
@@ -620,9 +562,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
           )}
 
           {!loadFailure && backups !== null && backups.length === 0 && (
-            <p className="mt-3 text-sm text-[var(--tfmc-stone)]">
-              No wipes have ever been recorded for this map.
-            </p>
+            <p className="mt-3 text-sm text-[var(--tfmc-stone)]">No wipes have ever been recorded for this map.</p>
           )}
 
           {backups !== null && backups.length > 0 && (
@@ -649,21 +589,15 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
                       >
                         <td className={cellClass}>
                           {formatUnixSeconds(row.wiped_at)}
-                          <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
-                            #{row.id}
-                          </span>
+                          <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">#{row.id}</span>
                         </td>
                         <td className={cellClass}>{row.wiped_by}</td>
                         <td className={cellClass}>{row.day_count}</td>
                         <td className={`${cellClass} max-w-[18rem]`}>
-                          <span className="block break-words text-[var(--tfmc-stone)]">
-                            {row.reason || "—"}
-                          </span>
+                          <span className="block break-words text-[var(--tfmc-stone)]">{row.reason || "—"}</span>
                         </td>
                         <td className={cellClass}>
-                          <span className="text-[var(--tfmc-stone)]">
-                            {describeRestoreState(row)}
-                          </span>
+                          <span className="text-[var(--tfmc-stone)]">{describeRestoreState(row)}</span>
                           {!restorable && (
                             <span className="mt-1 block rounded border border-[color-mix(in_srgb,#f87171_50%,transparent)] px-1.5 py-0.5 text-center text-xs font-medium text-[color-mix(in_srgb,#fca5a5_90%,transparent)]">
                               Backup missing from disk — cannot be restored
@@ -682,10 +616,8 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
                           {open && restorable && (
                             <div className="mt-2 w-[min(22rem,70vw)] rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-3">
                               <p className="text-xs leading-relaxed text-[var(--tfmc-stone)]">
-                                Restoring moves backup #{row.id} (
-                                {formatDayCount(row.day_count)}) back into the
-                                live chronicle. If this map already has days
-                                stored, the restore is refused unless you opt
+                                Restoring moves backup #{row.id} ({formatDayCount(row.day_count)}) back into the live
+                                chronicle. If this map already has days stored, the restore is refused unless you opt
                                 into merge.
                               </p>
                               <label className="mt-2 flex items-start gap-2 text-xs text-[var(--tfmc-cream)]">
@@ -693,16 +625,12 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
                                   type="checkbox"
                                   className="mt-0.5"
                                   checked={restoreMerge}
-                                  onChange={(event) =>
-                                    setRestoreMerge(event.target.checked)
-                                  }
+                                  onChange={(event) => setRestoreMerge(event.target.checked)}
                                 />
                                 <span>
-                                  Merge into the live chronicle. Live days win:
-                                  any day that already exists is kept exactly as
-                                  it is, its backup copy is left in the backup
-                                  directory, and it is listed as skipped. Nothing
-                                  live is overwritten.
+                                  Merge into the live chronicle. Live days win: any day that already exists is kept
+                                  exactly as it is, its backup copy is left in the backup directory, and it is listed as
+                                  skipped. Nothing live is overwritten.
                                 </span>
                               </label>
                               <label className="mt-2 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
@@ -713,25 +641,16 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
                                   autoComplete="off"
                                   spellCheck={false}
                                   placeholder="type the map id"
-                                  onChange={(event) =>
-                                    setRestoreConfirm(event.target.value)
-                                  }
+                                  onChange={(event) => setRestoreConfirm(event.target.value)}
                                 />
                               </label>
                               <button
                                 type="button"
                                 className={`${primaryButtonClass} mt-2 w-full`}
-                                disabled={
-                                  restoreBusy ||
-                                  !chronicleConfirmMatches(restoreConfirm, mapId)
-                                }
+                                disabled={restoreBusy || !chronicleConfirmMatches(restoreConfirm, mapId)}
                                 onClick={() => void runRestore(row)}
                               >
-                                {restoreBusy
-                                  ? "Restoring…"
-                                  : restoreMerge
-                                    ? "Restore (merge)"
-                                    : "Restore"}
+                                {restoreBusy ? "Restoring…" : restoreMerge ? "Restore (merge)" : "Restore"}
                               </button>
                               {restoreResult && restoreResult.backup_id === row.id && (
                                 <div className="mt-2">

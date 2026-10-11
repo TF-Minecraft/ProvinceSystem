@@ -81,10 +81,7 @@ export type CursorTooltip = {
   hint?: string;
 };
 
-export type SettlementMarkerKind =
-  | "faction_capital"
-  | "guild_capital"
-  | "settlement";
+export type SettlementMarkerKind = "faction_capital" | "guild_capital" | "settlement";
 
 export type SettlementMarkerSize = "small" | "large";
 
@@ -100,11 +97,7 @@ export type SettlementMarker = {
   map_y?: number;
 };
 
-export type InstallationMarkerKind =
-  | "fort"
-  | "port"
-  | "airport"
-  | "train_station";
+export type InstallationMarkerKind = "fort" | "port" | "airport" | "train_station";
 
 export type InstallationMarker = {
   id: string;
@@ -216,10 +209,7 @@ export const MAP_DISPLAY_NAMES: Record<string, string> = {
 };
 
 /** Accessible-list name when known, then the static main/dev labels, else the id. */
-export function mapDisplayName(
-  mapId: MapId,
-  maps?: { id: string; display_name: string }[] | null
-): string {
+export function mapDisplayName(mapId: MapId, maps?: { id: string; display_name: string }[] | null): string {
   const fromList = maps?.find((entry) => entry.id === mapId)?.display_name.trim();
   if (fromList) return fromList;
   return MAP_DISPLAY_NAMES[mapId] ?? mapId;

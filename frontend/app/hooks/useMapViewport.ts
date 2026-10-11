@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   clampTranslate,
   clampUserScale,
@@ -53,11 +45,7 @@ export type UseMapViewportOptions = {
    * screen, before React state catches up. Hover picking reads it so a
    * pointer over the map resolves against what the reader sees.
    */
-  onLiveTransform?: (live: {
-    displayScale: number;
-    translateX: number;
-    translateY: number;
-  }) => void;
+  onLiveTransform?: (live: { displayScale: number; translateX: number; translateY: number }) => void;
   /**
    * Hold the resting scale as CSS `zoom` on the content, leaving the transform
    * a plain translate once the map settles; gestures and animations still
@@ -121,7 +109,7 @@ export type UseMapViewportResult = {
     rect: MapRect,
     inset?: MapFocusInset,
     framing?: MapFocusFraming,
-    options?: ViewportResetOptions
+    options?: ViewportResetOptions,
   ) => void;
   /**
    * True once for the click that ends a drag. The browser still fires `click`
@@ -129,10 +117,7 @@ export type UseMapViewportResult = {
    * never also selects whatever was under the pointer when it ended.
    */
   consumeDragClick: () => boolean;
-  screenToMapFromClient: (
-    clientX: number,
-    clientY: number
-  ) => { x: number; y: number } | null;
+  screenToMapFromClient: (clientX: number, clientY: number) => { x: number; y: number } | null;
 };
 
 export type ViewportResetOptions = {
@@ -290,7 +275,7 @@ export function useMapViewport({
       liveActiveRef.current = true;
       const displayScale = computeDisplayScale(
         computeFitScale(viewportSizeRef.current, mapSizeRef.current, fitModeRef.current),
-        next.userScale
+        next.userScale,
       );
       // No `will-change` here: on a 6400 px layer it makes the browser
       // rasterise one enormous texture, which measured slower than letting it
@@ -306,7 +291,7 @@ export function useMapViewport({
       content.style.transform = viewportTransformStyle(
         liveScale,
         pixelAligned ? onDevicePixel(next.translateX) : next.translateX,
-        pixelAligned ? onDevicePixel(next.translateY) : next.translateY
+        pixelAligned ? onDevicePixel(next.translateY) : next.translateY,
       );
       markScaling(content, restingZoomRef.current && liveScale !== 1 ? liveScale : null);
       onLiveTransformRef.current?.({
@@ -317,7 +302,7 @@ export function useMapViewport({
       if (settleTimerRef.current !== null) clearTimeout(settleTimerRef.current);
       settleTimerRef.current = setTimeout(commitLive, GESTURE_SETTLE_MS);
     },
-    [commitLive]
+    [commitLive],
   );
 
   const clearTransition = useCallback(() => {
@@ -347,16 +332,13 @@ export function useMapViewport({
         setTransition(undefined);
       }, ms);
     },
-    [clearTransition, commitLive]
+    [clearTransition, commitLive],
   );
 
-  const fitScale = useMemo(
-    () => computeFitScale(viewportSize, mapSize, fitMode),
-    [viewportSize, mapSize, fitMode]
-  );
+  const fitScale = useMemo(() => computeFitScale(viewportSize, mapSize, fitMode), [viewportSize, mapSize, fitMode]);
   const displayScale = useMemo(
     () => computeDisplayScale(fitScale, transform.userScale),
-    [fitScale, transform.userScale]
+    [fitScale, transform.userScale],
   );
 
   const applyClampedTransform = useCallback((next: ViewportTransform): ViewportTransform => {
@@ -365,13 +347,7 @@ export function useMapViewport({
     const nextFitScale = computeFitScale(viewport, map, fitModeRef.current);
     const clampedUserScale = clampUserScale(next.userScale, userScaleCap());
     const nextDisplayScale = computeDisplayScale(nextFitScale, clampedUserScale);
-    const clamped = clampTranslate(
-      viewport,
-      map,
-      nextDisplayScale,
-      next.translateX,
-      next.translateY
-    );
+    const clamped = clampTranslate(viewport, map, nextDisplayScale, next.translateX, next.translateY);
     return {
       userScale: clampedUserScale,
       translateX: clamped.x,
@@ -386,23 +362,26 @@ export function useMapViewport({
     commitLive();
   }, [commitLive]);
 
-  const resetViewport = useCallback((options?: ViewportResetOptions) => {
-    // Same centered position the view opens with, not the raw (0,0) sentinel
-    // — that would land on cover-fit's cropped axis pinned to its edge.
-    const centred = computeCenteredTransform(
-      viewportSizeRef.current,
-      mapSizeRef.current,
-      INITIAL_TRANSFORM.userScale,
-      fitModeRef.current
-    );
-    endGesture();
-    if (options?.animated ?? true) {
-      animateTo(centred, VIEWPORT_RESET_TRANSITION, VIEWPORT_RESET_TRANSITION_MS);
-    } else {
-      clearTransition();
-      setTransform(centred);
-    }
-  }, [animateTo, clearTransition, endGesture]);
+  const resetViewport = useCallback(
+    (options?: ViewportResetOptions) => {
+      // Same centered position the view opens with, not the raw (0,0) sentinel
+      // — that would land on cover-fit's cropped axis pinned to its edge.
+      const centred = computeCenteredTransform(
+        viewportSizeRef.current,
+        mapSizeRef.current,
+        INITIAL_TRANSFORM.userScale,
+        fitModeRef.current,
+      );
+      endGesture();
+      if (options?.animated ?? true) {
+        animateTo(centred, VIEWPORT_RESET_TRANSITION, VIEWPORT_RESET_TRANSITION_MS);
+      } else {
+        clearTransition();
+        setTransform(centred);
+      }
+    },
+    [animateTo, clearTransition, endGesture],
+  );
 
   const zoomBy = useCallback(
     (factor: number) => {
@@ -417,22 +396,17 @@ export function useMapViewport({
           { x: viewport.w / 2, y: viewport.h / 2 },
           current.userScale * factor,
           fitModeRef.current,
-          userScaleCap()
+          userScaleCap(),
         ),
         VIEWPORT_RESET_TRANSITION,
-        VIEWPORT_RESET_TRANSITION_MS
+        VIEWPORT_RESET_TRANSITION_MS,
       );
     },
-    [animateTo]
+    [animateTo],
   );
 
   const focusMapRect = useCallback(
-    (
-      rect: MapRect,
-      inset?: MapFocusInset,
-      framing?: MapFocusFraming,
-      options?: ViewportResetOptions
-    ) => {
+    (rect: MapRect, inset?: MapFocusInset, framing?: MapFocusFraming, options?: ViewportResetOptions) => {
       const viewport = viewportSizeRef.current;
       if (viewport.w <= 0 || viewport.h <= 0) return;
       animateTo(
@@ -444,10 +418,10 @@ export function useMapViewport({
         }),
         VIEWPORT_FOCUS_TRANSITION,
         VIEWPORT_FOCUS_TRANSITION_MS,
-        options?.animated ?? true
+        options?.animated ?? true,
       );
     },
-    [animateTo]
+    [animateTo],
   );
 
   const consumeDragClick = useCallback(() => {
@@ -461,9 +435,7 @@ export function useMapViewport({
     const element = viewportRef.current;
     if (!element) return;
     const syncViewportSize = (next: Size) => {
-      setViewportSize((current) =>
-        current.w === next.w && current.h === next.h ? current : next
-      );
+      setViewportSize((current) => (current.w === next.w && current.h === next.h ? current : next));
     };
     syncViewportSize(readViewportSize(element));
     const observer = new ResizeObserver((entries) => {
@@ -491,7 +463,7 @@ export function useMapViewport({
           viewportSizeRef.current,
           mapSizeRef.current,
           INITIAL_TRANSFORM.userScale,
-          fitModeRef.current
+          fitModeRef.current,
         );
       }
       return applyClampedTransform(current);
@@ -510,12 +482,7 @@ export function useMapViewport({
     previousFitModeRef.current = fitMode;
     if (!enabled) return;
     setTransform(
-      computeCenteredTransform(
-        viewportSizeRef.current,
-        mapSizeRef.current,
-        INITIAL_TRANSFORM.userScale,
-        fitMode
-      )
+      computeCenteredTransform(viewportSizeRef.current, mapSizeRef.current, INITIAL_TRANSFORM.userScale, fitMode),
     );
   }, [enabled, fitMode]);
 
@@ -577,9 +544,9 @@ export function useMapViewport({
             cursor,
             event.deltaY,
             fitModeRef.current,
-            userScaleCap()
-          )
-        )
+            userScaleCap(),
+          ),
+        ),
       );
     };
 
@@ -632,14 +599,14 @@ export function useMapViewport({
           gesture.start.midpoint,
           pinchUserScale(gesture.startTransform.userScale, gesture.start, sample),
           fitModeRef.current,
-          userScaleCap()
+          userScaleCap(),
         );
         presentLive(
           applyClampedTransform({
             userScale: zoomed.userScale,
             translateX: zoomed.translateX + sample.midpoint.x - gesture.start.midpoint.x,
             translateY: zoomed.translateY + sample.midpoint.y - gesture.start.midpoint.y,
-          })
+          }),
         );
         return;
       }
@@ -658,7 +625,7 @@ export function useMapViewport({
           userScale: transformRef.current.userScale,
           translateX: gesture.startTranslateX + deltaX,
           translateY: gesture.startTranslateY + deltaY,
-        })
+        }),
       );
     };
 
@@ -727,10 +694,10 @@ export function useMapViewport({
           toViewportPoint(event),
           current.userScale * MAP_ZOOM_STEP,
           fitModeRef.current,
-          userScaleCap()
+          userScaleCap(),
         ),
         VIEWPORT_RESET_TRANSITION,
-        VIEWPORT_RESET_TRANSITION_MS
+        VIEWPORT_RESET_TRANSITION_MS,
       );
     };
 
@@ -786,7 +753,7 @@ export function useMapViewport({
           translateY: current.translateY + action.dy,
         }),
         VIEWPORT_RESET_TRANSITION,
-        VIEWPORT_RESET_TRANSITION_MS
+        VIEWPORT_RESET_TRANSITION_MS,
       );
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -804,40 +771,29 @@ export function useMapViewport({
     };
   }, []);
 
-  const screenToMapFromClient = useCallback(
-    (clientX: number, clientY: number) => {
-      const element = viewportRef.current;
-      const viewport = viewportSizeRef.current;
-      const map = mapSizeRef.current;
-      const current = transformRef.current;
-      const currentFitScale = computeFitScale(viewport, map, fitModeRef.current);
-      const currentDisplayScale = computeDisplayScale(
-        currentFitScale,
-        current.userScale
-      );
-      if (!element || viewport.w <= 0 || viewport.h <= 0) return null;
-      const rect = element.getBoundingClientRect();
-      const viewportX = clientX - rect.left;
-      const viewportY = clientY - rect.top;
-      if (
-        viewportX < 0 ||
-        viewportY < 0 ||
-        viewportX > viewport.w ||
-        viewportY > viewport.h
-      ) {
-        return null;
-      }
-      const point = screenToMap(viewportX, viewportY, currentDisplayScale, {
-        x: current.translateX,
-        y: current.translateY,
-      });
-      if (point.x < 0 || point.y < 0 || point.x > map.w || point.y > map.h) {
-        return null;
-      }
-      return point;
-    },
-    []
-  );
+  const screenToMapFromClient = useCallback((clientX: number, clientY: number) => {
+    const element = viewportRef.current;
+    const viewport = viewportSizeRef.current;
+    const map = mapSizeRef.current;
+    const current = transformRef.current;
+    const currentFitScale = computeFitScale(viewport, map, fitModeRef.current);
+    const currentDisplayScale = computeDisplayScale(currentFitScale, current.userScale);
+    if (!element || viewport.w <= 0 || viewport.h <= 0) return null;
+    const rect = element.getBoundingClientRect();
+    const viewportX = clientX - rect.left;
+    const viewportY = clientY - rect.top;
+    if (viewportX < 0 || viewportY < 0 || viewportX > viewport.w || viewportY > viewport.h) {
+      return null;
+    }
+    const point = screenToMap(viewportX, viewportY, currentDisplayScale, {
+      x: current.translateX,
+      y: current.translateY,
+    });
+    if (point.x < 0 || point.y < 0 || point.x > map.w || point.y > map.h) {
+      return null;
+    }
+    return point;
+  }, []);
 
   // Once nothing is moving the map, hand its scale to `zoom`. Until then (a
   // gesture, an animated move) the transform carries the change relative to
@@ -866,7 +822,7 @@ export function useMapViewport({
   const transformStyle = viewportTransformStyle(
     displayScale / appliedZoom,
     restingZoom ? onDevicePixel(transform.translateX) : transform.translateX,
-    restingZoom ? onDevicePixel(transform.translateY) : transform.translateY
+    restingZoom ? onDevicePixel(transform.translateY) : transform.translateY,
   );
   const cursorClassName = isPanning ? "cursor-grabbing" : "cursor-grab";
   const transformTransition = isPanning ? undefined : transition;

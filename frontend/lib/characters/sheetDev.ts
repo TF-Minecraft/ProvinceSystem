@@ -3,9 +3,7 @@
 import type { CharacterListItem } from "./api";
 import { UI_DEV_LORE_CHARACTER_ID } from "./loreItemsDev";
 
-export function uiDevSheetCharacter(
-  characterId: string = UI_DEV_LORE_CHARACTER_ID
-): CharacterListItem {
+export function uiDevSheetCharacter(characterId: string = UI_DEV_LORE_CHARACTER_ID): CharacterListItem {
   return {
     id: characterId || UI_DEV_LORE_CHARACTER_ID,
     name: "UI Dev Character",
@@ -17,10 +15,8 @@ export function uiDevSheetCharacter(
     age: "24",
     birthday: "326-09-26",
     gender: "female",
-    description:
-      "A quiet scout from the borderlands. Keeps to the trees and trusts few.",
-    background:
-      "Born under a red moon among the border hills.\nTrained with scouts who keep to the trees.",
+    description: "A quiet scout from the borderlands. Keeps to the trees and trusts few.",
+    background: "Born under a red moon among the border hills.\nTrained with scouts who keep to the trees.",
     attributes: {
       strength: 2,
       dexterity: 3,
@@ -39,10 +35,7 @@ export function uiDevSheetCharacter(
       { id: "soft_spoken", name: "Soft Spoken", key: "personality" },
       { id: "cruel", name: "Cruel", key: "evil" },
     ],
-    clues: [
-      "Saw a red banner at dusk near the mill road.",
-      "Heard wolves circling the eastern woods.",
-    ],
+    clues: ["Saw a red banner at dusk near the mill road.", "Heard wolves circling the eastern woods."],
     kit_status: "eligible",
     kit_statuses: { starter: "eligible" },
     source: "roster",

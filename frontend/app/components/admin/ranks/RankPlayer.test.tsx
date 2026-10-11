@@ -3,10 +3,16 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import RankPlayer from "./RankPlayer";
 import { AccountApiError } from "../../../../lib/account/api";
-import { getLpPlayer, submitLpChange, waitForChange, type LpChange, type LpPlayer } from "../../../../lib/admin/luckperms";
+import {
+  getLpPlayer,
+  submitLpChange,
+  waitForChange,
+  type LpChange,
+  type LpPlayer,
+} from "../../../../lib/admin/luckperms";
 
 vi.mock("../../../../lib/admin/luckperms", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../../../../lib/admin/luckperms")>(),
+  ...(await importOriginal<typeof import("../../../../lib/admin/luckperms")>()),
   getLpPlayer: vi.fn(),
   waitForChange: vi.fn(),
   submitLpChange: vi.fn(),
@@ -16,7 +22,14 @@ const UUID = "22222222-2222-2222-2222-222222222222";
 
 function player(overrides: Partial<LpPlayer["rights"]> = {}): LpPlayer {
   return {
-    status: { server: "main", snapshot_at: "2026-10-07T12:00:00Z", checked_at: new Date().toISOString(), has_snapshot: true, applying: true, polled_at: null },
+    status: {
+      server: "main",
+      snapshot_at: "2026-10-07T12:00:00Z",
+      checked_at: new Date().toISOString(),
+      has_snapshot: true,
+      applying: true,
+      polled_at: null,
+    },
     player: {
       uuid: UUID,
       name: "Bob",
@@ -24,13 +37,51 @@ function player(overrides: Partial<LpPlayer["rights"]> = {}): LpPlayer {
       rank_prefix: "&dHelper",
       inherits: ["helper_player", "commoner", "default"],
       nodes: [
-        { key: "group.helper_player", value: true, contexts: {}, expiry: 0, kind: "group", group: "helper_player", editable: true },
-        { key: "professions.chef_1", value: true, contexts: { server: ["main"] }, expiry: 0, kind: "permission", group: null, editable: true },
-        { key: "essentials.fly", value: true, contexts: {}, expiry: 0, kind: "permission", group: null, editable: false },
+        {
+          key: "group.helper_player",
+          value: true,
+          contexts: {},
+          expiry: 0,
+          kind: "group",
+          group: "helper_player",
+          editable: true,
+        },
+        {
+          key: "professions.chef_1",
+          value: true,
+          contexts: { server: ["main"] },
+          expiry: 0,
+          kind: "permission",
+          group: null,
+          editable: true,
+        },
+        {
+          key: "essentials.fly",
+          value: true,
+          contexts: {},
+          expiry: 0,
+          kind: "permission",
+          group: null,
+          editable: false,
+        },
       ],
       tracks: [
-        { name: "helper", groups: ["helper_player", "helper_inactive", "helper"], position: 0, ambiguous: false, can_promote: true, can_demote: true },
-        { name: "staff", groups: ["staff_player", "staff_inactive", "staff"], position: null, ambiguous: false, can_promote: false, can_demote: false },
+        {
+          name: "helper",
+          groups: ["helper_player", "helper_inactive", "helper"],
+          position: 0,
+          ambiguous: false,
+          can_promote: true,
+          can_demote: true,
+        },
+        {
+          name: "staff",
+          groups: ["staff_player", "staff_inactive", "staff"],
+          position: null,
+          ambiguous: false,
+          can_promote: false,
+          can_demote: false,
+        },
       ],
       account: { discord_user_id: "1", discord_username: "bobby", user_id: 4, role: "player" },
     },
@@ -38,7 +89,14 @@ function player(overrides: Partial<LpPlayer["rights"]> = {}): LpPlayer {
       { name: "staff", weight: 200, min_role: "root", patreon: false, addable: false },
       { name: "noble", weight: 20, min_role: "admin", patreon: true, addable: true },
     ],
-    rights: { read_only: false, change_players: true, edit_definitions: false, change_this_player: true, admin_permissions: ["professions.*"], ...overrides },
+    rights: {
+      read_only: false,
+      change_players: true,
+      edit_definitions: false,
+      change_this_player: true,
+      admin_permissions: ["professions.*"],
+      ...overrides,
+    },
     changes: [],
     pending: null,
   };
@@ -77,7 +135,12 @@ it("promotes along a track and refreshes once applied", async () => {
   fireEvent.change(screen.getByLabelText("Reason (recorded)"), { target: { value: "Passed helper training" } });
   fireEvent.click(screen.getAllByRole("button", { name: "Promote" }).at(-1)!);
   await vi.waitFor(() => expect(getLpPlayer).toHaveBeenCalledTimes(2));
-  expect(submitLpChange).toHaveBeenCalledWith("user", UUID, [{ op: "promote", track: "helper" }], "Passed helper training");
+  expect(submitLpChange).toHaveBeenCalledWith(
+    "user",
+    UUID,
+    [{ op: "promote", track: "helper" }],
+    "Passed helper training",
+  );
 });
 
 it("warns about Patreon groups and explains refusals", async () => {

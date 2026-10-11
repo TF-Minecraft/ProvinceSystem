@@ -58,10 +58,7 @@ export const EMPTY_ENTITLEMENTS: CatalogEntitlements = {
 const PS_CATEGORY_IDS = new Set(["ps_armor", "ps_items"]);
 
 /** Staff dropdown categories: drop ps_*; armor vs item by is_item. */
-export function filterStaffCategories(
-  categories: CatalogCategory[],
-  kind: string
-): CatalogCategory[] {
+export function filterStaffCategories(categories: CatalogCategory[], kind: string): CatalogCategory[] {
   const wantItem = kind !== "armor_set";
   return categories.filter((c) => {
     if (!c?.id || PS_CATEGORY_IDS.has(c.id)) return false;
@@ -95,19 +92,13 @@ export function parseEntitlements(raw: unknown): CatalogEntitlements {
     return EMPTY_ENTITLEMENTS;
   }
   const obj = raw as Record<string, unknown>;
-  const defaultsIn =
-    obj.defaults && typeof obj.defaults === "object"
-      ? (obj.defaults as Record<string, unknown>)
-      : {};
+  const defaultsIn = obj.defaults && typeof obj.defaults === "object" ? (obj.defaults as Record<string, unknown>) : {};
   const stops = Number(defaultsIn.name_colour_stops);
   const pair = Number(defaultsIn.max_3d_pair_bytes);
   const defaults: CatalogEntitlementDefaults = {
     name_colour_stops: Number.isFinite(stops) && stops >= 0 ? Math.floor(stops) : 0,
     max_3d_pair_bytes: Number.isFinite(pair) && pair >= 0 ? Math.floor(pair) : 0,
-    skin_token_cooldown_days: parseCooldown(
-      defaultsIn.skin_token_cooldown_days,
-      -1
-    ),
+    skin_token_cooldown_days: parseCooldown(defaultsIn.skin_token_cooldown_days, -1),
     skin_kinds: parseKindList(defaultsIn.skin_kinds),
     allow_armor_3d_helmet: defaultsIn.allow_armor_3d_helmet === true,
   };
@@ -125,27 +116,13 @@ export function parseEntitlements(raw: unknown): CatalogEntitlements {
       id,
       tier: Number.isFinite(tier) ? Math.floor(tier) : 0,
       permission: typeof g.permission === "string" ? g.permission : "",
-      display_name:
-        typeof g.display_name === "string" && g.display_name.trim()
-          ? g.display_name
-          : id,
-      name_colour_stops:
-        Number.isFinite(gStops) && gStops >= 0
-          ? Math.floor(gStops)
-          : defaults.name_colour_stops,
-      max_3d_pair_bytes:
-        Number.isFinite(gPair) && gPair >= 0
-          ? Math.floor(gPair)
-          : defaults.max_3d_pair_bytes,
-      skin_token_cooldown_days: parseCooldown(
-        g.skin_token_cooldown_days,
-        defaults.skin_token_cooldown_days
-      ),
+      display_name: typeof g.display_name === "string" && g.display_name.trim() ? g.display_name : id,
+      name_colour_stops: Number.isFinite(gStops) && gStops >= 0 ? Math.floor(gStops) : defaults.name_colour_stops,
+      max_3d_pair_bytes: Number.isFinite(gPair) && gPair >= 0 ? Math.floor(gPair) : defaults.max_3d_pair_bytes,
+      skin_token_cooldown_days: parseCooldown(g.skin_token_cooldown_days, defaults.skin_token_cooldown_days),
       skin_kinds: parseKindList(g.skin_kinds),
       allow_armor_3d_helmet:
-        typeof g.allow_armor_3d_helmet === "boolean"
-          ? g.allow_armor_3d_helmet
-          : defaults.allow_armor_3d_helmet,
+        typeof g.allow_armor_3d_helmet === "boolean" ? g.allow_armor_3d_helmet : defaults.allow_armor_3d_helmet,
     });
   }
   return { defaults, groups };

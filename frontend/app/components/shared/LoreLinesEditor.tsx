@@ -45,10 +45,7 @@ export default function LoreLinesEditor({
           allowColourCodes: true,
         })
       : null;
-  const canAdd =
-    lines.length < LORE_MAX_LINES &&
-    draftTrimmed.length > 0 &&
-    draftErr === null;
+  const canAdd = lines.length < LORE_MAX_LINES && draftTrimmed.length > 0 && draftErr === null;
 
   function addLine() {
     if (!canAdd) return;
@@ -63,19 +60,12 @@ export default function LoreLinesEditor({
   return (
     <div className={className}>
       {heading === "section" ? (
-        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Lore
-        </h2>
+        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Lore</h2>
       ) : (
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Lore</h2>
       )}
-      <p
-        className={`text-sm text-[var(--tfmc-mist)] ${
-          heading === "section" ? "mt-2" : "mt-1"
-        }`}
-      >
-        Up to {LORE_MAX_LINES} lines, {LORE_LINE_MAX} characters each. Colour
-        codes like &amp;c work.
+      <p className={`text-sm text-[var(--tfmc-mist)] ${heading === "section" ? "mt-2" : "mt-1"}`}>
+        Up to {LORE_MAX_LINES} lines, {LORE_LINE_MAX} characters each. Colour codes like &amp;c work.
       </p>
       {lines.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{emptyMessage}</p>
@@ -86,9 +76,7 @@ export default function LoreLinesEditor({
               key={`${i}-${line.slice(0, 12)}`}
               className="flex items-start justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-2"
             >
-              <p className="font-mono text-sm text-[var(--tfmc-cream)]">
-                {line}
-              </p>
+              <p className="font-mono text-sm text-[var(--tfmc-cream)]">{line}</p>
               <button
                 type="button"
                 onClick={() => removeLine(i)}
@@ -121,9 +109,7 @@ export default function LoreLinesEditor({
           </button>
         </div>
       ) : null}
-      {draftErr ? (
-        <p className="mt-2 text-xs text-[#e8a0a0]">{draftErr}</p>
-      ) : null}
+      {draftErr ? <p className="mt-2 text-xs text-[#e8a0a0]">{draftErr}</p> : null}
       {showPreview && lines.some((l) => l.trim()) ? (
         <div className="mt-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[#1a1a1a] px-4 py-3 font-mono text-sm">
           <ul className="space-y-1">

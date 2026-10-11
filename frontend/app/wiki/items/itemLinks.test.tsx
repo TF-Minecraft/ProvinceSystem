@@ -24,18 +24,15 @@ describe("custom recipe item links", () => {
     expect(customItemIdentity(itemsAdder)).toBe(itemsAdder.sourceId);
   });
 
-  it.each(["Abyssalite Pickaxe", "Demonwood Log"]) (
-    "renders %s output as a link to its generated item page",
-    (name) => {
-      const recipe = recipeWithOutput(name);
-      const href = getRecipeItemHref(recipe.output);
-      expect(href).toMatch(/^\/wiki\/items\/[a-z0-9-]+(?:--[a-z0-9-]+)*$/);
+  it.each(["Abyssalite Pickaxe", "Demonwood Log"])("renders %s output as a link to its generated item page", (name) => {
+    const recipe = recipeWithOutput(name);
+    const href = getRecipeItemHref(recipe.output);
+    expect(href).toMatch(/^\/wiki\/items\/[a-z0-9-]+(?:--[a-z0-9-]+)*$/);
 
-      const html = renderToStaticMarkup(CraftingGrid({ recipe }));
-      expect(html).toContain(`href="${href}"`);
-      expect(html).toContain(`alt="${name}"`);
-    },
-  );
+    const html = renderToStaticMarkup(CraftingGrid({ recipe }));
+    expect(html).toContain(`href="${href}"`);
+    expect(html).toContain(`alt="${name}"`);
+  });
 
   it("keeps the Raw Tin alias on the existing Tin material page", () => {
     const rawTin = itemRecipes
@@ -46,13 +43,9 @@ describe("custom recipe item links", () => {
   });
 
   it("keeps vehicle previews on the vehicle catalogue query route", () => {
-    const vehicleRecipe = itemRecipes.find(
-      (recipe) => getRecipeItemHref(recipe.output)?.startsWith("/wiki/vehicles?"),
-    );
+    const vehicleRecipe = itemRecipes.find((recipe) => getRecipeItemHref(recipe.output)?.startsWith("/wiki/vehicles?"));
     expect(vehicleRecipe).toBeDefined();
-    expect(getRecipeItemHref(vehicleRecipe!.output)).toMatch(
-      /^\/wiki\/vehicles\?vehicle=[a-z0-9-]+#catalogue$/,
-    );
+    expect(getRecipeItemHref(vehicleRecipe!.output)).toMatch(/^\/wiki\/vehicles\?vehicle=[a-z0-9-]+#catalogue$/);
     const html = renderToStaticMarkup(CraftingGrid({ recipe: vehicleRecipe! }));
     expect(html).toContain("/wiki/vehicles?vehicle=");
     expect(html).not.toContain("/wiki/items/");
@@ -85,19 +78,14 @@ describe("generated item detail routes", () => {
     expect(generateStaticParams()).not.toContainEqual({ slug: "weapon-station" });
   });
 
-  it.each(["abyssalite-pickaxe", "demonwood-log"])(
-    "renders real recipe and used-in sections for %s",
-    async (slug) => {
-      const item = getItemBySlug(slug);
-      expect(item).toBeDefined();
-      const html = renderToStaticMarkup(
-        await ItemDetailPage({ params: Promise.resolve({ slug }) }),
-      );
-      expect(html).toContain(`<h1`);
-      expect(html).toContain(item!.name);
-      expect(html).toContain("How to craft");
-      expect(html).toContain("What can be crafted from it");
-      expect(html).toContain(item!.recipes[0]?.title ?? item!.usedIn[0]?.title);
-    },
-  );
+  it.each(["abyssalite-pickaxe", "demonwood-log"])("renders real recipe and used-in sections for %s", async (slug) => {
+    const item = getItemBySlug(slug);
+    expect(item).toBeDefined();
+    const html = renderToStaticMarkup(await ItemDetailPage({ params: Promise.resolve({ slug }) }));
+    expect(html).toContain(`<h1`);
+    expect(html).toContain(item!.name);
+    expect(html).toContain("How to craft");
+    expect(html).toContain("What can be crafted from it");
+    expect(html).toContain(item!.recipes[0]?.title ?? item!.usedIn[0]?.title);
+  });
 });

@@ -4,10 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import { fetchMapJson, mapApiUrl } from "@/lib/map/api";
-import {
-  isTileManifest,
-  type TileManifest,
-} from "@/app/lib/map/tilePyramid";
+import { isTileManifest, type TileManifest } from "@/app/lib/map/tilePyramid";
 
 /**
  * Manifests already fetched this page view, by `mapId/layer`. Switching back
@@ -21,9 +18,7 @@ function cacheKey(mapId: MapId, layer: string): string {
 }
 
 async function fetchManifest(mapId: MapId, layer: string): Promise<TileManifest | null> {
-  const body = await fetchMapJson<unknown>(
-    `/${mapId}/tiles/${encodeURIComponent(layer)}/manifest`
-  );
+  const body = await fetchMapJson<unknown>(`/${mapId}/tiles/${encodeURIComponent(layer)}/manifest`);
   if (!isTileManifest(body)) return null;
   manifestCache.set(cacheKey(mapId, layer), body);
   return body;
@@ -35,11 +30,9 @@ export function tileUrl(
   manifest: TileManifest,
   level: number,
   x: number,
-  y: number
+  y: number,
 ): string {
-  return mapApiUrl(
-    `/${mapId}/tiles/${encodeURIComponent(layer)}/${manifest.version}/${level}/${x}/${y}.webp`
-  );
+  return mapApiUrl(`/${mapId}/tiles/${encodeURIComponent(layer)}/${manifest.version}/${level}/${x}/${y}.webp`);
 }
 
 /** How long to wait before asking again while the backend builds the pyramid. */
@@ -70,11 +63,7 @@ export type TileManifestState = {
  * request, and fetching hundreds of tiles as blobs would cost more than the
  * single image it replaces, so callers keep those on the single image.
  */
-export function useTileManifest(
-  mapId: MapId,
-  layer: string | null,
-  enabled: boolean
-): TileManifestState {
+export function useTileManifest(mapId: MapId, layer: string | null, enabled: boolean): TileManifestState {
   const [manifest, setManifest] = useState<TileManifest | null>(null);
   const [status, setStatus] = useState<TileManifestStatus>("loading");
   /** Which `mapId/layer` the two states above describe. */

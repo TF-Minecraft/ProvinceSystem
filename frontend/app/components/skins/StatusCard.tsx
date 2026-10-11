@@ -13,13 +13,9 @@ function statusMessage(row: SubmissionPublic): string {
       case "pending":
         return "Staff submission - waiting for auto-approve.";
       case "denied":
-        return row.deny_reason?.trim()
-          ? `Denied: ${row.deny_reason.trim()}`
-          : "Denied. No reason given.";
+        return row.deny_reason?.trim() ? `Denied: ${row.deny_reason.trim()}` : "Denied. No reason given.";
       case "approved":
-        return (
-          "Approved. Waiting to be applied on the server (curated pack; within 24 hours)."
-        );
+        return "Approved. Waiting to be applied on the server (curated pack; within 24 hours).";
       case "applied":
         return "Live on the server in the curated shop pack.";
       case "revoked":
@@ -30,13 +26,9 @@ function statusMessage(row: SubmissionPublic): string {
   }
   switch (row.status) {
     case "pending":
-      return (
-        "Submitted for staff review. Your confirmation DM can take up to 5 minutes."
-      );
+      return "Submitted for staff review. Your confirmation DM can take up to 5 minutes.";
     case "denied":
-      return row.deny_reason?.trim()
-        ? `Denied: ${row.deny_reason.trim()}`
-        : "Denied. No reason given.";
+      return row.deny_reason?.trim() ? `Denied: ${row.deny_reason.trim()}` : "Denied. No reason given.";
     case "approved":
       return "Approved. Your skin will be live within 24 hours.";
     case "applied":
@@ -77,11 +69,7 @@ export default function StatusCard({ row, sessionToken }: Props) {
       } catch (err) {
         if (revoked) return;
         setSheetError(
-          err instanceof SkinsApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Could not load preview"
+          err instanceof SkinsApiError ? err.message : err instanceof Error ? err.message : "Could not load preview",
         );
       } finally {
         if (!revoked) setSheetLoading(false);
@@ -100,9 +88,7 @@ export default function StatusCard({ row, sessionToken }: Props) {
       <p className="text-lg text-[var(--tfmc-cream)]">{statusMessage(row)}</p>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Preview
-        </h2>
+        <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Preview</h2>
         {sheetLoading ? (
           <div className="flex items-center gap-3 py-8 text-sm text-[var(--tfmc-mist)]">
             <div
@@ -133,16 +119,12 @@ export default function StatusCard({ row, sessionToken }: Props) {
         {row.tiers?.length ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Armour sets</dt>
-            <dd className="text-[var(--tfmc-cream)]">
-              {row.tiers.map(armorTierLabel).join(", ")}
-            </dd>
+            <dd className="text-[var(--tfmc-cream)]">{row.tiers.map(armorTierLabel).join(", ")}</dd>
           </div>
         ) : row.base_set ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Item type</dt>
-            <dd className="text-[var(--tfmc-cream)]">
-              {baseSetLabel(row.base_set)}
-            </dd>
+            <dd className="text-[var(--tfmc-cream)]">{baseSetLabel(row.base_set)}</dd>
           </div>
         ) : null}
         <div>
@@ -154,13 +136,9 @@ export default function StatusCard({ row, sessionToken }: Props) {
             <dt className="text-[var(--tfmc-stone)]">Name look</dt>
             <dd className="text-[var(--tfmc-cream)]">
               {row.name_colours?.length
-                ? `${row.name_colours.length} colour${
-                    row.name_colours.length === 1 ? "" : "s"
-                  }`
+                ? `${row.name_colours.length} colour${row.name_colours.length === 1 ? "" : "s"}`
                 : "no colours"}
-              {row.name_styles?.length
-                ? ` · ${row.name_styles.join(", ")}`
-                : ""}
+              {row.name_styles?.length ? ` · ${row.name_styles.join(", ")}` : ""}
             </dd>
           </div>
         ) : null}

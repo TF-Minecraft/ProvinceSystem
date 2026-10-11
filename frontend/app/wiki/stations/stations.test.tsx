@@ -4,7 +4,15 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { allRecipes, getRecipesForStation, getStationAcquisitionVisual, navItems, stationRecipes, stations, stationsSection } from "../data";
+import {
+  allRecipes,
+  getRecipesForStation,
+  getStationAcquisitionVisual,
+  navItems,
+  stationRecipes,
+  stations,
+  stationsSection,
+} from "../data";
 import { getRecipeItemHref } from "../data/items";
 import StationsPage from "./page";
 import StationDetailPage, { generateStaticParams } from "./[slug]/page";
@@ -29,19 +37,34 @@ describe("station registry and source coverage", () => {
     expect(navItems.filter((item) => item.href === "/wiki/stations")).toHaveLength(1);
     expect(stationsSection.recipes).toEqual(expect.arrayContaining(stationRecipes));
     for (const recipe of stationRecipes) {
-      expect(allRecipes.filter((candidate) => candidate === recipe), recipe.key).toHaveLength(1);
+      expect(
+        allRecipes.filter((candidate) => candidate === recipe),
+        recipe.key,
+      ).toHaveLength(1);
     }
     expect(new Set(allRecipes.map((recipe) => recipe.key)).size).toBe(allRecipes.length);
   });
 
   it("assigns each recipe source to its correct station detail page", () => {
     const expectedCounts: Record<string, number> = {
-      "alchemy-station": 53, "animal-station": 54, "archeology-station": 12,
-      "block-station": 133, "copper-station": 119, "engineer-station": 17,
-      "engineering-table": 16, "fishing-station": 25, "forester-station": 117,
-      "gunsmithing-station": 21, "ingot-station": 71, "instrument-station": 9,
-      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 42,
-      dockyard: 5, "research-station": 36, "tool-station": 57,
+      "alchemy-station": 53,
+      "animal-station": 54,
+      "archeology-station": 12,
+      "block-station": 133,
+      "copper-station": 119,
+      "engineer-station": 17,
+      "engineering-table": 16,
+      "fishing-station": 25,
+      "forester-station": 117,
+      "gunsmithing-station": 21,
+      "ingot-station": 71,
+      "instrument-station": 9,
+      "magic-station": 10,
+      "meal-prep-station": 22,
+      "medicine-station": 42,
+      dockyard: 5,
+      "research-station": 36,
+      "tool-station": 57,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {
       const station = stations.find((candidate) => candidate.slug === slug)!;
@@ -82,19 +105,52 @@ describe("station registry and source coverage", () => {
 
   it("provides the complete vanilla crafting grid for every vanilla-block station", () => {
     const expectedPatterns: Record<string, string[]> = {
-      "alchemy-station": ["", "blaze_rod", "", "#stone_crafting_materials", "#stone_crafting_materials", "#stone_crafting_materials", "", "", ""],
+      "alchemy-station": [
+        "",
+        "blaze_rod",
+        "",
+        "#stone_crafting_materials",
+        "#stone_crafting_materials",
+        "#stone_crafting_materials",
+        "",
+        "",
+        "",
+      ],
       "block-station": ["", "iron_ingot", "", "stone", "stone", "stone", "", "", ""],
       "copper-station": ["stick", "stone_slab", "stick", "#planks", "", "#planks", "", "", ""],
       "forester-station": ["flint", "flint", "", "#planks", "#planks", "", "#planks", "#planks", ""],
-      "ingot-station": ["iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", "furnace", "iron_ingot", "smooth_stone", "smooth_stone", "smooth_stone"],
-      "instrument-station": ["#planks", "#planks", "#planks", "#planks", "diamond", "#planks", "#planks", "#planks", "#planks"],
+      "ingot-station": [
+        "iron_ingot",
+        "iron_ingot",
+        "iron_ingot",
+        "iron_ingot",
+        "furnace",
+        "iron_ingot",
+        "smooth_stone",
+        "smooth_stone",
+        "smooth_stone",
+      ],
+      "instrument-station": [
+        "#planks",
+        "#planks",
+        "#planks",
+        "#planks",
+        "diamond",
+        "#planks",
+        "#planks",
+        "#planks",
+        "#planks",
+      ],
       "research-station": ["paper", "paper", "", "#planks", "#planks", "", "#planks", "#planks", ""],
       "tool-station": ["#planks", "#planks", "", "#planks", "#planks", "", "", "", ""],
     };
     for (const station of stations.filter((candidate) => candidate.vanillaBlock)) {
       const recipe = station.vanillaBlock!.recipe;
       expect(recipe.ingredients, station.slug).toHaveLength(9);
-      expect(recipe.ingredients.map((slot) => slot.sourceId?.replace("vanilla:", "") ?? ""), station.slug).toEqual(expectedPatterns[station.slug]);
+      expect(
+        recipe.ingredients.map((slot) => slot.sourceId?.replace("vanilla:", "") ?? ""),
+        station.slug,
+      ).toEqual(expectedPatterns[station.slug]);
       expect(recipe.output.name, station.slug).toBe(station.vanillaBlock!.name);
       expect(recipe.output.qty, station.slug).toBe(1);
       expect(recipe.output.sourceId, station.slug).toMatch(/^vanilla:/);
@@ -124,29 +180,44 @@ describe("station registry and source coverage", () => {
 
     const expectedCubes = {
       "forester-station": {
-        up: "/wiki/textures/vanilla/fletching_table_top.png", down: "/wiki/textures/vanilla/birch_planks.png",
-        north: "/wiki/textures/vanilla/fletching_table_front.png", south: "/wiki/textures/vanilla/fletching_table_front.png",
-        east: "/wiki/textures/vanilla/fletching_table_side.png", west: "/wiki/textures/vanilla/fletching_table_side.png",
+        up: "/wiki/textures/vanilla/fletching_table_top.png",
+        down: "/wiki/textures/vanilla/birch_planks.png",
+        north: "/wiki/textures/vanilla/fletching_table_front.png",
+        south: "/wiki/textures/vanilla/fletching_table_front.png",
+        east: "/wiki/textures/vanilla/fletching_table_side.png",
+        west: "/wiki/textures/vanilla/fletching_table_side.png",
       },
       "tool-station": {
-        up: "/wiki/textures/vanilla/crafting_table_top.png", down: "/wiki/textures/vanilla/oak_planks.png",
-        north: "/wiki/textures/vanilla/crafting_table_front.png", south: "/wiki/textures/vanilla/crafting_table_side.png",
-        east: "/wiki/textures/vanilla/crafting_table_side.png", west: "/wiki/textures/vanilla/crafting_table_front.png",
+        up: "/wiki/textures/vanilla/crafting_table_top.png",
+        down: "/wiki/textures/vanilla/oak_planks.png",
+        north: "/wiki/textures/vanilla/crafting_table_front.png",
+        south: "/wiki/textures/vanilla/crafting_table_side.png",
+        east: "/wiki/textures/vanilla/crafting_table_side.png",
+        west: "/wiki/textures/vanilla/crafting_table_front.png",
       },
       "research-station": {
-        up: "/wiki/textures/vanilla/cartography_table_top.png", down: "/wiki/textures/vanilla/dark_oak_planks.png",
-        north: "/wiki/textures/vanilla/cartography_table_side3.png", south: "/wiki/textures/vanilla/cartography_table_side1.png",
-        east: "/wiki/textures/vanilla/cartography_table_side3.png", west: "/wiki/textures/vanilla/cartography_table_side2.png",
+        up: "/wiki/textures/vanilla/cartography_table_top.png",
+        down: "/wiki/textures/vanilla/dark_oak_planks.png",
+        north: "/wiki/textures/vanilla/cartography_table_side3.png",
+        south: "/wiki/textures/vanilla/cartography_table_side1.png",
+        east: "/wiki/textures/vanilla/cartography_table_side3.png",
+        west: "/wiki/textures/vanilla/cartography_table_side2.png",
       },
       "ingot-station": {
-        up: "/wiki/textures/vanilla/blast_furnace_top.png", down: "/wiki/textures/vanilla/blast_furnace_top.png",
-        north: "/wiki/textures/vanilla/blast_furnace_front.png", south: "/wiki/textures/vanilla/blast_furnace_side.png",
-        east: "/wiki/textures/vanilla/blast_furnace_side.png", west: "/wiki/textures/vanilla/blast_furnace_side.png",
+        up: "/wiki/textures/vanilla/blast_furnace_top.png",
+        down: "/wiki/textures/vanilla/blast_furnace_top.png",
+        north: "/wiki/textures/vanilla/blast_furnace_front.png",
+        south: "/wiki/textures/vanilla/blast_furnace_side.png",
+        east: "/wiki/textures/vanilla/blast_furnace_side.png",
+        west: "/wiki/textures/vanilla/blast_furnace_side.png",
       },
       "instrument-station": {
-        up: "/wiki/textures/vanilla/jukebox_top.png", down: "/wiki/textures/vanilla/jukebox_side.png",
-        north: "/wiki/textures/vanilla/jukebox_side.png", south: "/wiki/textures/vanilla/jukebox_side.png",
-        east: "/wiki/textures/vanilla/jukebox_side.png", west: "/wiki/textures/vanilla/jukebox_side.png",
+        up: "/wiki/textures/vanilla/jukebox_top.png",
+        down: "/wiki/textures/vanilla/jukebox_side.png",
+        north: "/wiki/textures/vanilla/jukebox_side.png",
+        south: "/wiki/textures/vanilla/jukebox_side.png",
+        east: "/wiki/textures/vanilla/jukebox_side.png",
+        west: "/wiki/textures/vanilla/jukebox_side.png",
       },
     } as const;
     for (const [slug, faces] of Object.entries(expectedCubes)) {
@@ -174,13 +245,17 @@ describe("station registry and source coverage", () => {
   it("resolves every station preview and recipe asset", () => {
     for (const station of stations) {
       expect(existsSync(publicPath(station.icon)), station.icon).toBe(true);
-      if (station.fallbackTexture) expect(existsSync(publicPath(station.fallbackTexture)), station.fallbackTexture).toBe(true);
+      if (station.fallbackTexture)
+        expect(existsSync(publicPath(station.fallbackTexture)), station.fallbackTexture).toBe(true);
       if (station.model) {
         expect(existsSync(publicPath(station.model.url)), station.model.url).toBe(true);
-        if (station.model.texture) expect(existsSync(publicPath(station.model.texture)), station.model.texture).toBe(true);
-        for (const texture of Object.values(station.model.textures ?? {})) expect(existsSync(publicPath(texture)), texture).toBe(true);
+        if (station.model.texture)
+          expect(existsSync(publicPath(station.model.texture)), station.model.texture).toBe(true);
+        for (const texture of Object.values(station.model.textures ?? {}))
+          expect(existsSync(publicPath(texture)), texture).toBe(true);
       }
-      for (const texture of Object.values(station.cubeFaces ?? {})) expect(existsSync(publicPath(texture)), texture).toBe(true);
+      for (const texture of Object.values(station.cubeFaces ?? {}))
+        expect(existsSync(publicPath(texture)), texture).toBe(true);
     }
     for (const recipe of allRecipes) {
       for (const slot of [...recipe.ingredients, recipe.output]) {
@@ -231,7 +306,9 @@ describe("station routes", () => {
   it("resolves every station acquisition output by source identity to a static 3D thumbnail", () => {
     const acquisitionStations = stations.filter((station) => station.craftRecipe || station.vanillaBlock?.recipe);
     expect(acquisitionStations).toHaveLength(24);
-    const sourceIds = acquisitionStations.map((station) => (station.craftRecipe ?? station.vanillaBlock!.recipe).output.sourceId);
+    const sourceIds = acquisitionStations.map(
+      (station) => (station.craftRecipe ?? station.vanillaBlock!.recipe).output.sourceId,
+    );
     expect(sourceIds.every(Boolean)).toBe(true);
     expect(new Set(sourceIds).size).toBe(24);
 
@@ -255,15 +332,19 @@ describe("station routes", () => {
 
   it("does not replace a station item when it appears in an ingredient slot", () => {
     const engineeringRecipe = stations.find((station) => station.slug === "engineering-table")!.craftRecipe!;
-    const html = renderToStaticMarkup(<CraftingGrid recipe={{
-      key: "station-as-ingredient",
-      title: "Station as ingredient",
-      station: "Crafting Table",
-      ingredients: [engineeringRecipe.output],
-      output: { name: "Stone", qty: 1, sourceId: "vanilla:stone", texture: "/wiki/textures/vanilla/stone.png" },
-    }} />);
+    const html = renderToStaticMarkup(
+      <CraftingGrid
+        recipe={{
+          key: "station-as-ingredient",
+          title: "Station as ingredient",
+          station: "Crafting Table",
+          ingredients: [engineeringRecipe.output],
+          output: { name: "Stone", qty: 1, sourceId: "vanilla:stone", texture: "/wiki/textures/vanilla/stone.png" },
+        }}
+      />,
+    );
     expect(html).toContain('src="/wiki/textures/vehicle-stations/engineering_table/front.png"');
-    expect(html).not.toContain('/wiki/thumbnails/stations/engineering-table.webp');
+    expect(html).not.toContain("/wiki/thumbnails/stations/engineering-table.webp");
   });
 
   it("groups large catalogues and removes unavailable implementation placeholders", async () => {
@@ -280,7 +361,9 @@ describe("station routes", () => {
       const station = await StationDetailPage({ params: Promise.resolve({ slug }) });
       const html = renderToStaticMarkup(station);
       expect(html).toMatch(/How to use it<\/h2><p[^>]*>(?:Right click|Shift \+ Right click)<\/p>/);
-      expect(html).not.toMatch(/The action that opens|Stand still|without sneaking|holding a written Letter|normal right-click|placed station/i);
+      expect(html).not.toMatch(
+        /The action that opens|Stand still|without sneaking|holding a written Letter|normal right-click|placed station/i,
+      );
     }
   });
 

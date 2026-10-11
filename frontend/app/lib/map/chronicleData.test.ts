@@ -68,10 +68,7 @@ describe("chronicle data", () => {
       incomplete_days: [],
       incomplete_day_count: 0,
     };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(JSON.stringify(empty), { status: 200 }))
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(empty), { status: 200 })));
 
     await expect(fetchChronicleIndex("dev", "tok")).resolves.toEqual(empty);
   });
@@ -83,32 +80,22 @@ describe("chronicle data", () => {
 
     const result = await fetchChronicleDayFile("dev", "2026-08-31", "nation", "tok");
 
-    expect(fetchMock.mock.calls[0]![0]).toBe(
-      "http://api.test/dev/chronicle/2026-08-31/data/nation"
-    );
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api.test/dev/chronicle/2026-08-31/data/nation");
     expect(result.value).toEqual({ TEST: { rgb: "229,60,112", provinces: [1] } });
     expect(result.byteLength).toBe(Buffer.byteLength(payload, "utf-8"));
-    expect(result.fingerprint).toBe(
-      fingerprintBytes(new Uint8Array(Buffer.from(payload, "utf-8")))
-    );
+    expect(result.fingerprint).toBe(fingerprintBytes(new Uint8Array(Buffer.from(payload, "utf-8"))));
   });
 
   it("surfaces a missing day source distinctly from a transport failure", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ detail: "not captured" }), { status: 404 })
-      )
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: "not captured" }), { status: 404 })),
     );
-    const missing = await fetchChronicleDayFile("dev", "2026-08-31", "trade", "tok").catch(
-      (err: unknown) => err
-    );
+    const missing = await fetchChronicleDayFile("dev", "2026-08-31", "trade", "tok").catch((err: unknown) => err);
     expect(isChronicleDayFileMissing(missing)).toBe(true);
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-    const failed = await fetchChronicleDayFile("dev", "2026-08-31", "trade", "tok").catch(
-      (err: unknown) => err
-    );
+    const failed = await fetchChronicleDayFile("dev", "2026-08-31", "trade", "tok").catch((err: unknown) => err);
     expect(isChronicleDayFileMissing(failed)).toBe(false);
     expect((failed as MapAccessError).status).toBe(0);
   });
@@ -120,9 +107,7 @@ describe("chronicle data", () => {
     const bomb = Buffer.alloc(CHRONICLE_DAY_FILE_BUDGET_BYTES + 1024, 0x20);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(gzipResponse(bomb)));
 
-    const err = await fetchChronicleDayFile("dev", "2026-08-31", "nation", "tok").catch(
-      (e: unknown) => e
-    );
+    const err = await fetchChronicleDayFile("dev", "2026-08-31", "nation", "tok").catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(MapAccessError);
     expect((err as Error).name).toBe("ChronicleDecompressionLimitError");
@@ -143,9 +128,7 @@ describe("chronicle data", () => {
     // Without this the studio's Cancel could not interrupt the grid fetch, and
     // a cancelled build stayed parked on it long enough for a second build to
     // start behind it.
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(gzipResponse(encodeGrid(2, 2, [0, 1, 2, 0])));
+    const fetchMock = vi.fn().mockResolvedValue(gzipResponse(encodeGrid(2, 2, [0, 1, 2, 0])));
     vi.stubGlobal("fetch", fetchMock);
     const controller = new AbortController();
 
@@ -157,10 +140,7 @@ describe("chronicle data", () => {
   });
 
   it("fetchProvinceIdGridQ4 gunzips and deserializes the grid", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(gzipResponse(encodeGrid(2, 2, [0, 1, 2, 0])))
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(gzipResponse(encodeGrid(2, 2, [0, 1, 2, 0]))));
 
     const grid = await fetchProvinceIdGridQ4("dev", "tok");
 

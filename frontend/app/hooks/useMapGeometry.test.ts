@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  chronicleNamesSupported,
-  mapGeometryDataPaths,
-} from "./useMapGeometry";
+import { chronicleNamesSupported, mapGeometryDataPaths } from "./useMapGeometry";
 
 const GEOMETRY_FILES = [
   "province_neighbors",
@@ -17,9 +14,7 @@ describe("mapGeometryDataPaths", () => {
   it("builds the five data paths for any map id", () => {
     for (const mapId of ["dev", "calavorn"] as const) {
       const paths = mapGeometryDataPaths(mapId);
-      expect(paths).toEqual(
-        GEOMETRY_FILES.map((name) => `/${mapId}/data/${name}`)
-      );
+      expect(paths).toEqual(GEOMETRY_FILES.map((name) => `/${mapId}/data/${name}`));
     }
   });
 });
@@ -31,7 +26,7 @@ describe("chronicleNamesSupported", () => {
         ready: false,
         neighbors: null,
         centroids: null,
-      })
+      }),
     ).toBe(true);
   });
 
@@ -41,14 +36,14 @@ describe("chronicleNamesSupported", () => {
         ready: true,
         neighbors: null,
         centroids: null,
-      })
+      }),
     ).toBe(false);
     expect(
       chronicleNamesSupported({
         ready: true,
         neighbors: { "1": [] },
         centroids: null,
-      })
+      }),
     ).toBe(false);
   });
 
@@ -58,7 +53,7 @@ describe("chronicleNamesSupported", () => {
         ready: true,
         neighbors: { "1": [2] },
         centroids: { "1": { x: 1, y: 1 } },
-      })
+      }),
     ).toBe(true);
   });
 });

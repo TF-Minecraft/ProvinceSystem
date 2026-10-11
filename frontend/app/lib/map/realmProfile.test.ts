@@ -129,14 +129,14 @@ describe("buildRealmProfile", () => {
         leader: "newking",
         "leader character": "Grunk the Bold",
         "leader character of": "rushork",
-      }).leader
+      }).leader,
     ).toBeNull();
     expect(
       buildRealmProfile("Grunk", {
         leader: "RUSHORK",
         "leader character": "Grunk the Bold",
         "leader character of": "rushork",
-      }).leader
+      }).leader,
     ).toBe("Grunk the Bold");
   });
 
@@ -164,21 +164,15 @@ describe("realmCapitalSettlement", () => {
   ];
 
   it("prefers the realm's own faction capital", () => {
-    expect(
-      realmCapitalSettlement({ id: "Rat_Hill", capitalProvince: 212 }, settlements)?.name
-    ).toBe("Cru' Sadin");
+    expect(realmCapitalSettlement({ id: "Rat_Hill", capitalProvince: 212 }, settlements)?.name).toBe("Cru' Sadin");
   });
 
   it("falls back to any settlement in the capital province", () => {
-    expect(
-      realmCapitalSettlement({ id: "Other", capitalProvince: 212 }, settlements)?.name
-    ).toBe("Market Town");
+    expect(realmCapitalSettlement({ id: "Other", capitalProvince: 212 }, settlements)?.name).toBe("Market Town");
   });
 
   it("has nothing for a realm without a capital", () => {
-    expect(
-      realmCapitalSettlement({ id: "Rat_Hill", capitalProvince: null }, settlements)
-    ).toBeNull();
+    expect(realmCapitalSettlement({ id: "Rat_Hill", capitalProvince: null }, settlements)).toBeNull();
   });
 });
 

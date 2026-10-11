@@ -60,11 +60,7 @@ export function chronicleIndexPath(mapId: MapId): string {
   return `/${mapId}/chronicle/index`;
 }
 
-export function chronicleDayFilePath(
-  mapId: MapId,
-  day: string,
-  name: ChronicleFileName
-): string {
+export function chronicleDayFilePath(mapId: MapId, day: string, name: ChronicleFileName): string {
   return `/${mapId}/chronicle/${encodeURIComponent(day)}/data/${name}`;
 }
 
@@ -80,10 +76,7 @@ export function provinceIdGridQ4Path(mapId: MapId): string {
  * A map with no history answers 200 with `days: []` and null bounds — day zero,
  * not an error. Callers render the empty timeline for it.
  */
-export async function fetchChronicleIndex(
-  mapId: MapId,
-  sessionToken?: string | null
-): Promise<ChronicleIndex> {
+export async function fetchChronicleIndex(mapId: MapId, sessionToken?: string | null): Promise<ChronicleIndex> {
   return fetchMapJson<ChronicleIndex>(chronicleIndexPath(mapId), {
     sessionToken,
   });
@@ -106,9 +99,7 @@ export class ChronicleDayFileMissingError extends MapAccessError {
   }
 }
 
-export function isChronicleDayFileMissing(
-  error: unknown
-): error is ChronicleDayFileMissingError {
+export function isChronicleDayFileMissing(error: unknown): error is ChronicleDayFileMissingError {
   return error instanceof ChronicleDayFileMissingError;
 }
 
@@ -178,16 +169,14 @@ export class ChronicleDecompressionLimitError extends MapAccessError {
 async function decompressGzipWithBudget(
   compressed: ArrayBuffer,
   limitBytes: number,
-  path: string
+  path: string,
 ): Promise<ArrayBuffer> {
   if (typeof DecompressionStream === "undefined") {
     // Fall back to the shared helper, which throws its own clear message.
     return decompressGzipBuffer(compressed);
   }
 
-  const stream = new Blob([compressed])
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
+  const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip"));
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -222,7 +211,7 @@ async function fetchGzippedBytes(
   sessionToken: string | null | undefined,
   onNotFound: (detail: string) => Error,
   signal: AbortSignal | undefined,
-  limitBytes: number
+  limitBytes: number,
 ): Promise<ArrayBuffer> {
   const res = await fetchMapApi(path, { sessionToken, signal });
   if (!res.ok) {
@@ -244,14 +233,14 @@ export async function fetchChronicleDayFile<T>(
   day: string,
   name: ChronicleFileName,
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<ChronicleDayFile<T>> {
   const buffer = await fetchGzippedBytes(
     chronicleDayFilePath(mapId, day, name),
     sessionToken,
     (detail) => new ChronicleDayFileMissingError(day, name, detail),
     signal,
-    CHRONICLE_DAY_FILE_BUDGET_BYTES
+    CHRONICLE_DAY_FILE_BUDGET_BYTES,
   );
   const bytes = new Uint8Array(buffer);
   const text = new TextDecoder("utf-8").decode(bytes);
@@ -276,7 +265,7 @@ export async function fetchChronicleDayMarkers(
   mapId: MapId,
   day: string,
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Omit<ChronicleDayFile<MapMarkersResponse>, "fingerprint">> {
   const path = chronicleDayMarkersPath(mapId, day);
   const res = await fetchMapApi(path, { sessionToken, signal });
@@ -307,14 +296,14 @@ export async function fetchChronicleDayMarkers(
 export async function fetchProvinceIdGridQ4(
   mapId: MapId,
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<ProvinceIdGrid> {
   const buffer = await fetchGzippedBytes(
     provinceIdGridQ4Path(mapId),
     sessionToken,
     (detail) => new MapAccessError(detail, 404, detail),
     signal,
-    CHRONICLE_GRID_BUDGET_BYTES
+    CHRONICLE_GRID_BUDGET_BYTES,
   );
   return deserializeProvinceIdGrid(buffer);
 }

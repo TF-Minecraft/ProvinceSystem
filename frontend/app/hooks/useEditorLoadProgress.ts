@@ -10,14 +10,9 @@ import {
 } from "@/app/lib/map/editor/editorLoadProgress";
 
 export function useEditorLoadProgress(options: EditorLoadProgressOptions) {
-  const enabledStages = useMemo(
-    () => getEnabledStages(options),
-    [options.needsProvinceIndex, options.childTierMode]
-  );
+  const enabledStages = useMemo(() => getEnabledStages(options), [options.needsProvinceIndex, options.childTierMode]);
 
-  const [completed, setCompleted] = useState<Set<EditorLoadStageId>>(
-    () => new Set()
-  );
+  const [completed, setCompleted] = useState<Set<EditorLoadStageId>>(() => new Set());
   const [activeStage, setActiveStage] = useState<EditorLoadStageId | null>(null);
 
   const markActive = useCallback((stageId: EditorLoadStageId) => {
@@ -44,11 +39,7 @@ export function useEditorLoadProgress(options: EditorLoadProgressOptions) {
     });
   }, []);
 
-  const progress = computeEditorLoadProgress(
-    enabledStages,
-    completed,
-    activeStage
-  );
+  const progress = computeEditorLoadProgress(enabledStages, completed, activeStage);
 
   return {
     enabledStages,

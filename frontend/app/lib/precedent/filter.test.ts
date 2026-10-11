@@ -71,12 +71,9 @@ describe("filterCases", () => {
   });
 });
 
-
 describe("cleanSynthesis", () => {
   it("strips bold markers Claude emits, which Discord renders but the web does not", () => {
-    expect(cleanSynthesis("**Precedent Analysis:** rule 4.8 applies")).toBe(
-      "Precedent Analysis: rule 4.8 applies"
-    );
+    expect(cleanSynthesis("**Precedent Analysis:** rule 4.8 applies")).toBe("Precedent Analysis: rule 4.8 applies");
   });
 
   it("strips italic, bold-italic and underscore emphasis", () => {
@@ -102,7 +99,6 @@ describe("cleanSynthesis", () => {
     expect(cleanSynthesis("**line one\nline two**")).toBe("line one\nline two");
   });
 });
-
 
 describe("parsePlayers", () => {
   it("splits on commas and drops blanks", () => {
@@ -137,9 +133,7 @@ describe("rulingTone", () => {
   it("only treats a bare affirmative as the default outcome", () => {
     // Real corpus value: contains "Confirmed" but is evidence detail, so it
     // must not be classified as the unremarkable default and hidden.
-    expect(
-      rulingTone("Confirmed via replay mod footage, admitted after questioning")
-    ).toBe("neutral");
+    expect(rulingTone("Confirmed via replay mod footage, admitted after questioning")).toBe("neutral");
   });
 });
 
@@ -157,12 +151,8 @@ describe("visibleRuling", () => {
 
   it("shows unrecognised rulings rather than silently dropping them", () => {
     expect(visibleRuling("Reduced on appeal")).toBe("Reduced on appeal");
-    expect(visibleRuling("Decided by helper-tier staff")).toBe(
-      "Decided by helper-tier staff"
-    );
-    expect(
-      visibleRuling("Confirmed via replay mod footage, admitted after questioning")
-    ).not.toBeNull();
+    expect(visibleRuling("Decided by helper-tier staff")).toBe("Decided by helper-tier staff");
+    expect(visibleRuling("Confirmed via replay mod footage, admitted after questioning")).not.toBeNull();
   });
 
   it("returns null for an empty ruling", () => {

@@ -4,7 +4,13 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Matrix4, Euler, Vector3 } from "three";
-import { buildModelBuffers, faceUvs, referencedTextureKeys, resolveTextureUrls, type WikiBlockModel } from "../../components/wiki/modelGeometry";
+import {
+  buildModelBuffers,
+  faceUvs,
+  referencedTextureKeys,
+  resolveTextureUrls,
+  type WikiBlockModel,
+} from "../../components/wiki/modelGeometry";
 import { vehicles, vehicleRecipes, getVehicleBySlug } from "../data/vehicles";
 import VehicleDetail, { generateStaticParams } from "./[slug]/page";
 import VehiclesPage from "./page";
@@ -58,15 +64,9 @@ describe("vehicle catalogue and actual assets", () => {
         "1": "/wiki/textures/vehicles/biplane/1.png",
       });
 
-      const model: WikiBlockModel = JSON.parse(
-        readFileSync(join(process.cwd(), "public", skin.modelUrl!), "utf8")
-      );
-      const airframeFace = model.elements.find(
-        (element) => element.from.join(",") === "-4,32,-24"
-      )?.faces.north;
-      const turretFace = model.elements.find(
-        (element) => element.from.join(",") === "65,31,48"
-      )?.faces.north;
+      const model: WikiBlockModel = JSON.parse(readFileSync(join(process.cwd(), "public", skin.modelUrl!), "utf8"));
+      const airframeFace = model.elements.find((element) => element.from.join(",") === "-4,32,-24")?.faces.north;
+      const turretFace = model.elements.find((element) => element.from.join(",") === "65,31,48")?.faces.north;
 
       expect(airframeFace, `${skin.id} airframe face`).toBeDefined();
       expect(turretFace, `${skin.id} turret face`).toBeDefined();
@@ -93,9 +93,7 @@ describe("vehicle page rendering", () => {
     expect(generateStaticParams()).toEqual(vehicles.map(({ slug }) => ({ slug })));
 
     for (const vehicle of vehicles) {
-      const html = renderToStaticMarkup(
-        await VehicleDetail({ params: Promise.resolve({ slug: vehicle.slug }) })
-      );
+      const html = renderToStaticMarkup(await VehicleDetail({ params: Promise.resolve({ slug: vehicle.slug }) }));
       expect(html.match(/Loading /g) ?? [], vehicle.slug).toHaveLength(1);
       // Skins with no model are not offered, unless the vehicle has no previewable skin at all.
       const previewable = vehicle.skins.filter((skin) => skin.modelUrl);
@@ -122,10 +120,20 @@ describe("vehicle page rendering", () => {
 describe("vehicle model rotations", () => {
   it("matches Three.js XYZ rotation around the model pivot for compound angles", () => {
     const angles: [number, number, number] = [22.5, -45, 30];
-    const model: WikiBlockModel = { elements: [{ from: [0, 0, 0], to: [16, 16, 16],
-      rotation: { origin: [8, 8, 8], euler: angles }, faces: { east: { uv: [0, 0, 16, 16], texture: "#1" } } }] };
+    const model: WikiBlockModel = {
+      elements: [
+        {
+          from: [0, 0, 0],
+          to: [16, 16, 16],
+          rotation: { origin: [8, 8, 8], euler: angles },
+          faces: { east: { uv: [0, 0, 16, 16], texture: "#1" } },
+        },
+      ],
+    };
     const [buffer] = buildModelBuffers(model, 1, () => 0);
-    const matrix = new Matrix4().makeRotationFromEuler(new Euler(...angles.map((a) => a * Math.PI / 180) as [number, number, number], "XYZ"));
+    const matrix = new Matrix4().makeRotationFromEuler(
+      new Euler(...(angles.map((a) => (a * Math.PI) / 180) as [number, number, number]), "XYZ"),
+    );
     const expected = new Vector3(0.5, 0.5, 0.5).applyMatrix4(matrix).addScalar(0.5);
     expected.toArray().forEach((value, i) => expect(buffer.position[i]).toBeCloseTo(value));
     const normal = new Vector3(1, 0, 0).transformDirection(matrix);
@@ -133,12 +141,19 @@ describe("vehicle model rotations", () => {
   });
 
   it("applies nested parent-bone rotations from nearest parent outwards", () => {
-    const model: WikiBlockModel = { elements: [{ from: [16, 0, 0], to: [32, 16, 16],
-      parentRotations: [
-        { origin: [0, 0, 0], euler: [0, 0, 90] },
-        { origin: [0, 0, 0], euler: [0, 90, 0] },
+    const model: WikiBlockModel = {
+      elements: [
+        {
+          from: [16, 0, 0],
+          to: [32, 16, 16],
+          parentRotations: [
+            { origin: [0, 0, 0], euler: [0, 0, 90] },
+            { origin: [0, 0, 0], euler: [0, 90, 0] },
+          ],
+          faces: { east: { uv: [0, 0, 16, 16], texture: "#1" } },
+        },
       ],
-      faces: { east: { uv: [0, 0, 16, 16], texture: "#1" } } }] };
+    };
     const [buffer] = buildModelBuffers(model, 1, () => 0);
     const expected = new Vector3(2, 1, 1)
       .applyEuler(new Euler(0, 0, Math.PI / 2, "XYZ"))
@@ -148,10 +163,10 @@ describe("vehicle model rotations", () => {
 
   it("preserves the real biplane eight-segment turret chain and its transformed bounds", () => {
     const biplane: WikiBlockModel = JSON.parse(
-      readFileSync(join(process.cwd(), "public/wiki/models/vehicles/biplane.json"), "utf8")
+      readFileSync(join(process.cwd(), "public/wiki/models/vehicles/biplane.json"), "utf8"),
     );
     const tip = biplane.elements.find(
-      (element) => element.from.join(",") === "65,31,48" && element.to.join(",") === "75,33,50"
+      (element) => element.from.join(",") === "65,31,48" && element.to.join(",") === "75,33,50",
     );
 
     expect(tip, "source guncircle8 cube must survive conversion").toBeDefined();
@@ -160,34 +175,32 @@ describe("vehicle model rotations", () => {
         origin: [x, 32, 49],
         euler: [0, 45, 0],
         order: "ZYX",
-      }))
+      })),
     );
 
-    const buffers = buildModelBuffers({ elements: [tip!] }, 2, (key) =>
-      key?.replace(/^#/, "") === "1" ? 1: 0
-    );
+    const buffers = buildModelBuffers({ elements: [tip!] }, 2, (key) => (key?.replace(/^#/, "") === "1" ? 1 : 0));
     const positions = buffers.flatMap((buffer) => buffer.position);
-    const points = Array.from({ length: positions.length / 3 }, (_, index) =>
-      new Vector3(...positions.slice(index * 3, index * 3 + 3))
+    const points = Array.from(
+      { length: positions.length / 3 },
+      (_, index) => new Vector3(...positions.slice(index * 3, index * 3 + 3)),
     );
-    const minimum = points.reduce(
-      (bounds, point) => bounds.min(point),
-      new Vector3(Infinity, Infinity, Infinity)
-    );
-    const maximum = points.reduce(
-      (bounds, point) => bounds.max(point),
-      new Vector3(-Infinity, -Infinity, -Infinity)
-    );
+    const minimum = points.reduce((bounds, point) => bounds.min(point), new Vector3(Infinity, Infinity, Infinity));
+    const maximum = points.reduce((bounds, point) => bounds.max(point), new Vector3(-Infinity, -Infinity, -Infinity));
 
     [-0.7986359121, 1.9375, 2.5763640879].forEach((value, index) =>
-      expect(minimum.getComponent(index)).toBeCloseTo(value)
+      expect(minimum.getComponent(index)).toBeCloseTo(value),
     );
     [-0.2683058262, 2.0625, 3.1066941738].forEach((value, index) =>
-      expect(maximum.getComponent(index)).toBeCloseTo(value)
+      expect(maximum.getComponent(index)).toBeCloseTo(value),
     );
   });
 
   it("rotates texture sampling clockwise without changing normalized bounds", () => {
-    expect(faceUvs({ uv: [0, 0, 16, 16], rotation: 90 })).toEqual([[0, 0], [0, 1], [1, 0], [1, 1]]);
+    expect(faceUvs({ uv: [0, 0, 16, 16], rotation: 90 })).toEqual([
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ]);
   });
 });

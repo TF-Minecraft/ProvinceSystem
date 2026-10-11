@@ -19,12 +19,47 @@ describe("terminals", () => {
     const ends = terminals(
       network({
         tracks: [
-          { id: "a", line: 0, length: 20, loop: false, points: [[0, 0], [10, 0], [20, 0]], broken: [], damaged: [] },
-          { id: "b", line: 0, length: 5, loop: false, points: [[10, 0], [10, 5]], broken: [], damaged: [] },
-          { id: "c", line: 1, length: 9, loop: true, points: [[50, 50], [55, 50], [50, 50]], broken: [], damaged: [] },
+          {
+            id: "a",
+            line: 0,
+            length: 20,
+            loop: false,
+            points: [
+              [0, 0],
+              [10, 0],
+              [20, 0],
+            ],
+            broken: [],
+            damaged: [],
+          },
+          {
+            id: "b",
+            line: 0,
+            length: 5,
+            loop: false,
+            points: [
+              [10, 0],
+              [10, 5],
+            ],
+            broken: [],
+            damaged: [],
+          },
+          {
+            id: "c",
+            line: 1,
+            length: 9,
+            loop: true,
+            points: [
+              [50, 50],
+              [55, 50],
+              [50, 50],
+            ],
+            broken: [],
+            damaged: [],
+          },
         ],
         junctions: [{ id: "j", stem: "a", branch: "b", at: [10, 1], thrown: false }],
-      })
+      }),
     );
     expect(ends).toEqual([
       { at: [0, 0], towards: [10, 0], line: 0 },
@@ -36,8 +71,21 @@ describe("terminals", () => {
 
 describe("boundsOfPoints", () => {
   it("pads a small box out to the minimum, around its centre", () => {
-    expect(boundsOfPoints([[10, 10], [20, 30]], 100)).toEqual({ x: -35, y: -30, w: 100, h: 100 });
-    expect(boundsOfPoints([[0, 0], [300, 10]])).toEqual({ x: 0, y: 0, w: 300, h: 10 });
+    expect(
+      boundsOfPoints(
+        [
+          [10, 10],
+          [20, 30],
+        ],
+        100,
+      ),
+    ).toEqual({ x: -35, y: -30, w: 100, h: 100 });
+    expect(
+      boundsOfPoints([
+        [0, 0],
+        [300, 10],
+      ]),
+    ).toEqual({ x: 0, y: 0, w: 300, h: 10 });
     expect(boundsOfPoints([])).toBeNull();
   });
 });

@@ -1,7 +1,4 @@
-import {
-  MAX_PAINTABLE_PROVINCE_ID,
-  type NationColorLut,
-} from "./chroniclePaint";
+import { MAX_PAINTABLE_PROVINCE_ID, type NationColorLut } from "./chroniclePaint";
 
 /**
  * Terrains the live prosperity and trade generators refuse to paint.
@@ -14,16 +11,10 @@ import {
  * Nation fill, borders and occupation are not in this set. A realm can hold
  * water, and that ownership is still drawn.
  */
-export const CHRONICLE_DISCARDED_TERRAINS: ReadonlySet<string> = new Set([
-  "water",
-  "sea",
-]);
+export const CHRONICLE_DISCARDED_TERRAINS: ReadonlySet<string> = new Set(["water", "sea"]);
 
 export function isChronicleDiscardedTerrain(terrain: unknown): boolean {
-  return (
-    typeof terrain === "string" &&
-    CHRONICLE_DISCARDED_TERRAINS.has(terrain.trim().toLowerCase())
-  );
+  return typeof terrain === "string" && CHRONICLE_DISCARDED_TERRAINS.has(terrain.trim().toLowerCase());
 }
 
 /**
@@ -39,9 +30,7 @@ export function isChronicleDiscardedTerrain(terrain: unknown): boolean {
  * water. Those two have to stay apart: an empty mask paints every province,
  * and a missing one must not.
  */
-export function chronicleDiscardedProvinceMask(
-  payload: unknown
-): Uint8Array | null {
+export function chronicleDiscardedProvinceMask(payload: unknown): Uint8Array | null {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
     return null;
   }
@@ -50,11 +39,7 @@ export function chronicleDiscardedProvinceMask(
   let maxId = 0;
   for (const [key, value] of Object.entries(payload)) {
     const id = Number(key);
-    if (
-      !Number.isInteger(id) ||
-      id <= 0 ||
-      id > MAX_PAINTABLE_PROVINCE_ID
-    ) {
+    if (!Number.isInteger(id) || id <= 0 || id > MAX_PAINTABLE_PROVINCE_ID) {
       continue;
     }
     // A paintable province we cannot read the terrain of could be water, so
@@ -81,10 +66,7 @@ export function chronicleDiscardedProvinceMask(
  * terrain yet must withhold the layer entirely rather than call this with a
  * stand-in, or the water paints until the fetch lands.
  */
-export function omitDiscardedProvinces(
-  lut: NationColorLut,
-  mask: Uint8Array | null | undefined
-): NationColorLut {
+export function omitDiscardedProvinces(lut: NationColorLut, mask: Uint8Array | null | undefined): NationColorLut {
   if (!mask || mask.length === 0 || lut.length === 0) return lut;
   const limit = Math.min(lut.length, mask.length);
   let copy: NationColorLut | null = null;

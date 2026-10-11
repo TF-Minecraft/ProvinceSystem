@@ -1,5162 +1,731 @@
 {
-  "/wiki/textures/ammunition/ironshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/ammunition/pebbleshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/ammunition/rocket.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/ammunition/spreadshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/ammunition/steelshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/bird-mail/mailbox.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    32
-  ],
-  "/wiki/textures/crop-plants/basil/basil_block.png": [
-    96,
-    48,
-    5,
-    4,
-    48,
-    32
-  ],
-  "/wiki/textures/crop-plants/blackpepper/blackpepper_block.png": [
-    176,
-    64,
-    12,
-    6,
-    67,
-    58
-  ],
-  "/wiki/textures/crop-plants/cactusfruit/cactusfruit_block.png": [
-    16,
-    16,
-    0,
-    0,
-    2,
-    16
-  ],
-  "/wiki/textures/crop-plants/corn/corn_block.png": [
-    80,
-    48,
-    5,
-    0,
-    78,
-    48
-  ],
-  "/wiki/textures/crop-plants/cucumber/cucumber_block.png": [
-    32,
-    32,
-    5,
-    3,
-    27,
-    30
-  ],
-  "/wiki/textures/crop-plants/garlic/stage_4.png": [
-    16,
-    32,
-    2,
-    8,
-    15,
-    32
-  ],
-  "/wiki/textures/crop-plants/grape/grape.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    15
-  ],
-  "/wiki/textures/crop-plants/lettuce/lettuce_block.png": [
-    80,
-    48,
-    5,
-    41,
-    47,
-    48
-  ],
-  "/wiki/textures/crop-plants/moolis/moolis_block.png": [
-    80,
-    48,
-    0,
-    0,
-    43,
-    48
-  ],
-  "/wiki/textures/crop-plants/mustard/mustard_block.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/crop-plants/pineapple/pineapple_blocks.png": [
-    80,
-    48,
-    0,
-    0,
-    64,
-    48
-  ],
-  "/wiki/textures/crop-plants/pistachio/pistachio_block.png": [
-    96,
-    48,
-    0,
-    0,
-    48,
-    32
-  ],
-  "/wiki/textures/crop-plants/rhubarb/rhubarb_block.png": [
-    16,
-    16,
-    2,
-    6,
-    7,
-    15
-  ],
-  "/wiki/textures/crop-plants/rice/rice_block.png": [
-    48,
-    16,
-    3,
-    8,
-    32,
-    16
-  ],
-  "/wiki/textures/crop-plants/spiceleaf/spiceleaf_block.png": [
-    32,
-    32,
-    1,
-    10,
-    15,
-    32
-  ],
-  "/wiki/textures/crop-plants/strawberry/strawberry_block.png": [
-    80,
-    48,
-    0,
-    0,
-    47,
-    48
-  ],
-  "/wiki/textures/crop-plants/tomato/tomato_block.png": [
-    80,
-    48,
-    0,
-    0,
-    78,
-    48
-  ],
-  "/wiki/textures/crop-plants/vanilla/stage_5.png": [
-    32,
-    32,
-    1,
-    10,
-    20,
-    32
-  ],
-  "/wiki/textures/crop-plants/yeast/yeast_block.png": [
-    128,
-    128,
-    0,
-    1,
-    47,
-    31
-  ],
-  "/wiki/textures/crops/basil.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/crops/cactus-fruit.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    13
-  ],
-  "/wiki/textures/crops/cherry.png": [
-    16,
-    16,
-    1,
-    0,
-    13,
-    15
-  ],
-  "/wiki/textures/crops/cinnamon.png": [
-    16,
-    16,
-    3,
-    2,
-    15,
-    12
-  ],
-  "/wiki/textures/crops/cucumber.png": [
-    16,
-    16,
-    3,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/crops/garlic.png": [
-    16,
-    16,
-    2,
-    2,
-    13,
-    14
-  ],
-  "/wiki/textures/crops/grape.png": [
-    16,
-    16,
-    3,
-    0,
-    15,
-    15
-  ],
-  "/wiki/textures/crops/lemon.png": [
-    16,
-    16,
-    2,
-    5,
-    14,
-    13
-  ],
-  "/wiki/textures/crops/lime.png": [
-    16,
-    16,
-    2,
-    5,
-    14,
-    13
-  ],
-  "/wiki/textures/crops/mustard-seeds.png": [
-    16,
-    16,
-    3,
-    4,
-    14,
-    13
-  ],
-  "/wiki/textures/crops/mustard.png": [
-    16,
-    16,
-    6,
-    1,
-    11,
-    15
-  ],
-  "/wiki/textures/crops/nutmeg.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/crops/olive.png": [
-    16,
-    16,
-    5,
-    4,
-    12,
-    12
-  ],
-  "/wiki/textures/crops/onion.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/crops/peach.png": [
-    16,
-    16,
-    3,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/crops/pineapple.png": [
-    16,
-    16,
-    3,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/crops/pistachio.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    14
-  ],
-  "/wiki/textures/crops/plum.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    12
-  ],
-  "/wiki/textures/crops/rhubarb.png": [
-    16,
-    16,
-    4,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/crops/rice.png": [
-    16,
-    16,
-    4,
-    2,
-    15,
-    14
-  ],
-  "/wiki/textures/crops/spice-leaf.png": [
-    16,
-    16,
-    3,
-    3,
-    15,
-    13
-  ],
-  "/wiki/textures/crops/strawberry.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    12
-  ],
-  "/wiki/textures/crops/tomato.png": [
-    16,
-    16,
-    2,
-    0,
-    14,
-    15
-  ],
-  "/wiki/textures/crops/vanilla.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/crops/yeast.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    16
-  ],
-  "/wiki/textures/currency/gold-denar.png": [
-    16,
-    16,
-    4,
-    6,
-    11,
-    12
-  ],
-  "/wiki/textures/currency/handful-of-gold-denars.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    14
-  ],
-  "/wiki/textures/currency/handful-of-silver-denars.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    14
-  ],
-  "/wiki/textures/currency/pouch-of-gold-denars.png": [
-    16,
-    16,
-    3,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/currency/silver-denar.png": [
-    16,
-    16,
-    4,
-    6,
-    11,
-    12
-  ],
-  "/wiki/textures/currency/stack-of-gold-denars.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/currency/stack-of-silver-denars.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/farming/watering_can.png": [
-    24,
-    24,
-    0,
-    0,
-    22,
-    24
-  ],
-  "/wiki/textures/fishing-rods/abyssalite_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/fishing-rods/fishing_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/fishing-rods/mythril_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/fishing-rods/steel_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/furniture/artifact_display.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    25
-  ],
-  "/wiki/textures/furniture/butter_churn.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    25
-  ],
-  "/wiki/textures/furniture/cutting_board.png": [
-    32,
-    32,
-    0,
-    0,
-    13,
-    15
-  ],
-  "/wiki/textures/furniture/fire_pit.png": [
-    48,
-    48,
-    0,
-    0,
-    16,
-    36
-  ],
-  "/wiki/textures/furniture/frying_pan.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    21
-  ],
-  "/wiki/textures/furniture/liquid_container.png": [
-    32,
-    32,
-    0,
-    0,
-    31,
-    22
-  ],
-  "/wiki/textures/furniture/lure.png": [
-    32,
-    32,
-    0,
-    0,
-    16,
-    28
-  ],
-  "/wiki/textures/furniture/marauder/marauder_coins.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    31
-  ],
-  "/wiki/textures/furniture/marauder/marauder_coins_small.png": [
-    32,
-    32,
-    0,
-    0,
-    28,
-    14
-  ],
-  "/wiki/textures/furniture/marauder/marauder_goldbag.png": [
-    64,
-    64,
-    0,
-    0,
-    62,
-    31
-  ],
-  "/wiki/textures/furniture/marauder/marauder_goldbars.png": [
-    64,
-    64,
-    0,
-    0,
-    26,
-    19
-  ],
-  "/wiki/textures/furniture/meat_hook.png": [
-    16,
-    16,
-    0,
-    0,
-    6,
-    9
-  ],
-  "/wiki/textures/furniture/milling_stone.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    26
-  ],
-  "/wiki/textures/furniture/oven.png": [
-    48,
-    48,
-    0,
-    0,
-    33,
-    33
-  ],
-  "/wiki/textures/furniture/pedestal.png": [
-    32,
-    32,
-    0,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/furniture/pot.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    22
-  ],
-  "/wiki/textures/furniture/sausage_maker.png": [
-    32,
-    32,
-    0,
-    0,
-    22,
-    18
-  ],
-  "/wiki/textures/furniture/tray.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/furniture/trough.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/furniture/voting_booth.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    16
-  ],
-  "/wiki/textures/gems/agate.png": [
-    16,
-    16,
-    3,
-    4,
-    13,
-    13
-  ],
-  "/wiki/textures/gems/apatite.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    12
-  ],
-  "/wiki/textures/gems/aquamarine.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    14
-  ],
-  "/wiki/textures/gems/chrysoprase.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    14
-  ],
-  "/wiki/textures/gems/citrine.png": [
-    16,
-    16,
-    2,
-    2,
-    13,
-    14
-  ],
-  "/wiki/textures/gems/cloudstone.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/gems/coral.png": [
-    16,
-    16,
-    4,
-    5,
-    12,
-    13
-  ],
-  "/wiki/textures/gems/crystallite.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    13
-  ],
-  "/wiki/textures/gems/firestone.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/gems/labradorite.png": [
-    16,
-    16,
-    4,
-    5,
-    13,
-    13
-  ],
-  "/wiki/textures/gems/malachite.png": [
-    16,
-    16,
-    3,
-    3,
-    12,
-    12
-  ],
-  "/wiki/textures/gems/morganite.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/gems/musgravite.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/gems/peridot.png": [
-    16,
-    16,
-    5,
-    3,
-    13,
-    12
-  ],
-  "/wiki/textures/gems/rhodonite.png": [
-    16,
-    16,
-    4,
-    3,
-    11,
-    13
-  ],
-  "/wiki/textures/gems/sapphire.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    14
-  ],
-  "/wiki/textures/gems/sardonyx.png": [
-    16,
-    16,
-    4,
-    4,
-    13,
-    12
-  ],
-  "/wiki/textures/gems/serpents_eye.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    11
-  ],
-  "/wiki/textures/gems/taaffeite.png": [
-    16,
-    16,
-    2,
-    4,
-    13,
-    14
-  ],
-  "/wiki/textures/gems/tigers_eye.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    11
-  ],
-  "/wiki/textures/gems/topaz.png": [
-    16,
-    16,
-    2,
-    4,
-    14,
-    13
-  ],
-  "/wiki/textures/gems/turquoise.png": [
-    16,
-    16,
-    5,
-    3,
-    13,
-    13
-  ],
-  "/wiki/textures/gems/variscite.png": [
-    16,
-    16,
-    3,
-    4,
-    11,
-    14
-  ],
-  "/wiki/textures/gems/zircon.png": [
-    16,
-    16,
-    3,
-    5,
-    13,
-    12
-  ],
-  "/wiki/textures/goldsmith-tools/branding_tool.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/goldsmith-tools/small_smith_hammer.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/goldsmith-tools/smith_hammer.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/goldsmith-tools/smith_tinker_tool.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/gun-parts/arclock.png": [
-    16,
-    16,
-    1,
-    2,
-    15,
-    13
-  ],
-  "/wiki/textures/gun-parts/breech_loader.png": [
-    16,
-    16,
-    1,
-    4,
-    14,
-    12
-  ],
-  "/wiki/textures/gun-parts/elderwood_stock.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    13
-  ],
-  "/wiki/textures/gun-parts/flintlock.png": [
-    16,
-    16,
-    1,
-    2,
-    15,
-    13
-  ],
-  "/wiki/textures/gun-parts/launcher_barrel.png": [
-    16,
-    16,
-    0,
-    4,
-    16,
-    10
-  ],
-  "/wiki/textures/gun-parts/maplewood_stock.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    13
-  ],
-  "/wiki/textures/gun-parts/muzzle_loader.png": [
-    16,
-    16,
-    2,
-    4,
-    15,
-    12
-  ],
-  "/wiki/textures/gun-parts/oak_stock.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    13
-  ],
-  "/wiki/textures/gun-parts/quad_shot_rocket.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    10
-  ],
-  "/wiki/textures/gun-parts/revolver.png": [
-    16,
-    16,
-    0,
-    2,
-    14,
-    14
-  ],
-  "/wiki/textures/gun-parts/rifled_barrel_long.png": [
-    16,
-    16,
-    0,
-    5,
-    16,
-    9
-  ],
-  "/wiki/textures/gun-parts/rifled_barrel_short.png": [
-    16,
-    16,
-    3,
-    5,
-    13,
-    9
-  ],
-  "/wiki/textures/gun-parts/rocketlock.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    10
-  ],
-  "/wiki/textures/gun-parts/single_shot.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    11
-  ],
-  "/wiki/textures/gun-parts/single_shot_rocket.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    10
-  ],
-  "/wiki/textures/gun-parts/smoothbore_barrel_long.png": [
-    16,
-    16,
-    0,
-    5,
-    16,
-    9
-  ],
-  "/wiki/textures/gun-parts/smoothbore_barrel_short.png": [
-    16,
-    16,
-    3,
-    5,
-    13,
-    9
-  ],
-  "/wiki/textures/gun-parts/spread_barrel.png": [
-    16,
-    16,
-    0,
-    2,
-    14,
-    14
-  ],
-  "/wiki/textures/gun-parts/steamlock.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    13
-  ],
-  "/wiki/textures/herbs/icon14.png": [
-    32,
-    32,
-    4,
-    3,
-    28,
-    30
-  ],
-  "/wiki/textures/herbs/icon17.png": [
-    32,
-    32,
-    3,
-    3,
-    30,
-    29
-  ],
-  "/wiki/textures/herbs/icon18.png": [
-    32,
-    32,
-    2,
-    4,
-    30,
-    26
-  ],
-  "/wiki/textures/herbs/icon19.png": [
-    32,
-    32,
-    2,
-    7,
-    30,
-    26
-  ],
-  "/wiki/textures/herbs/icon2.png": [
-    32,
-    32,
-    4,
-    2,
-    27,
-    29
-  ],
-  "/wiki/textures/herbs/icon20.png": [
-    32,
-    32,
-    2,
-    2,
-    30,
-    29
-  ],
-  "/wiki/textures/herbs/icon21.png": [
-    32,
-    32,
-    5,
-    2,
-    26,
-    29
-  ],
-  "/wiki/textures/herbs/icon24.png": [
-    32,
-    32,
-    2,
-    5,
-    29,
-    27
-  ],
-  "/wiki/textures/herbs/icon32.png": [
-    32,
-    32,
-    3,
-    4,
-    28,
-    29
-  ],
-  "/wiki/textures/herbs/icon33.png": [
-    32,
-    32,
-    3,
-    3,
-    30,
-    29
-  ],
-  "/wiki/textures/herbs/icon36.png": [
-    32,
-    32,
-    2,
-    8,
-    30,
-    25
-  ],
-  "/wiki/textures/herbs/icon4.png": [
-    32,
-    32,
-    5,
-    2,
-    28,
-    30
-  ],
-  "/wiki/textures/herbs/icon41.png": [
-    32,
-    32,
-    3,
-    3,
-    29,
-    30
-  ],
-  "/wiki/textures/herbs/icon42.png": [
-    32,
-    32,
-    2,
-    8,
-    29,
-    27
-  ],
-  "/wiki/textures/herbs/icon44.png": [
-    32,
-    32,
-    3,
-    5,
-    30,
-    26
-  ],
-  "/wiki/textures/herbs/icon45.png": [
-    32,
-    32,
-    3,
-    5,
-    29,
-    28
-  ],
-  "/wiki/textures/herbs/icon5.png": [
-    32,
-    32,
-    3,
-    5,
-    30,
-    27
-  ],
-  "/wiki/textures/instruments/flute.png": [
-    16,
-    16,
-    0,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/items/letters/letter.png": [
-    16,
-    16,
-    2,
-    3,
-    16,
-    14
-  ],
-  "/wiki/textures/itemsadder/cutting_knife.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/itemsadder/ladle.png": [
-    16,
-    16,
-    0,
-    0,
-    15,
-    14
-  ],
-  "/wiki/textures/jewellery/blue_medal.png": [
-    16,
-    16,
-    4,
-    0,
-    12,
-    15
-  ],
-  "/wiki/textures/jewellery/dark_necklace.png": [
-    16,
-    16,
-    0,
-    0,
-    15,
-    16
-  ],
-  "/wiki/textures/jewellery/green_medal.png": [
-    16,
-    16,
-    4,
-    0,
-    12,
-    15
-  ],
-  "/wiki/textures/jewellery/jeweled_gold_ring.png": [
-    16,
-    16,
-    3,
-    1,
-    13,
-    14
-  ],
-  "/wiki/textures/magic_crafting/basic_magical_core.png": [
-    16,
-    16,
-    3,
-    2,
-    14,
-    13
-  ],
-  "/wiki/textures/magic_crafting/bloodmagic_essence.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/magic_crafting/enchanted_dust.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/magic_crafting/enchanted_leather.png": [
-    16,
-    16,
-    0,
-    2,
-    15,
-    16
-  ],
-  "/wiki/textures/magic_crafting/necromancy_essence.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/magic_crafting/petty_magical_core.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/market-block/apple.png": [
-    16,
-    16,
-    0,
-    0,
-    9,
-    9
-  ],
-  "/wiki/textures/market-block/coin.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    4
-  ],
-  "/wiki/textures/market-block/ink_bottle.png": [
-    16,
-    16,
-    0,
-    0,
-    12,
-    11
-  ],
-  "/wiki/textures/market-block/manifest.png": [
-    32,
-    32,
-    0,
-    0,
-    18,
-    11
-  ],
-  "/wiki/textures/market-block/wood1.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    13
-  ],
-  "/wiki/textures/market-block/wood2.png": [
-    32,
-    32,
-    0,
-    0,
-    30,
-    30
-  ],
-  "/wiki/textures/materials/abyssalite.png": [
-    16,
-    16,
-    3,
-    2,
-    14,
-    13
-  ],
-  "/wiki/textures/materials/alchemy_powder.png": [
-    16,
-    16,
-    2,
-    5,
-    13,
-    15
-  ],
-  "/wiki/textures/materials/bark.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/materials/barkwood.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/materials/carbon_powder.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    13
-  ],
-  "/wiki/textures/materials/coke.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/materials/crystallite_shard.png": [
-    16,
-    16,
-    5,
-    3,
-    11,
-    14
-  ],
-  "/wiki/textures/materials/detoxed_leather.png": [
-    16,
-    16,
-    1,
-    1,
-    13,
-    15
-  ],
-  "/wiki/textures/materials/diamond_fragment.png": [
-    16,
-    16,
-    2,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/materials/dynamite.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/materials/emerald_shard.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    14
-  ],
-  "/wiki/textures/materials/fertilizer.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    13
-  ],
-  "/wiki/textures/materials/flower_core.png": [
-    16,
-    16,
-    1,
-    5,
-    14,
-    14
-  ],
-  "/wiki/textures/materials/fossil.png": [
-    16,
-    16,
-    1,
-    0,
-    14,
-    15
-  ],
-  "/wiki/textures/materials/ignitium.png": [
-    16,
-    16,
-    2,
-    2,
-    13,
-    14
-  ],
-  "/wiki/textures/materials/moldable_gold.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/materials/mythril_fragment.png": [
-    16,
-    16,
-    5,
-    5,
-    12,
-    14
-  ],
-  "/wiki/textures/materials/niter.png": [
-    16,
-    16,
-    3,
-    2,
-    12,
-    13
-  ],
-  "/wiki/textures/materials/potash.png": [
-    16,
-    16,
-    2,
-    5,
-    14,
-    15
-  ],
-  "/wiki/textures/materials/raw_tin.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/materials/rawiron_fragment.png": [
-    16,
-    16,
-    1,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/materials/rough_gold.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/materials/ruby_shard.png": [
-    16,
-    16,
-    5,
-    2,
-    12,
-    15
-  ],
-  "/wiki/textures/materials/salt.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/materials/saltpeter.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    14
-  ],
-  "/wiki/textures/materials/shiny_gold.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/materials/smokeless_powder.png": [
-    16,
-    16,
-    1,
-    5,
-    14,
-    14
-  ],
-  "/wiki/textures/materials/sulfur.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/materials/synthetic_ink.png": [
-    16,
-    16,
-    4,
-    4,
-    13,
-    14
-  ],
-  "/wiki/textures/materials/transmutation_powder.png": [
-    16,
-    16,
-    4,
-    5,
-    13,
-    13
-  ],
-  "/wiki/textures/materials/war_key.png": [
-    16,
-    16,
-    5,
-    0,
-    12,
-    16
-  ],
-  "/wiki/textures/materials/wood_core.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    13
-  ],
-  "/wiki/textures/mmoitems/abyssalite_axe.png": [
-    16,
-    16,
-    2,
-    0,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/abyssalite_fragment.png": [
-    16,
-    16,
-    3,
-    2,
-    14,
-    13
-  ],
-  "/wiki/textures/mmoitems/abyssalite_hoe.png": [
-    16,
-    16,
-    2,
-    0,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/abyssalite_pickaxe.png": [
-    16,
-    16,
-    2,
-    1,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/abyssalite_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/abyssalite_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/alchemy_powder.png": [
-    16,
-    16,
-    2,
-    5,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/anesthetic.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/antibiotics.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/arcane_fuel.png": [
-    16,
-    16,
-    1,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/mmoitems/arcane_leaf.png": [
-    32,
-    32,
-    3,
-    5,
-    30,
-    27
-  ],
-  "/wiki/textures/mmoitems/ascendant_runestone.png": [
-    16,
-    16,
-    0,
-    0,
-    15,
-    16
-  ],
-  "/wiki/textures/mmoitems/autumn_leaf.png": [
-    32,
-    32,
-    5,
-    2,
-    28,
-    30
-  ],
-  "/wiki/textures/mmoitems/bark.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/barkshroom.png": [
-    32,
-    32,
-    2,
-    5,
-    29,
-    27
-  ],
-  "/wiki/textures/mmoitems/barkwood.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/basic_lockpick_set.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/mmoitems/birch_seed.png": [
-    32,
-    32,
-    3,
-    2,
-    29,
-    29
-  ],
-  "/wiki/textures/mmoitems/blazed_root.png": [
-    32,
-    32,
-    3,
-    5,
-    30,
-    26
-  ],
-  "/wiki/textures/mmoitems/bullet_box.png": [
-    16,
-    16,
-    1,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/burrow_root.png": [
-    32,
-    32,
-    3,
-    4,
-    28,
-    29
-  ],
-  "/wiki/textures/mmoitems/cannonball.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/carbon_powder.png": [
-    16,
-    16,
-    1,
-    4,
-    15,
-    13
-  ],
-  "/wiki/textures/mmoitems/caveshroom.png": [
-    32,
-    32,
-    5,
-    2,
-    26,
-    29
-  ],
-  "/wiki/textures/mmoitems/cloro_core.png": [
-    32,
-    32,
-    2,
-    8,
-    30,
-    25
-  ],
-  "/wiki/textures/mmoitems/clover.png": [
-    32,
-    32,
-    3,
-    3,
-    30,
-    29
-  ],
-  "/wiki/textures/mmoitems/clusterbomb.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/mmoitems/coke.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/cooling_serum.png": [
-    16,
-    16,
-    3,
-    0,
-    12,
-    16
-  ],
-  "/wiki/textures/mmoitems/coownership_item.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    14
-  ],
-  "/wiki/textures/mmoitems/dead_geiger_counter.png": [
-    16,
-    16,
-    3,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/mmoitems/death_fruit.png": [
-    32,
-    32,
-    2,
-    8,
-    29,
-    27
-  ],
-  "/wiki/textures/mmoitems/detoxed_leather.png": [
-    16,
-    16,
-    1,
-    1,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/dwindle_leaf.png": [
-    32,
-    32,
-    2,
-    2,
-    30,
-    29
-  ],
-  "/wiki/textures/mmoitems/dynamite.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/enchanted_charge_1.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    12
-  ],
-  "/wiki/textures/mmoitems/enchanted_dust.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/engraving_tool.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/etching_tool.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/eye_fruit.png": [
-    32,
-    32,
-    5,
-    2,
-    25,
-    29
-  ],
-  "/wiki/textures/mmoitems/farmreport_item.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/fertilizer.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    13
-  ],
-  "/wiki/textures/mmoitems/fever_flush.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/mmoitems/fire_leaf.png": [
-    32,
-    32,
-    4,
-    2,
-    27,
-    29
-  ],
-  "/wiki/textures/mmoitems/fish_treat.png": [
-    16,
-    16,
-    1,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/flatshroom.png": [
-    32,
-    32,
-    3,
-    5,
-    29,
-    28
-  ],
-  "/wiki/textures/mmoitems/flower_core.png": [
-    16,
-    16,
-    1,
-    5,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/flute.png": [
-    16,
-    16,
-    0,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/mmoitems/frost_flowers.png": [
-    32,
-    32,
-    2,
-    6,
-    30,
-    29
-  ],
-  "/wiki/textures/mmoitems/frost_root.png": [
-    32,
-    32,
-    5,
-    3,
-    30,
-    29
-  ],
-  "/wiki/textures/mmoitems/geiger_counter.png": [
-    16,
-    16,
-    3,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/mmoitems/glowpea_pod.png": [
-    32,
-    32,
-    5,
-    2,
-    25,
-    29
-  ],
-  "/wiki/textures/mmoitems/gold_coin.png": [
-    16,
-    16,
-    4,
-    6,
-    11,
-    12
-  ],
-  "/wiki/textures/mmoitems/goldsmith_branding_tool.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/goldsmith_hammer.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/goldsmith_tinker_tool.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/grapeberries.png": [
-    32,
-    32,
-    3,
-    3,
-    30,
-    29
-  ],
-  "/wiki/textures/mmoitems/greater_runestone.png": [
-    16,
-    16,
-    2,
-    1,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/green_concoction.png": [
-    160,
-    160,
-    20,
-    20,
-    140,
-    130
-  ],
-  "/wiki/textures/mmoitems/hammer_tool.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/hand_pick.png": [
-    16,
-    16,
-    3,
-    2,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/handful_of_coins.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    14
-  ],
-  "/wiki/textures/mmoitems/holt_core.png": [
-    32,
-    32,
-    2,
-    5,
-    29,
-    26
-  ],
-  "/wiki/textures/mmoitems/ignitium.png": [
-    16,
-    16,
-    2,
-    2,
-    13,
-    14
-  ],
-  "/wiki/textures/mmoitems/iron_axe.png": [
-    16,
-    16,
-    2,
-    1,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/iron_hunting_knife.png": [
-    16,
-    16,
-    1,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/iron_key.png": [
-    16,
-    16,
-    5,
-    0,
-    12,
-    16
-  ],
-  "/wiki/textures/mmoitems/ironshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/kelpberry.png": [
-    32,
-    32,
-    6,
-    2,
-    25,
-    29
-  ],
-  "/wiki/textures/mmoitems/lab_kit.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    14
-  ],
-  "/wiki/textures/mmoitems/lesser_armor_runestone.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/mmoitems/lesser_runestone.png": [
-    16,
-    16,
-    4,
-    2,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/lockpick.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/mmoitems/long_leaf.png": [
-    32,
-    32,
-    4,
-    3,
-    28,
-    30
-  ],
-  "/wiki/textures/mmoitems/lost_knowledge_scrap.png": [
-    16,
-    16,
-    4,
-    4,
-    13,
-    13
-  ],
-  "/wiki/textures/mmoitems/meat_treat.png": [
-    160,
-    160,
-    20,
-    30,
-    140,
-    140
-  ],
-  "/wiki/textures/mmoitems/minor_armor_runestone.png": [
-    16,
-    16,
-    4,
-    5,
-    12,
-    14
-  ],
-  "/wiki/textures/mmoitems/minor_runestone.png": [
-    16,
-    16,
-    4,
-    5,
-    12,
-    14
-  ],
-  "/wiki/textures/mmoitems/mythril_axe.png": [
-    16,
-    16,
-    1,
-    1,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/mythril_fragment.png": [
-    16,
-    16,
-    5,
-    5,
-    12,
-    14
-  ],
-  "/wiki/textures/mmoitems/mythril_hoe.png": [
-    16,
-    16,
-    1,
-    0,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/mythril_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/nightshade.png": [
-    32,
-    32,
-    2,
-    8,
-    30,
-    25
-  ],
-  "/wiki/textures/mmoitems/niter.png": [
-    16,
-    16,
-    3,
-    2,
-    12,
-    13
-  ],
-  "/wiki/textures/mmoitems/pebbleshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/pins.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    13
-  ],
-  "/wiki/textures/mmoitems/pointing_trowel.png": [
-    16,
-    16,
-    3,
-    4,
-    13,
-    14
-  ],
-  "/wiki/textures/mmoitems/poison_leaf.png": [
-    32,
-    32,
-    3,
-    5,
-    29,
-    29
-  ],
-  "/wiki/textures/mmoitems/poison_root.png": [
-    32,
-    32,
-    4,
-    3,
-    28,
-    30
-  ],
-  "/wiki/textures/mmoitems/potash.png": [
-    16,
-    16,
-    2,
-    5,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/pouch_of_coins.png": [
-    16,
-    16,
-    3,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/mmoitems/pumpkin_spore.png": [
-    32,
-    32,
-    3,
-    2,
-    29,
-    29
-  ],
-  "/wiki/textures/mmoitems/r_abyssalite.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_arcane_crystal.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_bronze.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_demonwood.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_denar.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_elderwood.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_enchanted_dust.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_gunpowder.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_ignitium.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_infusion.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_mythril.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/r_runestone.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/rare_research_paper.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/raw_tin.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/rerythmetizer.png": [
-    16,
-    16,
-    3,
-    0,
-    12,
-    16
-  ],
-  "/wiki/textures/mmoitems/rocket.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/saltpeter.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    14
-  ],
-  "/wiki/textures/mmoitems/scribe_paper.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/serpent_root.png": [
-    32,
-    32,
-    2,
-    4,
-    30,
-    26
-  ],
-  "/wiki/textures/mmoitems/sewing_needle.png": [
-    16,
-    16,
-    3,
-    1,
-    14,
-    16
-  ],
-  "/wiki/textures/mmoitems/silver_coin.png": [
-    16,
-    16,
-    4,
-    6,
-    11,
-    12
-  ],
-  "/wiki/textures/mmoitems/silver_coin10.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/silver_coin5.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    14
-  ],
-  "/wiki/textures/mmoitems/skin_branding_tool.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/small_bomb.png": [
-    16,
-    16,
-    4,
-    1,
-    12,
-    16
-  ],
-  "/wiki/textures/mmoitems/small_goldsmith_hammer.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/small_hammer_tool.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/splint.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/sponge.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/spot_leaf.png": [
-    32,
-    32,
-    2,
-    7,
-    30,
-    26
-  ],
-  "/wiki/textures/mmoitems/spreadshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/stack_of_coins.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/steel_axe.png": [
-    16,
-    16,
-    1,
-    0,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/steel_hoe.png": [
-    16,
-    16,
-    1,
-    0,
-    13,
-    15
-  ],
-  "/wiki/textures/mmoitems/steel_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/steel_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/mmoitems/steelshot.png": [
-    16,
-    16,
-    1,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/stitches.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/mmoitems/stone_core.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    13
-  ],
-  "/wiki/textures/mmoitems/strong_lockpick_set.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    14
-  ],
-  "/wiki/textures/mmoitems/sulfur.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/mmoitems/synthetic_ink.png": [
-    16,
-    16,
-    4,
-    4,
-    13,
-    14
-  ],
-  "/wiki/textures/mmoitems/taming_item.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    14
-  ],
-  "/wiki/textures/mmoitems/thorn_root.png": [
-    32,
-    32,
-    3,
-    3,
-    29,
-    30
-  ],
-  "/wiki/textures/mmoitems/torpedo.png": [
-    16,
-    16,
-    0,
-    6,
-    16,
-    11
-  ],
-  "/wiki/textures/mmoitems/transmutation_powder.png": [
-    16,
-    16,
-    4,
-    5,
-    13,
-    13
-  ],
-  "/wiki/textures/mmoitems/ultrasound.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    14
-  ],
-  "/wiki/textures/mmoitems/universal_feed.png": [
-    16,
-    16,
-    0,
-    1,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/vehicle_repair.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/vehicle_skin.png": [
-    16,
-    16,
-    1,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/mmoitems/vein_detoxifier.png": [
-    16,
-    16,
-    3,
-    0,
-    12,
-    16
-  ],
-  "/wiki/textures/mmoitems/whittling_tool.png": [
-    16,
-    16,
-    2,
-    4,
-    14,
-    15
-  ],
-  "/wiki/textures/mmoitems/wood_core.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    13
-  ],
-  "/wiki/textures/pets/epicleather.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    15
-  ],
-  "/wiki/textures/pets/legendaryleather.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    15
-  ],
-  "/wiki/textures/pets/rareleather.png": [
-    16,
-    16,
-    1,
-    1,
-    14,
-    15
-  ],
-  "/wiki/textures/smithing-tools/engraving-tool.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/smithing-tools/etching-tool.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    15
-  ],
-  "/wiki/textures/smithing-tools/hammer-tool.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/smithing-tools/sewing-needle.png": [
-    16,
-    16,
-    3,
-    1,
-    14,
-    16
-  ],
-  "/wiki/textures/smithing-tools/small-hammer-tool.png": [
-    16,
-    16,
-    2,
-    3,
-    13,
-    15
-  ],
-  "/wiki/textures/smithing-tools/whittling-tool.png": [
-    16,
-    16,
-    2,
-    4,
-    14,
-    15
-  ],
-  "/wiki/textures/stations/alloy-forge.png": [
-    64,
-    512,
-    0,
-    0,
-    48,
-    495
-  ],
-  "/wiki/textures/stations/archeology-cabinet.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    48
-  ],
-  "/wiki/textures/stations/archeology-station.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    48
-  ],
-  "/wiki/textures/stations/gunsmithing-station/bullet.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    4
-  ],
-  "/wiki/textures/stations/gunsmithing-station/manifest.png": [
-    32,
-    32,
-    0,
-    0,
-    18,
-    11
-  ],
-  "/wiki/textures/stations/gunsmithing-station/pistol.png": [
-    32,
-    32,
-    0,
-    0,
-    31,
-    32
-  ],
-  "/wiki/textures/stations/gunsmithing-station/wood1.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    13
-  ],
-  "/wiki/textures/stations/gunsmithing-station/wood2.png": [
-    32,
-    32,
-    0,
-    0,
-    30,
-    30
-  ],
-  "/wiki/textures/stations/magic-station.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    44
-  ],
-  "/wiki/textures/stations/meal-prep-station/meal-prep-station.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    41
-  ],
-  "/wiki/textures/stations/medicine-station.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    25
-  ],
-  "/wiki/textures/stations/recycling-station.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    51
-  ],
-  "/wiki/textures/stations/rune-station.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    46
-  ],
-  "/wiki/textures/stations/weapon-station.png": [
-    128,
-    128,
-    0,
-    0,
-    76,
-    59
-  ],
-  "/wiki/textures/tools/arcane_fuel.png": [
-    16,
-    16,
-    1,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/tools/dead_geiger_counter.png": [
-    16,
-    16,
-    3,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/tools/geiger_counter.png": [
-    16,
-    16,
-    3,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/allium.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    16
-  ],
-  "/wiki/textures/vanilla/amethyst_cluster.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/amethyst_shard.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/vanilla/arrow.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/azalea.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    11
-  ],
-  "/wiki/textures/vanilla/azure_bluet.png": [
-    16,
-    16,
-    3,
-    6,
-    12,
-    16
-  ],
-  "/wiki/textures/vanilla/bee_spawn_egg.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    14
-  ],
-  "/wiki/textures/vanilla/beef.png": [
-    16,
-    16,
-    2,
-    3,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/bell.png": [
-    16,
-    16,
-    2,
-    1,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/big_dripleaf.png": [
-    16,
-    16,
-    0,
-    0,
-    3,
-    1
-  ],
-  "/wiki/textures/vanilla/black_dye.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/blue_dye.png": [
-    16,
-    16,
-    0,
-    4,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/blue_orchid.png": [
-    16,
-    16,
-    2,
-    4,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/bone.png": [
-    16,
-    16,
-    1,
-    1,
-    16,
-    15
-  ],
-  "/wiki/textures/vanilla/brain_coral.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/brain_coral_fan.png": [
-    16,
-    16,
-    0,
-    5,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/brewing_stand.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/brewing_stand_model.png": [
-    16,
-    16,
-    0,
-    0,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/brown_dye.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/bubble_coral.png": [
-    16,
-    16,
-    0,
-    4,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/bubble_coral_fan.png": [
-    16,
-    16,
-    0,
-    6,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/bush.png": [
-    16,
-    16,
-    0,
-    4,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/cactus_flower.png": [
-    16,
-    16,
-    1,
-    6,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/carrot.png": [
-    16,
-    16,
-    2,
-    1,
-    16,
-    15
-  ],
-  "/wiki/textures/vanilla/cat_spawn_egg.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    14
-  ],
-  "/wiki/textures/vanilla/charcoal.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/chicken_spawn_egg.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    14
-  ],
-  "/wiki/textures/vanilla/closed_eyeblossom.png": [
-    16,
-    16,
-    4,
-    4,
-    12,
-    16
-  ],
-  "/wiki/textures/vanilla/coal.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/copper_horse_armor.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/vanilla/copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/cornflower.png": [
-    16,
-    16,
-    4,
-    4,
-    11,
-    16
-  ],
-  "/wiki/textures/vanilla/crimson_fungus.png": [
-    16,
-    16,
-    3,
-    4,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/crimson_roots.png": [
-    16,
-    16,
-    0,
-    4,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/cyan_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/dandelion.png": [
-    16,
-    16,
-    5,
-    7,
-    11,
-    16
-  ],
-  "/wiki/textures/vanilla/dead_bush.png": [
-    16,
-    16,
-    2,
-    0,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/diamond.png": [
-    16,
-    16,
-    2,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/vanilla/diamond_horse_armor.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/vanilla/diamond_pickaxe.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/diamond_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/end_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    6,
-    15
-  ],
-  "/wiki/textures/vanilla/exposed_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/exposed_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/exposed_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/exposed_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/feather.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/fern.png": [
-    16,
-    16,
-    0,
-    0,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/fire_coral_fan.png": [
-    16,
-    16,
-    0,
-    4,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/fishing_rod.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/flint.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/flowering_azalea.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    11
-  ],
-  "/wiki/textures/vanilla/fox_spawn_egg.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/frog_spawn_egg.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/glass_bottle.png": [
-    16,
-    16,
-    4,
-    2,
-    13,
-    15
-  ],
-  "/wiki/textures/vanilla/glow_ink_sac.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    13
-  ],
-  "/wiki/textures/vanilla/glowstone_dust.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/goat_spawn_egg.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    15
-  ],
-  "/wiki/textures/vanilla/golden_horse_armor.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/vanilla/gray_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/green_dye.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/grindstone_pivot.png": [
-    16,
-    16,
-    0,
-    0,
-    10,
-    6
-  ],
-  "/wiki/textures/vanilla/grindstone_round.png": [
-    16,
-    16,
-    0,
-    0,
-    8,
-    12
-  ],
-  "/wiki/textures/vanilla/grindstone_side.png": [
-    16,
-    16,
-    0,
-    0,
-    12,
-    12
-  ],
-  "/wiki/textures/vanilla/gunpowder.png": [
-    16,
-    16,
-    2,
-    3,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/hanging_roots.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    11
-  ],
-  "/wiki/textures/vanilla/honeycomb.png": [
-    16,
-    16,
-    1,
-    0,
-    14,
-    15
-  ],
-  "/wiki/textures/vanilla/horn_coral.png": [
-    16,
-    16,
-    1,
-    2,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/horn_coral_fan.png": [
-    16,
-    16,
-    0,
-    6,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/ink_sac.png": [
-    16,
-    16,
-    3,
-    3,
-    14,
-    13
-  ],
-  "/wiki/textures/vanilla/iron_horse_armor.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/vanilla/iron_pickaxe.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/iron_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/large_fern.png": [
-    16,
-    16,
-    1,
-    4,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/large_fern_top.png": [
-    16,
-    16,
-    1,
-    4,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/lead.png": [
-    16,
-    16,
-    3,
-    2,
-    14,
-    15
-  ],
-  "/wiki/textures/vanilla/leather_boots.png": [
-    16,
-    16,
-    3,
-    3,
-    13,
-    10
-  ],
-  "/wiki/textures/vanilla/leather_chestplate.png": [
-    16,
-    16,
-    1,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/leather_horse_armor.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    14
-  ],
-  "/wiki/textures/vanilla/light_blue_dye.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/light_gray_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/lilac.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/lilac_top.png": [
-    16,
-    16,
-    1,
-    2,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/lily_of_the_valley.png": [
-    16,
-    16,
-    3,
-    4,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/lily_pad.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/lime_dye.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/magenta_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/mangrove_roots.png": [
-    16,
-    16,
-    1,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/name_tag.png": [
-    16,
-    16,
-    0,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/nether_sprouts.png": [
-    16,
-    16,
-    1,
-    5,
-    15,
-    10
-  ],
-  "/wiki/textures/vanilla/nether_wart.png": [
-    16,
-    16,
-    4,
-    4,
-    12,
-    13
-  ],
-  "/wiki/textures/vanilla/netherite_pickaxe.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/netherite_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/oak_sign.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/orange_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/orange_tulip.png": [
-    16,
-    16,
-    5,
-    3,
-    10,
-    16
-  ],
-  "/wiki/textures/vanilla/oxeye_daisy.png": [
-    16,
-    16,
-    4,
-    2,
-    11,
-    16
-  ],
-  "/wiki/textures/vanilla/oxidized_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/oxidized_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/oxidized_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/oxidized_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/paper.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    14
-  ],
-  "/wiki/textures/vanilla/parrot_spawn_egg.png": [
-    16,
-    16,
-    3,
-    0,
-    13,
-    14
-  ],
-  "/wiki/textures/vanilla/peony.png": [
-    16,
-    16,
-    1,
-    4,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/peony_top.png": [
-    16,
-    16,
-    1,
-    4,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/pink_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/pink_tulip.png": [
-    16,
-    16,
-    5,
-    3,
-    10,
-    16
-  ],
-  "/wiki/textures/vanilla/pitcher_plant.png": [
-    16,
-    16,
-    3,
-    1,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/pointed_dripstone.png": [
-    16,
-    16,
-    4,
-    0,
-    12,
-    11
-  ],
-  "/wiki/textures/vanilla/poppy.png": [
-    16,
-    16,
-    5,
-    5,
-    12,
-    16
-  ],
-  "/wiki/textures/vanilla/potato.png": [
-    16,
-    16,
-    2,
-    4,
-    14,
-    14
-  ],
-  "/wiki/textures/vanilla/purple_dye.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/quartz.png": [
-    16,
-    16,
-    1,
-    0,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/rabbit_hide.png": [
-    16,
-    16,
-    3,
-    0,
-    13,
-    15
-  ],
-  "/wiki/textures/vanilla/rabbit_spawn_egg.png": [
-    16,
-    16,
-    1,
-    0,
-    13,
-    14
-  ],
-  "/wiki/textures/vanilla/raw_gold.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/vanilla/red_dye.png": [
-    16,
-    16,
-    0,
-    3,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/red_tulip.png": [
-    16,
-    16,
-    4,
-    3,
-    12,
-    16
-  ],
-  "/wiki/textures/vanilla/redstone_torch.png": [
-    16,
-    16,
-    6,
-    5,
-    10,
-    16
-  ],
-  "/wiki/textures/vanilla/resin_clump.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    15
-  ],
-  "/wiki/textures/vanilla/rose_bush.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/rose_bush_top.png": [
-    16,
-    16,
-    1,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/saddle.png": [
-    16,
-    16,
-    2,
-    4,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/salmon.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/sculk_sensor.png": [
-    16,
-    16,
-    0,
-    8,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/sculk_shrieker.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/sea_pickle.png": [
-    16,
-    16,
-    6,
-    2,
-    10,
-    16
-  ],
-  "/wiki/textures/vanilla/seagrass.png": [
-    16,
-    16,
-    0,
-    4,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/short_dry_grass.png": [
-    16,
-    16,
-    3,
-    7,
-    14,
-    16
-  ],
-  "/wiki/textures/vanilla/short_grass.png": [
-    16,
-    16,
-    0,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/small_dripleaf.png": [
-    16,
-    16,
-    1,
-    0,
-    8,
-    1
-  ],
-  "/wiki/textures/vanilla/small_dripleaf_top.png": [
-    16,
-    16,
-    0,
-    0,
-    8,
-    8
-  ],
-  "/wiki/textures/vanilla/spore_blossom.png": [
-    16,
-    16,
-    1,
-    3,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/stick.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/stone_pickaxe.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/stone_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/stonecutter_saw.png": [
-    16,
-    16,
-    1,
-    9,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/stonecutter_side.png": [
-    16,
-    16,
-    0,
-    7,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/string.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/tropical_fish.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/tube_coral.png": [
-    16,
-    16,
-    1,
-    2,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/tube_coral_fan.png": [
-    16,
-    16,
-    0,
-    7,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/twisting_vines.png": [
-    16,
-    16,
-    3,
-    1,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/warped_fungus.png": [
-    16,
-    16,
-    3,
-    7,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/warped_roots.png": [
-    16,
-    16,
-    2,
-    1,
-    15,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/waxed_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/waxed_exposed_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/waxed_exposed_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_exposed_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/waxed_exposed_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_oxidized_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/waxed_oxidized_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_oxidized_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/waxed_oxidized_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_weathered_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/waxed_weathered_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/waxed_weathered_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/waxed_weathered_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/weathered_copper_chain.png": [
-    16,
-    16,
-    6,
-    1,
-    9,
-    15
-  ],
-  "/wiki/textures/vanilla/weathered_copper_door.png": [
-    16,
-    16,
-    3,
-    2,
-    13,
-    16
-  ],
-  "/wiki/textures/vanilla/weathered_copper_lantern.png": [
-    16,
-    16,
-    5,
-    1,
-    11,
-    14
-  ],
-  "/wiki/textures/vanilla/weathered_lightning_rod.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    16
-  ],
-  "/wiki/textures/vanilla/weeping_vines.png": [
-    16,
-    16,
-    4,
-    0,
-    12,
-    7
-  ],
-  "/wiki/textures/vanilla/wheat.png": [
-    16,
-    16,
-    1,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/wheat_seeds.png": [
-    16,
-    16,
-    3,
-    4,
-    14,
-    13
-  ],
-  "/wiki/textures/vanilla/white_tulip.png": [
-    16,
-    16,
-    4,
-    3,
-    11,
-    16
-  ],
-  "/wiki/textures/vanilla/wildflowers.png": [
-    16,
-    16,
-    1,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/vanilla/wither_rose.png": [
-    16,
-    16,
-    5,
-    5,
-    12,
-    16
-  ],
-  "/wiki/textures/vanilla/wooden_pickaxe.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/wooden_shovel.png": [
-    16,
-    16,
-    2,
-    2,
-    15,
-    15
-  ],
-  "/wiki/textures/vanilla/yellow_dye.png": [
-    16,
-    16,
-    0,
-    1,
-    16,
-    16
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/bag.png": [
-    16,
-    16,
-    0,
-    0,
-    11,
-    10
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/bullet.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    4
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/bullet2.png": [
-    16,
-    16,
-    0,
-    0,
-    3,
-    3
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/pin.png": [
-    16,
-    16,
-    0,
-    0,
-    5,
-    5
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/powder.png": [
-    16,
-    16,
-    0,
-    0,
-    4,
-    3
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/stand.png": [
-    32,
-    32,
-    0,
-    0,
-    24,
-    14
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/wood1.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    13
-  ],
-  "/wiki/textures/vehicle-stations/ammunition_station/wood2.png": [
-    32,
-    32,
-    0,
-    0,
-    30,
-    30
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_armchair.png": [
-    64,
-    64,
-    0,
-    0,
-    64,
-    57
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_bench.png": [
-    128,
-    128,
-    0,
-    0,
-    88,
-    17
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_book.png": [
-    64,
-    64,
-    0,
-    0,
-    49,
-    36
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_chair.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    35
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_fireplace.png": [
-    128,
-    512,
-    0,
-    0,
-    78,
-    444
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_grandfatherclock.png": [
-    64,
-    64,
-    0,
-    0,
-    59,
-    44
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_painting.png": [
-    128,
-    128,
-    0,
-    1,
-    70,
-    97
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_piano.png": [
-    128,
-    128,
-    0,
-    0,
-    98,
-    74
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_rug.png": [
-    256,
-    256,
-    48,
-    0,
-    144,
-    48
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sideboard.png": [
-    128,
-    128,
-    0,
-    0,
-    96,
-    62
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sofa.png": [
-    128,
-    128,
-    0,
-    0,
-    96,
-    60
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar.png": [
-    64,
-    64,
-    0,
-    0,
-    40,
-    8
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png": [
-    128,
-    128,
-    0,
-    0,
-    72,
-    35
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_rope.png": [
-    64,
-    64,
-    0,
-    0,
-    40,
-    32
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_books.png": [
-    64,
-    64,
-    0,
-    0,
-    61,
-    52
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_canon.png": [
-    64,
-    64,
-    0,
-    0,
-    54,
-    53
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_captain_chair.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    51
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png": [
-    128,
-    128,
-    0,
-    0,
-    68,
-    40
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_desk.png": [
-    128,
-    128,
-    0,
-    0,
-    128,
-    52
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_globe.png": [
-    64,
-    64,
-    0,
-    0,
-    44,
-    35
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_map.png": [
-    128,
-    128,
-    14,
-    0,
-    54,
-    14
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_paperrolls.png": [
-    64,
-    64,
-    0,
-    0,
-    30,
-    30
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_planks.png": [
-    64,
-    64,
-    0,
-    0,
-    32,
-    47
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_rum_bottles.png": [
-    64,
-    64,
-    0,
-    0,
-    34,
-    41
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_sideboard.png": [
-    128,
-    128,
-    0,
-    0,
-    96,
-    44
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_telescope.png": [
-    64,
-    64,
-    0,
-    0,
-    38,
-    37
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_vase.png": [
-    64,
-    64,
-    0,
-    0,
-    51,
-    37
-  ],
+  "/wiki/textures/ammunition/ironshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/ammunition/pebbleshot.png": [16, 16, 1, 3, 14, 15],
+  "/wiki/textures/ammunition/rocket.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/ammunition/spreadshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/ammunition/steelshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/bird-mail/mailbox.png": [64, 64, 0, 0, 64, 32],
+  "/wiki/textures/crop-plants/basil/basil_block.png": [96, 48, 5, 4, 48, 32],
+  "/wiki/textures/crop-plants/blackpepper/blackpepper_block.png": [176, 64, 12, 6, 67, 58],
+  "/wiki/textures/crop-plants/cactusfruit/cactusfruit_block.png": [16, 16, 0, 0, 2, 16],
+  "/wiki/textures/crop-plants/corn/corn_block.png": [80, 48, 5, 0, 78, 48],
+  "/wiki/textures/crop-plants/cucumber/cucumber_block.png": [32, 32, 5, 3, 27, 30],
+  "/wiki/textures/crop-plants/garlic/stage_4.png": [16, 32, 2, 8, 15, 32],
+  "/wiki/textures/crop-plants/grape/grape.png": [16, 16, 1, 1, 14, 15],
+  "/wiki/textures/crop-plants/lettuce/lettuce_block.png": [80, 48, 5, 41, 47, 48],
+  "/wiki/textures/crop-plants/moolis/moolis_block.png": [80, 48, 0, 0, 43, 48],
+  "/wiki/textures/crop-plants/mustard/mustard_block.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/crop-plants/pineapple/pineapple_blocks.png": [80, 48, 0, 0, 64, 48],
+  "/wiki/textures/crop-plants/pistachio/pistachio_block.png": [96, 48, 0, 0, 48, 32],
+  "/wiki/textures/crop-plants/rhubarb/rhubarb_block.png": [16, 16, 2, 6, 7, 15],
+  "/wiki/textures/crop-plants/rice/rice_block.png": [48, 16, 3, 8, 32, 16],
+  "/wiki/textures/crop-plants/spiceleaf/spiceleaf_block.png": [32, 32, 1, 10, 15, 32],
+  "/wiki/textures/crop-plants/strawberry/strawberry_block.png": [80, 48, 0, 0, 47, 48],
+  "/wiki/textures/crop-plants/tomato/tomato_block.png": [80, 48, 0, 0, 78, 48],
+  "/wiki/textures/crop-plants/vanilla/stage_5.png": [32, 32, 1, 10, 20, 32],
+  "/wiki/textures/crop-plants/yeast/yeast_block.png": [128, 128, 0, 1, 47, 31],
+  "/wiki/textures/crops/basil.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/crops/cactus-fruit.png": [16, 16, 3, 2, 13, 13],
+  "/wiki/textures/crops/cherry.png": [16, 16, 1, 0, 13, 15],
+  "/wiki/textures/crops/cinnamon.png": [16, 16, 3, 2, 15, 12],
+  "/wiki/textures/crops/cucumber.png": [16, 16, 3, 1, 15, 15],
+  "/wiki/textures/crops/garlic.png": [16, 16, 2, 2, 13, 14],
+  "/wiki/textures/crops/grape.png": [16, 16, 3, 0, 15, 15],
+  "/wiki/textures/crops/lemon.png": [16, 16, 2, 5, 14, 13],
+  "/wiki/textures/crops/lime.png": [16, 16, 2, 5, 14, 13],
+  "/wiki/textures/crops/mustard-seeds.png": [16, 16, 3, 4, 14, 13],
+  "/wiki/textures/crops/mustard.png": [16, 16, 6, 1, 11, 15],
+  "/wiki/textures/crops/nutmeg.png": [16, 16, 1, 3, 14, 15],
+  "/wiki/textures/crops/olive.png": [16, 16, 5, 4, 12, 12],
+  "/wiki/textures/crops/onion.png": [16, 16, 1, 1, 15, 14],
+  "/wiki/textures/crops/peach.png": [16, 16, 3, 1, 15, 14],
+  "/wiki/textures/crops/pineapple.png": [16, 16, 3, 0, 14, 16],
+  "/wiki/textures/crops/pistachio.png": [16, 16, 4, 3, 12, 14],
+  "/wiki/textures/crops/plum.png": [16, 16, 3, 3, 13, 12],
+  "/wiki/textures/crops/rhubarb.png": [16, 16, 4, 2, 15, 15],
+  "/wiki/textures/crops/rice.png": [16, 16, 4, 2, 15, 14],
+  "/wiki/textures/crops/spice-leaf.png": [16, 16, 3, 3, 15, 13],
+  "/wiki/textures/crops/strawberry.png": [16, 16, 3, 2, 13, 12],
+  "/wiki/textures/crops/tomato.png": [16, 16, 2, 0, 14, 15],
+  "/wiki/textures/crops/vanilla.png": [16, 16, 1, 1, 15, 14],
+  "/wiki/textures/crops/yeast.png": [16, 16, 1, 1, 14, 16],
+  "/wiki/textures/currency/gold-denar.png": [16, 16, 4, 6, 11, 12],
+  "/wiki/textures/currency/handful-of-gold-denars.png": [16, 16, 4, 2, 11, 14],
+  "/wiki/textures/currency/handful-of-silver-denars.png": [16, 16, 4, 2, 11, 14],
+  "/wiki/textures/currency/pouch-of-gold-denars.png": [16, 16, 3, 3, 15, 14],
+  "/wiki/textures/currency/silver-denar.png": [16, 16, 4, 6, 11, 12],
+  "/wiki/textures/currency/stack-of-gold-denars.png": [16, 16, 1, 2, 14, 15],
+  "/wiki/textures/currency/stack-of-silver-denars.png": [16, 16, 1, 2, 14, 15],
+  "/wiki/textures/farming/watering_can.png": [24, 24, 0, 0, 22, 24],
+  "/wiki/textures/fishing-rods/abyssalite_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/fishing-rods/fishing_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/fishing-rods/mythril_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/fishing-rods/steel_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/furniture/artifact_display.png": [32, 32, 0, 0, 32, 25],
+  "/wiki/textures/furniture/butter_churn.png": [32, 32, 0, 0, 25, 25],
+  "/wiki/textures/furniture/cutting_board.png": [32, 32, 0, 0, 13, 15],
+  "/wiki/textures/furniture/fire_pit.png": [48, 48, 0, 0, 16, 36],
+  "/wiki/textures/furniture/frying_pan.png": [32, 32, 0, 0, 25, 21],
+  "/wiki/textures/furniture/liquid_container.png": [32, 32, 0, 0, 31, 22],
+  "/wiki/textures/furniture/lure.png": [32, 32, 0, 0, 16, 28],
+  "/wiki/textures/furniture/marauder/marauder_coins.png": [32, 32, 0, 0, 32, 31],
+  "/wiki/textures/furniture/marauder/marauder_coins_small.png": [32, 32, 0, 0, 28, 14],
+  "/wiki/textures/furniture/marauder/marauder_goldbag.png": [64, 64, 0, 0, 62, 31],
+  "/wiki/textures/furniture/marauder/marauder_goldbars.png": [64, 64, 0, 0, 26, 19],
+  "/wiki/textures/furniture/meat_hook.png": [16, 16, 0, 0, 6, 9],
+  "/wiki/textures/furniture/milling_stone.png": [32, 32, 0, 0, 32, 26],
+  "/wiki/textures/furniture/oven.png": [48, 48, 0, 0, 33, 33],
+  "/wiki/textures/furniture/pedestal.png": [32, 32, 0, 0, 16, 16],
+  "/wiki/textures/furniture/pot.png": [32, 32, 0, 0, 25, 22],
+  "/wiki/textures/furniture/sausage_maker.png": [32, 32, 0, 0, 22, 18],
+  "/wiki/textures/furniture/tray.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/furniture/trough.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/furniture/voting_booth.png": [32, 32, 0, 0, 32, 16],
+  "/wiki/textures/gems/agate.png": [16, 16, 3, 4, 13, 13],
+  "/wiki/textures/gems/apatite.png": [16, 16, 3, 3, 13, 12],
+  "/wiki/textures/gems/aquamarine.png": [16, 16, 4, 3, 12, 14],
+  "/wiki/textures/gems/chrysoprase.png": [16, 16, 1, 1, 14, 14],
+  "/wiki/textures/gems/citrine.png": [16, 16, 2, 2, 13, 14],
+  "/wiki/textures/gems/cloudstone.png": [16, 16, 2, 1, 15, 14],
+  "/wiki/textures/gems/coral.png": [16, 16, 4, 5, 12, 13],
+  "/wiki/textures/gems/crystallite.png": [16, 16, 4, 2, 11, 13],
+  "/wiki/textures/gems/firestone.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/gems/labradorite.png": [16, 16, 4, 5, 13, 13],
+  "/wiki/textures/gems/malachite.png": [16, 16, 3, 3, 12, 12],
+  "/wiki/textures/gems/morganite.png": [16, 16, 3, 3, 13, 15],
+  "/wiki/textures/gems/musgravite.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/gems/peridot.png": [16, 16, 5, 3, 13, 12],
+  "/wiki/textures/gems/rhodonite.png": [16, 16, 4, 3, 11, 13],
+  "/wiki/textures/gems/sapphire.png": [16, 16, 3, 3, 13, 14],
+  "/wiki/textures/gems/sardonyx.png": [16, 16, 4, 4, 13, 12],
+  "/wiki/textures/gems/serpents_eye.png": [16, 16, 2, 3, 14, 11],
+  "/wiki/textures/gems/taaffeite.png": [16, 16, 2, 4, 13, 14],
+  "/wiki/textures/gems/tigers_eye.png": [16, 16, 2, 3, 14, 11],
+  "/wiki/textures/gems/topaz.png": [16, 16, 2, 4, 14, 13],
+  "/wiki/textures/gems/turquoise.png": [16, 16, 5, 3, 13, 13],
+  "/wiki/textures/gems/variscite.png": [16, 16, 3, 4, 11, 14],
+  "/wiki/textures/gems/zircon.png": [16, 16, 3, 5, 13, 12],
+  "/wiki/textures/goldsmith-tools/branding_tool.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/goldsmith-tools/small_smith_hammer.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/goldsmith-tools/smith_hammer.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/goldsmith-tools/smith_tinker_tool.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/gun-parts/arclock.png": [16, 16, 1, 2, 15, 13],
+  "/wiki/textures/gun-parts/breech_loader.png": [16, 16, 1, 4, 14, 12],
+  "/wiki/textures/gun-parts/elderwood_stock.png": [16, 16, 1, 5, 15, 13],
+  "/wiki/textures/gun-parts/flintlock.png": [16, 16, 1, 2, 15, 13],
+  "/wiki/textures/gun-parts/launcher_barrel.png": [16, 16, 0, 4, 16, 10],
+  "/wiki/textures/gun-parts/maplewood_stock.png": [16, 16, 1, 5, 15, 13],
+  "/wiki/textures/gun-parts/muzzle_loader.png": [16, 16, 2, 4, 15, 12],
+  "/wiki/textures/gun-parts/oak_stock.png": [16, 16, 1, 5, 15, 13],
+  "/wiki/textures/gun-parts/quad_shot_rocket.png": [16, 16, 1, 4, 15, 10],
+  "/wiki/textures/gun-parts/revolver.png": [16, 16, 0, 2, 14, 14],
+  "/wiki/textures/gun-parts/rifled_barrel_long.png": [16, 16, 0, 5, 16, 9],
+  "/wiki/textures/gun-parts/rifled_barrel_short.png": [16, 16, 3, 5, 13, 9],
+  "/wiki/textures/gun-parts/rocketlock.png": [16, 16, 1, 4, 15, 10],
+  "/wiki/textures/gun-parts/single_shot.png": [16, 16, 4, 3, 12, 11],
+  "/wiki/textures/gun-parts/single_shot_rocket.png": [16, 16, 1, 4, 15, 10],
+  "/wiki/textures/gun-parts/smoothbore_barrel_long.png": [16, 16, 0, 5, 16, 9],
+  "/wiki/textures/gun-parts/smoothbore_barrel_short.png": [16, 16, 3, 5, 13, 9],
+  "/wiki/textures/gun-parts/spread_barrel.png": [16, 16, 0, 2, 14, 14],
+  "/wiki/textures/gun-parts/steamlock.png": [16, 16, 1, 4, 15, 13],
+  "/wiki/textures/herbs/icon14.png": [32, 32, 4, 3, 28, 30],
+  "/wiki/textures/herbs/icon17.png": [32, 32, 3, 3, 30, 29],
+  "/wiki/textures/herbs/icon18.png": [32, 32, 2, 4, 30, 26],
+  "/wiki/textures/herbs/icon19.png": [32, 32, 2, 7, 30, 26],
+  "/wiki/textures/herbs/icon2.png": [32, 32, 4, 2, 27, 29],
+  "/wiki/textures/herbs/icon20.png": [32, 32, 2, 2, 30, 29],
+  "/wiki/textures/herbs/icon21.png": [32, 32, 5, 2, 26, 29],
+  "/wiki/textures/herbs/icon24.png": [32, 32, 2, 5, 29, 27],
+  "/wiki/textures/herbs/icon32.png": [32, 32, 3, 4, 28, 29],
+  "/wiki/textures/herbs/icon33.png": [32, 32, 3, 3, 30, 29],
+  "/wiki/textures/herbs/icon36.png": [32, 32, 2, 8, 30, 25],
+  "/wiki/textures/herbs/icon4.png": [32, 32, 5, 2, 28, 30],
+  "/wiki/textures/herbs/icon41.png": [32, 32, 3, 3, 29, 30],
+  "/wiki/textures/herbs/icon42.png": [32, 32, 2, 8, 29, 27],
+  "/wiki/textures/herbs/icon44.png": [32, 32, 3, 5, 30, 26],
+  "/wiki/textures/herbs/icon45.png": [32, 32, 3, 5, 29, 28],
+  "/wiki/textures/herbs/icon5.png": [32, 32, 3, 5, 30, 27],
+  "/wiki/textures/instruments/flute.png": [16, 16, 0, 1, 15, 16],
+  "/wiki/textures/items/letters/letter.png": [16, 16, 2, 3, 16, 14],
+  "/wiki/textures/itemsadder/cutting_knife.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/itemsadder/ladle.png": [16, 16, 0, 0, 15, 14],
+  "/wiki/textures/jewellery/blue_medal.png": [16, 16, 4, 0, 12, 15],
+  "/wiki/textures/jewellery/dark_necklace.png": [16, 16, 0, 0, 15, 16],
+  "/wiki/textures/jewellery/green_medal.png": [16, 16, 4, 0, 12, 15],
+  "/wiki/textures/jewellery/jeweled_gold_ring.png": [16, 16, 3, 1, 13, 14],
+  "/wiki/textures/magic_crafting/basic_magical_core.png": [16, 16, 3, 2, 14, 13],
+  "/wiki/textures/magic_crafting/bloodmagic_essence.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/magic_crafting/enchanted_dust.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/magic_crafting/enchanted_leather.png": [16, 16, 0, 2, 15, 16],
+  "/wiki/textures/magic_crafting/necromancy_essence.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/magic_crafting/petty_magical_core.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/market-block/apple.png": [16, 16, 0, 0, 9, 9],
+  "/wiki/textures/market-block/coin.png": [16, 16, 0, 0, 4, 4],
+  "/wiki/textures/market-block/ink_bottle.png": [16, 16, 0, 0, 12, 11],
+  "/wiki/textures/market-block/manifest.png": [32, 32, 0, 0, 18, 11],
+  "/wiki/textures/market-block/wood1.png": [16, 16, 0, 0, 16, 13],
+  "/wiki/textures/market-block/wood2.png": [32, 32, 0, 0, 30, 30],
+  "/wiki/textures/materials/abyssalite.png": [16, 16, 3, 2, 14, 13],
+  "/wiki/textures/materials/alchemy_powder.png": [16, 16, 2, 5, 13, 15],
+  "/wiki/textures/materials/bark.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/materials/barkwood.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/materials/carbon_powder.png": [16, 16, 1, 4, 15, 13],
+  "/wiki/textures/materials/coke.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/materials/crystallite_shard.png": [16, 16, 5, 3, 11, 14],
+  "/wiki/textures/materials/detoxed_leather.png": [16, 16, 1, 1, 13, 15],
+  "/wiki/textures/materials/diamond_fragment.png": [16, 16, 2, 3, 15, 14],
+  "/wiki/textures/materials/dynamite.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/materials/emerald_shard.png": [16, 16, 4, 3, 12, 14],
+  "/wiki/textures/materials/fertilizer.png": [16, 16, 1, 2, 14, 13],
+  "/wiki/textures/materials/flower_core.png": [16, 16, 1, 5, 14, 14],
+  "/wiki/textures/materials/fossil.png": [16, 16, 1, 0, 14, 15],
+  "/wiki/textures/materials/ignitium.png": [16, 16, 2, 2, 13, 14],
+  "/wiki/textures/materials/moldable_gold.png": [16, 16, 1, 2, 16, 15],
+  "/wiki/textures/materials/mythril_fragment.png": [16, 16, 5, 5, 12, 14],
+  "/wiki/textures/materials/niter.png": [16, 16, 3, 2, 12, 13],
+  "/wiki/textures/materials/potash.png": [16, 16, 2, 5, 14, 15],
+  "/wiki/textures/materials/raw_tin.png": [16, 16, 3, 3, 14, 14],
+  "/wiki/textures/materials/rawiron_fragment.png": [16, 16, 1, 1, 16, 16],
+  "/wiki/textures/materials/rough_gold.png": [16, 16, 1, 2, 16, 15],
+  "/wiki/textures/materials/ruby_shard.png": [16, 16, 5, 2, 12, 15],
+  "/wiki/textures/materials/salt.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/materials/saltpeter.png": [16, 16, 1, 5, 15, 14],
+  "/wiki/textures/materials/shiny_gold.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/materials/smokeless_powder.png": [16, 16, 1, 5, 14, 14],
+  "/wiki/textures/materials/sulfur.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/materials/synthetic_ink.png": [16, 16, 4, 4, 13, 14],
+  "/wiki/textures/materials/transmutation_powder.png": [16, 16, 4, 5, 13, 13],
+  "/wiki/textures/materials/war_key.png": [16, 16, 5, 0, 12, 16],
+  "/wiki/textures/materials/wood_core.png": [16, 16, 3, 3, 14, 13],
+  "/wiki/textures/mmoitems/abyssalite_axe.png": [16, 16, 2, 0, 15, 15],
+  "/wiki/textures/mmoitems/abyssalite_fragment.png": [16, 16, 3, 2, 14, 13],
+  "/wiki/textures/mmoitems/abyssalite_hoe.png": [16, 16, 2, 0, 14, 15],
+  "/wiki/textures/mmoitems/abyssalite_pickaxe.png": [16, 16, 2, 1, 16, 15],
+  "/wiki/textures/mmoitems/abyssalite_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/mmoitems/abyssalite_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/mmoitems/alchemy_powder.png": [16, 16, 2, 5, 13, 15],
+  "/wiki/textures/mmoitems/anesthetic.png": [16, 16, 0, 2, 16, 15],
+  "/wiki/textures/mmoitems/antibiotics.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/mmoitems/arcane_fuel.png": [16, 16, 1, 0, 14, 16],
+  "/wiki/textures/mmoitems/arcane_leaf.png": [32, 32, 3, 5, 30, 27],
+  "/wiki/textures/mmoitems/ascendant_runestone.png": [16, 16, 0, 0, 15, 16],
+  "/wiki/textures/mmoitems/autumn_leaf.png": [32, 32, 5, 2, 28, 30],
+  "/wiki/textures/mmoitems/bark.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/mmoitems/barkshroom.png": [32, 32, 2, 5, 29, 27],
+  "/wiki/textures/mmoitems/barkwood.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/mmoitems/basic_lockpick_set.png": [16, 16, 2, 1, 15, 14],
+  "/wiki/textures/mmoitems/birch_seed.png": [32, 32, 3, 2, 29, 29],
+  "/wiki/textures/mmoitems/blazed_root.png": [32, 32, 3, 5, 30, 26],
+  "/wiki/textures/mmoitems/bullet_box.png": [16, 16, 1, 2, 15, 15],
+  "/wiki/textures/mmoitems/burrow_root.png": [32, 32, 3, 4, 28, 29],
+  "/wiki/textures/mmoitems/cannonball.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/mmoitems/carbon_powder.png": [16, 16, 1, 4, 15, 13],
+  "/wiki/textures/mmoitems/caveshroom.png": [32, 32, 5, 2, 26, 29],
+  "/wiki/textures/mmoitems/cloro_core.png": [32, 32, 2, 8, 30, 25],
+  "/wiki/textures/mmoitems/clover.png": [32, 32, 3, 3, 30, 29],
+  "/wiki/textures/mmoitems/clusterbomb.png": [16, 16, 1, 1, 15, 16],
+  "/wiki/textures/mmoitems/coke.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/cooling_serum.png": [16, 16, 3, 0, 12, 16],
+  "/wiki/textures/mmoitems/coownership_item.png": [16, 16, 3, 3, 13, 14],
+  "/wiki/textures/mmoitems/dead_geiger_counter.png": [16, 16, 3, 0, 14, 16],
+  "/wiki/textures/mmoitems/death_fruit.png": [32, 32, 2, 8, 29, 27],
+  "/wiki/textures/mmoitems/detoxed_leather.png": [16, 16, 1, 1, 13, 15],
+  "/wiki/textures/mmoitems/dwindle_leaf.png": [32, 32, 2, 2, 30, 29],
+  "/wiki/textures/mmoitems/dynamite.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/mmoitems/enchanted_charge_1.png": [16, 16, 4, 3, 12, 12],
+  "/wiki/textures/mmoitems/enchanted_dust.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/mmoitems/engraving_tool.png": [16, 16, 2, 3, 14, 15],
+  "/wiki/textures/mmoitems/etching_tool.png": [16, 16, 2, 3, 14, 15],
+  "/wiki/textures/mmoitems/eye_fruit.png": [32, 32, 5, 2, 25, 29],
+  "/wiki/textures/mmoitems/farmreport_item.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/mmoitems/fertilizer.png": [16, 16, 1, 2, 14, 13],
+  "/wiki/textures/mmoitems/fever_flush.png": [16, 16, 1, 1, 15, 16],
+  "/wiki/textures/mmoitems/fire_leaf.png": [32, 32, 4, 2, 27, 29],
+  "/wiki/textures/mmoitems/fish_treat.png": [16, 16, 1, 0, 16, 16],
+  "/wiki/textures/mmoitems/flatshroom.png": [32, 32, 3, 5, 29, 28],
+  "/wiki/textures/mmoitems/flower_core.png": [16, 16, 1, 5, 14, 14],
+  "/wiki/textures/mmoitems/flute.png": [16, 16, 0, 1, 15, 16],
+  "/wiki/textures/mmoitems/frost_flowers.png": [32, 32, 2, 6, 30, 29],
+  "/wiki/textures/mmoitems/frost_root.png": [32, 32, 5, 3, 30, 29],
+  "/wiki/textures/mmoitems/geiger_counter.png": [16, 16, 3, 0, 14, 16],
+  "/wiki/textures/mmoitems/glowpea_pod.png": [32, 32, 5, 2, 25, 29],
+  "/wiki/textures/mmoitems/gold_coin.png": [16, 16, 4, 6, 11, 12],
+  "/wiki/textures/mmoitems/goldsmith_branding_tool.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/goldsmith_hammer.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/goldsmith_tinker_tool.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/mmoitems/grapeberries.png": [32, 32, 3, 3, 30, 29],
+  "/wiki/textures/mmoitems/greater_runestone.png": [16, 16, 2, 1, 13, 15],
+  "/wiki/textures/mmoitems/green_concoction.png": [160, 160, 20, 20, 140, 130],
+  "/wiki/textures/mmoitems/hammer_tool.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/hand_pick.png": [16, 16, 3, 2, 14, 14],
+  "/wiki/textures/mmoitems/handful_of_coins.png": [16, 16, 4, 2, 11, 14],
+  "/wiki/textures/mmoitems/holt_core.png": [32, 32, 2, 5, 29, 26],
+  "/wiki/textures/mmoitems/ignitium.png": [16, 16, 2, 2, 13, 14],
+  "/wiki/textures/mmoitems/iron_axe.png": [16, 16, 2, 1, 13, 15],
+  "/wiki/textures/mmoitems/iron_hunting_knife.png": [16, 16, 1, 3, 13, 15],
+  "/wiki/textures/mmoitems/iron_key.png": [16, 16, 5, 0, 12, 16],
+  "/wiki/textures/mmoitems/ironshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/mmoitems/kelpberry.png": [32, 32, 6, 2, 25, 29],
+  "/wiki/textures/mmoitems/lab_kit.png": [16, 16, 0, 1, 16, 14],
+  "/wiki/textures/mmoitems/lesser_armor_runestone.png": [16, 16, 2, 1, 15, 16],
+  "/wiki/textures/mmoitems/lesser_runestone.png": [16, 16, 4, 2, 13, 15],
+  "/wiki/textures/mmoitems/lockpick.png": [16, 16, 2, 1, 15, 14],
+  "/wiki/textures/mmoitems/long_leaf.png": [32, 32, 4, 3, 28, 30],
+  "/wiki/textures/mmoitems/lost_knowledge_scrap.png": [16, 16, 4, 4, 13, 13],
+  "/wiki/textures/mmoitems/meat_treat.png": [160, 160, 20, 30, 140, 140],
+  "/wiki/textures/mmoitems/minor_armor_runestone.png": [16, 16, 4, 5, 12, 14],
+  "/wiki/textures/mmoitems/minor_runestone.png": [16, 16, 4, 5, 12, 14],
+  "/wiki/textures/mmoitems/mythril_axe.png": [16, 16, 1, 1, 13, 15],
+  "/wiki/textures/mmoitems/mythril_fragment.png": [16, 16, 5, 5, 12, 14],
+  "/wiki/textures/mmoitems/mythril_hoe.png": [16, 16, 1, 0, 13, 15],
+  "/wiki/textures/mmoitems/mythril_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/mmoitems/nightshade.png": [32, 32, 2, 8, 30, 25],
+  "/wiki/textures/mmoitems/niter.png": [16, 16, 3, 2, 12, 13],
+  "/wiki/textures/mmoitems/pebbleshot.png": [16, 16, 1, 3, 14, 15],
+  "/wiki/textures/mmoitems/pins.png": [16, 16, 0, 1, 16, 13],
+  "/wiki/textures/mmoitems/pointing_trowel.png": [16, 16, 3, 4, 13, 14],
+  "/wiki/textures/mmoitems/poison_leaf.png": [32, 32, 3, 5, 29, 29],
+  "/wiki/textures/mmoitems/poison_root.png": [32, 32, 4, 3, 28, 30],
+  "/wiki/textures/mmoitems/potash.png": [16, 16, 2, 5, 14, 15],
+  "/wiki/textures/mmoitems/pouch_of_coins.png": [16, 16, 3, 3, 15, 14],
+  "/wiki/textures/mmoitems/pumpkin_spore.png": [32, 32, 3, 2, 29, 29],
+  "/wiki/textures/mmoitems/r_abyssalite.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_arcane_crystal.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_bronze.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_demonwood.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_denar.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_elderwood.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_enchanted_dust.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_gunpowder.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_ignitium.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_infusion.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_mythril.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/r_runestone.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/rare_research_paper.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/raw_tin.png": [16, 16, 3, 3, 14, 14],
+  "/wiki/textures/mmoitems/rerythmetizer.png": [16, 16, 3, 0, 12, 16],
+  "/wiki/textures/mmoitems/rocket.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/mmoitems/saltpeter.png": [16, 16, 1, 5, 15, 14],
+  "/wiki/textures/mmoitems/scribe_paper.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/serpent_root.png": [32, 32, 2, 4, 30, 26],
+  "/wiki/textures/mmoitems/sewing_needle.png": [16, 16, 3, 1, 14, 16],
+  "/wiki/textures/mmoitems/silver_coin.png": [16, 16, 4, 6, 11, 12],
+  "/wiki/textures/mmoitems/silver_coin10.png": [16, 16, 1, 2, 14, 15],
+  "/wiki/textures/mmoitems/silver_coin5.png": [16, 16, 4, 2, 11, 14],
+  "/wiki/textures/mmoitems/skin_branding_tool.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/mmoitems/small_bomb.png": [16, 16, 4, 1, 12, 16],
+  "/wiki/textures/mmoitems/small_goldsmith_hammer.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/mmoitems/small_hammer_tool.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/mmoitems/splint.png": [16, 16, 0, 2, 16, 15],
+  "/wiki/textures/mmoitems/sponge.png": [16, 16, 0, 2, 16, 15],
+  "/wiki/textures/mmoitems/spot_leaf.png": [32, 32, 2, 7, 30, 26],
+  "/wiki/textures/mmoitems/spreadshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/mmoitems/stack_of_coins.png": [16, 16, 1, 2, 14, 15],
+  "/wiki/textures/mmoitems/steel_axe.png": [16, 16, 1, 0, 14, 15],
+  "/wiki/textures/mmoitems/steel_hoe.png": [16, 16, 1, 0, 13, 15],
+  "/wiki/textures/mmoitems/steel_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/mmoitems/steel_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/mmoitems/steelshot.png": [16, 16, 1, 3, 14, 14],
+  "/wiki/textures/mmoitems/stitches.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/mmoitems/stone_core.png": [16, 16, 3, 3, 14, 13],
+  "/wiki/textures/mmoitems/strong_lockpick_set.png": [16, 16, 2, 1, 15, 14],
+  "/wiki/textures/mmoitems/sulfur.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/mmoitems/synthetic_ink.png": [16, 16, 4, 4, 13, 14],
+  "/wiki/textures/mmoitems/taming_item.png": [16, 16, 3, 3, 13, 14],
+  "/wiki/textures/mmoitems/thorn_root.png": [32, 32, 3, 3, 29, 30],
+  "/wiki/textures/mmoitems/torpedo.png": [16, 16, 0, 6, 16, 11],
+  "/wiki/textures/mmoitems/transmutation_powder.png": [16, 16, 4, 5, 13, 13],
+  "/wiki/textures/mmoitems/ultrasound.png": [16, 16, 0, 3, 16, 14],
+  "/wiki/textures/mmoitems/universal_feed.png": [16, 16, 0, 1, 14, 15],
+  "/wiki/textures/mmoitems/vehicle_repair.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/mmoitems/vehicle_skin.png": [16, 16, 1, 1, 16, 16],
+  "/wiki/textures/mmoitems/vein_detoxifier.png": [16, 16, 3, 0, 12, 16],
+  "/wiki/textures/mmoitems/whittling_tool.png": [16, 16, 2, 4, 14, 15],
+  "/wiki/textures/mmoitems/wood_core.png": [16, 16, 3, 3, 14, 13],
+  "/wiki/textures/pets/epicleather.png": [16, 16, 1, 1, 14, 15],
+  "/wiki/textures/pets/legendaryleather.png": [16, 16, 1, 1, 14, 15],
+  "/wiki/textures/pets/rareleather.png": [16, 16, 1, 1, 14, 15],
+  "/wiki/textures/smithing-tools/engraving-tool.png": [16, 16, 2, 3, 14, 15],
+  "/wiki/textures/smithing-tools/etching-tool.png": [16, 16, 2, 3, 14, 15],
+  "/wiki/textures/smithing-tools/hammer-tool.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/smithing-tools/sewing-needle.png": [16, 16, 3, 1, 14, 16],
+  "/wiki/textures/smithing-tools/small-hammer-tool.png": [16, 16, 2, 3, 13, 15],
+  "/wiki/textures/smithing-tools/whittling-tool.png": [16, 16, 2, 4, 14, 15],
+  "/wiki/textures/stations/alloy-forge.png": [64, 512, 0, 0, 48, 495],
+  "/wiki/textures/stations/archeology-cabinet.png": [64, 64, 0, 0, 48, 48],
+  "/wiki/textures/stations/archeology-station.png": [64, 64, 0, 0, 48, 48],
+  "/wiki/textures/stations/gunsmithing-station/bullet.png": [16, 16, 0, 0, 4, 4],
+  "/wiki/textures/stations/gunsmithing-station/manifest.png": [32, 32, 0, 0, 18, 11],
+  "/wiki/textures/stations/gunsmithing-station/pistol.png": [32, 32, 0, 0, 31, 32],
+  "/wiki/textures/stations/gunsmithing-station/wood1.png": [16, 16, 0, 0, 16, 13],
+  "/wiki/textures/stations/gunsmithing-station/wood2.png": [32, 32, 0, 0, 30, 30],
+  "/wiki/textures/stations/magic-station.png": [64, 64, 0, 0, 64, 44],
+  "/wiki/textures/stations/meal-prep-station/meal-prep-station.png": [64, 64, 0, 0, 64, 41],
+  "/wiki/textures/stations/medicine-station.png": [64, 64, 0, 0, 64, 25],
+  "/wiki/textures/stations/recycling-station.png": [64, 64, 0, 0, 64, 51],
+  "/wiki/textures/stations/rune-station.png": [64, 64, 0, 0, 64, 46],
+  "/wiki/textures/stations/weapon-station.png": [128, 128, 0, 0, 76, 59],
+  "/wiki/textures/tools/arcane_fuel.png": [16, 16, 1, 0, 14, 16],
+  "/wiki/textures/tools/dead_geiger_counter.png": [16, 16, 3, 0, 14, 16],
+  "/wiki/textures/tools/geiger_counter.png": [16, 16, 3, 0, 14, 16],
+  "/wiki/textures/vanilla/allium.png": [16, 16, 4, 2, 11, 16],
+  "/wiki/textures/vanilla/amethyst_cluster.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vanilla/amethyst_shard.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/vanilla/arrow.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/azalea.png": [16, 16, 0, 0, 16, 11],
+  "/wiki/textures/vanilla/azure_bluet.png": [16, 16, 3, 6, 12, 16],
+  "/wiki/textures/vanilla/bee_spawn_egg.png": [16, 16, 0, 3, 16, 14],
+  "/wiki/textures/vanilla/beef.png": [16, 16, 2, 3, 15, 15],
+  "/wiki/textures/vanilla/bell.png": [16, 16, 2, 1, 14, 14],
+  "/wiki/textures/vanilla/big_dripleaf.png": [16, 16, 0, 0, 3, 1],
+  "/wiki/textures/vanilla/black_dye.png": [16, 16, 0, 3, 16, 16],
+  "/wiki/textures/vanilla/blue_dye.png": [16, 16, 0, 4, 16, 16],
+  "/wiki/textures/vanilla/blue_orchid.png": [16, 16, 2, 4, 15, 16],
+  "/wiki/textures/vanilla/bone.png": [16, 16, 1, 1, 16, 15],
+  "/wiki/textures/vanilla/brain_coral.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vanilla/brain_coral_fan.png": [16, 16, 0, 5, 16, 16],
+  "/wiki/textures/vanilla/brewing_stand.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/vanilla/brewing_stand_model.png": [16, 16, 0, 0, 14, 16],
+  "/wiki/textures/vanilla/brown_dye.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vanilla/bubble_coral.png": [16, 16, 0, 4, 16, 16],
+  "/wiki/textures/vanilla/bubble_coral_fan.png": [16, 16, 0, 6, 16, 16],
+  "/wiki/textures/vanilla/bush.png": [16, 16, 0, 4, 16, 16],
+  "/wiki/textures/vanilla/cactus_flower.png": [16, 16, 1, 6, 15, 16],
+  "/wiki/textures/vanilla/carrot.png": [16, 16, 2, 1, 16, 15],
+  "/wiki/textures/vanilla/cat_spawn_egg.png": [16, 16, 3, 3, 13, 14],
+  "/wiki/textures/vanilla/charcoal.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/chicken_spawn_egg.png": [16, 16, 3, 3, 13, 14],
+  "/wiki/textures/vanilla/closed_eyeblossom.png": [16, 16, 4, 4, 12, 16],
+  "/wiki/textures/vanilla/coal.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/copper_horse_armor.png": [16, 16, 1, 3, 15, 14],
+  "/wiki/textures/vanilla/copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/cornflower.png": [16, 16, 4, 4, 11, 16],
+  "/wiki/textures/vanilla/crimson_fungus.png": [16, 16, 3, 4, 13, 16],
+  "/wiki/textures/vanilla/crimson_roots.png": [16, 16, 0, 4, 15, 16],
+  "/wiki/textures/vanilla/cyan_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/dandelion.png": [16, 16, 5, 7, 11, 16],
+  "/wiki/textures/vanilla/dead_bush.png": [16, 16, 2, 0, 15, 16],
+  "/wiki/textures/vanilla/diamond.png": [16, 16, 2, 2, 14, 15],
+  "/wiki/textures/vanilla/diamond_horse_armor.png": [16, 16, 1, 3, 15, 14],
+  "/wiki/textures/vanilla/diamond_pickaxe.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/diamond_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/end_rod.png": [16, 16, 0, 0, 6, 15],
+  "/wiki/textures/vanilla/exposed_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/exposed_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/exposed_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/exposed_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/feather.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/fern.png": [16, 16, 0, 0, 15, 16],
+  "/wiki/textures/vanilla/fire_coral_fan.png": [16, 16, 0, 4, 16, 16],
+  "/wiki/textures/vanilla/fishing_rod.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/flint.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/flowering_azalea.png": [16, 16, 0, 0, 16, 11],
+  "/wiki/textures/vanilla/fox_spawn_egg.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/vanilla/frog_spawn_egg.png": [16, 16, 1, 3, 15, 15],
+  "/wiki/textures/vanilla/glass_bottle.png": [16, 16, 4, 2, 13, 15],
+  "/wiki/textures/vanilla/glow_ink_sac.png": [16, 16, 3, 3, 14, 13],
+  "/wiki/textures/vanilla/glowstone_dust.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/vanilla/goat_spawn_egg.png": [16, 16, 0, 0, 16, 15],
+  "/wiki/textures/vanilla/golden_horse_armor.png": [16, 16, 1, 3, 15, 14],
+  "/wiki/textures/vanilla/gray_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/green_dye.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vanilla/grindstone_pivot.png": [16, 16, 0, 0, 10, 6],
+  "/wiki/textures/vanilla/grindstone_round.png": [16, 16, 0, 0, 8, 12],
+  "/wiki/textures/vanilla/grindstone_side.png": [16, 16, 0, 0, 12, 12],
+  "/wiki/textures/vanilla/gunpowder.png": [16, 16, 2, 3, 14, 14],
+  "/wiki/textures/vanilla/hanging_roots.png": [16, 16, 0, 0, 16, 11],
+  "/wiki/textures/vanilla/honeycomb.png": [16, 16, 1, 0, 14, 15],
+  "/wiki/textures/vanilla/horn_coral.png": [16, 16, 1, 2, 15, 16],
+  "/wiki/textures/vanilla/horn_coral_fan.png": [16, 16, 0, 6, 16, 16],
+  "/wiki/textures/vanilla/ink_sac.png": [16, 16, 3, 3, 14, 13],
+  "/wiki/textures/vanilla/iron_horse_armor.png": [16, 16, 1, 3, 15, 14],
+  "/wiki/textures/vanilla/iron_pickaxe.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/iron_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/large_fern.png": [16, 16, 1, 4, 14, 16],
+  "/wiki/textures/vanilla/large_fern_top.png": [16, 16, 1, 4, 14, 16],
+  "/wiki/textures/vanilla/lead.png": [16, 16, 3, 2, 14, 15],
+  "/wiki/textures/vanilla/leather_boots.png": [16, 16, 3, 3, 13, 10],
+  "/wiki/textures/vanilla/leather_chestplate.png": [16, 16, 1, 2, 15, 15],
+  "/wiki/textures/vanilla/leather_horse_armor.png": [16, 16, 1, 3, 15, 14],
+  "/wiki/textures/vanilla/light_blue_dye.png": [16, 16, 0, 3, 16, 16],
+  "/wiki/textures/vanilla/light_gray_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/lilac.png": [16, 16, 1, 2, 14, 16],
+  "/wiki/textures/vanilla/lilac_top.png": [16, 16, 1, 2, 14, 16],
+  "/wiki/textures/vanilla/lily_of_the_valley.png": [16, 16, 3, 4, 13, 16],
+  "/wiki/textures/vanilla/lily_pad.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/lime_dye.png": [16, 16, 0, 3, 16, 16],
+  "/wiki/textures/vanilla/magenta_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/mangrove_roots.png": [16, 16, 1, 0, 16, 16],
+  "/wiki/textures/vanilla/name_tag.png": [16, 16, 0, 1, 15, 16],
+  "/wiki/textures/vanilla/nether_sprouts.png": [16, 16, 1, 5, 15, 10],
+  "/wiki/textures/vanilla/nether_wart.png": [16, 16, 4, 4, 12, 13],
+  "/wiki/textures/vanilla/netherite_pickaxe.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/netherite_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/oak_sign.png": [16, 16, 2, 2, 15, 16],
+  "/wiki/textures/vanilla/orange_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/orange_tulip.png": [16, 16, 5, 3, 10, 16],
+  "/wiki/textures/vanilla/oxeye_daisy.png": [16, 16, 4, 2, 11, 16],
+  "/wiki/textures/vanilla/oxidized_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/oxidized_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/oxidized_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/oxidized_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/paper.png": [16, 16, 1, 2, 16, 14],
+  "/wiki/textures/vanilla/parrot_spawn_egg.png": [16, 16, 3, 0, 13, 14],
+  "/wiki/textures/vanilla/peony.png": [16, 16, 1, 4, 14, 16],
+  "/wiki/textures/vanilla/peony_top.png": [16, 16, 1, 4, 14, 16],
+  "/wiki/textures/vanilla/pink_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/pink_tulip.png": [16, 16, 5, 3, 10, 16],
+  "/wiki/textures/vanilla/pitcher_plant.png": [16, 16, 3, 1, 13, 16],
+  "/wiki/textures/vanilla/pointed_dripstone.png": [16, 16, 4, 0, 12, 11],
+  "/wiki/textures/vanilla/poppy.png": [16, 16, 5, 5, 12, 16],
+  "/wiki/textures/vanilla/potato.png": [16, 16, 2, 4, 14, 14],
+  "/wiki/textures/vanilla/purple_dye.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/quartz.png": [16, 16, 1, 0, 15, 15],
+  "/wiki/textures/vanilla/rabbit_hide.png": [16, 16, 3, 0, 13, 15],
+  "/wiki/textures/vanilla/rabbit_spawn_egg.png": [16, 16, 1, 0, 13, 14],
+  "/wiki/textures/vanilla/raw_gold.png": [16, 16, 1, 2, 16, 15],
+  "/wiki/textures/vanilla/red_dye.png": [16, 16, 0, 3, 16, 16],
+  "/wiki/textures/vanilla/red_tulip.png": [16, 16, 4, 3, 12, 16],
+  "/wiki/textures/vanilla/redstone_torch.png": [16, 16, 6, 5, 10, 16],
+  "/wiki/textures/vanilla/resin_clump.png": [16, 16, 1, 2, 16, 15],
+  "/wiki/textures/vanilla/rose_bush.png": [16, 16, 1, 1, 15, 16],
+  "/wiki/textures/vanilla/rose_bush_top.png": [16, 16, 1, 1, 15, 16],
+  "/wiki/textures/vanilla/saddle.png": [16, 16, 2, 4, 15, 15],
+  "/wiki/textures/vanilla/salmon.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/sculk_sensor.png": [16, 16, 0, 8, 16, 16],
+  "/wiki/textures/vanilla/sculk_shrieker.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vanilla/sea_pickle.png": [16, 16, 6, 2, 10, 16],
+  "/wiki/textures/vanilla/seagrass.png": [16, 16, 0, 4, 15, 16],
+  "/wiki/textures/vanilla/short_dry_grass.png": [16, 16, 3, 7, 14, 16],
+  "/wiki/textures/vanilla/short_grass.png": [16, 16, 0, 2, 16, 16],
+  "/wiki/textures/vanilla/small_dripleaf.png": [16, 16, 1, 0, 8, 1],
+  "/wiki/textures/vanilla/small_dripleaf_top.png": [16, 16, 0, 0, 8, 8],
+  "/wiki/textures/vanilla/spore_blossom.png": [16, 16, 1, 3, 15, 16],
+  "/wiki/textures/vanilla/stick.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/stone_pickaxe.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/stone_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/stonecutter_saw.png": [16, 16, 1, 9, 15, 16],
+  "/wiki/textures/vanilla/stonecutter_side.png": [16, 16, 0, 7, 16, 16],
+  "/wiki/textures/vanilla/string.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/tropical_fish.png": [16, 16, 2, 1, 15, 15],
+  "/wiki/textures/vanilla/tube_coral.png": [16, 16, 1, 2, 16, 16],
+  "/wiki/textures/vanilla/tube_coral_fan.png": [16, 16, 0, 7, 16, 16],
+  "/wiki/textures/vanilla/twisting_vines.png": [16, 16, 3, 1, 13, 16],
+  "/wiki/textures/vanilla/warped_fungus.png": [16, 16, 3, 7, 13, 16],
+  "/wiki/textures/vanilla/warped_roots.png": [16, 16, 2, 1, 15, 16],
+  "/wiki/textures/vanilla/waxed_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/waxed_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/waxed_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/waxed_exposed_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/waxed_exposed_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/waxed_exposed_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/waxed_exposed_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/waxed_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/waxed_oxidized_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/waxed_oxidized_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/waxed_oxidized_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/waxed_oxidized_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/waxed_weathered_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/waxed_weathered_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/waxed_weathered_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/waxed_weathered_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/weathered_copper_chain.png": [16, 16, 6, 1, 9, 15],
+  "/wiki/textures/vanilla/weathered_copper_door.png": [16, 16, 3, 2, 13, 16],
+  "/wiki/textures/vanilla/weathered_copper_lantern.png": [16, 16, 5, 1, 11, 14],
+  "/wiki/textures/vanilla/weathered_lightning_rod.png": [16, 16, 0, 0, 4, 16],
+  "/wiki/textures/vanilla/weeping_vines.png": [16, 16, 4, 0, 12, 7],
+  "/wiki/textures/vanilla/wheat.png": [16, 16, 1, 0, 16, 16],
+  "/wiki/textures/vanilla/wheat_seeds.png": [16, 16, 3, 4, 14, 13],
+  "/wiki/textures/vanilla/white_tulip.png": [16, 16, 4, 3, 11, 16],
+  "/wiki/textures/vanilla/wildflowers.png": [16, 16, 1, 0, 16, 16],
+  "/wiki/textures/vanilla/wither_rose.png": [16, 16, 5, 5, 12, 16],
+  "/wiki/textures/vanilla/wooden_pickaxe.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/wooden_shovel.png": [16, 16, 2, 2, 15, 15],
+  "/wiki/textures/vanilla/yellow_dye.png": [16, 16, 0, 1, 16, 16],
+  "/wiki/textures/vehicle-stations/ammunition_station/bag.png": [16, 16, 0, 0, 11, 10],
+  "/wiki/textures/vehicle-stations/ammunition_station/bullet.png": [16, 16, 0, 0, 4, 4],
+  "/wiki/textures/vehicle-stations/ammunition_station/bullet2.png": [16, 16, 0, 0, 3, 3],
+  "/wiki/textures/vehicle-stations/ammunition_station/pin.png": [16, 16, 0, 0, 5, 5],
+  "/wiki/textures/vehicle-stations/ammunition_station/powder.png": [16, 16, 0, 0, 4, 3],
+  "/wiki/textures/vehicle-stations/ammunition_station/stand.png": [32, 32, 0, 0, 24, 14],
+  "/wiki/textures/vehicle-stations/ammunition_station/wood1.png": [16, 16, 0, 0, 16, 13],
+  "/wiki/textures/vehicle-stations/ammunition_station/wood2.png": [32, 32, 0, 0, 30, 30],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_armchair.png": [64, 64, 0, 0, 64, 57],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_bench.png": [128, 128, 0, 0, 88, 17],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_book.png": [64, 64, 0, 0, 49, 36],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_chair.png": [64, 64, 0, 0, 56, 35],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_fireplace.png": [128, 512, 0, 0, 78, 444],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_grandfatherclock.png": [64, 64, 0, 0, 59, 44],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_painting.png": [128, 128, 0, 1, 70, 97],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_piano.png": [128, 128, 0, 0, 98, 74],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_rug.png": [256, 256, 48, 0, 144, 48],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sideboard.png": [128, 128, 0, 0, 96, 62],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sofa.png": [128, 128, 0, 0, 96, 60],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar.png": [64, 64, 0, 0, 40, 8],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png": [128, 128, 0, 0, 72, 35],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_rope.png": [64, 64, 0, 0, 40, 32],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_books.png": [64, 64, 0, 0, 61, 52],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_canon.png": [64, 64, 0, 0, 54, 53],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_captain_chair.png": [64, 64, 0, 0, 56, 51],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png": [128, 128, 0, 0, 68, 40],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_desk.png": [128, 128, 0, 0, 128, 52],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_globe.png": [64, 64, 0, 0, 44, 35],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_map.png": [128, 128, 14, 0, 54, 14],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_paperrolls.png": [64, 64, 0, 0, 30, 30],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_planks.png": [64, 64, 0, 0, 32, 47],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_rum_bottles.png": [64, 64, 0, 0, 34, 41],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_sideboard.png": [128, 128, 0, 0, 96, 44],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_telescope.png": [64, 64, 0, 0, 38, 37],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_vase.png": [64, 64, 0, 0, 51, 37],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bag.png": [
-    128,
-    128,
-    0,
-    0,
-    67,
-    40
+    128, 128, 0, 0, 67, 40
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_barrel.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    28
+    64, 64, 0, 0, 48, 28
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bath.png": [
-    128,
-    128,
-    0,
-    0,
-    80,
-    64
+    128, 128, 0, 0, 80, 64
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bed.png": [
-    128,
-    128,
-    0,
-    0,
-    81,
-    70
+    128, 128, 0, 0, 81, 70
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bench.png": [
-    128,
-    128,
-    0,
-    0,
-    96,
-    56
+    128, 128, 0, 0, 96, 56
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box.png": [
-    64,
-    64,
-    0,
-    0,
-    52,
-    21
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box.png": [64, 64, 0, 0, 52, 21],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_apples.png": [
-    64,
-    64,
-    0,
-    0,
-    52,
-    21
+    64, 64, 0, 0, 52, 21
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_bread.png": [
-    64,
-    64,
-    0,
-    0,
-    52,
-    21
+    64, 64, 0, 0, 52, 21
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_campfire.png": [
-    128,
-    768,
-    0,
-    0,
-    97,
-    698
+    128, 768, 0, 0, 97, 698
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chair.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    47
+    64, 64, 0, 0, 56, 47
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chest.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    28
+    64, 64, 0, 0, 56, 28
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_direction_sign.png": [
-    64,
-    64,
-    0,
-    0,
-    61,
-    61
+    64, 64, 0, 0, 61, 61
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_hangingpot.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    35
+    64, 64, 0, 0, 48, 35
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_haybales.png": [
-    128,
-    128,
-    0,
-    0,
-    92,
-    48
+    128, 128, 0, 0, 92, 48
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_lantern.png": [
-    64,
-    64,
-    0,
-    0,
-    52,
-    61
+    64, 64, 0, 0, 52, 61
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_marketstall_red.png": [
-    256,
-    256,
-    0,
-    0,
-    123,
-    131
+    256, 256, 0, 0, 123, 131
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_open_chest.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    53
+    64, 64, 0, 0, 56, 53
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_pot.png": [
-    128,
-    128,
-    0,
-    0,
-    78,
-    55
+    128, 128, 0, 0, 78, 55
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_scarecrow.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    50
+    64, 64, 0, 0, 56, 50
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stall_purple.png": [
-    256,
-    256,
-    0,
-    0,
-    123,
-    131
+    256, 256, 0, 0, 123, 131
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stalltable.png": [
-    128,
-    128,
-    0,
-    0,
-    118,
-    40
+    128, 128, 0, 0, 118, 40
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stool.png": [
-    64,
-    64,
-    0,
-    0,
-    56,
-    16
+    64, 64, 0, 0, 56, 16
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_table.png": [
-    128,
-    128,
-    0,
-    0,
-    118,
-    32
+    128, 128, 0, 0, 118, 32
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon2.png": [
-    128,
-    128,
-    0,
-    0,
-    120,
-    80
+    128, 128, 0, 0, 120, 80
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_purple.png": [
-    128,
-    128,
-    0,
-    0,
-    104,
-    103
+    128, 128, 0, 0, 104, 103
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_red.png": [
-    128,
-    128,
-    0,
-    0,
-    104,
-    103
+    128, 128, 0, 0, 104, 103
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wall_lantern.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    48
+    64, 64, 0, 0, 48, 48
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_well.png": [
-    128,
-    128,
-    0,
-    0,
-    128,
-    97
+    128, 128, 0, 0, 128, 97
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wood_pile.png": [
-    128,
-    128,
-    0,
-    0,
-    50,
-    25
+    128, 128, 0, 0, 50, 25
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medieval_carpet.png": [
-    256,
-    256,
-    48,
-    0,
-    144,
-    48
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medieval_carpet.png": [256, 256, 48, 0, 144, 48],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_bed.png": [
-    256,
-    256,
-    0,
-    0,
-    168,
-    147
+    256, 256, 0, 0, 168, 147
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_carpet.png": [
-    256,
-    256,
-    48,
-    0,
-    144,
-    48
+    256, 256, 48, 0, 144, 48
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_chandelier.png": [
-    64,
-    64,
-    0,
-    0,
-    43,
-    36
+    64, 64, 0, 0, 43, 36
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_mirror.png": [
-    64,
-    64,
-    0,
-    0,
-    58,
-    56
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_mirror.png": [64, 64, 0, 0, 58, 56],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_2x1.png": [
-    128,
-    128,
-    0,
-    0,
-    68,
-    35
+    128, 128, 0, 0, 68, 35
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_3x2.png": [
-    128,
-    128,
-    0,
-    0,
-    100,
-    67
+    128, 128, 0, 0, 100, 67
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_pillow.png": [
-    128,
-    128,
-    0,
-    0,
-    56,
-    36
+    128, 128, 0, 0, 56, 36
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_tablecandleholder.png": [
-    64,
-    64,
-    0,
-    0,
-    39,
-    28
+    64, 64, 0, 0, 39, 28
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_throne.png": [
-    128,
-    128,
-    0,
-    0,
-    74,
-    60
+    128, 128, 0, 0, 74, 60
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_torch.png": [
-    32,
-    96,
-    0,
-    0,
-    32,
-    95
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_banner.png": [
-    64,
-    64,
-    0,
-    0,
-    44,
-    33
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_books.png": [
-    64,
-    64,
-    0,
-    0,
-    52,
-    49
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_torch.png": [32, 96, 0, 0, 32, 95],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_banner.png": [64, 64, 0, 0, 44, 33],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_books.png": [64, 64, 0, 0, 52, 49],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_bookshelf.png": [
-    128,
-    128,
-    0,
-    0,
-    101,
-    97
+    128, 128, 0, 0, 101, 97
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candle.png": [
-    64,
-    64,
-    0,
-    0,
-    50,
-    45
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candle.png": [64, 64, 0, 0, 50, 45],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candleholder.png": [
-    64,
-    64,
-    0,
-    0,
-    50,
-    45
+    64, 64, 0, 0, 50, 45
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_chair.png": [
-    64,
-    64,
-    0,
-    0,
-    61,
-    51
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish.png": [
-    64,
-    64,
-    0,
-    0,
-    33,
-    25
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_chair.png": [64, 64, 0, 0, 61, 51],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish.png": [64, 64, 0, 0, 33, 25],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish_fruits.png": [
-    64,
-    64,
-    0,
-    0,
-    37,
-    25
+    64, 64, 0, 0, 37, 25
   ],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_shelf_small.png": [
-    128,
-    128,
-    0,
-    0,
-    101,
-    97
+    128, 128, 0, 0, 101, 97
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa.png": [
-    128,
-    128,
-    0,
-    0,
-    73,
-    59
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa.png": [128, 128, 0, 0, 73, 59],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa_big.png": [
-    128,
-    128,
-    0,
-    0,
-    88,
-    67
+    128, 128, 0, 0, 88, 67
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_stool.png": [
-    64,
-    64,
-    0,
-    0,
-    61,
-    51
-  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_stool.png": [64, 64, 0, 0, 61, 51],
   "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_table.png": [
-    128,
-    128,
-    0,
-    0,
-    118,
-    62
+    128, 128, 0, 0, 118, 62
   ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_armchair.png": [
-    128,
-    128,
-    0,
-    0,
-    79,
-    65
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_empty.png": [
-    128,
-    128,
-    0,
-    0,
-    110,
-    112
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_full.png": [
-    128,
-    128,
-    0,
-    0,
-    123,
-    112
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_candles.png": [
-    64,
-    192,
-    0,
-    0,
-    32,
-    152
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_carpet.png": [
-    256,
-    256,
-    48,
-    0,
-    144,
-    48
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cauldron.png": [
-    128,
-    128,
-    0,
-    0,
-    104,
-    66
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_desk.png": [
-    128,
-    128,
-    0,
-    0,
-    100,
-    98
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_1.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    14
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_2.png": [
-    16,
-    16,
-    0,
-    0,
-    16,
-    12
-  ],
-  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_scry_ball.png": [
-    64,
-    64,
-    0,
-    0,
-    42,
-    34
-  ]
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_armchair.png": [128, 128, 0, 0, 79, 65],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_empty.png": [128, 128, 0, 0, 110, 112],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_full.png": [128, 128, 0, 0, 123, 112],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_candles.png": [64, 192, 0, 0, 32, 152],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_carpet.png": [256, 256, 48, 0, 144, 48],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cauldron.png": [128, 128, 0, 0, 104, 66],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_desk.png": [128, 128, 0, 0, 100, 98],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_1.png": [32, 32, 0, 0, 25, 14],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_2.png": [16, 16, 0, 0, 16, 12],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_scry_ball.png": [64, 64, 0, 0, 42, 34]
 }

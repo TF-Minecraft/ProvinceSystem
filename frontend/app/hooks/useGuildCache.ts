@@ -12,7 +12,7 @@ export function useGuildCache(
    * captured sources, so a stored day has real guild names rather than today's.
    * Taken as a parameter, not read from context, so the call site shows it.
    */
-  day: string | null = null
+  day: string | null = null,
 ) {
   // Null-prototype for the same reason `fetchGuildNameCache` builds one: this
   // ref is probed as `current[guildId]` with ids straight off the wire, and a

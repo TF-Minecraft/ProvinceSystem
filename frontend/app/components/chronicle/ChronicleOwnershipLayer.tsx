@@ -11,10 +11,7 @@ import {
   type ProvinceIdGrid,
 } from "@/app/lib/map/chroniclePaint";
 import type { MapObject, RegionRecord } from "@/app/components/map/types";
-import {
-  DRILL_STACK_OVERLAY_OPACITY,
-  HOVER_OVERLAY_OPACITY,
-} from "@/app/components/map/MapCanvas";
+import { DRILL_STACK_OVERLAY_OPACITY, HOVER_OVERLAY_OPACITY } from "@/app/components/map/MapCanvas";
 
 /**
  * The chronicle's replacement for the two server-rendered nation layers.
@@ -68,9 +65,7 @@ function highlightBytes(rgb: string | undefined): [number, number, number] | nul
     const value = Number(part.trim());
     if (!Number.isFinite(value)) return null;
     const clamped = Math.min(255, Math.max(0, value));
-    mixed.push(
-      Math.round(clamped + (255 - clamped) * HIGHLIGHT_MIX_TOWARD_WHITE)
-    );
+    mixed.push(Math.round(clamped + (255 - clamped) * HIGHLIGHT_MIX_TOWARD_WHITE));
   }
   return mixed as [number, number, number];
 }
@@ -116,7 +111,7 @@ type PaintedHighlight = {
 function paintOwnershipCanvas(
   canvas: HTMLCanvasElement | null,
   grid: ProvinceIdGrid | null,
-  ownership: NationOwnership | null
+  ownership: NationOwnership | null,
 ): void {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -155,10 +150,7 @@ export default function ChronicleOwnershipLayer({
 
   // Rebuilt only when the grid itself changes (a new day's province ids), not
   // on every hover — see `buildProvincePixelIndex`.
-  const provincePixelIndex = useMemo(
-    () => (grid ? buildProvincePixelIndex(grid) : null),
-    [grid]
-  );
+  const provincePixelIndex = useMemo(() => (grid ? buildProvincePixelIndex(grid) : null), [grid]);
   // The hover canvas's own persistent pixel buffer, mutated in place instead
   // of rebuilt from scratch on every hover change.
   const hoverImageDataRef = useRef<ImageData | null>(null);
@@ -168,10 +160,7 @@ export default function ChronicleOwnershipLayer({
   // entry objects) on every drill reset even when nothing became visible or
   // invisible, so depending on the array itself would repaint 2.5M pixels for
   // no visible change.
-  const visibilityKey = useMemo(
-    () => mapObjectsVisibilityKey(mapObjects),
-    [mapObjects]
-  );
+  const visibilityKey = useMemo(() => mapObjectsVisibilityKey(mapObjects), [mapObjects]);
 
   /**
    * The drawn ownership for the current drill state. Computed once and used by
@@ -186,7 +175,7 @@ export default function ChronicleOwnershipLayer({
     // `mapObjects` is read through `visibilityKey`, which is what actually
     // changes the result.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [regionData, visibilityKey]
+    [regionData, visibilityKey],
   );
 
   useEffect(() => {
@@ -232,9 +221,7 @@ export default function ChronicleOwnershipLayer({
     const drawn = hoveredRegionId ? visible?.[hoveredRegionId] : null;
     const bytes = drawn ? highlightBytes(drawn.rgb) : null;
     const next: PaintedHighlight | null =
-      hoveredRegionId && drawn && bytes
-        ? { regionId: hoveredRegionId, provinces: drawn.provinces ?? [] }
-        : null;
+      hoveredRegionId && drawn && bytes ? { regionId: hoveredRegionId, provinces: drawn.provinces ?? [] } : null;
     const previous = paintedHighlightRef.current;
 
     const unchanged =
@@ -287,15 +274,7 @@ export default function ChronicleOwnershipLayer({
     paintedHighlightRef.current = next;
 
     if (minX === Infinity) return; // Nothing was actually touched.
-    ctx.putImageData(
-      hoverImageDataRef.current,
-      0,
-      0,
-      minX,
-      minY,
-      maxX - minX + 1,
-      maxY - minY + 1
-    );
+    ctx.putImageData(hoverImageDataRef.current, 0, 0, minX, minY, maxX - minX + 1, maxY - minY + 1);
   }, [grid, provincePixelIndex, visible, hoveredRegionId]);
 
   // Matches `HoverOverlayImage`: a map with no measured size has nothing to

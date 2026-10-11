@@ -30,15 +30,10 @@ export type LabelEndpoints = {
   y2: number;
 };
 
-export function parseProvinceLabelGrid(
-  meta: ProvinceLabelGridMeta,
-  buffer: ArrayBuffer
-): ProvinceLabelGrid {
+export function parseProvinceLabelGrid(meta: ProvinceLabelGridMeta, buffer: ArrayBuffer): ProvinceLabelGrid {
   const expectedBytes = meta.gridWidth * meta.gridHeight * 2;
   if (buffer.byteLength < expectedBytes) {
-    throw new Error(
-      `Label grid buffer too small: ${buffer.byteLength} < ${expectedBytes}`
-    );
+    throw new Error(`Label grid buffer too small: ${buffer.byteLength} < ${expectedBytes}`);
   }
 
   return {
@@ -49,12 +44,7 @@ export function parseProvinceLabelGrid(
   };
 }
 
-export function segmentPixelLength(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): number {
+export function segmentPixelLength(x1: number, y1: number, x2: number, y2: number): number {
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
@@ -64,12 +54,8 @@ export function fontSizeForLabel(segmentPx: number, text: string): number {
   return Math.round(segmentPx / (units * LABEL_GLYPH_WIDTH_EM));
 }
 
-export function labelCorridorMargin(
-  segmentPx: number,
-  fontSize: number
-): number {
-  const textBand =
-    fontSize * LABEL_TEXT_CENTER_OFFSET_EM + segmentPx * LABEL_ARC_BULGE_RATIO;
+export function labelCorridorMargin(segmentPx: number, fontSize: number): number {
+  const textBand = fontSize * LABEL_TEXT_CENTER_OFFSET_EM + segmentPx * LABEL_ARC_BULGE_RATIO;
   return Math.max(LABEL_MIN_INSET_PX, textBand + LABEL_INSET_PADDING_PX);
 }
 
@@ -139,10 +125,7 @@ export function fullGridRect(grid: ProvinceLabelGrid): GridSubRect {
  * corridor search takes near the blob) stays inside it. Returns null when none
  * of the ids occur in the grid.
  */
-export function componentSubRect(
-  grid: ProvinceLabelGrid,
-  provinceIds: number[]
-): GridSubRect | null {
+export function componentSubRect(grid: ProvinceLabelGrid, provinceIds: number[]): GridSubRect | null {
   const { bounds, maxProvinceId } = getGridStats(grid);
 
   let x0 = Infinity;
@@ -163,10 +146,7 @@ export function componentSubRect(
   if (x1 < x0 || y1 < y0) return null;
 
   const cellScale = Math.min(grid.scaleX, grid.scaleY);
-  const pad = Math.max(
-    1,
-    Math.ceil(cellScale > 0 ? LABEL_MIN_INSET_PX / cellScale : 1)
-  );
+  const pad = Math.max(1, Math.ceil(cellScale > 0 ? LABEL_MIN_INSET_PX / cellScale : 1));
 
   return {
     x0: Math.max(0, x0 - pad),
@@ -176,11 +156,7 @@ export function componentSubRect(
   };
 }
 
-export function buildComponentMask(
-  grid: ProvinceLabelGrid,
-  provinceIds: number[],
-  rect?: GridSubRect
-): Uint8Array {
+export function buildComponentMask(grid: ProvinceLabelGrid, provinceIds: number[], rect?: GridSubRect): Uint8Array {
   const { cells, gridWidth, gridHeight } = grid;
   const { maxProvinceId } = getGridStats(grid);
 
@@ -216,11 +192,7 @@ export function buildComponentMask(
  * When `rect` is given the work is confined to that sub-rect; cells outside it
  * are left at 0. Sub-rect borders interior to the grid must never seed.
  */
-export function distanceTransform(
-  mask: Uint8Array,
-  grid: ProvinceLabelGrid,
-  rect?: GridSubRect
-): Float32Array {
+export function distanceTransform(mask: Uint8Array, grid: ProvinceLabelGrid, rect?: GridSubRect): Float32Array {
   const { cells, gridWidth, gridHeight, scaleX, scaleY } = grid;
   const cellScale = Math.min(scaleX, scaleY);
   const dist = new Float32Array(gridWidth * gridHeight);
@@ -297,27 +269,13 @@ export function distanceTransform(
 }
 
 /** Cell 0 = crossable inland water or black gaps. Sea provinces are non-zero and block corridors. */
-export function isLabelCorridorWaterCell(
-  grid: ProvinceLabelGrid,
-  gridIndex: number
-): boolean {
+export function isLabelCorridorWaterCell(grid: ProvinceLabelGrid, gridIndex: number): boolean {
   return grid.cells[gridIndex] === 0;
 }
 
-function clearanceAt(
-  grid: ProvinceLabelGrid,
-  dist: Float32Array,
-  mapX: number,
-  mapY: number
-): number {
-  const gx = Math.min(
-    grid.gridWidth - 1,
-    Math.max(0, Math.floor(mapX / grid.scaleX))
-  );
-  const gy = Math.min(
-    grid.gridHeight - 1,
-    Math.max(0, Math.floor(mapY / grid.scaleY))
-  );
+function clearanceAt(grid: ProvinceLabelGrid, dist: Float32Array, mapX: number, mapY: number): number {
+  const gx = Math.min(grid.gridWidth - 1, Math.max(0, Math.floor(mapX / grid.scaleX)));
+  const gy = Math.min(grid.gridHeight - 1, Math.max(0, Math.floor(mapY / grid.scaleY)));
   const idx = gy * grid.gridWidth + gx;
   if (isLabelCorridorWaterCell(grid, idx)) {
     return Number.POSITIVE_INFINITY;
@@ -329,7 +287,7 @@ export function orientLabelEndpoints(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
 ): { x1: number; y1: number; x2: number; y2: number } {
   const rad = Math.atan2(y2 - y1, x2 - x1);
   const deg = (rad * 180) / Math.PI;
@@ -346,7 +304,7 @@ function quadraticPoint(
   cy: number,
   bx: number,
   by: number,
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const u = 1 - t;
   return {
@@ -373,7 +331,7 @@ export function labelArcQuadratic(
   y1: number,
   x2: number,
   y2: number,
-  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
+  bulgeRatio: number = LABEL_ARC_BULGE_RATIO,
 ): LabelArcQuadratic {
   const oriented = orientLabelEndpoints(x1, y1, x2, y2);
   const ax = oriented.x1;
@@ -403,17 +361,14 @@ export function corridorClear(
   y2: number,
   margin: number,
   grid: ProvinceLabelGrid,
-  dist: Float32Array
+  dist: Float32Array,
 ): boolean {
   const len = segmentPixelLength(x1, y1, x2, y2);
   if (len === 0) {
     return clearanceAt(grid, dist, x1, y1) >= margin;
   }
 
-  const step = Math.max(
-    LABEL_CORRIDOR_SAMPLE_STEP_PX,
-    Math.min(grid.scaleX, grid.scaleY) * 0.5
-  );
+  const step = Math.max(LABEL_CORRIDOR_SAMPLE_STEP_PX, Math.min(grid.scaleX, grid.scaleY) * 0.5);
   const steps = Math.max(2, Math.ceil(len / step));
   const { cx, cy } = labelArcQuadratic(x1, y1, x2, y2);
 
@@ -437,7 +392,7 @@ function collectCandidates(
   mask: Uint8Array,
   dist: Float32Array,
   minClearance: number,
-  rect?: GridSubRect
+  rect?: GridSubRect,
 ): CandidatePoint[] {
   const { gridWidth, scaleX, scaleY } = grid;
   const points: CandidatePoint[] = [];
@@ -491,12 +446,7 @@ export class LongestFirstPairs {
       for (let j = i + 1; j < n; j += 1) {
         this.a[k] = i;
         this.b[k] = j;
-        this.len[k] = segmentPixelLength(
-          candidates[i].x,
-          candidates[i].y,
-          candidates[j].x,
-          candidates[j].y
-        );
+        this.len[k] = segmentPixelLength(candidates[i].x, candidates[i].y, candidates[j].x, candidates[j].y);
         k += 1;
       }
     }
@@ -554,7 +504,7 @@ function tryFindSegment(
   text: string,
   grid: ProvinceLabelGrid,
   dist: Float32Array,
-  marginScale: number
+  marginScale: number,
 ): LabelEndpoints | null {
   for (let k = 0; k < pairs.count; k += 1) {
     const index = pairs.at(k);
@@ -575,7 +525,7 @@ export function findLabelAnchor(
   mask: Uint8Array,
   dist: Float32Array,
   grid: ProvinceLabelGrid,
-  rect?: GridSubRect
+  rect?: GridSubRect,
 ): { x: number; y: number } | null {
   let bestIdx = -1;
   let bestClearance = -1;
@@ -613,14 +563,11 @@ export function raycastHalfExtent(
   margin: number,
   grid: ProvinceLabelGrid,
   dist: Float32Array,
-  mask: Uint8Array
+  mask: Uint8Array,
 ): number {
   const ux = Math.cos(angle);
   const uy = Math.sin(angle);
-  const step = Math.max(
-    LABEL_CORRIDOR_SAMPLE_STEP_PX,
-    Math.min(grid.scaleX, grid.scaleY) * 0.5
-  );
+  const step = Math.max(LABEL_CORRIDOR_SAMPLE_STEP_PX, Math.min(grid.scaleX, grid.scaleY) * 0.5);
   const maxDist = Math.max(grid.mapWidth, grid.mapHeight) * 2;
   let distance = 0;
 
@@ -661,7 +608,7 @@ export function tryRadialSegment(
   text: string,
   marginScale: number,
   anchor?: { x: number; y: number },
-  rect?: GridSubRect
+  rect?: GridSubRect,
 ): LabelEndpoints | null {
   const center = anchor ?? findLabelAnchor(mask, dist, grid, rect);
   if (!center) return null;
@@ -674,50 +621,17 @@ export function tryRadialSegment(
   for (let i = 0; i < LABEL_RADIAL_ANGLE_STEPS; i += 1) {
     const angle = (i / LABEL_RADIAL_ANGLE_STEPS) * Math.PI;
     const probeMargin = 1;
-    let forward = raycastHalfExtent(
-      center.x,
-      center.y,
-      angle,
-      probeMargin,
-      grid,
-      dist,
-      mask
-    );
-    let backward = raycastHalfExtent(
-      center.x,
-      center.y,
-      angle + Math.PI,
-      probeMargin,
-      grid,
-      dist,
-      mask
-    );
+    let forward = raycastHalfExtent(center.x, center.y, angle, probeMargin, grid, dist, mask);
+    let backward = raycastHalfExtent(center.x, center.y, angle + Math.PI, probeMargin, grid, dist, mask);
     let totalLen = forward + backward;
     if (totalLen <= 0) continue;
 
     const fontSize = fontSizeForLabel(totalLen, text);
-    const desiredMargin =
-      labelCorridorMargin(totalLen, fontSize) * marginScale;
+    const desiredMargin = labelCorridorMargin(totalLen, fontSize) * marginScale;
     const effectiveMargin = Math.min(desiredMargin, anchorClearance);
 
-    forward = raycastHalfExtent(
-      center.x,
-      center.y,
-      angle,
-      effectiveMargin,
-      grid,
-      dist,
-      mask
-    );
-    backward = raycastHalfExtent(
-      center.x,
-      center.y,
-      angle + Math.PI,
-      effectiveMargin,
-      grid,
-      dist,
-      mask
-    );
+    forward = raycastHalfExtent(center.x, center.y, angle, effectiveMargin, grid, dist, mask);
+    backward = raycastHalfExtent(center.x, center.y, angle + Math.PI, effectiveMargin, grid, dist, mask);
     totalLen = forward + backward;
     if (totalLen <= 0) continue;
 
@@ -747,23 +661,14 @@ export function insetLabelEndpoints(
   componentIds: number[],
   text: string,
   grid: ProvinceLabelGrid,
-  seed: LabelEndpoints
+  seed: LabelEndpoints,
 ): LabelEndpoints | null {
   const rect = componentSubRect(grid, componentIds) ?? fullGridRect(grid);
   const mask = buildComponentMask(grid, componentIds, rect);
   const dist = distanceTransform(mask, grid, rect);
   const cellScale = Math.min(grid.scaleX, grid.scaleY);
-  const candidates = collectCandidates(
-    grid,
-    mask,
-    dist,
-    Math.min(LABEL_MIN_INSET_PX, cellScale),
-    rect
-  );
-  candidates.push(
-    { x: seed.x1, y: seed.y1 },
-    { x: seed.x2, y: seed.y2 }
-  );
+  const candidates = collectCandidates(grid, mask, dist, Math.min(LABEL_MIN_INSET_PX, cellScale), rect);
+  candidates.push({ x: seed.x1, y: seed.y1 }, { x: seed.x2, y: seed.y2 });
 
   if (candidates.length) {
     const pairs = new LongestFirstPairs(candidates);
@@ -776,15 +681,7 @@ export function insetLabelEndpoints(
   }
 
   for (const marginScale of [1, 0.75, 0.5]) {
-    const radial = tryRadialSegment(
-      mask,
-      dist,
-      grid,
-      text,
-      marginScale,
-      undefined,
-      rect
-    );
+    const radial = tryRadialSegment(mask, dist, grid, text, marginScale, undefined, rect);
     if (radial) {
       return radial;
     }
@@ -793,15 +690,11 @@ export function insetLabelEndpoints(
   return null;
 }
 
-export async function decompressGzipBuffer(
-  compressed: ArrayBuffer
-): Promise<ArrayBuffer> {
+export async function decompressGzipBuffer(compressed: ArrayBuffer): Promise<ArrayBuffer> {
   if (typeof DecompressionStream === "undefined") {
     throw new Error("DecompressionStream is not available in this environment");
   }
 
-  const stream = new Blob([compressed])
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
+  const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip"));
   return new Response(stream).arrayBuffer();
 }

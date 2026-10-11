@@ -50,9 +50,7 @@ function entryOf(record: RegionRecord | null, id: string) {
  * realms that display the same name — a picker whose options reorder between
  * renders loses the user's selection under the cursor.
  */
-export function chronicleFocusOptions(
-  nationFile: RegionRecord | null
-): ChronicleFocusOption[] {
+export function chronicleFocusOptions(nationFile: RegionRecord | null): ChronicleFocusOption[] {
   if (!nationFile) return [];
   const options: ChronicleFocusOption[] = [];
   for (const id of Object.keys(nationFile)) {
@@ -61,9 +59,7 @@ export function chronicleFocusOptions(
     const raw = typeof entry.name === "string" ? entry.name : id;
     options.push({ id, name: cleanRegionName(raw) || id });
   }
-  return options.sort(
-    (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
-  );
+  return options.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
 /**
@@ -91,7 +87,7 @@ export function chronicleFocusOptions(
  */
 export function chronicleFocusProvinceIds(
   nationFile: RegionRecord | null,
-  focusNationId: string | null
+  focusNationId: string | null,
 ): ReadonlySet<number> | null {
   if (!focusNationId || !nationFile) return null;
   const ids = new Set<number>();
@@ -101,10 +97,7 @@ export function chronicleFocusProvinceIds(
   for (const id of Object.keys(nationFile)) {
     if (!chronicleRealmContains(nationFile, focusNationId, id)) continue;
     const entry = entryOf(nationFile, id);
-    const lists =
-      id === focusNationId
-        ? [entry?.provinces, entry?.occupied_held]
-        : [entry?.provinces];
+    const lists = id === focusNationId ? [entry?.provinces, entry?.occupied_held] : [entry?.provinces];
     for (const list of lists) {
       if (!Array.isArray(list)) continue;
       for (const provinceId of list) {
@@ -127,10 +120,7 @@ export function chronicleFocusProvinceIds(
  * the identical object it always did and the label layer's memoisation is not
  * defeated by a fresh copy every render.
  */
-export function focusChronicleLabels(
-  labels: NationLabelSpec[],
-  focusNationId: string | null
-): NationLabelSpec[] {
+export function focusChronicleLabels(labels: NationLabelSpec[], focusNationId: string | null): NationLabelSpec[] {
   if (!focusNationId) return labels;
   return labels.filter((label) => label.nationId === focusNationId);
 }
@@ -145,10 +135,7 @@ export function focusChronicleLabels(
  * it. With no focus set every pin passes, which is the existing behaviour
  * unchanged.
  */
-export function focusOwnsMarker(
-  factionId: string | null | undefined,
-  focusNationId: string | null
-): boolean {
+export function focusOwnsMarker(factionId: string | null | undefined, focusNationId: string | null): boolean {
   if (!focusNationId) return true;
   return factionId === focusNationId;
 }

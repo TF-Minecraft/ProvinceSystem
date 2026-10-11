@@ -32,14 +32,7 @@ const ALL_MODES: MapMode[] = [
 ];
 
 /** Region modes read out of a stored day's capture. */
-const DAY_REGION_MODES: MapMode[] = [
-  "nation",
-  "trade",
-  "empire",
-  "county",
-  "duchy",
-  "kingdom",
-];
+const DAY_REGION_MODES: MapMode[] = ["nation", "trade", "empire", "county", "duchy", "kingdom"];
 
 /**
  * Modes whose live source is also their historical answer: province geometry
@@ -55,10 +48,10 @@ const RASTER_DAY_MODES: MapMode[] = ["prosperity", "infestation"];
 
 function gzipResponse(body: string): Response {
   const gz = gzipSync(Buffer.from(body, "utf-8"));
-  return new Response(
-    gz.buffer.slice(gz.byteOffset, gz.byteOffset + gz.byteLength) as ArrayBuffer,
-    { status: 200, headers: { "Content-Type": "application/gzip" } }
-  );
+  return new Response(gz.buffer.slice(gz.byteOffset, gz.byteOffset + gz.byteLength) as ArrayBuffer, {
+    status: 200,
+    headers: { "Content-Type": "application/gzip" },
+  });
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -136,9 +129,7 @@ describe("map data source routing", () => {
   });
 
   it("accounts for every map mode exactly once", () => {
-    expect(
-      [...DAY_REGION_MODES, ...STATIC_MODES, ...RASTER_DAY_MODES].sort()
-    ).toEqual([...ALL_MODES].sort());
+    expect([...DAY_REGION_MODES, ...STATIC_MODES, ...RASTER_DAY_MODES].sort()).toEqual([...ALL_MODES].sort());
   });
 });
 
@@ -153,9 +144,7 @@ describe("fetchMapModeRegionData", () => {
   });
 
   it("fetches the live endpoint unchanged when there is no day", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(jsonResponse({ A: { rgb: "1,2,3", provinces: [1] } }));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ A: { rgb: "1,2,3", provinces: [1] } }));
     vi.stubGlobal("fetch", fetchMock);
 
     const data = await fetchMapModeRegionData({
@@ -170,9 +159,7 @@ describe("fetchMapModeRegionData", () => {
   });
 
   it("fetches the gzipped day file for a captured mode", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(gzipResponse(JSON.stringify({ A: { rgb: "1,2,3" } })));
+    const fetchMock = vi.fn().mockResolvedValue(gzipResponse(JSON.stringify({ A: { rgb: "1,2,3" } })));
     vi.stubGlobal("fetch", fetchMock);
 
     const data = await fetchMapModeRegionData({
@@ -182,9 +169,7 @@ describe("fetchMapModeRegionData", () => {
       sessionToken: "tok",
     });
 
-    expect(fetchMock.mock.calls[0]![0]).toBe(
-      "http://api.test/dev/chronicle/2026-08-31/data/trade"
-    );
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api.test/dev/chronicle/2026-08-31/data/trade");
     expect(data).toEqual({ A: { rgb: "1,2,3" } });
   });
 
@@ -199,9 +184,7 @@ describe("fetchMapModeRegionData", () => {
       sessionToken: "tok",
     });
 
-    expect(fetchMock.mock.calls[0]![0]).toBe(
-      "http://api.test/dev/chronicle/..%2F..%2Fsecrets/data/nation"
-    );
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api.test/dev/chronicle/..%2F..%2Fsecrets/data/nation");
   });
 
   it("throws MapModeNotCapturedError and never touches the network", async () => {
@@ -261,12 +244,7 @@ describe("fetchMapModeRegionData", () => {
   });
 
   it("passes a 403 through untouched so the access gate still fires", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ detail: "Staff map access required" }, 403)
-      )
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "Staff map access required" }, 403)));
 
     const err = await fetchMapModeRegionData({
       mapId: "dev",
@@ -290,11 +268,7 @@ describe("filterMapModeRegions", () => {
 
     expect(Object.keys(filterMapModeRegions(raw, "nation"))).toEqual(["OK"]);
     // Non-nation modes keep everything with an rgb, geometry or not.
-    expect(Object.keys(filterMapModeRegions(raw, "trade")).sort()).toEqual([
-      "EMPTY",
-      "NOT_ARRAY",
-      "OK",
-    ]);
+    expect(Object.keys(filterMapModeRegions(raw, "trade")).sort()).toEqual(["EMPTY", "NOT_ARRAY", "OK"]);
   });
 
   it("returns a null-prototype object", () => {
@@ -303,10 +277,7 @@ describe("filterMapModeRegions", () => {
   });
 
   it("survives a null or non-object region entry", () => {
-    const raw = { A: null, B: undefined, C: 7, D: { rgb: "1,2,3" } } as Record<
-      string,
-      any
-    >;
+    const raw = { A: null, B: undefined, C: 7, D: { rgb: "1,2,3" } } as Record<string, any>;
     expect(Object.keys(filterMapModeRegions(raw, "county"))).toEqual(["D"]);
   });
 });
@@ -343,9 +314,7 @@ describe("markers and guilds day scoping", () => {
   });
 
   it("fetchMapMarkersForDay hits the stored day route", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(jsonResponse({ settlements: [], forts: [] }));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ settlements: [], forts: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     const data = await fetchMapMarkersForDay({
@@ -353,9 +322,7 @@ describe("markers and guilds day scoping", () => {
       day: "2026-08-31",
     });
 
-    expect(fetchMock.mock.calls[0]![0]).toBe(
-      "http://api.test/dev/chronicle/2026-08-31/markers"
-    );
+    expect(fetchMock.mock.calls[0]![0]).toBe("http://api.test/dev/chronicle/2026-08-31/markers");
     expect(data).toEqual({ settlements: [], forts: [] });
   });
 
@@ -366,9 +333,7 @@ describe("markers and guilds day scoping", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(null));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(
-      fetchMapMarkersForDay({ mapId: "main", day: "2026-08-31" })
-    ).rejects.toThrow(/not a markers object/);
+    await expect(fetchMapMarkersForDay({ mapId: "main", day: "2026-08-31" })).rejects.toThrow(/not a markers object/);
   });
 
   it("day-scopes the guild cache to the captured trade file", () => {
@@ -385,8 +350,7 @@ describe("markers and guilds day scoping", () => {
   });
 
   it("builds guild names on a null prototype and falls back to the id", async () => {
-    const payload =
-      '{"__proto__":{"name":"evil"},"G1":{"name":"Hansa"},"G2":{},"G3":{"name":7}}';
+    const payload = '{"__proto__":{"name":"evil"},"G1":{"name":"Hansa"},"G2":{},"G3":{"name":7}}';
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(gzipResponse(payload)));
 
     const names = await fetchGuildNameCache({ mapId: "dev", day: "2026-08-31" });
@@ -403,8 +367,6 @@ describe("markers and guilds day scoping", () => {
   it("returns an empty cache rather than throwing on a non-object payload", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(gzipResponse("[]")));
 
-    await expect(
-      fetchGuildNameCache({ mapId: "dev", day: "2026-08-31" })
-    ).resolves.toEqual({});
+    await expect(fetchGuildNameCache({ mapId: "dev", day: "2026-08-31" })).resolves.toEqual({});
   });
 });

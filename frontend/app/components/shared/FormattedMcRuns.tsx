@@ -18,12 +18,7 @@ export default function FormattedMcRuns({ runs }: Props) {
             fontWeight: r.bold ? 700 : undefined,
             fontStyle: r.italic ? "italic" : undefined,
             textDecoration:
-              [
-                r.underline ? "underline" : "",
-                r.strike ? "line-through" : "",
-              ]
-                .filter(Boolean)
-                .join(" ") || undefined,
+              [r.underline ? "underline" : "", r.strike ? "line-through" : ""].filter(Boolean).join(" ") || undefined,
           }}
         >
           {r.text === " " ? "\u00a0" : r.text}

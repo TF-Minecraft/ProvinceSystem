@@ -8,26 +8,43 @@ import MapCanvas from "./MapCanvas";
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), displayScale: 1 }));
 vi.mock("@/lib/map/api", async (original) => ({
-  ...await original<typeof import("@/lib/map/api")>(), fetchMapJson: mocks.fetch,
+  ...(await original<typeof import("@/lib/map/api")>()),
+  fetchMapJson: mocks.fetch,
 }));
 vi.mock("../../hooks/useMapAssetUrl", () => ({
   useMapAssetUrl: (_map: string, path: string, _token: string, enabled: boolean) => ({ url: enabled ? path : null }),
 }));
 vi.mock("../../hooks/useMapViewport", () => ({
   useMapViewport: () => ({
-    displayScale: mocks.displayScale, translateX: 0, translateY: 0, viewportSize: { w: 512, h: 512 },
-    viewportRef: { current: null }, contentRef: { current: null }, zoom: 1,
+    displayScale: mocks.displayScale,
+    translateX: 0,
+    translateY: 0,
+    viewportSize: { w: 512, h: 512 },
+    viewportRef: { current: null },
+    contentRef: { current: null },
+    zoom: 1,
     resetViewport: vi.fn(),
   }),
 }));
 const manifest: TileManifest = {
-  ready: true, version: "v1", width: 512, height: 512, tile_size: 256,
-  max_level: 0, levels: [{ width: 512, height: 512 }],
+  ready: true,
+  version: "v1",
+  width: 512,
+  height: 512,
+  tile_size: 256,
+  max_level: 0,
+  levels: [{ width: 512, height: 512 }],
 };
 const props = {
-  mapId: "main", mapType: "terrain" as const, canvasRef: createRef<HTMLCanvasElement>(),
-  mapObjects: [], hoveredOverlay: null, cursorTooltip: null,
-  onMouseMove: vi.fn(), onMouseLeave: vi.fn(), onClick: vi.fn(),
+  mapId: "main",
+  mapType: "terrain" as const,
+  canvasRef: createRef<HTMLCanvasElement>(),
+  mapObjects: [],
+  hoveredOverlay: null,
+  cursorTooltip: null,
+  onMouseMove: vi.fn(),
+  onMouseLeave: vi.fn(),
+  onClick: vi.fn(),
 };
 let mapNumber = 0;
 beforeEach(() => {
@@ -38,14 +55,22 @@ beforeEach(() => {
   props.mapId = `test-map-${++mapNumber}`;
   vi.useFakeTimers();
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 function images(container: HTMLElement) {
   return [...container.querySelectorAll("img")].map((image) => image.getAttribute("src"));
 }
 describe("MapCanvas tile loading", () => {
   it("shows only the preview until manifests answer, then loads tiles without full images", async () => {
     let resolve!: (value: TileManifest) => void;
-    const pending = new Promise<TileManifest>((done) => { resolve = done; });
+    const pending = new Promise<TileManifest>((done) => {
+      resolve = done;
+    });
     mocks.fetch.mockReturnValue(pending);
     const { container } = render(<MapCanvas {...props} />);
     expect(images(container)).toEqual([expect.stringContaining(`/${props.mapId}/map/preview`)]);
@@ -77,7 +102,8 @@ describe("MapCanvas tile loading", () => {
     await act(async () => {});
     await act(async () => vi.advanceTimersByTime(10000));
     expect(mocks.fetch.mock.calls.map(([path]) => path)).toEqual([
-      `/${props.mapId}/tiles/base/manifest`, `/${props.mapId}/tiles/mapdata-terrain/manifest`,
+      `/${props.mapId}/tiles/base/manifest`,
+      `/${props.mapId}/tiles/mapdata-terrain/manifest`,
     ]);
   });
 });
@@ -89,7 +115,9 @@ describe("MapCanvas selection", () => {
     src = "";
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
-    constructor() { FakeImage.made.push(this); }
+    constructor() {
+      FakeImage.made.push(this);
+    }
   }
   beforeEach(() => {
     FakeImage.made = [];
@@ -109,9 +137,11 @@ describe("MapCanvas selection", () => {
     );
   }
   function loadShape(src: string, failed = false) {
-    act(() => FakeImage.made
-      .filter((image) => image.src === src)
-      .forEach((image) => (failed ? image.onerror : image.onload)?.()));
+    act(() =>
+      FakeImage.made
+        .filter((image) => image.src === src)
+        .forEach((image) => (failed ? image.onerror : image.onload)?.()),
+    );
   }
   // The realm colours under the selection: muted once its highlight is ready.
   const colours = (container: HTMLElement) => container.querySelector<HTMLElement>("div.duration-200")!.style.opacity;

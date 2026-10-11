@@ -42,7 +42,7 @@ class FakeImageData {
   readonly data: Uint8ClampedArray;
   constructor(
     readonly width: number,
-    readonly height: number
+    readonly height: number,
   ) {
     this.data = new Uint8ClampedArray(width * height * 4);
   }
@@ -70,7 +70,7 @@ class FakeCtx2D {
     dirtyX?: number,
     dirtyY?: number,
     dirtyWidth?: number,
-    dirtyHeight?: number
+    dirtyHeight?: number,
   ): void {
     this.imageData = imageData;
     this.putCalls.push({
@@ -87,9 +87,7 @@ class FakeCtx2D {
  * rendered by the component) never share recorded state. */
 function installFakeCanvas(): Map<HTMLCanvasElement, FakeCtx2D> {
   const byCanvas = new Map<HTMLCanvasElement, FakeCtx2D>();
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (
-    this: HTMLCanvasElement
-  ) {
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
     let ctx = byCanvas.get(this);
     if (!ctx) {
       ctx = new FakeCtx2D(this);
@@ -126,7 +124,7 @@ const MAP_OBJECTS: MapObject[] = [mapObject("nationA"), mapObject("nationB")];
 
 function findHoverCanvas(
   container: HTMLElement,
-  byCanvas: Map<HTMLCanvasElement, FakeCtx2D>
+  byCanvas: Map<HTMLCanvasElement, FakeCtx2D>,
 ): { canvas: HTMLCanvasElement; ctx: FakeCtx2D } {
   const canvases = Array.from(container.querySelectorAll("canvas"));
   // The hover canvas is the second of the two the component renders.
@@ -152,7 +150,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId={null}
         mapW={400}
         mapH={400}
-      />
+      />,
     );
 
     const { ctx } = findHoverCanvas(container, byCanvas);
@@ -168,7 +166,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId="nationA"
         mapW={400}
         mapH={400}
-      />
+      />,
     );
 
     expect(ctx.putCalls).toHaveLength(1);
@@ -194,7 +192,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId="nationA"
         mapW={400}
         mapH={400}
-      />
+      />,
     );
     const { ctx } = findHoverCanvas(container, byCanvas);
     expect(ctx.putCalls).toHaveLength(1);
@@ -207,7 +205,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId="nationB"
         mapW={400}
         mapH={400}
-      />
+      />,
     );
 
     expect(ctx.putCalls).toHaveLength(2);
@@ -236,7 +234,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId="nationA"
         mapW={400}
         mapH={400}
-      />
+      />,
     );
     const { ctx } = findHoverCanvas(container, byCanvas);
     expect(ctx.putCalls).toHaveLength(1);
@@ -251,7 +249,7 @@ describe("ChronicleOwnershipLayer hover highlight", () => {
         hoveredRegionId="nationA"
         mapW={401}
         mapH={400}
-      />
+      />,
     );
 
     expect(ctx.putCalls).toHaveLength(1);

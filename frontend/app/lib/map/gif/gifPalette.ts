@@ -71,10 +71,7 @@ type ColorHistogram = {
   size: number;
 };
 
-function sampleHistogram(
-  frames: readonly Uint8ClampedArray[],
-  width: number
-): ColorHistogram {
+function sampleHistogram(frames: readonly Uint8ClampedArray[], width: number): ColorHistogram {
   let totalPixels = 0;
   for (const frame of frames) totalPixels += frame.length >> 2;
   const stride = pixelSampleStride(totalPixels, width);
@@ -88,10 +85,7 @@ function sampleHistogram(
       // composites onto an opaque background before calling us. Folding them
       // in as black keeps a stray transparent pixel from inventing a palette
       // entry out of whatever RGB happens to sit under alpha 0.
-      const key =
-        frame[o + 3]! < OPAQUE_ALPHA_THRESHOLD
-          ? 0
-          : packRgb(frame[o]!, frame[o + 1]!, frame[o + 2]!);
+      const key = frame[o + 3]! < OPAQUE_ALPHA_THRESHOLD ? 0 : packRgb(frame[o]!, frame[o + 1]!, frame[o + 2]!);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
@@ -166,11 +160,7 @@ function boundBox(box: Box, hist: ColorHistogram, order: Uint32Array): void {
  * nation colours, which are far apart in RGB, win splits on their axis extent.
  */
 function boxPriority(box: Box): number {
-  const longest = Math.max(
-    box.rMax - box.rMin,
-    box.gMax - box.gMin,
-    box.bMax - box.bMin
-  );
+  const longest = Math.max(box.rMax - box.rMin, box.gMax - box.gMin, box.bMax - box.bMin);
   return longest * (box.end - box.start);
 }
 
@@ -180,11 +170,7 @@ function boxPriority(box: Box): number {
  * `width` is only used to pick a sampling stride that does not degenerate into
  * a single column; passing the real frame width is enough.
  */
-export function buildGifPalette(
-  frames: readonly Uint8ClampedArray[],
-  width: number,
-  maxColors = 256
-): GifPalette {
+export function buildGifPalette(frames: readonly Uint8ClampedArray[], width: number, maxColors = 256): GifPalette {
   const limit = Math.max(2, Math.min(256, maxColors | 0));
   const hist = sampleHistogram(frames, width);
 
@@ -228,8 +214,7 @@ export function buildGifPalette(
     const rSpan = box.rMax - box.rMin;
     const gSpan = box.gMax - box.gMin;
     const bSpan = box.bMax - box.bMin;
-    const channel =
-      rSpan >= gSpan && rSpan >= bSpan ? hist.r : gSpan >= bSpan ? hist.g : hist.b;
+    const channel = rSpan >= gSpan && rSpan >= bSpan ? hist.r : gSpan >= bSpan ? hist.g : hist.b;
 
     const segment = Array.from(order.subarray(box.start, box.end));
     segment.sort((a, b) => channel[a]! - channel[b]!);
@@ -371,11 +356,7 @@ export class NearestColorCache {
 }
 
 /** Maps one RGBA frame into `out`, which must hold `frame.length / 4` indices. */
-export function mapFrameToPaletteIndices(
-  frame: Uint8ClampedArray,
-  cache: NearestColorCache,
-  out: Uint8Array
-): void {
+export function mapFrameToPaletteIndices(frame: Uint8ClampedArray, cache: NearestColorCache, out: Uint8Array): void {
   const pixels = frame.length >> 2;
   for (let p = 0, o = 0; p < pixels; p++, o += 4) {
     out[p] =

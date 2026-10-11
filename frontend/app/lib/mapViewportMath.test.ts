@@ -166,24 +166,16 @@ describe("zoomAtPoint", () => {
     "leaves the transform unchanged for a non-finite delta (%s)",
     (wheelDelta) => {
       const start = { userScale: 2, translateX: -100, translateY: -50 };
-      const next = zoomAtPoint(
-        viewport,
-        map,
-        start,
-        { x: 400, y: 600 },
-        wheelDelta
-      );
+      const next = zoomAtPoint(viewport, map, start, { x: 400, y: 600 }, wheelDelta);
 
       expect(next).toEqual(start);
-    }
+    },
   );
 });
 
 describe("viewportTransformStyle", () => {
   it("emits translate then scale for transform-origin 0 0", () => {
-    expect(viewportTransformStyle(0.5, -10, 20)).toBe(
-      "translate(-10px, 20px) scale(0.5)"
-    );
+    expect(viewportTransformStyle(0.5, -10, 20)).toBe("translate(-10px, 20px) scale(0.5)");
   });
 });
 
@@ -194,12 +186,10 @@ describe("zoomToScaleAtPoint", () => {
     const before = screenToMap(anchor.x, anchor.y, 0.5, { x: 0, y: 0 });
 
     const next = zoomToScaleAtPoint(viewport, map, start, anchor, 2);
-    const after = screenToMap(
-      anchor.x,
-      anchor.y,
-      computeDisplayScale(0.5, next.userScale),
-      { x: next.translateX, y: next.translateY }
-    );
+    const after = screenToMap(anchor.x, anchor.y, computeDisplayScale(0.5, next.userScale), {
+      x: next.translateX,
+      y: next.translateY,
+    });
 
     expect(next.userScale).toBe(2);
     expect(after.x).toBeCloseTo(before.x);
@@ -210,9 +200,7 @@ describe("zoomToScaleAtPoint", () => {
     const start = { userScale: 1, translateX: 0, translateY: 0 };
     const centre = { x: 500, y: 500 };
 
-    expect(zoomToScaleAtPoint(viewport, map, start, centre, 99).userScale).toBe(
-      MAP_ZOOM_MAX
-    );
+    expect(zoomToScaleAtPoint(viewport, map, start, centre, 99).userScale).toBe(MAP_ZOOM_MAX);
     expect(zoomToScaleAtPoint(viewport, map, start, centre, 0.1).userScale).toBe(1);
   });
 
@@ -226,9 +214,7 @@ describe("zoomToScaleAtPoint", () => {
   it("ignores a non-finite scale", () => {
     const start = { userScale: 2, translateX: -100, translateY: -50 };
 
-    expect(
-      zoomToScaleAtPoint(viewport, map, start, { x: 0, y: 0 }, Number.NaN)
-    ).toBe(start);
+    expect(zoomToScaleAtPoint(viewport, map, start, { x: 0, y: 0 }, Number.NaN)).toBe(start);
   });
 });
 
@@ -265,13 +251,7 @@ describe("transformForMapRect", () => {
   });
 
   it("never zooms past the cap for a tiny rect", () => {
-    const next = transformForMapRect(
-      viewport,
-      map,
-      { x: 1000, y: 1000, w: 1, h: 1 },
-      "cover",
-      { maxUserScale: 4 }
-    );
+    const next = transformForMapRect(viewport, map, { x: 1000, y: 1000, w: 1, h: 1 }, "cover", { maxUserScale: 4 });
 
     expect(next.userScale).toBe(4);
   });

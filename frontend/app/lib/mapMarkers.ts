@@ -22,21 +22,16 @@ export const MARKER_LABEL_COLOR = "var(--tfmc-cream)";
  * are in `em` because the label font size lives in map space and is scaled by
  * the viewport transform.
  */
-export const MARKER_CHIP_BG =
-  "color-mix(in srgb, var(--tfmc-forest-deep) 88%, transparent)";
-export const MARKER_CHIP_BG_HOVER =
-  "color-mix(in srgb, var(--tfmc-forest) 92%, transparent)";
-export const MARKER_CHIP_BORDER =
-  "color-mix(in srgb, var(--tfmc-stone) 30%, transparent)";
+export const MARKER_CHIP_BG = "color-mix(in srgb, var(--tfmc-forest-deep) 88%, transparent)";
+export const MARKER_CHIP_BG_HOVER = "color-mix(in srgb, var(--tfmc-forest) 92%, transparent)";
+export const MARKER_CHIP_BORDER = "color-mix(in srgb, var(--tfmc-stone) 30%, transparent)";
 export const MARKER_CHIP_BORDER_HOVER = "var(--tfmc-accent)";
 export const MARKER_CHIP_PAD_X_EM = 0.5;
 export const MARKER_CHIP_PAD_Y_EM = 0.18;
 export const MARKER_CHIP_RADIUS_EM = 0.12;
 export const MARKER_CHIP_BORDER_EM = 0.035;
-export const MARKER_CHIP_TRANSITION =
-  "background-color 150ms ease-out, border-color 150ms ease-out";
-export const MARKER_ICON_HOVER_GLOW =
-  "drop-shadow(0 0 6px color-mix(in srgb, var(--tfmc-accent) 45%, transparent))";
+export const MARKER_CHIP_TRANSITION = "background-color 150ms ease-out, border-color 150ms ease-out";
+export const MARKER_ICON_HOVER_GLOW = "drop-shadow(0 0 6px color-mix(in srgb, var(--tfmc-accent) 45%, transparent))";
 export const MARKER_LABEL_MIN_SCREEN_PX = 9;
 
 /**
@@ -48,9 +43,7 @@ export const MARKER_MAX_DISPLAY_SCALE = 0.35;
 
 /** Factor to shrink a marker's map-pixel size by so it holds its screen size. */
 export function markerZoomScale(displayScale: number): number {
-  return displayScale > MARKER_MAX_DISPLAY_SCALE
-    ? MARKER_MAX_DISPLAY_SCALE / displayScale
-    : 1;
+  return displayScale > MARKER_MAX_DISPLAY_SCALE ? MARKER_MAX_DISPLAY_SCALE / displayScale : 1;
 }
 export const INSTALLATION_ICON_SCALE = 0.75;
 export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
@@ -66,12 +59,7 @@ export const MARKER_LAYER_Z_HOVERED = 17;
  */
 export type MapMarkerSize = "small" | "medium" | "large";
 
-export const INSTALLATION_MARKER_KINDS = new Set([
-  "fort",
-  "port",
-  "airport",
-  "train_station",
-]);
+export const INSTALLATION_MARKER_KINDS = new Set(["fort", "port", "airport", "train_station"]);
 export const BATTLE_MARKER_KIND = "battle";
 
 export type MapMarker = {
@@ -104,10 +92,7 @@ export function isMarkerMapMode(mapType: MapMode): boolean {
   return mapType === "nation";
 }
 
-export function markerVisibilityScreenPx(
-  marker: MapMarker,
-  displayScale: number
-): number {
+export function markerVisibilityScreenPx(marker: MapMarker, displayScale: number): number {
   if (displayScale <= 0) return 0;
   const { size, fontSize } = markerDimensions(marker.markerSize);
   if (marker.showLabelOnlyOnHover || isInstallationMarkerKind(marker.kind) || isBattleMarkerKind(marker.kind)) {
@@ -116,19 +101,11 @@ export function markerVisibilityScreenPx(
   return fontSize * displayScale;
 }
 
-export function shouldShowMapMarker(
-  marker: MapMarker,
-  displayScale: number
-): boolean {
-  return (
-    markerVisibilityScreenPx(marker, displayScale) >= MARKER_LABEL_MIN_SCREEN_PX
-  );
+export function shouldShowMapMarker(marker: MapMarker, displayScale: number): boolean {
+  return markerVisibilityScreenPx(marker, displayScale) >= MARKER_LABEL_MIN_SCREEN_PX;
 }
 
-export function filterVisibleMapMarkers(
-  markers: MapMarker[],
-  displayScale: number
-): MapMarker[] {
+export function filterVisibleMapMarkers(markers: MapMarker[], displayScale: number): MapMarker[] {
   return markers.filter((marker) => shouldShowMapMarker(marker, displayScale));
 }
 
@@ -139,10 +116,7 @@ export function markerIconScale(kind: string | undefined): number {
   return 1;
 }
 
-export function markerLabelTextStyle(options: {
-  fontSize: number;
-  highlighted: boolean;
-}): CSSProperties {
+export function markerLabelTextStyle(options: { fontSize: number; highlighted: boolean }): CSSProperties {
   const { fontSize, highlighted } = options;
   return {
     fontSize,
@@ -155,19 +129,14 @@ export function markerLabelTextStyle(options: {
     backgroundColor: highlighted ? MARKER_CHIP_BG_HOVER : MARKER_CHIP_BG,
     // Floors keep the chip outline from collapsing to a sub-pixel hairline at
     // the zoom levels where markers are smallest.
-    border: `max(1px, ${MARKER_CHIP_BORDER_EM}em) solid ${
-      highlighted ? MARKER_CHIP_BORDER_HOVER : MARKER_CHIP_BORDER
-    }`,
+    border: `max(1px, ${MARKER_CHIP_BORDER_EM}em) solid ${highlighted ? MARKER_CHIP_BORDER_HOVER : MARKER_CHIP_BORDER}`,
     borderRadius: `max(2px, ${MARKER_CHIP_RADIUS_EM}em)`,
     padding: `${MARKER_CHIP_PAD_Y_EM}em ${MARKER_CHIP_PAD_X_EM}em`,
     transition: MARKER_CHIP_TRANSITION,
   };
 }
 
-export function resolveMarkerImageSrc(
-  kind: string | undefined,
-  markerSize: MapMarkerSize | undefined
-): string {
+export function resolveMarkerImageSrc(kind: string | undefined, markerSize: MapMarkerSize | undefined): string {
   if (kind === "fort") return "/fort.png";
   if (kind === "port") return "/port.png";
   if (kind === "airport") return "/airport.png";
@@ -219,7 +188,7 @@ export function markerLayout(
   mapY: number,
   markerSize: MapMarkerSize | undefined,
   kind?: string,
-  zoomScale = 1
+  zoomScale = 1,
 ): MapMarkerLayout {
   const dimensions = markerDimensions(markerSize);
   const size = dimensions.size * zoomScale;
@@ -241,7 +210,7 @@ export function markerLayout(
 export function markerHitBounds(
   layout: MapMarkerLayout,
   label: string,
-  includeLabel = true
+  includeLabel = true,
 ): { x: number; y: number; w: number; h: number } {
   if (!includeLabel) {
     const iconSize = layout.iconSize;
@@ -254,21 +223,13 @@ export function markerHitBounds(
     };
   }
 
-  const chipPadX =
-    layout.fontSize * (MARKER_CHIP_PAD_X_EM + MARKER_CHIP_BORDER_EM) * 2;
-  const chipPadY =
-    layout.fontSize * (MARKER_CHIP_PAD_Y_EM + MARKER_CHIP_BORDER_EM) * 2;
-  const labelWidth = Math.max(
-    layout.size,
-    label.length * layout.fontSize * 0.55 + chipPadX
-  );
+  const chipPadX = layout.fontSize * (MARKER_CHIP_PAD_X_EM + MARKER_CHIP_BORDER_EM) * 2;
+  const chipPadY = layout.fontSize * (MARKER_CHIP_PAD_Y_EM + MARKER_CHIP_BORDER_EM) * 2;
+  const labelWidth = Math.max(layout.size, label.length * layout.fontSize * 0.55 + chipPadX);
   const labelHeight = layout.fontSize + chipPadY;
   const left = layout.mapX - labelWidth / 2;
   const top = layout.imageY;
-  const bottom = Math.max(
-    layout.imageY + layout.size,
-    layout.textY + labelHeight
-  );
+  const bottom = Math.max(layout.imageY + layout.size, layout.textY + labelHeight);
   return {
     x: left,
     y: top,
@@ -283,30 +244,15 @@ export function pickMapMarkerAt(
   y: number,
   displayScale = 0,
   /** Labels decluttered away: only their pins can be pointed at. */
-  hiddenLabels: ReadonlySet<string> = EMPTY_SET
+  hiddenLabels: ReadonlySet<string> = EMPTY_SET,
 ): MapMarker | null {
   // Hit-test the marker at the size it is drawn, not its map-pixel size.
   const zoomScale = markerZoomScale(displayScale);
   for (let i = markers.length - 1; i >= 0; i--) {
     const marker = markers[i];
-    const layout = markerLayout(
-      marker.mapX,
-      marker.mapY,
-      marker.markerSize,
-      marker.kind,
-      zoomScale
-    );
-    const bounds = markerHitBounds(
-      layout,
-      marker.label,
-      !marker.showLabelOnlyOnHover && !hiddenLabels.has(marker.id)
-    );
-    if (
-      x >= bounds.x &&
-      x < bounds.x + bounds.w &&
-      y >= bounds.y &&
-      y < bounds.y + bounds.h
-    ) {
+    const layout = markerLayout(marker.mapX, marker.mapY, marker.markerSize, marker.kind, zoomScale);
+    const bounds = markerHitBounds(layout, marker.label, !marker.showLabelOnlyOnHover && !hiddenLabels.has(marker.id));
+    if (x >= bounds.x && x < bounds.x + bounds.w && y >= bounds.y && y < bounds.y + bounds.h) {
       return marker;
     }
   }
@@ -374,7 +320,7 @@ export function hiddenMarkerLabels(markers: MapMarker[], displayScale: number): 
       visible.map((marker) => [
         marker.id,
         markerLayout(marker.mapX, marker.mapY, marker.markerSize, marker.kind, zoomScale),
-      ])
+      ]),
     );
     const ordered = [...visible].sort(
       (a, b) =>
@@ -383,7 +329,7 @@ export function hiddenMarkerLabels(markers: MapMarker[], displayScale: number): 
         Number(!a.showLabelOnlyOnHover) - Number(!b.showLabelOnlyOnHover) ||
         SIZE_RANK[a.markerSize ?? "small"] - SIZE_RANK[b.markerSize ?? "small"] ||
         (b.weight ?? 0) - (a.weight ?? 0) ||
-        a.label.localeCompare(b.label)
+        a.label.localeCompare(b.label),
     );
 
     // A label gives way only to names and pins placed before it, i.e. ones at
@@ -397,8 +343,7 @@ export function hiddenMarkerLabels(markers: MapMarker[], displayScale: number): 
         const base = markerLabelRect(layout, marker.label);
         const rect = { x: base.x - pad, y: base.y - pad, w: base.w + pad * 2, h: base.h + pad * 2 };
         const blocked =
-          placedLabels.some((other) => overlaps(rect, other)) ||
-          placedIcons.some((icon) => overlaps(rect, icon));
+          placedLabels.some((other) => overlaps(rect, other)) || placedIcons.some((icon) => overlaps(rect, icon));
         if (blocked) hidden.add(marker.id);
         else placedLabels.push(rect);
       }
@@ -409,4 +354,3 @@ export function hiddenMarkerLabels(markers: MapMarker[], displayScale: number): 
   declutterCache.set(markers, { scale: displayScale, hidden });
   return hidden;
 }
-

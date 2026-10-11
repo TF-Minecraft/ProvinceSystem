@@ -6,16 +6,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), token: null as string | null }));
 vi.mock("@/lib/map/api", () => ({ fetchAccessibleMaps: mocks.fetch }));
 vi.mock("@/lib/characters/session", () => ({
-  getSession: () => mocks.token ? { session_token: mocks.token } : null,
+  getSession: () => (mocks.token ? { session_token: mocks.token } : null),
   isSessionValid: (session: unknown) => Boolean(session),
 }));
 vi.mock("@/lib/characters/uiDev", () => ({ isCharacterUiDev: () => false }));
-beforeEach(() => { vi.resetModules(); mocks.fetch.mockReset(); mocks.token = null; });
+beforeEach(() => {
+  vi.resetModules();
+  mocks.fetch.mockReset();
+  mocks.token = null;
+});
 afterEach(cleanup);
 
 function deferred() {
   let resolve!: (value: { maps: { id: string }[] }) => void;
-  const promise = new Promise<{ maps: { id: string }[] }>((done) => { resolve = done; });
+  const promise = new Promise<{ maps: { id: string }[] }>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 function sessionChanged(token: string | null, key: string | null = "tfmc_profile_session") {

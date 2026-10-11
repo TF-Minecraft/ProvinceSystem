@@ -30,7 +30,9 @@ function RecipeCards({ recipes }: { recipes: readonly Recipe[] }) {
               {name} ({entries.length})
             </summary>
             <div className="grid gap-4 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] p-4 md:grid-cols-2">
-              {entries.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+              {entries.map((recipe) => (
+                <CraftingGrid key={recipe.key} recipe={recipe} />
+              ))}
             </div>
           </details>
         ))}
@@ -40,7 +42,9 @@ function RecipeCards({ recipes }: { recipes: readonly Recipe[] }) {
 
   return (
     <div className="mt-4 grid gap-4 md:grid-cols-2">
-      {recipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+      {recipes.map((recipe) => (
+        <CraftingGrid key={recipe.key} recipe={recipe} />
+      ))}
     </div>
   );
 }
@@ -54,8 +58,16 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
   const acquisitionRecipe = station.craftRecipe ?? station.vanillaBlock?.recipe;
 
   return (
-    <WikiPage lastModified="2026-10-11" title={station.name} intro={<WikiItemText text={station.blurb} excludeHref={`/wiki/stations/${station.slug}`} />} width="lg">
-      <Link href="/wiki/stations" className="mt-3 inline-block text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
+    <WikiPage
+      lastModified="2026-10-11"
+      title={station.name}
+      intro={<WikiItemText text={station.blurb} excludeHref={`/wiki/stations/${station.slug}`} />}
+      width="lg"
+    >
+      <Link
+        href="/wiki/stations"
+        className="mt-3 inline-block text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
+      >
         &larr; Back to Stations
       </Link>
 
@@ -65,13 +77,22 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
         {acquisitionRecipe ? <CraftingGrid recipe={acquisitionRecipe} /> : null}
         <div aria-label={`3D preview of ${station.name}`}>
           {station.model ? (
-            <StationModelViewer modelUrl={station.model.url} textureUrl={station.model.texture} textureUrls={station.model.textures} textureAnimationUrl={station.model.textureAnimationUrl} />
+            <StationModelViewer
+              modelUrl={station.model.url}
+              textureUrl={station.model.texture}
+              textureUrls={station.model.textures}
+              textureAnimationUrl={station.model.textureAnimationUrl}
+            />
           ) : station.cubeFaces ? (
             <SimpleCubeViewer faces={station.cubeFaces} />
           ) : (
             <div className="flex h-40 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={station.fallbackTexture ?? station.icon} alt="" className="h-16 w-16 object-contain [image-rendering:pixelated]" />
+              <img
+                src={station.fallbackTexture ?? station.icon}
+                alt=""
+                className="h-16 w-16 object-contain [image-rendering:pixelated]"
+              />
             </div>
           )}
         </div>
@@ -80,12 +101,27 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
       <WikiSectionHeading id="using">How to use it</WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{station.interaction}</p>
 
-      <WikiSectionHeading id="recipes" intro={recipes.length ? `${recipes.length} recipes use this station.` : station.guide ? "See its guide below." : undefined}>
+      <WikiSectionHeading
+        id="recipes"
+        intro={
+          recipes.length
+            ? `${recipes.length} recipes use this station.`
+            : station.guide
+              ? "See its guide below."
+              : undefined
+        }
+      >
         Recipes crafted here
       </WikiSectionHeading>
-      {recipes.length ? <RecipeCards recipes={recipes} /> : station.guide ? (
+      {recipes.length ? (
+        <RecipeCards recipes={recipes} />
+      ) : station.guide ? (
         <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-          See the <Link href={station.guide.href} className="text-[var(--tfmc-accent)] underline underline-offset-2">{station.guide.label}</Link> for its recipes and full workflow.
+          See the{" "}
+          <Link href={station.guide.href} className="text-[var(--tfmc-accent)] underline underline-offset-2">
+            {station.guide.label}
+          </Link>{" "}
+          for its recipes and full workflow.
         </p>
       ) : null}
     </WikiPage>

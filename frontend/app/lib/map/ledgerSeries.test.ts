@@ -300,11 +300,9 @@ describe("formatBreakdownBandLabel", () => {
   });
 
   it("strips Minecraft color and a leftover (Guild) suffix", () => {
-    expect(
-      formatBreakdownBandLabel(
-        "§x§a§3§a§1§8§4The Betriebsrat #a39ba8(§x§b§d§a§4§6§4Guild#a39ba8)"
-      )
-    ).toBe("The Betriebsrat");
+    expect(formatBreakdownBandLabel("§x§a§3§a§1§8§4The Betriebsrat #a39ba8(§x§b§d§a§4§6§4Guild#a39ba8)")).toBe(
+      "The Betriebsrat",
+    );
   });
 
   it("leaves component keys alone", () => {
@@ -376,9 +374,7 @@ describe("buildLedgerFactionOptions", () => {
     ];
     const options = buildLedgerFactionOptions(rows);
     expect(options).toHaveLength(2);
-    expect(options.map((o) => o.name)).toEqual(
-      expect.arrayContaining(["Brume", "Karsk"])
-    );
+    expect(options.map((o) => o.name)).toEqual(expect.arrayContaining(["Brume", "Karsk"]));
   });
 
   it("merges a reused id's two lifetimes sharing a name into one option", () => {
@@ -419,10 +415,7 @@ describe("buildLedgerFactionOptions", () => {
   });
 
   it("sorts options by name for a stable order across renders", () => {
-    const rows = [
-      faction({ key: "z", id: "z", name: "Velin" }),
-      faction({ key: "a", id: "a", name: "Karsk" }),
-    ];
+    const rows = [faction({ key: "z", id: "z", name: "Velin" }), faction({ key: "a", id: "a", name: "Karsk" })];
     const options = buildLedgerFactionOptions(rows);
     expect(options.map((o) => o.name)).toEqual(["Karsk", "Velin"]);
   });
@@ -435,10 +428,7 @@ describe("factionsInRange", () => {
       faction({ key: "short", first_seen_day: "2026-09-19", last_seen_day: "2026-09-19", deleted_day: "2026-09-21" }),
       faction({ key: "live", first_seen_day: "2026-09-19", last_seen_day: "2026-09-29" }),
     ];
-    expect(factionsInRange(rows, "2026-09-19", "2026-09-29").map((f) => f.key)).toEqual([
-      "short",
-      "live",
-    ]);
+    expect(factionsInRange(rows, "2026-09-19", "2026-09-29").map((f) => f.key)).toEqual(["short", "live"]);
   });
 });
 
@@ -501,25 +491,17 @@ describe("defaultLedgerFactionOption", () => {
   const registry = [brumeOld, brumeNew, karsk];
 
   it("defaults to the focused nation's name, resolved via the lifetime overlapping the built range", () => {
-    expect(defaultLedgerFactionOption(registry, "brume", "2026-08-24", "2026-08-31")).toBe(
-      "Brume"
-    );
-    expect(defaultLedgerFactionOption(registry, "brume", "2026-08-18", "2026-08-21")).toBe(
-      "Brume"
-    );
+    expect(defaultLedgerFactionOption(registry, "brume", "2026-08-24", "2026-08-31")).toBe("Brume");
+    expect(defaultLedgerFactionOption(registry, "brume", "2026-08-18", "2026-08-21")).toBe("Brume");
   });
 
   it("falls back to the first available option when no nation is focused", () => {
     // Alphabetical: "Brume" sorts before "Karsk".
-    expect(defaultLedgerFactionOption(registry, null, "2026-08-18", "2026-08-31")).toBe(
-      "Brume"
-    );
+    expect(defaultLedgerFactionOption(registry, null, "2026-08-18", "2026-08-31")).toBe("Brume");
   });
 
   it("falls back to the first available option when the focused id isn't in the registry", () => {
-    expect(defaultLedgerFactionOption(registry, "lantan", "2026-08-18", "2026-08-31")).toBe(
-      "Brume"
-    );
+    expect(defaultLedgerFactionOption(registry, "lantan", "2026-08-18", "2026-08-31")).toBe("Brume");
   });
 
   it("returns null when the registry has no factions at all", () => {
@@ -536,9 +518,7 @@ describe("spliceByFoundedAt", () => {
       "brume-1": [10, 20, 30, null, null, null, null],
       "brume-2": [null, null, null, null, null, 50, 60],
     };
-    expect(spliceByFoundedAt([older, newer], values, 7)).toEqual([
-      10, 20, 30, null, null, 50, 60,
-    ]);
+    expect(spliceByFoundedAt([older, newer], values, 7)).toEqual([10, 20, 30, null, null, 50, 60]);
   });
 
   it("leaves a day null when no entry has a row that day — the requested gap", () => {
@@ -584,7 +564,7 @@ describe("spliceBreakdownByFoundedAt", () => {
 
 /** Minimal `LedgerFactionSeries` fixture for `spliceLedgerFaction` tests. */
 function factionSeries(
-  overrides: Partial<LedgerFactionSeries> & { key: string; founded_at: string }
+  overrides: Partial<LedgerFactionSeries> & { key: string; founded_at: string },
 ): LedgerFactionSeries {
   return {
     id: "brume",
@@ -643,9 +623,7 @@ describe("spliceLedgerFaction", () => {
     const series = baseSeries([lifetime1, lifetime2]);
     const merged = spliceLedgerFaction(option, series);
     expect(merged).not.toBeNull();
-    expect(merged!.series.wealth).toEqual([
-      100, 110, 120, null, null, null, 500, 510,
-    ]);
+    expect(merged!.series.wealth).toEqual([100, 110, 120, null, null, null, 500, 510]);
   });
 
   it("picks the later founded_at on a same-day collision, never summing", () => {
@@ -688,12 +666,8 @@ describe("spliceLedgerFaction", () => {
     });
     const series = baseSeries([lifetime1, lifetime2]);
     const merged = spliceLedgerFaction(option, series);
-    expect(merged!.rank).toEqual([
-      "duchy", "duchy", "duchy", null, null, null, "kingdom", "kingdom",
-    ]);
-    expect(merged!.breakdowns.wealth.trade).toEqual([
-      10, 10, 10, null, null, null, 40, 40,
-    ]);
+    expect(merged!.rank).toEqual(["duchy", "duchy", "duchy", null, null, null, "kingdom", "kingdom"]);
+    expect(merged!.breakdowns.wealth.trade).toEqual([10, 10, 10, null, null, null, 40, 40]);
   });
 
   it("returns null when none of the option's keys are present in the series yet", () => {
@@ -821,9 +795,7 @@ describe("stackBreakdown band cap", () => {
   it("caps an explicitly ordered key list too", () => {
     const breakdown = manyBands(40);
     const order = Object.keys(breakdown);
-    expect(stackBreakdown(breakdown, 2, order).keys.length).toBe(
-      LEDGER_MAX_BREAKDOWN_BANDS + 1
-    );
+    expect(stackBreakdown(breakdown, 2, order).keys.length).toBe(LEDGER_MAX_BREAKDOWN_BANDS + 1);
   });
 
   it("keeps the largest bands by peak magnitude and folds the rest into `other`", () => {
@@ -892,10 +864,7 @@ describe("spliceBreakdownByFoundedAt prototype safety", () => {
 
   it("keeps a `__proto__` band as an own key instead of replacing the prototype", () => {
     const breakdownByKey = {
-      f1: JSON.parse('{"__proto__": [7], "tax": [3]}') as Record<
-        string,
-        Array<number | null>
-      >,
+      f1: JSON.parse('{"__proto__": [7], "tax": [3]}') as Record<string, Array<number | null>>,
     };
     const result = spliceBreakdownByFoundedAt(entries, breakdownByKey, 1);
     expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);

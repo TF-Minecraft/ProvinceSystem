@@ -55,11 +55,7 @@ function scoreEntry(entry: WikiSearchEntry, normalizedQuery: string, tokens: str
   return score;
 }
 
-export function searchWikiIndex(
-  entries: WikiSearchEntry[],
-  query: string,
-  limit = 8
-): RankedWikiSearchEntry[] {
+export function searchWikiIndex(entries: WikiSearchEntry[], query: string, limit = 8): RankedWikiSearchEntry[] {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return [];
   const tokens = normalizedQuery.split(" ").filter(Boolean);

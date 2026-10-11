@@ -2,12 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  adminErrorMessage,
-  coreProtectMessage,
-  getPlayerSessions,
-  type PlayerSession,
-} from "../../../lib/admin/api";
+import { adminErrorMessage, coreProtectMessage, getPlayerSessions, type PlayerSession } from "../../../lib/admin/api";
 import { formatDuration } from "../../../lib/admin/time";
 import { formatDay, sessionEndLabel, sessionSpanLabel, worldLabel } from "../../../lib/admin/movement";
 import { chipClass, chipOff } from "./MovementControls";
@@ -56,7 +51,7 @@ export default function SessionList({
           return [] as PlayerSession[];
         });
     },
-    [uuid]
+    [uuid],
   );
 
   useEffect(() => {
@@ -78,7 +73,10 @@ export default function SessionList({
           {state.error}
         </p>
       ) : null}
-      <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto pr-1 lg:max-h-[calc(100dvh-26rem)]" aria-label="Sessions">
+      <ul
+        className="flex max-h-80 flex-col gap-1 overflow-y-auto pr-1 lg:max-h-[calc(100dvh-26rem)]"
+        aria-label="Sessions"
+      >
         {state.sessions.map((session) => {
           const active = session.id === selected;
           return (

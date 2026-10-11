@@ -135,7 +135,7 @@ function uniqueOtherKey(taken: Set<string>): string {
 function capBreakdownBands(
   breakdown: Record<string, Array<number | null>>,
   requested: string[],
-  dayCount: number
+  dayCount: number,
 ): { keys: string[]; values: Record<string, Array<number | null> | undefined> } {
   const values: Record<string, Array<number | null> | undefined> = Object.create(null);
   if (requested.length <= LEDGER_MAX_BREAKDOWN_BANDS) {
@@ -145,9 +145,7 @@ function capBreakdownBands(
   const ranked = requested
     .map((key, index) => ({ key, index, peak: peakMagnitude(breakdown[key], dayCount) }))
     .sort((a, b) => b.peak - a.peak || a.index - b.index);
-  const kept = new Set(
-    ranked.slice(0, LEDGER_MAX_BREAKDOWN_BANDS).map((entry) => entry.key)
-  );
+  const kept = new Set(ranked.slice(0, LEDGER_MAX_BREAKDOWN_BANDS).map((entry) => entry.key));
   const keys: string[] = [];
   for (const key of requested) {
     if (!kept.has(key)) continue;
@@ -190,7 +188,7 @@ function capBreakdownBands(
 export function stackBreakdown(
   breakdown: Record<string, Array<number | null>>,
   dayCount: number,
-  order?: string[]
+  order?: string[],
 ): StackedBreakdown {
   const requested = order ?? Object.keys(breakdown).sort();
   const { keys, values } = capBreakdownBands(breakdown, requested, dayCount);
@@ -223,12 +221,7 @@ export function stackBreakdown(
  * of the requested range they actually cover, rather than a 0/1 "does it
  * overlap" flag that can't break a tie between two rows that both overlap.
  */
-export function overlapDayCount(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string
-): number {
+export function overlapDayCount(aStart: string, aEnd: string, bStart: string, bEnd: string): number {
   const start = aStart > bStart ? aStart : bStart;
   const end = aEnd < bEnd ? aEnd : bEnd;
   if (start > end) return 0;
@@ -285,7 +278,7 @@ function niceNumber(range: number, round: boolean): number {
 export function buildLinePath(
   values: Array<number | null>,
   xScale: (index: number) => number,
-  yScale: (value: number) => number
+  yScale: (value: number) => number,
 ): string {
   let d = "";
   let penDown = false;
@@ -312,7 +305,7 @@ export function buildAreaPath(
   tops: Array<number | null>,
   baselines: Array<number | null>,
   xScale: (index: number) => number,
-  yScale: (value: number) => number
+  yScale: (value: number) => number,
 ): string {
   const runs: Array<Array<number>> = [];
   let current: number[] = [];
@@ -335,9 +328,7 @@ export function buildAreaPath(
   let d = "";
   for (const run of runs) {
     const topPoints = run.map((i) => ({ x: xScale(i), y: yScale(tops[i] as number) }));
-    const basePoints = run
-      .map((i) => ({ x: xScale(i), y: yScale(baselines[i] as number) }))
-      .reverse();
+    const basePoints = run.map((i) => ({ x: xScale(i), y: yScale(baselines[i] as number) })).reverse();
     d += pathFromRing([...topPoints, ...basePoints]);
   }
   return d.trim();
@@ -357,7 +348,7 @@ export function buildAreaPath(
 export function buildStepPath(
   values: Array<number | null>,
   xScale: (index: number) => number,
-  yScale: (value: number) => number
+  yScale: (value: number) => number,
 ): string {
   let d = "";
   let penDown = false;
@@ -437,11 +428,10 @@ export function formatBreakdownBandLabel(key: string): string {
 export function factionsInRange(
   factions: LedgerRegistryFaction[],
   firstDay: string,
-  lastDay: string
+  lastDay: string,
 ): LedgerRegistryFaction[] {
   return factions.filter(
-    (faction) =>
-      overlapDayCount(faction.first_seen_day, faction.last_seen_day, firstDay, lastDay) > 0
+    (faction) => overlapDayCount(faction.first_seen_day, faction.last_seen_day, firstDay, lastDay) > 0,
   );
 }
 
@@ -453,9 +443,7 @@ export function factionsInRange(
  * carries all of them, sorted by `founded_at` ascending. Options themselves
  * are sorted by name for a stable order across renders.
  */
-export function buildLedgerFactionOptions(
-  factions: LedgerRegistryFaction[]
-): LedgerFactionOption[] {
+export function buildLedgerFactionOptions(factions: LedgerRegistryFaction[]): LedgerFactionOption[] {
   const byName = new Map<string, LedgerRegistryFaction[]>();
   for (const faction of factions) {
     const rows = byName.get(faction.name);
@@ -488,18 +476,13 @@ export function buildLedgerFactionOptions(
 export function resolveFactionKey(
   candidates: LedgerRegistryFaction[],
   firstDay: string,
-  lastDay: string
+  lastDay: string,
 ): string | null {
   if (candidates.length === 0) return null;
   let best: LedgerRegistryFaction | null = null;
   let bestOverlap = -1;
   for (const candidate of candidates) {
-    const overlap = overlapDayCount(
-      candidate.first_seen_day,
-      candidate.last_seen_day,
-      firstDay,
-      lastDay
-    );
+    const overlap = overlapDayCount(candidate.first_seen_day, candidate.last_seen_day, firstDay, lastDay);
     if (overlap > bestOverlap) {
       bestOverlap = overlap;
       best = candidate;
@@ -525,14 +508,12 @@ export function defaultLedgerFactionOption(
   factions: LedgerRegistryFaction[],
   focusNationId: string | null,
   firstDay: string,
-  lastDay: string
+  lastDay: string,
 ): string | null {
   if (focusNationId) {
     const candidates = factions.filter((faction) => faction.id === focusNationId);
     const resolvedKey = resolveFactionKey(candidates, firstDay, lastDay);
-    const resolvedFaction = resolvedKey
-      ? factions.find((faction) => faction.key === resolvedKey)
-      : null;
+    const resolvedFaction = resolvedKey ? factions.find((faction) => faction.key === resolvedKey) : null;
     if (resolvedFaction) return resolvedFaction.name;
   }
   return buildLedgerFactionOptions(factions)[0]?.name ?? null;
@@ -556,7 +537,7 @@ export type FoundedEntry = { key: string; founded_at: string };
 export function spliceByFoundedAt<T>(
   entries: FoundedEntry[],
   valuesByKey: Record<string, Array<T | null> | undefined>,
-  dayCount: number
+  dayCount: number,
 ): Array<T | null> {
   const out: Array<T | null> = new Array(dayCount).fill(null);
   for (let day = 0; day < dayCount; day++) {
@@ -585,7 +566,7 @@ export function spliceByFoundedAt<T>(
 export function spliceBreakdownByFoundedAt(
   entries: FoundedEntry[],
   breakdownByKey: Record<string, Record<string, Array<number | null>> | undefined>,
-  dayCount: number
+  dayCount: number,
 ): Record<string, Array<number | null>> {
   const bandKeys = new Set<string>();
   for (const entry of entries) {
@@ -654,10 +635,7 @@ export type MergedLedgerFaction = {
  * and the union fetch for it hasn't landed) — same "not there yet" contract
  * `factionForKey` always had for a single key.
  */
-export function spliceLedgerFaction(
-  option: LedgerFactionOption,
-  series: LedgerSeries
-): MergedLedgerFaction | null {
+export function spliceLedgerFaction(option: LedgerFactionOption, series: LedgerSeries): MergedLedgerFaction | null {
   const byKey = new Map(series.factions.map((faction) => [faction.key, faction]));
   const entries: FoundedEntry[] = option.keys
     .map((key, i) => ({ key, founded_at: option.foundedAt[i]! }))
@@ -679,10 +657,8 @@ export function spliceLedgerFaction(
 
   const rankByKey: Record<string, Array<string | null>> = Object.create(null);
   const tierByKey: Record<string, Array<string | null>> = Object.create(null);
-  const wealthBreakdownByKey: Record<string, Record<string, Array<number | null>>> =
-    Object.create(null);
-  const prestigeBreakdownByKey: Record<string, Record<string, Array<number | null>>> =
-    Object.create(null);
+  const wealthBreakdownByKey: Record<string, Record<string, Array<number | null>>> = Object.create(null);
+  const prestigeBreakdownByKey: Record<string, Record<string, Array<number | null>>> = Object.create(null);
   for (const entry of entries) {
     const faction = byKey.get(entry.key)!;
     rankByKey[entry.key] = faction.rank;
@@ -733,7 +709,7 @@ export function spliceLedgerFaction(
 export function ledgerCursorReadout(
   cursorDay: string | null,
   cursorIndex: number | null,
-  wealth: Array<number | null>
+  wealth: Array<number | null>,
 ): { day: string; hasData: boolean } | null {
   if (cursorDay == null) return null;
   const hasData = cursorIndex != null && wealth[cursorIndex] != null;

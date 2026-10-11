@@ -13,30 +13,13 @@ import {
   loreItemSkinTextureUrl,
   type LoreItemRow,
 } from "../../../lib/characters/api";
-import {
-  hasInlineFormatCodes,
-  parseLoreRuns,
-  parseNameRuns,
-} from "../../../lib/characters/lorePreview";
-import {
-  DISPLAY_NAME_HINT,
-  displayNameError,
-} from "../../../lib/textValidation";
-import {
-  NAME_STYLES,
-  previewColourStopRuns,
-  type NameStyle,
-} from "../../../lib/skins/namePreview";
-import {
-  getPlayerMeta,
-} from "../../../lib/skins/api";
+import { hasInlineFormatCodes, parseLoreRuns, parseNameRuns } from "../../../lib/characters/lorePreview";
+import { DISPLAY_NAME_HINT, displayNameError } from "../../../lib/textValidation";
+import { NAME_STYLES, previewColourStopRuns, type NameStyle } from "../../../lib/skins/namePreview";
+import { getPlayerMeta } from "../../../lib/skins/api";
 import { DEV_CATALOG_ENTITLEMENTS } from "../../../lib/skins/entitlementsDev";
 import { isCharacterUiDev } from "../../../lib/characters/uiDev";
-import {
-  loreItemDraftSyncKey,
-  resolveInitialSkinMode,
-  type LoreSkinMode,
-} from "../../../lib/characters/loreSkinMode";
+import { loreItemDraftSyncKey, resolveInitialSkinMode, type LoreSkinMode } from "../../../lib/characters/loreSkinMode";
 import {
   assert3dPairBudgets,
   assertFileSize,
@@ -117,12 +100,7 @@ function parseDraftStyles(raw: unknown): NameStyle[] {
 function draftHasCustomise(item: LoreItemRow): boolean {
   const d = item.draft;
   const state = String(d.state || "").toLowerCase();
-  if (
-    state === "pending_skin" ||
-    state === "ready" ||
-    state === "denied" ||
-    state === "applied"
-  ) {
+  if (state === "pending_skin" || state === "ready" || state === "denied" || state === "applied") {
     return true;
   }
   if (String(d.display_name || "").trim()) return true;
@@ -136,15 +114,7 @@ function draftHasCustomise(item: LoreItemRow): boolean {
 const inputClass =
   "w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-accent)] focus:outline-none";
 
-function SkinThumb({
-  id,
-  baseSet,
-  token,
-}: {
-  id: string;
-  baseSet: string;
-  token: string;
-}) {
+function SkinThumb({ id, baseSet, token }: { id: string; baseSet: string; token: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let dead = false;
@@ -174,11 +144,7 @@ function SkinThumb({
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      className="h-8 w-8 rounded-sm [image-rendering:pixelated]"
-    />
+    <img src={src} alt="" className="h-8 w-8 rounded-sm [image-rendering:pixelated]" />
   );
 }
 
@@ -198,36 +164,22 @@ export default function LoreItemEditor({
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const modelRef = useRef<HTMLInputElement>(null);
-  const [displayName, setDisplayName] = useState(
-    item.draft.display_name || ""
-  );
+  const [displayName, setDisplayName] = useState(item.draft.display_name || "");
   const [colours, setColours] = useState<string[]>(
-    Array.isArray(item.draft.name_colours)
-      ? [...item.draft.name_colours]
-      : []
+    Array.isArray(item.draft.name_colours) ? [...item.draft.name_colours] : [],
   );
-  const [styles, setStyles] = useState<NameStyle[]>(() =>
-    parseDraftStyles(item.draft.name_styles)
-  );
-  const [lore, setLore] = useState<string[]>(
-    item.draft.lore.length > 0 ? [...item.draft.lore] : []
-  );
-  const [skinMode, setSkinMode] = useState<LoreSkinMode>(() =>
-    resolveInitialSkinMode(item)
-  );
+  const [styles, setStyles] = useState<NameStyle[]>(() => parseDraftStyles(item.draft.name_styles));
+  const [lore, setLore] = useState<string[]>(item.draft.lore.length > 0 ? [...item.draft.lore] : []);
+  const [skinMode, setSkinMode] = useState<LoreSkinMode>(() => resolveInitialSkinMode(item));
   const [textureFile, setTextureFile] = useState<File | null>(null);
   const [unsignedFile, setUnsignedFile] = useState<File | null>(null);
   const [signedFile, setSignedFile] = useState<File | null>(null);
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [use3d, setUse3d] = useState(false);
-  const [pickedSkinId, setPickedSkinId] = useState<string>(
-    item.draft.existing_skin_id || ""
-  );
+  const [pickedSkinId, setPickedSkinId] = useState<string>(item.draft.existing_skin_id || "");
   const [localError, setLocalError] = useState<string | null>(null);
   const [previewTexture, setPreviewTexture] = useState<File | null>(null);
-  const [previewTextureSigned, setPreviewTextureSigned] = useState<File | null>(
-    null
-  );
+  const [previewTextureSigned, setPreviewTextureSigned] = useState<File | null>(null);
   const [previewModelFile, setPreviewModelFile] = useState<File | null>(null);
   const [bookPreviewUrls, setBookPreviewUrls] = useState<{
     unsigned: string | null;
@@ -249,15 +201,13 @@ export default function LoreItemEditor({
     () => ({
       displayName: item.draft.display_name || "",
       lore: (item.draft.lore || []).map(String),
-      colours: Array.isArray(item.draft.name_colours)
-        ? item.draft.name_colours.map(String)
-        : [],
+      colours: Array.isArray(item.draft.name_colours) ? item.draft.name_colours.map(String) : [],
       styles: parseDraftStyles(item.draft.name_styles),
       skinMode: resolveInitialSkinMode(item),
       pickedSkinId: item.draft.existing_skin_id || "",
       use3d: false,
     }),
-    [item]
+    [item],
   );
 
   const flatKind = asSkinKind(item["2d_template"], "handheld");
@@ -268,12 +218,10 @@ export default function LoreItemEditor({
 
   const pickedSkin = useMemo(
     () => item.pickable_skins.find((skin) => skin.id === pickedSkinId),
-    [item.pickable_skins, pickedSkinId]
+    [item.pickable_skins, pickedSkinId],
   );
   const pickedIs3d = Boolean(
-    skinMode === "pick" &&
-      pickedSkin &&
-      isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d"))
+    skinMode === "pick" && pickedSkin && isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d")),
   );
 
   const isDirty = useMemo(() => {
@@ -351,9 +299,7 @@ export default function LoreItemEditor({
   }, [sessionToken]);
 
   useEffect(() => {
-    const unsigned = unsignedFile
-      ? URL.createObjectURL(unsignedFile)
-      : null;
+    const unsigned = unsignedFile ? URL.createObjectURL(unsignedFile) : null;
     const signed = signedFile ? URL.createObjectURL(signedFile) : null;
     setBookPreviewUrls({ unsigned, signed });
     return () => {
@@ -368,20 +314,14 @@ export default function LoreItemEditor({
   const denyReason = String(item.draft.deny_reason || "").trim();
 
   const hasNewSkin =
-    (skinMode === "upload" &&
-      (isBook
-        ? Boolean(unsignedFile && signedFile)
-        : Boolean(textureFile))) ||
+    (skinMode === "upload" && (isBook ? Boolean(unsignedFile && signedFile) : Boolean(textureFile))) ||
     (skinMode === "pick" && Boolean(pickedSkinId.trim()));
   const submitBlocked = isDenied && !hasNewSkin;
 
   useEffect(() => {
     let dead = false;
 
-    async function fetchAsFile(
-      url: string,
-      filename: string
-    ): Promise<File | null> {
+    async function fetchAsFile(url: string, filename: string): Promise<File | null> {
       const res = await fetch(url, { headers: authHeaders(sessionToken) });
       if (!res.ok) return null;
       const blob = await res.blob();
@@ -402,14 +342,14 @@ export default function LoreItemEditor({
           if (!unsignedFile && (item.skin_png || item.kit_key)) {
             const file = await fetchAsFile(
               loreItemDefaultTextureUrl(item.kit_key),
-              `${String(item.skin_png || item.kit_key).trim() || "default"}.png`
+              `${String(item.skin_png || item.kit_key).trim() || "default"}.png`,
             );
             if (!dead && !unsignedFile) setPreviewTexture(file);
           }
           if (!signedFile && item.kit_key) {
             const file = await fetchAsFile(
               loreItemDefaultTextureUrl(item.kit_key, "signed"),
-              `${String(item.skin_png_signed || "journal_skin_signed").trim()}.png`
+              `${String(item.skin_png_signed || "journal_skin_signed").trim()}.png`,
             );
             if (!dead && !signedFile) setPreviewTextureSigned(file);
           }
@@ -427,15 +367,8 @@ export default function LoreItemEditor({
         let filename = "preview.png";
         if (skinMode === "pick" && pickedSkinId.trim()) {
           if (isBook) {
-            const unsignedUrl = loreItemSkinTextureUrl(
-              pickedSkinId,
-              item.base_set
-            );
-            const signedUrl = loreItemSkinTextureUrl(
-              pickedSkinId,
-              item.base_set,
-              "signed"
-            );
+            const unsignedUrl = loreItemSkinTextureUrl(pickedSkinId, item.base_set);
+            const signedUrl = loreItemSkinTextureUrl(pickedSkinId, item.base_set, "signed");
             const [unsignedFile, signedFile] = await Promise.all([
               fetchAsFile(unsignedUrl, `${pickedSkinId.trim()}_unsigned.png`),
               fetchAsFile(signedUrl, `${pickedSkinId.trim()}_signed.png`),
@@ -463,14 +396,10 @@ export default function LoreItemEditor({
         }
         const file = await fetchAsFile(url, filename);
         let modelFile: File | null = null;
-        if (
-          skinMode === "pick" &&
-          pickedSkin &&
-          isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d"))
-        ) {
+        if (skinMode === "pick" && pickedSkin && isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d"))) {
           modelFile = await fetchAsFile(
             loreItemSkinModelUrl(pickedSkinId, item.base_set),
-            `${pickedSkinId.trim()}.json`
+            `${pickedSkinId.trim()}.json`,
           );
         }
         if (!dead) {
@@ -515,10 +444,7 @@ export default function LoreItemEditor({
     : null;
 
   const previewName = displayName.trim() || item.base_preview.display_name || "Preview";
-  const nameHasInline = useMemo(
-    () => hasInlineFormatCodes(previewName),
-    [previewName]
-  );
+  const nameHasInline = useMemo(() => hasInlineFormatCodes(previewName), [previewName]);
   const namePreviewRuns = useMemo(() => {
     if (nameHasInline) {
       const styleSet = new Set(styles.map((s) => s.toLowerCase()));
@@ -526,16 +452,8 @@ export default function LoreItemEditor({
         ...run,
         bold: run.bold || styleSet.has("bold") || undefined,
         italic: run.italic || styleSet.has("italic") || undefined,
-        underline:
-          run.underline ||
-          styleSet.has("underline") ||
-          styleSet.has("underlined") ||
-          undefined,
-        strike:
-          run.strike ||
-          styleSet.has("strikethrough") ||
-          styleSet.has("strike") ||
-          undefined,
+        underline: run.underline || styleSet.has("underline") || styleSet.has("underlined") || undefined,
+        strike: run.strike || styleSet.has("strikethrough") || styleSet.has("strike") || undefined,
       }));
     }
     return previewColourStopRuns(previewName, colours, styles);
@@ -550,9 +468,7 @@ export default function LoreItemEditor({
   }, [item.base_preview.lore, lore]);
 
   function toggleStyle(style: NameStyle) {
-    setStyles((prev) =>
-      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
-    );
+    setStyles((prev) => (prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]));
   }
 
   async function onPickFile(file: File | null) {
@@ -562,8 +478,7 @@ export default function LoreItemEditor({
       return;
     }
     try {
-      const sizeKind =
-        use3d && threeDKind ? threeDKind : flatKind;
+      const sizeKind = use3d && threeDKind ? threeDKind : flatKind;
       const expected = expectedSizeForField(sizeKind, "texture");
       if (expected) {
         await assertFileSize(file, expected, "Texture");
@@ -578,10 +493,7 @@ export default function LoreItemEditor({
     }
   }
 
-  async function onPickBookFile(
-    field: "unsigned" | "signed",
-    file: File | null
-  ) {
+  async function onPickBookFile(field: "unsigned" | "signed", file: File | null) {
     setLocalError(null);
     if (!file) {
       if (field === "unsigned") setUnsignedFile(null);
@@ -591,11 +503,7 @@ export default function LoreItemEditor({
     try {
       const expected = expectedSizeForField("book", field);
       if (expected) {
-        await assertFileSize(
-          file,
-          expected,
-          field === "unsigned" ? "Unsigned cover" : "Signed cover"
-        );
+        await assertFileSize(file, expected, field === "unsigned" ? "Unsigned cover" : "Signed cover");
       }
       if (field === "unsigned") setUnsignedFile(file);
       else setSignedFile(file);
@@ -620,9 +528,7 @@ export default function LoreItemEditor({
       return;
     }
     if (submitBlocked) {
-      setLocalError(
-        "Skin was denied. Choose a different skin (upload or pick) and submit again."
-      );
+      setLocalError("Skin was denied. Choose a different skin (upload or pick) and submit again.");
       return;
     }
     if (!isDirty) {
@@ -642,11 +548,7 @@ export default function LoreItemEditor({
     const effective3d = skinMode === "upload" && allows3d && use3d;
     if (effective3d && threeDKind && textureFile && modelFile) {
       try {
-        assert3dPairBudgets(
-          threeDKind,
-          { texture: textureFile, model: modelFile },
-          resolvedPairBytes
-        );
+        assert3dPairBudgets(threeDKind, { texture: textureFile, model: modelFile }, resolvedPairBytes);
         await assertVanillaJavaBlockModelFile(modelFile);
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : "Invalid 3D files");
@@ -658,8 +560,7 @@ export default function LoreItemEditor({
       lore,
       nameColours: colours,
       nameStyles: styles,
-      existingSkinId:
-        skinMode === "pick" ? pickedSkinId || null : undefined,
+      existingSkinId: skinMode === "pick" ? pickedSkinId || null : undefined,
       textureFile: skinMode === "upload" && !isBook ? textureFile : null,
       unsignedFile: skinMode === "upload" && isBook ? unsignedFile : null,
       signedFile: skinMode === "upload" && isBook ? signedFile : null,
@@ -672,26 +573,17 @@ export default function LoreItemEditor({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-10">
-      {successMessage ? (
-        <p className="whitespace-pre-wrap text-sm text-[var(--tfmc-mist)]">
-          {successMessage}
-        </p>
-      ) : null}
+      {successMessage ? <p className="whitespace-pre-wrap text-sm text-[var(--tfmc-mist)]">{successMessage}</p> : null}
       {isDenied ? (
         <p className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_35%,transparent)] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] px-3 py-2 text-sm text-[#e8a0a0]">
-          Skin denied{denyReason ? `: ${denyReason}` : ""}. Your name and lore
-          are saved. The kit won&apos;t include them until a replacement skin is
-          accepted.
+          Skin denied{denyReason ? `: ${denyReason}` : ""}. Your name and lore are saved. The kit won&apos;t include
+          them until a replacement skin is accepted.
         </p>
       ) : null}
 
       <section>
-        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Name
-        </h2>
-        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          Allowed: {DISPLAY_NAME_HINT}
-        </p>
+        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Name</h2>
+        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">Allowed: {DISPLAY_NAME_HINT}</p>
         <input
           type="text"
           value={displayName}
@@ -700,9 +592,7 @@ export default function LoreItemEditor({
           className={`${inputClass} mt-3`}
           autoComplete="off"
         />
-        {nameErr ? (
-          <p className="mt-2 text-xs text-[#e8a0a0]">{nameErr}</p>
-        ) : null}
+        {nameErr ? <p className="mt-2 text-xs text-[#e8a0a0]">{nameErr}</p> : null}
         <fieldset className="mt-4 flex flex-col gap-4 border-0 p-0">
           <legend className="sr-only">Name colours and styles</legend>
           <NameColourPicker
@@ -715,20 +605,11 @@ export default function LoreItemEditor({
             onError={setLocalError}
           />
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              Styles
-            </span>
+            <span className="text-sm font-medium text-[var(--tfmc-stone)]">Styles</span>
             <div className="flex flex-wrap gap-3">
               {NAME_STYLES.map((s) => (
-                <label
-                  key={s}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]"
-                >
-                  <FancyCheckbox
-                    checked={styles.includes(s)}
-                    onChange={() => toggleStyle(s)}
-                    className="mt-0"
-                  />
+                <label key={s} className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]">
+                  <FancyCheckbox checked={styles.includes(s)} onChange={() => toggleStyle(s)} className="mt-0" />
                   {s}
                 </label>
               ))}
@@ -738,18 +619,11 @@ export default function LoreItemEditor({
       </section>
 
       <section>
-        <LoreLinesEditor
-          lines={lore}
-          onChange={setLore}
-          heading="section"
-          showPreview={false}
-        />
+        <LoreLinesEditor lines={lore} onChange={setLore} heading="section" showPreview={false} />
       </section>
 
       <section>
-        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Preview
-        </h2>
+        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Preview</h2>
         <div className="mt-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[#1a1a1a] px-4 py-3 font-mono text-sm">
           <p className="leading-relaxed">
             <FormattedMcRuns runs={namePreviewRuns} />
@@ -769,9 +643,7 @@ export default function LoreItemEditor({
       </section>
 
       <section>
-        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Skin
-        </h2>
+        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Skin</h2>
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <button
             type="button"
@@ -814,45 +686,27 @@ export default function LoreItemEditor({
             {isBook ? (
               <>
                 <label className="flex flex-col gap-2 text-left">
-                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                    Unsigned cover (16×16)
-                  </span>
+                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">Unsigned cover (16×16)</span>
                   <input
                     type="file"
                     accept="image/png"
-                    onChange={(e) =>
-                      void onPickBookFile(
-                        "unsigned",
-                        e.target.files?.[0] ?? null
-                      )
-                    }
+                    onChange={(e) => void onPickBookFile("unsigned", e.target.files?.[0] ?? null)}
                     className={FILE_INPUT_CLASS}
                   />
                   {unsignedFile ? (
-                    <span className="text-xs text-[var(--tfmc-cream)]">
-                      Selected: {unsignedFile.name}
-                    </span>
+                    <span className="text-xs text-[var(--tfmc-cream)]">Selected: {unsignedFile.name}</span>
                   ) : null}
                 </label>
                 <label className="flex flex-col gap-2 text-left">
-                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                    Signed cover (16×16)
-                  </span>
+                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">Signed cover (16×16)</span>
                   <input
                     type="file"
                     accept="image/png"
-                    onChange={(e) =>
-                      void onPickBookFile(
-                        "signed",
-                        e.target.files?.[0] ?? null
-                      )
-                    }
+                    onChange={(e) => void onPickBookFile("signed", e.target.files?.[0] ?? null)}
                     className={FILE_INPUT_CLASS}
                   />
                   {signedFile ? (
-                    <span className="text-xs text-[var(--tfmc-cream)]">
-                      Selected: {signedFile.name}
-                    </span>
+                    <span className="text-xs text-[var(--tfmc-cream)]">Selected: {signedFile.name}</span>
                   ) : null}
                 </label>
                 <div className="flex flex-wrap gap-4">
@@ -863,9 +717,7 @@ export default function LoreItemEditor({
                     ] as const
                   ).map(([label, url]) => (
                     <div key={label} className="flex flex-col gap-1.5">
-                      <span className="text-xs font-medium text-[var(--tfmc-stone)]">
-                        {label}
-                      </span>
+                      <span className="text-xs font-medium text-[var(--tfmc-stone)]">{label}</span>
                       <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)]">
                         {url ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -875,9 +727,7 @@ export default function LoreItemEditor({
                             className="h-full w-full object-contain [image-rendering:pixelated]"
                           />
                         ) : (
-                          <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">
-                            No file
-                          </span>
+                          <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">No file</span>
                         )}
                       </div>
                     </div>
@@ -910,30 +760,20 @@ export default function LoreItemEditor({
                   className={FILE_INPUT_CLASS}
                 />
                 {textureFile ? (
-                  <span className="text-xs text-[var(--tfmc-cream)]">
-                    Selected: {textureFile.name}
-                  </span>
+                  <span className="text-xs text-[var(--tfmc-cream)]">Selected: {textureFile.name}</span>
                 ) : null}
                 {allows3d && use3d ? (
                   <>
-                    {pairHint ? (
-                      <p className="text-xs text-[var(--tfmc-stone)]">
-                        {pairHint}
-                      </p>
-                    ) : null}
+                    {pairHint ? <p className="text-xs text-[var(--tfmc-stone)]">{pairHint}</p> : null}
                     <input
                       ref={modelRef}
                       type="file"
                       accept="application/json,.json"
-                      onChange={(e) =>
-                        setModelFile(e.target.files?.[0] ?? null)
-                      }
+                      onChange={(e) => setModelFile(e.target.files?.[0] ?? null)}
                       className={FILE_INPUT_CLASS}
                     />
                     {modelFile ? (
-                      <span className="text-xs text-[var(--tfmc-cream)]">
-                        Selected: {modelFile.name}
-                      </span>
+                      <span className="text-xs text-[var(--tfmc-cream)]">Selected: {modelFile.name}</span>
                     ) : null}
                   </>
                 ) : null}
@@ -941,51 +781,37 @@ export default function LoreItemEditor({
             )}
           </div>
         ) : item.pickable_skins.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            No saved skins for this item yet.
-          </p>
+          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">No saved skins for this item yet.</p>
         ) : (
           <>
-            <p className="mt-4 text-sm font-medium text-[var(--tfmc-stone)]">
-              Your skins
-            </p>
+            <p className="mt-4 text-sm font-medium text-[var(--tfmc-stone)]">Your skins</p>
             <ul className="mt-2 flex flex-col gap-2">
-            {item.pickable_skins.map((skin) => {
-              const selected = pickedSkinId === skin.id;
-              return (
-                <li key={skin.id}>
-                  <button
-                    type="button"
-                    onClick={() => setPickedSkinId(skin.id)}
-                    className={`flex w-full items-center gap-3 rounded-sm border px-3 py-2 text-left text-sm transition-colors ${
-                      selected
-                        ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] text-[var(--tfmc-cream)]"
-                        : "border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] text-[var(--tfmc-mist)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)]"
-                    }`}
-                  >
-                    <SkinThumb
-                      id={skin.id}
-                      baseSet={item.base_set}
-                      token={sessionToken}
-                    />
-                    <span>
-                      {skin.display_name || skin.id}
-                      {isModel3dKind(asSkinKind(skin.kind, "handheld")) ? (
-                        <span className="ml-2 text-xs text-[var(--tfmc-stone)]">
-                          3D
-                        </span>
-                      ) : null}
-                      {skin.staff ? (
-                        <span className="ml-2 text-xs text-[var(--tfmc-stone)]">
-                          staff
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+              {item.pickable_skins.map((skin) => {
+                const selected = pickedSkinId === skin.id;
+                return (
+                  <li key={skin.id}>
+                    <button
+                      type="button"
+                      onClick={() => setPickedSkinId(skin.id)}
+                      className={`flex w-full items-center gap-3 rounded-sm border px-3 py-2 text-left text-sm transition-colors ${
+                        selected
+                          ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] text-[var(--tfmc-cream)]"
+                          : "border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] text-[var(--tfmc-mist)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)]"
+                      }`}
+                    >
+                      <SkinThumb id={skin.id} baseSet={item.base_set} token={sessionToken} />
+                      <span>
+                        {skin.display_name || skin.id}
+                        {isModel3dKind(asSkinKind(skin.kind, "handheld")) ? (
+                          <span className="ml-2 text-xs text-[var(--tfmc-stone)]">3D</span>
+                        ) : null}
+                        {skin.staff ? <span className="ml-2 text-xs text-[var(--tfmc-stone)]">staff</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
 
@@ -1041,9 +867,7 @@ export default function LoreItemEditor({
       </section>
 
       <div className="flex flex-col gap-3">
-        {showError ? (
-          <p className="text-sm text-[#e8a0a0]">{showError}</p>
-        ) : null}
+        {showError ? <p className="text-sm text-[#e8a0a0]">{showError}</p> : null}
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
@@ -1058,9 +882,7 @@ export default function LoreItemEditor({
               onClick={() => {
                 if (
                   typeof window !== "undefined" &&
-                  !window.confirm(
-                    "Reset this item to the kit default? Your uploaded skin stays in Player skins."
-                  )
+                  !window.confirm("Reset this item to the kit default? Your uploaded skin stays in Player skins.")
                 ) {
                   return;
                 }

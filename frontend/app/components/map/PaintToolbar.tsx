@@ -30,10 +30,8 @@ import { mapFrameClass } from "./ui";
 
 const panelClass = `relative ${mapFrameClass}`;
 
-const activeClass =
-  "bg-[color-mix(in_srgb,var(--tfmc-cream)_92%,transparent)] text-[var(--tfmc-forest-deep)]";
-const idleClass =
-  "text-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]";
+const activeClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_92%,transparent)] text-[var(--tfmc-forest-deep)]";
+const idleClass = "text-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]";
 
 const TOOLS: { value: PaintTool; label: string; hint: string }[] = [
   { value: "brush", label: "Brush", hint: "Freehand line" },
@@ -90,9 +88,8 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
     const result = paint.importPlan(await file.text());
     setShareNote(
       result.ok
-        ? "Plan opened." +
-            (result.skipped ? ` Skipped ${result.skipped} unreadable drawing(s).` : "")
-        : result.reason
+        ? "Plan opened." + (result.skipped ? ` Skipped ${result.skipped} unreadable drawing(s).` : "")
+        : result.reason,
     );
   }
 
@@ -103,8 +100,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
   }, [confirmingClear]);
 
   const hasShapes = paint.shapes.length > 0;
-  const selectedStamp =
-    paint.selectedShape?.type === "stamp" ? paint.selectedShape : null;
+  const selectedStamp = paint.selectedShape?.type === "stamp" ? paint.selectedShape : null;
   const showStampOptions = paint.tool === "stamp" || !!selectedStamp;
   // Reflect the selected object's own state, falling back to what the next
   // placement is armed with.
@@ -123,9 +119,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
           aria-label="Toggle war planning"
           onClick={() => paint.setEnabled(!paint.enabled)}
           className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-            paint.enabled
-              ? "bg-[var(--tfmc-accent)]"
-              : "bg-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)]"
+            paint.enabled ? "bg-[var(--tfmc-accent)]" : "bg-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)]"
           }`}
         >
           <span
@@ -170,11 +164,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
         </div>
       ) : null}
 
-      {shareNote ? (
-        <p className="mt-1 px-1 text-[0.65rem] leading-tight text-[var(--tfmc-mist)]">
-          {shareNote}
-        </p>
-      ) : null}
+      {shareNote ? <p className="mt-1 px-1 text-[0.65rem] leading-tight text-[var(--tfmc-mist)]">{shareNote}</p> : null}
 
       {paint.enabled ? (
         <div className="mt-2 space-y-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
@@ -186,9 +176,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                 title={entry.hint}
                 aria-pressed={paint.tool === entry.value}
                 onClick={() => paint.setTool(entry.value)}
-                className={`rounded-md px-2 py-1.5 text-xs ${
-                  paint.tool === entry.value ? activeClass : idleClass
-                }`}
+                className={`rounded-md px-2 py-1.5 text-xs ${paint.tool === entry.value ? activeClass : idleClass}`}
               >
                 {entry.label}
               </button>
@@ -205,9 +193,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                 aria-pressed={paint.color === id}
                 onClick={() => paint.setColor(id)}
                 className={`h-6 w-6 rounded-full border-2 transition-transform ${
-                  paint.color === id
-                    ? "scale-110 border-[var(--tfmc-cream)]"
-                    : "border-transparent"
+                  paint.color === id ? "scale-110 border-[var(--tfmc-cream)]" : "border-transparent"
                 }`}
                 style={{ backgroundColor: PAINT_COLORS[id] }}
               />
@@ -256,9 +242,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                     type="button"
                     aria-pressed={paint.textStyle.font === id}
                     onClick={() => paint.setTextStyle({ font: id })}
-                    className={`rounded-md px-2 py-1 text-xs ${
-                      paint.textStyle.font === id ? activeClass : idleClass
-                    }`}
+                    className={`rounded-md px-2 py-1 text-xs ${paint.textStyle.font === id ? activeClass : idleClass}`}
                   >
                     {PAINT_FONT_LABELS[id]}
                   </button>
@@ -273,12 +257,8 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                       title={mark.title}
                       aria-label={mark.title}
                       aria-pressed={paint.textStyle[mark.key]}
-                      onClick={() =>
-                        paint.setTextStyle({ [mark.key]: !paint.textStyle[mark.key] })
-                      }
-                      className={`h-6 w-6 rounded-md text-xs ${
-                        paint.textStyle[mark.key] ? activeClass : idleClass
-                      }`}
+                      onClick={() => paint.setTextStyle({ [mark.key]: !paint.textStyle[mark.key] })}
+                      className={`h-6 w-6 rounded-md text-xs ${paint.textStyle[mark.key] ? activeClass : idleClass}`}
                       style={mark.style}
                     >
                       {mark.label}
@@ -294,23 +274,18 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                   max={PAINT_BG_OPACITY_MAX}
                   step={PAINT_BG_OPACITY_STEP}
                   value={paint.textStyle.bgOpacity}
-                  onChange={(event) =>
-                    paint.setTextStyle({ bgOpacity: Number(event.target.value) })
-                  }
+                  onChange={(event) => paint.setTextStyle({ bgOpacity: Number(event.target.value) })}
                   aria-label="Label background opacity"
                   className="h-6 w-full"
                   style={{ accentColor: PAINT_COLORS[paint.color] }}
                 />
-                <span className="tabular-nums">
-                  {Math.round(paint.textStyle.bgOpacity * 100)}%
-                </span>
+                <span className="tabular-nums">{Math.round(paint.textStyle.bgOpacity * 100)}%</span>
               </label>
               {paint.textStyle.bgOpacity > 0 ? (
                 <div className="flex flex-wrap items-center gap-1">
                   {PAINT_TEXT_BG_IDS.map((id) => {
                     const swatch = paintTextBgColor(id, paint.color);
-                    const label =
-                      PAINT_TEXT_BG_LABELS[id] ?? PAINT_COLOR_LABELS[id as PaintColorId];
+                    const label = PAINT_TEXT_BG_LABELS[id] ?? PAINT_COLOR_LABELS[id as PaintColorId];
                     return (
                       <button
                         key={id}
@@ -320,9 +295,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
                         aria-pressed={paint.textStyle.bgColor === id}
                         onClick={() => paint.setTextStyle({ bgColor: id })}
                         className={`h-5 w-5 rounded-full border-2 ${
-                          paint.textStyle.bgColor === id
-                            ? "scale-110 border-[var(--tfmc-cream)]"
-                            : "border-transparent"
+                          paint.textStyle.bgColor === id ? "scale-110 border-[var(--tfmc-cream)]" : "border-transparent"
                         }`}
                         style={{
                           backgroundColor: swatch,
@@ -347,9 +320,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
               aria-pressed={mirrored}
               onClick={() => paint.setStampFlipX(!mirrored)}
               title="Mirror the object left-to-right"
-              className={`w-full rounded-md px-2 py-1 text-xs ${
-                mirrored ? activeClass : idleClass
-              }`}
+              className={`w-full rounded-md px-2 py-1 text-xs ${mirrored ? activeClass : idleClass}`}
             >
               Mirror horizontally
             </button>
@@ -437,8 +408,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
 
       {paint.enabled ? (
         <p className="mt-2 px-1 text-[0.65rem] leading-tight text-[var(--tfmc-stone)]">
-          Drag to draw. Select a drawing to move, resize or rotate it.
-          Middle-drag to pan; scroll to zoom.
+          Drag to draw. Select a drawing to move, resize or rotate it. Middle-drag to pan; scroll to zoom.
         </p>
       ) : null}
     </div>

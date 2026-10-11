@@ -13,9 +13,9 @@ import {
 
 describe("StationModelViewer multi-texture models", () => {
   it("draws exactly one side of each fishing-station sheet from either direction", () => {
-    const model = JSON.parse(readFileSync(
-      join(process.cwd(), "public/wiki/models/stations/fishing-station.json"), "utf8",
-    )) as { elements: Array<Parameters<typeof buildGeometryForElement>[0]> };
+    const model = JSON.parse(
+      readFileSync(join(process.cwd(), "public/wiki/models/stations/fishing-station.json"), "utf8"),
+    ) as { elements: Array<Parameters<typeof buildGeometryForElement>[0]> };
     const sheets = model.elements.filter((el) => el.from[1] === el.to[1]);
     expect(sheets).toHaveLength(5); // String, two body fins, two tail fins.
     const materials = [
@@ -44,16 +44,21 @@ describe("StationModelViewer multi-texture models", () => {
 
   it("keeps lone sheets double-sided and honors missing faces with a single texture", () => {
     const face = { uv: [0, 0, 16, 16] as [number, number, number, number], texture: "#0" };
-    const { geo } = buildGeometryForElement({
-      from: [0, 0, 0], to: [16, 0, 16], faces: { up: face },
-    }, []);
+    const { geo } = buildGeometryForElement(
+      {
+        from: [0, 0, 0],
+        to: [16, 0, 16],
+        faces: { up: face },
+      },
+      [],
+    );
     expect(geo.groups).toEqual([{ start: 12, count: 6, materialIndex: 0 }]);
     const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, [material]);
     for (const side of [-1, 1]) {
-      expect(new THREE.Raycaster(
-        new THREE.Vector3(0.1, side, 0), new THREE.Vector3(0, -side, 0),
-      ).intersectObject(mesh)).toHaveLength(1);
+      expect(
+        new THREE.Raycaster(new THREE.Vector3(0.1, side, 0), new THREE.Vector3(0, -side, 0)).intersectObject(mesh),
+      ).toHaveLength(1);
     }
     geo.dispose();
     material.dispose();
@@ -85,24 +90,58 @@ describe("StationModelViewer multi-texture models", () => {
   });
 
   it.each([
-    [0, [[0.125, 0.75], [0.625, 0.75], [0.125, 0.25], [0.625, 0.25]]],
-    [90, [[0.125, 0.25], [0.125, 0.75], [0.625, 0.25], [0.625, 0.75]]],
-    [180, [[0.625, 0.25], [0.125, 0.25], [0.625, 0.75], [0.125, 0.75]]],
-    [270, [[0.625, 0.75], [0.625, 0.25], [0.125, 0.75], [0.125, 0.25]]],
+    [
+      0,
+      [
+        [0.125, 0.75],
+        [0.625, 0.75],
+        [0.125, 0.25],
+        [0.625, 0.25],
+      ],
+    ],
+    [
+      90,
+      [
+        [0.125, 0.25],
+        [0.125, 0.75],
+        [0.625, 0.25],
+        [0.625, 0.75],
+      ],
+    ],
+    [
+      180,
+      [
+        [0.625, 0.25],
+        [0.125, 0.25],
+        [0.625, 0.75],
+        [0.125, 0.75],
+      ],
+    ],
+    [
+      270,
+      [
+        [0.625, 0.75],
+        [0.625, 0.25],
+        [0.125, 0.75],
+        [0.125, 0.25],
+      ],
+    ],
   ] as const)("maps an asymmetric UV rectangle at %i degrees", (rotation, expected) => {
-    expect(faceUvCoordinates({
-      uv: [2, 4, 10, 12],
-      texture: "#crop",
-      rotation,
-    })).toEqual(expected);
+    expect(
+      faceUvCoordinates({
+        uv: [2, 4, 10, 12],
+        texture: "#crop",
+        rotation,
+      }),
+    ).toEqual(expected);
   });
 
   it("provides an existing authentic asset for every Market Block texture key", () => {
     const model = marketBlockRecipe.output.model;
     expect(model?.textures).toBeDefined();
-    const source = JSON.parse(
-      readFileSync(join(process.cwd(), "public/wiki/models/market-block.json"), "utf8"),
-    ) as { textures: Record<string, string> };
+    const source = JSON.parse(readFileSync(join(process.cwd(), "public/wiki/models/market-block.json"), "utf8")) as {
+      textures: Record<string, string>;
+    };
     const referencedKeys = new Set(
       Object.entries(source.textures)
         .filter(([key]) => key !== "particle")

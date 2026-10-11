@@ -68,15 +68,21 @@ export function sessionRow(session: PlayerSession): SessionRow {
       return { start, end: clockAfter(session.end!.time, from), duration: formatDuration(length), note: null };
     case "open":
       // A guess from a recent sighting, and the page does not refresh.
-      return { start, end: "now", duration: length === null ? null : `${formatDuration(length)} so far`,
-               note: "Probably online" };
+      return {
+        start,
+        end: "now",
+        duration: length === null ? null : `${formatDuration(length)} so far`,
+        note: "Probably online",
+      };
     case "last_observed":
       // A crash or unclean stop writes no logout; the last ping is a lower bound, not the end.
       return {
         start,
         end: "?",
         duration: length === null ? null : `at least ${formatDuration(length)}`,
-        note: session.end ? `No logout recorded · last seen ${clockAfter(session.end.time, from)}` : "No logout recorded",
+        note: session.end
+          ? `No logout recorded · last seen ${clockAfter(session.end.time, from)}`
+          : "No logout recorded",
       };
     default:
       return { start, end: "?", duration: null, note: "End unknown" };

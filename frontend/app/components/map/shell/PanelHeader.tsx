@@ -37,14 +37,7 @@ function scrollParent(node: HTMLElement): HTMLElement | null {
  * the name, so the button stays part of a header rather than floating over
  * the content.
  */
-export default function PanelHeader({
-  visual,
-  eyebrow,
-  title,
-  subtitle,
-  centred = false,
-  onClose,
-}: PanelHeaderProps) {
+export default function PanelHeader({ visual, eyebrow, title, subtitle, centred = false, onClose }: PanelHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [compact, setCompact] = useState(false);
 
@@ -62,9 +55,7 @@ export default function PanelHeader({
       const top = scroller.getBoundingClientRect().top;
       // The name moves into the bar as soon as the title has gone under it.
       // Never at rest: on a phone the title's foot sits near the bar's line.
-      setCompact(
-        scroller.scrollTop > 0 && heading!.getBoundingClientRect().bottom <= top + BAR_HEIGHT_PX
-      );
+      setCompact(scroller.scrollTop > 0 && heading!.getBoundingClientRect().bottom <= top + BAR_HEIGHT_PX);
     }
     function onScroll() {
       if (!frame) frame = requestAnimationFrame(update);

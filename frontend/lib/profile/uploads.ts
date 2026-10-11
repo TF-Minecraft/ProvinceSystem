@@ -1,12 +1,6 @@
 import { logoutCharacter } from "../characters/api";
-import {
-  clearSession as clearDrinksSession,
-  getSession as getDrinksSession,
-} from "../drinks/session";
-import {
-  clearSession as clearSkinsSession,
-  getSession as getSkinsSession,
-} from "../skins/session";
+import { clearSession as clearDrinksSession, getSession as getDrinksSession } from "../drinks/session";
+import { clearSession as clearSkinsSession, getSession as getSkinsSession } from "../skins/session";
 
 /**
  * End skin and drink uploads started from Profile, so signing out leaves none open.
@@ -28,8 +22,8 @@ export async function endProfileUploads(): Promise<void> {
     ended.map((token) =>
       logoutCharacter(token).catch(() => {
         // It expires on its own; the browser no longer holds it.
-      })
-    )
+      }),
+    ),
   );
 }
 

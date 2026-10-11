@@ -39,11 +39,7 @@ export type FitMode = "cover" | "contain";
  * identical to a width-only fit. It only differs once the viewport is a
  * full-bleed rectangle with its own independent height.
  */
-export function computeFitScale(
-  viewport: Size,
-  map: Size,
-  mode: FitMode = "cover"
-): number {
+export function computeFitScale(viewport: Size, map: Size, mode: FitMode = "cover"): number {
   if (map.w <= 0 || map.h <= 0) return 1;
   const widthFit = viewport.w / map.w;
   const heightFit = viewport.h / map.h;
@@ -72,7 +68,7 @@ export function clampTranslate(
   map: Size,
   displayScale: number,
   translateX: number,
-  translateY: number
+  translateY: number,
 ): ViewportPoint {
   const displayW = map.w * displayScale;
   const displayH = map.h * displayScale;
@@ -105,7 +101,7 @@ export function computeCenteredTransform(
   viewport: Size,
   map: Size,
   userScale = 1,
-  mode: FitMode = "cover"
+  mode: FitMode = "cover",
 ): ViewportTransform {
   const fitScale = computeFitScale(viewport, map, mode);
   const displayScale = computeDisplayScale(fitScale, userScale);
@@ -120,12 +116,7 @@ export function computeCenteredTransform(
   };
 }
 
-export function mapToScreen(
-  mapX: number,
-  mapY: number,
-  displayScale: number,
-  translate: ViewportPoint
-): ViewportPoint {
+export function mapToScreen(mapX: number, mapY: number, displayScale: number, translate: ViewportPoint): ViewportPoint {
   return {
     x: mapX * displayScale + translate.x,
     y: mapY * displayScale + translate.y,
@@ -136,7 +127,7 @@ export function screenToMap(
   viewportX: number,
   viewportY: number,
   displayScale: number,
-  translate: ViewportPoint
+  translate: ViewportPoint,
 ): ViewportPoint {
   if (displayScale === 0) {
     return { x: 0, y: 0 };
@@ -148,11 +139,7 @@ export function screenToMap(
   };
 }
 
-export function viewportTransformStyle(
-  displayScale: number,
-  translateX: number,
-  translateY: number
-): string {
+export function viewportTransformStyle(displayScale: number, translateX: number, translateY: number): string {
   return `translate(${translateX}px, ${translateY}px) scale(${displayScale})`;
 }
 
@@ -163,7 +150,7 @@ export function zoomAtPoint(
   cursor: ViewportPoint,
   wheelDelta: number,
   mode: FitMode = "cover",
-  maxUserScale: number = MAP_ZOOM_MAX
+  maxUserScale: number = MAP_ZOOM_MAX,
 ): ViewportTransform {
   // Horizontal-only wheel events (sideways trackpad swipe, Shift+wheel on
   // Windows) arrive with deltaY === 0 and carry no zoom direction.
@@ -171,17 +158,8 @@ export function zoomAtPoint(
     return transform;
   }
 
-  const zoomFactor =
-    wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
-  return zoomToScaleAtPoint(
-    viewport,
-    map,
-    transform,
-    cursor,
-    transform.userScale * zoomFactor,
-    mode,
-    maxUserScale
-  );
+  const zoomFactor = wheelDelta < 0 ? MAP_ZOOM_WHEEL_FACTOR : 1 / MAP_ZOOM_WHEEL_FACTOR;
+  return zoomToScaleAtPoint(viewport, map, transform, cursor, transform.userScale * zoomFactor, mode, maxUserScale);
 }
 
 /**
@@ -196,7 +174,7 @@ export function zoomToScaleAtPoint(
   anchor: ViewportPoint,
   userScale: number,
   mode: FitMode = "cover",
-  maxUserScale: number = MAP_ZOOM_MAX
+  maxUserScale: number = MAP_ZOOM_MAX,
 ): ViewportTransform {
   if (!Number.isFinite(userScale)) return transform;
 
@@ -212,7 +190,7 @@ export function zoomToScaleAtPoint(
     map,
     nextDisplayScale,
     anchor.x - mapPoint.x * nextDisplayScale,
-    anchor.y - mapPoint.y * nextDisplayScale
+    anchor.y - mapPoint.y * nextDisplayScale,
   );
 
   return {
@@ -240,7 +218,7 @@ export function transformForMapRect(
     fill?: number;
     maxUserScale?: number;
     inset?: { left?: number; right?: number; top?: number; bottom?: number };
-  } = {}
+  } = {},
 ): ViewportTransform {
   const fill = options.fill ?? 0.6;
   const inset = options.inset ?? {};
@@ -254,13 +232,8 @@ export function transformForMapRect(
   const fitScale = computeFitScale(viewport, map, mode);
   const rectW = Math.max(1, rect.w);
   const rectH = Math.max(1, rect.h);
-  const wanted = Math.min(
-    (usableW * fill) / (rectW * fitScale),
-    (usableH * fill) / (rectH * fitScale)
-  );
-  const userScale = clampUserScale(
-    Math.min(wanted, options.maxUserScale ?? MAP_ZOOM_MAX)
-  );
+  const wanted = Math.min((usableW * fill) / (rectW * fitScale), (usableH * fill) / (rectH * fitScale));
+  const userScale = clampUserScale(Math.min(wanted, options.maxUserScale ?? MAP_ZOOM_MAX));
   const displayScale = computeDisplayScale(fitScale, userScale);
 
   const centreX = left + usableW / 2;
@@ -270,7 +243,7 @@ export function transformForMapRect(
     map,
     displayScale,
     centreX - (rect.x + rect.w / 2) * displayScale,
-    centreY - (rect.y + rect.h / 2) * displayScale
+    centreY - (rect.y + rect.h / 2) * displayScale,
   );
 
   return {

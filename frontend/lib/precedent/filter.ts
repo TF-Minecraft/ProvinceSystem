@@ -17,14 +17,7 @@ import type { PrecedentCase } from "./api";
 export function caseMatchesFilter(row: PrecedentCase, filter: string): boolean {
   const needle = filter.trim().toLowerCase();
   if (!needle) return true;
-  const haystack = [
-    row.summary,
-    row.rule,
-    row.ruling,
-    row.punishment,
-    row.logged_by,
-    ...(row.players || []),
-  ]
+  const haystack = [row.summary, row.rule, row.ruling, row.punishment, row.logged_by, ...(row.players || [])]
     .join(" ")
     .toLowerCase();
   return haystack.includes(needle);
@@ -71,11 +64,7 @@ export type Tone = "positive" | "negative" | "warning" | "neutral";
 export function rulingTone(ruling: string): Tone {
   const v = ruling.trim().toLowerCase();
   if (!v) return "neutral";
-  if (
-    /(overturn|revers|pardon|acquit|denied|void|dismiss|rejected|not guilty)/.test(
-      v
-    )
-  ) {
+  if (/(overturn|revers|pardon|acquit|denied|void|dismiss|rejected|not guilty)/.test(v)) {
     return "negative";
   }
   // Whole-string match only. A substring test would swallow informative

@@ -3,19 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
-import {
-  toggleProvinceInCounty,
-  type ToggleProvinceOptions,
-} from "@/app/lib/map/editor/countyDraftActions";
+import { toggleProvinceInCounty, type ToggleProvinceOptions } from "@/app/lib/map/editor/countyDraftActions";
 import {
   removeTitleFromDraft,
   toggleChildInParent,
   type ToggleChildInParentOptions,
 } from "@/app/lib/map/editor/childTitleDraftActions";
-import {
-  type EditorTier,
-  fetchMapJson,
-} from "@/lib/map/api";
+import { type EditorTier, fetchMapJson } from "@/lib/map/api";
 
 import { EDITOR_TITLE_TIERS } from "@/app/lib/map/editor/editorTiers";
 
@@ -71,15 +65,11 @@ export function useEditorDraft({
   const [tierDrafts, setTierDrafts] = useState<TierDraftMap>(emptyTierDraftMap);
   const [tierSnapshots, setTierSnapshots] = useState<TierDraftMap>(emptyTierDraftMap);
 
-  const dirty = useMemo(
-    () => JSON.stringify(draft) !== JSON.stringify(serverSnapshot),
-    [draft, serverSnapshot]
-  );
+  const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(serverSnapshot), [draft, serverSnapshot]);
 
   const anyTierDirty = useMemo(() => {
     for (const targetTier of EDITOR_TIERS) {
-      const cached =
-        targetTier === tier ? draft : tierDrafts[targetTier];
+      const cached = targetTier === tier ? draft : tierDrafts[targetTier];
       const snapshot = tierSnapshots[targetTier];
       if (cached === null || snapshot === null) continue;
       if (JSON.stringify(cached) !== JSON.stringify(snapshot)) {
@@ -94,45 +84,37 @@ export function useEditorDraft({
     setTierSnapshots(emptyTierDraftMap());
   }, [mapId]);
 
-  const loadTier = useCallback(
-    async (targetMapId: MapId, targetTier: EditorTier, token: string | null) => {
-      if (!token) {
-        setDraft({});
-        setServerSnapshot({});
-        setSelectedId(null);
-        setLoading(false);
-        return;
-      }
+  const loadTier = useCallback(async (targetMapId: MapId, targetTier: EditorTier, token: string | null) => {
+    if (!token) {
+      setDraft({});
+      setServerSnapshot({});
+      setSelectedId(null);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchMapJson<TitleDraft>(
-          `/${targetMapId}/data/${targetTier}`,
-          { sessionToken: token }
-        );
-        const snapshot = cloneDraft(data);
-        setDraft(snapshot);
-        setServerSnapshot(snapshot);
-        setTierDrafts((current) => ({ ...current, [targetTier]: snapshot }));
-        setTierSnapshots((current) => ({ ...current, [targetTier]: snapshot }));
-        setSelectedId((current) =>
-          current && snapshot[current] ? current : null
-        );
-      } catch (err) {
-        console.error("Failed to load title tier:", err);
-        setError("Failed to load title data. Please try again.");
-        setDraft({});
-        setServerSnapshot({});
-        setTierDrafts((current) => ({ ...current, [targetTier]: {} }));
-        setTierSnapshots((current) => ({ ...current, [targetTier]: {} }));
-        setSelectedId(null);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchMapJson<TitleDraft>(`/${targetMapId}/data/${targetTier}`, { sessionToken: token });
+      const snapshot = cloneDraft(data);
+      setDraft(snapshot);
+      setServerSnapshot(snapshot);
+      setTierDrafts((current) => ({ ...current, [targetTier]: snapshot }));
+      setTierSnapshots((current) => ({ ...current, [targetTier]: snapshot }));
+      setSelectedId((current) => (current && snapshot[current] ? current : null));
+    } catch (err) {
+      console.error("Failed to load title tier:", err);
+      setError("Failed to load title data. Please try again.");
+      setDraft({});
+      setServerSnapshot({});
+      setTierDrafts((current) => ({ ...current, [targetTier]: {} }));
+      setTierSnapshots((current) => ({ ...current, [targetTier]: {} }));
+      setSelectedId(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setTierDrafts((current) => ({
@@ -188,19 +170,16 @@ export function useEditorDraft({
       setTierState(nextTier);
       setSelectedId(null);
     },
-    [dirty, tier]
+    [dirty, tier],
   );
 
-  const updateEntry = useCallback(
-    (id: string, patch: Partial<EditorTitleEntry>) => {
-      setDraft((current) => {
-        const entry = current[id];
-        if (!entry) return current;
-        return { ...current, [id]: { ...entry, ...patch } };
-      });
-    },
-    []
-  );
+  const updateEntry = useCallback((id: string, patch: Partial<EditorTitleEntry>) => {
+    setDraft((current) => {
+      const entry = current[id];
+      if (!entry) return current;
+      return { ...current, [id]: { ...entry, ...patch } };
+    });
+  }, []);
 
   const addTitle = useCallback((id: string, entry: EditorTitleEntry) => {
     setDraft((current) => ({ ...current, [id]: entry }));
@@ -212,37 +191,27 @@ export function useEditorDraft({
     setSelectedId((current) => (current === id ? null : current));
   }, []);
 
-  const toggleCountyProvince = useCallback(
-    (countyId: string, provinceId: number, options?: ToggleProvinceOptions) => {
-      setDraft((current) => {
-        const entry = current[countyId];
-        if (!entry) return current;
-        return {
-          ...current,
-          [countyId]: toggleProvinceInCounty(entry, provinceId, options),
-        };
-      });
-    },
-    []
-  );
+  const toggleCountyProvince = useCallback((countyId: string, provinceId: number, options?: ToggleProvinceOptions) => {
+    setDraft((current) => {
+      const entry = current[countyId];
+      if (!entry) return current;
+      return {
+        ...current,
+        [countyId]: toggleProvinceInCounty(entry, provinceId, options),
+      };
+    });
+  }, []);
 
-  const toggleChildMember = useCallback(
-    (
-      parentId: string,
-      childId: string,
-      options?: ToggleChildInParentOptions
-    ) => {
-      setDraft((current) => {
-        const entry = current[parentId];
-        if (!entry) return current;
-        return {
-          ...current,
-          [parentId]: toggleChildInParent(entry, childId, options),
-        };
-      });
-    },
-    []
-  );
+  const toggleChildMember = useCallback((parentId: string, childId: string, options?: ToggleChildInParentOptions) => {
+    setDraft((current) => {
+      const entry = current[parentId];
+      if (!entry) return current;
+      return {
+        ...current,
+        [parentId]: toggleChildInParent(entry, childId, options),
+      };
+    });
+  }, []);
 
   const getTierDraftsForExport = useCallback((): TierDraftMap => {
     return {

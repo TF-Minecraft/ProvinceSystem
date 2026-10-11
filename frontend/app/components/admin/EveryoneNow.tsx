@@ -73,7 +73,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
               ? { kind: gate }
               : prev.kind === "ready"
                 ? { ...prev, error: adminErrorMessage(err) }
-                : { kind: "failed", message: adminErrorMessage(err) }
+                : { kind: "failed", message: adminErrorMessage(err) },
           );
         });
     };
@@ -100,10 +100,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
   // The server's clock now: its answer's time plus however long ago that answer came.
   const serverNow =
     load.kind === "ready" ? (load.data.as_of ?? load.fetchedAt) + Math.max(0, clock - load.fetchedAt) : clock;
-  const positions = useMemo(
-    () => (data ? latestPositions(data, data.as_of ?? data.until, hold) : []),
-    [data, hold]
-  );
+  const positions = useMemo(() => (data ? latestPositions(data, data.as_of ?? data.until, hold) : []), [data, hold]);
   const trails = useMemo<MovementTrail[]>(
     () =>
       positions.map((p) => ({
@@ -112,7 +109,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
         colour: playerColour(p.uuid),
         stretches: [{ world: p.world, samples: [{ time: p.time, x: p.x, y: p.y, z: p.z, action: p.action }] }],
       })),
-    [positions]
+    [positions],
   );
 
   if (load.kind === "forbidden") {
@@ -198,7 +195,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
             {data
               ? `${positions.length} ${positions.length === 1 ? "player" : "players"} seen recently · updated ${formatClock(
                   data.as_of ?? data.until,
-                  true
+                  true,
                 )}`
               : "Loading…"}
           </p>
@@ -211,7 +208,10 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
             onChange={(e) => setQuery(e.target.value)}
           />
           {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
-          <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible" aria-label="Players online">
+          <ul
+            className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"
+            aria-label="Players online"
+          >
             {listed.map((p) => (
               <li
                 key={p.uuid}

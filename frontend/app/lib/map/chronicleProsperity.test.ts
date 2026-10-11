@@ -9,12 +9,7 @@ import {
   chronicleProsperityRgb,
 } from "./chronicleProsperity";
 
-const unpack = (value: number) => [
-  (value >>> 24) & 0xff,
-  (value >>> 16) & 0xff,
-  (value >>> 8) & 0xff,
-  value & 0xff,
-];
+const unpack = (value: number) => [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
 
 describe("chronicleProsperityFraction", () => {
   it("puts an unprospering province exactly on the first stop", () => {
@@ -25,8 +20,7 @@ describe("chronicleProsperityFraction", () => {
     // The point of the fixed domain: a colour means the same number on every
     // frame, so a province warming over a timelapse warms on screen.
     expect(chronicleProsperityFraction(CHRONICLE_PROSPERITY_DOMAIN_MAX)).toBe(1);
-    expect(chronicleProsperityFraction(CHRONICLE_PROSPERITY_DOMAIN_MAX * 10))
-      .toBe(1);
+    expect(chronicleProsperityFraction(CHRONICLE_PROSPERITY_DOMAIN_MAX * 10)).toBe(1);
   });
 
   it("rises monotonically", () => {
@@ -55,16 +49,13 @@ describe("chronicleProsperityFraction", () => {
 describe("chronicleProsperityRgb", () => {
   it("lands on the ramp's own ends", () => {
     expect(chronicleProsperityRgb(0)).toEqual([...CHRONICLE_PROSPERITY_RAMP[0]!]);
-    expect(chronicleProsperityRgb(1)).toEqual([
-      ...CHRONICLE_PROSPERITY_RAMP[CHRONICLE_PROSPERITY_RAMP.length - 1]!,
-    ]);
+    expect(chronicleProsperityRgb(1)).toEqual([...CHRONICLE_PROSPERITY_RAMP[CHRONICLE_PROSPERITY_RAMP.length - 1]!]);
   });
 
   it("rises in luminance end to end, which is what makes it readable to everyone", () => {
     // Viridis is monotonic in lightness, so the ordering survives greyscale and
     // every common colour vision deficiency. A red-green ramp would not.
-    const luminance = (rgb: number[]) =>
-      0.299 * rgb[0]! + 0.587 * rgb[1]! + 0.114 * rgb[2]!;
+    const luminance = (rgb: number[]) => 0.299 * rgb[0]! + 0.587 * rgb[1]! + 0.114 * rgb[2]!;
     let previous = -1;
     for (let i = 0; i <= 20; i++) {
       const value = luminance(chronicleProsperityRgb(i / 20));
@@ -76,9 +67,7 @@ describe("chronicleProsperityRgb", () => {
   it("clamps out-of-range and unusable fractions", () => {
     expect(chronicleProsperityRgb(-1)).toEqual(chronicleProsperityRgb(0));
     expect(chronicleProsperityRgb(4)).toEqual(chronicleProsperityRgb(1));
-    expect(chronicleProsperityRgb(Number.NaN)).toEqual(
-      chronicleProsperityRgb(0)
-    );
+    expect(chronicleProsperityRgb(Number.NaN)).toEqual(chronicleProsperityRgb(0));
   });
 });
 

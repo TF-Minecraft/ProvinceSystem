@@ -28,17 +28,11 @@ import WardrobeSlotModal from "./WardrobeSlotModal";
 
 const SLOT_ORDER = ["base", "extra_1", "extra_2", "masked"] as const;
 
-export type WardrobeDraftFiles = Partial<
-  Record<(typeof SLOT_ORDER)[number], File | null>
->;
+export type WardrobeDraftFiles = Partial<Record<(typeof SLOT_ORDER)[number], File | null>>;
 
-export type WardrobeDraftNames = Partial<
-  Record<(typeof SLOT_ORDER)[number], string>
->;
+export type WardrobeDraftNames = Partial<Record<(typeof SLOT_ORDER)[number], string>>;
 
-export type WardrobeDraftModels = Partial<
-  Record<(typeof SLOT_ORDER)[number], ArmModel>
->;
+export type WardrobeDraftModels = Partial<Record<(typeof SLOT_ORDER)[number], ArmModel>>;
 
 type LiveProps = {
   mode: "live";
@@ -78,10 +72,7 @@ function slotUnlocked(slot: string, swappable: number): boolean {
 }
 
 /** Swappable fill order: Skin 2 needs Base, Skin 3 needs Skin 2. */
-function fillOrderOk(
-  slot: string,
-  filled: (id: string) => boolean
-): { ok: boolean; message?: string } {
+function fillOrderOk(slot: string, filled: (id: string) => boolean): { ok: boolean; message?: string } {
   if (slot === "extra_1" && !filled("base")) {
     return { ok: false, message: "Upload Base before Skin 2" };
   }
@@ -97,7 +88,7 @@ function compactDraftSwappable(
   files: WardrobeDraftFiles,
   names: WardrobeDraftNames,
   models: WardrobeDraftModels,
-  cleared: string
+  cleared: string,
 ): {
   files: WardrobeDraftFiles;
   names: WardrobeDraftNames;
@@ -111,8 +102,7 @@ function compactDraftSwappable(
     delete nextModels.masked;
     return { files: nextFiles, names: nextNames, models: nextModels };
   }
-  const packed: { id: string; file: File; name?: string; model?: ArmModel }[] =
-    [];
+  const packed: { id: string; file: File; name?: string; model?: ArmModel }[] = [];
   for (const id of SWAPPABLE_ORDER) {
     if (id === cleared) continue;
     const f = files[id];
@@ -160,17 +150,13 @@ function emptySlots(swappable: number): WardrobeSlot[] {
 
 function hasPendingSlots(data: WardrobeResponse | null): boolean {
   if (!data) return false;
-  return data.slots.some(
-    (s) => s.filled && s.unlocked && Boolean(s.apply_pending)
-  );
+  return data.slots.some((s) => s.filled && s.unlocked && Boolean(s.apply_pending));
 }
 
 export default function WardrobeEditor(props: WardrobeEditorProps) {
   const isDraft = props.mode === "draft";
   const slotLimits = props.slotLimits;
-  const swappable = isDraft
-    ? Math.max(1, Math.min(3, props.swappableSlots ?? 1))
-    : 1;
+  const swappable = isDraft ? Math.max(1, Math.min(3, props.swappableSlots ?? 1)) : 1;
 
   const [wardrobe, setWardrobe] = useState<WardrobeResponse | null>(null);
   const [textures, setTextures] = useState<Record<string, string>>({});
@@ -198,33 +184,25 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           .filter((s) => s.filled)
           .map(async (s) => {
             try {
-              next[s.slot] = await fetchWardrobeTextureBlob(
-                token,
-                characterId,
-                s.slot,
-                s.updated_at ?? Date.now()
-              );
+              next[s.slot] = await fetchWardrobeTextureBlob(token, characterId, s.slot, s.updated_at ?? Date.now());
             } catch {
               /* leave empty */
             }
-          })
+          }),
       );
       setTextures((prev) => {
         revokeTextures(prev);
         return next;
       });
     },
-    [revokeTextures]
+    [revokeTextures],
   );
 
   // Live load
   useEffect(() => {
     if (isDraft) return;
     const { characterId, sessionToken, uiDev } = props;
-    const uiDevUnlocked = Math.max(
-      1,
-      Math.min(3, Number(props.uiDevSwappableSlots) || 1)
-    );
+    const uiDevUnlocked = Math.max(1, Math.min(3, Number(props.uiDevSwappableSlots) || 1));
     let cancelled = false;
     setError(null);
     void (async () => {
@@ -251,7 +229,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
             ? err.message
             : err instanceof Error
               ? err.message
-              : "Failed to load wardrobe"
+              : "Failed to load wardrobe",
         );
       }
     })();
@@ -367,8 +345,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     liveSwappable,
   ]);
 
-  const activeSlot =
-    !isDraft && wardrobe?.active_slot ? String(wardrobe.active_slot) : null;
+  const activeSlot = !isDraft && wardrobe?.active_slot ? String(wardrobe.active_slot) : null;
   const modalData = modalSlot ? slotsById.get(modalSlot) : null;
   const swappableIds = SLOT_ORDER.filter((s) => s !== "masked");
 
@@ -381,9 +358,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
   }) {
     if (!modalSlot) return;
     if (isDraft) {
-      const order = fillOrderOk(modalSlot, (id) =>
-        Boolean(props.draftFiles[id as keyof WardrobeDraftFiles])
-      );
+      const order = fillOrderOk(modalSlot, (id) => Boolean(props.draftFiles[id as keyof WardrobeDraftFiles]));
       if (input.file && !order.ok) {
         setModalError(order.message || "Upload earlier skins first");
         return;
@@ -400,10 +375,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           try {
             setSaving(true);
             const template = await fetchMaskedTemplateBlob(token);
-            const maskedFile = await composeMaskedFromBase(
-              input.file,
-              template
-            );
+            const maskedFile = await composeMaskedFromBase(input.file, template);
             nextFiles = { ...nextFiles, masked: maskedFile };
             props.onAutoMaskedChange?.(true);
           } catch (err) {
@@ -412,7 +384,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                 ? err.message
                 : err instanceof Error
                   ? err.message
-                  : "Could not create masked skin"
+                  : "Could not create masked skin",
             );
             setSaving(false);
             return;
@@ -447,9 +419,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       setModalError("UI dev mode cannot upload.");
       return;
     }
-    const order = fillOrderOk(modalSlot, (id) =>
-      Boolean(slotsById.get(id)?.filled)
-    );
+    const order = fillOrderOk(modalSlot, (id) => Boolean(slotsById.get(id)?.filled));
     if (input.file && !order.ok) {
       setModalError(order.message || "Upload earlier skins first");
       return;
@@ -471,27 +441,15 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       }
       let w: WardrobeResponse;
       if (uploadFile) {
-        w = await uploadWardrobeSlot(
-          sessionToken,
-          characterId,
-          modalSlot,
-          uploadFile,
-          input.displayName,
-          {
-            createMasked: input.createMasked,
-            model: armModelToWardrobeModel(input.armModel),
-          }
-        );
+        w = await uploadWardrobeSlot(sessionToken, characterId, modalSlot, uploadFile, input.displayName, {
+          createMasked: input.createMasked,
+          model: armModelToWardrobeModel(input.armModel),
+        });
         if (input.equip && modalSlot !== "masked") {
           w = await setWardrobeActive(sessionToken, characterId, modalSlot);
         }
       } else {
-        w = await renameWardrobeSlot(
-          sessionToken,
-          characterId,
-          modalSlot,
-          input.displayName
-        );
+        w = await renameWardrobeSlot(sessionToken, characterId, modalSlot, input.displayName);
       }
       setWardrobe(w);
       if (uploadFile) {
@@ -500,11 +458,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       setModalSlot(null);
     } catch (err) {
       setModalError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Upload failed"
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Upload failed",
       );
     } finally {
       setSaving(false);
@@ -514,12 +468,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
   async function handleClear() {
     if (!modalSlot) return;
     if (isDraft) {
-      const compacted = compactDraftSwappable(
-        props.draftFiles,
-        props.draftNames,
-        props.draftModels,
-        modalSlot
-      );
+      const compacted = compactDraftSwappable(props.draftFiles, props.draftNames, props.draftModels, modalSlot);
       props.onDraftFilesChange(compacted.files);
       props.onDraftNamesChange(compacted.names);
       props.onDraftModelsChange(compacted.models);
@@ -540,11 +489,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       setModalSlot(null);
     } catch (err) {
       setModalError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Clear failed"
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Clear failed",
       );
     } finally {
       setSaving(false);
@@ -558,9 +503,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       return;
     }
     const filled = (sid: string) =>
-      isDraft
-        ? Boolean(props.draftFiles[sid as keyof WardrobeDraftFiles])
-        : Boolean(slotsById.get(sid)?.filled);
+      isDraft ? Boolean(props.draftFiles[sid as keyof WardrobeDraftFiles]) : Boolean(slotsById.get(sid)?.filled);
     // Opening empty extra out of order → block; opening filled is ok (edit/clear)
     if (!filled(id)) {
       const order = fillOrderOk(id, filled);
@@ -585,13 +528,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       const w = await setWardrobeActive(sessionToken, characterId, slot);
       setWardrobe(w);
     } catch (err) {
-      setError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Equip failed"
-      );
+      setError(err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Equip failed");
     } finally {
       setEquipping(null);
     }
@@ -611,16 +548,12 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
 
       <section>
         {!isDraft ? (
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-            Skins
-          </h2>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">Skins</h2>
         ) : null}
         <div className="flex flex-wrap gap-4">
           {swappableIds.map((id) => {
             const slot = slotsById.get(id)!;
-            const lock = !slot.unlocked
-              ? lockLabelForSlot(id, slotLimits)
-              : null;
+            const lock = !slot.unlocked ? lockLabelForSlot(id, slotLimits) : null;
             return (
               <WardrobeSlotFrame
                 key={id}
@@ -632,10 +565,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                 lockPlain={lock?.plain}
                 onOpen={() => tryOpenSlot(id)}
                 onEquip={
-                  !isDraft &&
-                  slot.filled &&
-                  slot.unlocked &&
-                  !slot.apply_pending
+                  !isDraft && slot.filled && slot.unlocked && !slot.apply_pending
                     ? () => void handleEquip(id)
                     : undefined
                 }
@@ -647,12 +577,8 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-          Masked
-        </h2>
-        <p className="mb-3 text-sm text-[var(--tfmc-mist)]">
-          Worn automatically while you wear a mask.
-        </p>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">Masked</h2>
+        <p className="mb-3 text-sm text-[var(--tfmc-mist)]">Worn automatically while you wear a mask.</p>
         {(() => {
           const slot = slotsById.get("masked")!;
           return (
@@ -673,35 +599,18 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       <WardrobeSlotModal
         open={Boolean(modalSlot && modalData)}
         slotId={modalSlot || ""}
-        slotLabel={
-          modalSlot && modalData
-            ? labelFor(modalSlot, modalData)
-            : "Skin"
-        }
+        slotLabel={modalSlot && modalData ? labelFor(modalSlot, modalData) : "Skin"}
         filled={Boolean(modalData?.filled)}
         canEquip={!isDraft && modalSlot !== "masked"}
-        defaultEquipOnSave={
-          !isDraft &&
-          modalSlot !== "masked" &&
-          (!activeSlot || activeSlot === modalSlot)
-        }
+        defaultEquipOnSave={!isDraft && modalSlot !== "masked" && (!activeSlot || activeSlot === modalSlot)}
         canCreateMasked={modalSlot === "base"}
-        defaultCreateMasked={
-          modalSlot === "base" && !Boolean(slotsById.get("masked")?.filled)
-        }
+        defaultCreateMasked={modalSlot === "base" && !Boolean(slotsById.get("masked")?.filled)}
         defaultArmModel={
           isDraft && modalSlot
-            ? props.draftModels[modalSlot as keyof WardrobeDraftModels] ??
-              "default"
+            ? (props.draftModels[modalSlot as keyof WardrobeDraftModels] ?? "default")
             : wardrobeSlotToArmModel(modalData?.model)
         }
-        sessionToken={
-          isDraft
-            ? props.sessionToken
-            : props.mode === "live"
-              ? props.sessionToken
-              : null
-        }
+        sessionToken={isDraft ? props.sessionToken : props.mode === "live" ? props.sessionToken : null}
         existingTextureSrc={modalSlot ? textures[modalSlot] || null : null}
         initialDisplayName={
           modalSlot && modalData?.custom_name
@@ -710,11 +619,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
               ? String(props.draftNames[modalSlot as keyof WardrobeDraftNames] || "")
               : ""
         }
-        namePlaceholder={
-          modalSlot
-            ? WARDROBE_DEFAULT_LABELS[modalSlot] || "Skin"
-            : "Skin"
-        }
+        namePlaceholder={modalSlot ? WARDROBE_DEFAULT_LABELS[modalSlot] || "Skin" : "Skin"}
         saving={saving}
         error={modalError}
         onClose={() => {

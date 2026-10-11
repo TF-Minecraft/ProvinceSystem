@@ -50,12 +50,7 @@ const ESTIMATE = {
 
 describe("ChroniclePanels exports", () => {
   it("still exports every class token the studio imports by name", () => {
-    for (const token of [
-      chroniclePanelClass,
-      primaryButtonClass,
-      quietButtonClass,
-      selectClass,
-    ]) {
+    for (const token of [chroniclePanelClass, primaryButtonClass, quietButtonClass, selectClass]) {
       expect(typeof token).toBe("string");
       expect(token.length).toBeGreaterThan(0);
     }
@@ -67,15 +62,9 @@ describe("ChronicleSteps", () => {
   it("goes back to a step reached, but not on to one that is not", () => {
     const onSelect = vi.fn();
     render(
-      <ChronicleSteps
-        current="dates"
-        reachable={{ layers: true, dates: true, watch: false }}
-        onSelect={onSelect}
-      />
+      <ChronicleSteps current="dates" reachable={{ layers: true, dates: true, watch: false }} onSelect={onSelect} />,
     );
-    expect(screen.getByRole("button", { name: /Dates/ }).getAttribute("aria-current")).toBe(
-      "step"
-    );
+    expect(screen.getByRole("button", { name: /Dates/ }).getAttribute("aria-current")).toBe("step");
     expect(screen.getByRole("button", { name: /Watch/ }).hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: /Layers/ }));
     expect(onSelect).toHaveBeenCalledWith("layers");
@@ -95,16 +84,12 @@ describe("ChronicleTogglePanel", () => {
         focusNationId=""
         onFocusChange={noop}
         focusDisabledReason={null}
-      />
+      />,
     );
-    expect(screen.getByRole("switch", { name: "Nation fill" }).getAttribute("aria-checked")).toBe(
-      "true"
-    );
+    expect(screen.getByRole("switch", { name: "Nation fill" }).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByRole("switch", { name: "Wars" }));
     expect(onToggle).toHaveBeenCalledWith("wars");
-    expect(screen.getByRole("switch", { name: "Nation names" }).hasAttribute("disabled")).toBe(
-      true
-    );
+    expect(screen.getByRole("switch", { name: "Nation names" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("Nation names aren't available for this map.")).toBeDefined();
   });
 });
@@ -126,16 +111,14 @@ describe("ChronicleRangePanel", () => {
         renderSize={900}
         onRenderSizeChange={noop}
         blockReason={null}
-      />
+      />,
     );
     return { onStartChange, onEndChange };
   }
 
   it("shows the span a preset matches, and sets another from the latest day", () => {
     const { onStartChange, onEndChange } = renderRange();
-    expect(
-      screen.getByRole("button", { name: "Last 7 days" }).getAttribute("aria-pressed")
-    ).toBe("true");
+    expect(screen.getByRole("button", { name: "Last 7 days" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(onStartChange).toHaveBeenCalledWith(DAYS[10]);
     expect(onEndChange).toHaveBeenCalledWith(DAYS[39]);
@@ -152,12 +135,7 @@ describe("ChronicleRangePanel", () => {
 
 describe("ChronicleBuildPanel", () => {
   it("shows how far the build has got", () => {
-    render(
-      <ChronicleBuildPanel
-        progress={{ completed: 5, total: 20, day: "2026-08-05" }}
-        error={null}
-      />
-    );
+    render(<ChronicleBuildPanel progress={{ completed: 5, total: 20, day: "2026-08-05" }} error={null} />);
     expect(screen.getByText("25%")).toBeDefined();
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("5");
   });
@@ -181,7 +159,7 @@ describe("ChroniclePlayer", () => {
         loop
         incomplete={false}
         {...props}
-      />
+      />,
     );
     return props;
   }
@@ -198,9 +176,7 @@ describe("ChroniclePlayer", () => {
 
   it("cannot step past either end", () => {
     renderPlayer(0);
-    expect(screen.getByRole("button", { name: "Previous day" }).hasAttribute("disabled")).toBe(
-      true
-    );
+    expect(screen.getByRole("button", { name: "Previous day" }).hasAttribute("disabled")).toBe(true);
   });
 
   it("cycles the speed and wraps back to the slowest", () => {
@@ -242,13 +218,11 @@ describe("ChroniclePlaybackPanel", () => {
         gifStatus={null}
         gifError={null}
         gifNotice={null}
-      />
+      />,
     );
     const corners = screen.getByRole("radiogroup", { name: "Watermark position" });
     expect(corners.querySelectorAll('[role="radio"]').length).toBe(4);
-    expect(screen.getByRole("radio", { name: "Bottom left" }).getAttribute("aria-checked")).toBe(
-      "true"
-    );
+    expect(screen.getByRole("radio", { name: "Bottom left" }).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: "Top right" }));
     expect(onGifCornerChange).toHaveBeenCalledWith("top-right");
     fireEvent.click(screen.getByRole("switch", { name: "Logo" }));

@@ -45,18 +45,24 @@ recipes:
   });
 
   it("reads the vanilla origin of a Cooking food", () => {
-    const ref = parseRef('cooking{item="seafood(type=seafood_whole;origin=Tropical Fish)",amount=64,display="Tropical Fish"}');
+    const ref = parseRef(
+      'cooking{item="seafood(type=seafood_whole;origin=Tropical Fish)",amount=64,display="Tropical Fish"}',
+    );
     expect(cookingOrigin(ref)).toBe("Tropical_Fish");
   });
 });
 
 describe("station recipe build", () => {
   let dir;
-  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
 
   it("shows a Cooking food under its own name with its vanilla identity", () => {
     dir = mkdtempSync(path.join(tmpdir(), "stations-"));
-    writeFileSync(path.join(dir, "animal-station.yml"), `
+    writeFileSync(
+      path.join(dir, "animal-station.yml"),
+      `
 recipes:
     meat-treat:
         output:
@@ -66,7 +72,8 @@ recipes:
         ingredients:
         - 'cooking{item="meat(type=meat_red_meat;origin=Beef)",amount=2,display="Beef Steak"}'
         - 'vanilla{type=BEEF,amount=1}'
-`);
+`,
+    );
     const { recipes } = build({ sourceDir: dir, textureIndex: { byName: new Map() } });
     const [steak, beef] = recipes[0].ingredients;
     expect(steak).toMatchObject({ name: "Beef Steak", qty: 2, sourceId: "vanilla:beef" });
@@ -76,7 +83,9 @@ recipes:
 
   it("leaves hidden outputs off the wiki", () => {
     dir = mkdtempSync(path.join(tmpdir(), "stations-"));
-    writeFileSync(path.join(dir, "tool-station.yml"), `
+    writeFileSync(
+      path.join(dir, "tool-station.yml"),
+      `
 recipes:
     yellow-chip-spruce:
         output: "itemsadder{id=yellow_chip}"
@@ -86,7 +95,8 @@ recipes:
         output: 'vanilla{type=STICK,amount=4}'
         ingredients:
         - 'vanilla{type=OAK_PLANKS,amount=2}'
-`);
+`,
+    );
     const { recipes } = build({ sourceDir: dir, textureIndex: { byName: new Map() } });
     expect(recipes.map((recipe) => recipe.output.name)).toEqual(["Stick"]);
     expect(isHiddenOutput('itemsadder{id="tfmc_games:yellow_chip"}')).toBe(true);

@@ -101,7 +101,12 @@ export type LpPlayer = {
     inherits: string[];
     nodes: LpShownNode[];
     tracks: LpTrackPosition[];
-    account: { discord_user_id: string; discord_username: string | null; user_id: number | null; role: StaffRole | null } | null;
+    account: {
+      discord_user_id: string;
+      discord_username: string | null;
+      user_id: number | null;
+      role: StaffRole | null;
+    } | null;
   };
   groups: { name: string; weight: number | null; min_role: "admin" | "root"; patreon: boolean; addable: boolean }[];
   rights: LpRights & { change_this_player: boolean; admin_permissions: string[] };
@@ -147,7 +152,9 @@ export function getLuckPerms(): Promise<LpOverview> {
 }
 
 export function getLpPlayers(params: { q?: string; group?: string; page?: number }): Promise<LpPlayerPage> {
-  return adminRequest(`/admin/luckperms/players${query({ q: params.q?.trim(), group: params.group, page: params.page })}`);
+  return adminRequest(
+    `/admin/luckperms/players${query({ q: params.q?.trim(), group: params.group, page: params.page })}`,
+  );
 }
 
 export function getLpPlayer(uuid: string): Promise<LpPlayer> {
@@ -162,7 +169,12 @@ export function getLpChange(id: number): Promise<LpChange> {
   return adminRequest(`/admin/luckperms/changes/${id}`);
 }
 
-export function submitLpChange(targetType: LpTargetType, target: string, ops: LpOp[], reason: string): Promise<LpChange> {
+export function submitLpChange(
+  targetType: LpTargetType,
+  target: string,
+  ops: LpOp[],
+  reason: string,
+): Promise<LpChange> {
   return adminRequest("/admin/luckperms/changes", {
     method: "POST",
     body: JSON.stringify({ target_type: targetType, target, ops, reason }),
@@ -180,7 +192,11 @@ const POLL_LIMIT_MS = 330_000;
 /** Wait until the change is settled: applied, failed, expired or of unknown outcome. */
 export async function waitForChange(
   id: number,
-  { signal, intervalMs = POLL_MS, limitMs = POLL_LIMIT_MS }: { signal?: AbortSignal; intervalMs?: number; limitMs?: number } = {}
+  {
+    signal,
+    intervalMs = POLL_MS,
+    limitMs = POLL_LIMIT_MS,
+  }: { signal?: AbortSignal; intervalMs?: number; limitMs?: number } = {},
 ): Promise<LpChange> {
   const started = Date.now();
   let change = await getLpChange(id);
@@ -254,12 +270,18 @@ export function contextLabel(contexts: Record<string, string[]>): string {
     .join(", ");
 }
 
-const SERVER_NAMES = new Map([["main", "Main"], ["dev", "Dev"], ["tutorial", "Tutorial"]]);
+const SERVER_NAMES = new Map([
+  ["main", "Main"],
+  ["dev", "Dev"],
+  ["tutorial", "Tutorial"],
+]);
 
 /** contextLabel for lists: known servers by name ("Main"), anything else as key=value. */
 export function shortContextLabel(contexts: Record<string, string[]>): string {
   return Object.entries(contexts)
-    .flatMap(([key, values]) => values.map((value) => (key === "server" && SERVER_NAMES.get(value)) || `${key}=${value}`))
+    .flatMap(([key, values]) =>
+      values.map((value) => (key === "server" && SERVER_NAMES.get(value)) || `${key}=${value}`),
+    )
     .join(", ");
 }
 
@@ -314,7 +336,14 @@ const COLOURS: Record<string, string> = {
   f: "#FFFFFF",
 };
 
-export type McSegment = { text: string; colour: string | null; bold: boolean; italic: boolean; underline: boolean; strike: boolean };
+export type McSegment = {
+  text: string;
+  colour: string | null;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strike: boolean;
+};
 
 /** Split "&6Noble &lLord" (or § codes, or &#rrggbb) into styled runs. Unknown codes stay as text. */
 export function parseMcText(text: string): McSegment[] {
@@ -338,7 +367,8 @@ export function parseMcText(text: string): McSegment[] {
       const code = text[i + 1].toLowerCase();
       if (code in COLOURS || "lmnokr".includes(code)) {
         flush();
-        if (code in COLOURS) style = { colour: COLOURS[code], bold: false, italic: false, underline: false, strike: false };
+        if (code in COLOURS)
+          style = { colour: COLOURS[code], bold: false, italic: false, underline: false, strike: false };
         else if (code === "l") style = { ...style, bold: true };
         else if (code === "o") style = { ...style, italic: true };
         else if (code === "n") style = { ...style, underline: true };

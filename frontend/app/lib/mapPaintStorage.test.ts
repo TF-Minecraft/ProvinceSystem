@@ -97,11 +97,7 @@ describe("parsePaintDocument", () => {
       ],
     });
     // "thick" maps to 7, above the slider's ceiling, so it clamps.
-    expect(parsePaintDocument(raw).map((s) => (s as PaintBrushShape).width)).toEqual([
-      2,
-      4,
-      PAINT_WIDTH_MAX,
-    ]);
+    expect(parsePaintDocument(raw).map((s) => (s as PaintBrushShape).width)).toEqual([2, 4, PAINT_WIDTH_MAX]);
   });
 
   it("still drops a shape whose width is neither a number nor a known preset", () => {
@@ -168,16 +164,10 @@ describe("importPaintDocument", () => {
     expect(importPaintDocument("")).toEqual({ ok: false, reason: "That file is empty." });
     expect(importPaintDocument("not json").ok).toBe(false);
     expect(importPaintDocument("[]").ok).toBe(false);
-    const wrongVersion = importPaintDocument(
-      JSON.stringify({ version: 99, shapes: [stamp] })
-    );
+    const wrongVersion = importPaintDocument(JSON.stringify({ version: 99, shapes: [stamp] }));
     expect(wrongVersion.ok).toBe(false);
     if (!wrongVersion.ok) expect(wrongVersion.reason).toContain("version 99");
-    expect(
-      importPaintDocument(
-        JSON.stringify({ version: PAINT_STORAGE_VERSION, shapes: [] })
-      ).ok
-    ).toBe(false);
+    expect(importPaintDocument(JSON.stringify({ version: PAINT_STORAGE_VERSION, shapes: [] })).ok).toBe(false);
   });
 
   it("reports how many unreadable drawings it dropped", () => {

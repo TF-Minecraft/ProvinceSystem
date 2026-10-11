@@ -29,28 +29,16 @@ export default function HubPage() {
           >
             Map
           </Link>
-          <Link
-            href="/skins"
-            className={hubOutlineButtonClass}
-          >
+          <Link href="/skins" className={hubOutlineButtonClass}>
             Skins
           </Link>
-          <Link
-            href="/drinks"
-            className={hubOutlineButtonClass}
-          >
+          <Link href="/drinks" className={hubOutlineButtonClass}>
             Drinks
           </Link>
-          <Link
-            href="/profile"
-            className={hubOutlineButtonClass}
-          >
+          <Link href="/profile" className={hubOutlineButtonClass}>
             Profile
           </Link>
-          <Link
-            href="/updates"
-            className={hubOutlineButtonClass}
-          >
+          <Link href="/updates" className={hubOutlineButtonClass}>
             Updates
           </Link>
           <a

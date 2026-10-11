@@ -15,7 +15,7 @@ import {
 } from "../../../lib/admin/api";
 
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../../../lib/admin/api")>(),
+  ...(await importOriginal<typeof import("../../../lib/admin/api")>()),
   getAdminMe: vi.fn(),
   getStaff: vi.fn(),
   lookupAccounts: vi.fn(),
@@ -31,7 +31,12 @@ const ADMIN: AdminMe = {
   assignable_roles: ["player", "mod"],
 };
 
-function acct(user_id: number, name: string, role: AdminAccount["role"], minecraft: string | null = null): AdminAccount {
+function acct(
+  user_id: number,
+  name: string,
+  role: AdminAccount["role"],
+  minecraft: string | null = null,
+): AdminAccount {
   return {
     user_id,
     discord_user_id: String(1000 + user_id),
@@ -65,7 +70,11 @@ it.each([
 
 it("lists staff and only offers actions on accounts below you", async () => {
   vi.mocked(getAdminMe).mockResolvedValue(ADMIN);
-  vi.mocked(getStaff).mockResolvedValue([acct(9, "rory", "root"), acct(1, "adam", "admin"), acct(5, "mona", "mod", "MonaMC")]);
+  vi.mocked(getStaff).mockResolvedValue([
+    acct(9, "rory", "root"),
+    acct(1, "adam", "admin"),
+    acct(5, "mona", "mod", "MonaMC"),
+  ]);
   render(<AdminPanel />);
   const staff = await screen.findByRole("region", { name: "Staff" });
   expect(within(staff).getByLabelText("rory").textContent).not.toContain("Change role");
@@ -95,7 +104,12 @@ it("changes a role with a reason and reloads", async () => {
 });
 
 it("shows the server's refusal in plain words", async () => {
-  vi.mocked(getAdminMe).mockResolvedValue({ ...ADMIN, role: "mod", capabilities: ["view_admin", "revoke_sessions"], assignable_roles: [] });
+  vi.mocked(getAdminMe).mockResolvedValue({
+    ...ADMIN,
+    role: "mod",
+    capabilities: ["view_admin", "revoke_sessions"],
+    assignable_roles: [],
+  });
   vi.mocked(getStaff).mockResolvedValue([]);
   vi.mocked(lookupAccounts).mockResolvedValue([acct(7, "pat", "player")]);
   vi.mocked(revokeSessions).mockRejectedValue(new AccountApiError("target_outranks_you", 403));

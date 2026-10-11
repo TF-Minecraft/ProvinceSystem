@@ -58,7 +58,8 @@ const placeholderClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent
 const tabClass = "rounded-sm px-3 py-1.5 text-sm font-medium transition-colors";
 const activeTabClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-cream)]";
 const idleTabClass = "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]";
-const tabBarClass = "mt-8 flex flex-wrap gap-2 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pb-3";
+const tabBarClass =
+  "mt-8 flex flex-wrap gap-2 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pb-3";
 
 /** Longest the page waits for the activity line and Profile before showing without them. */
 const EXTRAS_WAIT_MS = 2500;
@@ -124,12 +125,12 @@ function activityParts(overview: AccountOverview | null): ReactNode[] {
       <span key="seen">
         <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[var(--tfmc-accent)]" />
         Online now{where}
-      </span>
+      </span>,
     );
   } else if (activity.last_seen) {
     const ago = formatAgo(activity.last_seen);
     parts.push(
-      <span key="seen">{activity.server_label ? `Last on ${activity.server_label} ${ago}` : `Last seen ${ago}`}</span>
+      <span key="seen">{activity.server_label ? `Last on ${activity.server_label} ${ago}` : `Last seen ${ago}`}</span>,
     );
   }
   if (activity.first_seen) parts.push(<span key="since">playing since {formatDate(activity.first_seen)}</span>);
@@ -186,7 +187,9 @@ export default function ProfilePanel({
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Race and class names for creates and rejects the roster hasn't named yet.
-  const [catalog, setCatalog] = useState<CreationCatalog | null>(uiDev ? (creationCatalogDev as CreationCatalog) : null);
+  const [catalog, setCatalog] = useState<CreationCatalog | null>(
+    uiDev ? (creationCatalogDev as CreationCatalog) : null,
+  );
   const [overview, setOverview] = useState<AccountOverview | null>(null);
   const [overviewFor, setOverviewFor] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -211,7 +214,7 @@ export default function ProfilePanel({
     if (!uiDev) void refresh();
   }, [refresh, uiDev]);
 
-  const playerUuid = load.kind === "ready" ? load.account.minecraft?.player_uuid ?? null : null;
+  const playerUuid = load.kind === "ready" ? (load.account.minecraft?.player_uuid ?? null) : null;
 
   // A linked Minecraft account opens Profile; otherwise an in-game code session kept from before.
   useEffect(() => {
@@ -260,7 +263,7 @@ export default function ProfilePanel({
         setDashboardFor(token);
       }
     },
-    [uiDev]
+    [uiDev],
   );
 
   const token = session?.session_token ?? null;
@@ -435,23 +438,36 @@ export default function ProfilePanel({
           ) : (
             /* Discord's CDN serves the avatar; next/image would need a remote pattern for one small image. */
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={account.user.avatar_url} alt="" width={72} height={72} className="h-[72px] w-[72px] shrink-0 rounded-full" />
+            <img
+              src={account.user.avatar_url}
+              alt=""
+              width={72}
+              height={72}
+              className="h-[72px] w-[72px] shrink-0 rounded-full"
+            />
           )}
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-accent)]">Profile</p>
             <h1 className={`${titleClass} truncate`}>
-              {minecraft?.minecraft_name || account.user.discord_global_name || account.user.discord_username || "Discord user"}
+              {minecraft?.minecraft_name ||
+                account.user.discord_global_name ||
+                account.user.discord_username ||
+                "Discord user"}
             </h1>
             {subline.length ? <Subline parts={subline} /> : null}
             {minecraft && (overview?.rank || account.patreon?.tier_name) ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {overview?.rank ? (
-                  <span className={`${chipClass} border-[color-mix(in_srgb,var(--tfmc-accent)_50%,transparent)] text-[var(--tfmc-accent)]`}>
+                  <span
+                    className={`${chipClass} border-[color-mix(in_srgb,var(--tfmc-accent)_50%,transparent)] text-[var(--tfmc-accent)]`}
+                  >
                     {overview.rank}
                   </span>
                 ) : null}
                 {account.patreon?.tier_name ? (
-                  <span className={`${chipClass} border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] text-[var(--tfmc-stone)]`}>
+                  <span
+                    className={`${chipClass} border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] text-[var(--tfmc-stone)]`}
+                  >
                     {account.patreon.tier_name} supporter
                   </span>
                 ) : null}
@@ -491,8 +507,8 @@ export default function ProfilePanel({
       ) : null}
       {minecraft?.in_grace ? (
         <p className={`${cardClass} mt-6 p-4 text-sm text-[#e8c9a0]`} role="status">
-          You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or your Minecraft
-          account will be unlinked.
+          You’ve left the TFMC Discord. Rejoin before {formatDeadline(minecraft.grace_until)} or your Minecraft account
+          will be unlinked.
         </p>
       ) : null}
 
@@ -549,7 +565,9 @@ export default function ProfilePanel({
           <>
             {loadError ? <p className="mb-4 text-sm text-[#e8a0a0]">{loadError}</p> : null}
             {!dashboard ? (
-              loadingDashboard || !sessionChecked ? <p className="text-sm text-[var(--tfmc-mist)]">Loading…</p> : null
+              loadingDashboard || !sessionChecked ? (
+                <p className="text-sm text-[var(--tfmc-mist)]">Loading…</p>
+              ) : null
             ) : shown === "characters" ? (
               <CharacterList
                 characters={dashboard.characters}
@@ -557,7 +575,10 @@ export default function ProfilePanel({
                 maxSlots={dashboard.max_alive_characters ?? 3}
                 catalog={catalog}
                 webCreatorAllowed={dashboard.web_creator_allowed !== false}
-                webCreatorLockLabel={webCreatorLockLabel(dashboard.web_creator_allowed, dashboard.web_creator_min_group_id)}
+                webCreatorLockLabel={webCreatorLockLabel(
+                  dashboard.web_creator_allowed,
+                  dashboard.web_creator_min_group_id,
+                )}
                 onRefresh={() => token && void loadDashboard(token)}
                 refreshing={loadingDashboard}
               />
@@ -615,7 +636,9 @@ function ProfilePlaceholder({ shape, tab }: { shape: AccountShape; tab: ProfileT
             {shape.subline ? (
               <span className="mt-1 block">
                 <span className="flex h-5 items-center">{bar("h-3.5 w-72 max-w-full")}</span>
-                {shape.subline > 1 ? <span className="flex h-5 items-center sm:hidden">{bar("h-3.5 w-48")}</span> : null}
+                {shape.subline > 1 ? (
+                  <span className="flex h-5 items-center sm:hidden">{bar("h-3.5 w-48")}</span>
+                ) : null}
               </span>
             ) : null}
             {shape.chips ? bar("mt-2 h-[22.5px] w-16") : null}
@@ -641,7 +664,9 @@ function ProfilePlaceholder({ shape, tab }: { shape: AccountShape; tab: ProfileT
               <div key={service} className="flex items-center gap-4 px-4 py-3.5">
                 {bar("h-8 w-8 shrink-0", "rounded-full")}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{service}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">
+                    {service}
+                  </p>
                   <span className="flex h-6 items-center">{bar("h-4 w-40 max-w-full")}</span>
                   <span className="flex h-5 items-center">{bar("h-3.5 w-56 max-w-full")}</span>
                 </div>

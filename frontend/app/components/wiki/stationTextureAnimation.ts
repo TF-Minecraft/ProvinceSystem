@@ -23,14 +23,17 @@ export function createStationTextureAnimation(
     throw new Error("Invalid station animation frame dimensions.");
   }
   const frameTime = animation.frametime ?? 1;
-  const frames = (animation.frames ?? Array.from({ length: columns * rows }, (_, i) => i))
-    .map((frame) => ({
-      index: typeof frame === "number" ? frame : frame.index,
-      duration: (typeof frame === "number" ? frameTime : frame.time ?? frameTime) * 50,
-    }));
-  if (!frames.length || frames.some(({ index, duration }) =>
-    !Number.isInteger(index) || index < 0 || index >= columns * rows || !Number.isFinite(duration) || duration <= 0
-  )) {
+  const frames = (animation.frames ?? Array.from({ length: columns * rows }, (_, i) => i)).map((frame) => ({
+    index: typeof frame === "number" ? frame : frame.index,
+    duration: (typeof frame === "number" ? frameTime : (frame.time ?? frameTime)) * 50,
+  }));
+  if (
+    !frames.length ||
+    frames.some(
+      ({ index, duration }) =>
+        !Number.isInteger(index) || index < 0 || index >= columns * rows || !Number.isFinite(duration) || duration <= 0,
+    )
+  ) {
     throw new Error("Invalid station animation frames.");
   }
   const duration = frames.reduce((total, frame) => total + frame.duration, 0);
@@ -60,8 +63,10 @@ export function createStationTextureAtlasFallback(
 ) {
   const [frameWidth, frameHeight] = textureSize;
   if (
-    frameWidth <= 0 || frameHeight <= 0 ||
-    imageWidth !== frameWidth || imageHeight <= frameHeight ||
+    frameWidth <= 0 ||
+    frameHeight <= 0 ||
+    imageWidth !== frameWidth ||
+    imageHeight <= frameHeight ||
     imageHeight % frameHeight !== 0
   ) {
     return undefined;

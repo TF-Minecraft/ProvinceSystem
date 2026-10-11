@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  removeTitleFromDraft,
-  toggleChildInParent,
-} from "./childTitleDraftActions";
+import { removeTitleFromDraft, toggleChildInParent } from "./childTitleDraftActions";
 
 describe("childTitleDraftActions", () => {
   it("toggleChildInParent adds child", () => {

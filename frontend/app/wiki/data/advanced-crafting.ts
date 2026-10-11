@@ -57,7 +57,12 @@ export const ingredientConverterRecipe: Recipe = {
     { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
   ],
-  output: { name: "Ingredient Converter", qty: 1, sourceId: "itemsadder:ingredient_converter", model: ingredientConverterModel },
+  output: {
+    name: "Ingredient Converter",
+    qty: 1,
+    sourceId: "itemsadder:ingredient_converter",
+    model: ingredientConverterModel,
+  },
 };
 
 export const alloyForgeRecipe: Recipe = {
@@ -80,11 +85,7 @@ export const alloyForgeRecipe: Recipe = {
   note: "Right-click it with a Lava Bucket to forge; the bucket is emptied.",
 };
 
-export const advancedCraftingRecipes: Recipe[] = [
-  weaponStationRecipe,
-  ingredientConverterRecipe,
-  alloyForgeRecipe,
-];
+export const advancedCraftingRecipes: Recipe[] = [weaponStationRecipe, ingredientConverterRecipe, alloyForgeRecipe];
 
 // ---------- Commands ----------
 
@@ -94,8 +95,7 @@ export const advancedCraftingCommands: WikiCommandSet = {
   commands: [
     {
       command: "/alloy name <NewName>",
-      description:
-        "Names the alloy you just invented at the Alloy Forge, inside a 60-second naming prompt.",
+      description: "Names the alloy you just invented at the Alloy Forge, inside a 60-second naming prompt.",
       notes:
         "Names may only contain letters and underscores. Underscores appear as spaces, and the naming prompt is available to every player who reaches it.",
     },
@@ -180,47 +180,402 @@ const gem = "gemstones" as const;
 
 /** recipes/weapons.yml: 12 entries, in file order. */
 export const weaponRecipeTemplates: StationRecipeTemplate[] = [
-  { id: "sword", name: "%material% Sword", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "battleaxe", name: "%material% Battleaxe", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "dagger", name: "%material% Dagger", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "warhammer", name: "%material% Warhammer", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "spear", name: "%material% Spear", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "polearm", name: "%material% Polearm", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 8 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "greathammer", name: "%material% Greathammer", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 8 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "longsword", name: "%material% Longsword", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 8 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "greataxe", name: "%material% Greataxe", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 8 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "shortswords", name: "%material% Shortsword", category: "weapons", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "shield", name: "%material% Shield", category: "weapons", socketGroup: gem, ingredients: [{ type: "wood", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
-  { id: "banner", name: "%material% Battle Standard", category: "weapons", socketGroup: gem, ingredients: [{ type: "wood", qty: 4 }, { type: "leather", qty: 2 }, { type: "wool", qty: 2 }] },
+  {
+    id: "sword",
+    name: "%material% Sword",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "battleaxe",
+    name: "%material% Battleaxe",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "dagger",
+    name: "%material% Dagger",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "warhammer",
+    name: "%material% Warhammer",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "spear",
+    name: "%material% Spear",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "polearm",
+    name: "%material% Polearm",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 8 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "greathammer",
+    name: "%material% Greathammer",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 8 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "longsword",
+    name: "%material% Longsword",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 8 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "greataxe",
+    name: "%material% Greataxe",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 8 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "shortswords",
+    name: "%material% Shortsword",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "shield",
+    name: "%material% Shield",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "wood", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
+  {
+    id: "banner",
+    name: "%material% Battle Standard",
+    category: "weapons",
+    socketGroup: gem,
+    ingredients: [
+      { type: "wood", qty: 4 },
+      { type: "leather", qty: 2 },
+      { type: "wool", qty: 2 },
+    ],
+  },
 ];
 
 /** recipes/bows.yml: 3 entries, in file order. */
 export const bowRecipeTemplates: StationRecipeTemplate[] = [
-  { id: "shortbow", name: "%material% Shortbow", category: "bows", socketGroup: gem, ingredients: [{ type: "wood", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "crossbow", name: "%material% Crossbow", category: "bows", socketGroup: gem, ingredients: [{ type: "wood", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "longbow", name: "%material% Longbow", category: "bows", socketGroup: gem, ingredients: [{ type: "wood", qty: 8 }, { type: "feather", qty: 4 }] },
+  {
+    id: "shortbow",
+    name: "%material% Shortbow",
+    category: "bows",
+    socketGroup: gem,
+    ingredients: [
+      { type: "wood", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "crossbow",
+    name: "%material% Crossbow",
+    category: "bows",
+    socketGroup: gem,
+    ingredients: [
+      { type: "wood", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "longbow",
+    name: "%material% Longbow",
+    category: "bows",
+    socketGroup: gem,
+    ingredients: [
+      { type: "wood", qty: 8 },
+      { type: "feather", qty: 4 },
+    ],
+  },
 ];
 
 /** recipes/armor.yml: 20 entries (5 classes x 4 slots), in file order. */
 export const armorRecipeTemplates: StationRecipeTemplate[] = [
-  { id: "light_helmet", name: "Light %material% Helmet", category: "armor", group: "Light", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "light_chestplate", name: "Light %material% Chestplate", category: "armor", group: "Light", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "light_leggings", name: "Light %material% Leggings", category: "armor", group: "Light", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "light_boots", name: "Light %material% Boots", category: "armor", group: "Light", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "medium_helmet", name: "Medium %material% Helmet", category: "armor", group: "Medium", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 4 }] },
-  { id: "medium_chestplate", name: "Medium %material% Chestplate", category: "armor", group: "Medium", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 4 }] },
-  { id: "medium_leggings", name: "Medium %material% Leggings", category: "armor", group: "Medium", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 4 }] },
-  { id: "medium_boots", name: "Medium %material% Boots", category: "armor", group: "Medium", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "leather", qty: 4 }] },
-  { id: "heavy_helmet", name: "Heavy %material% Helmet", category: "armor", group: "Heavy", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "wool", qty: 4 }] },
-  { id: "heavy_chestplate", name: "Heavy %material% Chestplate", category: "armor", group: "Heavy", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "wool", qty: 4 }] },
-  { id: "heavy_leggings", name: "Heavy %material% Leggings", category: "armor", group: "Heavy", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "wool", qty: 4 }] },
-  { id: "heavy_boots", name: "Heavy %material% Boots", category: "armor", group: "Heavy", socketGroup: gem, ingredients: [{ type: "metal", qty: 4 }, { type: "wool", qty: 4 }] },
-  { id: "infantry_helmet", name: "Infantry %material% Cap", category: "armor", group: "Infantry", socketGroup: gem, ingredients: [{ type: "paper", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "infantry_chestplate", name: "Infantry %material% Jacket", category: "armor", group: "Infantry", socketGroup: gem, ingredients: [{ type: "paper", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "infantry_leggings", name: "Infantry %material% Leggings", category: "armor", group: "Infantry", socketGroup: gem, ingredients: [{ type: "paper", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "infantry_boots", name: "Infantry %material% Boots", category: "armor", group: "Infantry", socketGroup: gem, ingredients: [{ type: "paper", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "mage_helmet", name: "Mage %material% Hood", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "mage_chestplate", name: "Mage %material% Robes", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "mage_leggings", name: "Mage %material% Leggings", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
-  { id: "mage_boots", name: "Mage %material% Boots", category: "armor", group: "Mage", socketGroup: "mage_armor_runes", ingredients: [{ type: "enchanted_dust", qty: 4 }, { type: "metal", qty: 4 }, { type: "feather", qty: 4 }] },
+  {
+    id: "light_helmet",
+    name: "Light %material% Helmet",
+    category: "armor",
+    group: "Light",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "light_chestplate",
+    name: "Light %material% Chestplate",
+    category: "armor",
+    group: "Light",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "light_leggings",
+    name: "Light %material% Leggings",
+    category: "armor",
+    group: "Light",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "light_boots",
+    name: "Light %material% Boots",
+    category: "armor",
+    group: "Light",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "medium_helmet",
+    name: "Medium %material% Helmet",
+    category: "armor",
+    group: "Medium",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 4 },
+    ],
+  },
+  {
+    id: "medium_chestplate",
+    name: "Medium %material% Chestplate",
+    category: "armor",
+    group: "Medium",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 4 },
+    ],
+  },
+  {
+    id: "medium_leggings",
+    name: "Medium %material% Leggings",
+    category: "armor",
+    group: "Medium",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 4 },
+    ],
+  },
+  {
+    id: "medium_boots",
+    name: "Medium %material% Boots",
+    category: "armor",
+    group: "Medium",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "leather", qty: 4 },
+    ],
+  },
+  {
+    id: "heavy_helmet",
+    name: "Heavy %material% Helmet",
+    category: "armor",
+    group: "Heavy",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "wool", qty: 4 },
+    ],
+  },
+  {
+    id: "heavy_chestplate",
+    name: "Heavy %material% Chestplate",
+    category: "armor",
+    group: "Heavy",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "wool", qty: 4 },
+    ],
+  },
+  {
+    id: "heavy_leggings",
+    name: "Heavy %material% Leggings",
+    category: "armor",
+    group: "Heavy",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "wool", qty: 4 },
+    ],
+  },
+  {
+    id: "heavy_boots",
+    name: "Heavy %material% Boots",
+    category: "armor",
+    group: "Heavy",
+    socketGroup: gem,
+    ingredients: [
+      { type: "metal", qty: 4 },
+      { type: "wool", qty: 4 },
+    ],
+  },
+  {
+    id: "infantry_helmet",
+    name: "Infantry %material% Cap",
+    category: "armor",
+    group: "Infantry",
+    socketGroup: gem,
+    ingredients: [
+      { type: "paper", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "infantry_chestplate",
+    name: "Infantry %material% Jacket",
+    category: "armor",
+    group: "Infantry",
+    socketGroup: gem,
+    ingredients: [
+      { type: "paper", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "infantry_leggings",
+    name: "Infantry %material% Leggings",
+    category: "armor",
+    group: "Infantry",
+    socketGroup: gem,
+    ingredients: [
+      { type: "paper", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "infantry_boots",
+    name: "Infantry %material% Boots",
+    category: "armor",
+    group: "Infantry",
+    socketGroup: gem,
+    ingredients: [
+      { type: "paper", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "mage_helmet",
+    name: "Mage %material% Hood",
+    category: "armor",
+    group: "Mage",
+    socketGroup: "mage_armor_runes",
+    ingredients: [
+      { type: "enchanted_dust", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "mage_chestplate",
+    name: "Mage %material% Robes",
+    category: "armor",
+    group: "Mage",
+    socketGroup: "mage_armor_runes",
+    ingredients: [
+      { type: "enchanted_dust", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "mage_leggings",
+    name: "Mage %material% Leggings",
+    category: "armor",
+    group: "Mage",
+    socketGroup: "mage_armor_runes",
+    ingredients: [
+      { type: "enchanted_dust", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
+  {
+    id: "mage_boots",
+    name: "Mage %material% Boots",
+    category: "armor",
+    group: "Mage",
+    socketGroup: "mage_armor_runes",
+    ingredients: [
+      { type: "enchanted_dust", qty: 4 },
+      { type: "metal", qty: 4 },
+      { type: "feather", qty: 4 },
+    ],
+  },
 ];

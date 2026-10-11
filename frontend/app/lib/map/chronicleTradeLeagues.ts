@@ -1,8 +1,4 @@
-import {
-  buildNationColorLut,
-  type NationColorLut,
-  type NationOwnership,
-} from "./chroniclePaint";
+import { buildNationColorLut, type NationColorLut, type NationOwnership } from "./chroniclePaint";
 
 /**
  * Trade-league territory for one stored day, from the captured `trade.json`.
@@ -36,9 +32,7 @@ export const CHRONICLE_TRADE_LEAGUE_ALPHA = 140;
  * Null in, empty LUT out: a day with no stored `trade` file is a day with no
  * leagues, which the fill stack then skips entirely.
  */
-export function buildTradeLeagueColorLut(
-  leagues: NationOwnership | null
-): NationColorLut {
+export function buildTradeLeagueColorLut(leagues: NationOwnership | null): NationColorLut {
   if (!leagues) return new Uint32Array(0);
   const lut = buildNationColorLut(leagues);
   // `buildNationColorLut` packs every painted province opaque. Rewriting the

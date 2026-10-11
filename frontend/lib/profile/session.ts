@@ -99,9 +99,7 @@ export function clearSession(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-export function isSessionValid(
-  session: ProfileSession | null = getSession()
-): boolean {
+export function isSessionValid(session: ProfileSession | null = getSession()): boolean {
   if (!session) return false;
   const exp = Date.parse(session.expires_at);
   if (Number.isNaN(exp)) return false;
@@ -119,7 +117,7 @@ type WardrobeSessionStore<S extends { session_token: string }> = {
  * Profile's. Clears an expired wardrobe session when neither is valid.
  */
 export function resolveOwnerToken<S extends { session_token: string }>(
-  wardrobe: WardrobeSessionStore<S>
+  wardrobe: WardrobeSessionStore<S>,
 ): string | null {
   const own = wardrobe.getSession();
   if (wardrobe.isSessionValid(own)) return own!.session_token;

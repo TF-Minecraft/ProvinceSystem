@@ -91,18 +91,14 @@ describe("chronicleDayColorLut", () => {
   });
 
   it("gives an empty table when neither layer is on", () => {
-    expect(
-      chronicleDayColorLut(ownership, { fill: false, occupation: false }).length
-    ).toBe(1);
-    expect(
-      chronicleDayColorLut(null, { fill: true, occupation: true }).length
-    ).toBe(1);
+    expect(chronicleDayColorLut(ownership, { fill: false, occupation: false }).length).toBe(1);
+    expect(chronicleDayColorLut(null, { fill: true, occupation: true }).length).toBe(1);
   });
 
   it("skips a nation the fill could not paint either", () => {
     const lut = chronicleDayColorLut(
       { ghost: { provinces: [1], occupied_held: [2] } },
-      { fill: true, occupation: true }
+      { fill: true, occupation: true },
     );
     expect(lut[1] ?? 0).toBe(0);
     expect(lut[2] ?? 0).toBe(0);
@@ -114,18 +110,14 @@ describe("chronicleDayColorLut", () => {
     const malformed = {
       red: { rgb: "1,2,3", provinces: {}, occupied_held: "nope" },
     } as unknown as NationOwnership;
-    expect(() =>
-      chronicleDayColorLut(malformed, { fill: true, occupation: true })
-    ).not.toThrow();
-    expect(
-      chronicleDayColorLut(malformed, { fill: true, occupation: true }).length
-    ).toBe(1);
+    expect(() => chronicleDayColorLut(malformed, { fill: true, occupation: true })).not.toThrow();
+    expect(chronicleDayColorLut(malformed, { fill: true, occupation: true }).length).toBe(1);
   });
 
   it("does not size the table off an absurd occupied id", () => {
     const lut = chronicleDayColorLut(
       { red: { rgb: "1,2,3", occupied_held: [2_000_000_000] } },
-      { fill: false, occupation: true }
+      { fill: false, occupation: true },
     );
     expect(lut.length).toBe(1);
   });
@@ -151,7 +143,7 @@ describe("computeChronicleOccupationSeamMask", () => {
     expect(
       computeChronicleOccupationSeamMask(grid, {
         red: { rgb: "200,40,40", provinces: [1] },
-      })
+      }),
     ).toBeNull();
     expect(computeChronicleOccupationSeamMask(grid, null)).toBeNull();
   });
@@ -163,7 +155,7 @@ describe("computeChronicleOccupationSeamMask", () => {
       computeChronicleOccupationSeamMask(grid, {
         red: { rgb: "200,40,40", provinces: [1] },
         blue: { rgb: "40,40,200", provinces: [3], occupied_held: [2] },
-      })
+      }),
     ).toBeNull();
   });
 
@@ -179,10 +171,7 @@ describe("computeChronicleOccupationSeamMask", () => {
 
   it("rejects a grid whose header disagrees with its ids", () => {
     expect(() =>
-      computeChronicleOccupationSeamMask(
-        { width: 4, height: 4, ids: new Uint16Array(3) },
-        ownership
-      )
+      computeChronicleOccupationSeamMask({ width: 4, height: 4, ids: new Uint16Array(3) }, ownership),
     ).toThrow();
   });
 });

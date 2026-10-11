@@ -2,15 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  fetchAccessibleMaps,
-  type AccessibleMapEntry,
-} from "@/lib/map/api";
+import { fetchAccessibleMaps, type AccessibleMapEntry } from "@/lib/map/api";
 import { getSession, isSessionValid } from "@/lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "@/lib/characters/uiDev";
+import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "@/lib/characters/uiDev";
 
 type AccessibleMapsState = {
   maps: AccessibleMapEntry[];
@@ -60,7 +54,7 @@ export function useAccessibleMaps(): AccessibleMapsState {
         ? UI_DEV_SESSION_TOKEN
         : (() => {
             const session = getSession();
-            return isSessionValid(session) ? session?.session_token ?? null : null;
+            return isSessionValid(session) ? (session?.session_token ?? null) : null;
           })();
       setState({ maps: [], loading: true, error: null });
       try {
@@ -74,17 +68,15 @@ export function useAccessibleMaps(): AccessibleMapsState {
         }
       }
     };
-    const reload = () => { void load(); };
+    const reload = () => {
+      void load();
+    };
     listeners.add(reload);
     reload();
     const onStorage = (event: StorageEvent) => {
       // A cleared store or a keyless session notification must also discard
       // the previous account's access list.
-      if (
-        !event.key ||
-        event.key === "tfmc_profile_session" ||
-        event.key === "tfmc_character_session"
-      ) {
+      if (!event.key || event.key === "tfmc_profile_session" || event.key === "tfmc_character_session") {
         void load();
       }
     };

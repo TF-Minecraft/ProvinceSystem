@@ -1,10 +1,4 @@
-import {
-  CommandTable,
-  DataTable,
-  SeeAlso,
-  WikiPage,
-  WikiSectionHeading,
-} from "@/app/components/wiki";
+import { CommandTable, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { sittingCommands } from "../data/sitting";
 
 export default function SittingPage() {
@@ -14,8 +8,8 @@ export default function SittingPage() {
       title="Sitting, Crawling & Posing"
       intro={
         <>
-          Sit on furniture, lie down, crawl, or strike a pose: small physical touches that make a
-          scene feel real. It&apos;s free for every player; nothing here needs a rank.
+          Sit on furniture, lie down, crawl, or strike a pose: small physical touches that make a scene feel real.
+          It&apos;s free for every player; nothing here needs a rank.
         </>
       }
     >
@@ -23,18 +17,15 @@ export default function SittingPage() {
         Sitting
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Right-click a stair, slab, carpet or snow layer with an <strong>empty main hand</strong>{" "}
-        and you sit down, snapped neatly to the block. You must be within 3 blocks to sit by
-        clicking. Only the{" "}
-        <strong>bottom half</strong> of stairs and slabs works: a top slab or an upside-down stair
-        won&apos;t seat you. You can also just type{" "}
-        <code className="text-[var(--tfmc-accent)]">/sit</code>.
+        Right-click a stair, slab, carpet or snow layer with an <strong>empty main hand</strong> and you sit down,
+        snapped neatly to the block. You must be within 3 blocks to sit by clicking. Only the{" "}
+        <strong>bottom half</strong> of stairs and slabs works: a top slab or an upside-down stair won&apos;t seat you.
+        You can also just type <code className="text-[var(--tfmc-accent)]">/sit</code>.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        To get up, press <strong>Sneak/Shift</strong>. Taking damage will not knock you out of a
-        seat, but breaking the block underneath you will. If click-to-sit ever annoys you (e.g. you
-        keep accidentally sitting on stairs while building), turn it off with{" "}
-        <code className="text-[var(--tfmc-accent)]">/sit toggle</code>: typing{" "}
+        To get up, press <strong>Sneak/Shift</strong>. Taking damage will not knock you out of a seat, but breaking the
+        block underneath you will. If click-to-sit ever annoys you (e.g. you keep accidentally sitting on stairs while
+        building), turn it off with <code className="text-[var(--tfmc-accent)]">/sit toggle</code>: typing{" "}
         <code className="text-[var(--tfmc-accent)]">/sit</code> still works to sit on command.
       </p>
 
@@ -50,24 +41,21 @@ export default function SittingPage() {
         />
       </div>
 
-      <WikiSectionHeading id="poses">
-        Lying down and poses
-      </WikiSectionHeading>
+      <WikiSectionHeading id="poses">Lying down and poses</WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         <code className="text-[var(--tfmc-accent)]">/lay</code> puts you on your back facing up.{" "}
         <code className="text-[var(--tfmc-accent)]">/layback</code>,{" "}
         <code className="text-[var(--tfmc-accent)]">/bellyflop</code> and{" "}
-        <code className="text-[var(--tfmc-accent)]">/spin</code> are other poses. While posed you
-        cannot interact with blocks, items or other players, so it&apos;s meant for a still moment,
-        not mid-fight. Sneak to get back up.
+        <code className="text-[var(--tfmc-accent)]">/spin</code> are other poses. While posed you cannot interact with
+        blocks, items or other players, so it&apos;s meant for a still moment, not mid-fight. Sneak to get back up.
       </p>
       <WikiSectionHeading id="crawling" intro="Go prone without needing a low ceiling.">
         Crawling
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Type <code className="text-[var(--tfmc-accent)]">/crawl</code> to drop to a prone,
-        crawling stance; sneak to stand back up. Double-tapping sneak to start crawling is turned
-        off on this server, so the command is the only way in.
+        Type <code className="text-[var(--tfmc-accent)]">/crawl</code> to drop to a prone, crawling stance; sneak to
+        stand back up. Double-tapping sneak to start crawling is turned off on this server, so the command is the only
+        way in.
       </p>
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>

@@ -105,9 +105,12 @@ export function useLiveMoment(urlAt: number | null, view: string, writeAt: (time
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   }, [urlAt, view]);
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
   return { at: live ?? urlAt, move, cancel };
 }
 
@@ -179,7 +182,8 @@ export function RangeForm({
     const problem = from.error ? `From: ${from.error}` : to.error ? `To: ${to.error}` : null;
     if (problem) return setError(problem);
     if (from.time! >= to.time!) return setError("From must be before To.");
-    if (to.time! - from.time! > longest) return setError(`Choose a range of up to ${formatDuration(longest).toLowerCase()}.`);
+    if (to.time! - from.time! > longest)
+      return setError(`Choose a range of up to ${formatDuration(longest).toLowerCase()}.`);
     setError(null);
     setDirty(false);
     onApply({ from: from.time!, to: to.time!, follow });
@@ -218,11 +222,27 @@ export function RangeForm({
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         <label className="flex min-w-0 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           From
-          <input type="datetime-local" className={dateInputClass} value={fromText} onChange={(e) => { setFromText(e.target.value); setDirty(true); }} />
+          <input
+            type="datetime-local"
+            className={dateInputClass}
+            value={fromText}
+            onChange={(e) => {
+              setFromText(e.target.value);
+              setDirty(true);
+            }}
+          />
         </label>
         <label className="flex min-w-0 flex-col gap-1 text-sm text-[var(--tfmc-mist)]">
           To
-          <input type="datetime-local" className={dateInputClass} value={toText} onChange={(e) => { setToText(e.target.value); setDirty(true); }} />
+          <input
+            type="datetime-local"
+            className={dateInputClass}
+            value={toText}
+            onChange={(e) => {
+              setToText(e.target.value);
+              setDirty(true);
+            }}
+          />
         </label>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -331,14 +351,17 @@ export function Timeline({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => () => {
-    if (frame.current !== null) cancelAnimationFrame(frame.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
   const span = Math.max(1, until - since);
   const clamp = (t: number) => Math.min(Math.max(t, since), until);
-  const pct = (t: number) => `${(clamp(t) - since) / span * 100}%`;
-  const px = (t: number) => (clamp(t) - since) / span * width;
+  const pct = (t: number) => `${((clamp(t) - since) / span) * 100}%`;
+  const px = (t: number) => ((clamp(t) - since) / span) * width;
   const most = width ? Math.max(2, Math.floor(width / TICK_LABEL_PX)) : 8;
   const ticks = timelineTicks(since, until, most);
   const minor = timelineTicks(since, until, most * 5).filter((t) => !ticks.includes(t));
@@ -349,8 +372,7 @@ export function Timeline({
   const rowHeight = rows === 1 ? 20 : Math.max(4, Math.min(10, 40 / rows));
   const barHeight = rows === 1 ? 40 : rows * (rowHeight + 2) + 8;
   const at = clamp(cursor);
-  const label = (t: number) =>
-    `${multiDay ? `${formatDay(t)}, ` : ""}${formatClock(t, span <= 3 * 3600)}`;
+  const label = (t: number) => `${multiDay ? `${formatDay(t)}, ` : ""}${formatClock(t, span <= 3 * 3600)}`;
 
   /** The time under a pointer, drawn to a nearby band edge when `snap`. */
   const timeAt = (clientX: number, snap: boolean) => {
@@ -422,7 +444,10 @@ export function Timeline({
       chip.style.visibility = clash ? "hidden" : "";
       if (!clash) placed.unshift([left, left + w]);
     }
-    for (const [label, a, b] of [[start, 0, start.offsetWidth], [end, width - end.offsetWidth, width]] as const) {
+    for (const [label, a, b] of [
+      [start, 0, start.offsetWidth],
+      [end, width - end.offsetWidth, width],
+    ] as const) {
       label.style.visibility = placed.some(([l, r]) => l < b + 8 && r > a - 8) ? "hidden" : "";
     }
   });
@@ -434,7 +459,10 @@ export function Timeline({
         <span className="absolute left-0 top-0 leading-5">{formatMoment(since)}</span>
         <span className="absolute right-0 top-0 leading-5">{formatMoment(until)}</span>
         {width ? (
-          <span className={`${chipBase} bg-[var(--tfmc-cream)] font-medium text-[var(--tfmc-forest-deep)]`} data-x={px(at)}>
+          <span
+            className={`${chipBase} bg-[var(--tfmc-cream)] font-medium text-[var(--tfmc-forest-deep)]`}
+            data-x={px(at)}
+          >
             {label(at)}
           </span>
         ) : null}
@@ -506,10 +534,18 @@ export function Timeline({
           />
         ) : null}
         {minor.map((t) => (
-          <div key={t} className="absolute bottom-0 h-1 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]" style={{ left: pct(t) }} />
+          <div
+            key={t}
+            className="absolute bottom-0 h-1 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]"
+            style={{ left: pct(t) }}
+          />
         ))}
         {ticks.map((t) => (
-          <div key={t} className="absolute bottom-0 h-2 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)]" style={{ left: pct(t) }} />
+          <div
+            key={t}
+            className="absolute bottom-0 h-2 border-l border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)]"
+            style={{ left: pct(t) }}
+          />
         ))}
         {bands.map((band, i) => (
           <div
@@ -533,7 +569,10 @@ export function Timeline({
           />
         ) : null}
         {/* The playhead: a line through the bar with a grip on top, outside the bar's clipping. */}
-        <div className="pointer-events-none absolute -bottom-1 -top-1 w-0.5 -translate-x-1/2 bg-[var(--tfmc-cream)] shadow-[0_0_0_1px_rgba(15,28,22,0.6)]" style={{ left: pct(at) }}>
+        <div
+          className="pointer-events-none absolute -bottom-1 -top-1 w-0.5 -translate-x-1/2 bg-[var(--tfmc-cream)] shadow-[0_0_0_1px_rgba(15,28,22,0.6)]"
+          style={{ left: pct(at) }}
+        >
           <div className="absolute -top-0.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-[2px] bg-[var(--tfmc-cream)]" />
         </div>
       </div>
@@ -553,14 +592,12 @@ export function Timeline({
           <span className="inline-block h-2 w-4 rounded-sm bg-[var(--tfmc-accent)]" /> seen
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" /> not
-          seen (not proof of offline)
+          <span className="inline-block h-2 w-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />{" "}
+          not seen (not proof of offline)
         </span>
         {hatchEnd !== null ? (
           <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block h-2 w-4 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(232,228,217,0.4)_0_2px,transparent_2px_4px)]"
-            />
+            <span className="inline-block h-2 w-4 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(232,228,217,0.4)_0_2px,transparent_2px_4px)]" />
             {unknownLabel}
           </span>
         ) : null}
@@ -680,8 +717,22 @@ function PinForm({ pin, onChange }: { pin: MapPin | null; onChange: (pin: MapPin
     >
       <span className="text-sm text-[var(--tfmc-mist)]">Pin a place in the overworld</span>
       <div className="flex gap-2">
-        <input aria-label="Pin x" placeholder="x" inputMode="numeric" className={inputClass} value={x} onChange={(e) => setX(e.target.value)} />
-        <input aria-label="Pin z" placeholder="z" inputMode="numeric" className={inputClass} value={z} onChange={(e) => setZ(e.target.value)} />
+        <input
+          aria-label="Pin x"
+          placeholder="x"
+          inputMode="numeric"
+          className={inputClass}
+          value={x}
+          onChange={(e) => setX(e.target.value)}
+        />
+        <input
+          aria-label="Pin z"
+          placeholder="z"
+          inputMode="numeric"
+          className={inputClass}
+          value={z}
+          onChange={(e) => setZ(e.target.value)}
+        />
         <button type="submit" disabled={!valid} className={`${chipClass} ${chipOff}`}>
           Pin
         </button>

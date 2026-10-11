@@ -3,14 +3,22 @@
 import type { LoreItemRow } from "../../../lib/characters/api";
 
 function customiseState(item: LoreItemRow): string {
-  const fromRow = String(item.state || "").trim().toLowerCase();
+  const fromRow = String(item.state || "")
+    .trim()
+    .toLowerCase();
   if (fromRow) return fromRow;
-  return String(item.draft?.state || "draft").trim().toLowerCase() || "draft";
+  return (
+    String(item.draft?.state || "draft")
+      .trim()
+      .toLowerCase() || "draft"
+  );
 }
 
 function submissionStatus(item: LoreItemRow): string {
   return (
-    String(item.draft?.submission_status || "").trim().toLowerCase() || ""
+    String(item.draft?.submission_status || "")
+      .trim()
+      .toLowerCase() || ""
   );
 }
 
@@ -20,10 +28,7 @@ function statusMessage(item: LoreItemRow): string {
   const deny = item.draft?.deny_reason?.trim() || "";
   if (state === "pending_skin") {
     if (sub === "approved") {
-      return (
-        "Your skin was approved. It will be live within 24 hours. " +
-        "After that, claim the kit in-game."
-      );
+      return "Your skin was approved. It will be live within 24 hours. " + "After that, claim the kit in-game.";
     }
     return (
       "Awaiting staff approval for your custom skin. It can take a few minutes " +
@@ -34,9 +39,7 @@ function statusMessage(item: LoreItemRow): string {
     case "ready":
       return "Item ready. Claim the kit in-game when available.";
     case "denied":
-      return deny
-        ? `Denied: ${deny}`
-        : "Denied. No reason given. Edit again to submit a different skin.";
+      return deny ? `Denied: ${deny}` : "Denied. No reason given. Edit again to submit a different skin.";
     case "applied":
       return "Live in-game.";
     case "draft":
@@ -52,10 +55,7 @@ type Props = {
 
 export default function CustomiseStatusCard({ item }: Props) {
   const previewName =
-    item.preview?.display_name?.trim() ||
-    item.draft?.display_name?.trim() ||
-    item.base_preview?.display_name ||
-    "Item";
+    item.preview?.display_name?.trim() || item.draft?.display_name?.trim() || item.base_preview?.display_name || "Item";
 
   return (
     <div className="mt-8 space-y-6">

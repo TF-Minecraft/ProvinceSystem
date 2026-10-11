@@ -3,11 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { MapId, MapMode } from "../components/map/types";
 import { MapAccessError, staffMapAccessReason } from "@/lib/map/api";
-import {
-  MapModeNotCapturedError,
-  fetchMapModeRegionData,
-  filterMapModeRegions,
-} from "@/app/lib/map/dataSource";
+import { MapModeNotCapturedError, fetchMapModeRegionData, filterMapModeRegions } from "@/app/lib/map/dataSource";
 import { isChronicleDayFileMissing } from "@/app/lib/map/chronicleData";
 import type { MapAccessGateReason } from "../components/map/MapAccessGate";
 
@@ -31,9 +27,7 @@ export function useMapModeData({
 }) {
   const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accessError, setAccessError] = useState<MapAccessGateReason | null>(
-    null
-  );
+  const [accessError, setAccessError] = useState<MapAccessGateReason | null>(null);
   /**
    * True when a historical day simply has no data for this mode — only
    * `nation` and `trade` are captured. Not an error: the caller renders an

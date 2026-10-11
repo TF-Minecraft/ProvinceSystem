@@ -258,7 +258,7 @@ export default function MovementMap({
       viewportW: viewport.viewportSize.w,
       viewportH: viewport.viewportSize.h,
     }),
-    [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h]
+    [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h],
   );
 
   // Drawn and framed: only the window. Markers read the full trails, which
@@ -266,16 +266,16 @@ export default function MovementMap({
   const shown = useMemo(
     () =>
       latest ? trails : trails.map((trail) => ({ ...trail, stretches: clipStretches(trail.stretches, since, until) })),
-    [trails, since, until, latest]
+    [trails, since, until, latest],
   );
   const paths = useMemo(
     () => shown.map((trail) => ({ trail, ...trailPaths(trail, mapWorld, since, until, cursor) })),
-    [shown, mapWorld, since, until, cursor]
+    [shown, mapWorld, since, until, cursor],
   );
   const unit = displayScale > 0 ? 1 / displayScale : 1;
   const chevrons = useMemo(
     () => (displayScale > 0 ? arrows(shown, mapWorld, ARROW_GAP_PX / displayScale) : []),
-    [shown, mapWorld, displayScale]
+    [shown, mapWorld, displayScale],
   );
   const bounds = useMemo(() => {
     const boxes = shown.map((t) => boundsOf(t.stretches, mapWorld)).filter((b) => b !== null);
@@ -331,7 +331,7 @@ export default function MovementMap({
     ? markers.flatMap(({ trail, at }) =>
         at && at.world === mapWorld
           ? [{ key: trail.key, label: trail.label, x: (at.x + 0.5) * displayScale, y: (at.z + 0.5) * displayScale }]
-          : []
+          : [],
       )
     : [];
   // Names stay on the map: the overlay is cut off at its edges.
@@ -343,10 +343,10 @@ export default function MovementMap({
     () =>
       layoutLabels(
         anchors.map((a) => ({ key: a.key, x: a.x, y: a.y, width: labelWidth(a.label), height: LABEL_HEIGHT_PX })),
-        { ...DEFAULT_LAYOUT, area }
+        { ...DEFAULT_LAYOUT, area },
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layoutKey]
+    [layoutKey],
   );
   // A pick only stands while its name has no room: once zooming makes room, or the player is gone, it lapses,
   // so the name never comes back on its own later and the next tap picks it again.
@@ -470,7 +470,7 @@ export default function MovementMap({
                       strokeWidth={1.5 * unit}
                       strokeDasharray={`${6 * unit} ${5 * unit}`}
                     />
-                  ) : null
+                  ) : null,
                 )}
                 {trail.stretches.map((stretch) =>
                   stretch.world === mapWorld && !latest
@@ -507,7 +507,7 @@ export default function MovementMap({
                           </circle>
                         );
                       })
-                    : null
+                    : null,
                 )}
               </g>
             );
@@ -531,7 +531,8 @@ export default function MovementMap({
                 // Endpoints within a few screen pixels share one label.
                 if (
                   labels.length === 2 &&
-                  Math.hypot(labels[0].sample.x - labels[1].sample.x, labels[0].sample.z - labels[1].sample.z) < 30 * unit
+                  Math.hypot(labels[0].sample.x - labels[1].sample.x, labels[0].sample.z - labels[1].sample.z) <
+                    30 * unit
                 ) {
                   labels.splice(0, 2, { sample: labels[1].sample, text: `${labels[0].text} · ${labels[1].text}` });
                 }
@@ -552,7 +553,14 @@ export default function MovementMap({
             : null}
           {pin ? (
             <g>
-              <circle cx={pin.x + 0.5} cy={pin.z + 0.5} r={9 * unit} fill="none" stroke="#ff5a5a" strokeWidth={2.5 * unit} />
+              <circle
+                cx={pin.x + 0.5}
+                cy={pin.z + 0.5}
+                r={9 * unit}
+                fill="none"
+                stroke="#ff5a5a"
+                strokeWidth={2.5 * unit}
+              />
               <path
                 d={`M ${pin.x + 0.5 - 14 * unit} ${pin.z + 0.5} H ${pin.x + 0.5 + 14 * unit} M ${pin.x + 0.5} ${
                   pin.z + 0.5 - 14 * unit
@@ -596,7 +604,7 @@ export default function MovementMap({
                   strokeLinecap="round"
                 />
               </g>
-            ) : null
+            ) : null,
           )}
           {markers.map(({ trail, at, title }) => {
             if (!at || at.world !== mapWorld) return null;
@@ -683,8 +691,7 @@ export default function MovementMap({
         ) : null}
         {latest ? (
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last
-            position
+            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> last position
           </span>
         ) : (
           <>
@@ -693,14 +700,17 @@ export default function MovementMap({
                 older
                 <span
                   className="inline-block h-1.5 w-16 rounded-full"
-                  style={{ background: `linear-gradient(to right, ${ageColour(0)}, ${ageColour(0.5)}, ${ageColour(1)})` }}
+                  style={{
+                    background: `linear-gradient(to right, ${ageColour(0)}, ${ageColour(0.5)}, ${ageColour(1)})`,
+                  }}
                 />
                 newer
               </span>
             ) : null}
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-white bg-[#f4c96b]" /> recorded
-              <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimated or last seen
+              <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-[#f4c96b]" /> estimated or
+              last seen
             </span>
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="inline-block w-5 border-t-2 border-dashed border-[#e8e4d9]" /> route unknown

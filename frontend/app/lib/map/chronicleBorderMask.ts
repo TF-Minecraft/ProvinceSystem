@@ -1,14 +1,7 @@
 import { parseRgbString } from "@/app/lib/map/titleRgb";
 
-import {
-  createRgbaU32View,
-  packRgbaForU32View,
-} from "./editor/paintTitleLayers";
-import {
-  MAX_PAINTABLE_PROVINCE_ID,
-  type NationOwnership,
-  type ProvinceIdGrid,
-} from "./chroniclePaint";
+import { createRgbaU32View, packRgbaForU32View } from "./editor/paintTitleLayers";
+import { MAX_PAINTABLE_PROVINCE_ID, type NationOwnership, type ProvinceIdGrid } from "./chroniclePaint";
 
 /**
  * Client-side port of the server's border painter
@@ -85,15 +78,11 @@ export function assertChronicleGridShape(grid: ProvinceIdGrid): number {
     height <= 0 ||
     width * height > MAX_BORDER_GRID_PIXELS
   ) {
-    throw new Error(
-      `province id grid claims ${width}x${height}, outside 1..${MAX_BORDER_GRID_PIXELS} pixels`
-    );
+    throw new Error(`province id grid claims ${width}x${height}, outside 1..${MAX_BORDER_GRID_PIXELS} pixels`);
   }
   const pixelCount = width * height;
   if (ids.length !== pixelCount) {
-    throw new Error(
-      `province id grid has ${ids.length} ids for ${width}x${height}`
-    );
+    throw new Error(`province id grid has ${ids.length} ids for ${width}x${height}`);
   }
   return pixelCount;
 }
@@ -112,11 +101,7 @@ function buildNationOwnerLut(ownership: NationOwnership): Uint32Array {
   let maxProvinceId = 0;
   for (const nation of Object.values(ownership)) {
     for (const id of nation?.provinces ?? []) {
-      if (
-        Number.isInteger(id) &&
-        id > maxProvinceId &&
-        id <= MAX_PAINTABLE_PROVINCE_ID
-      ) {
+      if (Number.isInteger(id) && id > maxProvinceId && id <= MAX_PAINTABLE_PROVINCE_ID) {
         maxProvinceId = id;
       }
     }
@@ -142,10 +127,7 @@ function buildNationOwnerLut(ownership: NationOwnership): Uint32Array {
  * heaviness of a doubled seam is carried by *where* the two rims sit, exactly
  * as it is on the server.
  */
-export function computeChronicleBorderMask(
-  grid: ProvinceIdGrid,
-  ownership: NationOwnership
-): ChronicleBorderMask {
+export function computeChronicleBorderMask(grid: ProvinceIdGrid, ownership: NationOwnership): ChronicleBorderMask {
   const pixelCount = assertChronicleGridShape(grid);
   const { width, height, ids } = grid;
 
@@ -222,17 +204,15 @@ export type ExpandBorderMaskOptions = {
 export function expandChronicleBorderMask(
   mask: ChronicleBorderMask,
   output: Uint8ClampedArray,
-  options: ExpandBorderMaskOptions = {}
+  options: ExpandBorderMaskOptions = {},
 ): void {
   const pixelCount = mask.width * mask.height;
   if (mask.bits.length !== (pixelCount + 7) >> 3) {
-    throw new Error(
-      `border mask holds ${mask.bits.length} bytes for ${mask.width}x${mask.height}`
-    );
+    throw new Error(`border mask holds ${mask.bits.length} bytes for ${mask.width}x${mask.height}`);
   }
   if (output.length !== pixelCount * 4) {
     throw new Error(
-      `border buffer holds ${output.length} bytes, expected ${pixelCount * 4} for ${mask.width}x${mask.height}`
+      `border buffer holds ${output.length} bytes, expected ${pixelCount * 4} for ${mask.width}x${mask.height}`,
     );
   }
 

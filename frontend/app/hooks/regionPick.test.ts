@@ -7,7 +7,7 @@ import type { RegionRecord } from "../components/map/types";
 function mockSurface(
   width: number,
   height: number,
-  pixelAt: (x: number, y: number) => [number, number, number, number]
+  pixelAt: (x: number, y: number) => [number, number, number, number],
 ): PickSurface {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y++) {
@@ -25,9 +25,7 @@ const regionData: RegionRecord = {
 
 describe("resolveRegionAtPickPixel", () => {
   it("maps a pick pixel to the resolved visible region", () => {
-    const surface = mockSurface(4, 4, (x, y) =>
-      x === 1 && y === 2 ? [10, 20, 30, 255] : [0, 0, 0, 0]
-    );
+    const surface = mockSurface(4, 4, (x, y) => (x === 1 && y === 2 ? [10, 20, 30, 255] : [0, 0, 0, 0]));
     const rgbToId = { "10,20,30": "Vassal" };
     const picked = resolveRegionAtPickPixel(
       surface,
@@ -41,7 +39,7 @@ describe("resolveRegionAtPickPixel", () => {
       }),
       "nation",
       "main",
-      regionData
+      regionData,
     );
 
     expect(picked).toEqual({
@@ -67,7 +65,7 @@ describe("resolveRegionAtPickPixel", () => {
       }),
       "nation",
       "main",
-      regionData
+      regionData,
     );
     expect(picked).toBeNull();
   });
@@ -86,7 +84,7 @@ describe("resolveRegionAtPickPixel", () => {
       }),
       "nation",
       "main",
-      regionData
+      regionData,
     );
     expect(picked).toBeNull();
   });
@@ -105,7 +103,7 @@ describe("resolveRegionAtPickPixel", () => {
       }),
       "nation",
       "main",
-      regionData
+      regionData,
     );
     expect(picked).toBeNull();
   });

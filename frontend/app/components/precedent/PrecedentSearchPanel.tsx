@@ -2,7 +2,15 @@
 
 import { FormEvent, useState } from "react";
 
-import { buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass, rowClass } from "@/app/components/admin/ui";
+import {
+  buttonClass,
+  errorClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  rowClass,
+} from "@/app/components/admin/ui";
 import { AccountApiError } from "@/lib/account/api";
 import { adminErrorMessage } from "@/lib/admin/api";
 import { searchPrecedent, type PrecedentSearchResult } from "@/lib/precedent/api";

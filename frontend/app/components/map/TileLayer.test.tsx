@@ -70,7 +70,7 @@ describe("TileLayer", () => {
   it("is ready once every backdrop tile has loaded", () => {
     const onReady = vi.fn();
     const { container } = render(
-      <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />
+      <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />,
     );
     expect(container.querySelectorAll("img")).toHaveLength(4);
     expect(onReady).not.toHaveBeenCalled();
@@ -90,13 +90,11 @@ describe("TileLayer", () => {
     try {
       const onReady = vi.fn();
       const { container } = render(
-        <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />
+        <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />,
       );
       // An async image is decoded only at the size it is drawn; WebKit drew
       // nothing while a settled zoom needed it at another size.
-      container
-        .querySelectorAll("img")
-        .forEach((img) => expect(img.getAttribute("decoding")).toBe("sync"));
+      container.querySelectorAll("img").forEach((img) => expect(img.getAttribute("decoding")).toBe("sync"));
 
       loadAll(container);
       expect(decode).toHaveBeenCalledTimes(4);
@@ -122,14 +120,12 @@ describe("TileLayer", () => {
   it("waits for a new version's tiles, not the old version's", () => {
     const onReady = vi.fn();
     const { container, rerender } = render(
-      <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />
+      <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} onReady={onReady} />,
     );
     loadAll(container);
     onReady.mockClear();
 
-    rerender(
-      <TileLayer manifest={manifest("v2")} tileUrl={tileUrl} view={view} onReady={onReady} />
-    );
+    rerender(<TileLayer manifest={manifest("v2")} tileUrl={tileUrl} view={view} onReady={onReady} />);
     expect(onReady).not.toHaveBeenCalled();
 
     loadAll(container);
@@ -160,19 +156,16 @@ describe("TileLayer", () => {
       viewportW: 200,
       viewportH: 200,
     };
-    const { container, rerender } = render(
-      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} />
-    );
+    const { container, rerender } = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} />);
     const backdrop = () =>
       [...container.querySelectorAll<HTMLImageElement>('img[src^="/t/0/"]')].filter(
-        (img) => img.style.visibility !== "hidden"
+        (img) => img.style.visibility !== "hidden",
       );
     const before = backdrop();
     expect(before).toHaveLength(16);
     const clip = () => before[0].parentElement!.style.clipPath;
     // The same elements, not equal-looking new ones.
-    const sameBackdrop = () =>
-      backdrop().length === before.length && backdrop().every((img, i) => img === before[i]);
+    const sameBackdrop = () => backdrop().length === before.length && backdrop().every((img, i) => img === before[i]);
     expect(clip()).toBe("");
 
     loadAll(container);
@@ -189,19 +182,13 @@ describe("TileLayer", () => {
     expect(clip()).toBe(
       "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
         "0.390625% 0.390625%, 0.390625% 24.609375%, 24.609375% 24.609375%, " +
-        "24.609375% 0.390625%, 0.390625% 0.390625%, 0% 0%)"
+        "24.609375% 0.390625%, 0.390625% 0.390625%, 0% 0%)",
     );
 
     // Zooming out to the backdrop level: it has loaded already, so the sharp
     // tiles stand down at once and the whole backdrop shows, on the same
     // elements.
-    rerender(
-      <TileLayer
-        manifest={pyramid}
-        tileUrl={tileUrl}
-        view={{ ...zoomedIn, displayScale: 0.25 }}
-      />
-    );
+    rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={{ ...zoomedIn, displayScale: 0.25 }} />);
     expect(container.querySelector('img[src^="/t/1/"]')).toBeNull();
     expect(sameBackdrop()).toBe(true);
     expect(clip()).toBe("");
@@ -227,12 +214,10 @@ describe("TileLayer", () => {
     });
     const shown = (level: number) =>
       [...container.querySelectorAll<HTMLImageElement>(`img[src^="/t/${level}/"]`)].filter(
-        (img) => img.style.visibility !== "hidden"
+        (img) => img.style.visibility !== "hidden",
       );
     // A cached manifest renders the layer before its viewport has a size.
-    const { container, rerender } = render(
-      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0)} />
-    );
+    const { container, rerender } = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0)} />);
     loadAll(container);
     fadeIn();
 
@@ -269,12 +254,8 @@ describe("TileLayer", () => {
       viewportW: 200,
       viewportH: 200,
     });
-    const imgs = (level: number) => [
-      ...container.querySelectorAll<HTMLImageElement>(`img[src^="/t/${level}/"]`),
-    ];
-    const { container, rerender } = render(
-      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
-    );
+    const imgs = (level: number) => [...container.querySelectorAll<HTMLImageElement>(`img[src^="/t/${level}/"]`)];
+    const { container, rerender } = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
     loadAll(container);
     fadeIn();
     rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
@@ -322,12 +303,8 @@ describe("TileLayer", () => {
       viewportW: 200,
       viewportH: 200,
     });
-    const { container, rerender } = render(
-      <TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />
-    );
-    const clip = () =>
-      container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!.parentElement!.style
-        .clipPath;
+    const { container, rerender } = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
+    const clip = () => container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!.parentElement!.style.clipPath;
     const advance = (ms: number) =>
       act(() => {
         vi.advanceTimersByTime(ms);
@@ -370,7 +347,7 @@ describe("TileLayer", () => {
     };
     const layer = (seeThrough: boolean) => {
       const { container } = render(
-        <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} seeThrough={seeThrough} />
+        <TileLayer manifest={pyramid} tileUrl={tileUrl} view={zoomedIn} seeThrough={seeThrough} />,
       );
       loadAll(container);
       fadeIn();
@@ -403,7 +380,7 @@ describe("TileLayer", () => {
           tileUrl={tileUrl}
           view={{ ...view, displayScale: 0.7 }}
           seeThrough={seeThrough}
-        />
+        />,
       );
       const tile = container.querySelector<HTMLImageElement>('img[src="/t/0/1/0.webp"]')!;
       const { translate, width } = tile.style;

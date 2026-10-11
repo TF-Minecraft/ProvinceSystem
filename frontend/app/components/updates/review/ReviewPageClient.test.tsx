@@ -37,14 +37,16 @@ it("shows toolbar actions and compact review rows to staff", async () => {
   mocks.state = "staff";
   mocks.listReviewWeeks.mockResolvedValue({
     current: "2026-W40",
-    weeks: [{
-      week: "2026-W40",
-      label: "Week of 28 September 2026",
-      pending: 1,
-      approved: 1,
-      denied: 0,
-      postponed: false,
-    }],
+    weeks: [
+      {
+        week: "2026-W40",
+        label: "Week of 28 September 2026",
+        pending: 1,
+        approved: 1,
+        denied: 0,
+        postponed: false,
+      },
+    ],
   });
   mocks.loadReviewWeek.mockResolvedValue({
     week: "2026-W40",
@@ -103,9 +105,7 @@ it("shows the sign-in message and fetches no review data for non-staff", async (
   mocks.state = "denied";
   render(<ReviewPageClient />);
 
-  expect(screen.getByText(
-    "This page is for staff. Sign in with a staff account to review weekly notes.",
-  )).toBeTruthy();
+  expect(screen.getByText("This page is for staff. Sign in with a staff account to review weekly notes.")).toBeTruthy();
   await waitFor(() => expect(mocks.listReviewWeeks).not.toHaveBeenCalled());
   expect(mocks.loadReviewWeek).not.toHaveBeenCalled();
   expect(screen.queryByText("A new ferry route opened.")).toBeNull();

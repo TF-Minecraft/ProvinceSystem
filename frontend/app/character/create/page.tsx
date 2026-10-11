@@ -12,16 +12,8 @@ import {
 } from "../../../lib/characters/api";
 import { logoutProfile } from "../../../lib/profile/uploads";
 import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  type CharacterSession,
-} from "../../../lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "../../../lib/characters/uiDev";
+import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../lib/characters/session";
+import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/uiDev";
 import { webCreatorLockLabel } from "../../../lib/characters/webCreatorLock";
 
 export default function CharacterCreatePage() {
@@ -48,18 +40,14 @@ export default function CharacterCreatePage() {
       });
       setCatalog(creationCatalogDev as CreationCatalog);
       // UI-dev keeps age stages so the flow is visible; skip via ?skipAge=1.
-      const params =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search)
-          : null;
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const skip = params?.get("skipAge") === "1";
       setSkipRealAge(Boolean(skip));
 
       const hoursRaw = params?.get("accountAgeHours");
       const unlockedParam = params?.get("evilUnlocked");
       const catalogHours = Number(
-        (creationCatalogDev as CreationCatalog).validation?.clues
-          ?.evil_min_account_age_hours ?? 24
+        (creationCatalogDev as CreationCatalog).validation?.clues?.evil_min_account_age_hours ?? 24,
       );
       const unlockHours = Number.isFinite(catalogHours) ? catalogHours : 24;
       if (hoursRaw != null && hoursRaw !== "") {
@@ -81,9 +69,7 @@ export default function CharacterCreatePage() {
       }
       const wardrobeSlotsRaw = params?.get("wardrobeSlots");
       if (wardrobeSlotsRaw != null && wardrobeSlotsRaw !== "") {
-        setWardrobeSkinSlots(
-          Math.max(1, Math.min(3, Number(wardrobeSlotsRaw) || 1))
-        );
+        setWardrobeSkinSlots(Math.max(1, Math.min(3, Number(wardrobeSlotsRaw) || 1)));
       } else {
         setWardrobeSkinSlots(1);
       }
@@ -115,18 +101,12 @@ export default function CharacterCreatePage() {
         if (typeof list.evil_unlocked === "boolean") {
           setEvilUnlocked(list.evil_unlocked);
         } else {
-          const hours = Number(
-            cat.validation?.clues?.evil_min_account_age_hours ?? 24
-          );
+          const hours = Number(cat.validation?.clues?.evil_min_account_age_hours ?? 24);
           const unlockHours = Number.isFinite(hours) ? hours : 24;
           setEvilUnlocked(ageSec >= unlockHours * 3600);
         }
-        setNameColourStops(
-          Math.max(0, Math.min(8, Number(list.name_colour_stops) || 0))
-        );
-        setWardrobeSkinSlots(
-          Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1))
-        );
+        setNameColourStops(Math.max(0, Math.min(8, Number(list.name_colour_stops) || 0)));
+        setWardrobeSkinSlots(Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1)));
         if (list.web_creator_allowed === false) {
           setError(webCreatorLockLabel(false, list.web_creator_min_group_id));
           setCatalog(null);
@@ -138,9 +118,7 @@ export default function CharacterCreatePage() {
           router.replace("/profile");
           return;
         }
-        setError(
-          err instanceof Error ? err.message : "Couldn't load. Try again.",
-        );
+        setError(err instanceof Error ? err.message : "Couldn't load. Try again.");
       } finally {
         setReady(true);
       }
@@ -185,10 +163,7 @@ export default function CharacterCreatePage() {
             </span>
           ) : null}
         </div>
-        <Link
-          href="/profile"
-          className="text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
-        >
+        <Link href="/profile" className="text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
           Back to list
         </Link>
       </div>

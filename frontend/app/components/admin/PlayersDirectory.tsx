@@ -61,13 +61,18 @@ function profileHref(player: PlayerSummary): string {
 
 /** `@handle · Server nickname`, whichever of the two is known. */
 function discordLabel(player: PlayerSummary): string {
-  return [player.discord_username ? `@${player.discord_username}` : null, player.discord_nickname]
-    .filter(Boolean)
-    .join(" · ") || "Linked";
+  return (
+    [player.discord_username ? `@${player.discord_username}` : null, player.discord_nickname]
+      .filter(Boolean)
+      .join(" · ") || "Linked"
+  );
 }
 
 function titleCase(text: string): string {
-  return text.toLowerCase().replace(/(^|[\s_-])\p{L}/gu, (s) => s.toUpperCase()).replace(/_/g, " ");
+  return text
+    .toLowerCase()
+    .replace(/(^|[\s_-])\p{L}/gu, (s) => s.toUpperCase())
+    .replace(/_/g, " ");
 }
 
 function MinecraftName({ player }: { player: PlayerSummary }) {
@@ -126,7 +131,12 @@ function Table({ head, children }: { head: ReactNode; children: ReactNode }) {
 }
 
 /** A column heading that sorts the whole list, every page of it; choosing it again reverses it. */
-function SortHeader({ column, label, sorting, className }: {
+function SortHeader({
+  column,
+  label,
+  sorting,
+  className,
+}: {
   column: PlayerSort;
   label: string;
   sorting: Sorting;
@@ -136,7 +146,11 @@ function SortHeader({ column, label, sorting, className }: {
   // The arrow shows the order now, or on hover the order a click would give.
   const shown = active ? sorting.order : defaultOrder(column);
   return (
-    <th scope="col" className={className} aria-sort={active ? (sorting.order === "asc" ? "ascending" : "descending") : undefined}>
+    <th
+      scope="col"
+      className={className}
+      aria-sort={active ? (sorting.order === "asc" ? "ascending" : "descending") : undefined}
+    >
       <button
         type="button"
         onClick={() => sorting.onSort(column)}
@@ -157,14 +171,18 @@ function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: 
       head={
         <>
           <SortHeader column="name" label="Discord" sorting={sorting} className={headClass} />
-          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Minecraft</th>
-          <th scope="col" className={charactersHeadClass}>Characters</th>
+          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>
+            Minecraft
+          </th>
+          <th scope="col" className={charactersHeadClass}>
+            Characters
+          </th>
           <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
     >
       {rows.map((player) => {
-        const lead = player.discord_username ? `@${player.discord_username}` : player.discord_nickname ?? "Linked";
+        const lead = player.discord_username ? `@${player.discord_username}` : (player.discord_nickname ?? "Linked");
         return (
           <tr key={player.uuid}>
             <td className={cellClass}>
@@ -202,8 +220,12 @@ function MinecraftTable({ rows, known, sorting }: { rows: PlayerSummary[]; known
       head={
         <>
           <SortHeader column="name" label="Minecraft" sorting={sorting} className={headClass} />
-          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Discord</th>
-          <th scope="col" className={charactersHeadClass}>Characters</th>
+          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>
+            Discord
+          </th>
+          <th scope="col" className={charactersHeadClass}>
+            Characters
+          </th>
           <SortHeader column="last_seen" label="Last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
@@ -242,7 +264,9 @@ function CharacterTable({ rows, known, sorting }: { rows: CharacterRow[]; known:
       head={
         <>
           <SortHeader column="name" label="Character" sorting={sorting} className={`sm:w-[45%] ${headClass}`} />
-          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>Player</th>
+          <th scope="col" className={`hidden sm:table-cell ${headClass}`}>
+            Player
+          </th>
           <SortHeader column="last_seen" label="Player last seen" sorting={sorting} className={lastSeenHeadClass} />
         </>
       }
@@ -258,7 +282,9 @@ function CharacterTable({ rows, known, sorting }: { rows: CharacterRow[]; known:
               {character.status === "dead" ? (
                 <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-[#e8a0a0]">Dead</span>
               ) : null}
-              {details.length ? <span className="block text-xs text-[var(--tfmc-mist)]">{details.join(" · ")}</span> : null}
+              {details.length ? (
+                <span className="block text-xs text-[var(--tfmc-mist)]">{details.join(" · ")}</span>
+              ) : null}
               <span className={`${smallClass} sm:hidden`}>
                 <MinecraftName player={player} />
                 {player.discord_user_id ? ` · ${discordLabel(player)}` : ""}
@@ -282,9 +308,17 @@ function CharacterTable({ rows, known, sorting }: { rows: CharacterRow[]; known:
 function countLine(data: PlayerDirectory): string {
   const n = data.total;
   const counted =
-    data.view === "character" ? (n === 1 ? "1 character" : `${n} characters`)
-      : data.view === "discord" ? (n === 1 ? "1 linked player" : `${n} linked players`)
-        : n === 1 ? "1 player" : `${n} players`;
+    data.view === "character"
+      ? n === 1
+        ? "1 character"
+        : `${n} characters`
+      : data.view === "discord"
+        ? n === 1
+          ? "1 linked player"
+          : `${n} linked players`
+        : n === 1
+          ? "1 player"
+          : `${n} players`;
   const source = data.coreprotect.server_label;
   if (!source) return counted;
   return data.view === "character" ? `${counted} on ${source}` : counted;
@@ -327,9 +361,11 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
       .catch((err) => {
         if (id !== request.current) return;
         const status = err instanceof AccountApiError ? err.status : 0;
-        setLoad(status === 400 || (status === 503 && err.message === "directory_busy")
-          ? { kind: "failed", message: adminErrorMessage(err) }
-          : { kind: gateKind(err) });
+        setLoad(
+          status === 400 || (status === 503 && err.message === "directory_busy")
+            ? { kind: "failed", message: adminErrorMessage(err) }
+            : { kind: gateKind(err) },
+        );
       });
   }, [search, view, sort, order, page]);
 
@@ -350,10 +386,18 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
   function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const last = VIEWS.length - 1;
     const target =
-      event.key === "ArrowRight" ? (index === last ? 0 : index + 1)
-        : event.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
-          : event.key === "Home" ? 0
-            : event.key === "End" ? last
+      event.key === "ArrowRight"
+        ? index === last
+          ? 0
+          : index + 1
+        : event.key === "ArrowLeft"
+          ? index === 0
+            ? last
+            : index - 1
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? last
               : null;
     if (target === null) return;
     event.preventDefault();
@@ -466,7 +510,9 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
           <>
             <p className="mt-3 text-xs text-[var(--tfmc-stone)]">{countLine(data)}</p>
             {data.rows.length === 0 ? (
-              <p className="mt-4 text-sm text-[var(--tfmc-mist)]">No {data.view === "character" ? "characters" : "players"} match that.</p>
+              <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+                No {data.view === "character" ? "characters" : "players"} match that.
+              </p>
             ) : data.view === "character" ? (
               <CharacterTable rows={data.rows} known={known} sorting={sorting} />
             ) : data.view === "discord" ? (
@@ -491,9 +537,15 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
               <p className="mt-4 text-xs text-[var(--tfmc-stone)]">
                 {data.view === "discord" ? (
                   <>
-                    {data.omitted === 1 ? "1 player without a Discord link isn’t" : `${data.omitted} players without a Discord link aren’t`}{" "}
+                    {data.omitted === 1
+                      ? "1 player without a Discord link isn’t"
+                      : `${data.omitted} players without a Discord link aren’t`}{" "}
                     listed here.{" "}
-                    <button type="button" className="underline underline-offset-2 hover:text-[var(--tfmc-cream)]" onClick={() => choose("minecraft")}>
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 hover:text-[var(--tfmc-cream)]"
+                      onClick={() => choose("minecraft")}
+                    >
                       See everyone under Minecraft
                     </button>
                   </>

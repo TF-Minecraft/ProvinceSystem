@@ -45,10 +45,7 @@ const markers: MapMarkersResponse = {
 
 describe("chronicleRegionData", () => {
   it("keeps only realms with a colour and land, like the live map does", () => {
-    expect(Object.keys(chronicleRegionData(nationFile)).sort()).toEqual([
-      "suzerain",
-      "vassal",
-    ]);
+    expect(Object.keys(chronicleRegionData(nationFile)).sort()).toEqual(["suzerain", "vassal"]);
     expect(chronicleRegionData(null)).toEqual({});
   });
 });
@@ -96,9 +93,7 @@ describe("toggle data needs", () => {
   it("maps each toggle onto the day file it costs", () => {
     expect(needsNationFile(CHRONICLE_TOGGLES_OFF)).toBe(false);
     expect(needsMarkers(CHRONICLE_TOGGLES_OFF)).toBe(false);
-    expect(
-      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, nationNames: true })
-    ).toBe(true);
+    expect(needsNationFile({ ...CHRONICLE_TOGGLES_OFF, nationNames: true })).toBe(true);
     expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, forts: true })).toBe(true);
   });
 });
@@ -125,40 +120,30 @@ describe("marker names", () => {
     // nameless while settlements beside them are labelled.
     const layers = withMarkers(true);
     expect(layers.markers.length).toBeGreaterThan(1);
-    expect(
-      layers.markers.every((marker) => marker.showLabelOnlyOnHover === false)
-    ).toBe(true);
+    expect(layers.markers.every((marker) => marker.showLabelOnlyOnHover === false)).toBe(true);
   });
 
   it("strips every name when the toggle is off, settlements included", () => {
     const layers = withMarkers(false);
     expect(layers.markers.length).toBeGreaterThan(1);
-    expect(
-      layers.markers.every((marker) => marker.showLabelOnlyOnHover === true)
-    ).toBe(true);
+    expect(layers.markers.every((marker) => marker.showLabelOnlyOnHover === true)).toBe(true);
   });
 
   it("costs no extra day file", () => {
-    expect(
-      needsMarkers({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
-    ).toBe(false);
-    expect(
-      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
-    ).toBe(false);
+    expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })).toBe(false);
+    expect(needsNationFile({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })).toBe(false);
   });
 
   it("does not on its own count as something to draw", () => {
     // It gates the "Pick a date range" button; alone it would offer to build a
     // range of empty frames.
-    expect(
-      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
-    ).toBe(false);
+    expect(anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })).toBe(false);
     expect(
       anyChronicleToggleOn({
         ...CHRONICLE_TOGGLES_OFF,
         markerNames: true,
         forts: true,
-      })
+      }),
     ).toBe(true);
   });
 });
@@ -166,15 +151,13 @@ describe("marker names", () => {
 describe("chronicleToggleSignature", () => {
   it("distinguishes layer sets that cost different amounts to build", () => {
     expect(chronicleToggleSignature(CHRONICLE_TOGGLES_OFF)).toBe("none");
-    expect(
-      chronicleToggleSignature({ ...CHRONICLE_TOGGLES_OFF, nationFill: true })
-    ).toBe("nationFill");
+    expect(chronicleToggleSignature({ ...CHRONICLE_TOGGLES_OFF, nationFill: true })).toBe("nationFill");
     expect(
       chronicleToggleSignature({
         ...CHRONICLE_TOGGLES_OFF,
         nationFill: true,
         nationNames: true,
-      })
+      }),
     ).toBe("nationFill+nationNames");
   });
 
@@ -184,13 +167,13 @@ describe("chronicleToggleSignature", () => {
         ...CHRONICLE_TOGGLES_OFF,
         wars: true,
         nationFill: true,
-      })
+      }),
     ).toBe(
       chronicleToggleSignature({
         ...CHRONICLE_TOGGLES_OFF,
         nationFill: true,
         wars: true,
-      })
+      }),
     );
   });
 });
@@ -223,11 +206,7 @@ describe("buildChronicleLayers", () => {
       labels,
       labelObjects,
     });
-    expect(settlementLayer.markers.map((marker) => marker.id)).toEqual([
-      "s1",
-      "installation:i1",
-      "installation:i3",
-    ]);
+    expect(settlementLayer.markers.map((marker) => marker.id)).toEqual(["s1", "installation:i1", "installation:i3"]);
 
     const fortLayer = buildChronicleLayers({
       toggles: { ...CHRONICLE_TOGGLES_OFF, forts: true },
@@ -235,9 +214,7 @@ describe("buildChronicleLayers", () => {
       labels,
       labelObjects,
     });
-    expect(fortLayer.markers.map((marker) => marker.id)).toEqual([
-      "installation:i2",
-    ]);
+    expect(fortLayer.markers.map((marker) => marker.id)).toEqual(["installation:i2"]);
   });
 
   it("only carries wars when the war toggle is on", () => {
@@ -247,7 +224,7 @@ describe("buildChronicleLayers", () => {
         markers,
         labels,
         labelObjects,
-      }).wars
+      }).wars,
     ).toHaveLength(1);
     expect(
       buildChronicleLayers({
@@ -255,7 +232,7 @@ describe("buildChronicleLayers", () => {
         markers,
         labels,
         labelObjects,
-      }).wars
+      }).wars,
     ).toEqual([]);
   });
 
@@ -266,7 +243,7 @@ describe("buildChronicleLayers", () => {
         markers: null,
         labels,
         labelObjects,
-      }).labels
+      }).labels,
     ).toBe(labels);
   });
 });
@@ -279,7 +256,7 @@ describe("chronicleRegionData against a hostile day file", () => {
     // the label layer while `buildNationColorLut` still paints its provinces,
     // and the map then answers truthily for keys it never had.
     const hostile = JSON.parse(
-      '{"__proto__":{"rgb":"1,2,3","provinces":[9]},"Real":{"rgb":"4,5,6","provinces":[1]}}'
+      '{"__proto__":{"rgb":"1,2,3","provinces":[9]},"Real":{"rgb":"4,5,6","provinces":[1]}}',
     ) as RegionRecord;
 
     const out = chronicleRegionData(hostile);
@@ -297,12 +274,10 @@ describe("chronicleRegionData against a hostile day file", () => {
     // `buildNationColorLut` reads the same file with `Object.values`, so any
     // realm this drops is one that gets painted with no label over it.
     const hostile = JSON.parse(
-      '{"__proto__":{"rgb":"1,2,3","provinces":[9]},"Real":{"rgb":"4,5,6","provinces":[1]}}'
+      '{"__proto__":{"rgb":"1,2,3","provinces":[9]},"Real":{"rgb":"4,5,6","provinces":[1]}}',
     ) as RegionRecord;
 
-    expect(Object.keys(chronicleRegionData(hostile))).toHaveLength(
-      Object.values(hostile).length
-    );
+    expect(Object.keys(chronicleRegionData(hostile))).toHaveLength(Object.values(hostile).length);
   });
 });
 
@@ -330,9 +305,7 @@ describe("marker layers against malformed day payloads", () => {
   it("treats a non-array wars payload as an empty day", () => {
     expect(chronicleWars(malformed)).toEqual([]);
     expect(chronicleWars(null)).toEqual([]);
-    expect(
-      chronicleWars({ map_id: "main" } as unknown as MapMarkersResponse)
-    ).toEqual([]);
+    expect(chronicleWars({ map_id: "main" } as unknown as MapMarkersResponse)).toEqual([]);
   });
 
   it("builds a whole layer set from a malformed day without throwing", () => {
@@ -363,31 +336,19 @@ describe("occupation and fort control", () => {
   const mask = () => ({ width: 4, height: 4, bits: new Uint8Array(2) });
 
   it("maps each onto the day file it costs", () => {
-    expect(
-      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, occupation: true })
-    ).toBe(true);
-    expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, occupation: true })).toBe(
-      false
-    );
+    expect(needsNationFile({ ...CHRONICLE_TOGGLES_OFF, occupation: true })).toBe(true);
+    expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, occupation: true })).toBe(false);
     // `zoc_provinces` rides on the fort rows of the markers payload the forts
     // toggle already pulls, so fort control costs no extra day file.
-    expect(
-      needsMarkers({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
-    ).toBe(true);
-    expect(
-      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
-    ).toBe(false);
+    expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })).toBe(true);
+    expect(needsNationFile({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })).toBe(false);
   });
 
   it("each counts as something to draw on its own", () => {
     // Unlike `markerNames`: both of these paint their own marks with every
     // other layer off, so gating the range step on them is correct.
-    expect(
-      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, occupation: true })
-    ).toBe(true);
-    expect(
-      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
-    ).toBe(true);
+    expect(anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, occupation: true })).toBe(true);
+    expect(anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })).toBe(true);
   });
 
   it("carries each computed mask only while its own toggle is on", () => {
@@ -418,7 +379,7 @@ describe("occupation and fort control", () => {
         ...CHRONICLE_TOGGLES_OFF,
         occupation: true,
         fortControl: true,
-      })
+      }),
     ).toBe("occupation+fortControl");
   });
 });
@@ -456,38 +417,23 @@ describe("trade leagues and prosperity", () => {
   });
 
   it("each needs the province grid, since each paints provinces", () => {
-    expect(
-      needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })
-    ).toBe(true);
-    expect(
-      needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })
-    ).toBe(true);
+    expect(needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })).toBe(true);
+    expect(needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })).toBe(true);
   });
 
   it("each counts as something to draw on its own", () => {
     // Unlike `markerNames`: both paint their own marks with every other layer
     // off — league territory on bare parchment, the heat wash over the map.
-    expect(
-      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })
-    ).toBe(true);
-    expect(
-      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })
-    ).toBe(true);
+    expect(anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })).toBe(true);
+    expect(anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })).toBe(true);
   });
 
   it("costs one pixel pass however many fill layers are on", () => {
     // All four composite into the frame's single colour table, so the estimate
     // must charge the paint once rather than once per layer.
     expect(paintsChronicleFill(CHRONICLE_TOGGLES_OFF)).toBe(false);
-    for (const key of [
-      "nationFill",
-      "occupation",
-      "tradeLeagues",
-      "prosperity",
-    ] as const) {
-      expect(paintsChronicleFill({ ...CHRONICLE_TOGGLES_OFF, [key]: true })).toBe(
-        true
-      );
+    for (const key of ["nationFill", "occupation", "tradeLeagues", "prosperity"] as const) {
+      expect(paintsChronicleFill({ ...CHRONICLE_TOGGLES_OFF, [key]: true })).toBe(true);
     }
     // Layers that draw somewhere other than the fill canvas do not light it up.
     expect(
@@ -496,7 +442,7 @@ describe("trade leagues and prosperity", () => {
         nationBorders: true,
         nationNames: true,
         fortControl: true,
-      })
+      }),
     ).toBe(false);
   });
 
@@ -509,16 +455,14 @@ describe("trade leagues and prosperity", () => {
         nationFill: true,
         tradeLeagues: true,
         prosperity: true,
-      })
+      }),
     ).toBe("nationFill+tradeLeagues+prosperity");
-    expect(
-      chronicleToggleSignature({ ...CHRONICLE_TOGGLES_OFF, nationFill: true })
-    ).not.toBe(
+    expect(chronicleToggleSignature({ ...CHRONICLE_TOGGLES_OFF, nationFill: true })).not.toBe(
       chronicleToggleSignature({
         ...CHRONICLE_TOGGLES_OFF,
         nationFill: true,
         prosperity: true,
-      })
+      }),
     );
   });
 
@@ -536,7 +480,7 @@ describe("trade leagues and prosperity", () => {
         markers,
         labels: [],
         labelObjects: [],
-      })
+      }),
     ).toEqual({
       labels: [],
       borders: null,
@@ -586,10 +530,7 @@ describe("buildChronicleLayers under a focus", () => {
     forts: [],
     wars: [{ id: "w1", name: "The War" }],
   };
-  const labels = [
-    { nationId: "suzerain" },
-    { nationId: "vassal" },
-  ] as never[];
+  const labels = [{ nationId: "suzerain" }, { nationId: "vassal" }] as never[];
   const labelObjects = [{ id: "suzerain", visible: true, nested: false, baseId: "suzerain" }];
 
   it("keeps only the focused realm's names and pins", () => {
@@ -606,11 +547,7 @@ describe("buildChronicleLayers under a focus", () => {
       focusNationId: "suzerain",
     });
     expect(layers.labels).toEqual([{ nationId: "suzerain" }]);
-    expect(layers.markers.map((marker) => marker.id)).toEqual([
-      "s-ours",
-      "installation:i-ours",
-      "installation:i-fort",
-    ]);
+    expect(layers.markers.map((marker) => marker.id)).toEqual(["s-ours", "installation:i-ours", "installation:i-fort"]);
   });
 
   it("keeps a vassal's pins when the focused suzerain's nation file is in hand", () => {
@@ -684,7 +621,7 @@ describe("buildChronicleLayers under a focus", () => {
         labels,
         labelObjects,
         focusNationId: null,
-      })
+      }),
     ).toEqual(base);
     expect(base.labels).toBe(labels);
   });
@@ -693,16 +630,14 @@ describe("buildChronicleLayers under a focus", () => {
 describe("chronicleClipLabel", () => {
   it("names the layers that are on, and collapses a long list", () => {
     expect(chronicleClipLabel(CHRONICLE_TOGGLES_OFF)).toBe("Empty look");
-    expect(
-      chronicleClipLabel({ ...CHRONICLE_TOGGLES_OFF, nationBorders: true })
-    ).toBe("Nation borders");
+    expect(chronicleClipLabel({ ...CHRONICLE_TOGGLES_OFF, nationBorders: true })).toBe("Nation borders");
     expect(
       chronicleClipLabel({
         ...CHRONICLE_TOGGLES_OFF,
         nationBorders: true,
         prosperity: true,
         tradeLeagues: true,
-      })
+      }),
     ).toBe("Nation borders, Trade leagues, Prosperity");
     expect(
       chronicleClipLabel({
@@ -711,7 +646,7 @@ describe("chronicleClipLabel", () => {
         nationBorders: true,
         occupation: true,
         prosperity: true,
-      })
+      }),
     ).toBe("Nation fill, Nation borders + 2 more");
   });
 });

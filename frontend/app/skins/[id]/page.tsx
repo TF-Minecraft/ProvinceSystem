@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import StatusCard from "../../components/skins/StatusCard";
-import {
-  getSubmission,
-  SkinsApiError,
-  type SubmissionPublic,
-} from "../../../lib/skins/api";
+import { getSubmission, SkinsApiError, type SubmissionPublic } from "../../../lib/skins/api";
 import {
   clearSession as clearSkinsSession,
   getSession as getSkinsSession,
@@ -51,11 +47,7 @@ export default function SubmissionStatusPage() {
       setToken(token);
     } catch (err) {
       const message =
-        err instanceof SkinsApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Failed to load";
+        err instanceof SkinsApiError ? err.message : err instanceof Error ? err.message : "Failed to load";
       setError(message);
       setRow(null);
     } finally {
@@ -74,9 +66,7 @@ export default function SubmissionStatusPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-16">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Submission
-      </h1>
+      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Submission</h1>
 
       {loading ? (
         <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
@@ -85,10 +75,7 @@ export default function SubmissionStatusPage() {
           <p className="text-sm text-[#e8a0a0]" role="alert">
             {error}
           </p>
-          <Link
-            href="/skins"
-            className="mt-4 inline-block text-sm text-[var(--tfmc-accent)] hover:underline"
-          >
+          <Link href="/skins" className="mt-4 inline-block text-sm text-[var(--tfmc-accent)] hover:underline">
             Back to skins
           </Link>
         </div>

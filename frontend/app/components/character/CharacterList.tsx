@@ -25,9 +25,7 @@ function Row({
   catalog?: CreationCatalog | null;
 }) {
   const status = String(item.status || "").toUpperCase();
-  const meta = [displayRace(item, catalog), displayClass(item, catalog)]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
   const err = String(item.error || "").trim();
   const body = (
     <>
@@ -35,19 +33,11 @@ function Row({
         <p className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
           {item.name || "Unnamed"}
         </p>
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          {meta || "-"}
-        </p>
-        {status === "REJECTED" && err ? (
-          <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p>
-        ) : null}
+        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
+        {status === "REJECTED" && err ? <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p> : null}
       </div>
       {/* Section headings name the status; only Missing needs a badge. */}
-      {status === "MISSING" ? (
-        <span className="text-xs font-medium text-[var(--tfmc-stone)]">
-          Missing
-        </span>
-      ) : null}
+      {status === "MISSING" ? <span className="text-xs font-medium text-[var(--tfmc-stone)]">Missing</span> : null}
     </>
   );
   if (linkable && item.id) {
@@ -87,12 +77,8 @@ function Section({
   if (items.length === 0 && !empty) return null;
   return (
     <section className="mt-10">
-      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        {title}
-      </h2>
-      {hint ? (
-        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">{hint}</p>
-      ) : null}
+      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{title}</h2>
+      {hint ? <p className="mt-2 text-sm text-[var(--tfmc-mist)]">{hint}</p> : null}
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{empty}</p>
       ) : (
@@ -104,8 +90,7 @@ function Section({
               catalog={catalog}
               linkable={
                 linkAlive &&
-                (String(c.status || "").toUpperCase() === "ALIVE" ||
-                  String(c.status || "").toLowerCase() === "pending")
+                (String(c.status || "").toUpperCase() === "ALIVE" || String(c.status || "").toLowerCase() === "pending")
               }
             />
           ))}
@@ -125,15 +110,9 @@ export default function CharacterList({
   onRefresh,
   refreshing = false,
 }: Props) {
-  const alive = characters.filter(
-    (c) => String(c.status).toUpperCase() === "ALIVE"
-  );
-  const pending = characters.filter(
-    (c) => String(c.status).toLowerCase() === "pending"
-  );
-  const rejected = characters.filter(
-    (c) => String(c.status).toLowerCase() === "rejected"
-  );
+  const alive = characters.filter((c) => String(c.status).toUpperCase() === "ALIVE");
+  const pending = characters.filter((c) => String(c.status).toLowerCase() === "pending");
+  const rejected = characters.filter((c) => String(c.status).toLowerCase() === "rejected");
   const dead = characters.filter((c) => {
     const s = String(c.status).toUpperCase();
     return s === "DEAD" || s === "MISSING";
@@ -142,9 +121,7 @@ export default function CharacterList({
   const atLimit = aliveCount >= maxSlots;
   const hasAny = characters.length > 0;
   const creatorLocked = !webCreatorAllowed;
-  const lockLabel =
-    webCreatorLockLabel.trim() ||
-    "Not available for your rank yet.";
+  const lockLabel = webCreatorLockLabel.trim() || "Not available for your rank yet.";
 
   return (
     <div className="animate-char-rise mt-6">
@@ -164,9 +141,7 @@ export default function CharacterList({
             </button>
           ) : null}
           {atLimit ? (
-            <span className="text-sm text-[var(--tfmc-mist)]">
-              No free slot
-            </span>
+            <span className="text-sm text-[var(--tfmc-mist)]">No free slot</span>
           ) : creatorLocked ? (
             <span className="text-sm text-[var(--tfmc-mist)]">{lockLabel}</span>
           ) : (
@@ -196,20 +171,12 @@ export default function CharacterList({
         </div>
       ) : (
         <>
-          <Section
-            title="Alive"
-            items={alive}
-            empty="No alive characters."
-            linkAlive
-            catalog={catalog}
-          />
+          <Section title="Alive" items={alive} empty="No alive characters." linkAlive catalog={catalog} />
           <Section
             title="Pending"
             items={pending}
             hint={
-              pending.length > 0
-                ? "This can take up to a minute. You can still edit kits and wardrobe."
-                : undefined
+              pending.length > 0 ? "This can take up to a minute. You can still edit kits and wardrobe." : undefined
             }
             linkAlive
             catalog={catalog}

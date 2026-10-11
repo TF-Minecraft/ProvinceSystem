@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  filterPlacedSettlements,
-  visibleSettlementKind,
-} from "./settlementMarkers";
+import { filterPlacedSettlements, visibleSettlementKind } from "./settlementMarkers";
 
 describe("settlementMarkers", () => {
   it("visibleSettlementKind hides capital star for hidden vassals", () => {
@@ -11,16 +8,12 @@ describe("settlementMarkers", () => {
       { id: "gaba_gaba", visible: true, nested: false, baseId: "gaba_gaba" },
       { id: "invaders", visible: false, nested: false, baseId: "invaders" },
     ];
-    expect(
-      visibleSettlementKind("faction_capital", "invaders", overview)
-    ).toBe("settlement");
-    expect(
-      visibleSettlementKind("faction_capital", "gaba_gaba", overview)
-    ).toBe("faction_capital");
+    expect(visibleSettlementKind("faction_capital", "invaders", overview)).toBe("settlement");
+    expect(visibleSettlementKind("faction_capital", "gaba_gaba", overview)).toBe("faction_capital");
     expect(
       visibleSettlementKind("faction_capital", "invaders", [
         { id: "invaders", visible: true, nested: false, baseId: "invaders" },
-      ])
+      ]),
     ).toBe("faction_capital");
   });
 

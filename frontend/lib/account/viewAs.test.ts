@@ -33,7 +33,11 @@ it("leaves the view a page shows once it runs out, and tells other tabs", async 
 });
 
 it("never ends a newer view or a switch made elsewhere; it reloads instead", async () => {
-  for (const account of [{ viewing_as: { staff_name: "boss", expires_at: "2026-10-11T01:00:00Z" } }, { viewing_as: null }, null]) {
+  for (const account of [
+    { viewing_as: { staff_name: "boss", expires_at: "2026-10-11T01:00:00Z" } },
+    { viewing_as: null },
+    null,
+  ]) {
     vi.mocked(getAccount).mockResolvedValue(account as never);
     await leaveExpiredView("2026-10-11T00:30:00Z");
   }

@@ -49,7 +49,10 @@ const FURNITURE_MODELS: Record<string, NonNullable<Slot["model"]>> = {
   "itemsadder:bowl": furnitureModel("bowl", "plate"),
   "itemsadder:tool_shelf": furnitureModel("tool_shelf"),
   "itemsadder:trough": furnitureModel("trough"),
-  "itemsadder:pet_house": { url: "/wiki/models/companion-pets/pethouse.json", textures: { "0": "/wiki/textures/companion-pets/pethouse/0.png" } },
+  "itemsadder:pet_house": {
+    url: "/wiki/models/companion-pets/pethouse.json",
+    textures: { "0": "/wiki/textures/companion-pets/pethouse/0.png" },
+  },
   "itemsadder:meat_hook": furnitureModel("meat_hook"),
   "itemsadder:sausage_maker": furnitureModel("sausage_maker"),
   "itemsadder:liquid_container": furnitureModel("liquid_container"),
@@ -62,7 +65,10 @@ const FURNITURE_MODELS: Record<string, NonNullable<Slot["model"]>> = {
   "itemsadder:marauder_coins_small": furnitureModel("marauder_coins_small", "marauder/marauder_coins_small"),
   "itemsadder:marauder_goldbars": furnitureModel("marauder_goldbars", "marauder/marauder_goldbars"),
   "itemsadder:marauder_goldbag": furnitureModel("marauder_goldbag", "marauder/marauder_goldbag"),
-  "itemsadder:archeology_cabinet": { url: "/wiki/models/archeology-cabinet.json", texture: "/wiki/textures/stations/archeology-cabinet.png" },
+  "itemsadder:archeology_cabinet": {
+    url: "/wiki/models/archeology-cabinet.json",
+    texture: "/wiki/textures/stations/archeology-cabinet.png",
+  },
 };
 
 /**
@@ -71,7 +77,9 @@ const FURNITURE_MODELS: Record<string, NonNullable<Slot["model"]>> = {
  * armour dyed 23 23 23, so it gets the vanilla sprite re-tinted to that dye.
  */
 const DOCTORS_GEAR: Record<string, Partial<Slot>> = {
-  "mmoitem:ARMORS:DOCTORS_MASK": { model: { url: "/wiki/models/doctors-mask.json", texture: "/wiki/textures/doctors-gear/doctors_mask_skin.png" } },
+  "mmoitem:ARMORS:DOCTORS_MASK": {
+    model: { url: "/wiki/models/doctors-mask.json", texture: "/wiki/textures/doctors-gear/doctors_mask_skin.png" },
+  },
   "mmoitem:ARMORS:DOCTORS_COAT": { texture: "/wiki/textures/doctors-gear/doctors_chestplate.png" },
   "mmoitem:ARMORS:DOCTORS_LEGGINGS": { texture: "/wiki/textures/doctors-gear/doctors_leggings.png" },
   "mmoitem:ARMORS:DOCTORS_BOOTS": { texture: "/wiki/textures/doctors-gear/doctors_boots.png" },
@@ -107,7 +115,7 @@ export function stationRecipe(key: string): Recipe {
   if (!recipe) {
     throw new Error(
       `No generated station recipe "${key}". Re-run scripts/build-station-recipes.mjs, ` +
-        "or update the caller if the server config dropped it."
+        "or update the caller if the server config dropped it.",
     );
   }
   return recipe;

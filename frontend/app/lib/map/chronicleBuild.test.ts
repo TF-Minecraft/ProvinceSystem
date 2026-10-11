@@ -69,7 +69,7 @@ describe("selectChronicleRange", () => {
     const selection = selectChronicleRange(
       index(["2026-01-01", "2026-01-02", "2026-01-04"], ["2026-01-02"]),
       "2026-01-01",
-      "2026-01-04"
+      "2026-01-04",
     );
 
     expect(selection.error).toBeNull();
@@ -78,11 +78,7 @@ describe("selectChronicleRange", () => {
   });
 
   it("rejects a range anchored on a day the map never stored", () => {
-    const selection = selectChronicleRange(
-      index(["2026-01-01", "2026-01-02"]),
-      "2026-01-01",
-      "2026-01-03"
-    );
+    const selection = selectChronicleRange(index(["2026-01-01", "2026-01-02"]), "2026-01-01", "2026-01-03");
 
     expect(selection.days).toEqual([]);
     expect(selection.error).toContain("2026-01-03");
@@ -90,12 +86,8 @@ describe("selectChronicleRange", () => {
 
   it("rejects a reversed range and an unset one", () => {
     const stored = index(["2026-01-01", "2026-01-02"]);
-    expect(
-      selectChronicleRange(stored, "2026-01-02", "2026-01-01").error
-    ).toMatch(/after/);
-    expect(selectChronicleRange(stored, null, "2026-01-02").error).toMatch(
-      /first and last/
-    );
+    expect(selectChronicleRange(stored, "2026-01-02", "2026-01-01").error).toMatch(/after/);
+    expect(selectChronicleRange(stored, null, "2026-01-02").error).toMatch(/first and last/);
   });
 
   it("treats a map with no history as empty rather than broken", () => {
@@ -186,14 +178,11 @@ describe("estimateChronicleBuild", () => {
     expect(estimate.totalMs).toBeGreaterThan(0);
     // The line reads the same whether or not the sample was measured; only the
     // numbers behind it differ.
-    expect(describeChronicleEstimate(estimate)).toMatch(
-      /^~.+ to build\. ~.+\.$/
-    );
+    expect(describeChronicleEstimate(estimate)).toMatch(/^~.+ to build\. ~.+\.$/);
   });
 
   it("flags a range that would blow the memory ceiling", () => {
-    const dayCount =
-      Math.ceil(CHRONICLE_MEMORY_CEILING_BYTES / (900 * 900 * 4)) + 1;
+    const dayCount = Math.ceil(CHRONICLE_MEMORY_CEILING_BYTES / (900 * 900 * 4)) + 1;
     const estimate = estimateChronicleBuild({
       dayCount,
       sample,
@@ -210,7 +199,7 @@ describe("estimateChronicleBuild", () => {
         signature,
         renderWidth: 600,
         renderHeight: 600,
-      }).overCeiling
+      }).overCeiling,
     ).toBe(false);
   });
 
@@ -222,9 +211,7 @@ describe("estimateChronicleBuild", () => {
       renderWidth: 900,
       renderHeight: 900,
     });
-    expect(describeChronicleEstimate(estimate)).toBe(
-      "~23 s to build. ~77.2 MB."
-    );
+    expect(describeChronicleEstimate(estimate)).toBe("~23 s to build. ~77.2 MB.");
   });
 });
 
@@ -276,11 +263,7 @@ describe("runChronicleBuild", () => {
     });
 
     expect(rendered).toEqual(["2026-01-01", "2026-01-02"]);
-    expect(result.frames.map((frame) => frame.reusedImage)).toEqual([
-      false,
-      false,
-      true,
-    ]);
+    expect(result.frames.map((frame) => frame.reusedImage)).toEqual([false, false, true]);
   });
 
   it("skips a day whose sources are absent instead of failing the build", async () => {
@@ -295,10 +278,7 @@ describe("runChronicleBuild", () => {
     });
 
     expect(result.skippedDays).toEqual(["2026-01-02"]);
-    expect(result.frames.map((frame) => frame.day)).toEqual([
-      "2026-01-01",
-      "2026-01-03",
-    ]);
+    expect(result.frames.map((frame) => frame.day)).toEqual(["2026-01-01", "2026-01-03"]);
   });
 
   it("stops painting and frees what it built when cancelled", async () => {
@@ -320,14 +300,11 @@ describe("runChronicleBuild", () => {
         effects,
         signal: controller.signal,
         onProgress,
-      })
+      }),
     ).rejects.toBeInstanceOf(ChronicleBuildCancelled);
 
     expect(rendered).toEqual(["2026-01-01", "2026-01-02"]);
-    expect(disposed.map((image) => image.id)).toEqual([
-      "2026-01-01",
-      "2026-01-02",
-    ]);
+    expect(disposed.map((image) => image.id)).toEqual(["2026-01-01", "2026-01-02"]);
   });
 
   it("reports progress and elapsed time from the injected clock", async () => {
@@ -361,7 +338,7 @@ describe("disposeChronicleFrames", () => {
         { day: "c", image: other, layers: null, incomplete: false, reusedImage: false },
         { day: "d", image: null, layers: null, incomplete: false, reusedImage: false },
       ],
-      (image) => closed.push(image)
+      (image) => closed.push(image),
     );
 
     expect(closed).toEqual([shared, other]);
@@ -456,11 +433,7 @@ describe("runChronicleBuild cancellation", () => {
 
 describe("selectChronicleRange against a malformed index", () => {
   it("treats non-array days and incomplete_days as an empty history", () => {
-    const selection = selectChronicleRange(
-      { days: {}, incomplete_days: {} } as never,
-      "2026-01-01",
-      "2026-01-02"
-    );
+    const selection = selectChronicleRange({ days: {}, incomplete_days: {} } as never, "2026-01-01", "2026-01-02");
 
     expect(selection.days).toEqual([]);
     expect(selection.incompleteDays).toEqual([]);
@@ -471,7 +444,7 @@ describe("selectChronicleRange against a malformed index", () => {
     const selection = selectChronicleRange(
       { days: ["2026-01-01", "2026-01-02"], incomplete_days: [null] } as never,
       "2026-01-01",
-      "2026-01-02"
+      "2026-01-02",
     );
 
     expect(selection.error).toBeNull();
@@ -493,17 +466,13 @@ describe("chronicleBuildBlockReason", () => {
 
   it("lets a well-formed build through", () => {
     expect(chronicleBuildBlockReason(buildable)).toBeNull();
-    expect(
-      chronicleBuildBlockReason({ ...buildable, nationNames: true })
-    ).toBeNull();
+    expect(chronicleBuildBlockReason({ ...buildable, nationNames: true })).toBeNull();
   });
 
   it("refuses a second build while one is still running", () => {
     // The reentrancy case: Back re-enables Build while the first build is still
     // parked on a fetch it cannot be interrupted out of.
-    expect(chronicleBuildBlockReason({ ...buildable, building: true })).toBe(
-      "A build is already running."
-    );
+    expect(chronicleBuildBlockReason({ ...buildable, building: true })).toBe("A build is already running.");
   });
 
   it("refuses nation names until the label geometry has landed", () => {
@@ -515,9 +484,7 @@ describe("chronicleBuildBlockReason", () => {
     expect(reason).toMatch(/loading nation names/i);
 
     // With names off the same un-ready geometry costs nothing.
-    expect(
-      chronicleBuildBlockReason({ ...buildable, geometryReady: false })
-    ).toBeNull();
+    expect(chronicleBuildBlockReason({ ...buildable, geometryReady: false })).toBeNull();
   });
 
   it("refuses nation names on a map with no label geometry at all", () => {
@@ -526,27 +493,21 @@ describe("chronicleBuildBlockReason", () => {
         ...buildable,
         nationNames: true,
         namesSupported: false,
-      })
+      }),
     ).toMatch(/aren't available for this map/i);
     expect(
       chronicleBuildBlockReason({
         ...buildable,
         nationNames: true,
         namesSupported: false,
-      })
+      }),
     ).not.toMatch(/only the live map/i);
   });
 
   it("re-asserts the memory ceiling and the range errors", () => {
-    expect(
-      chronicleBuildBlockReason({ ...buildable, overCeiling: true })
-    ).toMatch(/too many frames/i);
-    expect(
-      chronicleBuildBlockReason({ ...buildable, selectionError: "bad range" })
-    ).toBe("bad range");
-    expect(chronicleBuildBlockReason({ ...buildable, dayCount: 0 })).toMatch(
-      /at least one recorded day/i
-    );
+    expect(chronicleBuildBlockReason({ ...buildable, overCeiling: true })).toMatch(/too many frames/i);
+    expect(chronicleBuildBlockReason({ ...buildable, selectionError: "bad range" })).toBe("bad range");
+    expect(chronicleBuildBlockReason({ ...buildable, dayCount: 0 })).toMatch(/at least one recorded day/i);
   });
 
   it("reports the running build ahead of every other reason", () => {
@@ -558,7 +519,7 @@ describe("chronicleBuildBlockReason", () => {
         building: true,
         overCeiling: true,
         selectionError: "bad range",
-      })
+      }),
     ).toBe("A build is already running.");
   });
 });

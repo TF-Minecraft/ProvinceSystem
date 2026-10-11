@@ -8,7 +8,8 @@ export type PendingPatreonLink = {
 
 export const confirmationCopy = {
   title: "Confirm Patreon link",
-  warning: "Continue only if this Discord or Minecraft account is yours. If someone else sent you this link, cancel it.",
+  warning:
+    "Continue only if this Discord or Minecraft account is yours. If someone else sent you this link, cancel it.",
 };
 
 export function confirmationToken(fragment: string): string | null {
@@ -31,8 +32,11 @@ export async function getPendingPatreonLink(token: string): Promise<PendingPatre
   if (data && typeof data === "object") {
     if ("status" in data && data.status === "expired") return null;
     const pending = data as Partial<PendingPatreonLink>;
-    if ((pending.target_kind === "discord" || pending.target_kind === "minecraft") &&
-        typeof pending.target_name === "string" && typeof pending.patreon_name === "string") {
+    if (
+      (pending.target_kind === "discord" || pending.target_kind === "minecraft") &&
+      typeof pending.target_name === "string" &&
+      typeof pending.patreon_name === "string"
+    ) {
       return pending as PendingPatreonLink;
     }
   }
@@ -41,10 +45,12 @@ export async function getPendingPatreonLink(token: string): Promise<PendingPatre
 
 export async function finishPatreonLink(action: "confirm" | "cancel", token: string): Promise<PatreonLinkedResult> {
   const data = await linkRequest(action, token);
-  const result = data && typeof data === "object" ? data as { status?: unknown; tier?: unknown } : {};
+  const result = data && typeof data === "object" ? (data as { status?: unknown; tier?: unknown }) : {};
   const status = typeof result.status === "string" ? result.status : "error";
-  return getPatreonLinkedResult(action === "cancel" && status === "ok" ? "denied" : status,
-    typeof result.tier === "string" ? result.tier : null);
+  return getPatreonLinkedResult(
+    action === "cancel" && status === "ok" ? "denied" : status,
+    typeof result.tier === "string" ? result.tier : null,
+  );
 }
 
 export type PatreonLinkedResult = {
@@ -89,10 +95,7 @@ const results: Record<string, PatreonLinkedResult> = {
   },
 };
 
-export function getPatreonLinkedResult(
-  status: string | null,
-  tier: string | null
-): PatreonLinkedResult {
+export function getPatreonLinkedResult(status: string | null, tier: string | null): PatreonLinkedResult {
   const result = (status && Object.prototype.hasOwnProperty.call(results, status) && results[status]) || {
     title: "Link result unavailable",
     message: "Return to your profile to check your supporter status.",

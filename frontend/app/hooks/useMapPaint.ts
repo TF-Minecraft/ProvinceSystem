@@ -78,7 +78,7 @@ function pointerAngle(centre: PaintPoint, p: PaintPoint): number {
 /** Knob position in the shape's own unrotated frame. */
 export function paintRotationKnob(
   bounds: { x: number; y: number; w: number; h: number },
-  handleMapPx: number
+  handleMapPx: number,
 ): PaintPoint {
   return {
     x: bounds.x + bounds.w / 2,
@@ -181,10 +181,7 @@ export type UseMapPaintResult = {
  * wheel zooming (bound by useMapViewport on an ancestor element) keep working
  * untouched while painting.
  */
-export default function useMapPaint({
-  mapId,
-  viewportCoordsRef,
-}: UseMapPaintOptions): UseMapPaintResult {
+export default function useMapPaint({ mapId, viewportCoordsRef }: UseMapPaintOptions): UseMapPaintResult {
   const [enabled, setEnabled] = useState(false);
   const [visible, setVisible] = useState(true);
   const [tool, setTool] = useState<PaintTool>("brush");
@@ -192,15 +189,10 @@ export default function useMapPaint({
   const [width, setWidthState] = useState<PaintWidth>(PAINT_WIDTH_DEFAULT);
   // The slider is the only caller today, but clamping here means no shape can
   // ever be created with a width the renderer cannot draw.
-  const setWidth = useCallback(
-    (next: PaintWidth) => setWidthState(clampPaintWidth(next)),
-    []
-  );
+  const setWidth = useCallback((next: PaintWidth) => setWidthState(clampPaintWidth(next)), []);
   const [stampIcon, setStampIcon] = useState<PaintStampIconId>("raid");
   const [stampFlipX, setStampFlipXState] = useState(false);
-  const [textStyle, setTextStyleState] = useState<PaintTextStyle>(
-    PAINT_TEXT_STYLE_DEFAULT
-  );
+  const [textStyle, setTextStyleState] = useState<PaintTextStyle>(PAINT_TEXT_STYLE_DEFAULT);
 
   const [history, setHistory] = useState<PaintHistory>(() => createPaintHistory([]));
   const [draft, setDraftState] = useState<PaintShape | null>(null);
@@ -226,14 +218,11 @@ export default function useMapPaint({
    * pointerup has to read the finished stroke without depending on React having
    * re-rendered in between.
    */
-  const setDraft = useCallback(
-    (next: PaintShape | null | ((current: PaintShape | null) => PaintShape | null)) => {
-      const resolved = typeof next === "function" ? next(draftRef.current) : next;
-      draftRef.current = resolved;
-      setDraftState(resolved);
-    },
-    []
-  );
+  const setDraft = useCallback((next: PaintShape | null | ((current: PaintShape | null) => PaintShape | null)) => {
+    const resolved = typeof next === "function" ? next(draftRef.current) : next;
+    draftRef.current = resolved;
+    setDraftState(resolved);
+  }, []);
 
   // ---- persistence -------------------------------------------------------
 
@@ -263,9 +252,7 @@ export default function useMapPaint({
   /** Commits a gesture that mutated `present` live (erase, move) against its snapshot. */
   const commitFromSnapshot = useCallback((snapshot: PaintShape[]) => {
     setHistory((current) =>
-      current.present === snapshot
-        ? current
-        : commitPaintHistory({ ...current, present: snapshot }, current.present)
+      current.present === snapshot ? current : commitPaintHistory({ ...current, present: snapshot }, current.present),
     );
   }, []);
 
@@ -317,17 +304,13 @@ export default function useMapPaint({
       if (!viewport) return null;
       return screenPointToMap(event.clientX, event.clientY, viewport);
     },
-    [viewportCoordsRef]
+    [viewportCoordsRef],
   );
-
-  
 
   // ---- text editing ------------------------------------------------------
 
   const setTextValue = useCallback((next: string) => {
-    setTextEditor((current) =>
-      current ? { ...current, value: next.slice(0, PAINT_MAX_TEXT_LENGTH) } : current
-    );
+    setTextEditor((current) => (current ? { ...current, value: next.slice(0, PAINT_MAX_TEXT_LENGTH) } : current));
   }, []);
 
   const cancelText = useCallback(() => setTextEditor(null), []);
@@ -343,38 +326,33 @@ export default function useMapPaint({
       return commitPaintHistory(
         current,
         current.present.map((shape) =>
-          shape.id === targetId ? { ...(shape as PaintStampShape), flipX: next } : shape
-        )
+          shape.id === targetId ? { ...(shape as PaintStampShape), flipX: next } : shape,
+        ),
       );
     });
   }, []);
 
-  const setTextStyle = useCallback(
-    (patch: Partial<PaintTextStyle>) => {
-      setTextStyleState((current) => ({ ...current, ...patch }));
+  const setTextStyle = useCallback((patch: Partial<PaintTextStyle>) => {
+    setTextStyleState((current) => ({ ...current, ...patch }));
 
-      // Restyle whatever label the user is looking at, so the controls read as
-      // editing that label rather than only arming the next one.
-      const editing = textEditorRef.current;
-      if (editing) {
-        setTextEditor({ ...editing, shape: { ...editing.shape, ...patch } });
-      }
+    // Restyle whatever label the user is looking at, so the controls read as
+    // editing that label rather than only arming the next one.
+    const editing = textEditorRef.current;
+    if (editing) {
+      setTextEditor({ ...editing, shape: { ...editing.shape, ...patch } });
+    }
 
-      const targetId = editing?.isNew ? null : editing?.shape.id ?? selectedIdRef.current;
-      if (!targetId) return;
-      setHistory((current) => {
-        const target = current.present.find((shape) => shape.id === targetId);
-        if (target?.type !== "text") return current;
-        return commitPaintHistory(
-          current,
-          current.present.map((shape) =>
-            shape.id === targetId ? { ...(shape as PaintTextShape), ...patch } : shape
-          )
-        );
-      });
-    },
-    []
-  );
+    const targetId = editing?.isNew ? null : (editing?.shape.id ?? selectedIdRef.current);
+    if (!targetId) return;
+    setHistory((current) => {
+      const target = current.present.find((shape) => shape.id === targetId);
+      if (target?.type !== "text") return current;
+      return commitPaintHistory(
+        current,
+        current.present.map((shape) => (shape.id === targetId ? { ...(shape as PaintTextShape), ...patch } : shape)),
+      );
+    });
+  }, []);
 
   const commitText = useCallback(() => {
     const editor = textEditorRef.current;
@@ -390,16 +368,11 @@ export default function useMapPaint({
     setHistory((current) => {
       if (editor.isNew) {
         if (!text) return current;
-        return commitPaintHistory(current, [
-          ...current.present,
-          { ...editor.shape, text },
-        ]);
+        return commitPaintHistory(current, [...current.present, { ...editor.shape, text }]);
       }
       if (text === editor.shape.text) return current;
       const next = text
-        ? current.present.map((shape) =>
-            shape.id === editor.shape.id ? { ...editor.shape, text } : shape
-          )
+        ? current.present.map((shape) => (shape.id === editor.shape.id ? { ...editor.shape, text } : shape))
         : current.present.filter((shape) => shape.id !== editor.shape.id);
       return commitPaintHistory(current, next);
     });
@@ -417,7 +390,6 @@ export default function useMapPaint({
 
       if (textEditor) commitText();
 
-      
       const sizes = paintSizesMapPx();
       const tolerance = paintMapPx(PAINT_ERASER_SCREEN_PX);
 
@@ -495,10 +467,11 @@ export default function useMapPaint({
         case "eraser": {
           const snapshot = shapes;
           const hit = pickTopPaintShapeAt(shapes, point, tolerance, sizes);
-          if (hit) setHistory((current) => ({
-            ...current,
-            present: current.present.filter((shape) => shape.id !== hit.id),
-          }));
+          if (hit)
+            setHistory((current) => ({
+              ...current,
+              present: current.present.filter((shape) => shape.id !== hit.id),
+            }));
           gestureRef.current = { kind: "erase", pointerId: event.pointerId, snapshot };
           break;
         }
@@ -515,10 +488,7 @@ export default function useMapPaint({
             // own frame, so it travels with the shape as it rotates.
             const knobLocal = paintRotationKnob(selectedBounds, reach);
             const localPoint = toShapeLocalPoint(selected, point, sizes);
-            if (
-              Math.abs(localPoint.x - knobLocal.x) <= reach &&
-              Math.abs(localPoint.y - knobLocal.y) <= reach
-            ) {
+            if (Math.abs(localPoint.x - knobLocal.x) <= reach && Math.abs(localPoint.y - knobLocal.y) <= reach) {
               const centre = boundsCentre(selectedBounds);
               gestureRef.current = {
                 kind: "rotate",
@@ -532,16 +502,9 @@ export default function useMapPaint({
               break;
             }
 
-            const handle = pickPaintHandle(
-              selectedBounds,
-              localPoint,
-              reach
-            );
+            const handle = pickPaintHandle(selectedBounds, localPoint, reach);
             if (handle) {
-              const startDistance = Math.hypot(
-                handle.grabbed.x - handle.anchor.x,
-                handle.grabbed.y - handle.anchor.y
-              );
+              const startDistance = Math.hypot(handle.grabbed.x - handle.anchor.x, handle.grabbed.y - handle.anchor.y);
               if (startDistance > 0) {
                 gestureRef.current = {
                   kind: "resize",
@@ -593,7 +556,7 @@ export default function useMapPaint({
       toMapPoint,
       tool,
       width,
-    ]
+    ],
   );
 
   const onPointerMove = useCallback(
@@ -602,8 +565,6 @@ export default function useMapPaint({
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       const point = toMapPoint(event);
       if (!point) return;
-
-      
 
       switch (gesture.kind) {
         case "brush": {
@@ -618,9 +579,7 @@ export default function useMapPaint({
         }
 
         case "arrow":
-          setDraft((current) =>
-            current && current.type === "arrow" ? { ...current, to: point } : current
-          );
+          setDraft((current) => (current && current.type === "arrow" ? { ...current, to: point } : current));
           break;
 
         case "erase": {
@@ -646,7 +605,7 @@ export default function useMapPaint({
           setHistory((current) => ({
             ...current,
             present: current.present.map((shape) =>
-              shape.id === gesture.shapeId ? rotatePaintShape(shape, degrees) : shape
+              shape.id === gesture.shapeId ? rotatePaintShape(shape, degrees) : shape,
             ),
           }));
           break;
@@ -655,17 +614,10 @@ export default function useMapPaint({
         case "resize": {
           const distance = Math.hypot(point.x - gesture.anchor.x, point.y - gesture.anchor.y);
           const factor = distance / gesture.startDistance;
-          const resized = scalePaintShape(
-            gesture.original,
-            gesture.anchor,
-            factor,
-            paintSizesMapPx()
-          );
+          const resized = scalePaintShape(gesture.original, gesture.anchor, factor, paintSizesMapPx());
           setHistory((current) => ({
             ...current,
-            present: current.present.map((shape) =>
-              shape.id === resized.id ? resized : shape
-            ),
+            present: current.present.map((shape) => (shape.id === resized.id ? resized : shape)),
           }));
           break;
         }
@@ -677,14 +629,14 @@ export default function useMapPaint({
           setHistory((current) => ({
             ...current,
             present: current.present.map((shape) =>
-              shape.id === gesture.shapeId ? translatePaintShape(shape, dx, dy) : shape
+              shape.id === gesture.shapeId ? translatePaintShape(shape, dx, dy) : shape,
             ),
           }));
           break;
         }
       }
     },
-    [toMapPoint]
+    [toMapPoint],
   );
 
   const endGesture = useCallback(
@@ -706,15 +658,12 @@ export default function useMapPaint({
           setDraft(null);
           if (cancelled || !pending) break;
           if (pending.type === "arrow") {
-            const length = Math.hypot(
-              pending.to.x - pending.from.x,
-              pending.to.y - pending.from.y
-            );
+            const length = Math.hypot(pending.to.x - pending.from.x, pending.to.y - pending.from.y);
             // A click without a drag is not an arrow.
             if (length < 1) break;
           }
           setHistory((current) =>
-            commitPaintHistory(current, [...current.present, pending].slice(0, PAINT_MAX_SHAPES))
+            commitPaintHistory(current, [...current.present, pending].slice(0, PAINT_MAX_SHAPES)),
           );
           break;
         }
@@ -731,18 +680,12 @@ export default function useMapPaint({
           break;
       }
     },
-    [commitFromSnapshot]
+    [commitFromSnapshot],
   );
 
-  const onPointerUp = useCallback(
-    (event: ReactPointerEvent<Element>) => endGesture(event, false),
-    [endGesture]
-  );
+  const onPointerUp = useCallback((event: ReactPointerEvent<Element>) => endGesture(event, false), [endGesture]);
 
-  const onPointerCancel = useCallback(
-    (event: ReactPointerEvent<Element>) => endGesture(event, true),
-    [endGesture]
-  );
+  const onPointerCancel = useCallback((event: ReactPointerEvent<Element>) => endGesture(event, true), [endGesture]);
 
   // ---- keybindings -------------------------------------------------------
 
@@ -751,12 +694,7 @@ export default function useMapPaint({
 
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
         // Let the text editor keep its own undo stack.
         return;
       }
@@ -785,8 +723,8 @@ export default function useMapPaint({
         setHistory((current) =>
           commitPaintHistory(
             current,
-            current.present.filter((shape) => shape.id !== selectedId)
-          )
+            current.present.filter((shape) => shape.id !== selectedId),
+          ),
         );
         setSelectedId(null);
       }
@@ -807,7 +745,7 @@ export default function useMapPaint({
 
   const handlers = useMemo(
     () => ({ onPointerDown, onPointerMove, onPointerUp, onPointerCancel }),
-    [onPointerCancel, onPointerDown, onPointerMove, onPointerUp]
+    [onPointerCancel, onPointerDown, onPointerMove, onPointerUp],
   );
 
   return {

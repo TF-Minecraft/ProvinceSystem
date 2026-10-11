@@ -64,11 +64,7 @@ export type MinecraftLinkPreview = {
 };
 
 /** The session is an HttpOnly cookie, so every call sends credentials. */
-async function accountRequest<T>(
-  path: string,
-  init?: RequestInit,
-  opts?: { allowEmpty?: boolean }
-): Promise<T> {
+async function accountRequest<T>(path: string, init?: RequestInit, opts?: { allowEmpty?: boolean }): Promise<T> {
   const res = await fetch(`${getApiBase()}${path}`, {
     ...init,
     credentials: "include",
@@ -128,10 +124,10 @@ export function previewMinecraftLink(code: string): Promise<MinecraftLinkPreview
 }
 
 export async function linkMinecraft(code: string): Promise<AccountMinecraft | null> {
-  const data = await accountRequest<{ minecraft: AccountMinecraft | null }>(
-    "/account/minecraft/link",
-    { method: "POST", body: JSON.stringify({ code }) }
-  );
+  const data = await accountRequest<{ minecraft: AccountMinecraft | null }>("/account/minecraft/link", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
   return data.minecraft;
 }
 
@@ -211,7 +207,8 @@ const MINECRAFT_MESSAGES: Record<string, string> = {
   xbox_adult_verification: `That Microsoft account needs age verification at xbox.com first. ${IN_GAME_FALLBACK}`,
   no_java_profile:
     "That Microsoft account doesn’t own Minecraft: Java Edition. If you have another Microsoft account, try that one.",
-  minecraft_taken: "That Minecraft account is already linked to a different Discord account. Ask staff if this is wrong.",
+  minecraft_taken:
+    "That Minecraft account is already linked to a different Discord account. Ask staff if this is wrong.",
   discord_taken: "Your Discord account is already linked to a different Minecraft account. Unlink it first.",
   unavailable: `Connecting with Microsoft isn’t available right now. ${IN_GAME_FALLBACK}`,
   error: `We couldn’t connect with Microsoft just now. Please try again. ${IN_GAME_FALLBACK}`,

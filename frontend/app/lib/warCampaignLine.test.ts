@@ -43,7 +43,7 @@ describe("resolveWarWaypoints", () => {
         "10": { x: 50, y: 60, pixel_count: 100 },
         "20": { x: 150, y: 160, pixel_count: 100 },
         "30": { x: 250, y: 260, pixel_count: 100 },
-      }
+      },
     );
     expect(waypoints).toEqual([
       { x: 50, y: 60, provinceId: 10 },
@@ -64,22 +64,20 @@ describe("resolveWarWaypoints", () => {
           map_x: 80,
           map_y: 90,
         },
-      })
+      }),
     );
     expect(waypoints[0]).toEqual({ x: 80, y: 90, provinceId: 10 });
     expect(waypoints).toHaveLength(3);
   });
 
   it("returns empty when fewer than two points resolve", () => {
-    expect(resolveWarWaypoints(sampleWar({ campaign_line_points: [] }))).toEqual(
-      []
-    );
+    expect(resolveWarWaypoints(sampleWar({ campaign_line_points: [] }))).toEqual([]);
     expect(
       resolveWarWaypoints(
         sampleWar({
           campaign_line_points: [{ province_id: 1, map_x: 10, map_y: 10 }],
-        })
-      )
+        }),
+      ),
     ).toEqual([]);
   });
 
@@ -98,7 +96,7 @@ describe("resolveWarWaypoints", () => {
             map_y: 160,
           },
         ],
-      })
+      }),
     );
     expect(waypoints[1]).toEqual({ x: 210, y: 160, provinceId: 20 });
   });
@@ -118,7 +116,7 @@ describe("resolveWarWaypoints", () => {
             map_y: 180,
           },
         ],
-      })
+      }),
     );
     expect(waypoints[2]).toEqual({ x: 250, y: 180, provinceId: 30 });
   });
@@ -139,7 +137,7 @@ describe("resolveWarWaypoints", () => {
             fort_installation_id: "Greenfort",
           },
         ],
-      })
+      }),
     );
     expect(waypoints).toHaveLength(5);
     expect(waypoints[2]).toEqual({ x: 250, y: 135, provinceId: 99 });
@@ -170,11 +168,9 @@ describe("catmullRomSpline", () => {
     const spline = catmullRomSpline(waypoints);
     const first = spline[0];
     const last = spline[spline.length - 1];
-    expect(Math.hypot(first.x - waypoints[0].x, first.y - waypoints[0].y)).toBeLessThan(
-      1
-    );
+    expect(Math.hypot(first.x - waypoints[0].x, first.y - waypoints[0].y)).toBeLessThan(1);
     expect(
-      Math.hypot(last.x - waypoints[waypoints.length - 1].x, last.y - waypoints[waypoints.length - 1].y)
+      Math.hypot(last.x - waypoints[waypoints.length - 1].x, last.y - waypoints[waypoints.length - 1].y),
     ).toBeLessThan(1);
   });
 
@@ -202,9 +198,7 @@ describe("catmullRomSpline", () => {
         const bestDist = Math.hypot(best.x - waypoint.x, best.y - waypoint.y);
         return dist < bestDist ? point : best;
       });
-      expect(
-        Math.hypot(nearest.x - waypoint.x, nearest.y - waypoint.y)
-      ).toBeLessThan(1);
+      expect(Math.hypot(nearest.x - waypoint.x, nearest.y - waypoint.y)).toBeLessThan(1);
     }
   });
 
@@ -231,16 +225,14 @@ describe("buildSvgPathD", () => {
       buildSvgPathD([
         { x: 1, y: 2 },
         { x: 3, y: 4 },
-      ])
+      ]),
     ).toBe("M 1 2 L 3 4");
   });
 });
 
 describe("buildWarCampaignPathD", () => {
   it("returns empty path when war has insufficient waypoints", () => {
-    expect(buildWarCampaignPathD(sampleWar({ campaign_line_points: [] }))).toBe(
-      ""
-    );
+    expect(buildWarCampaignPathD(sampleWar({ campaign_line_points: [] }))).toBe("");
   });
 
   it("returns non-empty path for valid war", () => {
@@ -275,9 +267,10 @@ describe("campaignFrontAxisIndex", () => {
 
 describe("buildWarCampaignPathPair", () => {
   it("returns empty paths when war has insufficient waypoints", () => {
-    expect(buildWarCampaignPathPair(sampleWar({ campaign_line_points: [] }))).toEqual(
-      { progressedD: "", remainingD: "" }
-    );
+    expect(buildWarCampaignPathPair(sampleWar({ campaign_line_points: [] }))).toEqual({
+      progressedD: "",
+      remainingD: "",
+    });
   });
 
   it("splits progressed white from remaining gray at the front", () => {
@@ -285,7 +278,7 @@ describe("buildWarCampaignPathPair", () => {
       sampleWar({
         campaign_provinces: [10, 20, 30, 40],
         cursor_index: 1,
-      })
+      }),
     );
     expect(pair.progressedD.startsWith("M ")).toBe(true);
     expect(pair.remainingD.startsWith("M ")).toBe(true);
@@ -312,7 +305,7 @@ describe("buildWarCampaignPathPair", () => {
             map_y: 150,
           },
         ],
-      })
+      }),
     );
     expect(pair.progressedD.includes("400 200")).toBe(false);
     expect(pair.progressedD.includes("300 120")).toBe(false);

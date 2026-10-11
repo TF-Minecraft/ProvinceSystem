@@ -25,26 +25,13 @@ import {
   computeChronicleOccupationSeamMask,
 } from "../../lib/map/chronicleOccupation";
 import { overviewFillOwnership } from "../../lib/map/chronicleOwnership";
-import {
-  focusChronicleFillLut,
-  stackChronicleFillLuts,
-} from "../../lib/map/chronicleFillStack";
-import {
-  CHRONICLE_FOCUS_NONE,
-  chronicleFocusOptions,
-  chronicleFocusProvinceIds,
-} from "../../lib/map/chronicleFocus";
+import { focusChronicleFillLut, stackChronicleFillLuts } from "../../lib/map/chronicleFillStack";
+import { CHRONICLE_FOCUS_NONE, chronicleFocusOptions, chronicleFocusProvinceIds } from "../../lib/map/chronicleFocus";
 import { buildProsperityColorLut } from "../../lib/map/chronicleProsperity";
 import { buildTradeLeagueColorLut } from "../../lib/map/chronicleTradeLeagues";
-import {
-  chronicleDiscardedProvinceMask,
-  omitDiscardedProvinces,
-} from "../../lib/map/chronicleWater";
+import { chronicleDiscardedProvinceMask, omitDiscardedProvinces } from "../../lib/map/chronicleWater";
 import ChronicleBorderCanvas from "./ChronicleBorderCanvas";
-import type {
-  NationColorLut,
-  ProvinceIdGrid,
-} from "../../lib/map/chroniclePaint";
+import type { NationColorLut, ProvinceIdGrid } from "../../lib/map/chroniclePaint";
 import {
   CHRONICLE_FETCH_CONCURRENCY,
   DEFAULT_CHRONICLE_RENDER_SIZE,
@@ -69,26 +56,14 @@ import {
   isChronicleDayFileMissing,
   type ChronicleIndex,
 } from "../../lib/map/chronicleData";
-import {
-  MapAccessError,
-  fetchMapJson,
-  isAbortError,
-  mapRequiresAuth,
-  staffMapAccessReason,
-} from "@/lib/map/api";
+import { MapAccessError, fetchMapJson, isAbortError, mapRequiresAuth, staffMapAccessReason } from "@/lib/map/api";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
 import MapAuthImage from "../map/MapAuthImage";
 import MapMarkerLayer from "../map/MapMarkerLayer";
 import MapViewport from "../map/MapViewport";
 import LabelLayer from "../map/LabelLayer";
 import WarCampaignLineLayer from "../map/WarCampaignLineLayer";
-import {
-  mapDisplayName,
-  mapFallbackSize,
-  type MapId,
-  type MapMarkersResponse,
-  type RegionRecord,
-} from "../map/types";
+import { mapDisplayName, mapFallbackSize, type MapId, type MapMarkersResponse, type RegionRecord } from "../map/types";
 import { chronicleDayHref, liveMapHref } from "../../lib/map/chronicleDayRoute";
 import {
   DEFAULT_CHRONICLE_GIF_SIZE,
@@ -97,11 +72,7 @@ import {
   chronicleGifDelayMs,
   chronicleGifFilename,
 } from "../../lib/map/chronicleGifFrame";
-import {
-  downloadGif,
-  exportChronicleGif,
-  isChronicleGifCancelled,
-} from "./chronicleGifExport";
+import { downloadGif, exportChronicleGif, isChronicleGifCancelled } from "./chronicleGifExport";
 import { formatChronicleDay } from "../../lib/map/chronicleDayLabel";
 import { DownloadIcon } from "../map/shell/MapIcons";
 import MapShell from "../map/shell/MapShell";
@@ -238,9 +209,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * the toggle record would make `anyChronicleToggleOn` true for a picker that
    * draws nothing, and offer to build a range of empty frames.
    */
-  const [focusNationId, setFocusNationId] = useState<string>(
-    CHRONICLE_FOCUS_NONE
-  );
+  const [focusNationId, setFocusNationId] = useState<string>(CHRONICLE_FOCUS_NONE);
   /**
    * The focus as everything downstream sees it.
    *
@@ -255,26 +224,22 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * set the draft to prosperity alone to queue the next, and that first look
    * must still build narrowed to the realm picked for it.
    */
-  const focusWanted =
-    needsNationFile(toggles) || clips.some((clip) => needsNationFile(clip.toggles));
+  const focusWanted = needsNationFile(toggles) || clips.some((clip) => needsNationFile(clip.toggles));
   const activeFocusNationId = focusWanted ? focusNationId || null : null;
   const [notice, setNotice] = useState<string | null>(null);
   const [layerError, setLayerError] = useState<string | null>(null);
   const [layersLoading, setLayersLoading] = useState(false);
 
   const [previewNation, setPreviewNation] = useState<RegionRecord | null>(null);
-  const [previewMarkers, setPreviewMarkers] =
-    useState<MapMarkersResponse | null>(null);
+  const [previewMarkers, setPreviewMarkers] = useState<MapMarkersResponse | null>(null);
   const [previewTrade, setPreviewTrade] = useState<RegionRecord | null>(null);
-  const [previewProvinceData, setPreviewProvinceData] =
-    useState<unknown>(null);
+  const [previewProvinceData, setPreviewProvinceData] = useState<unknown>(null);
 
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [renderSize, setRenderSize] = useState(DEFAULT_CHRONICLE_RENDER_SIZE);
 
-  const [buildProgress, setBuildProgress] =
-    useState<ChronicleBuildProgress | null>(null);
+  const [buildProgress, setBuildProgress] = useState<ChronicleBuildProgress | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [skippedDays, setSkippedDays] = useState<string[]>([]);
 
@@ -299,9 +264,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [gifLogo, setGifLogo] = useState(true);
   const [gifDiscordLink, setGifDiscordLink] = useState(true);
   /** Where the logo and Discord line sit, when either is on. */
-  const [gifCorner, setGifCorner] = useState<ChronicleWatermarkCorner>(
-    DEFAULT_CHRONICLE_WATERMARK_CORNER
-  );
+  const [gifCorner, setGifCorner] = useState<ChronicleWatermarkCorner>(DEFAULT_CHRONICLE_WATERMARK_CORNER);
   const [gifStatus, setGifStatus] = useState<string | null>(null);
   const [gifError, setGifError] = useState<string | null>(null);
   const [gifNotice, setGifNotice] = useState<string | null>(null);
@@ -333,9 +296,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [nationCost, setNationCost] = useState<SourceCost | null>(null);
   const [markersCost, setMarkersCost] = useState<SourceCost | null>(null);
   const [tradeCost, setTradeCost] = useState<SourceCost | null>(null);
-  const [provinceDataCost, setProvinceDataCost] = useState<SourceCost | null>(
-    null
-  );
+  const [provinceDataCost, setProvinceDataCost] = useState<SourceCost | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // The base map the page already decoded. The GIF composites the parchment
@@ -409,10 +370,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const namesSupported = chronicleNamesSupported(geometry);
 
   const days = useMemo(() => index?.days ?? [], [index]);
-  const incompleteSet = useMemo(
-    () => new Set((index?.incomplete_days ?? []).map((entry) => entry.day)),
-    [index]
-  );
+  const incompleteSet = useMemo(() => new Set((index?.incomplete_days ?? []).map((entry) => entry.day)), [index]);
   const previewDay = index?.last ?? null;
 
   useEffect(() => {
@@ -439,9 +397,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           setGateReason(staffMapAccessReason(err));
           return;
         }
-        setIndexError(
-          err instanceof Error ? err.message : "Couldn't load the map history."
-        );
+        setIndexError(err instanceof Error ? err.message : "Couldn't load the map history.");
       })
       .finally(() => {
         if (!cancelled) setIndexLoading(false);
@@ -514,7 +470,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       }
       return gridPromiseRef.current;
     },
-    [mapId, authToken]
+    [mapId, authToken],
   );
 
   /**
@@ -526,18 +482,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const ensureRenderTarget = useCallback(
     (grid: ProvinceIdGrid): ChronicleRenderTarget => {
       const existing = previewTargetRef.current;
-      if (
-        existing &&
-        existing.size === renderSize &&
-        existing.target.grid === grid
-      ) {
+      if (existing && existing.size === renderSize && existing.target.grid === grid) {
         return existing.target;
       }
       const target = createChronicleRenderTarget(grid, renderSize, renderSize);
       previewTargetRef.current = { target, size: renderSize };
       return target;
     },
-    [renderSize]
+    [renderSize],
   );
 
   /**
@@ -547,13 +499,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const loadNationFile = useCallback(
     async (day: string, signal?: AbortSignal) => {
       const startedAt = performance.now();
-      const file = await fetchChronicleDayFile<RegionRecord>(
-        mapId,
-        day,
-        "nation",
-        authToken,
-        signal
-      );
+      const file = await fetchChronicleDayFile<RegionRecord>(mapId, day, "nation", authToken, signal);
       // Only the first fetch is recorded: one sample is all the estimate needs,
       // and re-recording would queue a render behind every day of a build.
       const cost = {
@@ -563,7 +509,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       setNationCost((current) => current ?? cost);
       return file;
     },
-    [mapId, authToken]
+    [mapId, authToken],
   );
 
   const loadMarkersFile = useCallback(
@@ -583,7 +529,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         throw err;
       }
     },
-    [mapId, authToken]
+    [mapId, authToken],
   );
 
   /**
@@ -598,13 +544,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     async (day: string, signal?: AbortSignal) => {
       const startedAt = performance.now();
       try {
-        const file = await fetchChronicleDayFile<RegionRecord>(
-          mapId,
-          day,
-          "trade",
-          authToken,
-          signal
-        );
+        const file = await fetchChronicleDayFile<RegionRecord>(mapId, day, "trade", authToken, signal);
         const cost = {
           bytes: file.byteLength,
           ms: Math.max(1, performance.now() - startedAt),
@@ -616,20 +556,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         throw err;
       }
     },
-    [mapId, authToken]
+    [mapId, authToken],
   );
 
   const loadProvinceDataFile = useCallback(
     async (day: string, signal?: AbortSignal) => {
       const startedAt = performance.now();
       try {
-        const file = await fetchChronicleDayFile<unknown>(
-          mapId,
-          day,
-          "province_data",
-          authToken,
-          signal
-        );
+        const file = await fetchChronicleDayFile<unknown>(mapId, day, "province_data", authToken, signal);
         const cost = {
           bytes: file.byteLength,
           ms: Math.max(1, performance.now() - startedAt),
@@ -641,7 +575,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         throw err;
       }
     },
-    [mapId, authToken]
+    [mapId, authToken],
   );
 
   const loadDay = useCallback(
@@ -653,7 +587,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         trade: boolean;
         provinceData: boolean;
       },
-      signal?: AbortSignal
+      signal?: AbortSignal,
     ): Promise<ChronicleDay | null> => {
       let nation: RegionRecord | null = null;
       let markers: MapMarkersResponse | null = null;
@@ -720,25 +654,15 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         // nation file still share a frame — the focus is constant across one
         // build — but a frame carried into a build with a different focus would
         // be stale pixels, and this is what stops that from ever being possible.
-        imageFingerprint: imageParts.length || nationFingerprint
-          ? [
-              nationFingerprint ?? "-",
-              ...imageParts,
-              `focus:${activeFocusNationId ?? "-"}`,
-            ].join("|")
-          : null,
+        imageFingerprint:
+          imageParts.length || nationFingerprint
+            ? [nationFingerprint ?? "-", ...imageParts, `focus:${activeFocusNationId ?? "-"}`].join("|")
+            : null,
         byteLength,
         incomplete: incompleteSet.has(day),
       };
     },
-    [
-      loadNationFile,
-      loadMarkersFile,
-      loadTradeFile,
-      loadProvinceDataFile,
-      incompleteSet,
-      activeFocusNationId,
-    ]
+    [loadNationFile, loadMarkersFile, loadTradeFile, loadProvinceDataFile, incompleteSet, activeFocusNationId],
   );
 
   // The preview day's nation file also lists the realms the focus picker
@@ -755,7 +679,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       trade: wantTrade,
       provinceData: wantProvinceData,
     }),
-    [wantNation, wantMarkers, wantTrade, wantProvinceData]
+    [wantNation, wantMarkers, wantTrade, wantProvinceData],
   );
   // `|| wantNation` only so the nation file's arrival keeps pulling the grid
   // with it exactly as it always has. Nation names do not need the grid, but
@@ -790,24 +714,12 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // re-enabling one costs nothing.
   useEffect(() => {
     if (!previewDay) return;
-    const fetchNation =
-      wantNation && !previewNation && !attemptedRef.current.nation;
-    const fetchMarkers =
-      wantMarkers && !previewMarkers && !attemptedRef.current.markers;
-    const fetchTrade =
-      wantTrade && !previewTrade && !attemptedRef.current.trade;
-    const fetchProvinceData =
-      wantProvinceData &&
-      !previewProvinceData &&
-      !attemptedRef.current.provinceData;
+    const fetchNation = wantNation && !previewNation && !attemptedRef.current.nation;
+    const fetchMarkers = wantMarkers && !previewMarkers && !attemptedRef.current.markers;
+    const fetchTrade = wantTrade && !previewTrade && !attemptedRef.current.trade;
+    const fetchProvinceData = wantProvinceData && !previewProvinceData && !attemptedRef.current.provinceData;
     const fetchGrid = wantGrid && !attemptedRef.current.grid;
-    if (
-      !fetchNation &&
-      !fetchMarkers &&
-      !fetchTrade &&
-      !fetchProvinceData &&
-      !fetchGrid
-    ) {
+    if (!fetchNation && !fetchMarkers && !fetchTrade && !fetchProvinceData && !fetchGrid) {
       return;
     }
 
@@ -855,11 +767,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         // is something to put in front of the user.
         if (signal.aborted || isAbortError(err)) return;
         clearAttempts();
-        setLayerError(
-          err instanceof Error
-            ? err.message
-            : `Failed to load ${previewDay}'s layers.`
-        );
+        setLayerError(err instanceof Error ? err.message : `Failed to load ${previewDay}'s layers.`);
       } finally {
         previewLoadsRef.current -= 1;
         // Loading until the last of the overlapping loads is in.
@@ -887,19 +795,16 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     clearAttempts,
   ]);
 
-  const previewRegionData = useMemo(
-    () => chronicleRegionData(previewNation),
-    [previewNation]
-  );
+  const previewRegionData = useMemo(() => chronicleRegionData(previewNation), [previewNation]);
   const previewLabelObjects = useMemo(
     () => chronicleLabelMapObjects(previewRegionData, previewNation),
-    [previewRegionData, previewNation]
+    [previewRegionData, previewNation],
   );
 
   const computeLabels = useCallback(
     (
       regionData: ReturnType<typeof chronicleRegionData>,
-      labelObjects: ReturnType<typeof chronicleLabelMapObjects>
+      labelObjects: ReturnType<typeof chronicleLabelMapObjects>,
     ): NationLabelSpec[] | null => {
       const { neighbors, labelNeighbors, centroids, labelGrid } = geometry;
       // Null, not []. An empty array is a legitimate answer for a day with no
@@ -910,18 +815,12 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         return null;
       }
       if (!Object.keys(regionData).length) return [];
-      return computeVisibleNationLabels(
-        regionData,
-        neighbors,
-        centroids,
-        labelObjects,
-        {
-          grid: labelGrid ?? undefined,
-          labelNeighbors: labelNeighbors ?? neighbors,
-        }
-      );
+      return computeVisibleNationLabels(regionData, neighbors, centroids, labelObjects, {
+        grid: labelGrid ?? undefined,
+        labelNeighbors: labelNeighbors ?? neighbors,
+      });
     },
-    [geometry, namesSupported]
+    [geometry, namesSupported],
   );
 
   // The label pass is the most expensive thing a chronicle day does — connected
@@ -940,12 +839,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       return { labels: [] as NationLabelSpec[], ms: null as number | null };
     }
     return { labels, ms: performance.now() - startedAt };
-  }, [
-    toggles.nationNames,
-    computeLabels,
-    previewRegionData,
-    previewLabelObjects,
-  ]);
+  }, [toggles.nationNames, computeLabels, previewRegionData, previewLabelObjects]);
 
   // Computed on the preview day so the estimate quotes a measured border pass,
   // exactly as it does for the label pass. `gridVersion` is the dependency
@@ -959,10 +853,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       };
     }
     const startedAt = performance.now();
-    const mask = computeChronicleBorderMask(
-      grid,
-      overviewFillOwnership(previewNation)
-    );
+    const mask = computeChronicleBorderMask(grid, overviewFillOwnership(previewNation));
     return { mask, ms: performance.now() - startedAt };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toggles.nationBorders, previewNation, gridVersion]);
@@ -1079,7 +970,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         trade: RegionRecord | null;
         provinceData: unknown;
       },
-      lookToggles: ChronicleToggles = toggles
+      lookToggles: ChronicleToggles = toggles,
     ): NationColorLut => {
       // No terrain yet, or the fetch failed: withhold the two layers the live
       // map refuses to paint on water, rather than paint them and correct
@@ -1093,31 +984,22 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       return focusChronicleFillLut(
         stackChronicleFillLuts([
           lookToggles.nationFill || lookToggles.occupation
-            ? chronicleDayColorLut(
-                day.nation ? overviewFillOwnership(day.nation) : null,
-                {
-                  fill: lookToggles.nationFill,
-                  occupation: lookToggles.occupation,
-                }
-              )
+            ? chronicleDayColorLut(day.nation ? overviewFillOwnership(day.nation) : null, {
+                fill: lookToggles.nationFill,
+                occupation: lookToggles.occupation,
+              })
             : null,
           lookToggles.prosperity && terrainReady
-            ? omitDiscardedProvinces(
-                buildProsperityColorLut(day.provinceData),
-                waterMask
-              )
+            ? omitDiscardedProvinces(buildProsperityColorLut(day.provinceData), waterMask)
             : null,
           lookToggles.tradeLeagues && terrainReady
-            ? omitDiscardedProvinces(
-                buildTradeLeagueColorLut(day.trade),
-                waterMask
-              )
+            ? omitDiscardedProvinces(buildTradeLeagueColorLut(day.trade), waterMask)
             : null,
         ]),
-        chronicleFocusProvinceIds(day.nation, activeFocusNationId)
+        chronicleFocusProvinceIds(day.nation, activeFocusNationId),
       );
     },
-    [toggles, activeFocusNationId, waterMask, waterMaskStatus]
+    [toggles, activeFocusNationId, waterMask, waterMaskStatus],
   );
 
   // The compose preview *is* a build frame: same render target, same downscale,
@@ -1186,10 +1068,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     ensureRenderTarget,
   ]);
 
-  const toggleSignature = useMemo(
-    () => chronicleToggleSignature(toggles),
-    [toggles]
-  );
+  const toggleSignature = useMemo(() => chronicleToggleSignature(toggles), [toggles]);
 
   /**
    * A sample is only offered once every layer that is switched on has been
@@ -1274,21 +1153,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   ]);
 
   const selection = useMemo(
-    () =>
-      selectChronicleRange(
-        { days, incomplete_days: index?.incomplete_days ?? [] },
-        rangeStart,
-        rangeEnd
-      ),
-    [days, index, rangeStart, rangeEnd]
+    () => selectChronicleRange({ days, incomplete_days: index?.incomplete_days ?? [] }, rangeStart, rangeEnd),
+    [days, index, rangeStart, rangeEnd],
   );
 
   const clipSignature = useMemo(
-    () =>
-      clips
-        .map((clip) => `${clip.id}:${chronicleToggleSignature(clip.toggles)}`)
-        .join("|"),
-    [clips]
+    () => clips.map((clip) => `${clip.id}:${chronicleToggleSignature(clip.toggles)}`).join("|"),
+    [clips],
   );
   const lookCount = Math.max(1, clips.length);
   /**
@@ -1296,9 +1167,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * draft, so the estimate refuses to call itself measured and falls back to
    * the expensive case, multiplied by the number of looks.
    */
-  const estimateSignature = clips.length
-    ? `sequence:${clipSignature}`
-    : toggleSignature;
+  const estimateSignature = clips.length ? `sequence:${clipSignature}` : toggleSignature;
 
   const estimate = useMemo(
     () =>
@@ -1309,13 +1178,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         renderWidth: renderSize,
         renderHeight: renderSize,
       }),
-    [
-      selection.days.length,
-      lookCount,
-      costSample,
-      estimateSignature,
-      renderSize,
-    ]
+    [selection.days.length, lookCount, costSample, estimateSignature, renderSize],
   );
 
   /**
@@ -1324,15 +1187,11 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
    * estimate and an unlabelled build — so names being on makes the geometry a
    * hard prerequisite rather than a nice-to-have.
    */
-  const geometryReady = Boolean(
-    geometry.ready && geometry.neighbors && geometry.centroids
-  );
+  const geometryReady = Boolean(geometry.ready && geometry.neighbors && geometry.centroids);
 
   const queuedLooks = clips.length > 0 ? clips.map((clip) => clip.toggles) : [toggles];
   const sequenceNeedsNames = queuedLooks.some((look) => look.nationNames);
-  const sequenceNeedsTerrain = queuedLooks.some(
-    (look) => look.prosperity || look.tradeLeagues
-  );
+  const sequenceNeedsTerrain = queuedLooks.some((look) => look.prosperity || look.tradeLeagues);
   const terrainBlock =
     sequenceNeedsTerrain && waterMaskStatus !== "ready"
       ? waterMaskStatus === "error"
@@ -1352,22 +1211,11 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         geometryReady,
         overCeiling: estimate.overCeiling,
       }),
-    [
-      terrainBlock,
-      selection,
-      building,
-      sequenceNeedsNames,
-      namesSupported,
-      geometryReady,
-      estimate.overCeiling,
-    ]
+    [terrainBlock, selection, building, sequenceNeedsNames, namesSupported, geometryReady, estimate.overCeiling],
   );
 
   /** Step 1 only cares about the geometry; the range is not picked yet. */
-  const composeBlockReason =
-    toggles.nationNames && namesSupported && !geometryReady
-      ? "Loading nation names…"
-      : null;
+  const composeBlockReason = toggles.nationNames && namesSupported && !geometryReady ? "Loading nation names…" : null;
 
   const discardFrames = useCallback(() => {
     if (!framesRef.current.length) return;
@@ -1468,19 +1316,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     const skipped = new Set<string>();
 
     try {
-      const sequenceNeedsGrid = looks.some(
-        (look) =>
-          needsProvinceGrid(look.toggles) || needsNationFile(look.toggles)
-      );
-      const sequencePaintsFill = looks.some((look) =>
-        paintsChronicleFill(look.toggles)
-      );
+      const sequenceNeedsGrid = looks.some((look) => needsProvinceGrid(look.toggles) || needsNationFile(look.toggles));
+      const sequencePaintsFill = looks.some((look) => paintsChronicleFill(look.toggles));
       const grid = sequenceNeedsGrid ? await ensureGrid(controller.signal) : null;
       // The same target the compose preview painted through: one
       // grid-resolution scratch buffer and one small output canvas, reused for
       // every day of every look.
-      const target =
-        grid && sequencePaintsFill ? ensureRenderTarget(grid) : null;
+      const target = grid && sequencePaintsFill ? ensureRenderTarget(grid) : null;
 
       for (let lookIndex = 0; lookIndex < looks.length; lookIndex++) {
         const look = looks[lookIndex]!;
@@ -1499,11 +1341,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
           mask: ChronicleBorderMask | null;
         } | null = null;
 
-        const result = await runChronicleBuild<
-          ChronicleDay,
-          ImageBitmap,
-          ChronicleFrameLayers
-        >({
+        const result = await runChronicleBuild<ChronicleDay, ImageBitmap, ChronicleFrameLayers>({
           days: selection.days,
           concurrency: CHRONICLE_FETCH_CONCURRENCY,
           signal: controller.signal,
@@ -1527,7 +1365,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                     trade: needsTradeFile(lookToggles),
                     provinceData: needsProvinceData(lookToggles),
                   },
-                  signal
+                  signal,
                 );
               } catch (err) {
                 if (signal?.aborted) throw new ChronicleBuildCancelled();
@@ -1556,10 +1394,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
             },
             buildLayers: (_day, load) => {
               const regionData = chronicleRegionData(load.nation);
-              const labelObjects = chronicleLabelMapObjects(
-                regionData,
-                load.nation
-              );
+              const labelObjects = chronicleLabelMapObjects(regionData, load.nation);
 
               let labels: NationLabelSpec[] = [];
               if (lookToggles.nationNames) {
@@ -1567,9 +1402,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                   lastLabels != null &&
                   load.nationFingerprint != null &&
                   lastLabels.fingerprint === load.nationFingerprint;
-                labels = reusable
-                  ? lastLabels!.labels
-                  : (computeLabels(regionData, labelObjects) ?? []);
+                labels = reusable ? lastLabels!.labels : (computeLabels(regionData, labelObjects) ?? []);
                 lastLabels = { fingerprint: load.nationFingerprint, labels };
               }
 
@@ -1581,10 +1414,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                   lastBorders.fingerprint === load.nationFingerprint;
                 borders = reusable
                   ? lastBorders!.mask
-                  : computeChronicleBorderMask(
-                      grid,
-                      overviewFillOwnership(load.nation)
-                    );
+                  : computeChronicleBorderMask(grid, overviewFillOwnership(load.nation));
                 lastBorders = {
                   fingerprint: load.nationFingerprint,
                   mask: borders,
@@ -1608,10 +1438,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
 
               const fortControl =
                 lookToggles.fortControl && grid
-                  ? computeChronicleZocMask(
-                      grid,
-                      fortZocProvinceIds(load.markers)
-                    )
+                  ? computeChronicleZocMask(grid, fortZocProvinceIds(load.markers))
                   : null;
 
               return buildChronicleLayers({
@@ -1666,9 +1493,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         setStage("range");
         return;
       }
-      setBuildError(
-        err instanceof Error ? err.message : "The build failed part-way."
-      );
+      setBuildError(err instanceof Error ? err.message : "The build failed part-way.");
     } finally {
       buildingRef.current = false;
       setBuilding(false);
@@ -1695,8 +1520,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, []);
 
   const frames = framesRef.current;
-  const activeFrame: StudioFrame | null =
-    stage === "play" ? (frames[playIndex] ?? null) : null;
+  const activeFrame: StudioFrame | null = stage === "play" ? (frames[playIndex] ?? null) : null;
 
   // `ChroniclePlaybackPanel`'s `days` prop, built once per build rather than
   // once per render — `frames` above is a fresh read of a ref every render,
@@ -1704,10 +1528,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // built frames hadn't changed at all. `framesRef.current` only actually
   // changes alongside `framesVersion` (see the effects above), the same
   // dependency those already key off instead of `frames` itself.
-  const frameDays = useMemo(
-    () => framesRef.current.map((frame) => frame.day),
-    [framesVersion]
-  );
+  const frameDays = useMemo(() => framesRef.current.map((frame) => frame.day), [framesVersion]);
 
   // Ledger charts read the range actually built, not the range inputs — a
   // build can skip days, and the panel's cursor has to walk the same span
@@ -1825,59 +1646,31 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         signal: controller.signal,
         onProgress: (progress) => {
           setGifStatus(
-            progress.phase === "render"
-              ? `Rendering day ${progress.completed + 1} of ${progress.total}…`
-              : "Encoding…"
+            progress.phase === "render" ? `Rendering day ${progress.completed + 1} of ${progress.total}…` : "Encoding…",
           );
         },
       });
-      downloadGif(
-        bytes,
-        chronicleGifFilename(
-          displayName,
-          built[0]!.day,
-          built[built.length - 1]!.day
-        )
-      );
+      downloadGif(bytes, chronicleGifFilename(displayName, built[0]!.day, built[built.length - 1]!.day));
       if (baseMapOmitted) {
-        setGifNotice(
-          "Exported without the base map."
-        );
+        setGifNotice("Exported without the base map.");
       }
     } catch (err) {
       if (!isChronicleGifCancelled(err)) {
-        setGifError(
-          err instanceof Error ? err.message : "The GIF export failed."
-        );
+        setGifError(err instanceof Error ? err.message : "The GIF export failed.");
       }
     } finally {
       if (gifAbortRef.current === controller) gifAbortRef.current = null;
       exportingRef.current = false;
       setGifStatus(null);
     }
-  }, [
-    gifSize,
-    gifStampDay,
-    gifLogo,
-    gifDiscordLink,
-    gifCorner,
-    mapSize,
-    speed,
-    loop,
-    geometry.centroids,
-    displayName,
-  ]);
+  }, [gifSize, gifStampDay, gifLogo, gifDiscordLink, gifCorner, mapSize, speed, loop, geometry.centroids, displayName]);
 
-  const focusOptions = useMemo(
-    () => chronicleFocusOptions(previewNation),
-    [previewNation]
-  );
+  const focusOptions = useMemo(() => chronicleFocusOptions(previewNation), [previewNation]);
 
   const toggleLayer = useCallback((key: ChronicleToggleKey) => {
     setNotice(null);
     setToggles((current) => ({ ...current, [key]: !current[key] }));
   }, []);
-
 
   // Space plays and pauses, as in a video player, unless a control has focus:
   // there Space already means "press this".
@@ -1898,20 +1691,17 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     return <MapAccessGate reason={gateReason} mapDisplayName={displayName} />;
   }
 
-  const disabledReasons: Partial<Record<ChronicleToggleKey, string>> =
-    namesSupported ? {} : { nationNames: "Nation names aren't available for this map." };
+  const disabledReasons: Partial<Record<ChronicleToggleKey, string>> = namesSupported
+    ? {}
+    : { nationNames: "Nation names aren't available for this map." };
 
   const emptyChronicle = !indexLoading && !indexError && days.length === 0;
   const layersOn = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).length;
   const hasQueuedLook = clips.some((clip) => anyChronicleToggleOn(clip.toggles));
   const composeReady =
-    (anyChronicleToggleOn(toggles) || hasQueuedLook) &&
-    !composeBlockReason &&
-    !layersLoading &&
-    !indexLoading;
+    (anyChronicleToggleOn(toggles) || hasQueuedLook) && !composeBlockReason && !layersLoading && !indexLoading;
 
-  const step: ChronicleStep =
-    stage === "compose" ? "layers" : stage === "play" ? "watch" : "dates";
+  const step: ChronicleStep = stage === "compose" ? "layers" : stage === "play" ? "watch" : "dates";
   const reachable: Record<ChronicleStep, boolean> = {
     layers: !building,
     dates: !building && (composeReady || stage !== "compose"),
@@ -1956,9 +1746,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         // The span of the timelapse as it was actually built, not the range
         // inputs: skipped days move the ends, and the day page's previous/next
         // must walk what the reader watched.
-        frames.length
-          ? { start: frames[0].day, end: frames[frames.length - 1].day }
-          : null
+        frames.length ? { start: frames[0].day, end: frames[frames.length - 1].day } : null,
       )
     : null;
 
@@ -1983,11 +1771,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const indexNotices = (
     <>
       {indexError ? <ChronicleNotice>{indexError}</ChronicleNotice> : null}
-      {emptyChronicle ? (
-        <ChronicleNotice tone="quiet">
-          No history available yet.
-        </ChronicleNotice>
-      ) : null}
+      {emptyChronicle ? <ChronicleNotice tone="quiet">No history available yet.</ChronicleNotice> : null}
       {layerError ? <ChronicleNotice>{layerError}</ChronicleNotice> : null}
     </>
   );
@@ -2117,11 +1901,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       </div>
     ) : stage === "build" ? (
       buildError ? (
-        <button
-          type="button"
-          className={`${quietButtonClass} w-full`}
-          onClick={() => setStage("range")}
-        >
+        <button type="button" className={`${quietButtonClass} w-full`} onClick={() => setStage("range")}>
           Back to the days
         </button>
       ) : (
@@ -2171,24 +1951,11 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       // and when playback starts, so the player is what shows.
       detailsKey={sheetMin ? "summary" : stage === "play" ? "watch" : "steps"}
       onDetailsClose={() => setSheetMin(true)}
-      detailsHeader={
-        sheetMin ? null : (
-          <ChronicleSteps current={step} reachable={reachable} onSelect={goToStep} />
-        )
-      }
+      detailsHeader={sheetMin ? null : <ChronicleSteps current={step} reachable={reachable} onSelect={goToStep} />}
       detailsFooter={sheetMin ? null : stepFooter}
-      status={
-        indexLoading
-          ? "Loading the timelapse…"
-          : stage === "compose" && layersLoading
-            ? "Loading layers…"
-            : null
-      }
+      status={indexLoading ? "Loading the timelapse…" : stage === "compose" && layersLoading ? "Loading layers…" : null}
       zoomControls={
-        <MapZoomControls
-          onZoom={viewport.zoomBy}
-          onReset={() => viewport.resetViewport({ animated: true })}
-        />
+        <MapZoomControls onZoom={viewport.zoomBy} onReset={() => viewport.resetViewport({ animated: true })} />
       }
       footer={stage === "play" && frameDays.length ? player("bar") : null}
       aside={charts ? <div className="space-y-3">{charts}</div> : null}
@@ -2232,7 +1999,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               setMapSize((current) =>
                 current.w === img.naturalWidth && current.h === img.naturalHeight
                   ? current
-                  : { w: img.naturalWidth, h: img.naturalHeight }
+                  : { w: img.naturalWidth, h: img.naturalHeight },
               );
             }
           }}
@@ -2249,17 +2016,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         */}
         <ChronicleBorderCanvas mask={layers.fortControl} ink={CHRONICLE_ZOC_HATCH_RGBA} />
         <ChronicleBorderCanvas mask={layers.borders} ink={CHRONICLE_BORDER_INK_RGBA} />
-        <ChronicleBorderCanvas
-          mask={layers.occupationSeam}
-          ink={CHRONICLE_OCCUPATION_SEAM_RGBA}
-        />
+        <ChronicleBorderCanvas mask={layers.occupationSeam} ink={CHRONICLE_OCCUPATION_SEAM_RGBA} />
         {layers.wars.length ? (
-          <WarCampaignLineLayer
-            wars={layers.wars}
-            centroids={geometry.centroids}
-            mapW={mapSize.w}
-            mapH={mapSize.h}
-          />
+          <WarCampaignLineLayer wars={layers.wars} centroids={geometry.centroids} mapW={mapSize.w} mapH={mapSize.h} />
         ) : null}
         {/*
           `alwaysVisible` on both: every layer here is one the user ticked

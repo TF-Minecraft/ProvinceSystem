@@ -18,7 +18,17 @@ import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import ChangeConfirm from "./ChangeConfirm";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
 import McText from "./McText";
-import { badgeClass, buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass } from "../ui";
+import {
+  badgeClass,
+  buttonClass,
+  errorClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  quietButtonClass,
+  rowClass,
+} from "../ui";
 
 type Load = { kind: "loading" } | { kind: GateKind } | { kind: "ready"; data: LpOverview };
 
@@ -114,9 +124,7 @@ function PlayerSearch({ initialQuery }: { initialQuery: string }) {
         <button type="submit" disabled={busy} className={buttonClass}>
           {busy ? "Searching…" : "Find"}
         </button>
-        <p className="text-xs text-[var(--tfmc-stone)]">
-          Part of a name is enough.
-        </p>
+        <p className="text-xs text-[var(--tfmc-stone)]">Part of a name is enough.</p>
       </form>
       {error ? (
         <p className={`mt-3 ${errorClass}`} role="alert">
@@ -172,7 +180,9 @@ export function PlayerResults({
   return (
     <>
       {membershipGroup ? (
-        <div className={`mt-4 hidden gap-x-4 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)] lg:grid ${columns}`}>
+        <div
+          className={`mt-4 hidden gap-x-4 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)] lg:grid ${columns}`}
+        >
           <span>Player</span>
           <span>Assignment</span>
           <span>Other groups</span>
@@ -214,11 +224,23 @@ export function PlayerResults({
       </ul>
       {pages > 1 ? (
         <nav aria-label="Pages" className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-[var(--tfmc-stone)]">
-          <button type="button" className={pageButtonClass} disabled={busy || page.page <= 1} onClick={() => onPage(page.page - 1)}>
+          <button
+            type="button"
+            className={pageButtonClass}
+            disabled={busy || page.page <= 1}
+            onClick={() => onPage(page.page - 1)}
+          >
             ← Previous
           </button>
-          <span className="px-2" aria-current="page">{busy ? "Loading…" : `Page ${page.page} of ${pages}`}</span>
-          <button type="button" className={pageButtonClass} disabled={busy || page.page >= pages} onClick={() => onPage(page.page + 1)}>
+          <span className="px-2" aria-current="page">
+            {busy ? "Loading…" : `Page ${page.page} of ${pages}`}
+          </span>
+          <button
+            type="button"
+            className={pageButtonClass}
+            disabled={busy || page.page >= pages}
+            onClick={() => onPage(page.page + 1)}
+          >
             Next →
           </button>
         </nav>
@@ -243,7 +265,9 @@ function playerCount(count: number): string {
 function GroupBadges({ group }: { group: LpGroupSummary }) {
   return (
     <>
-      {group.min_role === "root" ? <span className={`${badgeClass} bg-[#5a2a2a] text-[#f0c0c0]`}>Owner only</span> : null}
+      {group.min_role === "root" ? (
+        <span className={`${badgeClass} bg-[#5a2a2a] text-[#f0c0c0]`}>Owner only</span>
+      ) : null}
       {group.patreon ? <span className={`${badgeClass} bg-[#4a3a1a] text-[#f0d79a]`}>Patreon</span> : null}
     </>
   );
@@ -268,7 +292,8 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
         ) : null}
       </div>
       <p className={`mt-1 ${mutedClass}`}>
-        Highest weight first. A player shows the rank of their highest-weight group. Player counts are direct members only.
+        Highest weight first. A player shows the rank of their highest-weight group. Player counts are direct members
+        only.
       </p>
       {creating ? (
         <div className="mt-3 flex flex-col gap-3">
@@ -290,7 +315,12 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
             </label>
             <label className="flex w-28 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
               Weight
-              <input value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={inputClass} />
+              <input
+                value={weight}
+                onChange={(e) => setWeight(e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+                className={inputClass}
+              />
             </label>
           </div>
           {clean ? (
@@ -307,7 +337,9 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
               ops={[
                 { op: "create_group" },
                 ...(inherit ? [{ op: "add_node" as const, node: { key: `group.${inherit}` } }] : []),
-                ...(Number.isFinite(weightNumber) ? [{ op: "add_node" as const, node: { key: `weight.${weightNumber}` } }] : []),
+                ...(Number.isFinite(weightNumber)
+                  ? [{ op: "add_node" as const, node: { key: `weight.${weightNumber}` } }]
+                  : []),
               ]}
               confirmLabel="Create group"
               onDone={() => {
@@ -328,19 +360,29 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
       <ul className={`mt-3 lg:hidden ${rowClass}`} aria-label="Groups list">
         {data.groups.map((group) => (
           <li key={group.name} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 pb-3">
-            <Link href={groupHref(group.name)} className="flex min-h-11 items-center break-words font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]">
+            <Link
+              href={groupHref(group.name)}
+              className="flex min-h-11 items-center break-words font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]"
+            >
               {group.name}
             </Link>
-            <Link href={`${groupHref(group.name)}#members`} className="flex min-h-11 items-center tabular-nums text-sm text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
+            <Link
+              href={`${groupHref(group.name)}#members`}
+              className="flex min-h-11 items-center tabular-nums text-sm text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]"
+            >
               {playerCount(group.members)}
             </Link>
             <p className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <GroupBadges group={group} />
               {group.prefix ? <McText text={group.prefix} /> : null}
-              {group.weight !== null ? <span className="tabular-nums text-[var(--tfmc-mist)]">Weight {group.weight}</span> : null}
+              {group.weight !== null ? (
+                <span className="tabular-nums text-[var(--tfmc-mist)]">Weight {group.weight}</span>
+              ) : null}
             </p>
             {group.parents.length ? (
-              <p className="col-span-2 mt-1 break-words text-sm text-[var(--tfmc-mist)]">Inherits: {group.parents.join(", ")}</p>
+              <p className="col-span-2 mt-1 break-words text-sm text-[var(--tfmc-mist)]">
+                Inherits: {group.parents.join(", ")}
+              </p>
             ) : null}
           </li>
         ))}
@@ -359,7 +401,10 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
           {data.groups.map((group) => (
             <tr key={group.name} className="align-top">
               <td className="py-2 pr-3">
-                <Link href={groupHref(group.name)} className="font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]">
+                <Link
+                  href={groupHref(group.name)}
+                  className="font-semibold text-[var(--tfmc-cream)] hover:text-[var(--tfmc-accent)]"
+                >
                   {group.name}
                 </Link>
                 {group.min_role === "root" || group.patreon ? (
@@ -368,11 +413,16 @@ function GroupsPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
                   </div>
                 ) : null}
               </td>
-              <td className="py-2 pr-3">{group.prefix ? <McText text={group.prefix} /> : <span className="text-[var(--tfmc-stone)]">—</span>}</td>
+              <td className="py-2 pr-3">
+                {group.prefix ? <McText text={group.prefix} /> : <span className="text-[var(--tfmc-stone)]">—</span>}
+              </td>
               <td className="py-2 pr-6 text-right tabular-nums text-[var(--tfmc-mist)]">{group.weight ?? "—"}</td>
               <td className="break-words py-2 pr-3 text-[var(--tfmc-mist)]">{group.parents.join(", ") || "—"}</td>
               <td className="py-2 text-right tabular-nums">
-                <Link href={`${groupHref(group.name)}#members`} className="text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]">
+                <Link
+                  href={`${groupHref(group.name)}#members`}
+                  className="text-[var(--tfmc-mist)] hover:text-[var(--tfmc-accent)]"
+                >
                   {group.members.toLocaleString()}
                 </Link>
               </td>
@@ -423,7 +473,11 @@ function TracksPanel({ data, onChanged }: { data: LpOverview; onChanged: () => P
                   </span>
                 ))}
                 {data.rights.edit_definitions && editing !== track.name ? (
-                  <button type="button" className={`${quietButtonClass} ml-auto`} onClick={() => setEditing(track.name)}>
+                  <button
+                    type="button"
+                    className={`${quietButtonClass} ml-auto`}
+                    onClick={() => setEditing(track.name)}
+                  >
                     Edit
                   </button>
                 ) : null}
@@ -489,20 +543,41 @@ function TrackEditor({
           <li key={group} className="flex items-center gap-3 text-sm text-[var(--tfmc-cream)]">
             <span className="w-5 text-right tabular-nums text-[var(--tfmc-stone)]">{index + 1}</span>
             <span className="flex-1">{group}</span>
-            <button type="button" aria-label={`Move ${group} earlier`} className={quietButtonClass} disabled={index === 0} onClick={() => move(index, -1)}>
+            <button
+              type="button"
+              aria-label={`Move ${group} earlier`}
+              className={quietButtonClass}
+              disabled={index === 0}
+              onClick={() => move(index, -1)}
+            >
               ↑
             </button>
-            <button type="button" aria-label={`Move ${group} later`} className={quietButtonClass} disabled={index === groups.length - 1} onClick={() => move(index, 1)}>
+            <button
+              type="button"
+              aria-label={`Move ${group} later`}
+              className={quietButtonClass}
+              disabled={index === groups.length - 1}
+              onClick={() => move(index, 1)}
+            >
               ↓
             </button>
-            <button type="button" className={quietButtonClass} onClick={() => setGroups(groups.filter((g) => g !== group))}>
+            <button
+              type="button"
+              className={quietButtonClass}
+              onClick={() => setGroups(groups.filter((g) => g !== group))}
+            >
               Remove
             </button>
           </li>
         ))}
       </ol>
       <div className="flex flex-wrap items-center gap-3">
-        <select value={adding} onChange={(e) => setAdding(e.target.value)} className={inputClass} aria-label="Group to add">
+        <select
+          value={adding}
+          onChange={(e) => setAdding(e.target.value)}
+          className={inputClass}
+          aria-label="Group to add"
+        >
           <option value="">Add a group…</option>
           {unused.map((group) => (
             <option key={group} value={group}>
@@ -526,7 +601,9 @@ function TrackEditor({
         <ChangeConfirm
           summary={
             confirm === "delete" ? (
-              <>Delete track <strong>{track.name}</strong>. Players keep their groups.</>
+              <>
+                Delete track <strong>{track.name}</strong>. Players keep their groups.
+              </>
             ) : (
               <>
                 {isNew ? "Create" : "Save"} track <strong>{clean}</strong>: {groups.join(" → ") || "no groups"}.

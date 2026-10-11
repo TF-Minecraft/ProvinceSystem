@@ -54,9 +54,7 @@ describe("arrangeNote", () => {
   });
 
   it("keeps an explicit topic ahead of the guess", () => {
-    const note = arrangeNote([
-      { id: "knife", section: "new", body: "Added a hunting knife.", topic: "classes" },
-    ]);
+    const note = arrangeNote([{ id: "knife", section: "new", body: "Added a hunting knife.", topic: "classes" }]);
     expect(note.topics.map((topic) => topic.id)).toEqual(["classes"]);
   });
 });

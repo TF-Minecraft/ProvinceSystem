@@ -1,7 +1,6 @@
 import { readPngSize } from "../skins/sizes";
 
-export const WARDROBE_INVALID_PNG_MESSAGE =
-  "Image needs to be a valid PNG (did you rename a JPEG/WebP?)";
+export const WARDROBE_INVALID_PNG_MESSAGE = "Image needs to be a valid PNG (did you rename a JPEG/WebP?)";
 
 export const WARDROBE_SIZE_MESSAGE = "Skin must be exactly 64×64 pixels.";
 

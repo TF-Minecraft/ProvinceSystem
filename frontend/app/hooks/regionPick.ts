@@ -5,7 +5,7 @@ export type GetHoverRegion = (
   mapType: string,
   mapId: string,
   regionId: string,
-  regionData: RegionRecord
+  regionData: RegionRecord,
 ) => {
   regionId: string | null;
   imagePath: string | null;
@@ -38,15 +38,10 @@ export function resolveRegionById(
   getHoverRegion: GetHoverRegion,
   mapType: string,
   mapId: string,
-  regionData: RegionRecord | null
+  regionData: RegionRecord | null,
 ): RegionPickResult | null {
   if (!regionData?.[pickId]) return null;
-  const { regionId, imagePath, overlay, region } = getHoverRegion(
-    mapType,
-    mapId,
-    pickId,
-    regionData
-  );
+  const { regionId, imagePath, overlay, region } = getHoverRegion(mapType, mapId, pickId, regionData);
   if (!regionId || !region) return null;
   return { pickId, regionId, region, imagePath, overlay };
 }
@@ -59,7 +54,7 @@ export function resolveRegionAtPickPixel(
   getHoverRegion: GetHoverRegion,
   mapType: string,
   mapId: string,
-  regionData: RegionRecord | null
+  regionData: RegionRecord | null,
 ): RegionPickResult | null {
   if (!regionData) return null;
 
@@ -68,12 +63,7 @@ export function resolveRegionAtPickPixel(
   const pickId = rgbToId[rgb];
   if (!pickId) return null;
 
-  const { regionId, imagePath, overlay, region } = getHoverRegion(
-    mapType,
-    mapId,
-    pickId,
-    regionData
-  );
+  const { regionId, imagePath, overlay, region } = getHoverRegion(mapType, mapId, pickId, regionData);
   if (!regionId || !region) return null;
 
   return { pickId, regionId, region, imagePath, overlay };

@@ -72,9 +72,7 @@ export const PROVINCE_RASTER_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
  * `chronicleInfestation`. Routing them through the region-record map would mean
  * either lying about their shape or teaching a data source about colour ramps.
  */
-export const CHRONICLE_PROVINCE_PAINT_SOURCE: Partial<
-  Record<MapMode, ChronicleFileName>
-> = {
+export const CHRONICLE_PROVINCE_PAINT_SOURCE: Partial<Record<MapMode, ChronicleFileName>> = {
   prosperity: "province_data",
   infestation: "infestation_data",
 };
@@ -92,7 +90,7 @@ export type ChronicleProvincePaintSource =
 
 export function chronicleProvincePaintSource(
   mapType: MapMode | string,
-  day: string | null
+  day: string | null,
 ): ChronicleProvincePaintSource | null {
   if (!PROVINCE_RASTER_MODES.has(mapType as MapMode)) return null;
   // The live map is unchanged, byte for byte: every raster mode is live.
@@ -111,18 +109,12 @@ export function chronicleProvincePaintSource(
  * second of the two live-leak paths, and the one an allow-list widening would
  * have left wide open, since this `<img>` has never known what day it is.
  */
-export function showsLiveProvinceRaster(
-  mapType: MapMode | string,
-  day: string | null
-): boolean {
+export function showsLiveProvinceRaster(mapType: MapMode | string, day: string | null): boolean {
   return chronicleProvincePaintSource(mapType, day)?.kind === "live";
 }
 
 /** True when the raster must instead be painted from a captured day file. */
-export function usesChronicleProvincePaint(
-  mapType: MapMode | string,
-  day: string | null
-): boolean {
+export function usesChronicleProvincePaint(mapType: MapMode | string, day: string | null): boolean {
   return chronicleProvincePaintSource(mapType, day)?.kind === "day";
 }
 
@@ -134,10 +126,7 @@ export function usesChronicleProvincePaint(
  * owning their own hostile-input rules. An unclassified mode yields an empty
  * LUT, which paints nothing — the same as a capture with no usable rows.
  */
-export function chronicleProvincePaintLut(
-  mapType: MapMode | string,
-  payload: unknown
-): NationColorLut {
+export function chronicleProvincePaintLut(mapType: MapMode | string, payload: unknown): NationColorLut {
   if (mapType === "prosperity") return buildProsperityColorLut(payload);
   if (mapType === "infestation") return buildInfestationColorLut(payload);
   return new Uint32Array(0);

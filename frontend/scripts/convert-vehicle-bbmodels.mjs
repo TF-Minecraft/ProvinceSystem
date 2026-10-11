@@ -106,11 +106,15 @@ export function convert(id, relPath, baseId, paths = {}) {
         continue;
       }
       const group = { ...groups.get(node.uuid), ...node };
-      const rotation = Array.isArray(group.rotation) && group.rotation.some((angle) => angle)
-        ? { origin: (group.origin || [0, 0, 0]).map(round), euler: group.rotation.map(round), order: "ZYX" }
-        : null;
-      indexOutliner(node.children, rotation ? [...ancestors, rotation] : ancestors,
-        hidden || group.export === false || group.visibility === false);
+      const rotation =
+        Array.isArray(group.rotation) && group.rotation.some((angle) => angle)
+          ? { origin: (group.origin || [0, 0, 0]).map(round), euler: group.rotation.map(round), order: "ZYX" }
+          : null;
+      indexOutliner(
+        node.children,
+        rotation ? [...ancestors, rotation] : ancestors,
+        hidden || group.export === false || group.visibility === false,
+      );
     }
   }
   indexOutliner(bb.outliner);
@@ -147,9 +151,8 @@ export function convert(id, relPath, baseId, paths = {}) {
       uvWidth: tex.uv_width || resW,
       uvHeight: tex.uv_height || resH,
     };
-    textures[key] = baseTexture?.source === tex.source
-      ? `${texturePrefix}/${baseId}/${key}.png`
-      : `${texturePrefix}/${id}/${file}`;
+    textures[key] =
+      baseTexture?.source === tex.source ? `${texturePrefix}/${baseId}/${key}.png` : `${texturePrefix}/${id}/${file}`;
   });
 
   // `particle` is metadata only -- it may point at a different PNG than any visible
@@ -238,7 +241,11 @@ export function convert(id, relPath, baseId, paths = {}) {
     const faces = {};
     for (const element of canonical.elements) {
       const variant = byUuid.get(element.sourceUuid);
-      if (!variant || JSON.stringify(variant.from) !== JSON.stringify(element.from) || JSON.stringify(variant.to) !== JSON.stringify(element.to)) {
+      if (
+        !variant ||
+        JSON.stringify(variant.from) !== JSON.stringify(element.from) ||
+        JSON.stringify(variant.to) !== JSON.stringify(element.to)
+      ) {
         throw new Error(`${id}: skin cannot be mapped to base cube ${element.sourceUuid}`);
       }
       if (JSON.stringify(variant.faces) !== JSON.stringify(element.faces)) faces[element.sourceUuid] = variant.faces;
@@ -262,50 +269,65 @@ export function convert(id, relPath, baseId, paths = {}) {
 }
 
 export function main() {
-const requested = new Set(process.argv.slice(2));
-for (const id of requested) {
-  if (!(id in VEHICLES) && !(id in SKINS)) throw new Error(`Unknown vehicle or skin: ${id}`);
-}
-const report = [];
-for (const [id, relPath] of Object.entries(VEHICLES)) {
-  if (requested.size && !requested.has(id)) continue;
-  report.push(convert(id, relPath));
-}
-for (const [id, baseId] of Object.entries(SKINS)) {
-  if (requested.size && !requested.has(id)) continue;
-  report.push(convert(id, id, baseId));
-}
-
-for (const r of report) {
-  if (r.missing) {
-    console.log(`${r.id.padEnd(20)} MISSING .bbmodel`);
-    continue;
+  const requested = new Set(process.argv.slice(2));
+  for (const id of requested) {
+    if (!(id in VEHICLES) && !(id in SKINS)) throw new Error(`Unknown vehicle or skin: ${id}`);
   }
-  console.log(
-    `${r.id.padEnd(20)} elements=${String(r.elements).padStart(3)} skipped=${String(
-      r.skipped,
-    ).padStart(3)} multiAxisRot=${r.multiAxis} facesWithoutTexture=${r.facesDropped} pngs=${r.pngs} keys=${Object.keys(r.textures).join(",")}`,
-  );
-}
+  const report = [];
+  for (const [id, relPath] of Object.entries(VEHICLES)) {
+    if (requested.size && !requested.has(id)) continue;
+    report.push(convert(id, relPath));
+  }
+  for (const [id, baseId] of Object.entries(SKINS)) {
+    if (requested.size && !requested.has(id)) continue;
+    report.push(convert(id, id, baseId));
+  }
 
-// Emit the `textures` literal for each vehicle so app/wiki/data/vehicles.ts never has
-// to guess a key or a filename.
-console.log("\n--- paste-ready texture maps (values go through T()) ---");
-for (const r of report) {
-  if (r.missing) continue;
-  const entries = Object.entries(r.textures)
-    .map(([k, v]) => `${JSON.stringify(k)}: T(${JSON.stringify(v)})`)
-    .join(", ");
-  console.log(`${r.id}: { ${entries} },`);
-}
-const cataloguePath = join(OUT_MODELS, "catalogue.json");
-const previous = requested.size && existsSync(cataloguePath) ? JSON.parse(readFileSync(cataloguePath, "utf8")) : {};
-for (const result of report) delete previous[result.id];
-writeFileSync(cataloguePath, JSON.stringify({ ...previous, ...Object.fromEntries(report.filter((r) => !r.missing).map((r) => [r.id, {
-  modelUrl: `/wiki/models/vehicles/${r.baseId}.json`,
-  ...(r.id !== r.baseId ? { skinUvUrl: `/wiki/models/vehicles/${r.id}.json` } : {}),
-  textures: Object.fromEntries(Object.entries(r.textures).map(([key, path]) => [key, `/wiki/textures/${path}`])),
-}])) }));
+  for (const r of report) {
+    if (r.missing) {
+      console.log(`${r.id.padEnd(20)} MISSING .bbmodel`);
+      continue;
+    }
+    console.log(
+      `${r.id.padEnd(20)} elements=${String(r.elements).padStart(3)} skipped=${String(r.skipped).padStart(
+        3,
+      )} multiAxisRot=${r.multiAxis} facesWithoutTexture=${r.facesDropped} pngs=${r.pngs} keys=${Object.keys(r.textures).join(",")}`,
+    );
+  }
+
+  // Emit the `textures` literal for each vehicle so app/wiki/data/vehicles.ts never has
+  // to guess a key or a filename.
+  console.log("\n--- paste-ready texture maps (values go through T()) ---");
+  for (const r of report) {
+    if (r.missing) continue;
+    const entries = Object.entries(r.textures)
+      .map(([k, v]) => `${JSON.stringify(k)}: T(${JSON.stringify(v)})`)
+      .join(", ");
+    console.log(`${r.id}: { ${entries} },`);
+  }
+  const cataloguePath = join(OUT_MODELS, "catalogue.json");
+  const previous = requested.size && existsSync(cataloguePath) ? JSON.parse(readFileSync(cataloguePath, "utf8")) : {};
+  for (const result of report) delete previous[result.id];
+  writeFileSync(
+    cataloguePath,
+    JSON.stringify({
+      ...previous,
+      ...Object.fromEntries(
+        report
+          .filter((r) => !r.missing)
+          .map((r) => [
+            r.id,
+            {
+              modelUrl: `/wiki/models/vehicles/${r.baseId}.json`,
+              ...(r.id !== r.baseId ? { skinUvUrl: `/wiki/models/vehicles/${r.id}.json` } : {}),
+              textures: Object.fromEntries(
+                Object.entries(r.textures).map(([key, path]) => [key, `/wiki/textures/${path}`]),
+              ),
+            },
+          ]),
+      ),
+    }),
+  );
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

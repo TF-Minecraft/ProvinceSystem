@@ -149,10 +149,7 @@ export function chronicleStaffHref(mapId: MapId): string {
  * field is that somebody typed this specific map's name on purpose, which a
  * value that needed cleaning up did not.
  */
-export function chronicleConfirmMatches(
-  typed: string,
-  mapId: MapId | string
-): boolean {
+export function chronicleConfirmMatches(typed: string, mapId: MapId | string): boolean {
   return typed === mapId;
 }
 
@@ -163,11 +160,7 @@ export function chronicleReasonIsValid(reason: string): boolean {
 }
 
 /** Both gates on the wipe button: exact confirmation *and* a usable reason. */
-export function canSubmitChronicleWipe(
-  typed: string,
-  reason: string,
-  mapId: MapId | string
-): boolean {
+export function canSubmitChronicleWipe(typed: string, reason: string, mapId: MapId | string): boolean {
   return chronicleConfirmMatches(typed, mapId) && chronicleReasonIsValid(reason);
 }
 
@@ -184,9 +177,7 @@ export type ChronicleArchiveSubmitInput = {
 };
 
 /** Dest confirm (not source), extra flags for unknown / existing dest. */
-export function canSubmitChronicleArchive(
-  input: ChronicleArchiveSubmitInput
-): boolean {
+export function canSubmitChronicleArchive(input: ChronicleArchiveSubmitInput): boolean {
   const dest = input.destId;
   if (!dest || LIVE_ARCHIVE_DEST.has(dest)) return false;
   if (!chronicleConfirmMatches(input.confirm, dest)) return false;
@@ -216,11 +207,7 @@ export function canRestoreBackup(row: ChronicleBackupRow): boolean {
  * time it runs (the backups list reloads underneath it). The server answers
  * `nothing_to_restore` either way; this keeps the request from being made.
  */
-export function canSubmitChronicleRestore(
-  row: ChronicleBackupRow,
-  typed: string,
-  mapId: MapId | string
-): boolean {
+export function canSubmitChronicleRestore(row: ChronicleBackupRow, typed: string, mapId: MapId | string): boolean {
   return canRestoreBackup(row) && chronicleConfirmMatches(typed, mapId);
 }
 
@@ -237,18 +224,11 @@ export function backupFileName(backupPath: string | null | undefined): string | 
   return name ? name : null;
 }
 
-export function buildChronicleWipeRequest(
-  mapId: MapId,
-  reason: string
-): ChronicleWipeRequest {
+export function buildChronicleWipeRequest(mapId: MapId, reason: string): ChronicleWipeRequest {
   return { confirm: mapId, reason: reason.trim() };
 }
 
-export function buildChronicleRestoreRequest(
-  mapId: MapId,
-  backupId: number,
-  merge: boolean
-): ChronicleRestoreRequest {
+export function buildChronicleRestoreRequest(mapId: MapId, backupId: number, merge: boolean): ChronicleRestoreRequest {
   return { confirm: mapId, backup_id: backupId, merge };
 }
 
@@ -285,10 +265,7 @@ export function isNothingToWipe(result: ChronicleWipeResponse): boolean {
  * that wrong silently prints 1970 rather than throwing. Null (never restored)
  * and non-finite values render as an em dash instead of "Invalid Date".
  */
-export function formatUnixSeconds(
-  seconds: number | null | undefined,
-  locale?: string
-): string {
+export function formatUnixSeconds(seconds: number | null | undefined, locale?: string): string {
   if (seconds === null || seconds === undefined) return "—";
   if (!Number.isFinite(seconds)) return "—";
   const date = new Date(seconds * 1000);
@@ -303,10 +280,7 @@ export function formatUnixSeconds(
 }
 
 /** "Restored 12 Mar 2026, 14:03 by …" / "Not restored", for the table cell. */
-export function describeRestoreState(
-  row: ChronicleBackupRow,
-  locale?: string
-): string {
+export function describeRestoreState(row: ChronicleBackupRow, locale?: string): string {
   if (!row.restored) return "Not restored";
   const when = formatUnixSeconds(row.restored_at, locale);
   const who = row.restored_by?.trim();
@@ -343,7 +317,7 @@ export function chronicleStaffFailure(
   status: number,
   detail: string,
   code?: string | null,
-  action: "wipe" | "restore" | "load" | "archive" = "load"
+  action: "wipe" | "restore" | "load" | "archive" = "load",
 ): ChronicleStaffFailure {
   const fallback = detail?.trim() || "The request failed.";
 
@@ -397,8 +371,7 @@ export function chronicleStaffFailure(
     case 0:
       return {
         title: "Could not reach the server",
-        message:
-          "The request never completed. Check your connection and try again; nothing was changed.",
+        message: "The request never completed. Check your connection and try again; nothing was changed.",
       };
     case 400:
       return {
@@ -441,9 +414,7 @@ export function chronicleStaffFailure(
 }
 
 /** "Restored 4 days" plus, when relevant, what merge left alone. */
-export function describeRestoreOutcome(
-  result: ChronicleRestoreResponse
-): string {
+export function describeRestoreOutcome(result: ChronicleRestoreResponse): string {
   const restored = `Restored ${formatDayCount(result.restored_day_count)} (${result.restored_rows} index rows).`;
   if (result.skipped_days.length === 0) return restored;
   return `${restored} ${formatDayCount(result.skipped_days.length)} already existed live and were kept as they are: ${result.skipped_days.join(", ")}.`;

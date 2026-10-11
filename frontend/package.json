@@ -7,7 +7,9 @@
     "build": "next build",
     "postbuild": "node scripts/build-wiki-search-index.mjs",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "test": "vitest run"
   },
   "dependencies": {
@@ -26,6 +28,8 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.185.4",
     "jsdom": "^30.0.1",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.14",
     "typescript": "^5.9.3",

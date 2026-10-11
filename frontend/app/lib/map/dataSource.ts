@@ -1,9 +1,5 @@
 import { fetchMapJson, fetchMapMarkers } from "@/lib/map/api";
-import type {
-  MapId,
-  MapMarkersResponse,
-  MapMode,
-} from "@/app/components/map/types";
+import type { MapId, MapMarkersResponse, MapMode } from "@/app/components/map/types";
 
 import {
   fetchChronicleDayFile,
@@ -50,15 +46,14 @@ import type { ChronicleFileName } from "./chronicleData";
  * mode nobody has classified gets the honest blank panel, not today's data
  * under a past date.
  */
-export const CHRONICLE_MODE_SOURCE: Partial<Record<MapMode, ChronicleFileName>> =
-  {
-    nation: "nation",
-    trade: "trade",
-    empire: "empire",
-    county: "county",
-    duchy: "duchy",
-    kingdom: "kingdom",
-  };
+export const CHRONICLE_MODE_SOURCE: Partial<Record<MapMode, ChronicleFileName>> = {
+  nation: "nation",
+  trade: "trade",
+  empire: "empire",
+  county: "county",
+  duchy: "duchy",
+  kingdom: "kingdom",
+};
 
 /**
  * Where one map mode's region data comes from.
@@ -90,9 +85,7 @@ export class MapModeNotCapturedError extends Error {
   }
 }
 
-export function isMapModeNotCaptured(
-  error: unknown
-): error is MapModeNotCapturedError {
+export function isMapModeNotCaptured(error: unknown): error is MapModeNotCapturedError {
   return error instanceof MapModeNotCapturedError;
 }
 
@@ -102,11 +95,7 @@ export function isMapModeNotCaptured(
  * Every day-scoped branch is reached only by explicitly passing a day, so no
  * existing caller can change behaviour by upgrading to this function.
  */
-export function mapModeDataSource(
-  mapId: MapId,
-  mapType: MapMode,
-  day: string | null
-): MapDataSource {
+export function mapModeDataSource(mapId: MapId, mapType: MapMode, day: string | null): MapDataSource {
   if (day === null) {
     return { kind: "live", path: `/${mapId}/data/${mapType}` };
   }
@@ -154,9 +143,7 @@ function toNullProtoRecord(value: unknown): Record<string, any> {
  * failure inside the fetch, where a `catch` already exists.
  */
 function isRegionRecordShape(value: unknown): value is Record<string, unknown> {
-  return (
-    typeof value === "object" && value !== null && !Array.isArray(value)
-  );
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -188,17 +175,9 @@ export async function fetchMapModeRegionData(args: {
     return fetchMapJson<Record<string, any>>(source.path, { sessionToken });
   }
 
-  const file = await fetchChronicleDayFile<Record<string, any>>(
-    mapId,
-    source.day,
-    source.file,
-    sessionToken,
-    signal
-  );
+  const file = await fetchChronicleDayFile<Record<string, any>>(mapId, source.day, source.file, sessionToken, signal);
   if (!isRegionRecordShape(file.value)) {
-    throw new Error(
-      `Chronicle ${source.day}/${source.file} is not a region object`
-    );
+    throw new Error(`Chronicle ${source.day}/${source.file} is not a region object`);
   }
   return toNullProtoRecord(file.value);
 }
@@ -211,10 +190,7 @@ export async function fetchMapModeRegionData(args: {
  * loose `Record<string, any>` the live hook passes to `loadData`. Two call
  * sites, one rule; change both together.
  */
-export function filterMapModeRegions(
-  raw: Record<string, any>,
-  mapType: MapMode | string
-): Record<string, any> {
+export function filterMapModeRegions(raw: Record<string, any>, mapType: MapMode | string): Record<string, any> {
   // Null-prototype for the same `__proto__` reason as `toNullProtoRecord`:
   // this object is keyed entirely by ids that arrived over the wire.
   const out: Record<string, any> = Object.create(null);
@@ -239,7 +215,7 @@ export function filterMapModeRegions(
  */
 export function mapMarkersDataSource(
   mapId: MapId,
-  day: string | null
+  day: string | null,
 ): { kind: "live"; path: string } | { kind: "day"; day: string; path: string } {
   if (day === null) return { kind: "live", path: `/${mapId}/data/markers` };
   // Built by `chronicleDayMarkersPath`, which does the `encodeURIComponent`.
@@ -273,10 +249,8 @@ export async function fetchMapMarkersForDay(args: {
  */
 export function mapGuildsDataSource(
   mapId: MapId,
-  day: string | null
-):
-  | { kind: "live"; path: string }
-  | { kind: "day"; day: string; file: ChronicleFileName; path: string } {
+  day: string | null,
+): { kind: "live"; path: string } | { kind: "day"; day: string; file: ChronicleFileName; path: string } {
   if (day === null) return { kind: "live", path: `/${mapId}/data/trade` };
   return {
     kind: "day",
@@ -315,7 +289,7 @@ export async function fetchGuildNameCache(args: {
             source.day,
             source.file,
             sessionToken,
-            signal
+            signal,
           )
         ).value;
 

@@ -14,20 +14,17 @@ export const wikiDisplayFont = "font-[family-name:var(--font-fraunces)]";
 export const wikiBodyText = "text-sm text-[var(--tfmc-mist)]";
 
 /** Quiet 1px hairline used for panels, table shells and card edges. */
-export const wikiHairline =
-  "border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]";
+export const wikiHairline = "border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]";
 
 /** The standard wiki card/panel surface. */
 export const wikiCard =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)] p-4";
 
 /** Table header band. */
-export const wikiTableHead =
-  "bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] text-[var(--tfmc-cream)]";
+export const wikiTableHead = "bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] text-[var(--tfmc-cream)]";
 
 /** Divider between table rows. */
-export const wikiRowDivider =
-  "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
+export const wikiRowDivider = "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
 
 /**
  * Height of a full-size block preview in the wiki.

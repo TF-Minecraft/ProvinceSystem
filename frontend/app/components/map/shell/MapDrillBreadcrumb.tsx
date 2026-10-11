@@ -18,12 +18,7 @@ type MapDrillBreadcrumbProps = {
  * subjects are open. Any step goes back to that level; the cross closes them
  * all.
  */
-export default function MapDrillBreadcrumb({
-  rootLabel,
-  drillStack,
-  onSelectLayer,
-  onReset,
-}: MapDrillBreadcrumbProps) {
+export default function MapDrillBreadcrumb({ rootLabel, drillStack, onSelectLayer, onReset }: MapDrillBreadcrumbProps) {
   if (drillStack.length === 0) return null;
 
   return (
@@ -48,9 +43,7 @@ export default function MapDrillBreadcrumb({
               onClick={() => onSelectLayer(index)}
               aria-current={current ? "location" : undefined}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded px-1.5 py-1 ${
-                current
-                  ? "text-[var(--tfmc-cream)]"
-                  : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+                current ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
               }`}
             >
               <span

@@ -3,8 +3,7 @@
  * UX only — API remains authoritative.
  */
 
-export const DISPLAY_NAME_HINT =
-  "letters, numbers, spaces, and - _ . '";
+export const DISPLAY_NAME_HINT = "letters, numbers, spaces, and - _ . '";
 
 const DISPLAY_ALLOWED_EXTRA = new Set([" ", ".", "-", "_", "'"]);
 
@@ -31,11 +30,7 @@ function hasDisallowedDisplayChar(s: string): boolean {
   return false;
 }
 
-function hasDisallowedProseChar(
-  s: string,
-  allowNewlines: boolean,
-  allowColourCodes = false
-): boolean {
+function hasDisallowedProseChar(s: string, allowNewlines: boolean, allowColourCodes = false): boolean {
   let i = 0;
   while (i < s.length) {
     const ch = s[i]!;
@@ -48,11 +43,7 @@ function hasDisallowedProseChar(
         i += 2;
         continue;
       }
-      if (
-        ch === "#" &&
-        i + 6 < s.length &&
-        /^[0-9A-Fa-f]{6}$/.test(s.slice(i + 1, i + 7))
-      ) {
+      if (ch === "#" && i + 6 < s.length && /^[0-9A-Fa-f]{6}$/.test(s.slice(i + 1, i + 7))) {
         i += 7;
         continue;
       }
@@ -81,15 +72,13 @@ function labelize(field: string): string {
 
 export function displayNameError(
   value: string | null | undefined,
-  opts: { minLen: number; maxLen: number; field?: string }
+  opts: { minLen: number; maxLen: number; field?: string },
 ): string | null {
   const s = normalizeUserText(String(value ?? ""), true);
   const label = labelize(opts.field || "name");
   if (!s) return `${label} is required`;
   if (s.length < opts.minLen) {
-    return `${label} must be at least ${opts.minLen} character${
-      opts.minLen === 1 ? "" : "s"
-    }`;
+    return `${label} must be at least ${opts.minLen} character${opts.minLen === 1 ? "" : "s"}`;
   }
   if (s.length > opts.maxLen) {
     return `${label} must be at most ${opts.maxLen} characters`;
@@ -103,7 +92,7 @@ export function displayNameError(
 
 export function isValidDisplayName(
   value: string | null | undefined,
-  opts: { minLen: number; maxLen: number; field?: string }
+  opts: { minLen: number; maxLen: number; field?: string },
 ): boolean {
   return displayNameError(value, opts) === null;
 }
@@ -111,7 +100,7 @@ export function isValidDisplayName(
 /** Empty/whitespace is ok (returns null error). */
 export function optionalDisplayNameError(
   value: string | null | undefined,
-  opts: { maxLen: number; field?: string }
+  opts: { maxLen: number; field?: string },
 ): string | null {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
@@ -130,7 +119,7 @@ export function proseError(
     field?: string;
     allowNewlines?: boolean;
     allowColourCodes?: boolean;
-  }
+  },
 ): string | null {
   let s = normalizeUserText(String(value ?? ""), false);
   const label = labelize(opts.field || "text");
@@ -152,9 +141,7 @@ export function proseError(
     return `${label} cannot contain colour codes`;
   }
   if (s.length < opts.minLen) {
-    return `${label} must be at least ${opts.minLen} character${
-      opts.minLen === 1 ? "" : "s"
-    }`;
+    return `${label} must be at least ${opts.minLen} character${opts.minLen === 1 ? "" : "s"}`;
   }
   if (s.length > opts.maxLen) {
     return `${label} must be at most ${opts.maxLen} characters`;
@@ -172,7 +159,7 @@ export function isValidProse(
     maxLen: number;
     field?: string;
     allowNewlines?: boolean;
-  }
+  },
 ): boolean {
   return proseError(value, opts) === null;
 }

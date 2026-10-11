@@ -47,9 +47,7 @@ export default function MapArchiveMenu({ maps, linkClass }: MapArchiveMenuProps)
           className={`${panelClass} absolute right-0 z-20 mt-1 min-w-48 p-1`}
         >
           {chapters.length === 0 ? (
-            <p className="px-2 py-1.5 text-left text-xs text-[var(--tfmc-stone)]">
-              No archived chapters yet.
-            </p>
+            <p className="px-2 py-1.5 text-left text-xs text-[var(--tfmc-stone)]">No archived chapters yet.</p>
           ) : (
             chapters.map((chapter) => (
               <Link

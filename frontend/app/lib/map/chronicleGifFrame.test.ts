@@ -108,10 +108,7 @@ describe("chronicleGifMarkerLayout", () => {
   it("draws a large settlement icon at 90 map pixels", () => {
     const t = chronicleGifTransform(MAP, MAP, 1080);
     const small = chronicleGifMarkerLayout(t, marker())!;
-    const large = chronicleGifMarkerLayout(
-      t,
-      marker({ markerSize: "large" })
-    )!;
+    const large = chronicleGifMarkerLayout(t, marker({ markerSize: "large" }))!;
     expect(large.iconSize).toBeCloseTo(small.iconSize * (90 / 100));
     expect(large.fontSize).toBeGreaterThan(small.fontSize);
   });
@@ -143,9 +140,7 @@ describe("chronicleGifMarkerLayout", () => {
   it("rejects a pin with non-finite coordinates rather than drawing NaN", () => {
     const t = chronicleGifTransform(MAP, MAP, 720);
     expect(chronicleGifMarkerLayout(t, marker({ mapX: Number.NaN }))).toBeNull();
-    expect(
-      chronicleGifMarkerLayout(t, marker({ mapY: undefined as unknown as number }))
-    ).toBeNull();
+    expect(chronicleGifMarkerLayout(t, marker({ mapY: undefined as unknown as number }))).toBeNull();
   });
 });
 
@@ -205,7 +200,7 @@ describe("arcGlyphPlacements", () => {
         bx: 100,
         by: 0,
       },
-      [10, 10, 10]
+      [10, 10, 10],
     );
     expect(placements[0]!.x).toBeCloseTo(40, 1);
     expect(placements[1]!.x).toBeCloseTo(50, 1);
@@ -298,15 +293,11 @@ describe("chronicleWatermarkLayout", () => {
       // this wrong is what once pushed the date away from the link and
       // stretched the scrim, so pin the spacing, not just the ordering.
       expect(withDate.date!.textX).toBe(withDate.textX);
-      expect(withDate.textX).toBeGreaterThanOrEqual(
-        withDate.logoX + withDate.logoSize
-      );
+      expect(withDate.textX).toBeGreaterThanOrEqual(withDate.logoX + withDate.logoSize);
       const lineSpacing = withDate.date!.textBaselineY - withDate.textBaselineY;
       expect(lineSpacing).toBeGreaterThan(0);
       // One line's worth of leading, not a logo's height of dead space.
-      expect(lineSpacing).toBeLessThanOrEqual(
-        withDate.date!.fontSize + withDate.fontSize * 0.5
-      );
+      expect(lineSpacing).toBeLessThanOrEqual(withDate.date!.fontSize + withDate.fontSize * 0.5);
 
       // The logo out-measures the two-line stack at every real export size, so
       // the row — and therefore the scrim — is exactly as tall either way.
@@ -314,10 +305,7 @@ describe("chronicleWatermarkLayout", () => {
       expect(withDate.scrim.y).toBe(linkOnly.scrim.y);
 
       // Bottom margin above the canvas edge is untouched.
-      expect(size - (withDate.logoY + withDate.logoSize)).toBeCloseTo(
-        size - (linkOnly.logoY + linkOnly.logoSize),
-        0
-      );
+      expect(size - (withDate.logoY + withDate.logoSize)).toBeCloseTo(size - (linkOnly.logoY + linkOnly.logoSize), 0);
     }
   });
 
@@ -335,32 +323,21 @@ describe("chronicleWatermarkLayout", () => {
     const narrowerDate = chronicleWatermarkLayout(720, 200, 40);
     const widerDate = chronicleWatermarkLayout(720, 40, 200);
     // Both boxes must be wide enough for their own widest line.
-    expect(narrowerDate.scrim.width).toBeGreaterThanOrEqual(
-      narrowerDate.textX + 200 - narrowerDate.scrim.x - 1
-    );
-    expect(widerDate.scrim.width).toBeGreaterThanOrEqual(
-      widerDate.textX + 200 - widerDate.scrim.x - 1
-    );
+    expect(narrowerDate.scrim.width).toBeGreaterThanOrEqual(narrowerDate.textX + 200 - narrowerDate.scrim.x - 1);
+    expect(widerDate.scrim.width).toBeGreaterThanOrEqual(widerDate.textX + 200 - widerDate.scrim.x - 1);
   });
 
   it("survives a junk size and a junk date width", () => {
     const w = chronicleWatermarkLayout(Number.NaN, Number.NaN, Number.NaN);
     expect(w.date).not.toBeNull();
-    for (const value of [
-      w.date!.fontSize,
-      w.date!.textX,
-      w.date!.textBaselineY,
-      w.date!.haloWidth,
-    ]) {
+    for (const value of [w.date!.fontSize, w.date!.textX, w.date!.textBaselineY, w.date!.haloWidth]) {
       expect(Number.isFinite(value)).toBe(true);
     }
   });
 
   it("sits bottom-left unless told otherwise", () => {
     for (const size of CHRONICLE_GIF_SIZES) {
-      expect(chronicleWatermarkLayout(size, 120, 90, "bottom-left")).toEqual(
-        chronicleWatermarkLayout(size, 120, 90)
-      );
+      expect(chronicleWatermarkLayout(size, 120, 90, "bottom-left")).toEqual(chronicleWatermarkLayout(size, 120, 90));
     }
   });
 
@@ -408,7 +385,7 @@ describe("chronicleWatermarkLayout", () => {
         chronicleWatermarkLayout(size, 120, 90, "bottom-left", {
           logo: true,
           link: true,
-        })
+        }),
       ).toEqual(chronicleWatermarkLayout(size, 120, 90));
     }
   });
@@ -421,7 +398,7 @@ describe("chronicleWatermarkLayout", () => {
     expect(logoOnly.logoSize).toBe(full.logoSize);
     expect(logoOnly.scrim.width).toBeLessThan(full.scrim.width);
     expect(logoOnly.scrim.x + logoOnly.scrim.width).toBeLessThanOrEqual(
-      logoOnly.logoX + logoOnly.logoSize + logoOnly.fontSize
+      logoOnly.logoX + logoOnly.logoSize + logoOnly.fontSize,
     );
   });
 
@@ -517,19 +494,17 @@ describe("chronicleGifDelayMs", () => {
 describe("chronicleGifFilename", () => {
   it("names the file after the map and the span it covers", () => {
     expect(chronicleGifFilename("Adavaar", "2026-08-15", "2026-08-26")).toBe(
-      "adavaar-timelapse-2026-08-15-to-2026-08-26.gif"
+      "adavaar-timelapse-2026-08-15-to-2026-08-26.gif",
     );
   });
 
   it("collapses a single-day export", () => {
-    expect(chronicleGifFilename("Adavaar", "2026-08-15", "2026-08-15")).toBe(
-      "adavaar-timelapse-2026-08-15.gif"
-    );
+    expect(chronicleGifFilename("Adavaar", "2026-08-15", "2026-08-15")).toBe("adavaar-timelapse-2026-08-15.gif");
   });
 
   it("strips anything a filesystem would reject", () => {
     expect(chronicleGifFilename("R3b1rth / Dev", "2026-08-15", "2026-08-16")).toBe(
-      "r3b1rth-dev-timelapse-2026-08-15-to-2026-08-16.gif"
+      "r3b1rth-dev-timelapse-2026-08-15-to-2026-08-16.gif",
     );
     expect(chronicleGifFilename("", null, null)).toBe("map-timelapse.gif");
   });

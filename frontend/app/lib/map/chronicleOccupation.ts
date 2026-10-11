@@ -2,10 +2,7 @@ import { parseRgbString } from "@/app/lib/map/titleRgb";
 
 import { parchmentWashRgb } from "./displayColour";
 
-import {
-  assertChronicleGridShape,
-  type ChronicleBorderMask,
-} from "./chronicleBorderMask";
+import { assertChronicleGridShape, type ChronicleBorderMask } from "./chronicleBorderMask";
 import {
   MAX_PAINTABLE_PROVINCE_ID,
   type NationColorLut,
@@ -56,9 +53,7 @@ function clampByte(value: number): number {
  * same blend the server uses, applied to whichever base colour the caller is
  * already painting home land with.
  */
-export function occupationDisplayRgb(
-  rgb: readonly [number, number, number]
-): [number, number, number] {
+export function occupationDisplayRgb(rgb: readonly [number, number, number]): [number, number, number] {
   const [r, g, b] = rgb;
   const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
   const blend = CHRONICLE_OCCUPATION_GREY_BLEND;
@@ -115,17 +110,10 @@ export type ChronicleFillOptions = {
  * Occupation is written second so it wins any province a malformed day claims
  * in both lists. Real days never overlap — see the module note.
  */
-export function chronicleDayColorLut(
-  ownership: NationOwnership | null,
-  options: ChronicleFillOptions
-): NationColorLut {
+export function chronicleDayColorLut(ownership: NationOwnership | null, options: ChronicleFillOptions): NationColorLut {
   const nations = ownership ? Object.values(ownership) : [];
-  const homeLists = options.fill
-    ? nations.map((nation) => provinceIds(nation?.provinces))
-    : [];
-  const occupiedLists = options.occupation
-    ? nations.map((nation) => provinceIds(nation?.occupied_held))
-    : [];
+  const homeLists = options.fill ? nations.map((nation) => provinceIds(nation?.provinces)) : [];
+  const occupiedLists = options.occupation ? nations.map((nation) => provinceIds(nation?.occupied_held)) : [];
 
   const maxProvinceId = maxProvinceIdIn([...homeLists, ...occupiedLists]);
   const lut = new Uint32Array(maxProvinceId + 1);
@@ -174,9 +162,7 @@ function buildRoleLuts(ownership: NationOwnership): {
 } {
   const nations = Object.values(ownership);
   const homeLists = nations.map((nation) => provinceIds(nation?.provinces));
-  const occupiedLists = nations.map((nation) =>
-    provinceIds(nation?.occupied_held)
-  );
+  const occupiedLists = nations.map((nation) => provinceIds(nation?.occupied_held));
   const maxProvinceId = maxProvinceIdIn([...homeLists, ...occupiedLists]);
 
   const home = new Uint32Array(maxProvinceId + 1);
@@ -209,7 +195,7 @@ function buildRoleLuts(ownership: NationOwnership): {
  */
 export function computeChronicleOccupationSeamMask(
   grid: ProvinceIdGrid,
-  ownership: NationOwnership | null
+  ownership: NationOwnership | null,
 ): ChronicleBorderMask | null {
   if (!ownership) return null;
   const pixelCount = assertChronicleGridShape(grid);

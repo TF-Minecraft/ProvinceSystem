@@ -84,9 +84,7 @@ export default function CodeRedeemForm<Result, Session>({
   return (
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-4">
       <label className="flex flex-col gap-2 text-left">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">{label}</span>
         <input
           type="text"
           name="code"
@@ -106,11 +104,7 @@ export default function CodeRedeemForm<Result, Session>({
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className={buttonClass}
-      >
+      <button type="submit" disabled={loading} className={buttonClass}>
         {loading ? "Redeeming…" : "Redeem"}
       </button>
     </form>

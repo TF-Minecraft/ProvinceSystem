@@ -131,12 +131,15 @@ export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptio
     !boxHitsCircle(box, own.x, own.y, markerRadius);
   const free = (box: Box) =>
     (!area ||
-      (box.x >= pad && box.y >= pad && box.x + box.width <= area.width - pad && box.y + box.height <= area.height - pad)) &&
+      (box.x >= pad &&
+        box.y >= pad &&
+        box.x + box.width <= area.width - pad &&
+        box.y + box.height <= area.height - pad)) &&
     boxes.every((placed) => !overlaps(box, placed, pad));
 
   const near = options.crowdRadius;
   const touching = new Map(
-    points.map((p) => [p, points.filter((q) => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < near)])
+    points.map((p) => [p, points.filter((q) => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < near)]),
   );
   const order = [...points].sort((a, b) => touching.get(a)!.length - touching.get(b)!.length);
 
@@ -188,7 +191,7 @@ export function layoutLabels(points: readonly LabelPoint[], options: LayoutOptio
           (p) =>
             p === point ||
             (!strict && Math.hypot(p.x - point.x, p.y - point.y) < 2 * markerRadius) ||
-            !segmentHitsCircle(leader, p.x, p.y, markerRadius)
+            !segmentHitsCircle(leader, p.x, p.y, markerRadius),
         )
       ) {
         placed = { key: point.key, ...box, leader };

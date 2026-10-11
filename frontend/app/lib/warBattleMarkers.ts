@@ -6,9 +6,7 @@ export const BATTLE_MARKER_KIND = "battle";
 export const BATTLE_NEXT_BASE_SCALE = 1.1;
 export const BATTLE_MARKER_Y_OFFSET = 30;
 
-export function formatBattleSlotStatus(
-  status: WarScheduleSlot["status"]
-): string {
+export function formatBattleSlotStatus(status: WarScheduleSlot["status"]): string {
   switch (status) {
     case "next":
       return "Next battle";
@@ -78,10 +76,7 @@ function compareSlotCandidates(a: SlotCandidate, b: SlotCandidate): number {
 
 function collectWarSlots(war: WarExport): SlotCandidate[] {
   const candidates: SlotCandidate[] = [];
-  const schedules = [
-    war.campaign_battle_schedule ?? [],
-    war.campaign_counter_schedule ?? [],
-  ];
+  const schedules = [war.campaign_battle_schedule ?? [], war.campaign_counter_schedule ?? []];
 
   for (const schedule of schedules) {
     for (const slot of schedule) {

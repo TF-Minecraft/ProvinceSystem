@@ -21,7 +21,7 @@ export function overlayStyle(
   bbox: OverlayBBox | undefined,
   mapW: number,
   mapH: number,
-  options?: OverlayStyleOptions
+  options?: OverlayStyleOptions,
 ): CSSProperties {
   if (!bbox?.w || !bbox?.h || !mapW || !mapH) {
     return {

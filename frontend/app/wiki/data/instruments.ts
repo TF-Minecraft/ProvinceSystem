@@ -48,7 +48,7 @@ function instrumentKeys(folder: string, mode: "chord" | "octave"): { row1: Instr
           note: letter.toUpperCase(),
           sound: S(i + 1, letter, "chord"),
         }))
-     : NOTE_LETTERS.map((letter, i) => ({
+      : NOTE_LETTERS.map((letter, i) => ({
           num: i + 9,
           note: letter.toUpperCase(),
           sound: S(i + 9, letter, "single"),
@@ -107,8 +107,7 @@ export const instrumentCommands: WikiCommandSet = {
   commands: [
     {
       command: "/instruments keybinds",
-      description:
-        "Prints the full note and chord layout for the instrument currently in your off-hand.",
+      description: "Prints the full note and chord layout for the instrument currently in your off-hand.",
       notes:
         "You must be holding an instrument in your off-hand, or it just tells you so. " +
         "Permission instruments.use, default true - no normal player is ever blocked.",
@@ -116,9 +115,7 @@ export const instrumentCommands: WikiCommandSet = {
     {
       command: "/instruments list",
       description: "Prints the name of every instrument that exists on the server.",
-      notes:
-        "Needs nothing in hand. Permission instruments.use, default true - no normal player " +
-        "is ever blocked.",
+      notes: "Needs nothing in hand. Permission instruments.use, default true - no normal player " + "is ever blocked.",
     },
   ],
 };
@@ -128,8 +125,7 @@ export const instrumentsSection: WikiSection = {
     href: "/wiki/musical-instruments",
     label: "Musical Instruments",
     category: "social",
-    blurb:
-      "Nine instruments turn your hotbar into a keyboard. Only Bards can craft them - anyone can play one.",
+    blurb: "Nine instruments turn your hotbar into a keyboard. Only Bards can craft them - anyone can play one.",
   },
   // `instrumentRecipes` are server recipes registered by `stationsSection`;
   // listing them again here would put them in the recipe index twice.

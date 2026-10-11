@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
-import {
-  StartRefusedError,
-  timeUntil,
-  type StartAllowance,
-  type StartRefusal,
-} from "../../../lib/profile/start";
+import { StartRefusedError, timeUntil, type StartAllowance, type StartRefusal } from "../../../lib/profile/start";
 
 export type WardrobeItem = {
   id: string;
@@ -38,13 +33,19 @@ const tileClass =
   "flex h-full min-h-44 w-full flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] px-3 text-center text-sm";
 
 const CHIPS: Record<string, { label: string; className: string }> = {
-  pending: { label: "In review", className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] text-[var(--tfmc-cream)]" },
+  pending: {
+    label: "In review",
+    className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] text-[var(--tfmc-cream)]",
+  },
   pending_pack: { label: "Live soon", className: "bg-[#c8b27a] text-[var(--tfmc-forest-deep)]" },
   approved: { label: "Live soon", className: "bg-[#c8b27a] text-[var(--tfmc-forest-deep)]" },
   applied: { label: "Live", className: "bg-[var(--tfmc-accent)] text-[var(--tfmc-forest-deep)]" },
   denied: { label: "Denied", className: "bg-[color-mix(in_srgb,#e8a0a0_22%,transparent)] text-[#f0b8b8]" },
   rejected: { label: "Denied", className: "bg-[color-mix(in_srgb,#e8a0a0_22%,transparent)] text-[#f0b8b8]" },
-  revoked: { label: "Removed", className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-stone)]" },
+  revoked: {
+    label: "Removed",
+    className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-stone)]",
+  },
 };
 
 function Chip({ status }: { status: string }) {
@@ -75,7 +76,11 @@ function refusalText(noun: Noun, reason: StartRefusal, nextAt: string | null): s
 /** A hanger, for things with no picture yet. */
 export function HangerGlyph() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-10 w-10 text-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)]">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className="h-10 w-10 text-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)]"
+    >
       <path
         fill="none"
         stroke="currentColor"
@@ -96,9 +101,7 @@ function Card({ item }: { item: WardrobeItem }) {
         href={item.href}
         className="block overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
       >
-        <div
-          className="relative grid aspect-square place-items-center bg-[radial-gradient(circle_at_50%_45%,var(--tfmc-moss),color-mix(in_srgb,var(--tfmc-forest-deep)_90%,var(--tfmc-forest))_70%)]"
-        >
+        <div className="relative grid aspect-square place-items-center bg-[radial-gradient(circle_at_50%_45%,var(--tfmc-moss),color-mix(in_srgb,var(--tfmc-forest-deep)_90%,var(--tfmc-forest))_70%)]">
           <div className={`grid h-full w-full place-items-center ${denied ? "opacity-50 grayscale" : ""}`}>
             {item.picture}
           </div>
@@ -107,9 +110,7 @@ function Card({ item }: { item: WardrobeItem }) {
         <div className="px-2.5 pb-3 pt-2">
           <p className="truncate font-semibold text-[var(--tfmc-cream)]">{item.name}</p>
           <p className="text-xs text-[var(--tfmc-mist)]">{item.detail}</p>
-          {item.denyReason ? (
-            <p className="mt-1 text-xs text-[#e8a0a0]">{item.denyReason}</p>
-          ) : null}
+          {item.denyReason ? <p className="mt-1 text-xs text-[#e8a0a0]">{item.denyReason}</p> : null}
         </div>
       </Link>
     </li>
@@ -135,7 +136,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm }: 
           ? refusalText(noun, err.reason, err.nextAt)
           : err instanceof Error
             ? err.message
-            : `Couldn’t start a ${noun}. Please try again.`
+            : `Couldn’t start a ${noun}. Please try again.`,
       );
       setStarting(false);
     }
@@ -183,9 +184,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm }: 
   return (
     <div>
       <div className="mb-3 flex items-baseline justify-between gap-4 text-sm text-[var(--tfmc-mist)]">
-        <span>
-          {items.length === 1 ? `1 ${noun}` : `${items.length} ${noun}s`}
-        </span>
+        <span>{items.length === 1 ? `1 ${noun}` : `${items.length} ${noun}s`}</span>
         <button
           type="button"
           onClick={() => setShowCode((v) => !v)}
@@ -198,8 +197,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm }: 
       </div>
       <div id={codeId} hidden={!showCode} className="mb-4">
         <p className="mb-2 text-sm text-[var(--tfmc-mist)]">
-          Run <code className="text-[var(--tfmc-accent)]">/token create {noun}</code> in game, then
-          enter the code.
+          Run <code className="text-[var(--tfmc-accent)]">/token create {noun}</code> in game, then enter the code.
         </p>
         {codeForm}
       </div>

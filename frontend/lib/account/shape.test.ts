@@ -25,7 +25,20 @@ it("keeps the card height to a tenth of a pixel", () => {
   expect(decodeAccountShape("12113-0")).toEqual(DEFAULT_ACCOUNT_SHAPE);
 });
 
-it.each([undefined, null, "", "1111", "131103", "111114", "12113-", "12113-12345", "12113-1.25", "abcde", "121103", "111113x"])("falls back to the default for %s", (value) => {
+it.each([
+  undefined,
+  null,
+  "",
+  "1111",
+  "131103",
+  "111114",
+  "12113-",
+  "12113-12345",
+  "12113-1.25",
+  "abcde",
+  "121103",
+  "111113x",
+])("falls back to the default for %s", (value) => {
   expect(decodeAccountShape(value)).toEqual(DEFAULT_ACCOUNT_SHAPE);
 });
 

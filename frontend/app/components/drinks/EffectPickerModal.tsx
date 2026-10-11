@@ -17,14 +17,7 @@ type Props = {
 const fieldClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]";
 
-export default function EffectPickerModal({
-  open,
-  onClose,
-  onSave,
-  effectChoices,
-  initial,
-  title,
-}: Props) {
+export default function EffectPickerModal({ open, onClose, onSave, effectChoices, initial, title }: Props) {
   const [search, setSearch] = useState("");
   const [type, setType] = useState(initial?.type || effectChoices[0] || "");
   const [level, setLevel] = useState(initial?.level || 1);
@@ -42,9 +35,7 @@ export default function EffectPickerModal({
     const q = search.trim().toLowerCase();
     return effectChoices.filter((id) => {
       if (!q) return true;
-      return (
-        id.includes(q) || effectLabel(id).toLowerCase().includes(q)
-      );
+      return id.includes(q) || effectLabel(id).toLowerCase().includes(q);
     });
   }, [effectChoices, search]);
 
@@ -98,9 +89,7 @@ export default function EffectPickerModal({
                       }`}
                     >
                       <span>{effectLabel(id)}</span>
-                      {selected ? (
-                        <span className="text-xs text-[var(--tfmc-accent)]">Selected</span>
-                      ) : null}
+                      {selected ? <span className="text-xs text-[var(--tfmc-accent)]">Selected</span> : null}
                     </button>
                   </li>
                 );

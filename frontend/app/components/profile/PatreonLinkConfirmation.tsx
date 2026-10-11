@@ -32,13 +32,20 @@ export default function PatreonLinkConfirmation({ fallback }: { fallback: Patreo
     if (token.current === null) {
       setState({ kind: "result", result: fallback });
     } else {
-      void getPendingPatreonLink(token.current).then((link) => {
-        if (active) setState(link ? { kind: "pending", link } : { kind: "result", result: getPatreonLinkedResult("expired", null) });
-      }).catch(() => {
-        if (active) setState({ kind: "result", result: getPatreonLinkedResult("error", null) });
-      });
+      void getPendingPatreonLink(token.current)
+        .then((link) => {
+          if (active)
+            setState(
+              link ? { kind: "pending", link } : { kind: "result", result: getPatreonLinkedResult("expired", null) },
+            );
+        })
+        .catch(() => {
+          if (active) setState({ kind: "result", result: getPatreonLinkedResult("error", null) });
+        });
     }
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [fallback]);
 
   async function finish(action: "confirm" | "cancel") {
@@ -55,19 +62,43 @@ export default function PatreonLinkConfirmation({ fallback }: { fallback: Patreo
     }
   }
 
-  const title = state.kind === "pending" ? confirmationCopy.title : state.kind === "result" ? state.result.title : "Checking Patreon link…";
+  const title =
+    state.kind === "pending"
+      ? confirmationCopy.title
+      : state.kind === "result"
+        ? state.result.title
+        : "Checking Patreon link…";
   return (
     <div aria-live="polite">
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">{title}</h1>
       {state.kind === "result" ? <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{state.result.message}</p> : null}
       {state.kind === "pending" ? (
         <div className="mt-3 text-sm text-[var(--tfmc-mist)]">
-          <p>Patreon account: <strong>{state.link.patreon_name}</strong></p>
-          <p className="mt-2">{state.link.target_kind === "discord" ? "Discord" : "Minecraft"} account: <strong>{state.link.target_name}</strong></p>
+          <p>
+            Patreon account: <strong>{state.link.patreon_name}</strong>
+          </p>
+          <p className="mt-2">
+            {state.link.target_kind === "discord" ? "Discord" : "Minecraft"} account:{" "}
+            <strong>{state.link.target_name}</strong>
+          </p>
           <p className="mt-4">{confirmationCopy.warning}</p>
           <div className="mt-4 flex gap-3">
-            <button type="button" disabled={busy} onClick={() => void finish("confirm")} className="rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50">Confirm</button>
-            <button type="button" disabled={busy} onClick={() => void finish("cancel")} className="rounded-sm border px-4 py-2 text-[var(--tfmc-cream)] disabled:opacity-50">Cancel</button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void finish("confirm")}
+              className="rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50"
+            >
+              Confirm
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void finish("cancel")}
+              className="rounded-sm border px-4 py-2 text-[var(--tfmc-cream)] disabled:opacity-50"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       ) : null}

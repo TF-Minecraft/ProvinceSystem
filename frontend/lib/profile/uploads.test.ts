@@ -6,7 +6,10 @@ import { getSession as getSkinsSession, setSession as setSkinsSession } from "..
 import { endProfileUploads, logoutProfile } from "./uploads";
 
 vi.mock("../characters/api", () => ({ logoutCharacter: vi.fn().mockResolvedValue(undefined) }));
-afterEach(() => { sessionStorage.clear(); vi.clearAllMocks(); });
+afterEach(() => {
+  sessionStorage.clear();
+  vi.clearAllMocks();
+});
 
 const BASE = { player_uuid: "p", expires_at: "2099-01-01T00:00:00Z" };
 
@@ -16,7 +19,12 @@ it("ends uploads started from Profile and revokes them", async () => {
   await endProfileUploads();
   expect(getSkinsSession()).toBeNull();
   expect(getDrinksSession()).toBeNull();
-  expect(vi.mocked(logoutCharacter).mock.calls.map(([t]) => t).sort()).toEqual(["drink", "skin"]);
+  expect(
+    vi
+      .mocked(logoutCharacter)
+      .mock.calls.map(([t]) => t)
+      .sort(),
+  ).toEqual(["drink", "skin"]);
 });
 
 it("leaves uploads redeemed from an in-game code", async () => {
@@ -30,5 +38,10 @@ it("ends Profile uploads with the Profile session on any log out", async () => {
   setSkinsSession({ ...BASE, session_token: "skin", from_profile: true });
   await logoutProfile("profile-token");
   expect(getSkinsSession()).toBeNull();
-  expect(vi.mocked(logoutCharacter).mock.calls.map(([t]) => t).sort()).toEqual(["profile-token", "skin"]);
+  expect(
+    vi
+      .mocked(logoutCharacter)
+      .mock.calls.map(([t]) => t)
+      .sort(),
+  ).toEqual(["profile-token", "skin"]);
 });

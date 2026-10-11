@@ -61,9 +61,7 @@ export function getPlayerMovement(uuid: string, since: number, until: number): P
 }
 
 export function getSessionMovement(uuid: string, session: string): Promise<SessionMovement> {
-  return adminRequest(
-    `/admin/players/${encodeURIComponent(uuid)}/sessions/${encodeURIComponent(session)}/movement`
-  );
+  return adminRequest(`/admin/players/${encodeURIComponent(uuid)}/sessions/${encodeURIComponent(session)}/movement`);
 }
 
 export function getEveryoneMovement(since: number, until: number): Promise<EveryoneMovement> {
@@ -159,7 +157,7 @@ export function isJump(a: Sample, b: Sample): boolean {
 export function stretches(
   points: readonly MovementPoint[],
   worlds: readonly (string | null)[],
-  pingSeconds: number | null | undefined
+  pingSeconds: number | null | undefined,
 ): Stretch[] {
   const gap = gapSeconds(pingSeconds);
   const out: Stretch[] = [];
@@ -260,7 +258,14 @@ export function inspect(all: readonly Stretch[], time: number, hold = 0): Inspec
       if (b && a.time < time && time < b.time) {
         if (isJump(a, b)) return { kind: "unobserved", world: stretch.world, before: a, after: b };
         const f = (time - a.time) / (b.time - a.time);
-        return { kind: "estimated", world: stretch.world, x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f, before: a, after: b };
+        return {
+          kind: "estimated",
+          world: stretch.world,
+          x: a.x + (b.x - a.x) * f,
+          z: a.z + (b.z - a.z) * f,
+          before: a,
+          after: b,
+        };
       }
     }
   }
@@ -297,7 +302,7 @@ export function positionAt(all: readonly Stretch[], time: number, hold = 0): Pos
 /** Every recorded observation time in [from, to], oldest first, for stepping to the previous or next one. */
 export function observationTimes(all: readonly Stretch[], from = -Infinity, to = Infinity): number[] {
   const times = all.flatMap((stretch) =>
-    stretch.samples.filter((s) => !s.estimated && s.time >= from && s.time <= to).map((s) => s.time)
+    stretch.samples.filter((s) => !s.estimated && s.time >= from && s.time <= to).map((s) => s.time),
   );
   return [...new Set(times)].sort((a, b) => a - b);
 }
@@ -331,7 +336,7 @@ export function timeByWorld(all: readonly Stretch[]): Map<string | null, number>
 /** The map-space box around every sample in the map's world, or null when there is none. */
 export function boundsOf(
   all: readonly Stretch[],
-  mapWorld: string
+  mapWorld: string,
 ): { x: number; y: number; w: number; h: number } | null {
   let minX = Infinity;
   let minZ = Infinity;
@@ -436,7 +441,12 @@ function dateParts(at: number, options: Intl.DateTimeFormatOptions): Record<stri
 
 /** `14:03`, or with seconds `14:03:18`, in local time. */
 export function formatClock(at: number, seconds = false): string {
-  const p = dateParts(at, { hour: "2-digit", minute: "2-digit", second: seconds ? "2-digit" : undefined, hourCycle: "h23" });
+  const p = dateParts(at, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: seconds ? "2-digit" : undefined,
+    hourCycle: "h23",
+  });
   return seconds ? `${p.hour}:${p.minute}:${p.second}` : `${p.hour}:${p.minute}`;
 }
 

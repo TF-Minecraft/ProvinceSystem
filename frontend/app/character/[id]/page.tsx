@@ -13,12 +13,7 @@ import {
   type CreationCatalog,
 } from "../../../lib/characters/api";
 import { logoutProfile } from "../../../lib/profile/uploads";
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  type CharacterSession,
-} from "../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../lib/characters/uiDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
 import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
@@ -45,19 +40,15 @@ export default function CharacterDetailPage() {
         setCatalog(creationCatalogDev as CreationCatalog);
         return;
       }
-      const [list, cat] = await Promise.all([
-        listCharacters(token),
-        getCreationCatalog(token).catch(() => null),
-      ]);
+      const [list, cat] = await Promise.all([listCharacters(token), getCreationCatalog(token).catch(() => null)]);
       setCatalog(cat);
-      const found =
-        list.characters.find((c) => c.id === characterId) || null;
+      const found = list.characters.find((c) => c.id === characterId) || null;
       setCharacter(found);
       if (!found) {
         setError("Character not found.");
       }
     },
-    [characterId, uiDev]
+    [characterId, uiDev],
   );
 
   useEffect(() => {
@@ -81,10 +72,7 @@ export default function CharacterDetailPage() {
     setSession(s);
     void load(s.session_token)
       .catch((e) => {
-        const msg =
-          e instanceof CharactersApiError
-            ? e.message
-            : "Could not load character.";
+        const msg = e instanceof CharactersApiError ? e.message : "Could not load character.";
         setError(msg);
       })
       .finally(() => setReady(true));
@@ -113,10 +101,7 @@ export default function CharacterDetailPage() {
       await deletePendingCreate(session.session_token, characterId);
       router.replace("/profile");
     } catch (e) {
-      const msg =
-        e instanceof CharactersApiError
-          ? e.message
-          : "Could not cancel submission.";
+      const msg = e instanceof CharactersApiError ? e.message : "Could not cancel submission.";
       setError(msg);
     } finally {
       setCancelling(false);
@@ -124,9 +109,7 @@ export default function CharacterDetailPage() {
   }
 
   if (!ready) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   return (

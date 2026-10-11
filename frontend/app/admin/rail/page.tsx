@@ -5,7 +5,12 @@ import AdminColumn from "../../components/admin/AdminColumn";
 import RailOverview from "../../components/admin/RailOverview";
 
 // The tube map's lettering: an open font after the Underground's own.
-const underground = Hammersmith_One({ weight: "400", subsets: ["latin"], variable: "--font-underground", display: "swap" });
+const underground = Hammersmith_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-underground",
+  display: "swap",
+});
 
 export default function AdminRailPage() {
   // The map style lives in the URL's query, which needs a Suspense boundary.

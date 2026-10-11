@@ -7,8 +7,7 @@ export const animalHusbandryCommands: WikiCommandSet = {
     {
       command: "/animals",
       aliases: ["/livestock"],
-      description:
-        "Lists every animal you own or share, with the last place each one was seen.",
+      description: "Lists every animal you own or share, with the last place each one was seen.",
       notes:
         "Each line shows the name, the kind of animal, whether it is growing, and whether it is happy, hungry, or dirty. Click the coordinates in chat to copy them. If a place is missing, visit that animal once so it can be recorded.",
     },

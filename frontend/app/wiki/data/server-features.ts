@@ -46,7 +46,8 @@ export const serverFeaturesCommands: WikiCommandSet = {
       description: "Creates a one-time website code to redeem for a skin upload, a drink upload, or your profile page.",
       access: "permission",
       permission: "tfmcweb.token.create",
-      notes: "Skin and drink codes share one cooldown, gated by rank (28 days down to 7 days). This is a rank perk, not something every player has.",
+      notes:
+        "Skin and drink codes share one cooldown, gated by rank (28 days down to 7 days). This is a rank perk, not something every player has.",
     },
   ],
 };

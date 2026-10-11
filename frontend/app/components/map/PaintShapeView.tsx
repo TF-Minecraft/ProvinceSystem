@@ -89,9 +89,7 @@ function PaintShapeView({ shape, selected = false }: PaintShapeViewProps) {
 
     case "arrow": {
       const style = paintStrokeStyle(shape.width, shape.color, shapeScale);
-      const head = pointsToPolygonAttr(
-        arrowHeadPoints(shape.from, shape.to, sizes.arrowHead)
-      );
+      const head = pointsToPolygonAttr(arrowHeadPoints(shape.from, shape.to, sizes.arrowHead));
       const d = `M ${shape.from.x} ${shape.from.y} L ${shape.to.x} ${shape.to.y}`;
       return (
         <g opacity={selected ? 1 : 0.95}>
@@ -140,11 +138,7 @@ function PaintShapeView({ shape, selected = false }: PaintShapeViewProps) {
             preserveAspectRatio="xMidYMid meet"
             // Mirror about the stamp's own centre, so a flipped icon stays put
             // instead of jumping to the other side of the map.
-            transform={
-              shape.flipX
-                ? `translate(${shape.at.x * 2} 0) scale(-1 1)`
-                : undefined
-            }
+            transform={shape.flipX ? `translate(${shape.at.x * 2} 0) scale(-1 1)` : undefined}
             // The stamp assets are 16x16 Minecraft textures. Left to smooth
             // upscaling they turn to mush the moment a shape is resized up, so
             // scale them nearest-neighbour like every other texture in the app.

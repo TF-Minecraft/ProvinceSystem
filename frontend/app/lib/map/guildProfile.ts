@@ -51,11 +51,7 @@ export function buildGuildProfile(factionId: string, raw: RawGuild): GuildProfil
   if (!id) return null;
   const type = typeof raw.type === "string" ? raw.type : "guild";
   const capital = typeof raw.capital === "number" && raw.capital >= 0 ? raw.capital : null;
-  const members = Array.isArray(raw.members)
-    ? raw.members.length
-    : typeof raw.members === "number"
-      ? raw.members
-      : 0;
+  const members = Array.isArray(raw.members) ? raw.members.length : typeof raw.members === "number" ? raw.members : 0;
   const branches = Array.isArray(raw.branches)
     ? raw.branches.flatMap((branch) => {
         if (!branch || typeof branch !== "object") return [];
@@ -93,9 +89,7 @@ export function realmGuilds(factionId: string, region: unknown): GuildProfile[] 
 }
 
 export function allGuilds(regionData: RegionRecord | null): GuildProfile[] {
-  return Object.entries(regionData ?? {}).flatMap(([factionId, region]) =>
-    realmGuilds(factionId, region)
-  );
+  return Object.entries(regionData ?? {}).flatMap(([factionId, region]) => realmGuilds(factionId, region));
 }
 
 /** Every guild of a realm, its own realm guild included. */
@@ -135,7 +129,7 @@ export function guildsInProvince(regionData: RegionRecord | null, province: numb
 /** The settlement a guild is based in, matched by province. */
 export function guildSeat(
   guild: Pick<GuildProfile, "homeProvince" | "factionId">,
-  settlements: SettlementMarker[]
+  settlements: SettlementMarker[],
 ): SettlementMarker | null {
   if (guild.homeProvince === null) return null;
   const here = settlements.filter((settlement) => settlement.province_id === guild.homeProvince);

@@ -43,7 +43,11 @@ export default function WoodworkingGallery({
 
   return (
     <div className="mt-4">
-      <div role="tablist" aria-label="Furniture style" className="flex flex-wrap gap-x-6 gap-y-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
+      <div
+        role="tablist"
+        aria-label="Furniture style"
+        className="flex flex-wrap gap-x-6 gap-y-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]"
+      >
         {categories.map((category) => (
           <button
             key={category.id}
@@ -74,9 +78,17 @@ export default function WoodworkingGallery({
         </ul>
         <div className="flex flex-col rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] p-5">
           <div className="w-full" aria-label={`3D preview of ${selected.name}`}>
-            <StationModelViewer key={selected.id} modelUrl={selected.modelUrl} textureUrl={selected.textureUrl} textureUrls={selected.textureUrl ? undefined : selected.textureUrls} textureAnimationUrl={selected.textureAnimationUrl} />
+            <StationModelViewer
+              key={selected.id}
+              modelUrl={selected.modelUrl}
+              textureUrl={selected.textureUrl}
+              textureUrls={selected.textureUrl ? undefined : selected.textureUrls}
+              textureAnimationUrl={selected.textureAnimationUrl}
+            />
           </div>
-          <h3 className="mt-4 text-center font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{selected.name}</h3>
+          <h3 className="mt-4 text-center font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+            {selected.name}
+          </h3>
         </div>
       </div>
     </div>

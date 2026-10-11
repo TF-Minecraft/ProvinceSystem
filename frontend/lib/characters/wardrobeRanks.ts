@@ -26,7 +26,7 @@ function visibleGroups(slotLimits: SlotLimits | undefined) {
  */
 export function groupUnlockingSlots(
   slotLimits: SlotLimits | undefined,
-  minSlots: number
+  minSlots: number,
 ): { id?: string; display_name?: string; wardrobe_skin_slots?: number } | null {
   for (const g of visibleGroups(slotLimits)) {
     const n = Number(g.wardrobe_skin_slots ?? 0);
@@ -47,10 +47,7 @@ export function minSlotsForExtra(slot: string): number {
 }
 
 /** Lock copy for a wardrobe extra slot from catalog groups. */
-export function lockLabelForSlot(
-  slot: string,
-  slotLimits: SlotLimits | undefined
-): RankLockLabel {
+export function lockLabelForSlot(slot: string, slotLimits: SlotLimits | undefined): RankLockLabel {
   const minSlots = minSlotsForExtra(slot);
   if (minSlots <= 0) {
     return { plain: "a higher rank", runs: [{ text: "a higher rank", color: "#e8a0a0" }] };
@@ -63,10 +60,7 @@ export function lockLabelForSlot(
       const last = runs[runs.length - 1]!;
       return {
         plain: `${runs.map((r) => r.text).join("")}+`,
-        runs: [
-          ...runs.slice(0, -1),
-          { ...last, text: `${last.text}+` },
-        ],
+        runs: [...runs.slice(0, -1), { ...last, text: `${last.text}+` }],
       };
     }
   }
@@ -79,7 +73,11 @@ export function lockLabelForSlot(
 
 /** Map stored wardrobe slot model to preview arm model. */
 export function wardrobeSlotToArmModel(model?: string | null): ArmModel {
-  return String(model || "").trim().toLowerCase() === "slim" ? "slim" : "default";
+  return String(model || "")
+    .trim()
+    .toLowerCase() === "slim"
+    ? "slim"
+    : "default";
 }
 
 /** Map preview arm model to wardrobe API / storage value. */

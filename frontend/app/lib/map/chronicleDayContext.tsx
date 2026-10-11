@@ -24,16 +24,9 @@ export const ChronicleDayProvider: React.FC<{
   // Memoised on the day string alone so a re-render of the page around the
   // provider does not hand every consumer a new object and re-run the data
   // effects that take `day` in their deps.
-  const value = useMemo<ChronicleDayContextValue>(
-    () => (day === null ? null : { day }),
-    [day]
-  );
+  const value = useMemo<ChronicleDayContextValue>(() => (day === null ? null : { day }), [day]);
 
-  return (
-    <ChronicleDayContext.Provider value={value}>
-      {children}
-    </ChronicleDayContext.Provider>
-  );
+  return <ChronicleDayContext.Provider value={value}>{children}</ChronicleDayContext.Provider>;
 };
 
 /**

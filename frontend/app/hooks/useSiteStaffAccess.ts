@@ -6,11 +6,7 @@ import { getSession, isSessionValid } from "@/lib/characters/session";
 import { isCharacterUiDev } from "@/lib/characters/uiDev";
 import { hasSiteStaffAccess } from "@/lib/site/staffAccess";
 
-export type SiteStaffAccessState =
-  | "loading"
-  | "unauthenticated"
-  | "staff"
-  | "denied";
+export type SiteStaffAccessState = "loading" | "unauthenticated" | "staff" | "denied";
 
 type Options = {
   enabled?: boolean;

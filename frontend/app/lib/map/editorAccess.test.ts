@@ -29,9 +29,7 @@ describe("editorAccess", () => {
 
   it("probeCanEditMap returns true on 200 when editor enabled", async () => {
     vi.stubEnv("NEXT_PUBLIC_MAP_EDITOR_ENABLED", "1");
-    vi.spyOn(api, "fetchMapApi").mockResolvedValue(
-      new Response(JSON.stringify({ provinces: [] }), { status: 200 })
-    );
+    vi.spyOn(api, "fetchMapApi").mockResolvedValue(new Response(JSON.stringify({ provinces: [] }), { status: 200 }));
 
     await expect(probeCanEditMap("main", "staff-token")).resolves.toBe(true);
     expect(api.fetchMapApi).toHaveBeenCalledWith("/main/editor/provinces", {
@@ -44,7 +42,7 @@ describe("editorAccess", () => {
     vi.spyOn(api, "fetchMapApi").mockResolvedValue(
       new Response(JSON.stringify({ detail: "Staff map access required" }), {
         status: 403,
-      })
+      }),
     );
 
     await expect(probeCanEditMap("main", "anon-token")).resolves.toBe(false);

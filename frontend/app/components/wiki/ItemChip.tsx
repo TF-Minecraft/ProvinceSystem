@@ -37,7 +37,7 @@ export default function ItemChip({ name, texture, link, className }: ItemChipPro
       {icon ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={icon} alt="" aria-hidden="true" className={cx("h-4 w-4 shrink-0", wikiPixelIcon)} />
-      ): null}
+      ) : null}
       <span className="text-[var(--tfmc-cream)]">{name}</span>
     </span>
   );

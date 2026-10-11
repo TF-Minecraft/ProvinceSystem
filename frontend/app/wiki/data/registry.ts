@@ -39,13 +39,7 @@ import { sittingSection } from "./sitting";
 import { stationsSection } from "./stations";
 import { thieverySection } from "./thievery";
 import { vehiclesSection } from "./vehicles";
-import type {
-  DuplicateCommand,
-  Recipe,
-  RegisteredCommand,
-  WikiCommandSet,
-  WikiSection,
-} from "./types";
+import type { DuplicateCommand, Recipe, RegisteredCommand, WikiCommandSet, WikiSection } from "./types";
 
 /**
  * The single registration point for wiki content. Adding a `WikiSection` wires
@@ -102,9 +96,7 @@ export const wikiSections: readonly WikiSection[] = [
 export const allRecipes: readonly Recipe[] = wikiSections.flatMap((s) => s.recipes ?? []);
 
 /** Every registered command set, derived from the registry. Never hand-maintained. */
-export const allCommands: readonly WikiCommandSet[] = wikiSections.flatMap((s) =>
-  s.commands ? [s.commands]: []
-);
+export const allCommands: readonly WikiCommandSet[] = wikiSections.flatMap((s) => (s.commands ? [s.commands] : []));
 
 /** The command set registered by the section at `href`, if it registered one. */
 export function getCommandsForHref(href: string): WikiCommandSet | undefined {
@@ -117,15 +109,13 @@ export function getCommandsForHref(href: string): WikiCommandSet | undefined {
  */
 export const allCommandRows: readonly RegisteredCommand[] = allCommands
   .flatMap((set) => set.commands.map((row) => ({ row, system: set.system, href: set.href })))
-  .sort((a, b) => (a.row.command < b.row.command ? -1: a.row.command > b.row.command ? 1: 0));
+  .sort((a, b) => (a.row.command < b.row.command ? -1 : a.row.command > b.row.command ? 1 : 0));
 
 /**
  * Commands claimed by more than one section. This remains available for
  * internal validation and is not shown in the player guide.
  */
-export function findDuplicateCommands(
-  sets: readonly WikiCommandSet[] = allCommands
-): DuplicateCommand[] {
+export function findDuplicateCommands(sets: readonly WikiCommandSet[] = allCommands): DuplicateCommand[] {
   const byCommand = new Map<string, RegisteredCommand[]>();
   for (const set of sets) {
     for (const row of set.commands) {

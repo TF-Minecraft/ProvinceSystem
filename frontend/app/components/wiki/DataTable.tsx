@@ -73,18 +73,14 @@ export default function DataTable({
   return (
     <div className={cx("mt-2 overflow-x-auto rounded-md", wikiHairline, className)}>
       <table className={cx("w-full text-left text-sm", fixedLayout && "table-fixed")} style={{ minWidth }}>
-        {caption ? (
-          <caption className="px-3 pt-2 text-left text-xs text-[var(--tfmc-stone)]">
-            {caption}
-          </caption>
-        ): null}
+        {caption ? <caption className="px-3 pt-2 text-left text-xs text-[var(--tfmc-stone)]">{caption}</caption> : null}
         <thead className={wikiTableHead}>
           <tr>
             {columns.map((column, i) => (
               <th
                 key={i}
                 scope="col"
-                style={column.width ? { width: column.width }: undefined}
+                style={column.width ? { width: column.width } : undefined}
                 className={cx("px-3 py-2 font-medium", ALIGN[column.align ?? "left"])}
               >
                 {column.header}
@@ -94,7 +90,7 @@ export default function DataTable({
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowKey ? rowKey(row, rowIndex): rowIndex} className={cx(wikiRowDivider, "align-top")}>
+            <tr key={rowKey ? rowKey(row, rowIndex) : rowIndex} className={cx(wikiRowDivider, "align-top")}>
               {columns.map((column, colIndex) => (
                 <td
                   key={colIndex}
@@ -102,7 +98,7 @@ export default function DataTable({
                     "px-3 py-2",
                     ALIGN[column.align ?? "left"],
                     column.nowrap && "whitespace-nowrap",
-                    colIndex === 0 ? "text-[var(--tfmc-cream)]": "text-[var(--tfmc-mist)]"
+                    colIndex === 0 ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-mist)]",
                   )}
                 >
                   {row[colIndex]}

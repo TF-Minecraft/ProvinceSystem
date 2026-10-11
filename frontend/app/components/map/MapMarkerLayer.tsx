@@ -69,12 +69,9 @@ function MapMarkerLayer({
 
   // Over the full list, not this layer's slice, so both layers (and hover)
   // agree on which names were thinned out.
-  const hiddenLabels = alwaysVisible
-    ? new Set<string>()
-    : hiddenMarkerLabels(markers, displayScale);
+  const hiddenLabels = alwaysVisible ? new Set<string>() : hiddenMarkerLabels(markers, displayScale);
 
-  const layerZ =
-    layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_ABOVE_LABELS;
+  const layerZ = layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_ABOVE_LABELS;
 
   return (
     <div
@@ -88,18 +85,16 @@ function MapMarkerLayer({
           marker.mapY,
           marker.markerSize,
           marker.kind,
-          markerZoomScale(displayScale)
+          markerZoomScale(displayScale),
         );
-        const visible =
-          alwaysVisible || shouldShowMapMarker(marker, displayScale);
+        const visible = alwaysVisible || shouldShowMapMarker(marker, displayScale);
         const hovered = hoveredMarkerId === marker.id;
         const baseScale = marker.baseScale ?? 1;
         const scale = baseScale * (hovered ? MARKER_HOVER_SCALE : 1);
         const src = resolveMarkerImageSrc(marker.kind, marker.markerSize);
         // Hover always names a pin, even one whose label gave way to a
         // more prominent neighbour.
-        const showLabel =
-          hovered || (!marker.showLabelOnlyOnHover && !hiddenLabels.has(marker.id));
+        const showLabel = hovered || (!marker.showLabelOnlyOnHover && !hiddenLabels.has(marker.id));
         const iconOffset = (layout.size - layout.iconSize) / 2;
         const ringSize = layout.iconSize * 1.2;
 
@@ -127,8 +122,7 @@ function MapMarkerLayer({
                   width: ringSize,
                   height: ringSize,
                   border: "3px solid color-mix(in srgb, #3dff3d 70%, transparent)",
-                  boxShadow:
-                    "0 0 8px color-mix(in srgb, #3dff3d 35%, transparent)",
+                  boxShadow: "0 0 8px color-mix(in srgb, #3dff3d 35%, transparent)",
                 }}
               />
             ) : null}

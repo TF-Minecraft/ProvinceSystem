@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  LEGACY_PALETTE,
-  normalizePreviewHex,
-  previewColourStopRuns,
-} from "../../../lib/skins/namePreview";
+import { LEGACY_PALETTE, normalizePreviewHex, previewColourStopRuns } from "../../../lib/skins/namePreview";
 import FormattedMcRuns from "./FormattedMcRuns";
 
 const inputClass =
@@ -43,11 +39,7 @@ export default function NameColourPicker({
   const lockedForRank = maxStops <= 0;
   const interactiveLocked = disabled || lockedForRank;
   const cap = Math.max(0, Math.min(8, maxStops));
-  const previewRuns = previewColourStopRuns(
-    previewText.trim() || "Preview",
-    colours,
-    previewStyles
-  );
+  const previewRuns = previewColourStopRuns(previewText.trim() || "Preview", colours, previewStyles);
 
   function addColour(token: string) {
     if (interactiveLocked) return;
@@ -57,11 +49,7 @@ export default function NameColourPicker({
       return;
     }
     if (colours.length >= cap) {
-      onError?.(
-        cap <= 0
-          ? lockedMessage
-          : `At most ${cap} colour${cap === 1 ? "" : "s"} with your rank`
-      );
+      onError?.(cap <= 0 ? lockedMessage : `At most ${cap} colour${cap === 1 ? "" : "s"} with your rank`);
       return;
     }
     onError?.(null);
@@ -84,9 +72,7 @@ export default function NameColourPicker({
 
   return (
     <fieldset
-      className={`flex flex-col gap-4 border-0 p-0 ${
-        lockedForRank ? "opacity-50" : ""
-      } ${className}`}
+      className={`flex flex-col gap-4 border-0 p-0 ${lockedForRank ? "opacity-50" : ""} ${className}`}
       disabled={interactiveLocked}
       aria-disabled={interactiveLocked}
     >
@@ -98,11 +84,7 @@ export default function NameColourPicker({
         </p>
       ) : null}
 
-      <div
-        className={`flex flex-col gap-2 ${
-          lockedForRank ? "pointer-events-none select-none" : ""
-        }`}
-      >
+      <div className={`flex flex-col gap-2 ${lockedForRank ? "pointer-events-none select-none" : ""}`}>
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
           Colours
           {!lockedForRank && cap > 0 ? (
@@ -130,9 +112,7 @@ export default function NameColourPicker({
               }}
               onDragEnd={() => setDragFrom(null)}
               className={`inline-flex cursor-grab items-center gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_30%,transparent)] px-2 py-1 text-xs text-[var(--tfmc-cream)] active:cursor-grabbing ${
-                dragFrom === i
-                  ? "opacity-60 ring-1 ring-[var(--tfmc-accent)]"
-                  : ""
+                dragFrom === i ? "opacity-60 ring-1 ring-[var(--tfmc-accent)]" : ""
               }`}
               title="Drag to reorder"
             >
@@ -195,16 +175,12 @@ export default function NameColourPicker({
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Preview
-        </span>
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">Preview</span>
         <div
           className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[#1a1a1a] px-4 py-3"
           aria-live="polite"
         >
-          <p
-            className="m-0 font-[family-name:ui-monospace,Cascadia_Mono,Segoe_UI_Mono,monospace] text-xl tracking-wide"
-          >
+          <p className="m-0 font-[family-name:ui-monospace,Cascadia_Mono,Segoe_UI_Mono,monospace] text-xl tracking-wide">
             <FormattedMcRuns runs={previewRuns} />
           </p>
         </div>

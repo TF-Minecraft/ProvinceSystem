@@ -25,17 +25,10 @@ import {
 } from "../../lib/map/chronicleGifFrame";
 import { LABEL_INK, type ProvinceCentroids } from "../../lib/mapLabels";
 import { resolveMarkerImageSrc, type MapMarker } from "../../lib/mapMarkers";
-import {
-  buildWarCampaignPathPair,
-  warLineStrokeStyle,
-} from "../../lib/warCampaignLine";
+import { buildWarCampaignPathPair, warLineStrokeStyle } from "../../lib/warCampaignLine";
 import type { WarExport } from "../map/types";
 import type { ChronicleFrameLayers } from "./chronicleLayers";
-import {
-  createChronicleCanvas,
-  type AnyCanvas,
-  type AnyCanvasContext,
-} from "./chronicleRenderTarget";
+import { createChronicleCanvas, type AnyCanvas, type AnyCanvasContext } from "./chronicleRenderTarget";
 
 /**
  * Flattens the studio's layer stack into one square raster per day. The GIF
@@ -173,8 +166,7 @@ function context2d(canvas: AnyCanvas): AnyCanvasContext {
  * the page — and a plain `setTimeout(0)` everywhere else.
  */
 function yieldToEventLoop(): Promise<void> {
-  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } })
-    .scheduler;
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
   if (typeof scheduler?.yield === "function") {
     return scheduler.yield().catch(() => undefined);
   }
@@ -201,8 +193,8 @@ function loadImages(sources: string[]): Promise<Map<string, HTMLImageElement>> {
           img.onload = () => resolve([src, img]);
           img.onerror = () => resolve([src, null]);
           img.src = src;
-        })
-    )
+        }),
+    ),
   ).then((entries) => {
     const map = new Map<string, HTMLImageElement>();
     for (const [src, img] of entries) if (img) map.set(src, img);
@@ -231,16 +223,8 @@ class MaskScratch {
 
   constructor(private readonly ink: readonly [number, number, number, number]) {}
 
-  draw(
-    target: AnyCanvasContext,
-    mask: ChronicleBorderMask,
-    transform: ChronicleGifTransform
-  ): void {
-    if (
-      !this.canvas ||
-      this.canvas.width !== mask.width ||
-      this.canvas.height !== mask.height
-    ) {
+  draw(target: AnyCanvasContext, mask: ChronicleBorderMask, transform: ChronicleGifTransform): void {
+    if (!this.canvas || this.canvas.width !== mask.width || this.canvas.height !== mask.height) {
       this.canvas = createChronicleCanvas(mask.width, mask.height);
       this.ctx = context2d(this.canvas);
       this.imageData = null;
@@ -266,7 +250,7 @@ class MaskScratch {
       transform.offsetX,
       transform.offsetY,
       transform.drawWidth,
-      transform.drawHeight
+      transform.drawHeight,
     );
     target.imageSmoothingEnabled = smoothing;
     target.imageSmoothingQuality = quality;
@@ -299,7 +283,7 @@ function drawWarLines(
   ctx: AnyCanvasContext,
   wars: WarExport[],
   centroids: ProvinceCentroids | null,
-  transform: ChronicleGifTransform
+  transform: ChronicleGifTransform,
 ): void {
   if (!wars.length) return;
   ctx.save();
@@ -333,7 +317,7 @@ function drawWarLines(
         style.dashArray
           .split(/[\s,]+/)
           .map(Number)
-          .filter((n) => Number.isFinite(n) && n > 0)
+          .filter((n) => Number.isFinite(n) && n > 0),
       );
       try {
         ctx.stroke(new Path2D(d));
@@ -353,15 +337,14 @@ function drawMarkers(
   markers: MapMarker[],
   icons: Map<string, HTMLImageElement>,
   transform: ChronicleGifTransform,
-  sansStack: string
+  sansStack: string,
 ): void {
   if (!markers.length) return;
 
   // Icons first, then every chip, so a pin never lands on top of a name that a
   // neighbouring pin owns. `MapMarkerLayer` gets the same ordering for free
   // from the DOM's paint order plus its z-index.
-  const chips: { marker: MapMarker; layout: NonNullable<ReturnType<typeof chronicleGifMarkerLayout>> }[] =
-    [];
+  const chips: { marker: MapMarker; layout: NonNullable<ReturnType<typeof chronicleGifMarkerLayout>> }[] = [];
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -403,7 +386,7 @@ function drawNationLabels(
   ctx: AnyCanvasContext,
   layers: ChronicleFrameLayers,
   transform: ChronicleGifTransform,
-  serifStack: string
+  serifStack: string,
 ): void {
   if (!layers.labels.length) return;
   ctx.save();
@@ -428,8 +411,7 @@ function drawNationLabels(
 
     const glyphs = arc ? Array.from(arc.text) : [];
     const widths = glyphs.map((glyph) => ctx.measureText(glyph).width);
-    const placements =
-      arc && glyphs.length > 0 ? arcGlyphPlacements(arc, widths) : [];
+    const placements = arc && glyphs.length > 0 ? arcGlyphPlacements(arc, widths) : [];
     if (placements.length === glyphs.length && glyphs.length > 0) {
       ctx.textAlign = "center";
       ctx.textBaseline = "alphabetic";
@@ -478,7 +460,7 @@ function drawWatermark(
   sansStack: string,
   day: string | null,
   corner: ChronicleWatermarkCorner,
-  parts: ChronicleWatermarkParts
+  parts: ChronicleWatermarkParts,
 ): void {
   const dateText = typeof day === "string" ? day.trim() : "";
   const hasDate = dateText.length > 0;
@@ -489,13 +471,7 @@ function drawWatermark(
   const layoutParts = { logo: showLogo, link: showLink };
   // Measured before the layout is computed: the scrim has to know how wide
   // each line turned out, and only the context can say.
-  const probe = chronicleWatermarkLayout(
-    size,
-    0,
-    hasDate ? 0 : null,
-    corner,
-    layoutParts
-  );
+  const probe = chronicleWatermarkLayout(size, 0, hasDate ? 0 : null, corner, layoutParts);
   ctx.save();
   let textWidth = 0;
   if (showLink) {
@@ -509,13 +485,7 @@ function drawWatermark(
     dateWidth = ctx.measureText(dateText).width;
   }
 
-  const layout = chronicleWatermarkLayout(
-    size,
-    textWidth,
-    dateWidth,
-    corner,
-    layoutParts
-  );
+  const layout = chronicleWatermarkLayout(size, textWidth, dateWidth, corner, layoutParts);
 
   const { scrim } = layout;
   if (scrim.width > 0 && scrim.height > 0) {
@@ -533,13 +503,7 @@ function drawWatermark(
 
   if (showLogo && logo && layout.logoSize > 0) {
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(
-      logo,
-      layout.logoX,
-      layout.logoY,
-      layout.logoSize,
-      layout.logoSize
-    );
+    ctx.drawImage(logo, layout.logoX, layout.logoY, layout.logoSize, layout.logoSize);
   }
 
   ctx.textAlign = "left";
@@ -578,20 +542,11 @@ function drawWatermark(
  * map with `crossOrigin="anonymous"` precisely so this probe passes; the probe
  * is what makes the deployment where it does not still produce a GIF.
  */
-function baseMapIsReadable(
-  baseImage: HTMLImageElement,
-  transform: ChronicleGifTransform
-): boolean {
+function baseMapIsReadable(baseImage: HTMLImageElement, transform: ChronicleGifTransform): boolean {
   try {
     const probe = createChronicleCanvas(1, 1);
     const ctx = context2d(probe);
-    ctx.drawImage(
-      baseImage,
-      transform.offsetX,
-      transform.offsetY,
-      transform.drawWidth,
-      transform.drawHeight
-    );
+    ctx.drawImage(baseImage, transform.offsetX, transform.offsetY, transform.drawWidth, transform.drawHeight);
     ctx.getImageData(0, 0, 1, 1);
     return true;
   } catch {
@@ -616,9 +571,7 @@ export type ChronicleGifExportResult = {
  * be read back is *not* a failure: it is detected up front and dropped from
  * the composite, and the caller is told through `baseMapOmitted`.
  */
-export async function exportChronicleGif(
-  options: ChronicleGifExportOptions
-): Promise<ChronicleGifExportResult> {
+export async function exportChronicleGif(options: ChronicleGifExportOptions): Promise<ChronicleGifExportResult> {
   const {
     frames,
     size,
@@ -653,7 +606,7 @@ export async function exportChronicleGif(
     throw new Error(
       `This export would hold ${mb(sourceBytes)} of frame pixels at once, more ` +
         `than this browser should — over the ${mb(CHRONICLE_MEMORY_CEILING_BYTES)} limit. ` +
-        `Export fewer days or a smaller size.`
+        `Export fewer days or a smaller size.`,
     );
   }
 
@@ -663,8 +616,7 @@ export async function exportChronicleGif(
   const ctx = context2d(canvas);
   ctx.imageSmoothingQuality = "high";
 
-  const baseUsable =
-    baseImage != null && baseImage.complete && baseImage.naturalWidth > 0;
+  const baseUsable = baseImage != null && baseImage.complete && baseImage.naturalWidth > 0;
   const baseReady = baseUsable && baseMapIsReadable(baseImage, transform);
 
   const { serif, sans } = fontStacks();
@@ -721,25 +673,13 @@ export async function exportChronicleGif(
       ctx.fillRect(0, 0, edge, edge);
 
       if (baseReady) {
-        ctx.drawImage(
-          baseImage,
-          transform.offsetX,
-          transform.offsetY,
-          transform.drawWidth,
-          transform.drawHeight
-        );
+        ctx.drawImage(baseImage, transform.offsetX, transform.offsetY, transform.drawWidth, transform.drawHeight);
       }
 
       if (frame.image) {
         ctx.save();
         ctx.globalAlpha = fillOpacity;
-        ctx.drawImage(
-          frame.image,
-          transform.offsetX,
-          transform.offsetY,
-          transform.drawWidth,
-          transform.drawHeight
-        );
+        ctx.drawImage(frame.image, transform.offsetX, transform.offsetY, transform.drawWidth, transform.drawHeight);
         ctx.restore();
       }
 
@@ -755,15 +695,7 @@ export async function exportChronicleGif(
       drawWarLines(ctx, frame.layers.wars, centroids, transform);
       drawMarkers(ctx, frame.layers.markers, images, transform, sans);
       drawNationLabels(ctx, frame.layers, transform, serif);
-      drawWatermark(
-        ctx,
-        edge,
-        logo,
-        sans,
-        stampDay ? frame.day : null,
-        watermarkCorner,
-        watermarkParts
-      );
+      drawWatermark(ctx, edge, logo, sans, stampDay ? frame.day : null, watermarkCorner, watermarkParts);
 
       let pixels: ImageData;
       try {
@@ -773,9 +705,7 @@ export async function exportChronicleGif(
         // origin, so reaching here means something else tainted the canvas —
         // there is nothing to drop and retry, and a half-written GIF is worse
         // than a message.
-        throw new Error(
-          "The browser blocked reading this frame's pixels, so the GIF cannot be built."
-        );
+        throw new Error("The browser blocked reading this frame's pixels, so the GIF cannot be built.");
       }
       sourceFrames.push({ data: pixels.data, delayMs });
 
@@ -805,8 +735,7 @@ export async function exportChronicleGif(
       height: edge,
       frames: sourceFrames,
       loop,
-      onProgress: (completed, total) =>
-        onProgress?.({ phase: "encode", completed, total }),
+      onProgress: (completed, total) => onProgress?.({ phase: "encode", completed, total }),
     });
     let step: IteratorResult<number, Uint8Array>;
     do {

@@ -8,13 +8,7 @@
  */
 
 import type { MapId } from "../components/map/types";
-import {
-  PAINT_MAX_BRUSH_POINTS,
-  PAINT_MAX_SHAPES,
-  clampPaintWidth,
-  isPaintShape,
-  type PaintShape,
-} from "./mapPaint";
+import { PAINT_MAX_BRUSH_POINTS, PAINT_MAX_SHAPES, clampPaintWidth, isPaintShape, type PaintShape } from "./mapPaint";
 
 /**
  * Saved browser plans may contain named stroke widths. Normalise them to
@@ -85,7 +79,7 @@ export function parsePaintDocument(raw: string | null | undefined): PaintShape[]
     shapes.push(
       entry.type === "brush" && entry.points.length > PAINT_MAX_BRUSH_POINTS
         ? { ...entry, points: entry.points.slice(0, PAINT_MAX_BRUSH_POINTS) }
-        : entry
+        : entry,
     );
     if (shapes.length >= PAINT_MAX_SHAPES) break;
   }
@@ -148,9 +142,7 @@ export function paintExportFilename(mapId: MapId, at: number): string {
   return `war-plan-${mapId}-${stamp}.json`;
 }
 
-export type PaintImportResult =
-  | { ok: true; shapes: PaintShape[]; skipped: number }
-  | { ok: false; reason: string };
+export type PaintImportResult = { ok: true; shapes: PaintShape[]; skipped: number } | { ok: false; reason: string };
 
 /**
  * Reads a plan someone else exported. Unlike the localStorage path — which

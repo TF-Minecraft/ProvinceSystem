@@ -11,21 +11,20 @@ import {
   type LoreItemDraft,
 } from "../../../../../lib/characters/api";
 import { logoutProfile } from "../../../../../lib/profile/uploads";
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  type CharacterSession,
-} from "../../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../../lib/characters/kitsDev";
 
 function customiseState(c: LoreItemDraft | undefined): string {
-  return String(c?.state || "").trim().toLowerCase();
+  return String(c?.state || "")
+    .trim()
+    .toLowerCase();
 }
 
 function submissionStatus(c: LoreItemDraft | undefined): string {
-  return String(c?.submission_status || "").trim().toLowerCase();
+  return String(c?.submission_status || "")
+    .trim()
+    .toLowerCase();
 }
 
 /** Staff review not done yet. */
@@ -42,9 +41,7 @@ function isPendingApproval(item: CharacterKitItem): boolean {
 function isPendingPack(item: CharacterKitItem): boolean {
   const c = item.customise;
   if (!c) return false;
-  return (
-    customiseState(c) === "pending_skin" && submissionStatus(c) === "approved"
-  );
+  return customiseState(c) === "pending_skin" && submissionStatus(c) === "approved";
 }
 
 function isSkinInFlight(item: CharacterKitItem): boolean {
@@ -55,12 +52,7 @@ function hasCustomise(item: CharacterKitItem): boolean {
   const c = item.customise;
   if (!c) return false;
   const state = customiseState(c);
-  if (
-    state === "pending_skin" ||
-    state === "ready" ||
-    state === "denied" ||
-    state === "applied"
-  ) {
+  if (state === "pending_skin" || state === "ready" || state === "denied" || state === "applied") {
     return true;
   }
   if (String(c.display_name || "").trim()) return true;
@@ -86,7 +78,9 @@ export default function CharacterKitDetailPage() {
   const router = useRouter();
   const params = useParams();
   const characterId = String(params?.id || "").trim();
-  const kitId = String(params?.kitId || "").trim().toLowerCase();
+  const kitId = String(params?.kitId || "")
+    .trim()
+    .toLowerCase();
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
@@ -99,24 +93,17 @@ export default function CharacterKitDetailPage() {
     async (token: string) => {
       setError(null);
       try {
-        const data = uiDev
-          ? uiDevCharacterKits(characterId)
-          : await listCharacterKits(token, characterId);
-        const found =
-          data.kits.find((k) => k.id.toLowerCase() === kitId) || null;
+        const data = uiDev ? uiDevCharacterKits(characterId) : await listCharacterKits(token, characterId);
+        const found = data.kits.find((k) => k.id.toLowerCase() === kitId) || null;
         setKit(found);
         if (!found) setError("Kit not found.");
       } catch (err) {
         setError(
-          err instanceof CharactersApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Failed to load kit"
+          err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Failed to load kit",
         );
       }
     },
-    [characterId, kitId, uiDev]
+    [characterId, kitId, uiDev],
   );
 
   useEffect(() => {
@@ -155,9 +142,7 @@ export default function CharacterKitDetailPage() {
   }
 
   if (!ready) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   return (
@@ -187,9 +172,7 @@ export default function CharacterKitDetailPage() {
             {kit.display_name || kit.id}
           </h1>
           <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-            {kit.claimable
-              ? "Claimable in-game with /rpcharacter kit " + kit.id
-              : "Claimed"}
+            {kit.claimable ? "Claimable in-game with /rpcharacter kit " + kit.id : "Claimed"}
             {kit.once_per_character ? " · once per character" : " · repeatable"}
           </p>
 
@@ -199,10 +182,7 @@ export default function CharacterKitDetailPage() {
               const awaitingPack = isPendingPack(item);
               const inFlight = isSkinInFlight(item);
               const custom = hasCustomise(item);
-              const canEdit =
-                Boolean(item.editable && item.kit_key) &&
-                kit.claimable &&
-                !inFlight;
+              const canEdit = Boolean(item.editable && item.kit_key) && kit.claimable && !inFlight;
               const statusHref =
                 item.kit_key &&
                 `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kit.id)}/edit/${encodeURIComponent(item.kit_key)}/status`;
@@ -216,30 +196,16 @@ export default function CharacterKitDetailPage() {
                   className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className={inFlight ? "opacity-55" : undefined}>
-                    <p
-                      className={
-                        inFlight
-                          ? "text-[var(--tfmc-stone)]"
-                          : "text-[var(--tfmc-cream)]"
-                      }
-                    >
+                    <p className={inFlight ? "text-[var(--tfmc-stone)]" : "text-[var(--tfmc-cream)]"}>
                       {itemLabel(item)}
-                      <span className="ml-2 text-sm text-[var(--tfmc-stone)]">
-                        ×{item.amount}
-                      </span>
+                      <span className="ml-2 text-sm text-[var(--tfmc-stone)]">×{item.amount}</span>
                     </p>
                     {!item.editable ? (
-                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Not customisable
-                      </p>
+                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">Not customisable</p>
                     ) : !kit.claimable ? null : awaitingApproval ? (
-                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Awaiting approval
-                      </p>
+                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">Awaiting approval</p>
                     ) : awaitingPack ? (
-                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Approved · live within 24 hours
-                      </p>
+                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">Approved · live within 24 hours</p>
                     ) : null}
                   </div>
                   {inFlight && statusHref && kit.claimable ? (

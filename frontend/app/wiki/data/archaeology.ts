@@ -7,7 +7,28 @@ import type { Recipe, Slot, WikiCommandSet, WikiSection } from "./types";
 const item = (name: string, texture: string, qty = 1): Slot => ({ name, qty, texture: V(texture) });
 
 /** Crafted at a vanilla Crafting Table, not at a station: it has no server-config counterpart. */
-export const archeologyTableRecipe: Recipe = { key:"archeology-table", title:"Archeology Table", station:"Crafting Table", ingredients:[item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Bone","bone.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png")], output:{name:"Archeology Table",qty:1,sourceId:"itemsadder:archeology_station",model:{url:"/wiki/models/archeology-station.json",texture:"/wiki/textures/stations/archeology-station.png"}}};
+export const archeologyTableRecipe: Recipe = {
+  key: "archeology-table",
+  title: "Archeology Table",
+  station: "Crafting Table",
+  ingredients: [
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Bone", "bone.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+    item("Oak Planks", "oak_planks.png"),
+  ],
+  output: {
+    name: "Archeology Table",
+    qty: 1,
+    sourceId: "itemsadder:archeology_station",
+    model: { url: "/wiki/models/archeology-station.json", texture: "/wiki/textures/stations/archeology-station.png" },
+  },
+};
 
 /**
  * The crafting-table recipe plus twelve workshop recipes from the authoritative
@@ -32,5 +53,14 @@ export const archaeologyRecipes: Recipe[] = [
     "archeology-cabinet",
   ].map((key) => stationRecipe(`gen-archeology-station-${key}`)),
 ];
-export const archaeologyCommands: WikiCommandSet = {system: "Archaeo", href: "/wiki/archaeology", commands: []};
-export const archaeologySection: WikiSection = {nav: {href: "/wiki/archaeology", label: "Archaeology", category: "magic", blurb: "Find a ruin, establish a field camp, excavate by sound, then clean, register, and display recovered finds."}, recipes: [archeologyTableRecipe], commands: archaeologyCommands};
+export const archaeologyCommands: WikiCommandSet = { system: "Archaeo", href: "/wiki/archaeology", commands: [] };
+export const archaeologySection: WikiSection = {
+  nav: {
+    href: "/wiki/archaeology",
+    label: "Archaeology",
+    category: "magic",
+    blurb: "Find a ruin, establish a field camp, excavate by sound, then clean, register, and display recovered finds.",
+  },
+  recipes: [archeologyTableRecipe],
+  commands: archaeologyCommands,
+};

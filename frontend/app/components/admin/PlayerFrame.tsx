@@ -18,7 +18,11 @@ import AdminColumn from "./AdminColumn";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import PlayerTabs, { profileTab } from "./PlayerTabs";
 
-type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; profile: Profile };
+type Load =
+  | { kind: "loading" }
+  | { kind: GateKind }
+  | { kind: "failed"; message: string }
+  | { kind: "ready"; profile: Profile };
 
 export type PlayerData = {
   profile: Profile;
@@ -64,7 +68,11 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
       .catch((err) => {
         if (!live) return;
         const status = err instanceof AccountApiError ? err.status : 0;
-        setLoad(status === 400 || status === 404 ? { kind: "failed", message: adminErrorMessage(err) } : { kind: gateKind(err) });
+        setLoad(
+          status === 400 || status === 404
+            ? { kind: "failed", message: adminErrorMessage(err) }
+            : { kind: gateKind(err) },
+        );
       });
     return () => {
       live = false;
@@ -124,7 +132,10 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
           <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
             {seen.join(" · ")}
             {" · "}
-            <Link href={`/admin/ranks/players/${profile.uuid}`} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+            <Link
+              href={`/admin/ranks/players/${profile.uuid}`}
+              className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
+            >
               In-game ranks and permissions →
             </Link>
             {viewAs !== null ? (

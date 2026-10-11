@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  serializeTitleDraftForSave,
-  validateEditorDraft,
-} from "./validateEditorDraft";
+import { serializeTitleDraftForSave, validateEditorDraft } from "./validateEditorDraft";
 
 describe("validateEditorDraft", () => {
   it("accepts valid county draft", () => {
@@ -53,9 +50,7 @@ describe("validateEditorDraft", () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(
-      result.errors.some((e) => e.includes("Province 2 is assigned to both"))
-    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("Province 2 is assigned to both"))).toBe(true);
   });
 
   it("rejects invalid name and rgb", () => {
@@ -87,9 +82,7 @@ describe("validateEditorDraft", () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(
-      result.errors.some((e) => e.includes("unknown county 'MISSING'"))
-    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("unknown county 'MISSING'"))).toBe(true);
   });
 
   it("rejects save when prerequisite child tier is dirty", () => {
@@ -109,9 +102,7 @@ describe("validateEditorDraft", () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.some((e) => e.includes("before saving duchies"))).toBe(
-      true
-    );
+    expect(result.errors.some((e) => e.includes("before saving duchies"))).toBe(true);
   });
 });
 
@@ -125,7 +116,7 @@ describe("serializeTitleDraftForSave", () => {
           provinces: [1, 2],
         },
       },
-      "county"
+      "county",
     );
     expect(out).toEqual({
       COUNTY_1: { name: "North", rgb: "1,2,3", provinces: [1, 2] },
@@ -141,7 +132,7 @@ describe("serializeTitleDraftForSave", () => {
           titles: ["COUNTY_1"],
         },
       },
-      "duchy"
+      "duchy",
     );
     expect(out).toEqual({
       DUCHY_1: { name: "D", rgb: "4,5,6", titles: ["COUNTY_1"] },

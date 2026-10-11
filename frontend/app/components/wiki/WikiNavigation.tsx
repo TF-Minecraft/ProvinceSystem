@@ -22,8 +22,19 @@ export default function WikiNavigation({ children }: { children: ReactNode }) {
         className="flex min-h-12 w-full items-center justify-between gap-3 rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] px-4 py-3 text-sm font-semibold text-[var(--tfmc-cream)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] lg:hidden"
       >
         Browse guide
-        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          fill="none"
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path
+            d="m5 7.5 5 5 5-5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
       <div

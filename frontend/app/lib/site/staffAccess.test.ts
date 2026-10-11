@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as skinsApi from "@/lib/skins/api";
-import {
-  hasSiteStaffAccess,
-  playerMetaHasSiteStaffAccess,
-  SITE_STAFF_PERMISSION,
-} from "@/lib/site/staffAccess";
+import { hasSiteStaffAccess, playerMetaHasSiteStaffAccess, SITE_STAFF_PERMISSION } from "@/lib/site/staffAccess";
 
 function meta(permissionFlags: Record<string, boolean>) {
   return {
@@ -33,20 +29,14 @@ describe("staffAccess", () => {
   });
 
   it("playerMetaHasSiteStaffAccess checks tfmc.map.staff", () => {
-    expect(
-      playerMetaHasSiteStaffAccess({ [SITE_STAFF_PERMISSION]: true })
-    ).toBe(true);
-    expect(
-      playerMetaHasSiteStaffAccess({ [SITE_STAFF_PERMISSION]: false })
-    ).toBe(false);
+    expect(playerMetaHasSiteStaffAccess({ [SITE_STAFF_PERMISSION]: true })).toBe(true);
+    expect(playerMetaHasSiteStaffAccess({ [SITE_STAFF_PERMISSION]: false })).toBe(false);
     expect(playerMetaHasSiteStaffAccess({})).toBe(false);
     expect(playerMetaHasSiteStaffAccess(undefined)).toBe(false);
   });
 
   it("hasSiteStaffAccess returns true for staff flag", async () => {
-    vi.spyOn(skinsApi, "getPlayerMeta").mockResolvedValue(
-      meta({ [SITE_STAFF_PERMISSION]: true })
-    );
+    vi.spyOn(skinsApi, "getPlayerMeta").mockResolvedValue(meta({ [SITE_STAFF_PERMISSION]: true }));
 
     await expect(hasSiteStaffAccess("staff-token")).resolves.toBe(true);
     expect(skinsApi.getPlayerMeta).toHaveBeenCalledWith("staff-token");
@@ -59,9 +49,7 @@ describe("staffAccess", () => {
   });
 
   it("hasSiteStaffAccess returns false on 401", async () => {
-    vi.spyOn(skinsApi, "getPlayerMeta").mockRejectedValue(
-      new skinsApi.SkinsApiError("Unauthorized", 401)
-    );
+    vi.spyOn(skinsApi, "getPlayerMeta").mockRejectedValue(new skinsApi.SkinsApiError("Unauthorized", 401));
 
     await expect(hasSiteStaffAccess("expired-token")).resolves.toBe(false);
   });

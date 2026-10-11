@@ -11,10 +11,28 @@ const T = 1_791_407_600;
 
 function entry(id: string, time: number, extra: Partial<ActivityEntry> = {}): ActivityEntry {
   return {
-    id, time, kind: "block", verb: "broke", target: "short_grass", amount: null, victim: null, message: null,
-    truncated: false, world: "TFMC_Map", x: 1, y: 64, z: 2, rolled_back: null,
-    target_info: { name: "Short Grass", source: "vanilla", id: "short_grass", vanilla_name: "Short Grass",
-                   source_id: null, custom_name: null },
+    id,
+    time,
+    kind: "block",
+    verb: "broke",
+    target: "short_grass",
+    amount: null,
+    victim: null,
+    message: null,
+    truncated: false,
+    world: "TFMC_Map",
+    x: 1,
+    y: 64,
+    z: 2,
+    rolled_back: null,
+    target_info: {
+      name: "Short Grass",
+      source: "vanilla",
+      id: "short_grass",
+      vanilla_name: "Short Grass",
+      source_id: null,
+      custom_name: null,
+    },
     ...extra,
   };
 }
@@ -46,12 +64,21 @@ describe("groupRuns", () => {
   it("never merges anything but block changes", () => {
     const kill = { kind: "kill", verb: "killed", target: "Bob", target_info: null };
     const chat = { kind: "chat", verb: "said", target: null, target_info: null, message: "hi" };
-    const rows = groupRuns([entry("a", T, kill), entry("b", T - 1, kill), entry("c", T - 2, chat), entry("d", T - 3, chat)]);
+    const rows = groupRuns([
+      entry("a", T, kill),
+      entry("b", T - 1, kill),
+      entry("c", T - 2, chat),
+      entry("d", T - 3, chat),
+    ]);
     expect(rows).toHaveLength(4);
   });
 
   it("is broken by anything in between", () => {
-    const rows = groupRuns([entry("a", T), entry("b", T - 1, { kind: "session", verb: "logged out" }), entry("c", T - 2)]);
+    const rows = groupRuns([
+      entry("a", T),
+      entry("b", T - 1, { kind: "session", verb: "logged out" }),
+      entry("c", T - 2),
+    ]);
     expect(rows).toHaveLength(3);
   });
 
@@ -70,7 +97,10 @@ describe("groupRuns", () => {
 
 describe("groupActivity", () => {
   it("puts rows under local days", () => {
-    const days = groupActivity([entry("a", T + 37_000, { kind: "session", verb: "logged in" }), entry("b", T)], T + 37_100);
+    const days = groupActivity(
+      [entry("a", T + 37_000, { kind: "session", verb: "logged in" }), entry("b", T)],
+      T + 37_100,
+    );
     expect(days.map((d) => d.label)).toEqual(["Today", "Yesterday"]);
   });
 });

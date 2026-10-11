@@ -111,10 +111,7 @@ function resetDictionary(): Int32Array {
  * clear and end-of-information codes no room to grow into, and real decoders
  * reject it.
  */
-export function lzwCompress(
-  indices: Uint8Array,
-  minCodeSize: number
-): Uint8Array {
+export function lzwCompress(indices: Uint8Array, minCodeSize: number): Uint8Array {
   const codeSizeFloor = Math.max(2, Math.min(8, minCodeSize | 0));
   // The two reserved codes sit directly above the pixel values, which is why
   // every "first free code" below is `clearCode + 2` rather than a table size.

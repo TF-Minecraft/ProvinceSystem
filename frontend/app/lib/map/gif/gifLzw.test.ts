@@ -141,9 +141,7 @@ describe("writeSubBlocks", () => {
     expect(out[256]).toBe(255);
     expect(out[512]).toBe(90);
     expect(out[out.length - 1]).toBe(0);
-    expect(Array.from(out.subarray(1, 256))).toEqual(
-      Array.from(payload.subarray(0, 255))
-    );
+    expect(Array.from(out.subarray(1, 256))).toEqual(Array.from(payload.subarray(0, 255)));
   });
 
   it("writes only the terminator for an empty payload", () => {

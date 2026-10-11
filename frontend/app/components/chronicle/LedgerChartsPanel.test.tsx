@@ -98,9 +98,7 @@ describe("LedgerChartsPanel", () => {
   it("does not mount one band per server key when the breakdown is huge", () => {
     // The hang: breakdown keys are attacker-controlled, and each one became a
     // `<path>` plus a legend `<span>` on every card.
-    const { container } = render(
-      <LedgerChartsPanel result={readyResult(4_000)} cursorDay={DAYS[0]!} />
-    );
+    const { container } = render(<LedgerChartsPanel result={readyResult(4_000)} cursorDay={DAYS[0]!} />);
     // First card, first `<svg>`: the stacked wealth chart itself (the second
     // svg in the card is the separate globals strip, which is two fixed lines).
     const stack = container.firstElementChild!.querySelector("svg")!;
@@ -118,9 +116,7 @@ describe("LedgerChartsPanel", () => {
     const stackSpy = vi.spyOn(ledgerSeriesModule, "stackBreakdown");
 
     const result = readyResult(3);
-    const { rerender } = render(
-      <LedgerChartsPanel result={result} cursorDay={DAYS[0]!} />
-    );
+    const { rerender } = render(<LedgerChartsPanel result={result} cursorDay={DAYS[0]!} />);
 
     const factionCallsAfterMount = factionSpy.mock.calls.length;
     const stackCallsAfterMount = stackSpy.mock.calls.length;

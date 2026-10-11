@@ -11,7 +11,9 @@ export default function McText({ text, className = "" }: { text: string; classNa
             color: segment.colour ?? undefined,
             fontWeight: segment.bold ? 800 : undefined,
             fontStyle: segment.italic ? "italic" : undefined,
-            textDecoration: [segment.underline ? "underline" : "", segment.strike ? "line-through" : ""].join(" ").trim() || undefined,
+            textDecoration:
+              [segment.underline ? "underline" : "", segment.strike ? "line-through" : ""].join(" ").trim() ||
+              undefined,
           }}
         >
           {segment.text}

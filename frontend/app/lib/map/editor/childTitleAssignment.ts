@@ -15,7 +15,7 @@ export function buildChildToParentId(parentDraft: ParentDraft): Map<string, stri
 export function canSelectChild(
   childId: string,
   editingParentId: string | null,
-  assignment: Map<string, string>
+  assignment: Map<string, string>,
 ): boolean {
   if (!editingParentId) return false;
   const owner = assignment.get(childId);
@@ -45,7 +45,7 @@ export function findDuplicateChildIds(parentDraft: ParentDraft): string[] {
 export function getChildOwnerName(
   childId: string,
   assignment: Map<string, string>,
-  parentDraft: TitleDraft
+  parentDraft: TitleDraft,
 ): string | null {
   const parentId = assignment.get(childId);
   if (!parentId) return null;

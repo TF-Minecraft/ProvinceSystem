@@ -34,20 +34,12 @@ export default function StatGrid({ stats, columns = 3, className }: StatGridProp
       {stats.map((stat, i) => (
         <div
           key={i}
-          className={cx(
-            "rounded-md p-3",
-            wikiHairline,
-            "bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)]"
-          )}
+          className={cx("rounded-md p-3", wikiHairline, "bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)]")}
         >
-          <dt className="text-[11px] uppercase tracking-wide text-[var(--tfmc-stone)]">
-            {stat.label}
-          </dt>
+          <dt className="text-[11px] uppercase tracking-wide text-[var(--tfmc-stone)]">{stat.label}</dt>
           <dd className="mt-1 text-base text-[var(--tfmc-cream)]">
             {stat.value}
-            {stat.note ? (
-              <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">{stat.note}</span>
-            ): null}
+            {stat.note ? <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">{stat.note}</span> : null}
           </dd>
         </div>
       ))}

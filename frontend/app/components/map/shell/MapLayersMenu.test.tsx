@@ -9,7 +9,7 @@ import MapLayersMenu from "./MapLayersMenu";
 
 const fetchManifest = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/map/api", async (original) => ({
-  ...await original<typeof import("@/lib/map/api")>(),
+  ...(await original<typeof import("@/lib/map/api")>()),
   fetchMapJson: fetchManifest,
 }));
 
@@ -33,7 +33,7 @@ function renderMenu(onMapTypeChange = vi.fn()) {
       toggles={[]}
       mapId="main"
       previews={false}
-    />
+    />,
   );
   fireEvent.click(screen.getByRole("button", { name: "Layers" }));
   return screen.getByRole("dialog", { name: "Map layers" });
@@ -61,7 +61,7 @@ describe("MapLayersMenu", () => {
         toggles={[]}
         mapId="main"
         previews={false}
-      />
+      />,
     );
     const button = screen.getByRole("button", { name: "Layers" });
     expect(button.textContent).toBe("");
@@ -133,16 +133,20 @@ describe("MapLayersMenu pull that stops before lifting", () => {
   });
 });
 
-
 describe("MapLayersMenu intent loading", () => {
   it("requests previews only once the panel is opened, with low image priority", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "https://map.test");
     fetchManifest.mockResolvedValue({
-      ready: true, version: "v1", width: 512, height: 512, tile_size: 256,
-      max_level: 0, levels: [{ width: 512, height: 512 }],
+      ready: true,
+      version: "v1",
+      width: 512,
+      height: 512,
+      tile_size: 256,
+      max_level: 0,
+      levels: [{ width: 512, height: 512 }],
     });
     const { container } = render(
-      <MapLayersMenu placement="phone" mapType="nation" onMapTypeChange={vi.fn()} toggles={[]} mapId="main" previews />
+      <MapLayersMenu placement="phone" mapType="nation" onMapTypeChange={vi.fn()} toggles={[]} mapId="main" previews />,
     );
     await act(async () => vi.advanceTimersByTime(10000));
     expect(fetchManifest).not.toHaveBeenCalled();
@@ -156,8 +160,13 @@ describe("MapLayersMenu intent loading", () => {
 });
 
 const MANIFEST = {
-  ready: true, version: "v1", width: 512, height: 512, tile_size: 256,
-  max_level: 0, levels: [{ width: 512, height: 512 }],
+  ready: true,
+  version: "v1",
+  width: 512,
+  height: 512,
+  tile_size: 256,
+  max_level: 0,
+  levels: [{ width: 512, height: 512 }],
 };
 
 function renderDesktop(props: Partial<Parameters<typeof MapLayersMenu>[0]> = {}) {
@@ -170,7 +179,7 @@ function renderDesktop(props: Partial<Parameters<typeof MapLayersMenu>[0]> = {})
       mapId="main"
       previews={false}
       {...props}
-    />
+    />,
   );
 }
 
@@ -186,9 +195,7 @@ describe("MapLayersMenu on a desktop", () => {
     const onChange = vi.fn();
     renderDesktop({
       onMapTypeChange,
-      toggles: [
-        { id: "paint", label: "War planning", icon: () => null, desktopOnly: true, checked: false, onChange },
-      ],
+      toggles: [{ id: "paint", label: "War planning", icon: () => null, desktopOnly: true, checked: false, onChange }],
     });
     const strip = screen.getByRole("group", { name: "Map type and details" });
     expect(strip.querySelectorAll("button[aria-pressed]")).toHaveLength(12);

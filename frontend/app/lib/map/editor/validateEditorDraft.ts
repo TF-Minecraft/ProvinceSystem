@@ -6,9 +6,7 @@ import { findDuplicateChildIds } from "./childTitleAssignment";
 import { findDuplicateProvinceIds } from "./countyAssignment";
 import { getChildTierConfig } from "./editorTierConfig";
 
-export type ValidationResult =
-  | { ok: true }
-  | { ok: false; errors: string[] };
+export type ValidationResult = { ok: true } | { ok: false; errors: string[] };
 
 export type ValidateEditorDraftOptions = {
   tier: EditorTier;
@@ -23,10 +21,7 @@ export function savePrerequisiteMessage(tier: EditorTier): string | null {
   return config.prerequisiteMessage.replace("editing", "saving");
 }
 
-export function serializeTitleDraftForSave(
-  draft: TitleDraft,
-  tier: EditorTier
-): EditorTitleDraft {
+export function serializeTitleDraftForSave(draft: TitleDraft, tier: EditorTier): EditorTitleDraft {
   const out: EditorTitleDraft = {};
   for (const [id, entry] of Object.entries(draft)) {
     const base = { name: entry.name, rgb: entry.rgb };
@@ -39,11 +34,8 @@ export function serializeTitleDraftForSave(
   return out;
 }
 
-export function validateEditorDraft(
-  options: ValidateEditorDraftOptions
-): ValidationResult {
-  const { tier, draft, childTierSnapshot = {}, prerequisiteChildTierDirty } =
-    options;
+export function validateEditorDraft(options: ValidateEditorDraftOptions): ValidationResult {
+  const { tier, draft, childTierSnapshot = {}, prerequisiteChildTierDirty } = options;
   const errors: string[] = [];
 
   if (prerequisiteChildTierDirty) {
@@ -76,9 +68,7 @@ export function validateEditorDraft(
 
     const parsedRgb = parseRgbString(entry.rgb);
     if (!parsedRgb) {
-      errors.push(
-        `Title '${titleId}' has invalid rgb (use R,G,B with 0-255)`
-      );
+      errors.push(`Title '${titleId}' has invalid rgb (use R,G,B with 0-255)`);
     } else {
       const rgb = entry.rgb.trim();
       if (seenRgb.has(rgb)) {
@@ -94,16 +84,12 @@ export function validateEditorDraft(
       } else {
         for (const item of provinces) {
           if (!Number.isInteger(item)) {
-            errors.push(
-              `County '${titleId}' provinces must contain integers only`
-            );
+            errors.push(`County '${titleId}' provinces must contain integers only`);
             break;
           }
           if (provinceOwner.has(item)) {
             const other = provinceOwner.get(item)!;
-            errors.push(
-              `Province ${item} is assigned to both '${other}' and '${titleId}'`
-            );
+            errors.push(`Province ${item} is assigned to both '${other}' and '${titleId}'`);
           }
           provinceOwner.set(item, titleId);
         }
@@ -120,15 +106,11 @@ export function validateEditorDraft(
             continue;
           }
           if (!childTierSnapshot[childId]) {
-            errors.push(
-              `Title '${titleId}' references unknown ${childTier} '${childId}'`
-            );
+            errors.push(`Title '${titleId}' references unknown ${childTier} '${childId}'`);
           }
           if (childOwner.has(childId)) {
             const other = childOwner.get(childId)!;
-            errors.push(
-              `${childTier} '${childId}' is assigned to both '${other}' and '${titleId}'`
-            );
+            errors.push(`${childTier} '${childId}' is assigned to both '${other}' and '${titleId}'`);
           }
           childOwner.set(childId, titleId);
         }
@@ -145,13 +127,8 @@ export function validateEditorDraft(
 
   const duplicateChildren = findDuplicateChildIds(draft);
   for (const childId of duplicateChildren) {
-    if (
-      childTier &&
-      !errors.some((e) => e.includes(`'${childId}' is assigned to both`))
-    ) {
-      errors.push(
-        `${childTier} '${childId}' is assigned to multiple parent titles`
-      );
+    if (childTier && !errors.some((e) => e.includes(`'${childId}' is assigned to both`))) {
+      errors.push(`${childTier} '${childId}' is assigned to multiple parent titles`);
     }
   }
 

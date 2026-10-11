@@ -1,7 +1,4 @@
-import {
-  MAX_PAINTABLE_PROVINCE_ID,
-  type NationColorLut,
-} from "./chroniclePaint";
+import { MAX_PAINTABLE_PROVINCE_ID, type NationColorLut } from "./chroniclePaint";
 
 /**
  * The infestation heat map for one stored day, built from the captured
@@ -32,14 +29,16 @@ export type ChronicleInfestationDatum = {
  * The alphas are the backend's too, and they are baked into the LUT below, so
  * the layer that draws this needs no opacity of its own.
  */
-export const CHRONICLE_INFESTATION_SEVERITY_RGBA: Readonly<
-  Record<string, readonly [number, number, number, number]>
-> = Object.assign(Object.create(null) as Record<string, never>, {
-  mild: [230, 200, 40, 220],
-  worrying: [220, 120, 20, 230],
-  severe: [180, 20, 20, 240],
-  extreme: [90, 0, 0, 255],
-} as const);
+export const CHRONICLE_INFESTATION_SEVERITY_RGBA: Readonly<Record<string, readonly [number, number, number, number]>> =
+  Object.assign(
+    Object.create(null) as Record<string, never>,
+    {
+      mild: [230, 200, 40, 220],
+      worrying: [220, 120, 20, 230],
+      severe: [180, 20, 20, 240],
+      extreme: [90, 0, 0, 255],
+    } as const,
+  );
 
 /**
  * Severity string -> colour, or null for anything this palette does not name.
@@ -54,9 +53,7 @@ export const CHRONICLE_INFESTATION_SEVERITY_RGBA: Readonly<
  * stop for a word the palette never had would put a number on the map that the
  * capture never contained.
  */
-export function chronicleInfestationRgba(
-  severity: unknown
-): readonly [number, number, number, number] | null {
+export function chronicleInfestationRgba(severity: unknown): readonly [number, number, number, number] | null {
   if (typeof severity !== "string") return null;
   const key = severity.trim().toLowerCase();
   if (!key) return null;
@@ -101,17 +98,8 @@ export function buildInfestationColorLut(payload: unknown): NationColorLut {
     if (typeof row !== "object" || row === null) continue;
     const { id, severity } = row as ChronicleInfestationDatum;
 
-    const numericId =
-      typeof id === "number"
-        ? id
-        : typeof id === "string" && id.trim() !== ""
-          ? Number(id)
-          : NaN;
-    if (
-      !Number.isInteger(numericId) ||
-      numericId <= 0 ||
-      numericId > MAX_PAINTABLE_PROVINCE_ID
-    ) {
+    const numericId = typeof id === "number" ? id : typeof id === "string" && id.trim() !== "" ? Number(id) : NaN;
+    if (!Number.isInteger(numericId) || numericId <= 0 || numericId > MAX_PAINTABLE_PROVINCE_ID) {
       continue;
     }
 

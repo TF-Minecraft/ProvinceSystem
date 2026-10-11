@@ -8,9 +8,7 @@ import type { TitleLayers } from "@/app/lib/titleProvinces";
 import type { EditorTier } from "@/lib/map/api";
 import { fetchMapJson } from "@/lib/map/api";
 
-function draftToLayer(
-  draft: TitleDraft
-): Record<string, { provinces?: number[]; titles?: string[] }> {
+function draftToLayer(draft: TitleDraft): Record<string, { provinces?: number[]; titles?: string[] }> {
   const layer: Record<string, { provinces?: number[]; titles?: string[] }> = {};
   for (const [id, entry] of Object.entries(draft)) {
     layer[id] = {
@@ -25,7 +23,7 @@ export function useEditorTitleLayers(
   mapId: MapId,
   sessionToken: string | null,
   layersNeeded: EditorTier[],
-  enabled = true
+  enabled = true,
 ): {
   titleLayers: TitleLayers;
   loading: boolean;
@@ -53,10 +51,7 @@ export function useEditorTitleLayers(
         const layers: TitleLayers = { county: {} };
 
         for (const tier of layersNeeded) {
-          const data = await fetchMapJson<TitleDraft>(
-            `/${mapId}/data/${tier}`,
-            { sessionToken }
-          );
+          const data = await fetchMapJson<TitleDraft>(`/${mapId}/data/${tier}`, { sessionToken });
           if (tier === "county") {
             layers.county = draftToLayer(data);
           } else if (tier === "duchy") {
@@ -76,9 +71,7 @@ export function useEditorTitleLayers(
         if (!cancelled) {
           setTitleLayers({ county: {} });
           setLoading(false);
-          setError(
-            err instanceof Error ? err.message : "Failed to load title layers"
-          );
+          setError(err instanceof Error ? err.message : "Failed to load title layers");
         }
       }
     };

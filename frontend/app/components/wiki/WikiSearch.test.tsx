@@ -8,7 +8,12 @@ import type { WikiSearchEntry } from "@/lib/wikiSearch";
 import WikiSearch, { highlightSearchText } from "./WikiSearch";
 
 const entries: WikiSearchEntry[] = [
-  { href: "/wiki/materials#steel", pageTitle: "Materials", sectionTitle: "Steel Ingot", text: "A forged crafting material." },
+  {
+    href: "/wiki/materials#steel",
+    pageTitle: "Materials",
+    sectionTitle: "Steel Ingot",
+    text: "A forged crafting material.",
+  },
   { href: "/wiki/commands#pets", pageTitle: "Pets", sectionTitle: "Commands", text: "/pets opens the pet menu." },
 ];
 
@@ -59,7 +64,15 @@ describe("WikiSearch", () => {
 
   it("shows loading, no-result and load-failure states without hanging", async () => {
     let resolveFetch!: (value: { ok: boolean; json: () => Promise<WikiSearchEntry[]> }) => void;
-    vi.stubGlobal("fetch", vi.fn(() => new Promise((resolve) => { resolveFetch = resolve; })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
     const view = render(<WikiSearch />);
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "missing" } });
@@ -77,7 +90,12 @@ describe("WikiSearch", () => {
   it("renders repeated hrefs without duplicate React key warnings", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     successfulFetch([
-      { href: "/wiki/materials/steel-ingot", pageTitle: "Steel Ingot", sectionTitle: "How to acquire", text: "Steel recipe" },
+      {
+        href: "/wiki/materials/steel-ingot",
+        pageTitle: "Steel Ingot",
+        sectionTitle: "How to acquire",
+        text: "Steel recipe",
+      },
       { href: "/wiki/materials/steel-ingot", pageTitle: "Steel Ingot", sectionTitle: "Used in", text: "Steel tools" },
     ]);
     render(<WikiSearch />);

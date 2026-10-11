@@ -10,64 +10,92 @@ import type { Recipe, StationInfo, WikiSection } from "./types";
 // ---------- Stations ----------
 
 const vehicleStationTexture = (station: string, file: string) => T(`vehicle-stations/${station}/${file}.png`);
-const engineerModel = { url: M("vehicles/ammunition_station.json"), textures: {
-  "0": vehicleStationTexture("ammunition_station", "bullet"),
-  "1": vehicleStationTexture("ammunition_station", "pin"),
-  "2": vehicleStationTexture("ammunition_station", "stand"),
-  "3": vehicleStationTexture("ammunition_station", "bag"),
-  "4": vehicleStationTexture("ammunition_station", "wood4"),
-  "5": vehicleStationTexture("ammunition_station", "powder"),
-  "6": vehicleStationTexture("ammunition_station", "bullet2"),
-  "8": vehicleStationTexture("ammunition_station", "wood2"),
-  "9": vehicleStationTexture("ammunition_station", "wood1"),
-  particle: vehicleStationTexture("ammunition_station", "bullet"),
-} };
+const engineerModel = {
+  url: M("vehicles/ammunition_station.json"),
+  textures: {
+    "0": vehicleStationTexture("ammunition_station", "bullet"),
+    "1": vehicleStationTexture("ammunition_station", "pin"),
+    "2": vehicleStationTexture("ammunition_station", "stand"),
+    "3": vehicleStationTexture("ammunition_station", "bag"),
+    "4": vehicleStationTexture("ammunition_station", "wood4"),
+    "5": vehicleStationTexture("ammunition_station", "powder"),
+    "6": vehicleStationTexture("ammunition_station", "bullet2"),
+    "8": vehicleStationTexture("ammunition_station", "wood2"),
+    "9": vehicleStationTexture("ammunition_station", "wood1"),
+    particle: vehicleStationTexture("ammunition_station", "bullet"),
+  },
+};
 const animalModel = { url: M("animal-station.json"), texture: T("stations/animal-station.png") };
 const medicineModel = { url: M("medicine-station.json"), texture: T("stations/medicine-station.png") };
 const birdMailboxModel = { url: M("bird-mailbox.json"), texture: T("bird-mail/mailbox.png") };
 const magicModel = { url: M("magic-station.json"), texture: T("stations/magic-station.png") };
 const weaponModel = { url: M("weapon-station.json"), texture: T("stations/weapon-station.png") };
 const converterModel = { url: M("ingredient-converter.json"), texture: T("stations/ingredient-converter.png") };
-const alloyModel = { url: M("alloy-forge.json"), texture: T("stations/alloy-forge.png"), textureAnimationUrl: T("stations/alloy-forge.png.mcmeta") };
+const alloyModel = {
+  url: M("alloy-forge.json"),
+  texture: T("stations/alloy-forge.png"),
+  textureAnimationUrl: T("stations/alloy-forge.png.mcmeta"),
+};
 const recyclingModel = { url: M("recycling-station.json"), texture: T("stations/recycling-station.png") };
-const dockyardModel = { url: M("vehicles/dockyard.json"), textures: {
-  bottom: vehicleStationTexture("dockyard", "bottom"),
-  side: vehicleStationTexture("dockyard", "side"),
-  front: vehicleStationTexture("dockyard", "front"),
-  top: vehicleStationTexture("dockyard", "top"),
-  particle: vehicleStationTexture("dockyard", "side"),
-} };
-const fishingStationModel = { url: M("stations/fishing-station.json"), textures: {
-  "2": T("stations/fishing-station/fishing-station.png"),
-} };
-const gunsmithingStationModel = { url: M("stations/gunsmithing-station.json"), textures: {
-  "4": T("stations/gunsmithing-station/wood_m.png"),
-  "8": T("stations/gunsmithing-station/wood2.png"),
-  "9": T("stations/gunsmithing-station/wood1.png"),
-  "11": T("stations/gunsmithing-station/manifest.png"),
-  "14": T("stations/gunsmithing-station/pistol.png"),
-  particle: T("stations/gunsmithing-station/bullet.png"),
-} };
-const mealPrepStationModel = { url: M("stations/meal-prep-station.json"), textures: {
-  "0": T("stations/meal-prep-station/meal-prep-station.png"),
-  particle: T("stations/meal-prep-station/meal-prep-station.png"),
-} };
-const brewingStandModel = { url: M("vanilla/brewing_stand.json"), textures: {
-  base: V("brewing_stand_base.png"),
-  stand: V("brewing_stand_model.png"),
-} };
-const stonecutterModel = { url: M("vanilla/stonecutter.json"), textures: {
-  bottom: V("stonecutter_bottom.png"),
-  top: V("stonecutter_top.png"),
-  side: V("stonecutter_side.png"),
-  saw: V("stonecutter_saw.png"),
-} };
-const grindstoneModel = { url: M("vanilla/grindstone.json"), textures: {
-  pivot: V("grindstone_pivot.png"),
-  round: V("grindstone_round.png"),
-  side: V("grindstone_side.png"),
-  leg: V("dark_oak_log.png"),
-} };
+const dockyardModel = {
+  url: M("vehicles/dockyard.json"),
+  textures: {
+    bottom: vehicleStationTexture("dockyard", "bottom"),
+    side: vehicleStationTexture("dockyard", "side"),
+    front: vehicleStationTexture("dockyard", "front"),
+    top: vehicleStationTexture("dockyard", "top"),
+    particle: vehicleStationTexture("dockyard", "side"),
+  },
+};
+const fishingStationModel = {
+  url: M("stations/fishing-station.json"),
+  textures: {
+    "2": T("stations/fishing-station/fishing-station.png"),
+  },
+};
+const gunsmithingStationModel = {
+  url: M("stations/gunsmithing-station.json"),
+  textures: {
+    "4": T("stations/gunsmithing-station/wood_m.png"),
+    "8": T("stations/gunsmithing-station/wood2.png"),
+    "9": T("stations/gunsmithing-station/wood1.png"),
+    "11": T("stations/gunsmithing-station/manifest.png"),
+    "14": T("stations/gunsmithing-station/pistol.png"),
+    particle: T("stations/gunsmithing-station/bullet.png"),
+  },
+};
+const mealPrepStationModel = {
+  url: M("stations/meal-prep-station.json"),
+  textures: {
+    "0": T("stations/meal-prep-station/meal-prep-station.png"),
+    particle: T("stations/meal-prep-station/meal-prep-station.png"),
+  },
+};
+const brewingStandModel = {
+  url: M("vanilla/brewing_stand.json"),
+  textures: {
+    base: V("brewing_stand_base.png"),
+    stand: V("brewing_stand_model.png"),
+  },
+};
+const stonecutterModel = {
+  url: M("vanilla/stonecutter.json"),
+  textures: {
+    bottom: V("stonecutter_bottom.png"),
+    top: V("stonecutter_top.png"),
+    side: V("stonecutter_side.png"),
+    saw: V("stonecutter_saw.png"),
+  },
+};
+const grindstoneModel = {
+  url: M("vanilla/grindstone.json"),
+  textures: {
+    pivot: V("grindstone_pivot.png"),
+    round: V("grindstone_round.png"),
+    side: V("grindstone_side.png"),
+    leg: V("dark_oak_log.png"),
+  },
+};
 
 const vanillaSlot = (name: string, id: string, texture: string) => ({
   name,
@@ -82,11 +110,15 @@ const vanillaStationRecipes = {
     title: "Brewing Stand",
     station: "Crafting Table",
     ingredients: [
-      empty, vanillaSlot("Blaze Rod", "blaze_rod", "blaze_rod.png"), empty,
+      empty,
+      vanillaSlot("Blaze Rod", "blaze_rod", "blaze_rod.png"),
+      empty,
       vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
       vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
       vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
-      empty, empty, empty,
+      empty,
+      empty,
+      empty,
     ],
     output: vanillaSlot("Brewing Stand", "brewing_stand", "brewing_stand.png"),
   },
@@ -95,9 +127,15 @@ const vanillaStationRecipes = {
     title: "Stonecutter",
     station: "Crafting Table",
     ingredients: [
-      empty, vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), empty,
-      vanillaSlot("Stone", "stone", "stone.png"), vanillaSlot("Stone", "stone", "stone.png"), vanillaSlot("Stone", "stone", "stone.png"),
-      empty, empty, empty,
+      empty,
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      empty,
+      vanillaSlot("Stone", "stone", "stone.png"),
+      vanillaSlot("Stone", "stone", "stone.png"),
+      vanillaSlot("Stone", "stone", "stone.png"),
+      empty,
+      empty,
+      empty,
     ],
     output: vanillaSlot("Stonecutter", "stonecutter", "stonecutter_top.png"),
   },
@@ -106,9 +144,15 @@ const vanillaStationRecipes = {
     title: "Grindstone",
     station: "Crafting Table",
     ingredients: [
-      vanillaSlot("Stick", "stick", "stick.png"), vanillaSlot("Stone Slab", "stone_slab", "stone.png"), vanillaSlot("Stick", "stick", "stick.png"),
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty, vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
-      empty, empty, empty,
+      vanillaSlot("Stick", "stick", "stick.png"),
+      vanillaSlot("Stone Slab", "stone_slab", "stone.png"),
+      vanillaSlot("Stick", "stick", "stick.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      empty,
+      empty,
     ],
     output: vanillaSlot("Grindstone", "grindstone", "grindstone_side.png"),
   },
@@ -117,9 +161,15 @@ const vanillaStationRecipes = {
     title: "Fletching Table",
     station: "Crafting Table",
     ingredients: [
-      vanillaSlot("Flint", "flint", "flint.png"), vanillaSlot("Flint", "flint", "flint.png"), empty,
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      vanillaSlot("Flint", "flint", "flint.png"),
+      vanillaSlot("Flint", "flint", "flint.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
     ],
     output: vanillaSlot("Fletching Table", "fletching_table", "fletching_table_front.png"),
   },
@@ -128,9 +178,15 @@ const vanillaStationRecipes = {
     title: "Blast Furnace",
     station: "Crafting Table",
     ingredients: [
-      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
-      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Furnace", "furnace", "furnace.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
-      vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"), vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"), vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Furnace", "furnace", "furnace.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"),
+      vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"),
+      vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"),
     ],
     output: vanillaSlot("Blast Furnace", "blast_furnace", "blast_furnace_front.png"),
   },
@@ -139,9 +195,15 @@ const vanillaStationRecipes = {
     title: "Jukebox",
     station: "Crafting Table",
     ingredients: [
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Diamond", "diamond", "diamond.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Diamond", "diamond", "diamond.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
     ],
     output: vanillaSlot("Jukebox", "jukebox", "jukebox_top.png"),
   },
@@ -150,9 +212,15 @@ const vanillaStationRecipes = {
     title: "Cartography Table",
     station: "Crafting Table",
     ingredients: [
-      vanillaSlot("Paper", "paper", "paper.png"), vanillaSlot("Paper", "paper", "paper.png"), empty,
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      vanillaSlot("Paper", "paper", "paper.png"),
+      vanillaSlot("Paper", "paper", "paper.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
     ],
     output: vanillaSlot("Cartography Table", "cartography_table", "cartography_table_top.png"),
   },
@@ -161,9 +229,15 @@ const vanillaStationRecipes = {
     title: "Crafting Table",
     station: "Player Crafting",
     ingredients: [
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
-      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
-      empty, empty, empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty,
+      empty,
+      empty,
+      empty,
     ],
     output: vanillaSlot("Crafting Table", "crafting_table", "crafting_table_top.png"),
   },
@@ -194,8 +268,12 @@ const birdMailboxCraft: Recipe = {
   station: "Crafting Table",
   requirement: "None",
   ingredients: [
-    empty, { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") }, empty,
-    empty, { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") }, empty,
+    empty,
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    empty,
+    empty,
+    { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
+    empty,
     { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
     { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
     { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
@@ -238,7 +316,12 @@ const gunsmithingStationCraft: Recipe = {
     empty,
     { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
   ],
-  output: { name: "Gunsmithing Station", qty: 1, sourceId: "itemsadder:gunsmithing_station", model: gunsmithingStationModel },
+  output: {
+    name: "Gunsmithing Station",
+    qty: 1,
+    sourceId: "itemsadder:gunsmithing_station",
+    model: gunsmithingStationModel,
+  },
 };
 
 const mealPrepStationCraft: Recipe = {
@@ -616,10 +699,17 @@ export function getStationBySlug(slug: string): StationInfo | undefined {
 const stationAcquisitionVisuals = new Map(
   stations.flatMap((station) => {
     const recipe = station.craftRecipe ?? station.vanillaBlock?.recipe;
-    return recipe?.output.sourceId ? [[recipe.output.sourceId, {
-      slug: station.slug,
-      thumbnail: `/wiki/thumbnails/stations/${station.slug}.webp`,
-    }] as const] : [];
+    return recipe?.output.sourceId
+      ? [
+          [
+            recipe.output.sourceId,
+            {
+              slug: station.slug,
+              thumbnail: `/wiki/thumbnails/stations/${station.slug}.webp`,
+            },
+          ] as const,
+        ]
+      : [];
   }),
 );
 export function getStationAcquisitionVisual(sourceId?: string) {

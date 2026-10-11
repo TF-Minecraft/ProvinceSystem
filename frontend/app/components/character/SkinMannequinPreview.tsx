@@ -26,10 +26,7 @@ type Props = {
   downloadFilename?: string | null;
 };
 
-async function downloadSkinSource(
-  source: File | string,
-  filename: string
-): Promise<void> {
+async function downloadSkinSource(source: File | string, filename: string): Promise<void> {
   let blob: Blob;
   if (source instanceof File) {
     blob = source;
@@ -115,12 +112,7 @@ export default function SkinMannequinPreview({
         renderer.domElement.className = "h-full w-full touch-none";
         renderer.domElement.style.display = "block";
 
-        const camera = new THREE.PerspectiveCamera(
-          34,
-          widthPx / Math.max(heightPx, 1),
-          0.1,
-          500
-        );
+        const camera = new THREE.PerspectiveCamera(34, widthPx / Math.max(heightPx, 1), 0.1, 500);
         const focus = new THREE.Vector3(0, 12, 0);
         camera.position.set(focus.x + 6, focus.y + 4, focus.z + 54);
         camera.lookAt(focus);
@@ -181,20 +173,14 @@ export default function SkinMannequinPreview({
   }
 
   return (
-    <div
-      className={`relative overflow-hidden bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] ${className}`}
-    >
+    <div className={`relative overflow-hidden bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] ${className}`}>
       <div ref={hostRef} className="h-full w-full" />
       {!source ? (
         <p className="absolute inset-0 flex items-center justify-center px-2 text-center text-xs text-[var(--tfmc-mist)]">
           No skin
         </p>
       ) : null}
-      {error ? (
-        <p className="absolute inset-x-0 bottom-1 px-2 text-center text-[10px] text-red-300">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="absolute inset-x-0 bottom-1 px-2 text-center text-[10px] text-red-300">{error}</p> : null}
       {canDownload ? (
         <button
           type="button"

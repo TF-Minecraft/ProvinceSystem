@@ -22,11 +22,5 @@ export default function SiteDevGate({ children }: Props) {
     );
   }
 
-  return (
-    <DevLandingPage
-      loading={state === "loading"}
-      accessDenied={state === "denied"}
-      onStaffVerified={retry}
-    />
-  );
+  return <DevLandingPage loading={state === "loading"} accessDenied={state === "denied"} onStaffVerified={retry} />;
 }

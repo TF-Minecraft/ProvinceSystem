@@ -2,17 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  isSectionName,
-  SECTION_LABELS,
-  SECTION_ORDER,
-  TOPIC_LABELS,
-  TOPIC_ORDER,
-} from "@/lib/patchnotes/notes";
-import {
-  patchReviewBullet,
-  type ReviewBullet,
-} from "@/lib/patchnotes/review";
+import { isSectionName, SECTION_LABELS, SECTION_ORDER, TOPIC_LABELS, TOPIC_ORDER } from "@/lib/patchnotes/notes";
+import { patchReviewBullet, type ReviewBullet } from "@/lib/patchnotes/review";
 
 export const reviewButtonClass = [
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)]",
@@ -35,14 +26,7 @@ type ReviewLineProps = {
   onError: (id: string, text: string) => void;
 };
 
-export default function ReviewLine({
-  bullet,
-  disabled,
-  error,
-  onPatch,
-  onDrop,
-  onError,
-}: ReviewLineProps) {
+export default function ReviewLine({ bullet, disabled, error, onPatch, onDrop, onError }: ReviewLineProps) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(bullet.body);
 
@@ -81,9 +65,7 @@ export default function ReviewLine({
                 </span>
               )}
               {bullet.warning && (
-                <span className="ml-2 inline text-xs text-[var(--tfmc-accent)]">
-                  ⚠ {bullet.warning}
-                </span>
+                <span className="ml-2 inline text-xs text-[var(--tfmc-accent)]">⚠ {bullet.warning}</span>
               )}
             </p>
           )}
@@ -174,12 +156,7 @@ export default function ReviewLine({
               >
                 Edit
               </button>
-              <button
-                className={reviewButtonClass}
-                type="button"
-                disabled={disabled}
-                onClick={onDrop}
-              >
+              <button className={reviewButtonClass} type="button" disabled={disabled} onClick={onDrop}>
                 Remove
               </button>
             </>

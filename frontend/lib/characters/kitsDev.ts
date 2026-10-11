@@ -3,9 +3,7 @@
 import type { CharacterKitsResponse } from "./api";
 import { UI_DEV_LORE_CHARACTER_ID } from "./loreItemsDev";
 
-export function uiDevCharacterKits(
-  characterId: string
-): CharacterKitsResponse {
+export function uiDevCharacterKits(characterId: string): CharacterKitsResponse {
   return {
     character_id: characterId || UI_DEV_LORE_CHARACTER_ID,
     kits: [

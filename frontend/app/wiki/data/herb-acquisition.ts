@@ -8,10 +8,7 @@ export function collectorSource(): MaterialAcquisition {
   };
 }
 
-function collectorHerb(
-  name: string,
-  texture: string,
-): DropOnlyMaterial {
+function collectorHerb(name: string, texture: string): DropOnlyMaterial {
   return {
     name,
     texture: T(texture),

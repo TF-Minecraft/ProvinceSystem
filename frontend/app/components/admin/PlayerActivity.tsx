@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  adminErrorMessage,
-  coreProtectMessage,
-  getPlayerActivity,
-  type ActivityEntry,
-} from "../../../lib/admin/api";
+import { adminErrorMessage, coreProtectMessage, getPlayerActivity, type ActivityEntry } from "../../../lib/admin/api";
 import { groupActivity, placeName, targetName, type ActivityRow, type WorldNames } from "../../../lib/admin/activity";
 import { formatClock } from "../../../lib/admin/movement";
 import { formatEpoch } from "../../../lib/admin/time";
@@ -33,8 +28,18 @@ const SOURCE_LABELS: Record<string, string> = { mmoitems: "Custom item", mythicm
 
 // Each channel in the colour its in-game tag uses (RPCharacters' chat.yml).
 const CHANNEL_COLOURS: Record<string, string> = {
-  LOOC: "#55c455", OOC: "#7f8cff", GOOC: "#ffaa00", FOOC: "#55e0e0", POOC: "#ff77ff", ROOC: "#ff77ff",
-  Admin: "#ff6b6b", Helper: "#ff77ff", Shout: "#ffaa00", Yell: "#ff6b6b", Whisper: "#55aaff", Emote: "#ff77ff",
+  LOOC: "#55c455",
+  OOC: "#7f8cff",
+  GOOC: "#ffaa00",
+  FOOC: "#55e0e0",
+  POOC: "#ff77ff",
+  ROOC: "#ff77ff",
+  Admin: "#ff6b6b",
+  Helper: "#ff77ff",
+  Shout: "#ffaa00",
+  Yell: "#ff6b6b",
+  Whisper: "#55aaff",
+  Emote: "#ff77ff",
 };
 
 function ChannelTag({ channel, inferred = false }: { channel: string; inferred?: boolean }) {
@@ -114,8 +119,7 @@ function Sentence({ entry, count }: { entry: ActivityEntry; count: number }) {
   if (entry.kind === "command") {
     return (
       <>
-        {verb}{" "}
-        <code className="break-all font-mono text-[0.8125rem] text-[var(--tfmc-cream)]">{entry.target}</code>
+        {verb} <code className="break-all font-mono text-[0.8125rem] text-[var(--tfmc-cream)]">{entry.target}</code>
       </>
     );
   }
@@ -274,7 +278,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
         if (id === request.current) setState("ready");
       }
     },
-    [uuid, kinds]
+    [uuid, kinds],
   );
 
   useEffect(() => {
@@ -314,7 +318,9 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
     <section className={panelClass} aria-label="Recent activity">
       <h3 className={headingClass}>Recent activity</h3>
       <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-        {showsMessages ? "Includes chat and full commands; sign text is hidden. Views are logged." : "Chat, command details and sign text are hidden."}
+        {showsMessages
+          ? "Includes chat and full commands; sign text is hidden. Views are logged."
+          : "Chat, command details and sign text are hidden."}
       </p>
       {/* One row that scrolls sideways on a phone; wraps where there is room. */}
       <div
@@ -327,7 +333,13 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
           All
         </button>
         {available.map((kind) => (
-          <button key={kind} type="button" aria-pressed={kinds.includes(kind)} className={chip(kinds.includes(kind))} onClick={() => toggle(kind)}>
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={kinds.includes(kind)}
+            className={chip(kinds.includes(kind))}
+            onClick={() => toggle(kind)}
+          >
             {KIND_LABELS[kind] ?? kind}
           </button>
         ))}

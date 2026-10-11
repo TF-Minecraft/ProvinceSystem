@@ -53,9 +53,7 @@ export default function PlayerProfile() {
               {profile.discord.discord_username ? (
                 `@${profile.discord.discord_username}`
               ) : (
-                <span className="text-[var(--tfmc-mist)]">
-                  Not known yet · ID {profile.discord.discord_user_id}
-                </span>
+                <span className="text-[var(--tfmc-mist)]">Not known yet · ID {profile.discord.discord_user_id}</span>
               )}
             </dd>
             <dt className="text-[var(--tfmc-stone)]">Server nickname</dt>
@@ -82,9 +80,13 @@ export default function PlayerProfile() {
           </dl>
         ) : null}
         {me && profile.discord && profile.account && canManage(me, websiteAccount(profile)) ? (
-          <AccountActions me={me} account={websiteAccount(profile)} onChanged={async () => {
-            reload();
-          }} />
+          <AccountActions
+            me={me}
+            account={websiteAccount(profile)}
+            onChanged={async () => {
+              reload();
+            }}
+          />
         ) : null}
         {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}
       </section>
@@ -97,7 +99,9 @@ export default function PlayerProfile() {
               <li key={`${c.realm_id}:${c.character_id}`} className="text-[var(--tfmc-cream)]">
                 {c.name}
                 <span className="text-[var(--tfmc-stone)]">
-                  {[c.race, c.class, c.status, c.realm_id !== "main" ? c.realm_id : null].filter(Boolean).map((v) => ` · ${v}`)}
+                  {[c.race, c.class, c.status, c.realm_id !== "main" ? c.realm_id : null]
+                    .filter(Boolean)
+                    .map((v) => ` · ${v}`)}
                 </span>
               </li>
             ))}
@@ -106,7 +110,6 @@ export default function PlayerProfile() {
           <p className={`mt-3 ${mutedClass}`}>No characters.</p>
         )}
       </section>
-
     </>
   );
 }
@@ -127,7 +130,17 @@ function websiteAccount(profile: Profile): AdminAccount {
   };
 }
 
-function SessionItem({ session, day, uuid, movement }: { session: PlayerSession; day: string; uuid: string; movement: boolean }) {
+function SessionItem({
+  session,
+  day,
+  uuid,
+  movement,
+}: {
+  session: PlayerSession;
+  day: string;
+  uuid: string;
+  movement: boolean;
+}) {
   const row = sessionRow(session);
   const spoken = `${day}, ${row.start} to ${row.end}${row.duration ? `, ${row.duration}` : ""}${row.note ? `. ${row.note}` : ""}`;
   const body = (
@@ -141,7 +154,9 @@ function SessionItem({ session, day, uuid, movement }: { session: PlayerSession;
           {row.duration ? <span className="shrink-0 text-right text-[var(--tfmc-mist)]">{row.duration}</span> : null}
         </span>
         {row.note ? (
-          <span className={`block text-xs ${session.end_kind === "open" ? "text-[var(--tfmc-accent)]" : "text-[#e8c48a]"}`}>
+          <span
+            className={`block text-xs ${session.end_kind === "open" ? "text-[var(--tfmc-accent)]" : "text-[#e8c48a]"}`}
+          >
             {row.note}
           </span>
         ) : null}
@@ -187,7 +202,7 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
         setState("ready");
       }
     },
-    [uuid]
+    [uuid],
   );
 
   useEffect(() => {
@@ -200,7 +215,9 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
     <section className={panelClass} aria-label="Sessions">
       <h3 className={headingClass}>Sessions</h3>
       {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
-      {state !== "loading" && !rows.length && !failure ? <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p> : null}
+      {state !== "loading" && !rows.length && !failure ? (
+        <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p>
+      ) : null}
       {days.length ? (
         <div className="mt-3 space-y-4">
           {days.map((day) => (
@@ -225,7 +242,9 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
         </button>
       ) : rows.length && historyStart && state === "ready" ? (
         // The oldest session row CoreProtect still holds for anyone, not this player's first session.
-        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">Server session history starts {formatDate(historyStart)}.</p>
+        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
+          Server session history starts {formatDate(historyStart)}.
+        </p>
       ) : null}
     </section>
   );

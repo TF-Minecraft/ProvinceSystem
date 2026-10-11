@@ -46,7 +46,8 @@ export const denarCommands: WikiCommandSet = {
     },
     {
       command: "/deco toitem <amount>",
-      description: "Converts part of your pouch balance into physical coin items in your inventory, largest denomination first.",
+      description:
+        "Converts part of your pouch balance into physical coin items in your inventory, largest denomination first.",
       notes: "Gold Ingots can never be withdrawn this way: only the dedicated coin items.",
     },
     {

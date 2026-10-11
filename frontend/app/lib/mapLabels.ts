@@ -11,10 +11,7 @@ import {
   type ProvinceLabelGrid,
 } from "./labelBlobGeometry";
 import type { MapMode } from "../components/map/types";
-import {
-  resolveTitleProvinces,
-  type TitleLayers,
-} from "./titleProvinces";
+import { resolveTitleProvinces, type TitleLayers } from "./titleProvinces";
 
 export {
   LABEL_ARC_BULGE_RATIO,
@@ -27,21 +24,9 @@ export {
   type LabelArcQuadratic,
 };
 
-export const LABEL_MAP_MODES = new Set<MapMode>([
-  "nation",
-  "county",
-  "duchy",
-  "kingdom",
-  "empire",
-  "trade",
-]);
+export const LABEL_MAP_MODES = new Set<MapMode>(["nation", "county", "duchy", "kingdom", "empire", "trade"]);
 
-export const TITLE_LABEL_MODES = new Set<MapMode>([
-  "county",
-  "duchy",
-  "kingdom",
-  "empire",
-]);
+export const TITLE_LABEL_MODES = new Set<MapMode>(["county", "duchy", "kingdom", "empire"]);
 
 export const MIN_PROVINCES = 1;
 export const MIN_PIXEL_AREA = 15000;
@@ -73,17 +58,11 @@ export const LABEL_MIN_SCREEN_PX = 6;
  */
 export const LABEL_MAX_SCREEN_PX = 140;
 
-export function labelScreenFontSize(
-  fontSize: number,
-  displayScale: number
-): number {
+export function labelScreenFontSize(fontSize: number, displayScale: number): number {
   return fontSize * displayScale;
 }
 
-export function shouldShowLabelAtScreenSize(
-  fontSize: number,
-  displayScale: number
-): boolean {
+export function shouldShowLabelAtScreenSize(fontSize: number, displayScale: number): boolean {
   if (displayScale <= 0 || fontSize <= 0) return false;
   const screenPx = labelScreenFontSize(fontSize, displayScale);
   return screenPx >= LABEL_MIN_SCREEN_PX && screenPx <= LABEL_MAX_SCREEN_PX;
@@ -114,14 +93,8 @@ export type LabelMapObject = {
   baseId: string;
 };
 
-function findLabelEntry(
-  mapObjects: LabelMapObject[],
-  nationId: string,
-  nested: boolean
-): LabelMapObject | undefined {
-  return mapObjects.find(
-    (obj) => obj.nested === nested && obj.baseId === nationId
-  );
+function findLabelEntry(mapObjects: LabelMapObject[], nationId: string, nested: boolean): LabelMapObject | undefined {
+  return mapObjects.find((obj) => obj.nested === nested && obj.baseId === nationId);
 }
 
 export type NationLabelScope = "full" | "direct";
@@ -153,17 +126,11 @@ export type ComputeNationLabelsOptions = {
   labelNeighbors?: ProvinceNeighbors;
 };
 
-function neighborList(
-  neighbors: ProvinceNeighbors,
-  provinceId: number
-): number[] {
+function neighborList(neighbors: ProvinceNeighbors, provinceId: number): number[] {
   return neighbors[String(provinceId)] ?? [];
 }
 
-export function connectedComponents(
-  provinceIds: number[],
-  neighbors: ProvinceNeighbors
-): number[][] {
+export function connectedComponents(provinceIds: number[], neighbors: ProvinceNeighbors): number[][] {
   const allowed = new Set(provinceIds);
   const visited = new Set<number>();
   const components: number[][] = [];
@@ -195,7 +162,7 @@ export function connectedComponents(
 function bfsFarthest(
   start: number,
   allowed: Set<number>,
-  neighbors: ProvinceNeighbors
+  neighbors: ProvinceNeighbors,
 ): { id: number; distance: number } {
   const distances = new Map<number, number>([[start, 0]]);
   const queue = [start];
@@ -210,10 +177,7 @@ function bfsFarthest(
       const nextDistance = currentDistance + 1;
       distances.set(next, nextDistance);
       queue.push(next);
-      if (
-        nextDistance > farthest.distance ||
-        (nextDistance === farthest.distance && next < farthest.id)
-      ) {
+      if (nextDistance > farthest.distance || (nextDistance === farthest.distance && next < farthest.id)) {
         farthest = { id: next, distance: nextDistance };
       }
     }
@@ -222,10 +186,7 @@ function bfsFarthest(
   return farthest;
 }
 
-export function graphDiameterEndpoints(
-  componentIds: number[],
-  neighbors: ProvinceNeighbors
-): [number, number] {
+export function graphDiameterEndpoints(componentIds: number[], neighbors: ProvinceNeighbors): [number, number] {
   if (componentIds.length === 0) {
     throw new Error("graphDiameterEndpoints requires at least one province");
   }
@@ -243,10 +204,7 @@ export function graphDiameterEndpoints(
   return a <= b ? [a, b] : [b, a];
 }
 
-export function pixelDiameterEndpoints(
-  componentIds: number[],
-  centroids: ProvinceCentroids
-): [number, number] {
+export function pixelDiameterEndpoints(componentIds: number[], centroids: ProvinceCentroids): [number, number] {
   if (componentIds.length === 0) {
     throw new Error("pixelDiameterEndpoints requires at least one province");
   }
@@ -257,9 +215,7 @@ export function pixelDiameterEndpoints(
 
   const points = componentIds
     .map((id) => ({ id, centroid: centroidOf(id, centroids) }))
-    .filter((entry): entry is { id: number; centroid: ProvinceCentroid } =>
-      entry.centroid !== null
-    );
+    .filter((entry): entry is { id: number; centroid: ProvinceCentroid } => entry.centroid !== null);
 
   if (points.length === 0) {
     throw new Error("pixelDiameterEndpoints requires at least one centroid");
@@ -277,14 +233,11 @@ export function pixelDiameterEndpoints(
       const a = points[i];
       const b = points[j];
       const distance = segmentPixelLength(a.centroid.x, a.centroid.y, b.centroid.x, b.centroid.y);
-      const pair: [number, number] =
-        a.id <= b.id ? [a.id, b.id] : [b.id, a.id];
+      const pair: [number, number] = a.id <= b.id ? [a.id, b.id] : [b.id, a.id];
 
       if (
         distance > bestDistance ||
-        (distance === bestDistance &&
-          (pair[0] < bestPair[0] ||
-            (pair[0] === bestPair[0] && pair[1] < bestPair[1])))
+        (distance === bestDistance && (pair[0] < bestPair[0] || (pair[0] === bestPair[0] && pair[1] < bestPair[1])))
       ) {
         bestDistance = distance;
         bestPair = pair;
@@ -300,26 +253,15 @@ export function estimatedLabelWidthPx(fontSize: number, text: string): number {
   return fontSize * units * LABEL_GLYPH_WIDTH_EM;
 }
 
-export function componentPixelArea(
-  provinceIds: number[],
-  centroids: ProvinceCentroids
-): number {
+export function componentPixelArea(provinceIds: number[], centroids: ProvinceCentroids): number {
   return provinceIds.reduce((sum, pid) => {
     return sum + (centroids[String(pid)]?.pixel_count ?? 0);
   }, 0);
 }
 
-export function labelAngleDeg(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): number {
+export function labelAngleDeg(x1: number, y1: number, x2: number, y2: number): number {
   const oriented = orientLabelEndpoints(x1, y1, x2, y2);
-  const rad = Math.atan2(
-    oriented.y2 - oriented.y1,
-    oriented.x2 - oriented.x1
-  );
+  const rad = Math.atan2(oriented.y2 - oriented.y1, oriented.x2 - oriented.x1);
   let deg = (rad * 180) / Math.PI;
   if (deg <= -90) deg += 180;
   else if (deg > 90) deg -= 180;
@@ -336,7 +278,7 @@ export function extendLabelEndpoints(
   y1: number,
   x2: number,
   y2: number,
-  ratio: number = LABEL_PATH_OVERSHOOT_RATIO
+  ratio: number = LABEL_PATH_OVERSHOOT_RATIO,
 ): { x1: number; y1: number; x2: number; y2: number } {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -361,7 +303,7 @@ export function labelArcPathD(
   y1: number,
   x2: number,
   y2: number,
-  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
+  bulgeRatio: number = LABEL_ARC_BULGE_RATIO,
 ): string {
   const arc = labelArcQuadratic(x1, y1, x2, y2, bulgeRatio);
   if (arc.ax === arc.bx && arc.ay === arc.by) {
@@ -376,7 +318,7 @@ export function labelPathCenterOffset(
   x2: number,
   y2: number,
   fontSize: number,
-  bulgeRatio: number = LABEL_ARC_BULGE_RATIO
+  bulgeRatio: number = LABEL_ARC_BULGE_RATIO,
 ): { dx: number; dy: number } {
   const oriented = orientLabelEndpoints(x1, y1, x2, y2);
   const dx = oriented.x2 - oriented.x1;
@@ -409,7 +351,7 @@ export function pickRegionLabelAt(
   labels: NationLabelSpec[],
   x: number,
   y: number,
-  displayScale: number
+  displayScale: number,
 ): string | null {
   const SAMPLES = 48;
   let best: { id: string; distance: number } | null = null;
@@ -422,12 +364,7 @@ export function pickRegionLabelAt(
     }
 
     const extended = extendLabelEndpoints(label.x1, label.y1, label.x2, label.y2);
-    const { x1: ax, y1: ay, x2: bx, y2: by } = orientLabelEndpoints(
-      extended.x1,
-      extended.y1,
-      extended.x2,
-      extended.y2
-    );
+    const { x1: ax, y1: ay, x2: bx, y2: by } = orientLabelEndpoints(extended.x1, extended.y1, extended.x2, extended.y2);
     const len = Math.hypot(bx - ax, by - ay);
     if (len === 0) continue;
     // Toward the top of the letters, as labelArcPathD bulges.
@@ -471,35 +408,23 @@ export function pickRegionLabelAt(
   return best?.id ?? null;
 }
 
-function centroidOf(
-  provinceId: number,
-  centroids: ProvinceCentroids
-): ProvinceCentroid | null {
+function centroidOf(provinceId: number, centroids: ProvinceCentroids): ProvinceCentroid | null {
   return centroids[String(provinceId)] ?? null;
 }
 
-export function isNationLabelVisible(
-  nationId: string,
-  mapObjects: LabelMapObject[]
-): boolean {
+export function isNationLabelVisible(nationId: string, mapObjects: LabelMapObject[]): boolean {
   const main = findLabelEntry(mapObjects, nationId, false);
   const nested = findLabelEntry(mapObjects, nationId, true);
   return !!(main?.visible || nested?.visible);
 }
 
-export function isDrilledSuzerainView(
-  nationId: string,
-  mapObjects: LabelMapObject[]
-): boolean {
+export function isDrilledSuzerainView(nationId: string, mapObjects: LabelMapObject[]): boolean {
   const main = findLabelEntry(mapObjects, nationId, false);
   const nested = findLabelEntry(mapObjects, nationId, true);
   return !!main && !main.visible && nested?.visible === true;
 }
 
-export function directHoldingProvinces(
-  nationId: string,
-  regionData: Record<string, NationRegionInput>
-): number[] {
+export function directHoldingProvinces(nationId: string, regionData: Record<string, NationRegionInput>): number[] {
   const region = regionData[nationId];
   const provinces = region?.provinces ?? [];
   const subjects = region?.subjects ?? [];
@@ -515,10 +440,7 @@ export function directHoldingProvinces(
   return provinces.filter((provinceId) => !subjectProvinces.has(provinceId));
 }
 
-export function fullRealmProvinces(
-  nationId: string,
-  regionData: Record<string, NationRegionInput>
-): number[] {
+export function fullRealmProvinces(nationId: string, regionData: Record<string, NationRegionInput>): number[] {
   const region = regionData[nationId];
   const provinces: number[] = [];
   const seenProvinces = new Set<number>();
@@ -566,9 +488,7 @@ export type OccupationIndex = {
   multi: Set<number>;
 };
 
-export function buildOccupationIndex(
-  regionData: Record<string, NationRegionInput>
-): OccupationIndex {
+export function buildOccupationIndex(regionData: Record<string, NationRegionInput>): OccupationIndex {
   const ownerOf = new Map<number, string>();
   const multi = new Set<number>();
 
@@ -586,11 +506,7 @@ export function buildOccupationIndex(
   return { ownerOf, multi };
 }
 
-function isOccupiedByOther(
-  index: OccupationIndex,
-  provinceId: number,
-  nationId: string
-): boolean {
+function isOccupiedByOther(index: OccupationIndex, provinceId: number, nationId: string): boolean {
   if (index.multi.has(provinceId)) return true;
   const owner = index.ownerOf.get(provinceId);
   return owner !== undefined && owner !== nationId;
@@ -600,14 +516,13 @@ export function labelControlProvinces(
   nationId: string,
   regionData: Record<string, NationRegionInput>,
   deJure: number[],
-  occupation?: OccupationIndex
+  occupation?: OccupationIndex,
 ): number[] {
   const index = occupation ?? buildOccupationIndex(regionData);
   const seen = new Set<number>();
   const out: number[] = [];
   for (const provinceId of deJure) {
-    if (isOccupiedByOther(index, provinceId, nationId) || seen.has(provinceId))
-      continue;
+    if (isOccupiedByOther(index, provinceId, nationId) || seen.has(provinceId)) continue;
     seen.add(provinceId);
     out.push(provinceId);
   }
@@ -622,27 +537,19 @@ export function labelControlProvinces(
 export function provincesForNationLabel(
   nationId: string,
   regionData: Record<string, NationRegionInput>,
-  mapObjects: LabelMapObject[]
+  mapObjects: LabelMapObject[],
 ): { provinces: number[]; scope: NationLabelScope } | null {
   if (!isNationLabelVisible(nationId, mapObjects)) return null;
 
   const region = regionData[nationId];
 
   if (isDrilledSuzerainView(nationId, mapObjects) && region?.subjects?.length) {
-    const directProvinces = labelControlProvinces(
-      nationId,
-      regionData,
-      directHoldingProvinces(nationId, regionData)
-    );
+    const directProvinces = labelControlProvinces(nationId, regionData, directHoldingProvinces(nationId, regionData));
     if (!directProvinces.length) return null;
     return { provinces: directProvinces, scope: "direct" };
   }
 
-  const fullProvinces = labelControlProvinces(
-    nationId,
-    regionData,
-    fullRealmProvinces(nationId, regionData)
-  );
+  const fullProvinces = labelControlProvinces(nationId, regionData, fullRealmProvinces(nationId, regionData));
   if (!fullProvinces.length) return null;
   return { provinces: fullProvinces, scope: "full" };
 }
@@ -654,15 +561,13 @@ export function labelsForProvinces(
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
   scope: NationLabelScope,
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): NationLabelSpec[] {
   const minProvinces = options?.minProvinces ?? MIN_PROVINCES;
   const minPixelArea = options?.minPixelArea ?? MIN_PIXEL_AREA;
   const labels: NationLabelSpec[] = [];
 
-  const withGeometry = provinces.filter(
-    (pid) => centroidOf(pid, centroids) !== null
-  );
+  const withGeometry = provinces.filter((pid) => centroidOf(pid, centroids) !== null);
   if (!withGeometry.length) return labels;
 
   const componentNeighbors = options?.labelNeighbors ?? neighbors;
@@ -682,12 +587,7 @@ export function labelsForProvinces(
     const cB = centroidOf(pidB, centroids)!;
 
     if (options?.grid) {
-      const endpoints = insetLabelEndpoints(
-        component,
-        name,
-        options.grid,
-        { x1: cA.x, y1: cA.y, x2: cB.x, y2: cB.y }
-      );
+      const endpoints = insetLabelEndpoints(component, name, options.grid, { x1: cA.x, y1: cA.y, x2: cB.x, y2: cB.y });
       if (!endpoints) continue;
       x1 = endpoints.x1;
       y1 = endpoints.y1;
@@ -710,13 +610,7 @@ export function labelsForProvinces(
     // chord, and `cx`/`cy`/`angleDeg`/`segmentPx` below stay on it too, so
     // hover scaling and the GIF export's flat re-layout are unchanged.
     const textPath = extendLabelEndpoints(x1, y1, x2, y2);
-    const pathOffset = labelPathCenterOffset(
-      textPath.x1,
-      textPath.y1,
-      textPath.x2,
-      textPath.y2,
-      fontSize
-    );
+    const pathOffset = labelPathCenterOffset(textPath.x1, textPath.y1, textPath.x2, textPath.y2, fontSize);
 
     labels.push({
       nationId,
@@ -732,12 +626,7 @@ export function labelsForProvinces(
       angleDeg: labelAngleDeg(x1, y1, x2, y2),
       segmentPx,
       fontSize,
-      pathD: labelArcPathD(
-        textPath.x1,
-        textPath.y1,
-        textPath.x2,
-        textPath.y2
-      ),
+      pathD: labelArcPathD(textPath.x1, textPath.y1, textPath.x2, textPath.y2),
       pathOffsetX: pathOffset.dx,
       pathOffsetY: pathOffset.dy,
     });
@@ -751,30 +640,16 @@ export function computeNationLabels(
   regionData: Record<string, NationRegionInput>,
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): NationLabelSpec[] {
   const labels: NationLabelSpec[] = [];
 
   for (const [nationId, region] of Object.entries(regionData)) {
     const name = region.name?.trim();
-    const provinces = labelControlProvinces(
-      nationId,
-      regionData,
-      region.provinces ?? []
-    );
+    const provinces = labelControlProvinces(nationId, regionData, region.provinces ?? []);
     if (!name || !provinces?.length) continue;
 
-    labels.push(
-      ...labelsForProvinces(
-        nationId,
-        name,
-        provinces,
-        neighbors,
-        centroids,
-        "full",
-        options
-      )
-    );
+    labels.push(...labelsForProvinces(nationId, name, provinces, neighbors, centroids, "full", options));
   }
 
   return labels;
@@ -805,7 +680,7 @@ export function provincesForRegionLabelGeometry(
   regionId: string,
   mapType: MapMode,
   regionData: Record<string, NationRegionInput>,
-  titleLayers: TitleLayers | null
+  titleLayers: TitleLayers | null,
 ): { provinces: number[]; scope: NationLabelScope } | null {
   if (mapType === "trade") {
     if (!titleLayers) return null;
@@ -843,7 +718,7 @@ export function* computeRegionLabelGeometrySteps(
   titleLayers: TitleLayers | null,
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): Generator<void, RegionLabelGeometryCache | null, void> {
   if (mapType === "nation") {
     const nations: NationLabelGeometry[] = [];
@@ -858,19 +733,11 @@ export function* computeRegionLabelGeometrySteps(
         nationId,
         regionData,
         fullRealmProvinces(nationId, regionData),
-        occupation
+        occupation,
       );
       if (!fullProvinces.length) continue;
 
-      const full = labelsForProvinces(
-        nationId,
-        rawName,
-        fullProvinces,
-        neighbors,
-        centroids,
-        "full",
-        options
-      );
+      const full = labelsForProvinces(nationId, rawName, fullProvinces, neighbors, centroids, "full", options);
 
       let direct: NationLabelSpec[] = [];
       if (region?.subjects?.length) {
@@ -878,18 +745,10 @@ export function* computeRegionLabelGeometrySteps(
           nationId,
           regionData,
           directHoldingProvinces(nationId, regionData),
-          occupation
+          occupation,
         );
         if (directProvinces.length) {
-          direct = labelsForProvinces(
-            nationId,
-            rawName,
-            directProvinces,
-            neighbors,
-            centroids,
-            "direct",
-            options
-          );
+          direct = labelsForProvinces(nationId, rawName, directProvinces, neighbors, centroids, "direct", options);
         }
       }
 
@@ -907,19 +766,11 @@ export function* computeRegionLabelGeometrySteps(
     if (TITLE_LABEL_MODES.has(mapType) && typeof region?.rgb !== "string") {
       continue;
     }
-    if (
-      mapType === "trade" &&
-      (typeof region?.rgb !== "string" || !region?.size || region.size <= 0)
-    ) {
+    if (mapType === "trade" && (typeof region?.rgb !== "string" || !region?.size || region.size <= 0)) {
       continue;
     }
 
-    const resolved = provincesForRegionLabelGeometry(
-      regionId,
-      mapType,
-      regionData,
-      titleLayers
-    );
+    const resolved = provincesForRegionLabelGeometry(regionId, mapType, regionData, titleLayers);
     if (!resolved) continue;
 
     const rawName = region?.name?.trim();
@@ -929,15 +780,7 @@ export function* computeRegionLabelGeometrySteps(
     if (!name) continue;
 
     labels.push(
-      ...labelsForProvinces(
-        regionId,
-        name,
-        resolved.provinces,
-        neighbors,
-        centroids,
-        resolved.scope,
-        options
-      )
+      ...labelsForProvinces(regionId, name, resolved.provinces, neighbors, centroids, resolved.scope, options),
     );
     yield;
   }
@@ -952,16 +795,9 @@ export function computeRegionLabelGeometry(
   titleLayers: TitleLayers | null,
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): RegionLabelGeometryCache | null {
-  const steps = computeRegionLabelGeometrySteps(
-    mapType,
-    regionData,
-    titleLayers,
-    neighbors,
-    centroids,
-    options
-  );
+  const steps = computeRegionLabelGeometrySteps(mapType, regionData, titleLayers, neighbors, centroids, options);
   let step = steps.next();
   while (!step.done) step = steps.next();
   return step.value;
@@ -970,7 +806,7 @@ export function computeRegionLabelGeometry(
 export function filterRegionLabelsForMapObjects(
   cache: RegionLabelGeometryCache | null,
   mapType: MapMode,
-  mapObjects: LabelMapObject[]
+  mapObjects: LabelMapObject[],
 ): NationLabelSpec[] {
   if (!cache) return [];
 
@@ -1007,16 +843,9 @@ export function computeVisibleRegionLabels(
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
   mapObjects: LabelMapObject[],
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): NationLabelSpec[] {
-  const geometry = computeRegionLabelGeometry(
-    mapType,
-    regionData,
-    titleLayers,
-    neighbors,
-    centroids,
-    options
-  );
+  const geometry = computeRegionLabelGeometry(mapType, regionData, titleLayers, neighbors, centroids, options);
   return filterRegionLabelsForMapObjects(geometry, mapType, mapObjects);
 }
 
@@ -1025,15 +854,7 @@ export function computeVisibleNationLabels(
   neighbors: ProvinceNeighbors,
   centroids: ProvinceCentroids,
   mapObjects: LabelMapObject[],
-  options?: ComputeNationLabelsOptions
+  options?: ComputeNationLabelsOptions,
 ): NationLabelSpec[] {
-  return computeVisibleRegionLabels(
-    "nation",
-    regionData,
-    null,
-    neighbors,
-    centroids,
-    mapObjects,
-    options
-  );
+  return computeVisibleRegionLabels("nation", regionData, null, neighbors, centroids, mapObjects, options);
 }

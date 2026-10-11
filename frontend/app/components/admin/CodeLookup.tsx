@@ -5,7 +5,17 @@ import { FormEvent, type ReactNode, useState } from "react";
 import { adminErrorMessage } from "@/lib/admin/api";
 import { inspectCode, type InspectCodeResult } from "@/lib/skins/api";
 import { formatLocal } from "@/lib/skins/formatTime";
-import { badgeClass, buttonClass, chipClass, errorClass, headingClass, inputClass, mutedClass, panelClass, rowClass } from "./ui";
+import {
+  badgeClass,
+  buttonClass,
+  chipClass,
+  errorClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  rowClass,
+} from "./ui";
 
 type Found = Extract<InspectCodeResult, { valid: true }>;
 
@@ -69,7 +79,12 @@ function CodeDetails({ code, result }: { code: string; result: Found }) {
           rows={[
             ["Kind", result.scope || "—"],
             ["Realm", result.realm_id || "—"],
-            ["Player", <span key="p" className="font-mono text-xs">{result.player_uuid_masked || "—"}</span>],
+            [
+              "Player",
+              <span key="p" className="font-mono text-xs">
+                {result.player_uuid_masked || "—"}
+              </span>,
+            ],
             ["Made", formatLocal(result.created_at) || "—"],
             ["Expires", formatLocal(result.expires_at) || "—"],
           ]}
@@ -79,8 +94,14 @@ function CodeDetails({ code, result }: { code: string; result: Found }) {
           rows={[
             ["Staff skin code", yesNo(result.staff)],
             [<Permission key="s" text="Site staff" node="tfmc.map.staff" />, yesNo(result.site_staff_access)],
-            [<Permission key="t" text="Can make codes" node="tfmcweb.token.create" />, yesNo(perms["tfmcweb.token.create"])],
-            [<Permission key="st" text="Can make staff codes" node="tfmcweb.token.create.staff" />, yesNo(perms["tfmcweb.token.create.staff"])],
+            [
+              <Permission key="t" text="Can make codes" node="tfmcweb.token.create" />,
+              yesNo(perms["tfmcweb.token.create"]),
+            ],
+            [
+              <Permission key="st" text="Can make staff codes" node="tfmcweb.token.create.staff" />,
+              yesNo(perms["tfmcweb.token.create.staff"]),
+            ],
           ]}
         />
       </div>
@@ -157,9 +178,7 @@ export default function CodeLookup() {
             {busy ? "Looking up…" : "Look up"}
           </button>
         </form>
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-          A skin or drink code. Looking it up does not use it.
-        </p>
+        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">A skin or drink code. Looking it up does not use it.</p>
         {error ? (
           <p className={`mt-3 ${errorClass}`} role="alert">
             {error}

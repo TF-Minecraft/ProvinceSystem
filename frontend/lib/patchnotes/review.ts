@@ -1,11 +1,4 @@
-import {
-  isSectionName,
-  isTopicName,
-  isWeekKey,
-  weekLabel,
-  type SectionName,
-  type TopicName,
-} from "./notes";
+import { isSectionName, isTopicName, isWeekKey, weekLabel, type SectionName, type TopicName } from "./notes";
 
 export type ReviewBullet = {
   id: string;
@@ -57,9 +50,7 @@ function apiBase(): string | null {
 }
 
 function record(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 export function readReviewBullet(value: unknown): ReviewBullet | null {
@@ -127,12 +118,8 @@ export function readReviewPayload(value: unknown): ReviewPayload | null {
   ) {
     return null;
   }
-  const bullets = row.bullets
-    .map(readReviewBullet)
-    .filter((item): item is ReviewBullet => item !== null);
-  const removed = row.removed
-    .map(readReviewBullet)
-    .filter((item): item is ReviewBullet => item !== null);
+  const bullets = row.bullets.map(readReviewBullet).filter((item): item is ReviewBullet => item !== null);
+  const removed = row.removed.map(readReviewBullet).filter((item): item is ReviewBullet => item !== null);
 
   return {
     week: row.week,
@@ -170,11 +157,9 @@ async function request<T>(
   }
   if (!response.ok) {
     const detail = record(body)?.detail;
-    throw new Error(
-      typeof detail === "string" ? detail : "Request failed (" + response.status + ").",
-    );
+    throw new Error(typeof detail === "string" ? detail : "Request failed (" + response.status + ").");
   }
-  const result = parse ? parse(body) : body as T;
+  const result = parse ? parse(body) : (body as T);
   if (result === null) throw new Error("The server returned an invalid response.");
   return result;
 }
@@ -188,9 +173,7 @@ function readBulletResponse(value: unknown): ReviewBullet | null {
   return readReviewBullet(value);
 }
 
-export async function listReviewWeeks(
-  token: string,
-): Promise<{ current: string | null; weeks: ReviewWeek[] }> {
+export async function listReviewWeeks(token: string): Promise<{ current: string | null; weeks: ReviewWeek[] }> {
   return request(token, "/staff/weeks", undefined, (value) => {
     const row = record(value);
     if (!row || !Array.isArray(row.weeks)) return null;
@@ -252,11 +235,7 @@ export function approveReviewWeek(token: string, week: string): Promise<unknown>
   return request(token, path, json("POST"));
 }
 
-export async function submitReviewFeedback(
-  token: string,
-  week: string,
-  feedback: string,
-): Promise<ReviewJob> {
+export async function submitReviewFeedback(token: string, week: string, feedback: string): Promise<ReviewJob> {
   const path = "/staff/weeks/" + encodeURIComponent(week) + "/feedback";
   return request(token, path, json("POST", { feedback }), (value) => {
     return readReviewJob(record(value)?.job);

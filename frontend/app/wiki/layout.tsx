@@ -14,7 +14,10 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
           Gameplay Guide
         </p>
         <WikiSearch />
-        <nav aria-label="Gameplay guide" className="mt-3 flex flex-col gap-1 lg:min-h-0 lg:flex-1 lg:gap-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 lg:[scrollbar-gutter:stable]">
+        <nav
+          aria-label="Gameplay guide"
+          className="mt-3 flex flex-col gap-1 lg:min-h-0 lg:flex-1 lg:gap-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 lg:[scrollbar-gutter:stable]"
+        >
           <Link
             href={overviewNavItem.href}
             className="flex min-h-11 items-center rounded px-2 py-1.5 text-sm text-[var(--tfmc-stone)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] hover:text-[var(--tfmc-cream)] lg:min-h-0"
@@ -41,9 +44,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </WikiNavigation>
 
-      <main className="min-w-0 flex-1">
-        {children}
-      </main>
+      <main className="min-w-0 flex-1">{children}</main>
     </div>
   );
 }

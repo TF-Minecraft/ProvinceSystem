@@ -61,10 +61,7 @@ describe("paintMapPx", () => {
 
 describe("paintStrokeStyle", () => {
   it("converts the slider value straight into a map-pixel stroke", () => {
-    expect(paintStrokeStyle(4, "attack").strokeWidth).toBeCloseTo(
-      4 / PAINT_REFERENCE_SCALE,
-      10
-    );
+    expect(paintStrokeStyle(4, "attack").strokeWidth).toBeCloseTo(4 / PAINT_REFERENCE_SCALE, 10);
   });
 
   it("grows continuously with the slider and keeps a wider backing", () => {
@@ -76,14 +73,8 @@ describe("paintStrokeStyle", () => {
   });
 
   it("clamps a width outside the slider's range", () => {
-    expect(paintStrokeStyle(1e6, "attack").strokeWidth).toBeCloseTo(
-      PAINT_WIDTH_MAX / PAINT_REFERENCE_SCALE,
-      10
-    );
-    expect(paintStrokeStyle(0, "attack").strokeWidth).toBeCloseTo(
-      PAINT_WIDTH_MIN / PAINT_REFERENCE_SCALE,
-      10
-    );
+    expect(paintStrokeStyle(1e6, "attack").strokeWidth).toBeCloseTo(PAINT_WIDTH_MAX / PAINT_REFERENCE_SCALE, 10);
+    expect(paintStrokeStyle(0, "attack").strokeWidth).toBeCloseTo(PAINT_WIDTH_MIN / PAINT_REFERENCE_SCALE, 10);
   });
 
   it("dashes drawn strokes, which is what separates them from real map lines", () => {
@@ -143,7 +134,7 @@ describe("isPaintShape", () => {
         createdAt: 2,
         from: { x: 0, y: 0 },
         to: { x: 5, y: 5 },
-      })
+      }),
     ).toBe(true);
     expect(
       isPaintShape({
@@ -153,7 +144,7 @@ describe("isPaintShape", () => {
         createdAt: 3,
         icon: "port",
         at: { x: 1, y: 2 },
-      })
+      }),
     ).toBe(true);
     expect(
       isPaintShape({
@@ -164,7 +155,7 @@ describe("isPaintShape", () => {
         createdAt: 4,
         at: { x: 1, y: 2 },
         text: "2nd army",
-      })
+      }),
     ).toBe(true);
   });
 
@@ -185,7 +176,7 @@ describe("isPaintShape", () => {
         createdAt: 5,
         icon: "not_an_icon",
         at: { x: 0, y: 0 },
-      })
+      }),
     ).toBe(false);
   });
 });
@@ -255,7 +246,7 @@ describe("isPaintShape with label styling", () => {
         underline: true,
         strike: false,
         bgOpacity: 0.4,
-      })
+      }),
     ).toBe(true);
   });
 
@@ -288,9 +279,7 @@ describe("paintTextStyleOf plate colour", () => {
 
   it("keeps a valid choice and rejects a bogus one", () => {
     expect(paintTextStyleOf({ ...label, bgColor: "dark" }).bgColor).toBe("dark");
-    expect(paintTextStyleOf({ ...label, bgColor: "chartreuse" as never }).bgColor).toBe(
-      "ink"
-    );
+    expect(paintTextStyleOf({ ...label, bgColor: "chartreuse" as never }).bgColor).toBe("ink");
   });
 
   it("is validated by the storage guard", () => {

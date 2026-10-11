@@ -13,11 +13,7 @@ function singleValue(value: string | string[] | undefined): string | null {
   return typeof value === "string" ? value : null;
 }
 
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const shape = decodeAccountShape((await cookies()).get(ACCOUNT_SHAPE_COOKIE)?.value);
 

@@ -57,13 +57,19 @@ for (const route of routes) {
     const href = anchor.getAttribute("href");
     if (!href?.startsWith("/wiki")) continue;
     const url = new URL(href, base);
-    if (url.pathname.startsWith("/wiki/models/") || url.pathname.startsWith("/wiki/textures/") || url.pathname.startsWith("/wiki/sounds/")) continue;
+    if (
+      url.pathname.startsWith("/wiki/models/") ||
+      url.pathname.startsWith("/wiki/textures/") ||
+      url.pathname.startsWith("/wiki/sounds/")
+    )
+      continue;
     if (!routeSet.has(url.pathname.replace(/\/$/, ""))) failures.push(`${route}: missing target ${href}`);
     if (url.hash) {
       const targetResponse = url.pathname === route ? response : await fetch(`${base}${url.pathname}`);
       const targetHtml = url.pathname === route ? html : await targetResponse.text();
       const targetDocument = new JSDOM(targetHtml).window.document;
-      if (!targetDocument.getElementById(decodeURIComponent(url.hash.slice(1)))) failures.push(`${route}: missing anchor ${href}`);
+      if (!targetDocument.getElementById(decodeURIComponent(url.hash.slice(1))))
+        failures.push(`${route}: missing anchor ${href}`);
     }
   }
 }

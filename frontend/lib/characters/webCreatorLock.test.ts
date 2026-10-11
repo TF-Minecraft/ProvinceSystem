@@ -8,7 +8,7 @@ it("is empty while the creator is open", () => {
 
 it("names the rank the creator needs", () => {
   expect(webCreatorLockLabel(false, "high_noble")).toBe(
-    "Needs High Noble rank or higher. Just ranked up? Join the server once, then refresh."
+    "Needs High Noble rank or higher. Just ranked up? Join the server once, then refresh.",
   );
   expect(webCreatorLockLabel(false, " ")).toMatch(/^Needs donator rank/);
 });

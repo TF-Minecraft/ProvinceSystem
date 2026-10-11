@@ -1,8 +1,4 @@
-import type {
-  InstallationMarker,
-  RegionRecord,
-  SettlementMarker,
-} from "@/app/components/map/types";
+import type { InstallationMarker, RegionRecord, SettlementMarker } from "@/app/components/map/types";
 import type { MapMarker } from "@/app/lib/mapMarkers";
 import { isBattleMarkerKind } from "@/app/lib/mapMarkers";
 import { cleanRegionName } from "@/app/lib/mapLabels";
@@ -53,7 +49,7 @@ export function buildPlaceProfile(
   marker: MapMarker,
   settlements: SettlementMarker[],
   installations: InstallationMarker[],
-  regionData: RegionRecord | null
+  regionData: RegionRecord | null,
 ): PlaceProfile {
   const base: PlaceProfile = {
     markerId: marker.id,
@@ -77,8 +73,7 @@ export function buildPlaceProfile(
       name: cleanRegionName(installation.name) || base.name,
       kindLabel: INSTALLATION_KIND_LABELS[installation.kind] ?? "Installation",
       ownerId: known(installation.faction_id),
-      provinces:
-        typeof installation.province_id === "number" ? [installation.province_id] : [],
+      provinces: typeof installation.province_id === "number" ? [installation.province_id] : [],
     };
   }
 
@@ -98,15 +93,11 @@ export function buildPlaceProfile(
   // capital first and foremost.
   const kind = settlement.kind ?? "settlement";
   const guildCapital =
-    kind === "settlement" &&
-    provinces.length > 0 &&
-    guildsInProvince(regionData, provinces[0]).length > 0;
+    kind === "settlement" && provinces.length > 0 && guildsInProvince(regionData, provinces[0]).length > 0;
   return {
     ...base,
     name: cleanRegionName(settlement.name) || base.name,
-    kindLabel: guildCapital
-      ? "Guild capital"
-      : SETTLEMENT_KIND_LABELS[kind] ?? "Settlement",
+    kindLabel: guildCapital ? "Guild capital" : (SETTLEMENT_KIND_LABELS[kind] ?? "Settlement"),
     ownerId: known(settlement.faction_id),
     population: typeof settlement.population === "number" ? settlement.population : null,
     provinces,

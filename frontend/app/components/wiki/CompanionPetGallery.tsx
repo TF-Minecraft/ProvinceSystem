@@ -23,23 +23,28 @@ export default function CompanionPetGallery() {
         className="mt-2 mb-4 w-full rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)] p-2 text-sm text-[var(--tfmc-cream)] focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)]"
       >
         {companionPetTypes.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
+          <option key={candidate.id} value={candidate.id}>
+            {candidate.name}
+          </option>
         ))}
       </select>
       <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-[var(--tfmc-mist)]">
         Hatch {pet.name} with a <ItemChip name={pet.egg} texture={pet.eggTexture} link={false} />. Craft it at the{" "}
-        <StationLink name="Animal Station"><ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} /></StationLink>.{" "}
-        {pet.unlock === "Pet Master"
-          ? <>Requires the <strong>Pet Master</strong> profession perk.</>
-          : <>Requires the <strong>{pet.unlock}</strong> donator rank or higher.</>}
+        <StationLink name="Animal Station">
+          <ItemChip name="Animal Station" texture="/wiki/thumbnails/stations/animal-station.webp" link={false} />
+        </StationLink>
+        .{" "}
+        {pet.unlock === "Pet Master" ? (
+          <>
+            Requires the <strong>Pet Master</strong> profession perk.
+          </>
+        ) : (
+          <>
+            Requires the <strong>{pet.unlock}</strong> donator rank or higher.
+          </>
+        )}
       </p>
-      <WikiModelViewer
-        key={pet.id}
-        modelUrl={pet.modelUrl}
-        textures={pet.textures}
-        label={pet.name}
-        height="sm"
-      />
+      <WikiModelViewer key={pet.id} modelUrl={pet.modelUrl} textures={pet.textures} label={pet.name} height="sm" />
     </div>
   );
 }

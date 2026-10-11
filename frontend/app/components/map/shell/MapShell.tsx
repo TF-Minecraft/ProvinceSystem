@@ -101,9 +101,7 @@ export default function MapShell({
           the details are a bottom sheet pinned to the column's foot, which
           at full height rises over the search. The column itself lets clicks
           through to the map; only its panels take them. */}
-      <div
-        className="pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0"
-      >
+      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0">
         {/* Above the details panel, so search results drop down over it. */}
         <div className="pointer-events-auto relative z-10 shrink-0">
           {banner ? <div className="mb-2 md:mb-3">{banner}</div> : null}
@@ -133,9 +131,7 @@ export default function MapShell({
       </div>
 
       {breadcrumb ? (
-        <div
-          className="pointer-events-none absolute left-1/2 top-4 z-20 hidden max-w-[min(42rem,calc(100%-52rem))] -translate-x-1/2 md:block"
-        >
+        <div className="pointer-events-none absolute left-1/2 top-4 z-20 hidden max-w-[min(42rem,calc(100%-52rem))] -translate-x-1/2 md:block">
           <div className="pointer-events-auto">{breadcrumb}</div>
         </div>
       ) : null}
@@ -151,9 +147,7 @@ export default function MapShell({
       ) : null}
 
       {paintPanel ? (
-        <div
-          className="pointer-events-auto absolute right-4 top-4 z-20 hidden max-h-[calc(100%-9rem)] w-72 overflow-y-auto md:block"
-        >
+        <div className="pointer-events-auto absolute right-4 top-4 z-20 hidden max-h-[calc(100%-9rem)] w-72 overflow-y-auto md:block">
           {paintPanel}
         </div>
       ) : null}
@@ -238,10 +232,7 @@ function DetailsSheet({
         <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
       </button>
       {header ? <div className="shrink-0">{header}</div> : null}
-      <div
-        ref={scrollerRef}
-        className="relative min-h-0 flex-1 overflow-y-auto overscroll-none px-4 pb-4"
-      >
+      <div ref={scrollerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-none px-4 pb-4">
         {children}
       </div>
       {footer ? (

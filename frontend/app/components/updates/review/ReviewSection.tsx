@@ -34,13 +34,8 @@ export default function ReviewSection({
     : `${SECTION_LABELS[section]} (${bullets.length})`;
 
   return (
-    <details
-      open={open}
-      className="border-b border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]"
-    >
-      <summary className="cursor-pointer py-2 font-semibold text-sm text-[var(--tfmc-cream)]">
-        {summary}
-      </summary>
+    <details open={open} className="border-b border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]">
+      <summary className="cursor-pointer py-2 font-semibold text-sm text-[var(--tfmc-cream)]">{summary}</summary>
       <div>
         {bullets.map((bullet) => (
           <ReviewLine

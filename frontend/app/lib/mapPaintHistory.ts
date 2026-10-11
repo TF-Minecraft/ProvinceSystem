@@ -21,10 +21,7 @@ export function createPaintHistory(present: PaintShape[] = []): PaintHistory {
   return { past: [], present, future: [] };
 }
 
-export function commitPaintHistory(
-  history: PaintHistory,
-  next: PaintShape[]
-): PaintHistory {
+export function commitPaintHistory(history: PaintHistory, next: PaintShape[]): PaintHistory {
   if (next === history.present) return history;
   const past = [...history.past, history.present];
   return {

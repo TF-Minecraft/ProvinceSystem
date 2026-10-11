@@ -3,22 +3,14 @@
 import { useRouter, usePathname } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
-import {
-  CharactersApiError,
-  redeemProfile,
-} from "@/lib/characters/api";
-import {
-  clearSession,
-  setSession,
-  type ProfileSession,
-} from "@/lib/profile/session";
+import { CharactersApiError, redeemProfile } from "@/lib/characters/api";
+import { clearSession, setSession, type ProfileSession } from "@/lib/profile/session";
 import { SITE_DISCORD_URL } from "@/lib/site/config";
 import { hasSiteStaffAccess } from "@/lib/site/staffAccess";
 
 import HubAtmosphere from "./HubAtmosphere";
 
-const STAFF_DENIED_MESSAGE =
-  "This site is in development. Staff access only.";
+const STAFF_DENIED_MESSAGE = "This site is in development. Staff access only.";
 
 type Props = {
   loading?: boolean;
@@ -26,17 +18,11 @@ type Props = {
   onStaffVerified: () => void;
 };
 
-export default function DevLandingPage({
-  loading = false,
-  accessDenied = false,
-  onStaffVerified,
-}: Props) {
+export default function DevLandingPage({ loading = false, accessDenied = false, onStaffVerified }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [code, setCode] = useState("");
-  const [staffError, setStaffError] = useState<string | null>(
-    accessDenied ? STAFF_DENIED_MESSAGE : null
-  );
+  const [staffError, setStaffError] = useState<string | null>(accessDenied ? STAFF_DENIED_MESSAGE : null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -79,11 +65,7 @@ export default function DevLandingPage({
       router.replace(returnPath);
     } catch (err) {
       const message =
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Sign-in failed";
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Sign-in failed";
       setStaffError(message);
     } finally {
       setSubmitting(false);
@@ -99,17 +81,9 @@ export default function DevLandingPage({
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
         <h1 className="animate-hub-rise">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-512.webp"
-            alt="TFMC"
-            width={208}
-            height={208}
-            className="block h-40 w-40 sm:h-52 sm:w-52"
-          />
+          <img src="/logo-512.webp" alt="TFMC" width={208} height={208} className="block h-40 w-40 sm:h-52 sm:w-52" />
         </h1>
-        <p className="animate-hub-rise-delay mt-4 text-lg text-[var(--tfmc-mist)] sm:text-xl">
-          We are in development
-        </p>
+        <p className="animate-hub-rise-delay mt-4 text-lg text-[var(--tfmc-mist)] sm:text-xl">We are in development</p>
         <p className="animate-hub-fade-delay mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)] sm:text-3xl">
           Season 5 Coming Soon
         </p>
@@ -124,22 +98,15 @@ export default function DevLandingPage({
         </a>
 
         <div className="animate-hub-fade-delay mt-10 w-full border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-8">
-          <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]">
-            Staff access
-          </p>
+          <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]">Staff access</p>
 
           {showSpinner ? (
             <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Checking access…</p>
           ) : (
             <>
-              <form
-                onSubmit={onSubmit}
-                className="mt-4 flex w-full flex-col gap-4"
-              >
+              <form onSubmit={onSubmit} className="mt-4 flex w-full flex-col gap-4">
                 <label className="flex flex-col gap-2 text-left">
-                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                    Log in with code
-                  </span>
+                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">Log in with code</span>
                   <input
                     type="text"
                     name="code"

@@ -6,14 +6,9 @@ import { formatLocal } from "../../../lib/skins/formatTime";
 function statusMessage(row: DrinkSubmissionPublic): string {
   switch (row.status) {
     case "pending":
-      return (
-        "Submitted. Staff will review your recipe. You will get a Discord DM " +
-        "when it is approved or denied."
-      );
+      return "Submitted. Staff will review your recipe. You will get a Discord DM " + "when it is approved or denied.";
     case "denied":
-      return row.deny_reason?.trim()
-        ? `Denied: ${row.deny_reason.trim()}`
-        : "Denied. No reason given.";
+      return row.deny_reason?.trim() ? `Denied: ${row.deny_reason.trim()}` : "Denied. No reason given.";
     case "pending_pack":
       return "Approved. Your icon goes live soon.";
     case "approved":
@@ -31,8 +26,7 @@ type Props = {
 
 export default function StatusCard({ row }: Props) {
   const recipe = row.recipe || {};
-  const color =
-    typeof recipe.color === "string" ? recipe.color : null;
+  const color = typeof recipe.color === "string" ? recipe.color : null;
 
   return (
     <div className="mt-8 space-y-6">
@@ -58,24 +52,18 @@ export default function StatusCard({ row }: Props) {
         ) : null}
         <div>
           <dt className="text-[var(--tfmc-stone)]">Created</dt>
-          <dd className="text-[var(--tfmc-mist)]">
-            {formatLocal(row.created_at)}
-          </dd>
+          <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.created_at)}</dd>
         </div>
         {row.reviewed_at ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Reviewed</dt>
-            <dd className="text-[var(--tfmc-mist)]">
-              {formatLocal(row.reviewed_at)}
-            </dd>
+            <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.reviewed_at)}</dd>
           </div>
         ) : null}
         {row.applied_at ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Applied</dt>
-            <dd className="text-[var(--tfmc-mist)]">
-              {formatLocal(row.applied_at)}
-            </dd>
+            <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.applied_at)}</dd>
           </div>
         ) : null}
       </dl>

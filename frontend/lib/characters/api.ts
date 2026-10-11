@@ -27,10 +27,7 @@ export type RedeemResult = {
   remember_me?: boolean;
 };
 
-export async function redeemProfile(
-  code: string,
-  rememberMe = false
-): Promise<RedeemResult> {
+export async function redeemProfile(code: string, rememberMe = false): Promise<RedeemResult> {
   const res = await apiFetch(`${getApiBase()}/skins/profile/redeem`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,10 +38,7 @@ export async function redeemProfile(
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, "Couldn’t log in. Check the code and try again."),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, "Couldn’t log in. Check the code and try again."), res.status);
   }
   const body = data as Partial<RedeemResult>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
@@ -69,10 +63,7 @@ export async function logoutCharacter(sessionToken: string): Promise<void> {
   });
   if (!res.ok && res.status !== 401) {
     const data = await parseJson(res);
-    throw new CharactersApiError(
-      detailMessage(data, `Logout failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Logout failed (${res.status})`), res.status);
   }
 }
 
@@ -238,18 +229,13 @@ export type SlotLimits = {
   }>;
 };
 
-export async function getCreationCatalog(
-  sessionToken: string
-): Promise<CreationCatalog> {
+export async function getCreationCatalog(sessionToken: string): Promise<CreationCatalog> {
   const res = await apiFetch(`${getApiBase()}/characters/creation-catalog`, {
     headers: authHeaders(sessionToken),
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Catalog failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Catalog failed (${res.status})`), res.status);
   }
   return data as CreationCatalog;
 }
@@ -312,10 +298,7 @@ export type CharacterListResponse = {
   kit_cooldown_seconds_remaining?: number;
   /** Config echo of kit cooldown length in hours. */
   kit_cooldown_hours?: number;
-  kit_cooldowns?: Record<
-    string,
-    { seconds_remaining?: number; hours?: number }
-  > | null;
+  kit_cooldowns?: Record<string, { seconds_remaining?: number; hours?: number }> | null;
   web_creator_allowed?: boolean;
   web_creator_min_tier?: number;
   web_creator_min_group_id?: string;
@@ -323,77 +306,38 @@ export type CharacterListResponse = {
   donator_tier?: number;
 };
 
-export async function listCharacters(
-  sessionToken: string
-): Promise<CharacterListResponse> {
+export async function listCharacters(sessionToken: string): Promise<CharacterListResponse> {
   const res = await apiFetch(`${getApiBase()}/characters`, {
     headers: authHeaders(sessionToken),
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `List failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `List failed (${res.status})`), res.status);
   }
   const body = data as CharacterListResponse;
   return {
     characters: Array.isArray(body.characters) ? body.characters : [],
     player_uuid: body.player_uuid || "",
-    max_alive_characters:
-      typeof body.max_alive_characters === "number"
-        ? body.max_alive_characters
-        : undefined,
-    alive_count:
-      typeof body.alive_count === "number" ? body.alive_count : undefined,
+    max_alive_characters: typeof body.max_alive_characters === "number" ? body.max_alive_characters : undefined,
+    alive_count: typeof body.alive_count === "number" ? body.alive_count : undefined,
     real_age_set: Boolean(body.real_age_set),
-    eighteen:
-      typeof body.eighteen === "boolean" ? body.eighteen : undefined,
-    account_age_seconds:
-      typeof body.account_age_seconds === "number"
-        ? body.account_age_seconds
-        : undefined,
-    evil_unlocked:
-      typeof body.evil_unlocked === "boolean" ? body.evil_unlocked : undefined,
-    name_colour_stops:
-      typeof body.name_colour_stops === "number"
-        ? Math.max(0, body.name_colour_stops)
-        : 0,
+    eighteen: typeof body.eighteen === "boolean" ? body.eighteen : undefined,
+    account_age_seconds: typeof body.account_age_seconds === "number" ? body.account_age_seconds : undefined,
+    evil_unlocked: typeof body.evil_unlocked === "boolean" ? body.evil_unlocked : undefined,
+    name_colour_stops: typeof body.name_colour_stops === "number" ? Math.max(0, body.name_colour_stops) : 0,
     wardrobe_skin_slots: Math.max(
       1,
-      Math.min(
-        3,
-        typeof body.wardrobe_skin_slots === "number"
-          ? body.wardrobe_skin_slots
-          : 1
-      )
+      Math.min(3, typeof body.wardrobe_skin_slots === "number" ? body.wardrobe_skin_slots : 1),
     ),
     kit_cooldown_seconds_remaining:
-      typeof body.kit_cooldown_seconds_remaining === "number"
-        ? Math.max(0, body.kit_cooldown_seconds_remaining)
-        : 0,
-    kit_cooldown_hours:
-      typeof body.kit_cooldown_hours === "number"
-        ? Math.max(0, body.kit_cooldown_hours)
-        : undefined,
-    web_creator_allowed:
-      typeof body.web_creator_allowed === "boolean"
-        ? body.web_creator_allowed
-        : true,
-    web_creator_min_tier:
-      typeof body.web_creator_min_tier === "number"
-        ? body.web_creator_min_tier
-        : 0,
-    web_creator_min_group_id:
-      typeof body.web_creator_min_group_id === "string"
-        ? body.web_creator_min_group_id
-        : "",
+      typeof body.kit_cooldown_seconds_remaining === "number" ? Math.max(0, body.kit_cooldown_seconds_remaining) : 0,
+    kit_cooldown_hours: typeof body.kit_cooldown_hours === "number" ? Math.max(0, body.kit_cooldown_hours) : undefined,
+    web_creator_allowed: typeof body.web_creator_allowed === "boolean" ? body.web_creator_allowed : true,
+    web_creator_min_tier: typeof body.web_creator_min_tier === "number" ? body.web_creator_min_tier : 0,
+    web_creator_min_group_id: typeof body.web_creator_min_group_id === "string" ? body.web_creator_min_group_id : "",
     web_creator_min_group_display:
-      typeof body.web_creator_min_group_display === "string"
-        ? body.web_creator_min_group_display
-        : "",
-    donator_tier:
-      typeof body.donator_tier === "number" ? Math.max(0, body.donator_tier) : 0,
+      typeof body.web_creator_min_group_display === "string" ? body.web_creator_min_group_display : "",
+    donator_tier: typeof body.donator_tier === "number" ? Math.max(0, body.donator_tier) : 0,
   };
 }
 
@@ -424,10 +368,7 @@ export type CreateCharacterResult = {
   created_at?: string;
 };
 
-export async function createCharacter(
-  sessionToken: string,
-  body: CreateCharacterBody
-): Promise<CreateCharacterResult> {
+export async function createCharacter(sessionToken: string, body: CreateCharacterBody): Promise<CreateCharacterResult> {
   const res = await apiFetch(`${getApiBase()}/characters`, {
     method: "POST",
     headers: {
@@ -438,10 +379,7 @@ export async function createCharacter(
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Create failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Create failed (${res.status})`), res.status);
   }
   return data as CreateCharacterResult;
 }
@@ -528,21 +466,14 @@ export type CharacterKitsResponse = {
   kits: CharacterKit[];
 };
 
-export async function listCharacterKits(
-  sessionToken: string,
-  characterId: string
-): Promise<CharacterKitsResponse> {
+export async function listCharacterKits(sessionToken: string, characterId: string): Promise<CharacterKitsResponse> {
   const cid = encodeURIComponent(characterId.trim());
-  const res = await apiFetch(
-    `${getApiBase()}/characters/kits?character_id=${cid}`,
-    { headers: authHeaders(sessionToken) }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/kits?character_id=${cid}`, {
+    headers: authHeaders(sessionToken),
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Kits failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Kits failed (${res.status})`), res.status);
   }
   const body = data as CharacterKitsResponse;
   return {
@@ -571,7 +502,7 @@ export type CustomiseLoreItemResult = LoreItemRow & { ok: boolean };
 export function loreItemSkinTextureUrl(
   submissionId: string,
   baseSet?: string,
-  variant?: "unsigned" | "signed"
+  variant?: "unsigned" | "signed",
 ): string {
   const id = encodeURIComponent(submissionId.trim());
   const params = new URLSearchParams();
@@ -585,10 +516,7 @@ export function loreItemSkinTextureUrl(
   return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs ? `?${qs}` : ""}`;
 }
 
-export function loreItemSkinModelUrl(
-  submissionId: string,
-  baseSet?: string
-): string {
+export function loreItemSkinModelUrl(submissionId: string, baseSet?: string): string {
   const id = encodeURIComponent(submissionId.trim());
   const params = new URLSearchParams();
   if (baseSet?.trim()) {
@@ -598,33 +526,25 @@ export function loreItemSkinModelUrl(
   return `${getApiBase()}/characters/lore-items/skins/${id}/model${qs ? `?${qs}` : ""}`;
 }
 
-export function loreItemDefaultTextureUrl(
-  kitKey: string,
-  variant?: "unsigned" | "signed"
-): string {
+export function loreItemDefaultTextureUrl(kitKey: string, variant?: "unsigned" | "signed"): string {
   const key = encodeURIComponent(kitKey.trim());
-  const qs =
-    variant === "signed" ? "?variant=signed" : "";
+  const qs = variant === "signed" ? "?variant=signed" : "";
   return `${getApiBase()}/characters/lore-items/${key}/default-texture${qs}`;
 }
 
 export async function listLoreItems(
   sessionToken: string,
   characterId: string,
-  kitId = "starter"
+  kitId = "starter",
 ): Promise<LoreItemsResponse> {
   const cid = encodeURIComponent(characterId.trim());
   const kid = encodeURIComponent(kitId.trim() || "starter");
-  const res = await apiFetch(
-    `${getApiBase()}/characters/lore-items?character_id=${cid}&kit_id=${kid}`,
-    { headers: authHeaders(sessionToken) }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/lore-items?character_id=${cid}&kit_id=${kid}`, {
+    headers: authHeaders(sessionToken),
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Lore items failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Lore items failed (${res.status})`), res.status);
   }
   const body = data as LoreItemsResponse;
   return {
@@ -638,18 +558,13 @@ export async function customiseLoreItem(
   characterId: string,
   kitKey: string,
   input: CustomiseLoreItemInput,
-  kitId = "starter"
+  kitId = "starter",
 ): Promise<CustomiseLoreItemResult> {
   const cid = encodeURIComponent(characterId.trim());
   const key = encodeURIComponent(kitKey.trim());
   const kid = encodeURIComponent(kitId.trim() || "starter");
   const url = `${getApiBase()}/characters/lore-items/${key}/customise?character_id=${cid}&kit_id=${kid}`;
-  const needsMultipart = Boolean(
-    input.textureFile ||
-      input.modelFile ||
-      input.unsignedFile ||
-      input.signedFile
-  );
+  const needsMultipart = Boolean(input.textureFile || input.modelFile || input.unsignedFile || input.signedFile);
 
   let res: Response;
   if (needsMultipart) {
@@ -714,10 +629,7 @@ export async function customiseLoreItem(
 
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Customise failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Customise failed (${res.status})`), res.status);
   }
   return data as CustomiseLoreItemResult;
 }
@@ -734,7 +646,7 @@ export async function deleteLoreItemCustomise(
   sessionToken: string,
   characterId: string,
   kitKey: string,
-  kitId = "starter"
+  kitId = "starter",
 ): Promise<DeleteLoreItemCustomiseResult> {
   const cid = encodeURIComponent(characterId.trim());
   const key = encodeURIComponent(kitKey.trim());
@@ -744,14 +656,11 @@ export async function deleteLoreItemCustomise(
     {
       method: "DELETE",
       headers: authHeaders(sessionToken),
-    }
+    },
   );
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Delete customise failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Delete customise failed (${res.status})`), res.status);
   }
   return data as DeleteLoreItemCustomiseResult;
 }
@@ -791,29 +700,20 @@ export const WARDROBE_DEFAULT_LABELS: Record<string, string> = {
   masked: "Masked",
 };
 
-export function wardrobeSlotLabel(
-  slot: string,
-  displayName?: string | null
-): string {
+export function wardrobeSlotLabel(slot: string, displayName?: string | null): string {
   const custom = String(displayName || "").trim();
   if (custom) return custom;
   return WARDROBE_DEFAULT_LABELS[slot] || slot;
 }
 
-export async function getWardrobe(
-  sessionToken: string,
-  characterId: string
-): Promise<WardrobeResponse> {
+export async function getWardrobe(sessionToken: string, characterId: string): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe`, {
     headers: authHeaders(sessionToken),
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Wardrobe failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Wardrobe failed (${res.status})`), res.status);
   }
   const body = data as WardrobeResponse;
   return {
@@ -830,7 +730,7 @@ export async function uploadWardrobeSlot(
   slot: string,
   file: File,
   displayName?: string | null,
-  opts?: { createMasked?: boolean; model?: "classic" | "slim" }
+  opts?: { createMasked?: boolean; model?: "classic" | "slim" },
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -845,20 +745,14 @@ export async function uploadWardrobeSlot(
   if (opts?.model) {
     form.append("model", opts.model);
   }
-  const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/${s}`,
-    {
-      method: "POST",
-      headers: authHeaders(sessionToken),
-      body: form,
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe/${s}`, {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+    body: form,
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Upload failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Upload failed (${res.status})`), res.status);
   }
   return data as WardrobeResponse;
 }
@@ -867,27 +761,21 @@ export async function renameWardrobeSlot(
   sessionToken: string,
   characterId: string,
   slot: string,
-  displayName: string | null
+  displayName: string | null,
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
-  const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/${s}/name`,
-    {
-      method: "PATCH",
-      headers: {
-        ...authHeaders(sessionToken),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ display_name: displayName }),
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe/${s}/name`, {
+    method: "PATCH",
+    headers: {
+      ...authHeaders(sessionToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ display_name: displayName }),
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Rename failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Rename failed (${res.status})`), res.status);
   }
   return data as WardrobeResponse;
 }
@@ -895,23 +783,17 @@ export async function renameWardrobeSlot(
 export async function clearWardrobeSlot(
   sessionToken: string,
   characterId: string,
-  slot: string
+  slot: string,
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
-  const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/${s}`,
-    {
-      method: "DELETE",
-      headers: authHeaders(sessionToken),
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe/${s}`, {
+    method: "DELETE",
+    headers: authHeaders(sessionToken),
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Clear slot failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Clear slot failed (${res.status})`), res.status);
   }
   return data as WardrobeResponse;
 }
@@ -919,26 +801,20 @@ export async function clearWardrobeSlot(
 export async function setWardrobeActive(
   sessionToken: string,
   characterId: string,
-  slot: string | null
+  slot: string | null,
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
-  const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/active`,
-    {
-      method: "PATCH",
-      headers: {
-        ...authHeaders(sessionToken),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ slot }),
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe/active`, {
+    method: "PATCH",
+    headers: {
+      ...authHeaders(sessionToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ slot }),
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Set active failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Set active failed (${res.status})`), res.status);
   }
   return data as WardrobeResponse;
 }
@@ -949,7 +825,7 @@ export async function uploadPendingCreateWardrobe(
   slot: string,
   file: File,
   displayName?: string | null,
-  opts?: { createMasked?: boolean; model?: "classic" | "slim" }
+  opts?: { createMasked?: boolean; model?: "classic" | "slim" },
 ): Promise<{ ok: boolean; create_id: string; slot: string; signed?: boolean }> {
   const cid = encodeURIComponent(createId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -964,20 +840,14 @@ export async function uploadPendingCreateWardrobe(
   if (opts?.model) {
     form.append("model", opts.model);
   }
-  const res = await apiFetch(
-    `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
-    {
-      method: "POST",
-      headers: authHeaders(sessionToken),
-      body: form,
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`, {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+    body: form,
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Pending wardrobe upload failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Pending wardrobe upload failed (${res.status})`), res.status);
   }
   return data as {
     ok: boolean;
@@ -988,26 +858,20 @@ export async function uploadPendingCreateWardrobe(
 }
 
 /** Fetch synced masked body template as a Blob (for client compose preview). */
-export async function fetchMaskedTemplateBlob(
-  sessionToken: string
-): Promise<Blob> {
-  const res = await apiFetch(
-    `${getApiBase()}/characters/wardrobe-template/masked`,
-    { headers: authHeaders(sessionToken) }
-  );
+export async function fetchMaskedTemplateBlob(sessionToken: string): Promise<Blob> {
+  const res = await apiFetch(`${getApiBase()}/characters/wardrobe-template/masked`, {
+    headers: authHeaders(sessionToken),
+  });
   if (!res.ok) {
     const data = await parseJson(res);
-    throw new CharactersApiError(
-      detailMessage(data, `Masked template failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Masked template failed (${res.status})`), res.status);
   }
   return res.blob();
 }
 
 export async function deletePendingCreate(
   sessionToken: string,
-  createId: string
+  createId: string,
 ): Promise<{ ok: boolean; deleted: string }> {
   const cid = encodeURIComponent(createId.trim());
   const res = await apiFetch(`${getApiBase()}/characters/creates/${cid}`, {
@@ -1016,10 +880,7 @@ export async function deletePendingCreate(
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new CharactersApiError(
-      detailMessage(data, `Cancel submission failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Cancel submission failed (${res.status})`), res.status);
   }
   return data as { ok: boolean; deleted: string };
 }
@@ -1029,23 +890,18 @@ export async function fetchWardrobeTextureBlob(
   characterId: string,
   slot: string,
   /** Optional bust token (e.g. slot updated_at); defaults to now. */
-  cacheBust?: string | number | null
+  cacheBust?: string | number | null,
 ): Promise<string> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
-  const bust = encodeURIComponent(
-    String(cacheBust != null && cacheBust !== "" ? cacheBust : Date.now())
-  );
-  const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/${s}/texture?v=${bust}`,
-    { headers: authHeaders(sessionToken), cache: "no-store" }
-  );
+  const bust = encodeURIComponent(String(cacheBust != null && cacheBust !== "" ? cacheBust : Date.now()));
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe/${s}/texture?v=${bust}`, {
+    headers: authHeaders(sessionToken),
+    cache: "no-store",
+  });
   if (!res.ok) {
     const data = await parseJson(res);
-    throw new CharactersApiError(
-      detailMessage(data, `Texture failed (${res.status})`),
-      res.status
-    );
+    throw new CharactersApiError(detailMessage(data, `Texture failed (${res.status})`), res.status);
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);

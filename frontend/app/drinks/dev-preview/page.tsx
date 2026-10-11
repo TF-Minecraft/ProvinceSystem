@@ -18,11 +18,7 @@ export default function DrinksDevPreviewPage() {
       <h1 className="text-2xl text-[var(--tfmc-cream)]">Drinks preview (dev)</h1>
       <label className="flex items-center gap-2 text-sm text-[var(--tfmc-stone)]">
         Color
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-        />
+        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
         <code>{color}</code>
       </label>
       {error ? <p className="text-sm text-red-300">{error}</p> : null}

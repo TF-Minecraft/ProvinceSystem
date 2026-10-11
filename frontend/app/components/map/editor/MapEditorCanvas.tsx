@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import MapAuthImage from "@/app/components/map/MapAuthImage";
@@ -16,19 +9,13 @@ import { useMapViewport } from "@/app/hooks/useMapViewport";
 import type { MapPickViewport } from "@/app/hooks/useMapCoords";
 import { useEditorPick } from "@/app/hooks/useEditorPick";
 import { useEditorProvinceIndex } from "@/app/hooks/useEditorProvinceIndex";
-import {
-  buildProvincePixelIndex,
-  type ProvinceIndex,
-} from "@/app/lib/map/editor/buildProvinceIndex";
+import { buildProvincePixelIndex, type ProvinceIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import type { ProvinceRegionIndex } from "@/app/lib/map/editor/paintTitleLayers";
 import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
 import { buildChildToParentId } from "@/app/lib/map/editor/childTitleAssignment";
 import { buildProvinceToCountyId } from "@/app/lib/map/editor/countyAssignment";
 import type { ChildTierEditorConfig } from "@/app/lib/map/editor/editorTierConfig";
-import {
-  EDITOR_ACTIVE_OPACITY,
-  EDITOR_SELECTION_OPACITY,
-} from "@/app/lib/map/editor/editorConstants";
+import { EDITOR_ACTIVE_OPACITY, EDITOR_SELECTION_OPACITY } from "@/app/lib/map/editor/editorConstants";
 import {
   diffChildTierPaintSnapshot,
   diffCountyPaintSnapshot,
@@ -56,33 +43,21 @@ import type { TitleLayers } from "@/app/lib/titleProvinces";
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
 
-function applyNaturalMapSize(
-  img: HTMLImageElement,
-  setMapSize: Dispatch<SetStateAction<{ w: number; h: number }>>
-) {
+function applyNaturalMapSize(img: HTMLImageElement, setMapSize: Dispatch<SetStateAction<{ w: number; h: number }>>) {
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   if (w <= 0 || h <= 0) return;
 
-  setMapSize((current) =>
-    current.w === w && current.h === h ? current : { w, h }
-  );
+  setMapSize((current) => (current.w === w && current.h === h ? current : { w, h }));
 }
 
-function mapInteractionCursor(
-  isPanning: boolean,
-  isHoveringClickable: boolean
-): string {
+function mapInteractionCursor(isPanning: boolean, isHoveringClickable: boolean): string {
   if (isPanning) return "cursor-grabbing";
   if (isHoveringClickable) return "cursor-pointer";
   return "cursor-grab";
 }
 
-function resizeCanvasIfNeeded(
-  canvas: HTMLCanvasElement,
-  width: number,
-  height: number
-): void {
+function resizeCanvasIfNeeded(canvas: HTMLCanvasElement, width: number, height: number): void {
   if (canvas.width !== width) canvas.width = width;
   if (canvas.height !== height) canvas.height = height;
 }
@@ -150,50 +125,33 @@ export default function MapEditorCanvas({
   const appliedNaturalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const selectionImageDataRef = useRef<ImageData | null>(null);
   const activeImageDataRef = useRef<ImageData | null>(null);
-  const prevPaintSnapshotRef = useRef<
-    CountyPaintSnapshot | ChildTierPaintSnapshot | null
-  >(null);
+  const prevPaintSnapshotRef = useRef<CountyPaintSnapshot | ChildTierPaintSnapshot | null>(null);
   const paintContextRef = useRef<PaintContextKey | null>(null);
   const rafPaintRef = useRef(0);
-  const pendingSnapshotRef = useRef<
-    CountyPaintSnapshot | ChildTierPaintSnapshot | null
-  >(null);
+  const pendingSnapshotRef = useRef<CountyPaintSnapshot | ChildTierPaintSnapshot | null>(null);
 
   const viewport = useMapViewport({ mapSize });
-  const internalPick = useEditorProvinceIndex(
-    mapId,
-    sessionToken,
-    editorPickMode && !pickProvidedByParent
-  );
+  const internalPick = useEditorProvinceIndex(mapId, sessionToken, editorPickMode && !pickProvidedByParent);
   const index = externalIndex ?? internalPick.index;
-  const loading =
-    provinceIndexLoading ||
-    internalPick.loading ||
-    (childTierMode && childPickLoading);
-  const error =
-    provinceIndexError ??
-    internalPick.error ??
-    (childTierMode ? childPickError : null);
+  const loading = provinceIndexLoading || internalPick.loading || (childTierMode && childPickLoading);
+  const error = provinceIndexError ?? internalPick.error ?? (childTierMode ? childPickError : null);
 
   // The flat pixel index walks all 40.96M pixels and buckets them into
   // per-province arrays - a large transient allocation. When the index came
   // from the run-length artifact the run spans serve the same queries, so we
   // skip building the flat pixel buckets.
-  const pixelIndex = useMemo(
-    () => (index && !index.runs ? buildProvincePixelIndex(index.provinceMap) : null),
-    [index]
-  );
+  const pixelIndex = useMemo(() => (index && !index.runs ? buildProvincePixelIndex(index.provinceMap) : null), [index]);
 
   const regionIndex: ProvinceRegionIndex | null = index?.runs ?? pixelIndex;
 
   const provinceAssignment = useMemo(
     () => (countyMode ? buildProvinceToCountyId(draft) : new Map()),
-    [countyMode, draft]
+    [countyMode, draft],
   );
 
   const childAssignment = useMemo(
     () => (childTierMode ? buildChildToParentId(draft) : new Map()),
-    [childTierMode, draft]
+    [childTierMode, draft],
   );
 
   const childDraftForPaint = childDraft;
@@ -210,10 +168,7 @@ export default function MapEditorCanvas({
 
   const pick = useEditorPick({
     mapId,
-    enabled:
-      editorPickMode &&
-      !loading &&
-      (countyMode ? index !== null : childPick !== null),
+    enabled: editorPickMode && !loading && (countyMode ? index !== null : childPick !== null),
     tier,
     childTierConfig,
     index,
@@ -275,21 +230,11 @@ export default function MapEditorCanvas({
 
     const snapshot = countyMode
       ? extractCountyPaintSnapshot(draft, selectedId)
-      : extractChildTierPaintSnapshot(
-          draft,
-          childDraftForPaint,
-          selectedId
-        );
+      : extractChildTierPaintSnapshot(draft, childDraftForPaint, selectedId);
 
     const runFullPaint = () => {
-      selectionImageDataRef.current = selectionCtx.createImageData(
-        index.width,
-        index.height
-      );
-      activeImageDataRef.current = activeCtx.createImageData(
-        index.width,
-        index.height
-      );
+      selectionImageDataRef.current = selectionCtx.createImageData(index.width, index.height);
+      activeImageDataRef.current = activeCtx.createImageData(index.width, index.height);
 
       const selectionImageData = selectionImageDataRef.current;
       const activeImageData = activeImageDataRef.current;
@@ -301,14 +246,14 @@ export default function MapEditorCanvas({
           geometry,
           index.provinceToRgb,
           provinceAssignment,
-          countySnapshot.colors
+          countySnapshot.colors,
         );
         paintActiveLayerFull(
           activeImageData,
           geometry,
           countySnapshot.selectedProvinces,
           countySnapshot.selectedRgb,
-          new Set()
+          new Set(),
         );
       }
 
@@ -319,7 +264,7 @@ export default function MapEditorCanvas({
           geometry,
           childDraftForPaint,
           childTierConfig.resolveChildProvinces,
-          titleLayers
+          titleLayers,
         );
         paintParentActiveLayerFull(
           activeImageData,
@@ -327,7 +272,7 @@ export default function MapEditorCanvas({
           childSnapshot.selectedMembers,
           childSnapshot.selectedRgb,
           childTierConfig.resolveChildProvinces,
-          titleLayers
+          titleLayers,
         );
       }
 
@@ -344,7 +289,7 @@ export default function MapEditorCanvas({
 
     const applyCountyIncremental = (
       countySnapshot: CountyPaintSnapshot,
-      diff: NonNullable<ReturnType<typeof diffCountyPaintSnapshot>>
+      diff: NonNullable<ReturnType<typeof diffCountyPaintSnapshot>>,
     ) => {
       const selectionImageData = selectionImageDataRef.current;
       const activeImageData = activeImageDataRef.current;
@@ -363,29 +308,21 @@ export default function MapEditorCanvas({
           [...selectionProvinceIds],
           index.provinceToRgb,
           provinceAssignment,
-          countySnapshot.colors
+          countySnapshot.colors,
         );
       }
 
       if (diff.activeLayerChanged) {
         const prevProvinces = diff.prevSelectedProvinces ?? [];
         const nextProvinces = countySnapshot.selectedProvinces ?? [];
-        const toClear = prevProvinces.filter(
-          (pid) => !nextProvinces.includes(pid)
-        );
-        updateCountyActiveSubset(
-          activeImageData,
-          regionIndex,
-          nextProvinces,
-          countySnapshot.selectedRgb,
-          toClear
-        );
+        const toClear = prevProvinces.filter((pid) => !nextProvinces.includes(pid));
+        updateCountyActiveSubset(activeImageData, regionIndex, nextProvinces, countySnapshot.selectedRgb, toClear);
       }
     };
 
     const applyChildTierIncremental = (
       childSnapshot: ChildTierPaintSnapshot,
-      diff: NonNullable<ReturnType<typeof diffChildTierPaintSnapshot>>
+      diff: NonNullable<ReturnType<typeof diffChildTierPaintSnapshot>>,
     ) => {
       const selectionImageData = selectionImageDataRef.current;
       const activeImageData = activeImageDataRef.current;
@@ -404,7 +341,7 @@ export default function MapEditorCanvas({
           [...selectionChildIds],
           childSnapshot.childColors,
           childTierConfig.resolveChildProvinces,
-          titleLayers
+          titleLayers,
         );
       }
 
@@ -419,29 +356,21 @@ export default function MapEditorCanvas({
           childSnapshot.selectedRgb,
           childTierConfig.resolveChildProvinces,
           titleLayers,
-          toClear
+          toClear,
         );
       }
     };
 
-    const applyIncremental = (
-      nextSnapshot: CountyPaintSnapshot | ChildTierPaintSnapshot
-    ) => {
+    const applyIncremental = (nextSnapshot: CountyPaintSnapshot | ChildTierPaintSnapshot) => {
       const prev = prevPaintSnapshotRef.current;
       if (!prev) return;
 
       if (countyMode) {
-        const diff = diffCountyPaintSnapshot(
-          prev as CountyPaintSnapshot,
-          nextSnapshot as CountyPaintSnapshot
-        );
+        const diff = diffCountyPaintSnapshot(prev as CountyPaintSnapshot, nextSnapshot as CountyPaintSnapshot);
         if (!diff || isCountyPaintDiffEmpty(diff)) return;
         applyCountyIncremental(nextSnapshot as CountyPaintSnapshot, diff);
       } else if (childTierMode) {
-        const diff = diffChildTierPaintSnapshot(
-          prev as ChildTierPaintSnapshot,
-          nextSnapshot as ChildTierPaintSnapshot
-        );
+        const diff = diffChildTierPaintSnapshot(prev as ChildTierPaintSnapshot, nextSnapshot as ChildTierPaintSnapshot);
         if (!diff || isChildTierPaintDiffEmpty(diff)) return;
         applyChildTierIncremental(nextSnapshot as ChildTierPaintSnapshot, diff);
       }
@@ -463,10 +392,7 @@ export default function MapEditorCanvas({
 
     const prev = prevPaintSnapshotRef.current;
     if (countyMode) {
-      const diff = diffCountyPaintSnapshot(
-        prev as CountyPaintSnapshot | null,
-        snapshot as CountyPaintSnapshot
-      );
+      const diff = diffCountyPaintSnapshot(prev as CountyPaintSnapshot | null, snapshot as CountyPaintSnapshot);
       if (diff && isCountyPaintDiffEmpty(diff)) {
         prevPaintSnapshotRef.current = snapshot;
         return;
@@ -474,7 +400,7 @@ export default function MapEditorCanvas({
     } else {
       const diff = diffChildTierPaintSnapshot(
         prev as ChildTierPaintSnapshot | null,
-        snapshot as ChildTierPaintSnapshot
+        snapshot as ChildTierPaintSnapshot,
       );
       if (diff && isChildTierPaintDiffEmpty(diff)) {
         prevPaintSnapshotRef.current = snapshot;
@@ -525,15 +451,10 @@ export default function MapEditorCanvas({
     syncNaturalMapSize(e.currentTarget);
   };
 
-  const interactionCursor = mapInteractionCursor(
-    viewport.isPanning,
-    pick.isHoveringClickable
-  );
+  const interactionCursor = mapInteractionCursor(viewport.isPanning, pick.isHoveringClickable);
 
-  const showCountyEmptyState =
-    countyMode && !selectedId && !loading && !error;
-  const showChildTierEmptyState =
-    childTierMode && !selectedId && !loading && !error;
+  const showCountyEmptyState = countyMode && !selectedId && !loading && !error;
+  const showChildTierEmptyState = childTierMode && !selectedId && !loading && !error;
 
   const childEmptyMessage = childTierConfig?.emptyStateMessage ?? "";
 
@@ -547,9 +468,7 @@ export default function MapEditorCanvas({
             top: pick.cursorTooltip.y + 12,
           }}
         >
-          <p className="text-sm text-[var(--tfmc-cream)]">
-            {pick.cursorTooltip.text}
-          </p>
+          <p className="text-sm text-[var(--tfmc-cream)]">{pick.cursorTooltip.text}</p>
         </div>
       ) : null}
 
@@ -571,68 +490,62 @@ export default function MapEditorCanvas({
             cursorClassName={interactionCursor}
             isPanning={viewport.isPanning}
           >
-          <MapAuthImage
-            mapId={mapId}
-            path={`/${mapId}/map`}
-            sessionToken={sessionToken}
-            alt="Map"
-            className="pointer-events-none block h-full w-full"
-            imgRef={(node) => {
-              if (node?.complete) {
-                syncNaturalMapSize(node);
-              }
-            }}
-            onLoad={handleBaseMapLoad}
-          />
-          {editorPickMode && index ? (
-            <>
-              <canvas
-                ref={selectionCanvasRef}
-                className="pointer-events-none absolute inset-0 h-full w-full"
-                style={{ opacity: EDITOR_SELECTION_OPACITY }}
-              />
-              <canvas
-                ref={activeCanvasRef}
-                className="pointer-events-none absolute inset-0 h-full w-full"
-                style={{ opacity: EDITOR_ACTIVE_OPACITY }}
-              />
-            </>
-          ) : null}
-          {showCountyEmptyState ? (
-            <div
-              className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_25%,transparent)]"
-            >
-              <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
-                Select a county or create new
-              </p>
-            </div>
-          ) : null}
-          {showChildTierEmptyState ? (
-            <div
-              className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_25%,transparent)]"
-            >
-              <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
-                {childEmptyMessage}
-              </p>
-            </div>
-          ) : null}
-          {!editorPickMode ? (
-            <div
-              className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_35%,transparent)]"
-            >
-              <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
-                Title pick available on county, duchy, kingdom, and empire tabs
-              </p>
-            </div>
-          ) : null}
-          <canvas
-            ref={pickCanvasRef}
-            className={`pointer-events-auto absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
-            onMouseMove={pick.onMouseMove}
-            onMouseLeave={pick.onMouseLeave}
-            onClick={pick.onClick}
-          />
-        </MapViewport>
+            <MapAuthImage
+              mapId={mapId}
+              path={`/${mapId}/map`}
+              sessionToken={sessionToken}
+              alt="Map"
+              className="pointer-events-none block h-full w-full"
+              imgRef={(node) => {
+                if (node?.complete) {
+                  syncNaturalMapSize(node);
+                }
+              }}
+              onLoad={handleBaseMapLoad}
+            />
+            {editorPickMode && index ? (
+              <>
+                <canvas
+                  ref={selectionCanvasRef}
+                  className="pointer-events-none absolute inset-0 h-full w-full"
+                  style={{ opacity: EDITOR_SELECTION_OPACITY }}
+                />
+                <canvas
+                  ref={activeCanvasRef}
+                  className="pointer-events-none absolute inset-0 h-full w-full"
+                  style={{ opacity: EDITOR_ACTIVE_OPACITY }}
+                />
+              </>
+            ) : null}
+            {showCountyEmptyState ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_25%,transparent)]">
+                <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
+                  Select a county or create new
+                </p>
+              </div>
+            ) : null}
+            {showChildTierEmptyState ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_25%,transparent)]">
+                <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
+                  {childEmptyMessage}
+                </p>
+              </div>
+            ) : null}
+            {!editorPickMode ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_35%,transparent)]">
+                <p className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)]">
+                  Title pick available on county, duchy, kingdom, and empire tabs
+                </p>
+              </div>
+            ) : null}
+            <canvas
+              ref={pickCanvasRef}
+              className={`pointer-events-auto absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
+              onMouseMove={pick.onMouseMove}
+              onMouseLeave={pick.onMouseLeave}
+              onClick={pick.onClick}
+            />
+          </MapViewport>
         </div>
       )}
     </div>

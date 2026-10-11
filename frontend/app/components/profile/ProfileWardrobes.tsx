@@ -1,10 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type {
-  ProfileDrinkSubmission,
-  ProfileSkinSubmission,
-} from "../../../lib/profile/api";
+import type { ProfileDrinkSubmission, ProfileSkinSubmission } from "../../../lib/profile/api";
 import type { StartAllowance } from "../../../lib/profile/start";
 import { redeemCode, startSkinFromProfile } from "../../../lib/skins/api";
 import { setSession as setSkinsSession, skinsSessionFrom } from "../../../lib/skins/session";

@@ -10,9 +10,7 @@ import type { MapObject, OverlayBBox } from "../components/map/types";
  * indistinguishable by string from the synthetic entry for `Foo`. Only this
  * function knows which of the two it is building.
  */
-export function buildMapObjectsFromRegionData(
-  regionData: Record<string, unknown>
-): MapObject[] {
+export function buildMapObjectsFromRegionData(regionData: Record<string, unknown>): MapObject[] {
   return Object.keys(regionData).flatMap((regionId) => {
     const region = regionData[regionId] as Record<string, unknown>;
     const rgb = region.rgb as string | undefined;
@@ -49,10 +47,7 @@ export function buildMapObjectsFromRegionData(
   });
 }
 
-export function initialMapObjectVisibility(
-  obj: MapObject,
-  regionData: Record<string, unknown>
-): boolean {
+export function initialMapObjectVisibility(obj: MapObject, regionData: Record<string, unknown>): boolean {
   // The flag, not the id: a real region named `Foo_nested` used to be forced
   // permanently invisible here by the string test.
   if (obj.nested === true) {
@@ -79,9 +74,7 @@ export type MapObjectIndex = {
  * real region named `Foo_nested` answer lookups for `Foo`'s drill entry.
  * First entry wins a duplicate key, matching the old `Array.prototype.find`.
  */
-export function buildMapObjectIndex(
-  mapObjects: MapObject[] | null | undefined
-): MapObjectIndex {
+export function buildMapObjectIndex(mapObjects: MapObject[] | null | undefined): MapObjectIndex {
   const base = new Map<string, MapObject>();
   const nested = new Map<string, MapObject>();
   if (!Array.isArray(mapObjects)) return { base, nested };
@@ -126,7 +119,7 @@ export type HoverTarget = {
 export function resolveHoverTarget(
   regionId: string,
   regionData: Record<string, unknown>,
-  index: MapObjectIndex
+  index: MapObjectIndex,
 ): HoverTarget {
   const visited = new Set<string>();
   let currentRegionId: string | null = regionId;
@@ -135,9 +128,7 @@ export function resolveHoverTarget(
     if (visited.has(currentRegionId)) return null;
     visited.add(currentRegionId);
 
-    const region = regionData?.[currentRegionId] as
-      | Record<string, unknown>
-      | undefined;
+    const region = regionData?.[currentRegionId] as Record<string, unknown> | undefined;
     if (!region) return null;
 
     const main = index.base.get(currentRegionId);
@@ -150,10 +141,7 @@ export function resolveHoverTarget(
       return { regionId: currentRegionId, region, object: nested };
     }
 
-    currentRegionId =
-      typeof region.overlord === "string" && region.overlord.length > 0
-        ? region.overlord
-        : null;
+    currentRegionId = typeof region.overlord === "string" && region.overlord.length > 0 ? region.overlord : null;
   }
 
   return null;

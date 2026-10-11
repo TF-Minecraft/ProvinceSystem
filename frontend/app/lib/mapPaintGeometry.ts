@@ -19,11 +19,7 @@ import {
   type PaintSizesMapPx,
 } from "./mapPaint";
 
-export function pointToSegmentDistance(
-  p: PaintPoint,
-  a: PaintPoint,
-  b: PaintPoint
-): number {
+export function pointToSegmentDistance(p: PaintPoint, a: PaintPoint, b: PaintPoint): number {
   const abx = b.x - a.x;
   const aby = b.y - a.y;
   const lengthSq = abx * abx + aby * aby;
@@ -56,9 +52,7 @@ export function brushPathD(points: PaintPoint[]): string {
     const { x, y } = points[0];
     return `M ${x} ${y} L ${x} ${y}`;
   }
-  return points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
+  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
 
 const ARROW_HEAD_HALF_ANGLE = Math.PI / 7;
@@ -68,11 +62,7 @@ const ARROW_HEAD_HALF_ANGLE = Math.PI / 7;
  * as a filled polygon rather than an SVG `<marker>` so the head size stays
  * independent of stroke width.
  */
-export function arrowHeadPoints(
-  from: PaintPoint,
-  to: PaintPoint,
-  headLenMapPx: number
-): PaintPoint[] {
+export function arrowHeadPoints(from: PaintPoint, to: PaintPoint, headLenMapPx: number): PaintPoint[] {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const angle = dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx);
@@ -99,11 +89,7 @@ export function pointsToPolygonAttr(points: PaintPoint[]): string {
  * the previous one. Returns the *same array reference* when the point is
  * dropped so React can skip the re-render.
  */
-export function appendBrushPoint(
-  points: PaintPoint[],
-  p: PaintPoint,
-  minDistMapPx: number
-): PaintPoint[] {
+export function appendBrushPoint(points: PaintPoint[], p: PaintPoint, minDistMapPx: number): PaintPoint[] {
   const last = points[points.length - 1];
   if (last && Math.hypot(p.x - last.x, p.y - last.y) < minDistMapPx) {
     return points;
@@ -128,21 +114,14 @@ export const PAINT_TEXT_LINE_EM = 1.15;
  */
 export function paintTextBounds(
   shape: Extract<PaintShape, { type: "text" }>,
-  fontSize: number
+  fontSize: number,
 ): { x: number; y: number; w: number; h: number } {
-  const w = Math.max(
-    fontSize * PAINT_TEXT_MIN_EM,
-    shape.text.length * fontSize * PAINT_TEXT_CHAR_EM
-  );
+  const w = Math.max(fontSize * PAINT_TEXT_MIN_EM, shape.text.length * fontSize * PAINT_TEXT_CHAR_EM);
   const h = fontSize * PAINT_TEXT_LINE_EM;
   return { x: shape.at.x, y: shape.at.y - h * 0.8, w, h };
 }
 
-function withinBox(
-  p: PaintPoint,
-  box: { x: number; y: number; w: number; h: number },
-  tolerance: number
-): boolean {
+function withinBox(p: PaintPoint, box: { x: number; y: number; w: number; h: number }, tolerance: number): boolean {
   return (
     p.x >= box.x - tolerance &&
     p.x <= box.x + box.w + tolerance &&
@@ -151,11 +130,7 @@ function withinBox(
   );
 }
 
-export function rotatePoint(
-  p: PaintPoint,
-  centre: PaintPoint,
-  degrees: number
-): PaintPoint {
+export function rotatePoint(p: PaintPoint, centre: PaintPoint, degrees: number): PaintPoint {
   if (!degrees) return p;
   const radians = (degrees * Math.PI) / 180;
   const cos = Math.cos(radians);
@@ -177,11 +152,7 @@ export function boundsCentre(bounds: PaintBounds): PaintPoint {
  * always stored unrotated, so everything downstream — hit-testing, handles,
  * resizing — can ignore rotation entirely once the pointer is converted.
  */
-export function toShapeLocalPoint(
-  shape: PaintShape,
-  p: PaintPoint,
-  sizes: PaintSizesMapPx
-): PaintPoint {
+export function toShapeLocalPoint(shape: PaintShape, p: PaintPoint, sizes: PaintSizesMapPx): PaintPoint {
   const rotation = paintShapeRotation(shape);
   if (!rotation) return p;
   return rotatePoint(p, boundsCentre(paintShapeBounds(shape, sizes)), -rotation);
@@ -195,7 +166,7 @@ export function paintShapeHitTest(
   shape: PaintShape,
   p: PaintPoint,
   toleranceMapPx: number,
-  sizes: PaintSizesMapPx
+  sizes: PaintSizesMapPx,
 ): boolean {
   const size = paintEffectiveSizes(shape, sizes);
   // Geometry is stored unrotated, so bring the pointer into the shape's frame.
@@ -203,9 +174,7 @@ export function paintShapeHitTest(
 
   switch (shape.type) {
     case "brush":
-      return (
-        distanceToPolyline(local, shape.points) <= toleranceMapPx + size.strokeWidth / 2
-      );
+      return distanceToPolyline(local, shape.points) <= toleranceMapPx + size.strokeWidth / 2;
     case "arrow": {
       const shaft = pointToSegmentDistance(local, shape.from, shape.to);
       if (shaft <= toleranceMapPx + size.strokeWidth / 2) return true;
@@ -216,7 +185,7 @@ export function paintShapeHitTest(
       return withinBox(
         local,
         { x: shape.at.x - half, y: shape.at.y - half, w: size.stamp, h: size.stamp },
-        toleranceMapPx
+        toleranceMapPx,
       );
     }
     case "text":
@@ -229,17 +198,13 @@ export function paintShapeHitTest(
 export type PaintBounds = { x: number; y: number; w: number; h: number };
 
 /** Axis-aligned extent of a shape as drawn, used for the selection box and its handles. */
-export function paintShapeBounds(
-  shape: PaintShape,
-  sizes: PaintSizesMapPx
-): PaintBounds {
+export function paintShapeBounds(shape: PaintShape, sizes: PaintSizesMapPx): PaintBounds {
   const size = paintEffectiveSizes(shape, sizes);
 
   switch (shape.type) {
     case "brush":
     case "arrow": {
-      const points =
-        shape.type === "brush" ? shape.points : [shape.from, shape.to];
+      const points = shape.type === "brush" ? shape.points : [shape.from, shape.to];
       let minX = Infinity;
       let minY = Infinity;
       let maxX = -Infinity;
@@ -251,10 +216,7 @@ export function paintShapeBounds(
         if (point.y > maxY) maxY = point.y;
       }
       // The arrowhead sticks out past the shaft's end point.
-      const pad =
-        shape.type === "arrow"
-          ? Math.max(size.strokeWidth / 2, size.arrowHead * 0.6)
-          : size.strokeWidth / 2;
+      const pad = shape.type === "arrow" ? Math.max(size.strokeWidth / 2, size.arrowHead * 0.6) : size.strokeWidth / 2;
       return {
         x: minX - pad,
         y: minY - pad,
@@ -290,11 +252,7 @@ export type PaintHandleHit = {
   grabbed: PaintPoint;
 };
 
-export function pickPaintHandle(
-  bounds: PaintBounds,
-  p: PaintPoint,
-  handleMapPx: number
-): PaintHandleHit | null {
+export function pickPaintHandle(bounds: PaintBounds, p: PaintPoint, handleMapPx: number): PaintHandleHit | null {
   const corners = paintBoundsCorners(bounds);
   // On a small shape — or at low zoom, where the constant-screen-size grab
   // radius is large in map pixels — four full-reach corners would cover the
@@ -319,7 +277,7 @@ export function scalePaintShape<T extends PaintShape>(
   anchor: PaintPoint,
   factor: number,
   /** Needed only to keep the anchor pinned when the shape is rotated. */
-  sizes?: PaintSizesMapPx
+  sizes?: PaintSizesMapPx,
 ): T {
   if (!Number.isFinite(factor) || factor <= 0) return shape;
 
@@ -363,7 +321,7 @@ export function pickTopPaintShapeAt(
   shapes: PaintShape[],
   p: PaintPoint,
   toleranceMapPx: number,
-  sizes: PaintSizesMapPx
+  sizes: PaintSizesMapPx,
 ): PaintShape | null {
   for (let i = shapes.length - 1; i >= 0; i -= 1) {
     if (paintShapeHitTest(shapes[i], p, toleranceMapPx, sizes)) return shapes[i];
@@ -371,11 +329,7 @@ export function pickTopPaintShapeAt(
   return null;
 }
 
-export function translatePaintShape<T extends PaintShape>(
-  shape: T,
-  dx: number,
-  dy: number
-): T {
+export function translatePaintShape<T extends PaintShape>(shape: T, dx: number, dy: number): T {
   switch (shape.type) {
     case "brush":
       return {

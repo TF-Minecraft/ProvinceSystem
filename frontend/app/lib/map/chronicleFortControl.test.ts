@@ -15,11 +15,7 @@ const markers = {
   exported_at: null,
   settlements: [],
   installations: [],
-  forts: [
-    { id: "a", zoc_provinces: [1, 2] },
-    { id: "b", zoc_provinces: [2, 3] },
-    { id: "c" },
-  ],
+  forts: [{ id: "a", zoc_provinces: [1, 2] }, { id: "b", zoc_provinces: [2, 3] }, { id: "c" }],
 } as unknown as MapMarkersResponse;
 
 /**
@@ -52,9 +48,7 @@ describe("fortZocProvinceIds", () => {
 
   it("treats a day with no fort rows as no zones", () => {
     expect(fortZocProvinceIds(null)).toEqual([]);
-    expect(
-      fortZocProvinceIds({ map_id: "main" } as unknown as MapMarkersResponse)
-    ).toEqual([]);
+    expect(fortZocProvinceIds({ map_id: "main" } as unknown as MapMarkersResponse)).toEqual([]);
   });
 
   it("survives malformed fort payloads", () => {
@@ -66,7 +60,10 @@ describe("fortZocProvinceIds", () => {
     expect(fortZocProvinceIds(malformed)).toEqual([]);
 
     const badIds = {
-      forts: [{ id: "a", zoc_provinces: "1,2" }, { id: "b", zoc_provinces: [0, -3, 1.5, 7] }],
+      forts: [
+        { id: "a", zoc_provinces: "1,2" },
+        { id: "b", zoc_provinces: [0, -3, 1.5, 7] },
+      ],
     } as unknown as MapMarkersResponse;
     // Ocean (0), negatives and fractions are junk; only the real id survives.
     expect(fortZocProvinceIds(badIds)).toEqual([7]);
@@ -114,9 +111,7 @@ describe("computeChronicleZocMask", () => {
     expect(period).toBe(10);
     expect(line).toBe(4);
     expect(setBits(mask.bits, width)).toEqual(
-      Array.from({ length: width }, (_, x) => x).filter(
-        (x) => x % period < line
-      )
+      Array.from({ length: width }, (_, x) => x).filter((x) => x % period < line),
     );
   });
 
@@ -136,11 +131,6 @@ describe("computeChronicleZocMask", () => {
   });
 
   it("rejects a grid whose header disagrees with its ids", () => {
-    expect(() =>
-      computeChronicleZocMask(
-        { width: 4, height: 4, ids: new Uint16Array(3) },
-        [1]
-      )
-    ).toThrow();
+    expect(() => computeChronicleZocMask({ width: 4, height: 4, ids: new Uint16Array(3) }, [1])).toThrow();
   });
 });

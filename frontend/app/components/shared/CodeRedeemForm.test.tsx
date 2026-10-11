@@ -16,7 +16,7 @@ function setup(redeem: (code: string) => Promise<{ token: string }>, compact = f
       saveSession={saveSession}
       onRedeemed={onRedeemed}
       label="Skin code"
-    />
+    />,
   );
   return { saveSession, onRedeemed };
 }

@@ -13,25 +13,19 @@ describe("WikiItemLink", () => {
     expect(renderToStaticMarkup(<WikiItemLink name="Enchanted Dust" />)).toContain(
       'href="/wiki/materials/enchanted-dust"',
     );
-    expect(renderToStaticMarkup(<WikiItemLink name="Deck of Cards" />)).toContain(
-      'href="/wiki/items/deck-of-cards"',
-    );
+    expect(renderToStaticMarkup(<WikiItemLink name="Deck of Cards" />)).toContain('href="/wiki/items/deck-of-cards"');
   });
 
   it("prefers a canonical material route for an exact item alias", () => {
-    expect(
-      renderToStaticMarkup(
-        <WikiItemLink name="Raw Tin" sourceId="mmoitem:MATERIALS:RAW_TIN" />,
-      ),
-    ).toContain('href="/wiki/materials/tin"');
+    expect(renderToStaticMarkup(<WikiItemLink name="Raw Tin" sourceId="mmoitem:MATERIALS:RAW_TIN" />)).toContain(
+      'href="/wiki/materials/tin"',
+    );
   });
 
   it("uses exact provenance to disambiguate same-name items", () => {
     expect(renderToStaticMarkup(<WikiItemLink name="Research Paper" />)).toBe("Research Paper");
     expect(
-      renderToStaticMarkup(
-        <WikiItemLink name="Research Paper" sourceId="mmoitem:RESEARCH:R_ABYSSALITE" />,
-      ),
+      renderToStaticMarkup(<WikiItemLink name="Research Paper" sourceId="mmoitem:RESEARCH:R_ABYSSALITE" />),
     ).toContain('href="/wiki/items/research-paper--');
   });
 
@@ -63,12 +57,8 @@ describe("WikiItemLink", () => {
     const html = renderToStaticMarkup(
       <WikiItemText text="Use a Single Shot (launcher) or Smoothbore Barrel (Short)." />,
     );
-    expect(html).toContain(
-      'href="/wiki/items/single-shot-launcher">Single Shot (launcher)</a>',
-    );
-    expect(html).toContain(
-      'href="/wiki/items/smoothbore-barrel-short">Smoothbore Barrel (Short)</a>',
-    );
+    expect(html).toContain('href="/wiki/items/single-shot-launcher">Single Shot (launcher)</a>');
+    expect(html).toContain('href="/wiki/items/smoothbore-barrel-short">Smoothbore Barrel (Short)</a>');
     expect(html).not.toContain('href="/wiki/items/single-shot"');
   });
 
@@ -90,9 +80,7 @@ describe("WikiItemLink", () => {
   });
 
   it("links another material from a dynamic material description", async () => {
-    const html = renderToStaticMarkup(
-      await MaterialDetailPage({ params: Promise.resolve({ slug: "ignitium" }) }),
-    );
+    const html = renderToStaticMarkup(await MaterialDetailPage({ params: Promise.resolve({ slug: "ignitium" }) }));
     expect(html).toContain('href="/wiki/materials/coke">Coke</a>');
     expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*<a\b/);
   });

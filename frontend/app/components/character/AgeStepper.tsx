@@ -35,9 +35,7 @@ export default function AgeStepper({
   const [birthdayDraft, setBirthdayDraft] = useState(birthdayValue);
   const [birthdayError, setBirthdayError] = useState<string | null>(null);
   const [toast, setToast] = useState<"in" | "out" | null>(null);
-  const birthdayDirty =
-    normalizeBirthdayText(birthdayDraft) !==
-    normalizeBirthdayText(birthdayValue);
+  const birthdayDirty = normalizeBirthdayText(birthdayDraft) !== normalizeBirthdayText(birthdayValue);
 
   useEffect(() => {
     setBirthdayDraft(birthdayValue);
@@ -145,9 +143,7 @@ export default function AgeStepper({
             Apply
           </button>
         </div>
-        {birthdayError ? (
-          <p className="text-xs text-[#e8a0a0]">{birthdayError}</p>
-        ) : null}
+        {birthdayError ? <p className="text-xs text-[#e8a0a0]">{birthdayError}</p> : null}
       </label>
 
       {toast ? (

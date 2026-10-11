@@ -39,18 +39,13 @@ describe("mode classification", () => {
       const isRasterDay = mode in CHRONICLE_PROVINCE_PAINT_SOURCE;
       expect(
         [isStatic, isRegionDay, isRasterDay].filter(Boolean).length,
-        `${mode} must be classified exactly once`
+        `${mode} must be classified exactly once`,
       ).toBe(1);
     }
   });
 
   it("classifies the modes that never change as static", () => {
-    expect([...CHRONICLE_STATIC_MODES].sort()).toEqual([
-      "fertility",
-      "plain",
-      "province",
-      "terrain",
-    ]);
+    expect([...CHRONICLE_STATIC_MODES].sort()).toEqual(["fertility", "plain", "province", "terrain"]);
   });
 
   it("treats an unknown mode as non-static so it cannot leak live data", () => {
@@ -76,13 +71,7 @@ describe("chronicleProvincePaintSource", () => {
   });
 
   it("keeps every raster mode live on the live map", () => {
-    for (const mode of [
-      "terrain",
-      "fertility",
-      "province",
-      "prosperity",
-      "infestation",
-    ] as MapMode[]) {
+    for (const mode of ["terrain", "fertility", "province", "prosperity", "infestation"] as MapMode[]) {
       expect(chronicleProvincePaintSource(mode, null)).toEqual({ kind: "live" });
     }
   });
@@ -114,18 +103,14 @@ describe("chronicleProvincePaintSource", () => {
 
 describe("chronicleProvincePaintLut", () => {
   it("paints prosperity through the shared ramp, alpha included", () => {
-    const lut = chronicleProvincePaintLut("prosperity", [
-      { id: 3, prosperity: 12 },
-    ]);
+    const lut = chronicleProvincePaintLut("prosperity", [{ id: 3, prosperity: 12 }]);
     expect(lut.length).toBe(4);
     expect(lut[3]! & 0xff).toBe(CHRONICLE_PROSPERITY_ALPHA);
     expect(lut[1]).toBe(0);
   });
 
   it("paints infestation through the severity palette", () => {
-    const lut = chronicleProvincePaintLut("infestation", [
-      { id: 2, severity: "severe" },
-    ]);
+    const lut = chronicleProvincePaintLut("infestation", [{ id: 2, severity: "severe" }]);
     expect(lut[2]! >>> 0).toBe(((180 << 24) | (20 << 16) | (20 << 8) | 240) >>> 0);
   });
 

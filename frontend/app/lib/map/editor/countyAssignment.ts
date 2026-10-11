@@ -12,17 +12,14 @@ export function buildProvinceToCountyId(draft: CountyDraft): Map<number, string>
   return map;
 }
 
-export function unassignedProvinces(
-  catalogIds: readonly number[],
-  assignment: Map<number, string>
-): number[] {
+export function unassignedProvinces(catalogIds: readonly number[], assignment: Map<number, string>): number[] {
   return catalogIds.filter((pid) => !assignment.has(pid));
 }
 
 export function canSelectProvince(
   provinceId: number,
   editingId: string | null,
-  assignment: Map<number, string>
+  assignment: Map<number, string>,
 ): boolean {
   if (!editingId) return false;
   const owner = assignment.get(provinceId);
@@ -52,7 +49,7 @@ export function findDuplicateProvinceIds(draft: CountyDraft): number[] {
 export function getProvinceOwnerName(
   provinceId: number,
   assignment: Map<number, string>,
-  draft: TitleDraft
+  draft: TitleDraft,
 ): string | null {
   const countyId = assignment.get(provinceId);
   if (!countyId) return null;

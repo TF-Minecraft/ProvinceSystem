@@ -16,11 +16,10 @@ export default function RecyclerPage() {
       intro={
         <>
           The <StationLink name="Recycling Station" /> breaks a crafted item back down into a share of the materials it
-          took to make it. A pristine item gives back the most; a worn-down one gives back less,
-          and a fully broken item gives back nothing at all.
+          took to make it. A pristine item gives back the most; a worn-down one gives back less, and a fully broken item
+          gives back nothing at all.
         </>
       }
-
     >
       <WikiSectionHeading id="building" intro="Built on a vanilla crafting table.">
         Building the station
@@ -33,26 +32,23 @@ export default function RecyclerPage() {
         The loop
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Right-click the <StationLink name="Recycling Station" />.</li>
         <li>
-          Drop the item you want to break down into the input slot. An item that cannot be
-          recycled at all is rejected with &quot;That item cannot be recycled here.&quot;
+          Right-click the <StationLink name="Recycling Station" />.
         </li>
         <li>
-          The middle columns of the menu preview exactly what you would get back. If recycling it
-          would return nothing, the preview says so and the confirm button is blocked.
+          Drop the item you want to break down into the input slot. An item that cannot be recycled at all is rejected
+          with &quot;That item cannot be recycled here.&quot;
+        </li>
+        <li>
+          The middle columns of the menu preview exactly what you would get back. If recycling it would return nothing,
+          the preview says so and the confirm button is blocked.
         </li>
         <li>Click confirm. The materials pop out of the station, and you get &quot;Recycling complete.&quot;</li>
         <li>If you close the menu with an item still sitting in the input slot, it is returned to you.</li>
       </ol>
 
-      <WikiSectionHeading id="what-recycles">
-        What can be recycled
-      </WikiSectionHeading>
-      <DataTable
-        columns={[{ header: "Item" }, { header: "What you get back" }]}
-        rows={providers}
-      />
+      <WikiSectionHeading id="what-recycles">What can be recycled</WikiSectionHeading>
+      <DataTable columns={[{ header: "Item" }, { header: "What you get back" }]} rows={providers} />
 
       <SeeAlso hrefs={["/wiki/materials", "/wiki/stations", "/wiki/commands", "/wiki/advanced-crafting"]} />
     </WikiPage>

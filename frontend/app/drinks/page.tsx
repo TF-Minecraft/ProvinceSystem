@@ -64,9 +64,7 @@ export default function DrinksPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-16">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Drinks
-      </h1>
+      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">Drinks</h1>
       {session && isSessionValid(session) ? (
         <div className="mt-4">
           {fromProfile ? (
@@ -78,9 +76,7 @@ export default function DrinksPage() {
             </Link>
           ) : (
             <>
-              <p className="text-sm text-[var(--tfmc-stone)]">
-                Session expires {formatExpiresIn(session.expires_at)}
-              </p>
+              <p className="text-sm text-[var(--tfmc-stone)]">Session expires {formatExpiresIn(session.expires_at)}</p>
               <button
                 type="button"
                 className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
@@ -98,9 +94,8 @@ export default function DrinksPage() {
       ) : (
         <>
           <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-            Redeem a drink code from{" "}
-            <code className="text-[var(--tfmc-accent)]">/token create drink</code>,
-            then design your drink for staff review.
+            Redeem a drink code from <code className="text-[var(--tfmc-accent)]">/token create drink</code>, then design
+            your drink for staff review.
           </p>
           <CodeRedeemForm
             redeem={redeemDrink}
