@@ -15,8 +15,10 @@ import { resolveOwnerToken, type WardrobeSessionStore } from "../../../lib/profi
 type Props = {
   /** "new" for the editor, else a submission id. */
   id: string;
-  /** Back to the wardrobe. */
+  /** ← back to the wardrobe. */
   onBack: () => void;
+  /** Back to the wardrobe in place, when there's nothing to show. */
+  onLeave: () => void;
   /** Swaps this view for one skin or drink, in place (after a submit). */
   onShow: (id: string) => void;
 };
@@ -58,7 +60,7 @@ function Loading() {
 }
 
 /** The skin editor, for a session Profile started or an in-game code opened. */
-function NewSkin({ onBack, onShow }: Omit<Props, "id">) {
+function NewSkin({ onBack, onLeave, onShow }: Omit<Props, "id">) {
   const [session, setSessionState] = useState<skins.SkinsSession | null>(null);
   const [metaSynced, setMetaSynced] = useState(true);
 
@@ -66,7 +68,7 @@ function NewSkin({ onBack, onShow }: Omit<Props, "id">) {
     const existing = skins.getSession();
     if (!skins.isSessionValid(existing)) {
       if (existing) skins.clearSession();
-      onBack();
+      onLeave();
       return;
     }
     // Back to a submitted skin's editor: its code is spent, so show the skin instead.
@@ -76,7 +78,7 @@ function NewSkin({ onBack, onShow }: Omit<Props, "id">) {
       return;
     }
     setSessionState(existing);
-  }, [onBack, onShow]);
+  }, [onLeave, onShow]);
 
   const token = session?.session_token;
   useEffect(() => {
@@ -132,14 +134,14 @@ function NewSkin({ onBack, onShow }: Omit<Props, "id">) {
 }
 
 /** The drink editor, for a session Profile started or an in-game code opened. */
-function NewDrink({ onBack, onShow }: Omit<Props, "id">) {
+function NewDrink({ onBack, onLeave, onShow }: Omit<Props, "id">) {
   const [session, setSessionState] = useState<drinks.DrinksSession | null>(null);
 
   useEffect(() => {
     const existing = drinks.getSession();
     if (!drinks.isSessionValid(existing)) {
       if (existing) drinks.clearSession();
-      onBack();
+      onLeave();
       return;
     }
     // Back to a submitted drink's editor: its code is spent, so show the drink instead.
@@ -149,7 +151,7 @@ function NewDrink({ onBack, onShow }: Omit<Props, "id">) {
       return;
     }
     setSessionState(existing);
-  }, [onBack, onShow]);
+  }, [onLeave, onShow]);
 
   return (
     <ItemFrame tab="drinks" title="New drink" onBack={onBack}>
@@ -163,7 +165,7 @@ function useOwnedItem<Row, S extends { session_token: string }>(
   id: string,
   store: WardrobeSessionStore<S>,
   get: (id: string, token: string) => Promise<Row>,
-  onBack: () => void,
+  onLeave: () => void,
 ) {
   const [row, setRow] = useState<Row | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -173,7 +175,7 @@ function useOwnedItem<Row, S extends { session_token: string }>(
   const load = useCallback(async () => {
     const owner = resolveOwnerToken(store);
     if (!owner) {
-      onBack();
+      onLeave();
       return;
     }
     setLoading(true);
@@ -187,7 +189,7 @@ function useOwnedItem<Row, S extends { session_token: string }>(
     } finally {
       setLoading(false);
     }
-  }, [get, id, onBack, store]);
+  }, [get, id, onLeave, store]);
 
   useEffect(() => {
     void load();
@@ -226,12 +228,12 @@ function ItemBody({
   );
 }
 
-function SkinView({ id, onBack }: Omit<Props, "onShow">) {
+function SkinView({ id, onBack, onLeave }: Omit<Props, "onShow">) {
   const { row, token, error, loading, load } = useOwnedItem<SubmissionPublic, skins.SkinsSession>(
     id,
     skins,
     getSkin,
-    onBack,
+    onLeave,
   );
   return (
     <ItemFrame tab="skins" title={row?.display_name || "Skin"} onBack={onBack}>
@@ -245,12 +247,12 @@ function SkinView({ id, onBack }: Omit<Props, "onShow">) {
   );
 }
 
-function DrinkView({ id, onBack }: Omit<Props, "onShow">) {
+function DrinkView({ id, onBack, onLeave }: Omit<Props, "onShow">) {
   const { row, error, loading, load } = useOwnedItem<DrinkSubmissionPublic, drinks.DrinksSession>(
     id,
     drinks,
     getDrink,
-    onBack,
+    onLeave,
   );
   return (
     <ItemFrame tab="drinks" title={row?.display_name || "Drink"} onBack={onBack}>
@@ -264,10 +266,10 @@ function DrinkView({ id, onBack }: Omit<Props, "onShow">) {
   );
 }
 
-export function SkinItem({ id, onBack, onShow }: Props) {
-  return id === "new" ? <NewSkin onBack={onBack} onShow={onShow} /> : <SkinView key={id} id={id} onBack={onBack} />;
+export function SkinItem({ id, ...nav }: Props) {
+  return id === "new" ? <NewSkin {...nav} /> : <SkinView key={id} id={id} {...nav} />;
 }
 
-export function DrinkItem({ id, onBack, onShow }: Props) {
-  return id === "new" ? <NewDrink onBack={onBack} onShow={onShow} /> : <DrinkView key={id} id={id} onBack={onBack} />;
+export function DrinkItem({ id, ...nav }: Props) {
+  return id === "new" ? <NewDrink {...nav} /> : <DrinkView key={id} id={id} {...nav} />;
 }

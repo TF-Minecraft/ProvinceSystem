@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import CharacterList from "../character/CharacterList";
 import ProfileCustomItemsList from "./ProfileCustomItemsList";
 import ProfileRedeemForm from "./ProfileRedeemForm";
@@ -167,15 +168,10 @@ function Subline({ parts }: { parts: ReactNode[] }) {
  * Discord. A skin or drink code opens just that wardrobe.
  */
 export default function ProfilePanel({
-  tab: initialTab = null,
-  item: initialItem = null,
   signin = null,
   minecraft: minecraftStatus = null,
   shape = DEFAULT_ACCOUNT_SHAPE,
 }: {
-  tab?: ProfileTab | null;
-  /** The skin or drink open in the tab: "new" for the editor, else a submission id. */
-  item?: string | null;
   signin?: string | null;
   minecraft?: string | null;
   /** What the page drew last time, for the loading outline. */
@@ -199,8 +195,11 @@ export default function ProfilePanel({
   const [overview, setOverview] = useState<AccountOverview | null>(null);
   const [overviewFor, setOverviewFor] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [tab, setTab] = useState<ProfileTab | null>(initialTab);
-  const [item, setItem] = useState<string | null>(initialItem);
+  // The address says which tab shows and which skin or drink is open in it ("new" is the editor).
+  const searchParams = useSearchParams();
+  const tab = profileTab(searchParams.get("tab"));
+  const param = itemParam(tab);
+  const item = param ? searchParams.get(param) : null;
   // Set once this page has pushed an item's address, so ← goes back to the wardrobe entry.
   const openedHere = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -208,7 +207,7 @@ export default function ProfilePanel({
   // Skin and drink codes' sessions, which open just their wardrobes when there's no Profile session.
   const [codes, setCodes] = useState<CodeSessions>(NO_CODE_SESSIONS);
   // The old /skins and /drinks addresses land on those tabs, from in-game messages about codes.
-  const [showCode, setShowCode] = useState(initialTab === "skins" || initialTab === "drinks");
+  const [showCode, setShowCode] = useState(tab === "skins" || tab === "drinks");
   const codeId = useId();
   const panelId = useId();
   const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
@@ -367,22 +366,8 @@ export default function ProfilePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawn && encodeAccountShape(drawn), shown]);
 
-  // Back and forward move between the wardrobe and what it opened.
-  useEffect(() => {
-    function fromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      const next = profileTab(params.get("tab"));
-      const param = itemParam(next);
-      setTab(next);
-      setItem(param ? params.get(param) : null);
-    }
-    window.addEventListener("popstate", fromUrl);
-    return () => window.removeEventListener("popstate", fromUrl);
-  }, []);
-
+  // Next.js keeps useSearchParams in step with these, and with Back, Forward and links.
   const go = useCallback((next: ProfileTab, nextItem: string | null, push: boolean) => {
-    setTab(next);
-    setItem(nextItem);
     const url = profileHref(next, nextItem);
     if (push) window.history.pushState(null, "", url);
     else window.history.replaceState(null, "", url);
@@ -399,6 +384,8 @@ export default function ProfilePanel({
   const itemNav = useCallback(
     (next: ProfileTab) => ({
       onOpen: (id: string) => {
+        // A code redeemed in the wardrobe replaces the code session it was opened with.
+        dropCodes();
         openedHere.current = true;
         go(next, id, true);
       },
@@ -406,13 +393,15 @@ export default function ProfilePanel({
         if (openedHere.current) window.history.back();
         else go(next, null, false);
       },
+      // Nothing to show (no session for it): back to the wardrobe in place, safe to repeat.
+      onLeave: () => go(next, null, false),
       // After a submit: the new item replaces the editor's entry, and the wardrobe catches up.
       onShow: (id: string) => {
         go(next, id, false);
         if (tokenRef.current) void loadDashboard(tokenRef.current, { quiet: true });
       },
     }),
-    [go, loadDashboard],
+    [dropCodes, go, loadDashboard],
   );
   const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
@@ -443,7 +432,7 @@ export default function ProfilePanel({
     setLoggingOut(false);
   }
 
-  if (holding) return <ProfilePlaceholder shape={shape} tab={initialTab} />;
+  if (holding) return <ProfilePlaceholder shape={shape} tab={tab} />;
 
   const codeForm = (
     <>

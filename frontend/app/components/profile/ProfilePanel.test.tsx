@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import ProfilePanel from "./ProfilePanel";
 import {
@@ -19,13 +20,44 @@ import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../
 import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
 import { getCreationCatalog, logoutCharacter, type CreationCatalog } from "../../../lib/characters/api";
-import { getReviewSheet, getSkinThumbnail, getSubmission, startSkinFromProfile } from "../../../lib/skins/api";
+import {
+  getReviewSheet,
+  getSkinThumbnail,
+  getSubmission,
+  redeemCode,
+  startSkinFromProfile,
+} from "../../../lib/skins/api";
 import { getSession as getSkinsSession, setSession as setSkinsSession } from "../../../lib/skins/session";
 import { getCodeWardrobe, signInWithCode } from "../../../lib/profile/codes";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+// Like Next.js, useSearchParams follows pushState, replaceState and Back.
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  function subscribe(onChange: () => void) {
+    window.addEventListener("popstate", onChange);
+    window.addEventListener("test:url", onChange);
+    return () => {
+      window.removeEventListener("popstate", onChange);
+      window.removeEventListener("test:url", onChange);
+    };
+  }
+  return {
+    useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+    useSearchParams: () => new URLSearchParams(useSyncExternalStore(subscribe, () => window.location.search)),
+  };
+});
+for (const method of ["pushState", "replaceState"] as const) {
+  const original = window.history[method].bind(window.history);
+  window.history[method] = (...args: Parameters<History["pushState"]>) => {
+    original(...args);
+    window.dispatchEvent(new Event("test:url"));
+  };
+}
+
+/** Puts the page at Profile's address for a tab, and a skin open in it. */
+function visit(tab: string, skin?: string) {
+  window.history.replaceState(null, "", skin ? `/profile?tab=${tab}&skin=${skin}` : `/profile?tab=${tab}`);
+}
 
 vi.mock("../../../lib/account/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/account/api")>()),
@@ -50,6 +82,7 @@ vi.mock("../../../lib/skins/api", async (importOriginal) => ({
   getSubmission: vi.fn(),
   getReviewSheet: vi.fn(),
   getPlayerMeta: vi.fn(() => new Promise(() => undefined)),
+  redeemCode: vi.fn(),
   startSkinFromProfile: vi.fn(),
 }));
 // The editor is tested on its own; here it only has to open in the tab and hand back a submission.
@@ -141,7 +174,8 @@ afterEach(() => {
 
 it("offers Discord sign-in when signed out, with the callback notice", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
-  render(<ProfilePanel tab="accounts" signin="expired" />);
+  visit("accounts");
+  render(<ProfilePanel signin="expired" />);
   const link = await screen.findByRole("link", { name: "Sign in with Discord" });
   expect(link.getAttribute("href")).toBe(
     "https://www.tfminecraft.net/api/auth/discord/start?return_to=%2Fprofile%3Ftab%3Daccounts",
@@ -151,13 +185,15 @@ it("offers Discord sign-in when signed out, with the callback notice", async () 
 
 it("says when sign-in is not configured", async () => {
   vi.mocked(getAccount).mockRejectedValue(new AccountApiError("discord_auth_disabled", 503));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   expect(await screen.findByText("Discord sign-in isn’t available yet.")).toBeTruthy();
 });
 
 it("shows an existing Minecraft link", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked({ link_method: "microsoft" }) }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
   expect(row.textContent).toContain("SteveMC");
   expect(row.textContent).toContain("Linked with Microsoft");
@@ -176,7 +212,8 @@ it("shows the linked player's head, rank, time on the server and Profile's tabs"
     activity: { first_seen: 1_740_960_000, last_seen: 1_790_000_000, online: true, server_label: "Vardera" },
     rank: "Builder",
   });
-  const { container } = render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  const { container } = render(<ProfilePanel signin={null} />);
   expect(await screen.findByText("Builder")).toBeTruthy();
   expect(screen.getByText("Noble supporter")).toBeTruthy();
   expect(container.querySelector("header")?.textContent).toMatch(/Online now on Vardera · playing since/);
@@ -197,7 +234,8 @@ it("names the server a player was last on once", async () => {
     activity: { first_seen: null, last_seen: Date.now() / 1000 - 86400 * 2, online: false, server_label: "Vardera" },
     rank: null,
   });
-  const { container } = render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  const { container } = render(<ProfilePanel signin={null} />);
   await screen.findByRole("tablist", { name: "Profile sections" });
   expect(container.querySelector("header")?.textContent).toContain("Last on Vardera 2 days ago");
 });
@@ -205,7 +243,8 @@ it("names the server a player was last on once", async () => {
 it("reuses a stored Profile session for the same player", async () => {
   setSession({ session_token: "kept", player_uuid: UUID.toUpperCase(), expires_at: "2099-01-01T00:00:00Z" }, true);
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await screen.findByRole("tablist", { name: "Profile sections" });
   expect(startLinkedProfileSession).not.toHaveBeenCalled();
   expect(getProfileDashboard).toHaveBeenCalledWith("kept");
@@ -219,7 +258,8 @@ it("holds the outline until the overview and Profile arrive, then shows them tog
       finish = done;
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
   expect(screen.getByText("Loading your profile…")).toBeTruthy();
   expect(screen.queryByLabelText("Minecraft account")).toBeNull();
@@ -234,7 +274,8 @@ it("shows the account while Profile is still loading if it is slow", async () =>
   try {
     vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
     vi.mocked(getProfileDashboard).mockReturnValue(new Promise(() => undefined));
-    render(<ProfilePanel tab="accounts" signin={null} />);
+    visit("accounts");
+    render(<ProfilePanel signin={null} />);
     await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalled());
     expect(screen.queryByLabelText("Minecraft account")).toBeNull();
     await vi.advanceTimersByTimeAsync(2500);
@@ -249,17 +290,20 @@ it("shows the account while Profile is still loading if it is slow", async () =>
 it("shapes the outline like the page drawn last time", async () => {
   vi.mocked(getAccount).mockReturnValue(new Promise(() => undefined));
   const shape = { signedIn: true, subline: 0, chips: false, tabs: true, rows: 2 } as const;
-  render(<ProfilePanel tab="accounts" signin={null} shape={shape} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} shape={shape} />);
   expect(screen.getByText("Skins")).toBeTruthy();
   expect(screen.getByText("Minecraft")).toBeTruthy();
   expect(screen.queryByText("Patreon")).toBeNull();
   cleanup();
   // Another tab has no card to outline.
-  render(<ProfilePanel tab="skins" signin={null} shape={shape} />);
+  visit("skins");
+  render(<ProfilePanel signin={null} shape={shape} />);
   expect(screen.getByText("Skins")).toBeTruthy();
   expect(screen.queryByText("Minecraft")).toBeNull();
   cleanup();
-  render(<ProfilePanel tab="accounts" signin={null} shape={{ ...shape, signedIn: false }} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} shape={{ ...shape, signedIn: false }} />);
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Profile");
   expect(screen.queryByText("Linked accounts")).toBeNull();
 });
@@ -267,7 +311,8 @@ it("shapes the outline like the page drawn last time", async () => {
 it("remembers what it drew for the next outline", async () => {
   const set = vi.spyOn(Document.prototype, "cookie", "set");
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await screen.findByRole("tablist", { name: "Profile sections" });
   // No activity, rank or Patreon; Profile's tabs are open.
   await vi.waitFor(() => expect(set).toHaveBeenLastCalledWith(expect.stringMatching(/^tfmc_profile_shape=10012[-;]/)));
@@ -278,7 +323,8 @@ it("still shows the account when the overview and Profile can't load, without Pr
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getAccountOverview).mockRejectedValue(new AccountApiError("down", 500));
   vi.mocked(startLinkedProfileSession).mockRejectedValue(new AccountApiError("down", 500));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   expect((await screen.findByLabelText("Minecraft account")).textContent).toContain("SteveMC");
   await vi.waitFor(() => expect(startLinkedProfileSession).toHaveBeenCalled());
   expect(screen.queryByRole("tablist", { name: "Profile sections" })).toBeNull();
@@ -301,7 +347,8 @@ it("previews then links a code, naming both accounts", async () => {
     );
   vi.mocked(previewMinecraftLink).mockResolvedValue({ player_uuid: "u", minecraft_name: "SteveMC", expires_at: "z" });
   vi.mocked(linkMinecraft).mockResolvedValue(null);
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
   fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "abcd1234ef56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -317,7 +364,8 @@ it("asks for a fresh Discord check when the guild check is stale", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
   vi.mocked(previewMinecraftLink).mockResolvedValue({ player_uuid: "u", minecraft_name: "SteveMC", expires_at: "z" });
   vi.mocked(linkMinecraft).mockRejectedValue(new AccountApiError("guild_check_stale", 403));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
   fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -330,7 +378,8 @@ it("asks for a fresh Discord check when the guild check is stale", async () => {
 it("shows code errors from the server", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
   vi.mocked(previewMinecraftLink).mockRejectedValue(new AccountApiError("Link code has expired", 400));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
   fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -343,7 +392,8 @@ it("asks non-members to join the Discord first", async () => {
       guild: { member: false, checked_at: null, fresh: false, can_recheck: true },
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
   expect(within(row).getByRole("link", { name: "TFMC Discord" }).getAttribute("href")).toBe("https://discord.gg/tfmc");
   expect(within(row).getByRole("button", { name: "I’ve joined, check again" })).toBeTruthy();
@@ -352,20 +402,23 @@ it("asks non-members to join the Discord first", async () => {
 
 it("offers Patreon when enabled and unlinked", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ patreon: { linked: false } }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   expect(await screen.findByRole("button", { name: "Connect Patreon" })).toBeTruthy();
 });
 
 it("shows a cancelled re-check notice while still signed in", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
-  render(<ProfilePanel tab="accounts" signin="denied" />);
+  visit("accounts");
+  render(<ProfilePanel signin="denied" />);
   expect((await screen.findByRole("alert")).textContent).toBe("Discord sign-in was cancelled.");
 });
 
 it("explains a failed sign-out that left the session active", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
   vi.mocked(signOut).mockRejectedValue(new Error("offline"));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
   expect((await screen.findByRole("alert")).textContent).toBe("We couldn’t sign you out just now. Please try again.");
 });
@@ -373,7 +426,8 @@ it("explains a failed sign-out that left the session active", async () => {
 it("returns to signed out after signing out", async () => {
   vi.mocked(getAccount).mockResolvedValueOnce(account()).mockResolvedValueOnce(null);
   vi.mocked(signOut).mockResolvedValue({ ok: true });
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
   expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
 });
@@ -390,14 +444,16 @@ it("shows the grace deadline with a time", async () => {
       },
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const text = (await screen.findByText(/You’ve left the TFMC Discord/)).textContent || "";
   expect(text).toMatch(/\d{1,2}:\d{2}/);
 });
 
 it("lists Discord, Minecraft and Patreon in one card", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked(), patreon: { linked: false } }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const rows = within(await screen.findByRole("list", { name: "Connected accounts" })).getAllByRole("listitem");
   expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual([
     "Discord account",
@@ -412,7 +468,8 @@ it("lists Discord, Minecraft and Patreon in one card", async () => {
 
 it("leaves Patreon out when Patreon linking is off", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await screen.findByLabelText("Minecraft account");
   expect(screen.queryByLabelText("Patreon")).toBeNull();
 });
@@ -422,7 +479,8 @@ it("invites a connected Patreon without a tier to support, and disconnects after
     .mockResolvedValueOnce(account({ patreon: { linked: true, patreon_name: "Wonder" } }))
     .mockResolvedValueOnce(account({ patreon: { linked: false } }));
   vi.mocked(unlinkAccountPatreon).mockResolvedValue({ unlinked: true });
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const row = await screen.findByLabelText("Patreon");
   expect(row.textContent).toContain("No active tier");
   expect(row.textContent).toContain("Connected as Wonder");
@@ -440,7 +498,8 @@ it("invites a connected Patreon without a tier to support, and disconnects after
 
 it("thanks a supporter by tier and skips the supporter link", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ patreon: { linked: true, tier_name: "Gilded" } }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const row = await screen.findByLabelText("Patreon");
   expect(row.textContent).toContain("Supporting as Gilded. Thank you!");
   expect(within(row).queryByRole("link")).toBeNull();
@@ -451,7 +510,8 @@ it("drops a Profile session opened through Discord when signing out", async () =
     .mockResolvedValueOnce(account({ minecraft: linked() }))
     .mockResolvedValueOnce(null);
   vi.mocked(signOut).mockResolvedValue({ ok: true });
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await screen.findByRole("tablist", { name: "Profile sections" });
   expect(getSession()?.source).toBe("discord");
   fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
@@ -466,7 +526,8 @@ it("offers Microsoft first, with the in-game code as a fallback", async () => {
   );
   const assign = vi.fn();
   vi.stubGlobal("location", { ...window.location, assign });
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const row = await screen.findByLabelText("Minecraft account");
   const toggle = within(row).getByRole("button", { name: "Use a code" });
   expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -483,7 +544,8 @@ it("offers Microsoft first, with the in-game code as a fallback", async () => {
 
 it("keeps only the code form when Microsoft is not set up", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: false }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Link with a code from in game" }));
   expect(screen.getByLabelText("Link code")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Sign in with Microsoft" })).toBeNull();
@@ -492,7 +554,8 @@ it("keeps only the code form when Microsoft is not set up", async () => {
 it("asks for a fresh Discord check before opening Microsoft", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
   vi.mocked(startMicrosoftLink).mockRejectedValue(new AccountApiError("guild_check_stale", 403));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "Sign in with Microsoft" }));
   expect((await screen.findByRole("link", { name: "Sign in with Discord" })).getAttribute("href")).toContain(
     "/auth/discord/start",
@@ -501,7 +564,8 @@ it("asks for a fresh Discord check before opening Microsoft", async () => {
 
 it("explains why a Microsoft link failed", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ microsoft_link: true }));
-  render(<ProfilePanel tab="accounts" signin={null} minecraft="no_java_profile" />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} minecraft="no_java_profile" />);
   expect((await screen.findByRole("alert")).textContent).toContain("doesn’t own Minecraft: Java Edition");
 });
 
@@ -512,7 +576,8 @@ it("confirms a Microsoft link from the account itself", async () => {
       minecraft: linked({ linked_at: "2026-10-10T09:00:00Z", link_method: "microsoft" }),
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} minecraft="linked" />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} minecraft="linked" />);
   expect((await screen.findByRole("status")).textContent).toBe("Linked SteveMC with Microsoft.");
   expect(screen.queryByRole("alert")).toBeNull();
 });
@@ -522,7 +587,8 @@ it("drops a Profile session opened through Discord even when the account then fa
     .mockResolvedValueOnce(account({ minecraft: linked() }))
     .mockRejectedValueOnce(new AccountApiError("down", 500));
   vi.mocked(signOut).mockResolvedValue({ ok: true });
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   await screen.findByRole("tablist", { name: "Profile sections" });
   fireEvent.click(within(screen.getByLabelText("Discord account")).getByRole("button", { name: "Sign out" }));
   expect(await screen.findByText(/couldn’t load your account/)).toBeTruthy();
@@ -538,7 +604,8 @@ it("keeps a pending code link's outcome when the form is closed and reopened", a
       reject = no;
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const toggle = await screen.findByRole("button", { name: "Use a code" });
   fireEvent.click(toggle);
   fireEvent.change(screen.getByLabelText("Link code"), { target: { value: "ABCD-1234-EF56" } });
@@ -559,7 +626,8 @@ it("checks again for a player who has joined without signing in again", async ()
       }),
     )
     .mockResolvedValueOnce(account({ microsoft_link: true }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "I’ve joined, check again" }));
   expect(await screen.findByRole("button", { name: "Sign in with Microsoft" })).toBeTruthy();
   expect(getAccount).toHaveBeenCalledTimes(2);
@@ -571,7 +639,8 @@ it("says when Discord still doesn't show the player in the server", async () => 
   vi.mocked(getAccount)
     .mockResolvedValueOnce(account({ guild: outside }))
     .mockResolvedValueOnce(account({ guild: outside }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   fireEvent.click(await screen.findByRole("button", { name: "I’ve joined, check again" }));
   expect((await screen.findByRole("alert")).textContent).toContain("doesn’t show you in the TFMC server yet");
 });
@@ -584,7 +653,8 @@ it.each([false, undefined])(
         guild: { member: false, checked_at: null, fresh: false, can_recheck: canRecheck },
       }),
     );
-    render(<ProfilePanel tab="accounts" signin={null} />);
+    visit("accounts");
+    render(<ProfilePanel signin={null} />);
     const row = await screen.findByLabelText("Minecraft account");
     expect(within(row).getByRole("link", { name: "I’ve joined, check again" }).getAttribute("href")).toContain(
       "/auth/discord/start",
@@ -664,7 +734,8 @@ it("reloads characters when the page comes back into view", async () => {
 
 it("opens on the tab in the address and keeps the address in step with the tabs", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   expect((await screen.findByRole("tab", { name: "Skins" })).className).toContain("bg-");
   expect(screen.getByRole("tab", { name: "Characters" }).className).not.toContain("bg-");
   fireEvent.click(screen.getByRole("tab", { name: "Linked accounts" }));
@@ -676,7 +747,8 @@ it("opens on the tab in the address and keeps the address in step with the tabs"
 
 it("shows only Linked accounts to a Discord account without a Minecraft link", async () => {
   vi.mocked(getAccount).mockResolvedValue(account());
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   expect(await screen.findByRole("heading", { level: 2, name: "Linked accounts" })).toBeTruthy();
   expect(screen.queryByRole("tablist", { name: "Profile sections" })).toBeNull();
   expect(screen.getByRole("button", { name: "Link with a code from in game" })).toBeTruthy();
@@ -686,7 +758,8 @@ it("shows only Linked accounts to a Discord account without a Minecraft link", a
 it("ends a code session with Log out, and offers Discord under Linked accounts", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
   setSession({ session_token: "code-token", player_uuid: UUID, expires_at: "2099-01-01T00:00:00Z", scope: "profile" });
-  render(<ProfilePanel tab="accounts" />);
+  visit("accounts");
+  render(<ProfilePanel />);
   expect((await screen.findByRole("link", { name: "Sign in with Discord" })).getAttribute("href")).toContain(
     "return_to=%2Fprofile%3Ftab%3Daccounts",
   );
@@ -763,8 +836,8 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
     scope: "skin",
     skin_kinds: ["handheld"],
   });
-  window.history.replaceState(null, "", "/profile?tab=skins");
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   const card = await screen.findByRole("link", { name: /Emberfang/ });
   expect(card.getAttribute("href")).toBe("/profile?tab=skins&skin=sub-1");
   expect(card.textContent).toContain("Live");
@@ -794,8 +867,8 @@ it("opens a skin in its tab, and Back returns to the wardrobe", async () => {
     applied_at: null,
   });
   vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
-  window.history.replaceState(null, "", "/profile?tab=skins");
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   fireEvent.click(await screen.findByRole("link", { name: /Emberfang/ }));
   expect(await screen.findByRole("heading", { level: 2, name: "Emberfang" })).toBeTruthy();
   expect(window.location.search).toBe("?tab=skins&skin=sub-1");
@@ -821,8 +894,8 @@ it("opens a skin's address in the tab, and a submit shows the new skin in the ed
   });
   vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
   setSkinsSession({ ...SKIN_CODE, from_profile: true });
-  window.history.replaceState(null, "", "/profile?tab=skins&skin=new");
-  render(<ProfilePanel tab="skins" item="new" />);
+  visit("skins", "new");
+  render(<ProfilePanel />);
   fireEvent.click(await screen.findByRole("button", { name: "Submit skin" }));
   expect(await screen.findByRole("heading", { level: 2, name: "Frostbite" })).toBeTruthy();
   expect(window.location.search).toBe("?tab=skins&skin=sub-2");
@@ -836,15 +909,52 @@ it("opens a skin's address in the tab, and a submit shows the new skin in the ed
 it("sends the editor's address back to the wardrobe without a session for it", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
-  window.history.replaceState(null, "", "/profile?tab=skins&skin=new");
-  render(<ProfilePanel tab="skins" item="new" />);
+  visit("skins", "new");
+  render(<ProfilePanel />);
   expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
   expect(window.location.search).toBe("?tab=skins");
 });
 
+it("closes an open skin when the address leaves it, as the header's Profile link does", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
+  vi.mocked(getSubmission).mockResolvedValue({
+    ...SKIN,
+    grip_preset: null,
+    base_set: null,
+    deny_reason: null,
+    reviewed_at: null,
+    applied_at: null,
+  });
+  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  visit("skins", "sub-1");
+  render(<ProfilePanel />);
+  expect(await screen.findByRole("heading", { level: 2, name: "Emberfang" })).toBeTruthy();
+  act(() => window.history.pushState(null, "", "/profile"));
+  expect(screen.getByRole("tab", { name: "Characters" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+});
+
+it("leaves an editor with no session in place, once, even when effects run twice", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
+  const back = vi.spyOn(window.history, "back");
+  visit("skins", "new");
+  render(
+    <StrictMode>
+      <ProfilePanel />
+    </StrictMode>,
+  );
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins");
+  expect(back).not.toHaveBeenCalled();
+  back.mockRestore();
+});
+
 it("keeps a skin's address through Discord sign-in", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
-  render(<ProfilePanel tab="skins" item="sub-1" />);
+  visit("skins", "sub-1");
+  render(<ProfilePanel />);
   const link = await screen.findByRole("link", { name: "Sign in with Discord" });
   expect(new URL(link.getAttribute("href")!).searchParams.get("return_to")).toBe("/profile?tab=skins&skin=sub-1");
 });
@@ -855,7 +965,8 @@ it("shows when the next skin is ready and keeps codes behind Use a code", async 
   vi.mocked(getProfileDashboard).mockResolvedValue(
     wardrobe({ can_start: { skin: { can_start: false, reason: "cooldown", next_at: nextAt }, drink: READY } }),
   );
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   expect(await screen.findByText("In 3 days")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "New skin" })).toBeNull();
   const toggle = screen.getByRole("button", { name: "Use a code" });
@@ -870,7 +981,8 @@ it("explains a refused start", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe());
   vi.mocked(startSkinFromProfile).mockRejectedValue(new StartRefusedError("rank", null));
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   fireEvent.click(await screen.findByRole("button", { name: "New skin" }));
   expect((await screen.findByRole("alert")).textContent).toBe("Your rank can’t make skins");
   expect(screen.queryByRole("heading", { level: 2, name: "New skin" })).toBeNull();
@@ -884,7 +996,8 @@ it("shows a viewed player's accounts with every action disabled", async () => {
       viewing_as: { staff_name: "boss", expires_at: "2099-01-01T00:00:00Z" },
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const card = await screen.findByRole("list", { name: "Connected accounts" });
   expect(screen.getByText("View only: you can’t change their accounts.")).toBeTruthy();
   const buttons = within(card).getAllByRole("button");
@@ -901,7 +1014,8 @@ it("offers no Discord sign-in link during a view, which would leave it", async (
       viewing_as: { staff_name: "boss", expires_at: "2099-01-01T00:00:00Z" },
     }),
   );
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const card = await screen.findByRole("list", { name: "Connected accounts" });
   expect(within(card).queryByRole("link", { name: /check again|Sign in with Discord/ })).toBeNull();
   expect(
@@ -911,7 +1025,8 @@ it("offers no Discord sign-in link during a view, which would leave it", async (
 
 it("leaves the card usable outside a view", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
-  render(<ProfilePanel tab="accounts" signin={null} />);
+  visit("accounts");
+  render(<ProfilePanel signin={null} />);
   const card = await screen.findByRole("list", { name: "Connected accounts" });
   expect(screen.queryByText(/View only/)).toBeNull();
   expect((within(card).getByRole("button", { name: "Sign out" }) as HTMLButtonElement).matches(":disabled")).toBe(
@@ -950,6 +1065,26 @@ it("opens just the Skins wardrobe for a skin code, with the editor one click awa
   expect(getProfileDashboard).not.toHaveBeenCalled();
 });
 
+it("follows a second skin code entered in the code wardrobe", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  setSkinsSession(SKIN_CODE);
+  vi.mocked(getCodeWardrobe).mockResolvedValue({
+    items: [SKIN],
+    can_start: { can_start: false, reason: "used", next_at: null },
+  });
+  vi.mocked(redeemCode).mockResolvedValue({ ...SKIN_CODE, session_token: "skin-code-2", code_id: 8 });
+  visit("skins");
+  render(<ProfilePanel />);
+  expect(await screen.findByText("Code used")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Use a code" }));
+  fireEvent.change(screen.getByLabelText("Skin code"), { target: { value: "SKIN-TWO" } });
+  fireEvent.click(screen.getByRole("button", { name: "Open" }));
+  expect(await screen.findByRole("button", { name: "Submit skin" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("link", { name: "← Skins" }));
+  await vi.waitFor(() => expect(getCodeWardrobe).toHaveBeenLastCalledWith("skin-code-2"));
+  expect(getSkinsSession()?.session_token).toBe("skin-code-2");
+});
+
 it("says when a code has made its skin, and Log out ends the code", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
   setSkinsSession(SKIN_CODE);
@@ -957,7 +1092,8 @@ it("says when a code has made its skin, and Log out ends the code", async () => 
     items: [SKIN],
     can_start: { can_start: false, reason: "used", next_at: null },
   });
-  render(<ProfilePanel tab="characters" />);
+  visit("characters");
+  render(<ProfilePanel />);
   expect(await screen.findByText("Code used")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "New skin" })).toBeNull();
   expect(screen.getByRole("tab", { name: "Skins" }).getAttribute("aria-selected")).toBe("true");
@@ -979,14 +1115,16 @@ it("falls back to sign-in when a code's session has run out", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
   setSkinsSession(SKIN_CODE);
   vi.mocked(getCodeWardrobe).mockRejectedValue(new ProfileApiError("expired", 401));
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
   expect(getSkinsSession()).toBeNull();
 });
 
 it("opens the code form for old skin and drink links", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
-  render(<ProfilePanel tab="drinks" />);
+  visit("drinks");
+  render(<ProfilePanel />);
   const toggle = await screen.findByRole("button", { name: "Use a code" });
   expect(toggle.getAttribute("aria-expanded")).toBe("true");
   const form = document.getElementById(toggle.getAttribute("aria-controls")!)!;
@@ -1001,7 +1139,8 @@ it("lets a Discord account without a Minecraft link open a wardrobe with a code"
     return { tab: "skins", profile: null };
   });
   vi.mocked(getCodeWardrobe).mockResolvedValue({ items: [SKIN], can_start: READY });
-  render(<ProfilePanel tab="skins" />);
+  visit("skins");
+  render(<ProfilePanel />);
   const toggle = await screen.findByRole("button", { name: "Enter code" });
   // Old /skins links land here with the form open.
   expect(toggle.getAttribute("aria-expanded")).toBe("true");
