@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from src.api.characters_routes import _bearer_token, _profile_session_from_auth
 from src.characters.creates import list_for_player
 from src.characters.lore_items import list_player_custom_items
+from src.characters.wardrobe import WardrobeError, worn_skin_name
 from src.skins.codes import (
     REDEEMABLE_SKIN_SCOPES,
     CodeError,
@@ -29,6 +30,17 @@ class SignInCodeBody(BaseModel):
     remember_me: bool = False
 
 
+def _add_worn_skins(player_uuid: str, characters: list[dict]) -> None:
+    """The skin each character that opens on Profile wears, for its Wardrobe link; null with none."""
+    for character in characters:
+        if str(character.get("status") or "").upper() not in ("ALIVE", "PENDING"):
+            continue
+        try:
+            character["worn_skin"] = worn_skin_name(player_uuid, str(character["id"]))
+        except WardrobeError:
+            pass
+
+
 @profile_router.get("")
 @profile_router.get("/")
 def get_profile_dashboard(
@@ -39,6 +51,7 @@ def get_profile_dashboard(
     uuid = session["player_uuid"]
     realm = session.get("realm_id")
     roster = list_for_player(uuid, realm)
+    _add_worn_skins(uuid, roster.get("characters") or [])
     return {
         **roster,
         "skins": list_submissions_for_player(uuid, realm),

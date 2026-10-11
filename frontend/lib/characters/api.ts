@@ -276,6 +276,8 @@ export type CharacterListItem = {
   experience_modifiers?: ExperienceModifierDto[] | null;
   traits?: CharacterSheetTrait[] | null;
   clues?: string[] | null;
+  /** Profile only: the name of the skin the character wears, null with none. */
+  worn_skin?: string | null;
 };
 
 export type CharacterListResponse = {

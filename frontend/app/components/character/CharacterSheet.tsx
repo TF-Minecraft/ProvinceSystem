@@ -36,7 +36,7 @@ const quietClass = "text-sm text-[var(--tfmc-mist)]";
 const proseClass =
   "max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.6] text-[color-mix(in_srgb,var(--tfmc-cream)_85%,var(--tfmc-mist))]";
 const actionClass =
-  "flex min-h-11 items-center gap-2.5 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_3%,transparent)] px-3.5 py-1.5 text-[15px] font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
+  "group flex min-h-14 min-w-0 items-center gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_3%,transparent)] px-3.5 py-2 text-[15px] font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
 
 function text(value: unknown): string {
   return String(value ?? "").trim();
@@ -151,7 +151,38 @@ function Icon({ path }: { path: string }) {
 
 const HANGER =
   "M10 6.5a1.8 1.8 0 1 1 1.8-1.8c0 1-1.8 1.4-1.8 2.6M10 7.3 2.8 13a1 1 0 0 0 .6 1.8h13.2a1 1 0 0 0 .6-1.8L10 7.3Z";
+const CHEVRON = "M7.5 4.5 13 10l-5.5 5.5";
 const CHEST = "M3 7h14v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Zm4 0V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M3 11h14";
+
+/** A way into the wardrobe or kits, with what's there now. */
+function ActionCard({ href, icon, title, note }: { href: string; icon: string; title: string; note: string | null }) {
+  const noteId = useId();
+  return (
+    <Link href={href} className={actionClass} aria-describedby={note ? noteId : undefined}>
+      <Icon path={icon} />
+      <span className="min-w-0 flex-1">
+        {title}
+        {note ? (
+          <span id={noteId} aria-hidden className="block break-words text-xs font-normal text-[var(--tfmc-mist)]">
+            {note}
+          </span>
+        ) : null}
+      </span>
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden
+        className="h-4 w-4 shrink-0 text-[var(--tfmc-stone)] transition-transform group-hover:translate-x-0.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d={CHEVRON} />
+      </svg>
+    </Link>
+  );
+}
 
 /** One character: who they are, their mechanics, traits, story and clues. */
 export default function CharacterSheet({
@@ -163,7 +194,6 @@ export default function CharacterSheet({
   onCancelPending,
   cancelling = false,
 }: Props) {
-  const kitNoteId = useId();
   const isPending = text(character.status).toUpperCase() === "PENDING";
   const name = character.name || "Unnamed";
   const id = encodeURIComponent(character.id);
@@ -175,7 +205,10 @@ export default function CharacterSheet({
     ["Born", formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) || birthdayIso],
     ["Gender", text(character.gender)],
   ].filter(([, v]) => v);
-  const kit = starterKitLabel(character.kit_status);
+  // A pending character can always claim its kits once it reaches the server.
+  const wornNote =
+    character.worn_skin === undefined ? null : character.worn_skin ? `Wearing ${character.worn_skin}` : "No skin yet";
+  const kit = starterKitLabel(character.kit_status) ?? (isPending ? "Not yet claimed" : null);
 
   const attrs = attributeRows(character.attributes, catalog);
   const maxRank = catalog?.attribute_point_buy?.max_rank ?? 0;
@@ -203,28 +236,15 @@ export default function CharacterSheet({
           ))}
         </dl>
       ) : null}
-      <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap">
-        <Link href={`/character/${id}/wardrobe`} className={actionClass}>
-          <Icon path={HANGER} />
-          Wardrobe
-        </Link>
-        <Link href={`/character/${id}/kits`} className={actionClass} aria-describedby={kit ? kitNoteId : undefined}>
-          <Icon path={CHEST} />
-          <span>
-            Kits
-            {kit ? (
-              <span aria-hidden className="hidden text-xs font-normal text-[var(--tfmc-mist)] sm:block">
-                Starter kit: {kit}
-              </span>
-            ) : null}
-          </span>
-        </Link>
+      <div className="mt-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+        <ActionCard href={`/character/${id}/wardrobe`} icon={HANGER} title="Wardrobe" note={wornNote} />
+        <ActionCard
+          href={`/character/${id}/kits`}
+          icon={CHEST}
+          title="Kits"
+          note={kit ? `Starter kit: ${kit}` : null}
+        />
       </div>
-      {kit ? (
-        <p id={kitNoteId} className="mt-2 text-xs text-[var(--tfmc-mist)] sm:hidden">
-          Starter kit: {kit}
-        </p>
-      ) : null}
     </>
   );
 
