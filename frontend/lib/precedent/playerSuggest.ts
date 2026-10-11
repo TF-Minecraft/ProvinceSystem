@@ -1,7 +1,5 @@
-import type { PrecedentCase } from "./api";
-
-/**
- * Autocomplete source: names already present in the corpus.
+/*
+ * Autocomplete over names already present in the corpus (listKnownPlayers).
  *
  * Deliberately not an external lookup (NameMC has no public API; Mojang's only
  * resolves exact names and is CORS-blocked from a browser). Suggesting only
@@ -9,19 +7,6 @@ import type { PrecedentCase } from "./api";
  * search_similar boosts rows whose players overlap the query -- a fresh typo
  * silently fails to match anything.
  */
-export function collectKnownPlayers(cases: PrecedentCase[]): string[] {
-  const seen = new Map<string, string>();
-  for (const c of cases) {
-    for (const raw of c.players || []) {
-      const name = raw.trim();
-      if (!name) continue;
-      const key = name.toLowerCase();
-      // First spelling encountered wins, so casing stays stable across renders.
-      if (!seen.has(key)) seen.set(key, name);
-    }
-  }
-  return [...seen.values()].sort((a, b) => a.localeCompare(b));
-}
 
 /** The partial name being typed: everything after the last comma. */
 export function currentToken(value: string): string {

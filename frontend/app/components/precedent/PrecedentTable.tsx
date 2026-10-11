@@ -1,38 +1,52 @@
 "use client";
 
-import { mutedClass, quietButtonClass, rowClass } from "@/app/components/admin/ui";
+import { mutedClass, pagerClass, quietButtonClass, rowClass } from "@/app/components/admin/ui";
 import type { PrecedentCase } from "@/lib/precedent/api";
 import { formatCreatedAt } from "@/lib/precedent/filter";
 import CaseTags from "./CaseTags";
 import { dateClass, idClass, loggedByClass } from "./caseFieldStyles";
 
 type Props = {
+  /** One page of cases. */
   cases: PrecedentCase[];
-  /** Total in the DB, for the "showing N of M" line. */
+  /** Cases matching the search across every page. */
   total: number;
+  searching: boolean;
   loading: boolean;
+  page: number;
+  pages: number;
+  onPage: (page: number) => void;
   onEdit: (row: PrecedentCase) => void;
   onDelete: (row: PrecedentCase) => void;
 };
 
-export default function PrecedentTable({ cases, total, loading, onEdit, onDelete }: Props) {
-  if (loading) {
+function matchLine(total: number): string {
+  return total === 1 ? "1 case matches" : `${total.toLocaleString()} cases match`;
+}
+
+export default function PrecedentTable({
+  cases,
+  total,
+  searching,
+  loading,
+  page,
+  pages,
+  onPage,
+  onEdit,
+  onDelete,
+}: Props) {
+  // Only the first load blanks the list; later pages and searches keep the old rows until theirs arrive.
+  if (loading && cases.length === 0) {
     return <p className={`mt-3 ${mutedClass}`}>Loading cases…</p>;
   }
 
   if (cases.length === 0) {
-    return (
-      <p className={`mt-3 ${mutedClass}`}>{total === 0 ? "No cases logged yet." : "No cases match that filter."}</p>
-    );
+    return <p className={`mt-3 ${mutedClass}`}>{searching ? "No cases match that search." : "No cases logged yet."}</p>;
   }
 
   return (
-    <>
-      {cases.length < total ? (
-        <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
-          Showing {cases.length.toLocaleString()} of {total.toLocaleString()}
-        </p>
-      ) : null}
+    <div aria-busy={loading} className={loading ? "opacity-60 transition-opacity" : undefined}>
+      {searching ? <p className="mt-3 text-xs text-[var(--tfmc-stone)]">{matchLine(total)}</p> : null}
       <ul className={`mt-2 ${rowClass}`}>
         {cases.map((row) => (
           <li key={row.id} className="py-3">
@@ -60,6 +74,25 @@ export default function PrecedentTable({ cases, total, loading, onEdit, onDelete
           </li>
         ))}
       </ul>
-    </>
+      {pages > 1 ? (
+        <div className="mt-4 flex items-center gap-3 text-sm text-[var(--tfmc-stone)]">
+          {/* Held while a page loads, so a turn never counts from rows that are about to change. */}
+          <button type="button" className={pagerClass} disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>
+            Previous
+          </button>
+          <span>
+            Page {page} of {pages}
+          </span>
+          <button
+            type="button"
+            className={pagerClass}
+            disabled={loading || page >= pages}
+            onClick={() => onPage(page + 1)}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

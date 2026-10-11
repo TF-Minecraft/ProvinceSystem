@@ -20,6 +20,7 @@ import {
 } from "../../../lib/admin/api";
 import { formatAgo, formatEpoch } from "../../../lib/admin/time";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import { pagerClass } from "./ui";
 
 const VIEWS: { key: PlayerView; label: string }[] = [
   { key: "minecraft", label: "Minecraft" },
@@ -31,8 +32,6 @@ const PANEL_ID = "players-panel";
 
 const inputClass =
   "w-full appearance-none rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] py-3 pl-10 pr-11 text-base text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_70%,transparent)] focus:border-[var(--tfmc-accent)] [&::-webkit-search-cancel-button]:hidden";
-const pagerClass =
-  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-3 py-1.5 text-sm text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)] disabled:opacity-40";
 // The view's subject, in each row's first column.
 const leadClass =
   "text-base font-semibold text-[var(--tfmc-cream)] underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline sm:text-lg";

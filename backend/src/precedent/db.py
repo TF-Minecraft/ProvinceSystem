@@ -285,36 +285,70 @@ def search_similar(
         conn.close()
 
 
-def list_cases(limit: int = 500, offset: int = 0) -> list[dict[str, Any]]:
-    """Newest-first page of the whole corpus. Plain SELECT: no embedding, no Voyage cost.
+# Every field a staff member might filter on, as one string. Players are
+# space-joined so a name matches wherever it sits in the list.
+_CASE_HAYSTACK = (
+    "concat_ws(' ', summary, rule, ruling, punishment, logged_by, array_to_string(players, ' '))"
+)
+
+
+def _like_term(term: str) -> str:
+    """`%term%` for ILIKE, with the pattern characters in `term` matched literally."""
+    escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def list_cases(limit: int = 500, offset: int = 0, query: str = "") -> tuple[list[dict[str, Any]], int]:
+    """Newest-first page of the corpus and how many cases match in all.
+
+    `query` narrows the whole corpus, not just this page: every word in it must
+    appear somewhere in the case's text, rule, ruling, punishment, logger or
+    players, ignoring case. Plain SELECTs on one connection: no embedding, no
+    Voyage cost.
 
     Deliberately not built on search_similar, which caps at MAX_RELEVANT_DISTANCE
     and only ever returns a handful of rows.
     """
+    terms = [_like_term(t) for t in query.split()]
+    where = " AND ".join([f"{_CASE_HAYSTACK} ILIKE %s"] * len(terms)) or "TRUE"
     conn = _connect()
     try:
         with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """
+                f"""
                 SELECT id, logged_by, players, summary, rule, ruling, punishment, created_at
                 FROM precedent_cases
+                WHERE {where}
                 ORDER BY created_at DESC
                 LIMIT %s OFFSET %s
                 """,
-                (limit, offset),
+                (*terms, limit, offset),
             )
-            return [dict(row) for row in cur.fetchall()]
+            rows = [dict(row) for row in cur.fetchall()]
+            cur.execute(f"SELECT count(*) AS total FROM precedent_cases WHERE {where}", terms)
+            row = cur.fetchone()
+            return rows, int(row["total"]) if row else 0
     finally:
         conn.close()
 
 
-def count_cases() -> int:
+def known_players() -> list[str]:
+    """Every player name in the corpus, once each ignoring case, in its newest spelling."""
     conn = _connect()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM precedent_cases")
-            row = cur.fetchone()
-            return int(row[0]) if row else 0
+            cur.execute(
+                """
+                SELECT DISTINCT ON (lower(name)) name
+                FROM (
+                    SELECT btrim(p) AS name, created_at
+                    FROM precedent_cases, unnest(players) AS p
+                ) named
+                WHERE name <> ''
+                ORDER BY lower(name), created_at DESC
+                """
+            )
+            return [row[0] for row in cur.fetchall()]
     finally:
         conn.close()
 

@@ -1,75 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { PrecedentCase } from "@/lib/precedent/api";
 import {
-  caseMatchesFilter,
   cleanSynthesis,
-  filterCases,
   formatCreatedAt,
   parsePlayers,
   punishmentTone,
   rulingTone,
   visibleRuling,
 } from "@/lib/precedent/filter";
-
-function makeCase(overrides: Partial<PrecedentCase> = {}): PrecedentCase {
-  return {
-    id: "case-1",
-    logged_by: "WrenPlays",
-    players: ["alterind"],
-    summary: "Illegal usage of Xaero's Minimap (4.8)",
-    rule: "4.8",
-    ruling: "Upheld",
-    punishment: "10y",
-    created_at: "2026-08-26T11:29:35.433129+00:00",
-    ...overrides,
-  };
-}
-
-describe("caseMatchesFilter", () => {
-  it("matches on summary, case-insensitively", () => {
-    expect(caseMatchesFilter(makeCase(), "xaero")).toBe(true);
-    expect(caseMatchesFilter(makeCase(), "XAERO")).toBe(true);
-  });
-
-  it("matches on rule, ruling, punishment, logged_by and players", () => {
-    const row = makeCase();
-    expect(caseMatchesFilter(row, "4.8")).toBe(true);
-    expect(caseMatchesFilter(row, "upheld")).toBe(true);
-    expect(caseMatchesFilter(row, "10y")).toBe(true);
-    expect(caseMatchesFilter(row, "wrenplays")).toBe(true);
-    expect(caseMatchesFilter(row, "alterind")).toBe(true);
-  });
-
-  it("does not match unrelated text", () => {
-    expect(caseMatchesFilter(makeCase(), "banana bread")).toBe(false);
-  });
-
-  it("treats an empty or whitespace filter as match-all", () => {
-    expect(caseMatchesFilter(makeCase(), "")).toBe(true);
-    expect(caseMatchesFilter(makeCase(), "   ")).toBe(true);
-  });
-
-  it("tolerates a missing players array", () => {
-    const row = { ...makeCase(), players: undefined as unknown as string[] };
-    expect(caseMatchesFilter(row, "xaero")).toBe(true);
-  });
-});
-
-describe("filterCases", () => {
-  it("returns the original array when the filter is blank", () => {
-    const rows = [makeCase(), makeCase({ id: "case-2" })];
-    expect(filterCases(rows, "  ")).toBe(rows);
-  });
-
-  it("narrows to matching rows only", () => {
-    const rows = [
-      makeCase({ id: "a", summary: "Xray" }),
-      makeCase({ id: "b", summary: "Stealing without clues", rule: "7.2" }),
-    ];
-    expect(filterCases(rows, "xray").map((r) => r.id)).toEqual(["a"]);
-  });
-});
 
 describe("cleanSynthesis", () => {
   it("strips bold markers Claude emits, which Discord renders but the web does not", () => {

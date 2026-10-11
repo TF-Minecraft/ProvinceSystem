@@ -35,8 +35,23 @@ export type CaseInput = {
  * routes also accept the shared X-Staff-Key, but that is a bot secret and must
  * never reach a browser. Failures throw AccountApiError, as the panel's do.
  */
-export function listCases(): Promise<{ cases: PrecedentCase[]; total: number }> {
-  return adminRequest("/precedent/staff/cases");
+export function listCases({
+  query = "",
+  limit,
+  offset,
+}: {
+  query?: string;
+  limit: number;
+  offset: number;
+}): Promise<{ cases: PrecedentCase[]; total: number }> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (query.trim()) params.set("q", query.trim());
+  return adminRequest(`/precedent/staff/cases?${params}`);
+}
+
+/** Every player name already in the corpus, for the case form's autocomplete. */
+export function listKnownPlayers(): Promise<{ players: string[] }> {
+  return adminRequest("/precedent/staff/players");
 }
 
 export function createCase(body: CaseInput): Promise<{ id: string }> {

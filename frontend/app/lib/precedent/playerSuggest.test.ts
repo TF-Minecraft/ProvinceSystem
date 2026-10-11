@@ -1,45 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { PrecedentCase } from "@/lib/precedent/api";
-import {
-  applySuggestion,
-  collectKnownPlayers,
-  committedNames,
-  currentToken,
-  suggestPlayers,
-} from "@/lib/precedent/playerSuggest";
-
-function caseWith(players: string[]): PrecedentCase {
-  return {
-    id: "x",
-    logged_by: "s",
-    players,
-    summary: "s",
-    rule: "",
-    ruling: "",
-    punishment: "",
-    created_at: null,
-  };
-}
+import { applySuggestion, committedNames, currentToken, suggestPlayers } from "@/lib/precedent/playerSuggest";
 
 const KNOWN = ["alterind", "drterror23", "Gvinno", "hydra_dr", "noobz___"];
-
-describe("collectKnownPlayers", () => {
-  it("dedupes case-insensitively and sorts", () => {
-    const out = collectKnownPlayers([caseWith(["Gvinno", "alterind"]), caseWith(["gvinno", " alterind "])]);
-    expect(out).toEqual(["alterind", "Gvinno"]);
-  });
-
-  it("keeps the first spelling seen, so casing does not flicker", () => {
-    const out = collectKnownPlayers([caseWith(["Gvinno"]), caseWith(["GVINNO"])]);
-    expect(out).toEqual(["Gvinno"]);
-  });
-
-  it("ignores blanks and missing arrays", () => {
-    const bare = { ...caseWith([]), players: undefined as unknown as string[] };
-    expect(collectKnownPlayers([caseWith(["", "  "]), bare])).toEqual([]);
-  });
-});
 
 describe("currentToken", () => {
   it("returns the text after the last comma", () => {
