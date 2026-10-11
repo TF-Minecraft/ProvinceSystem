@@ -62,7 +62,7 @@ def test_day_partitions_on_captured_at_not_server_day() -> None:
     ("fraction", "microsecond"),
     [("", 0), (".1", 100000), (".882", 882000), (".882157", 882157), (".882157766", 882157)],
 )
-def test_java_instant_timestamps_on_python310(fraction, microsecond) -> None:
+def test_java_instant_timestamps(fraction, microsecond) -> None:
     stamp = f"2026-09-11T01:42:29{fraction}Z"
     assert parse_instant(stamp) == datetime(
         2026, 9, 11, 1, 42, 29, microsecond, tzinfo=timezone.utc
