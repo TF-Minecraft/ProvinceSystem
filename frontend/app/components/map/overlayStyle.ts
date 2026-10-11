@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import type { OverlayBBox } from "./types";
 
-/** Fractional grow on hover (0.01 = 1% larger), centered on the bbox. */
-export const HOVER_OVERLAY_EXPAND = 0.01;
+/** Keep region overlays and labels fixed; highlight with colour and a rim only. */
+export const HOVER_OVERLAY_EXPAND = 0;
 
 type OverlayStyleOptions = {
   /** Fractional grow (e.g. 0.05 = 5% larger), centered on the bbox. */
