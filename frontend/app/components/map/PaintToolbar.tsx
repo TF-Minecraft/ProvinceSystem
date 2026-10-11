@@ -25,6 +25,7 @@ import {
   type PaintTool,
 } from "../../lib/mapPaint";
 import type { UseMapPaintResult } from "../../hooks/useMapPaint";
+import { downloadBlob } from "../../lib/downloadBlob";
 
 const panelClass = "map-frame";
 
@@ -80,12 +81,7 @@ export default function PaintToolbar({ paint }: PaintToolbarProps) {
 
   function handleExport() {
     const { json, filename } = paint.exportPlan();
-    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([json], { type: "application/json" }), filename);
     setShareNote("Plan downloaded.");
   }
 
