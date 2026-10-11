@@ -39,10 +39,11 @@ export default function AdminNav() {
 
   return (
     // Sits 1px low so the current tab's underline covers the row's border inside the scroll box.
+    // Not selectable, so quick clicks between tabs don't highlight their labels.
     <nav
       ref={navRef}
       aria-label="Staff panel"
-      className="-mb-px flex max-w-full gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-5"
+      className="-mb-px flex max-w-full select-none gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-5"
     >
       {LINKS.map((link) => (
         <Link

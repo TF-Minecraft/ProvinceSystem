@@ -278,8 +278,6 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     <MapWorkspace
       // The player's two-line header (PlayerFrame) and their tabs above.
       above="8.5rem"
-      // The timeline under the map: one row of bands, its labels and its key.
-      stripHeight="7.25rem"
       panel={
         <>
           <p className={mutedClass}>Lines between positions are estimates. Views are logged.</p>
