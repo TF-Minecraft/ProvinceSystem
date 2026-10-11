@@ -80,9 +80,7 @@ function SheetSection({ title, children }: { title: string; children: React.Reac
 
 export default function CharacterSheet({ character, catalog, onCancelPending, cancelling = false }: Props) {
   const status = String(character.status || "").toUpperCase();
-  const isAlive = status === "ALIVE";
   const isPending = status === "PENDING";
-  const canEditGear = isAlive || isPending;
 
   const race = displayRace(character, catalog);
   const klass = displayClass(character, catalog);
@@ -125,14 +123,6 @@ export default function CharacterSheet({ character, catalog, onCancelPending, ca
 
   return (
     <>
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        {character.name || "Unnamed"}
-      </h1>
-      {/* Alive needs no label; pending has PendingServerBanner. */}
-      {status && !canEditGear ? (
-        <p className="mt-2 text-xs font-medium text-[var(--tfmc-stone)]">{capitalizeKey(status.toLowerCase())}</p>
-      ) : null}
-
       {identityBits.length > 0 ? (
         <p className="mt-4 text-sm text-[var(--tfmc-mist)]">{identityBits.join(" · ")}</p>
       ) : null}
@@ -215,41 +205,39 @@ export default function CharacterSheet({ character, catalog, onCancelPending, ca
         </SheetSection>
       ) : null}
 
-      {canEditGear ? (
-        <nav className="mt-10 flex flex-col gap-3">
-          <Link
-            href={`/character/${encodeURIComponent(character.id)}/kits`}
-            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+      <nav className="mt-10 flex flex-col gap-3">
+        <Link
+          href={`/character/${encodeURIComponent(character.id)}/kits`}
+          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+        >
+          Kits
+        </Link>
+        <Link
+          href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
+          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+        >
+          Wardrobe
+        </Link>
+        {isPending && onCancelPending ? (
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone.",
+                )
+              ) {
+                return;
+              }
+              void onCancelPending();
+            }}
+            className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
           >
-            Kits
-          </Link>
-          <Link
-            href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
-            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-          >
-            Wardrobe
-          </Link>
-          {isPending && onCancelPending ? (
-            <button
-              type="button"
-              disabled={cancelling}
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone.",
-                  )
-                ) {
-                  return;
-                }
-                void onCancelPending();
-              }}
-              className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
-            >
-              {cancelling ? "Cancelling…" : "Cancel submission"}
-            </button>
-          ) : null}
-        </nav>
-      ) : null}
+            {cancelling ? "Cancelling…" : "Cancel submission"}
+          </button>
+        ) : null}
+      </nav>
     </>
   );
 }

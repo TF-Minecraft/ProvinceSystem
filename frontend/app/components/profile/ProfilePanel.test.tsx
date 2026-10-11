@@ -19,7 +19,12 @@ import {
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
-import { getCreationCatalog, logoutCharacter, type CreationCatalog } from "../../../lib/characters/api";
+import {
+  deletePendingCreate,
+  getCreationCatalog,
+  logoutCharacter,
+  type CreationCatalog,
+} from "../../../lib/characters/api";
 import {
   getReviewSheet,
   getSkinThumbnail,
@@ -102,6 +107,8 @@ vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/characters/api")>()),
   getCreationCatalog: vi.fn(),
   logoutCharacter: vi.fn(),
+  characterFace: vi.fn(async () => null),
+  deletePendingCreate: vi.fn(),
 }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
@@ -853,6 +860,51 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
   fireEvent.click(screen.getByRole("link", { name: "← Skins" }));
   expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
   expect(window.location.search).toBe("?tab=skins");
+});
+
+const CHARACTERS = [
+  { id: "c1", status: "ALIVE", name: "Vaelthir", description: "A quiet scout." },
+  { id: "c2", status: "pending", name: "Mira" },
+  { id: "c3", status: "DEAD", name: "Old Tamsin" },
+] as unknown as ProfileDashboard["characters"];
+
+it("opens a character in its tab, and Back returns to the list", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
+  render(<ProfilePanel />);
+  fireEvent.click(await screen.findByRole("link", { name: /Vaelthir/ }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
+  expect(screen.getByText("A quiet scout.")).toBeTruthy();
+  expect(window.location.search).toBe("?tab=characters&character=c1");
+  expect(screen.getByRole("tab", { name: "Characters" }).getAttribute("aria-selected")).toBe("true");
+  window.history.back();
+  expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();
+  expect(window.location.search).toBe("");
+});
+
+it("sends a character's address back to the list when it can't be opened", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
+  window.history.replaceState(null, "", "/profile?tab=characters&character=c3");
+  render(<ProfilePanel />);
+  expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();
+  expect(window.location.search).toBe("");
+});
+
+it("cancels a pending character from its sheet and returns to the list", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
+  vi.mocked(deletePendingCreate).mockResolvedValue(undefined as never);
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  window.history.replaceState(null, "", "/profile?tab=characters&character=c2");
+  render(<ProfilePanel />);
+  expect(await screen.findByText("Being added to the server…")).toBeTruthy();
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS.slice(0, 1) }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel submission" }));
+  expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();
+  expect(deletePendingCreate).toHaveBeenCalledWith("linked-token", "c2");
+  expect(window.location.search).toBe("");
+  await vi.waitFor(() => expect(screen.queryByText("Mira")).toBeNull());
 });
 
 it("opens a skin in its tab, and Back returns to the wardrobe", async () => {

@@ -7,6 +7,7 @@ import ProfileCustomItemsList from "./ProfileCustomItemsList";
 import ProfileRedeemForm from "./ProfileRedeemForm";
 import { CodeWardrobe, DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
 import { DrinkItem, SkinItem } from "./ProfileItems";
+import ProfileCharacter from "./ProfileCharacter";
 import LinkedAccounts, {
   ACCOUNTS_PATH,
   cardClass,
@@ -403,6 +404,19 @@ export default function ProfilePanel({
     }),
     [dropCodes, go, loadDashboard],
   );
+  const characterNav = useMemo(() => {
+    const nav = itemNav("characters");
+    return {
+      onOpen: nav.onOpen,
+      onBack: nav.onBack,
+      onLeave: nav.onLeave,
+      // The character is gone: back to the list, which reloads without it.
+      onCancelled: () => {
+        nav.onBack();
+        if (tokenRef.current) void loadDashboard(tokenRef.current, { quiet: true });
+      },
+    };
+  }, [itemNav, loadDashboard]);
   const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
 
@@ -650,7 +664,7 @@ export default function ProfilePanel({
               ) : null}
             </>
           )
-        ) : openItem ? (
+        ) : openItem && shown !== "characters" ? (
           shown === "skins" ? (
             <SkinItem id={openItem} {...skinNav} />
           ) : (
@@ -681,8 +695,17 @@ export default function ProfilePanel({
               loadingDashboard || !sessionChecked ? (
                 <p className="text-sm text-[var(--tfmc-mist)]">Loading…</p>
               ) : null
+            ) : shown === "characters" && openItem ? (
+              <ProfileCharacter
+                key={openItem}
+                character={dashboard.characters.find((c) => c.id === openItem) ?? null}
+                catalog={catalog}
+                sessionToken={uiDev ? null : token}
+                {...characterNav}
+              />
             ) : shown === "characters" ? (
               <CharacterList
+                onOpen={characterNav.onOpen}
                 characters={dashboard.characters}
                 aliveCount={aliveCount}
                 maxSlots={dashboard.max_alive_characters ?? 3}

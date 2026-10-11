@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
 import { characterFace, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
+import { characterPath } from "../../../lib/profile/paths";
+import { OPENABLE } from "../profile/ProfileCharacter";
 
 type Props = {
   characters: CharacterListItem[];
   aliveCount: number;
   maxSlots: number;
   catalog?: CreationCatalog | null;
+  /** Opens a character inside the tab. */
+  onOpen: (id: string) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
   /** Reads each character's wardrobe for its face. */
@@ -82,18 +86,20 @@ function Card({
   catalog,
   face,
   playerUuid,
+  onOpen,
 }: {
   item: CharacterListItem;
   catalog?: CreationCatalog | null;
   face: string | null | undefined;
   playerUuid?: string | null;
+  onOpen: (id: string) => void;
 }) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
   const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
   const err = String(item.error || "").trim();
   const chip = CHIPS[status];
-  const linkable = Boolean(item.id) && (status === "ALIVE" || status === "PENDING");
+  const linkable = Boolean(item.id) && OPENABLE.has(status);
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
   const body = (
     <>
@@ -117,12 +123,18 @@ function Card({
       ) : null}
     </>
   );
+  // A plain click opens it in the tab; a new-tab click follows the address.
+  function open(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    onOpen(item.id);
+  }
   return (
     <li className="animate-char-row">
       {linkable ? (
-        <Link href={`/character/${encodeURIComponent(item.id)}`} className={`${cardClass} ${linkCardClass}`}>
+        <a href={characterPath(item.id)} onClick={open} className={`${cardClass} ${linkCardClass}`}>
           {body}
-        </Link>
+        </a>
       ) : (
         <div className={`${cardClass} ${faded ? "text-[var(--tfmc-stone)]" : ""}`}>{body}</div>
       )}
@@ -181,6 +193,7 @@ export default function CharacterList({
   aliveCount,
   maxSlots,
   catalog = null,
+  onOpen,
   onRefresh,
   refreshing = false,
   sessionToken = null,
@@ -218,7 +231,7 @@ export default function CharacterList({
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {current.map((c) => (
-          <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} />
+          <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
         ))}
         <li>
           {atLimit ? (
@@ -252,7 +265,7 @@ export default function CharacterList({
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {dead.map((c) => (
-              <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} />
+              <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
             ))}
           </ul>
         </section>

@@ -8,6 +8,7 @@ import { getSession, isSessionValid, type CharacterSession } from "../../../../l
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
+import { characterPath } from "../../../../lib/profile/paths";
 
 /** UI-dev: unlocked swappable count from URL (always 3 frames shown). */
 function parseUiDevUnlocked(): number {
@@ -102,7 +103,7 @@ export default function CharacterWardrobePage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link
-            href={`/character/${encodeURIComponent(characterId)}`}
+            href={characterPath(characterId)}
             className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:underline"
           >
             ← Character
