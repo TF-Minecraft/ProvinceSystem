@@ -13,88 +13,93 @@ type Props = {
   refreshing?: boolean;
 };
 
-function Row({
-  item,
-  linkable,
-  catalog,
-}: {
-  item: CharacterListItem;
-  linkable?: boolean;
-  catalog?: CreationCatalog | null;
-}) {
-  const status = String(item.status || "").toUpperCase();
+const cardClass =
+  "flex h-full min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
+const linkCardClass =
+  "group transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
+const tileClass =
+  "flex h-full min-h-[84px] items-center justify-center gap-3 rounded-sm border border-dashed border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] px-4 text-sm";
+const chipClass = "rounded-sm px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider";
+
+const CHIPS: Record<string, { label: string; className: string }> = {
+  PENDING: { label: "Pending", className: "bg-[#c8b27a] text-[var(--tfmc-forest-deep)]" },
+  REJECTED: { label: "Rejected", className: "bg-[color-mix(in_srgb,#e8a0a0_22%,transparent)] text-[#f0b8b8]" },
+  MISSING: {
+    label: "Missing",
+    className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-stone)]",
+  },
+};
+
+function statusOf(item: CharacterListItem): string {
+  return String(item.status || "").toUpperCase();
+}
+
+/** The character's initial on the wardrobe cards' backdrop. */
+function Crest({ name, faded }: { name: string; faded?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid h-14 w-14 shrink-0 place-items-center rounded-sm bg-[radial-gradient(circle_at_50%_45%,var(--tfmc-moss),color-mix(in_srgb,var(--tfmc-forest-deep)_90%,var(--tfmc-forest))_75%)] font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)] ${faded ? "opacity-50 grayscale" : ""}`}
+    >
+      {name.trim().charAt(0).toUpperCase() || "?"}
+    </span>
+  );
+}
+
+function Card({ item, catalog }: { item: CharacterListItem; catalog?: CreationCatalog | null }) {
+  const status = statusOf(item);
+  const name = item.name || "Unnamed";
   const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
   const err = String(item.error || "").trim();
+  const chip = CHIPS[status];
+  const linkable = Boolean(item.id) && (status === "ALIVE" || status === "PENDING");
+  const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
   const body = (
     <>
-      <div>
-        <p className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
-          {item.name || "Unnamed"}
-        </p>
-        <p className="mt-1 text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
-        {status === "REJECTED" && err ? <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p> : null}
+      <Crest name={name} faded={faded} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{name}</p>
+          {chip ? <span className={`${chipClass} ${chip.className}`}>{chip.label}</span> : null}
+        </div>
+        <p className="truncate text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
+        {status === "REJECTED" && err ? <p className="mt-0.5 text-xs text-[#e8a0a0]">{err}</p> : null}
       </div>
-      {/* Section headings name the status; only Missing needs a badge. */}
-      {status === "MISSING" ? <span className="text-xs font-medium text-[var(--tfmc-stone)]">Missing</span> : null}
+      {linkable ? (
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden
+          className="h-4 w-4 shrink-0 text-[var(--tfmc-stone)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--tfmc-cream)]"
+        >
+          <path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" d="M6 3.5 10.5 8 6 12.5" />
+        </svg>
+      ) : null}
     </>
   );
-  if (linkable && item.id) {
-    return (
-      <li className="animate-char-row border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] last:border-b-0">
-        <Link
-          href={`/character/${encodeURIComponent(item.id)}`}
-          className="flex flex-col gap-1 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
-        >
+  return (
+    <li className="animate-char-row">
+      {linkable ? (
+        <Link href={`/character/${encodeURIComponent(item.id)}`} className={`${cardClass} ${linkCardClass}`}>
           {body}
         </Link>
-      </li>
-    );
-  }
-  return (
-    <li className="animate-char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-      {body}
+      ) : (
+        <div className={`${cardClass} ${faded ? "text-[var(--tfmc-stone)]" : ""}`}>{body}</div>
+      )}
     </li>
   );
 }
 
-function Section({
-  title,
-  items,
-  empty,
-  hint,
-  linkAlive,
-  catalog,
-}: {
-  title: string;
-  items: CharacterListItem[];
-  empty?: string;
-  hint?: string;
-  linkAlive?: boolean;
-  catalog?: CreationCatalog | null;
-}) {
-  if (items.length === 0 && !empty) return null;
+function SlotPips({ used, total }: { used: number; total: number }) {
+  if (total < 1 || total > 12) return null;
   return (
-    <section className="mt-10">
-      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{title}</h2>
-      {hint ? <p className="mt-2 text-sm text-[var(--tfmc-mist)]">{hint}</p> : null}
-      {items.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{empty}</p>
-      ) : (
-        <ul className="mt-2">
-          {items.map((c) => (
-            <Row
-              key={c.id}
-              item={c}
-              catalog={catalog}
-              linkable={
-                linkAlive &&
-                (String(c.status || "").toUpperCase() === "ALIVE" || String(c.status || "").toLowerCase() === "pending")
-              }
-            />
-          ))}
-        </ul>
-      )}
-    </section>
+    <span aria-hidden className="flex gap-1">
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={`h-1.5 w-4 rounded-full ${i < used ? "bg-[var(--tfmc-accent)]" : "bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]"}`}
+        />
+      ))}
+    </span>
   );
 }
 
@@ -106,75 +111,76 @@ export default function CharacterList({
   onRefresh,
   refreshing = false,
 }: Props) {
-  const alive = characters.filter((c) => String(c.status).toUpperCase() === "ALIVE");
-  const pending = characters.filter((c) => String(c.status).toLowerCase() === "pending");
-  const rejected = characters.filter((c) => String(c.status).toLowerCase() === "rejected");
-  const dead = characters.filter((c) => {
-    const s = String(c.status).toUpperCase();
-    return s === "DEAD" || s === "MISSING";
-  });
-
+  const order = ["ALIVE", "PENDING", "REJECTED"];
+  const current = characters
+    .filter((c) => order.includes(statusOf(c)))
+    .sort((a, b) => order.indexOf(statusOf(a)) - order.indexOf(statusOf(b)));
+  const dead = characters.filter((c) => statusOf(c) === "DEAD" || statusOf(c) === "MISSING");
+  const hasPending = current.some((c) => statusOf(c) === "PENDING");
   const atLimit = aliveCount >= maxSlots;
-  const hasAny = characters.length > 0;
 
   return (
-    <div className="animate-char-rise mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--tfmc-stone)]">
-          Alive characters {aliveCount}/{maxSlots}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          {onRefresh ? (
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-            >
-              {refreshing ? "Refreshing…" : "Refresh"}
-            </button>
-          ) : null}
+    <div className="animate-char-rise">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-mist)]">
+        <span className="flex items-center gap-3">
+          <span>
+            {aliveCount} of {maxSlots} {maxSlots === 1 ? "slot" : "slots"} used
+          </span>
+          <SlotPips used={aliveCount} total={maxSlots} />
+        </span>
+        {onRefresh ? (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+          >
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        ) : null}
+      </div>
+
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {current.map((c) => (
+          <Card key={c.id} item={c} catalog={catalog} />
+        ))}
+        <li>
           {atLimit ? (
-            <span className="text-sm text-[var(--tfmc-mist)]">No free slot</span>
+            <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
+              No free slot
+            </div>
           ) : (
             <Link
               href="/character/create"
-              className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
+              className={`${tileClass} text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]`}
             >
-              Create
+              <span
+                aria-hidden
+                className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] text-lg leading-none"
+              >
+                +
+              </span>
+              New character
             </Link>
           )}
-        </div>
-      </div>
+        </li>
+      </ul>
+      {hasPending ? (
+        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+          Pending characters take up to a minute. You can still edit kits and wardrobe.
+        </p>
+      ) : null}
 
-      {!hasAny ? (
-        <div className="mt-12 text-center">
-          <p className="text-[var(--tfmc-mist)]">No characters yet.</p>
-          {!atLimit ? (
-            <Link
-              href="/character/create"
-              className="mt-6 inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
-            >
-              Create a character
-            </Link>
-          ) : null}
-        </div>
-      ) : (
-        <>
-          <Section title="Alive" items={alive} empty="No alive characters." linkAlive catalog={catalog} />
-          <Section
-            title="Pending"
-            items={pending}
-            hint={
-              pending.length > 0 ? "This can take up to a minute. You can still edit kits and wardrobe." : undefined
-            }
-            linkAlive
-            catalog={catalog}
-          />
-          <Section title="Rejected" items={rejected} catalog={catalog} />
-          <Section title="Dead" items={dead} catalog={catalog} />
-        </>
-      )}
+      {dead.length ? (
+        <section className="mt-10">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {dead.map((c) => (
+              <Card key={c.id} item={c} catalog={catalog} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

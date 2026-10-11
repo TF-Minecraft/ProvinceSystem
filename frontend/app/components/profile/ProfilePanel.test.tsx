@@ -714,7 +714,7 @@ it("reloads characters when the page comes back into view", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe());
   render(<ProfilePanel />);
-  expect(await screen.findByText("Alive characters 0/5")).toBeTruthy();
+  expect(await screen.findByText("0 of 5 slots used")).toBeTruthy();
   const before = vi.mocked(getProfileDashboard).mock.calls.length;
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
   fireEvent(document, new Event("visibilitychange"));
@@ -727,7 +727,7 @@ it("reloads characters when the page comes back into view", async () => {
   );
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
   fireEvent(document, new Event("visibilitychange"));
-  expect(await screen.findByText("Alive characters 1/6")).toBeTruthy();
+  expect(await screen.findByText("1 of 6 slots used")).toBeTruthy();
   expect(screen.getByText("Brin")).toBeTruthy();
   vi.restoreAllMocks();
 });
