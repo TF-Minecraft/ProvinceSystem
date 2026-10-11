@@ -415,7 +415,7 @@ export default function ProfilePanel({
           <p className="text-sm text-[var(--tfmc-mist)]">
             Run <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game, then enter the code.
           </p>
-          <ProfileRedeemForm onRedeemed={onRedeemed} variant="compact" />
+          <ProfileRedeemForm onRedeemed={onRedeemed} />
         </div>
       </>
     );
