@@ -87,7 +87,7 @@ export default function CharacterDetailPage() {
     const s = getSession();
     if (!s || !isSessionValid(s) || s.scope !== "profile") {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
       return;
     }
     setSession(s);
@@ -113,7 +113,7 @@ export default function CharacterDetailPage() {
       /* still clear local */
     } finally {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
     }
   }
 
@@ -123,7 +123,7 @@ export default function CharacterDetailPage() {
     setError(null);
     try {
       await deletePendingCreate(session.session_token, characterId);
-      router.replace("/character");
+      router.replace("/profile");
     } catch (e) {
       const msg =
         e instanceof CharactersApiError
@@ -145,7 +145,7 @@ export default function CharacterDetailPage() {
     <div className="char-rise">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
-          href="/character"
+          href="/profile"
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
         >
           Back to characters

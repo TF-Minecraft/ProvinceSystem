@@ -32,9 +32,12 @@ import {
   rememberAccountShape,
   type AccountShape,
 } from "../../../lib/account/shape";
+import { getCreationCatalog, type CreationCatalog } from "../../../lib/characters/api";
+import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
+import { webCreatorLockLabel } from "../../../lib/characters/webCreatorLock";
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { clearSession, getSession, isSessionValid, type ProfileSession } from "../../../lib/profile/session";
 import type { ProfileTab } from "../../../lib/profile/tabs";
@@ -182,6 +185,8 @@ export default function ProfilePanel({
   const [dashboardFor, setDashboardFor] = useState<string | null>(uiDev ? UI_DEV_SESSION_TOKEN : null);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Race and class names for creates and rejects the roster hasn't named yet.
+  const [catalog, setCatalog] = useState<CreationCatalog | null>(uiDev ? (creationCatalogDev as CreationCatalog) : null);
   const [overview, setOverview] = useState<AccountOverview | null>(null);
   const [overviewFor, setOverviewFor] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -266,10 +271,31 @@ export default function ProfilePanel({
   }, [loadDashboard, token, uiDev]);
 
   useEffect(() => {
+    if (uiDev || !token) return;
+    let live = true;
+    getCreationCatalog(token)
+      .then((next) => live && setCatalog(next))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [token, uiDev]);
+
+  useEffect(() => {
     if (uiDev || !token || !hasPending(dashboard)) return;
     const id = window.setInterval(() => void loadDashboard(token, { quiet: true }), PENDING_POLL_MS);
     return () => window.clearInterval(id);
   }, [dashboard, loadDashboard, token, uiDev]);
+
+  // Back from the game, characters and slots may have changed.
+  useEffect(() => {
+    if (uiDev || !token) return;
+    function onVisible() {
+      if (document.visibilityState === "visible") void loadDashboard(token!, { quiet: true });
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadDashboard, token, uiDev]);
 
   // The linked player's rank and time on the server. Both are optional.
   useEffect(() => {
@@ -529,6 +555,9 @@ export default function ProfilePanel({
                 characters={dashboard.characters}
                 aliveCount={aliveCount}
                 maxSlots={dashboard.max_alive_characters ?? 3}
+                catalog={catalog}
+                webCreatorAllowed={dashboard.web_creator_allowed !== false}
+                webCreatorLockLabel={webCreatorLockLabel(dashboard.web_creator_allowed, dashboard.web_creator_min_group_id)}
                 onRefresh={() => token && void loadDashboard(token)}
                 refreshing={loadingDashboard}
               />

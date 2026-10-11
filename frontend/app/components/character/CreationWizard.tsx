@@ -843,7 +843,7 @@ export default function CreationWizard({
         );
       }
       setError(null);
-      router.replace("/character");
+      router.replace("/profile");
     } catch (err) {
       const raw =
         err instanceof CharactersApiError

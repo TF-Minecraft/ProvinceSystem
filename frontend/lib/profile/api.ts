@@ -64,6 +64,9 @@ export type ProfileCustomItem = {
 export type ProfileDashboard = {
   characters: CharacterListItem[];
   max_alive_characters?: number;
+  /** False when the player's rank is below the web creator's minimum. */
+  web_creator_allowed?: boolean;
+  web_creator_min_group_id?: string;
   skins: ProfileSkinSubmission[];
   drinks: ProfileDrinkSubmission[];
   custom_items: ProfileCustomItem[];
@@ -91,6 +94,9 @@ export async function getProfileDashboard(
       typeof body.max_alive_characters === "number"
         ? body.max_alive_characters
         : undefined,
+    web_creator_allowed: body.web_creator_allowed !== false,
+    web_creator_min_group_id:
+      typeof body.web_creator_min_group_id === "string" ? body.web_creator_min_group_id : "",
     skins: Array.isArray(body.skins) ? body.skins : [],
     drinks: Array.isArray(body.drinks) ? body.drinks : [],
     custom_items: Array.isArray(body.custom_items) ? body.custom_items : [],
