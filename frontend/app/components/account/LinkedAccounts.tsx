@@ -206,11 +206,12 @@ export default function LinkedAccounts({
   const { user, minecraft, patreon } = account;
   const displayName = user.discord_global_name || user.discord_username || "Discord user";
   const discordHandle = user.discord_username ? `@${user.discord_username}` : displayName;
-  // An admin viewing as this player sees the same card, with nothing they can press.
+  // An admin viewing as this player sees the same card, with nothing they can press. Not
+  // inert, which would hide it from screen readers; its Discord sign-in links go instead.
   const viewOnly = Boolean(account.viewing_as);
 
   return (
-      <fieldset disabled={viewOnly} inert={viewOnly} className="m-0 min-w-0 border-0 p-0">
+      <fieldset disabled={viewOnly} className="m-0 min-w-0 border-0 p-0">
         {viewOnly ? (
           <legend className="mb-2 text-sm text-[#e8c48a]">View only: you can’t change their accounts.</legend>
         ) : null}
@@ -253,6 +254,7 @@ export default function LinkedAccounts({
               <LinkActions
                 account={account}
                 recheck={recheck}
+                viewOnly={viewOnly}
                 busy={busy}
                 showCode={showCode}
                 onConnectMicrosoft={() => void onConnectMicrosoft()}
@@ -480,6 +482,7 @@ function PatreonRow({
 function LinkActions({
   account,
   recheck,
+  viewOnly,
   busy,
   showCode,
   onConnectMicrosoft,
@@ -488,6 +491,8 @@ function LinkActions({
 }: {
   account: Account;
   recheck: boolean;
+  /** Links can't be disabled, and signing in with Discord would leave the view. */
+  viewOnly: boolean;
   busy: boolean;
   showCode: boolean;
   onConnectMicrosoft: () => void;
@@ -496,7 +501,7 @@ function LinkActions({
 }) {
   if (!account.guild.member) {
     // Reloading the account asks Discord again, unless the site cannot reach it.
-    return account.guild.can_recheck !== true ? (
+    return account.guild.can_recheck !== true && !viewOnly ? (
       <a href={discordSignInUrl(ACCOUNTS_PATH)} className={quietButtonClass}>
         I’ve joined, check again
       </a>
@@ -506,7 +511,7 @@ function LinkActions({
       </button>
     );
   }
-  if (recheck) return <DiscordSignInLink href={discordSignInUrl(ACCOUNTS_PATH)} />;
+  if (recheck && !viewOnly) return <DiscordSignInLink href={discordSignInUrl(ACCOUNTS_PATH)} />;
   const codeToggle = (
     <button type="button" onClick={onToggleCode} aria-expanded={showCode} className={quietButtonClass}>
       {account.microsoft_link ? "Use a code" : "Link with a code from in game"}

@@ -689,9 +689,20 @@ it("shows a viewed player's accounts with every action disabled", async () => {
   expect(screen.getByText("View only: you can’t change their accounts.")).toBeTruthy();
   const buttons = within(card).getAllByRole("button");
   expect(buttons.map((button) => button.textContent)).toEqual(expect.arrayContaining(["Sign out", "Unlink"]));
-  // Browsers send no clicks to these (jsdom does), and the fieldset is inert as well.
+  // Browsers send no clicks to these (jsdom does). The card stays readable, so it isn't inert.
   for (const button of buttons) expect((button as HTMLButtonElement).matches(":disabled")).toBe(true);
-  expect(card.closest("fieldset")?.hasAttribute("inert")).toBe(true);
+  expect(card.closest("fieldset")?.hasAttribute("inert")).toBe(false);
+});
+
+it("offers no Discord sign-in link during a view, which would leave it", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    guild: { member: false, checked_at: null, fresh: false, can_recheck: false },
+    viewing_as: { staff_name: "boss", expires_at: "2099-01-01T00:00:00Z" },
+  }));
+  render(<ProfilePanel tab="accounts" signin={null} />);
+  const card = await screen.findByRole("list", { name: "Connected accounts" });
+  expect(within(card).queryByRole("link", { name: /check again|Sign in with Discord/ })).toBeNull();
+  expect((within(card).getByRole("button", { name: "I’ve joined, check again" }) as HTMLButtonElement).matches(":disabled")).toBe(true);
 });
 
 it("leaves the card usable outside a view", async () => {
