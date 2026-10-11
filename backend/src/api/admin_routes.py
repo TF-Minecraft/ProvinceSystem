@@ -6,6 +6,7 @@ signed-in caller are audited.
 """
 from __future__ import annotations
 
+import json
 import re
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
@@ -14,8 +15,17 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from src.api.auth_routes import _config, _no_store, current_user, require_same_origin, session_cookie
-from src.auth import admin, audit, players, roles, users
+from src.api.auth_routes import (
+    _config,
+    _no_store,
+    _set_cookie,
+    current_user,
+    require_same_origin,
+    seconds_left,
+    session_cookie,
+    staff_cookie,
+)
+from src.auth import admin, audit, players, roles, users, view_as
 from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
 from src.scripts.util.dirs import validate_map
@@ -197,11 +207,25 @@ def post_revoke_sessions(user_id: int, body: ReasonBody, request: Request, respo
                   lambda token: admin.revoke_sessions(token, user_id, body.reason))
 
 
+@admin_router.post("/accounts/{user_id}/view-as")
+def post_view_as(user_id: int, request: Request):
+    """View the site as a player: their session, view only, while the admin's own waits in a cookie."""
+    config = _config()
+    staff = request.cookies.get(session_cookie(config))
+    view = _write(request, "account.view_as.start", user_id, lambda token: view_as.start(token, user_id))
+    response = _no_store(Response(content=json.dumps({"expires_at": view["expires_at"], "return_to": "/profile"}),
+                                  media_type="application/json"))
+    _set_cookie(response, config, session_cookie(config), view["token"], seconds_left(view["expires_at"]))
+    _set_cookie(response, config, staff_cookie(config), staff, seconds_left(view["staff_expires_at"]))
+    return response
+
+
 # Request validation runs before the handlers above, so malformed writes are
 # audited here: the action, the target and which fields failed, never values.
 _WRITE_ROUTES = (
     (re.compile(r"^/admin/accounts/([^/]+)/role$"), "account.role.change"),
     (re.compile(r"^/admin/accounts/([^/]+)/sessions/revoke$"), "account.sessions.revoke"),
+    (re.compile(r"^/admin/accounts/([^/]+)/view-as$"), "account.view_as.start"),
     (re.compile(r"^/admin/luckperms/changes$"), "luckperms.change"),
 )
 

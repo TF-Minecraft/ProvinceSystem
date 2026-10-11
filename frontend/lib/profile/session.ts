@@ -87,6 +87,12 @@ export function setSession(session: ProfileSession, rememberMe = false): void {
   writeStored(stored, rememberMe);
 }
 
+/** Only this tab's copy; a remembered session in localStorage is shared with other tabs. */
+export function clearTabSession(): void {
+  if (!canUseStorage()) return;
+  sessionStorage.removeItem(STORAGE_KEY);
+}
+
 export function clearSession(): void {
   if (!canUseStorage()) return;
   sessionStorage.removeItem(STORAGE_KEY);

@@ -19,6 +19,7 @@ from src.skins import db
 
 from . import audit
 from .admin import REASON_MAX, REASON_MIN, AdminError, clean_reason, list_staff
+from .users import drop_orphan_view_profiles
 
 
 def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: str = "player") -> str:
@@ -46,7 +47,11 @@ def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: st
                     raise SystemExit("Refusing to remove the last root account.")
                 new_role = demote_to
             conn.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, target["user_id"]))
-            revoked = conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (target["user_id"],)).rowcount
+            revoked = conn.execute(
+                "DELETE FROM user_sessions WHERE user_id = ? OR acting_user_id = ?",
+                (target["user_id"], target["user_id"]),
+            ).rowcount
+            drop_orphan_view_profiles(conn)
             audit.record(
                 conn, actor=None, action="account.role.change", outcome="ok", target=target, reason=clean,
                 detail={"before": target["role"], "after": new_role, "sessions_revoked": revoked},

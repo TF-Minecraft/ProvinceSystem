@@ -53,6 +53,8 @@ export type Account = {
   /** True when "Connect with Microsoft" is set up on this site. */
   microsoft_link?: boolean;
   patreon: PatreonStatus | null;
+  /** Set while an admin views the site as this player; everything is view only. */
+  viewing_as?: { staff_name: string | null; expires_at: string } | null;
 };
 
 export type MinecraftLinkPreview = {
@@ -99,6 +101,19 @@ export async function getAccount(): Promise<Account | null> {
     if (err instanceof AccountApiError && err.status === 401) return null;
     throw err;
   }
+}
+
+/** Leave a view of the site as a player; returns where to go next. */
+export async function stopViewingAs(): Promise<string> {
+  let data: { return_to?: unknown };
+  try {
+    data = await accountRequest<{ return_to?: unknown }>("/auth/view-as/stop", { method: "POST" });
+  } catch (err) {
+    // Another tab, or the view running out, has already switched back.
+    if (err instanceof AccountApiError && err.status === 409) return "/admin/players";
+    throw err;
+  }
+  return typeof data.return_to === "string" && data.return_to.startsWith("/") ? data.return_to : "/profile";
 }
 
 export function signOut(): Promise<unknown> {

@@ -94,6 +94,12 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         if "role" not in columns:
             conn.execute(f"ALTER TABLE users ADD COLUMN {_USERS_ROLE_COLUMN}")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+        user_sessions = {row["name"] for row in conn.execute("PRAGMA table_info(user_sessions)")}
+        if "acting_user_id" not in user_sessions:
+            conn.execute(
+                "ALTER TABLE user_sessions ADD COLUMN acting_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
+            )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_acting ON user_sessions(acting_user_id)")
         links = {row["name"] for row in conn.execute("PRAGMA table_info(discord_links)")}
         if "discord_nickname" not in links:
             conn.execute("ALTER TABLE discord_links ADD COLUMN discord_nickname TEXT")

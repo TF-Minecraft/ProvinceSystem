@@ -206,111 +206,120 @@ export default function LinkedAccounts({
   const { user, minecraft, patreon } = account;
   const displayName = user.discord_global_name || user.discord_username || "Discord user";
   const discordHandle = user.discord_username ? `@${user.discord_username}` : displayName;
+  // An admin viewing as this player sees the same card, with nothing they can press. Not
+  // inert, which would hide it from screen readers; its Discord sign-in links go instead.
+  const viewOnly = Boolean(account.viewing_as);
 
   return (
-    <ul
-      ref={cardRef}
-      className={`${cardClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`}
-      aria-label="Connected accounts"
-    >
-      <AccountRow
-        label="Discord account"
-        service="Discord"
-        icon={
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={user.avatar_url} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
-        }
-        action={
-          <button type="button" onClick={() => void onSignOut()} disabled={busy} className={quietButtonClass}>
-            Sign out
-          </button>
-        }
-      >
-        <p className="truncate font-semibold text-[var(--tfmc-cream)]">{displayName}</p>
-        {user.discord_username ? (
-          <p className="truncate text-sm text-[var(--tfmc-stone)]">@{user.discord_username}</p>
+      <fieldset disabled={viewOnly} className="m-0 min-w-0 border-0 p-0">
+        {viewOnly ? (
+          <legend className="mb-2 text-sm text-[#e8c48a]">View only: you can’t change their accounts.</legend>
         ) : null}
-      </AccountRow>
-
-      <AccountRow
-        label="Minecraft account"
-        service="Minecraft"
-        icon={minecraft ? <PlayerHead uuid={minecraft.player_uuid} fallback={null} size={32} /> : <EmptyIcon />}
-        action={
-          minecraft ? (
-            confirmUnlink ? null : (
-              <button type="button" onClick={() => setConfirmUnlink(true)} className={quietButtonClass}>
-                Unlink
-              </button>
-            )
-          ) : (
-            <LinkActions
-              account={account}
-              recheck={recheck}
-              busy={busy}
-              showCode={showCode}
-              onConnectMicrosoft={() => void onConnectMicrosoft()}
-              onToggleCode={() => setShowCode((open) => !open)}
-              onRecheck={() => void onRecheckGuild()}
-            />
-          )
-        }
-        below={
-          !minecraft && account.guild.member && !recheck ? (
-            <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
-          ) : null
-        }
-        // Hidden rather than unmounted, so closing it mid-request keeps the request's outcome.
-        belowOpen={showCode}
+      <ul
+        ref={cardRef}
+        className={`${cardClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`}
+        aria-label="Connected accounts"
       >
-        {minecraft ? (
-          <>
-            <p className="truncate font-semibold text-[var(--tfmc-cream)]">
-              {minecraft.minecraft_name || "Minecraft account"}
-            </p>
-            <p className="text-sm text-[var(--tfmc-stone)]">{linkedHow(minecraft)}</p>
-            {confirmUnlink ? (
-              <div className="mt-3 flex flex-wrap items-center gap-4">
-                <span className="text-sm text-[var(--tfmc-mist)]">Unlink this Minecraft account?</span>
-                <button type="button" onClick={() => void onUnlink()} disabled={busy} className={buttonClass}>
+        <AccountRow
+          label="Discord account"
+          service="Discord"
+          icon={
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={user.avatar_url} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
+          }
+          action={
+            <button type="button" onClick={() => void onSignOut()} disabled={busy} className={quietButtonClass}>
+              Sign out
+            </button>
+          }
+        >
+          <p className="truncate font-semibold text-[var(--tfmc-cream)]">{displayName}</p>
+          {user.discord_username ? (
+            <p className="truncate text-sm text-[var(--tfmc-stone)]">@{user.discord_username}</p>
+          ) : null}
+        </AccountRow>
+
+        <AccountRow
+          label="Minecraft account"
+          service="Minecraft"
+          icon={minecraft ? <PlayerHead uuid={minecraft.player_uuid} fallback={null} size={32} /> : <EmptyIcon />}
+          action={
+            minecraft ? (
+              confirmUnlink ? null : (
+                <button type="button" onClick={() => setConfirmUnlink(true)} className={quietButtonClass}>
                   Unlink
                 </button>
-                <button type="button" onClick={() => setConfirmUnlink(false)} disabled={busy} className={quietButtonClass}>
-                  Keep it
-                </button>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <p className="text-[var(--tfmc-stone)]">Not linked</p>
-            {!account.guild.member ? (
-              <p className="text-sm text-[var(--tfmc-stone)]">
-                Join the{" "}
-                <a href={SITE_DISCORD_URL} className={accentLinkClass}>
-                  TFMC Discord
-                </a>{" "}
-                to link.
+              )
+            ) : (
+              <LinkActions
+                account={account}
+                recheck={recheck}
+                viewOnly={viewOnly}
+                busy={busy}
+                showCode={showCode}
+                onConnectMicrosoft={() => void onConnectMicrosoft()}
+                onToggleCode={() => setShowCode((open) => !open)}
+                onRecheck={() => void onRecheckGuild()}
+              />
+            )
+          }
+          below={
+            !minecraft && account.guild.member && !recheck ? (
+              <MinecraftLinkForm discordName={discordHandle} onLinked={refresh} />
+            ) : null
+          }
+          // Hidden rather than unmounted, so closing it mid-request keeps the request's outcome.
+          belowOpen={showCode}
+        >
+          {minecraft ? (
+            <>
+              <p className="truncate font-semibold text-[var(--tfmc-cream)]">
+                {minecraft.minecraft_name || "Minecraft account"}
               </p>
-            ) : recheck ? (
-              <p className="text-sm text-[var(--tfmc-stone)]">Confirm your Discord membership to link.</p>
-            ) : null}
-          </>
-        )}
-      </AccountRow>
+              <p className="text-sm text-[var(--tfmc-stone)]">{linkedHow(minecraft)}</p>
+              {confirmUnlink ? (
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  <span className="text-sm text-[var(--tfmc-mist)]">Unlink this Minecraft account?</span>
+                  <button type="button" onClick={() => void onUnlink()} disabled={busy} className={buttonClass}>
+                    Unlink
+                  </button>
+                  <button type="button" onClick={() => setConfirmUnlink(false)} disabled={busy} className={quietButtonClass}>
+                    Keep it
+                  </button>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p className="text-[var(--tfmc-stone)]">Not linked</p>
+              {!account.guild.member ? (
+                <p className="text-sm text-[var(--tfmc-stone)]">
+                  Join the{" "}
+                  <a href={SITE_DISCORD_URL} className={accentLinkClass}>
+                    TFMC Discord
+                  </a>{" "}
+                  to link.
+                </p>
+              ) : recheck ? (
+                <p className="text-sm text-[var(--tfmc-stone)]">Confirm your Discord membership to link.</p>
+              ) : null}
+            </>
+          )}
+        </AccountRow>
 
-      {patreon ? (
-        <PatreonRow
-          patreon={patreon}
-          busy={busy}
-          confirm={confirmPatreon}
-          onConnect={() => void onConnectPatreon()}
-          onBegin={() => setConfirmPatreon(true)}
-          onCancel={() => setConfirmPatreon(false)}
-          onDisconnect={() => void onDisconnectPatreon()}
-        />
-      ) : null}
-    </ul>
+        {patreon ? (
+          <PatreonRow
+            patreon={patreon}
+            busy={busy}
+            confirm={confirmPatreon}
+            onConnect={() => void onConnectPatreon()}
+            onBegin={() => setConfirmPatreon(true)}
+            onCancel={() => setConfirmPatreon(false)}
+            onDisconnect={() => void onDisconnectPatreon()}
+          />
+        ) : null}
+      </ul>
+      </fieldset>
   );
 }
 
@@ -473,6 +482,7 @@ function PatreonRow({
 function LinkActions({
   account,
   recheck,
+  viewOnly,
   busy,
   showCode,
   onConnectMicrosoft,
@@ -481,6 +491,8 @@ function LinkActions({
 }: {
   account: Account;
   recheck: boolean;
+  /** Links can't be disabled, and signing in with Discord would leave the view. */
+  viewOnly: boolean;
   busy: boolean;
   showCode: boolean;
   onConnectMicrosoft: () => void;
@@ -489,7 +501,7 @@ function LinkActions({
 }) {
   if (!account.guild.member) {
     // Reloading the account asks Discord again, unless the site cannot reach it.
-    return account.guild.can_recheck !== true ? (
+    return account.guild.can_recheck !== true && !viewOnly ? (
       <a href={discordSignInUrl(ACCOUNTS_PATH)} className={quietButtonClass}>
         I’ve joined, check again
       </a>
@@ -499,7 +511,7 @@ function LinkActions({
       </button>
     );
   }
-  if (recheck) return <DiscordSignInLink href={discordSignInUrl(ACCOUNTS_PATH)} />;
+  if (recheck && !viewOnly) return <DiscordSignInLink href={discordSignInUrl(ACCOUNTS_PATH)} />;
   const codeToggle = (
     <button type="button" onClick={onToggleCode} aria-expanded={showCode} className={quietButtonClass}>
       {account.microsoft_link ? "Use a code" : "Link with a code from in game"}

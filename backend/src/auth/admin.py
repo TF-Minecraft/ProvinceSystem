@@ -10,8 +10,10 @@ from __future__ import annotations
 from src.skins.db import connect
 
 from . import audit, roles
-from .users import session_user_in
+from .users import drop_orphan_view_profiles, session_user_in
 
+# A user's own sessions and the views they have open as players.
+_REVOKE = "DELETE FROM user_sessions WHERE user_id = ? OR acting_user_id = ?"
 REASON_MIN = 3
 REASON_MAX = 500
 _LOOKUP_MAX = 64
@@ -92,7 +94,8 @@ def change_role(token: str, target_id: int, new_role: str, reason: str | None) -
         conn.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, target["user_id"]))
         # Live role checks already apply; signing out also stops open tabs
         # from carrying on with the old role's view.
-        revoked = conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (target["user_id"],)).rowcount
+        revoked = conn.execute(_REVOKE, (target["user_id"], target["user_id"])).rowcount
+        drop_orphan_view_profiles(conn)
         return {"before": target["role"], "after": new_role, "sessions_revoked": revoked}
 
     return _staff_write(token, "account.role.change", target_id, reason, apply)
@@ -102,7 +105,8 @@ def revoke_sessions(token: str, target_id: int, reason: str | None) -> dict:
     def apply(conn, actor, target, _reason):
         if not roles.can(actor["role"], "revoke_sessions"):
             raise AdminError(403, "forbidden", "denied")
-        revoked = conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (target["user_id"],)).rowcount
+        revoked = conn.execute(_REVOKE, (target["user_id"], target["user_id"])).rowcount
+        drop_orphan_view_profiles(conn)
         return {"sessions_revoked": revoked}
 
     return _staff_write(token, "account.sessions.revoke", target_id, reason, apply)

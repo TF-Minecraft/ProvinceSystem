@@ -7,9 +7,13 @@ export function getApiBase(): string {
   return base;
 }
 
+/** Shown for writes refused while an admin views the site as a player. */
+export const VIEW_ONLY_MESSAGE = "View only: you’re seeing the site as this player, so nothing can be changed.";
+
 export function detailMessage(data: unknown, fallback: string): string {
   if (data && typeof data === "object" && "detail" in data) {
     const detail = (data as { detail: unknown }).detail;
+    if (detail === "viewing_as_player") return VIEW_ONLY_MESSAGE;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) {
       return detail
