@@ -56,6 +56,8 @@ docker/data/
 *.db
 backend/src/data/skins/**
 !backend/src/data/skins/.gitkeep
+# Copies of the server resource pack for /diagnostic.
+backend/src/data/diagnostic/
 .claude/
 backend/src/defines/*/derived_sources.json
 CLAUDE.md
