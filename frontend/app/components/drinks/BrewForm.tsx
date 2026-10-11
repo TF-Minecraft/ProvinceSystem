@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import {
   createSubmission,
   getCatalog,
-  getPlayerMeta,
   getTextures,
   DrinksApiError,
   type DrinkCatalog,
   type DrinkIngredient,
   type DrinkTexture,
 } from "../../../lib/drinks/api";
+import { getPlayerMeta } from "../../../lib/skins/api";
+import { readPngSize } from "../../../lib/skins/sizes";
 import {
   COMMON_EFFECTS,
   EXPECTED_PNG_SIZE,
@@ -272,7 +273,10 @@ export default function BrewForm({ session }: Props) {
     };
 
     if (appearance === "upload" && textureFile) {
-      const ok = await checkPngSize(textureFile);
+      const ok = await readPngSize(textureFile).then(
+        (size) => size.w === EXPECTED_PNG_SIZE && size.h === EXPECTED_PNG_SIZE,
+        () => false
+      );
       if (!ok) {
         setError(`PNG must be ${EXPECTED_PNG_SIZE}×${EXPECTED_PNG_SIZE}`);
         return;
@@ -779,20 +783,4 @@ function NumberField({
       />
     </label>
   );
-}
-
-function checkPngSize(file: File): Promise<boolean> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img.width === EXPECTED_PNG_SIZE && img.height === EXPECTED_PNG_SIZE);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(false);
-    };
-    img.src = url;
-  });
 }

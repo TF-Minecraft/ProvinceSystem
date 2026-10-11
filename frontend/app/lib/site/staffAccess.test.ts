@@ -11,6 +11,7 @@ function meta(permissionFlags: Record<string, boolean>) {
   return {
     name_colour_stops: 0,
     allow_drink_texture: false,
+    allow_drink_message: false,
     max_alive_characters: null,
     wardrobe_skin_slots: 0,
     max_3d_pair_bytes: 0,
