@@ -29,7 +29,7 @@ export function placeName(world: string | null, names: WorldNames): string {
 function runKey(entry: ActivityEntry): string | null {
   if (entry.kind !== "block") return null;
   const info = entry.target_info;
-  const what = info ? `${info.source}|${info.id ?? ""}|${info.source_id ?? ""}|${info.name}` : entry.target ?? "";
+  const what = info ? `${info.source}|${info.id ?? ""}|${info.source_id ?? ""}|${info.name}` : (entry.target ?? "");
   return [entry.verb, what, entry.world ?? "", entry.rolled_back ?? ""].join("\u0000");
 }
 

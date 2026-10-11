@@ -4,12 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import { useAccessibleMaps } from "./useAccessibleMaps";
-import {
-  fetchMapBlobUrl,
-  mapApiUrl,
-  mapRequiresAuth,
-  revokeMapBlobUrl,
-} from "@/lib/map/api";
+import { fetchMapBlobUrl, mapApiUrl, mapRequiresAuth, revokeMapBlobUrl } from "@/lib/map/api";
 
 type UseMapAssetUrlResult = {
   url: string | null;
@@ -21,7 +16,7 @@ export function useMapAssetUrl(
   mapId: MapId,
   path: string,
   sessionToken: string | null | undefined,
-  enabled = true
+  enabled = true,
 ): UseMapAssetUrlResult {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -72,8 +67,7 @@ export function useMapAssetUrl(
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : "Failed to load map asset";
+        const message = err instanceof Error ? err.message : "Failed to load map asset";
         setError(message);
         setUrl(null);
       })

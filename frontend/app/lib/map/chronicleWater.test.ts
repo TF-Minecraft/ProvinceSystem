@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildProsperityColorLut } from "./chronicleProsperity";
 import { buildTradeLeagueColorLut } from "./chronicleTradeLeagues";
-import {
-  chronicleDiscardedProvinceMask,
-  isChronicleDiscardedTerrain,
-  omitDiscardedProvinces,
-} from "./chronicleWater";
+import { chronicleDiscardedProvinceMask, isChronicleDiscardedTerrain, omitDiscardedProvinces } from "./chronicleWater";
 
 describe("isChronicleDiscardedTerrain", () => {
   it("matches the terrains the live generators skip, in any case", () => {

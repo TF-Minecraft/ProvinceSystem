@@ -21,10 +21,9 @@ afterEach(() => {
 it("clicks an attached anchor, removes it and revokes the URL a minute later", () => {
   const blob = new Blob(["{}"], { type: "application/json" });
   let clicked: HTMLAnchorElement | null = null;
-  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
-    this: HTMLAnchorElement
-  ) {
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
     expect(this.isConnected).toBe(true);
+    // oxlint-disable-next-line typescript/no-this-alias -- captures the clicked anchor
     clicked = this;
   });
 

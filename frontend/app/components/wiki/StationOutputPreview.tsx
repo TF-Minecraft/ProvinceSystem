@@ -12,7 +12,17 @@ const PREVIEW =
  * Station recipe output: a static thumbnail at rest (no WebGL context per slot),
  * swapped for the rotating 3D model (or textured cube, for vanilla blocks) the first time the slot is hovered or focused.
  */
-export default function StationOutputPreview({ thumbnail, alt, model, cubeFaces }: { thumbnail: string; alt: string; model?: Slot["model"]; cubeFaces?: CubeFaces }) {
+export default function StationOutputPreview({
+  thumbnail,
+  alt,
+  model,
+  cubeFaces,
+}: {
+  thumbnail: string;
+  alt: string;
+  model?: Slot["model"];
+  cubeFaces?: CubeFaces;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [active, setActive] = useState(false);
 
@@ -35,7 +45,13 @@ export default function StationOutputPreview({ thumbnail, alt, model, cubeFaces 
         <img src={thumbnail} alt={alt} loading="lazy" className="block h-full w-full object-contain" />
       </span>
       {active && model ? (
-        <StationModelViewer modelUrl={model.url} textureUrl={model.texture} textureUrls={model.textures} textureAnimationUrl={model.textureAnimationUrl} variant="thumb" />
+        <StationModelViewer
+          modelUrl={model.url}
+          textureUrl={model.texture}
+          textureUrls={model.textures}
+          textureAnimationUrl={model.textureAnimationUrl}
+          variant="thumb"
+        />
       ) : active && cubeFaces ? (
         <SimpleCubeViewer faces={cubeFaces} variant="thumb" />
       ) : null}

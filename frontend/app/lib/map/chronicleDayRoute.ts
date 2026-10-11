@@ -106,16 +106,10 @@ export type ChronicleDayRange = { start: string; end: string };
  * and a day string is never concatenated into a path by hand anywhere in the
  * codebase.
  */
-export function chronicleDayHref(
-  mapId: MapId,
-  day: string,
-  range?: ChronicleDayRange | null
-): string {
+export function chronicleDayHref(mapId: MapId, day: string, range?: ChronicleDayRange | null): string {
   const href = `${chronicleStudioHref(mapId)}/${encodeURIComponent(day)}`;
   if (!range) return href;
-  return `${href}?from=${encodeURIComponent(range.start)}&to=${encodeURIComponent(
-    range.end
-  )}`;
+  return `${href}?from=${encodeURIComponent(range.start)}&to=${encodeURIComponent(range.end)}`;
 }
 
 /**
@@ -124,10 +118,7 @@ export function chronicleDayHref(
  * rather than as an error: the day page still works without one, and silently
  * falling back to the full day list is better than refusing to render.
  */
-export function parseChronicleDayRange(
-  from: unknown,
-  to: unknown
-): ChronicleDayRange | null {
+export function parseChronicleDayRange(from: unknown, to: unknown): ChronicleDayRange | null {
   if (!isValidChronicleDay(from) || !isValidChronicleDay(to)) return null;
   if (from > to) return null;
   return { start: from, end: to };
@@ -149,7 +140,7 @@ export function parseChronicleDayRange(
 export function chronicleDayWalk(
   days: unknown,
   day: string,
-  range: ChronicleDayRange | null
+  range: ChronicleDayRange | null,
 ): {
   days: string[];
   position: number;
@@ -159,9 +150,7 @@ export function chronicleDayWalk(
 } {
   const source = Array.isArray(days) ? days.filter(isValidChronicleDay) : [];
   const deduped = Array.from(new Set(source)).sort();
-  const walkable = range
-    ? deduped.filter((d) => d >= range.start && d <= range.end)
-    : deduped;
+  const walkable = range ? deduped.filter((d) => d >= range.start && d <= range.end) : deduped;
 
   let previous: string | null = null;
   let next: string | null = null;

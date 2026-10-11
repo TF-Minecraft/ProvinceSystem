@@ -28,26 +28,47 @@ it.each<ArmModel>(["default", "slim"])(
   "preserves manual arm selection when replacing a detected %s skin",
   async (detected) => {
     vi.mocked(inferArmModel).mockReturnValue(detected);
-    vi.stubGlobal("Image", class {
-      onload?: () => void;
-      set src(_value: string) { queueMicrotask(() => this.onload?.()); }
-    });
-    vi.stubGlobal("URL", class extends URL {
-      static createObjectURL = vi.fn(() => "blob:replacement");
-      static revokeObjectURL = vi.fn();
-    });
+    vi.stubGlobal(
+      "Image",
+      class {
+        onload?: () => void;
+        set src(_value: string) {
+          queueMicrotask(() => this.onload?.());
+        }
+      },
+    );
+    vi.stubGlobal(
+      "URL",
+      class extends URL {
+        static createObjectURL = vi.fn(() => "blob:replacement");
+        static revokeObjectURL = vi.fn();
+      },
+    );
     const onSave = vi.fn();
-    render(<WardrobeSlotModal
-      open slotLabel="Base" slotId="base" filled canEquip
-      defaultEquipOnSave defaultArmModel={detected}
-      existingTextureSrc="/broken-skin.png" initialDisplayName="Base"
-      namePlaceholder="Base" saving={false} error={null}
-      onClose={vi.fn()} onSave={onSave}
-    />);
+    render(
+      <WardrobeSlotModal
+        open
+        slotLabel="Base"
+        slotId="base"
+        filled
+        canEquip
+        defaultEquipOnSave
+        defaultArmModel={detected}
+        existingTextureSrc="/broken-skin.png"
+        initialDisplayName="Base"
+        namePlaceholder="Base"
+        saving={false}
+        error={null}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />,
+    );
     const file = new File(["png"], "replacement.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText("Skin file"), { target: { files: [file] } });
     await waitFor(() => expect(inferArmModel).toHaveBeenCalled());
-    await waitFor(() => expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() =>
+      expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(false),
+    );
 
     const toggle = screen.getByRole("switch", { name: "Slim arms" });
     const chosen = detected === "default" ? "slim" : "default";

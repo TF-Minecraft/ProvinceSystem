@@ -4,7 +4,7 @@ import type { LoreItemRow } from "./api";
 import { resolveInitialSkinMode } from "./loreSkinMode";
 
 function item(
-  overrides: Omit<Partial<LoreItemRow>, "draft"> & { draft?: Partial<LoreItemRow["draft"]> } = {}
+  overrides: Omit<Partial<LoreItemRow>, "draft"> & { draft?: Partial<LoreItemRow["draft"]> } = {},
 ): LoreItemRow {
   const base: LoreItemRow = {
     kit_key: "iron_hunting_knife",
@@ -36,18 +36,14 @@ function item(
   return {
     ...base,
     ...overrides,
-    draft: { ...base.draft, ...(overrides.draft ?? {}) },
+    draft: { ...base.draft, ...overrides.draft },
     pickable_skins: overrides.pickable_skins ?? base.pickable_skins,
   };
 }
 
 describe("resolveInitialSkinMode", () => {
   it("picks when existing_skin_id is set", () => {
-    expect(
-      resolveInitialSkinMode(
-        item({ draft: { existing_skin_id: "player-knife" } })
-      )
-    ).toBe("pick");
+    expect(resolveInitialSkinMode(item({ draft: { existing_skin_id: "player-knife" } }))).toBe("pick");
   });
 
   it("uploads when pending_skin has submission_id", () => {
@@ -65,8 +61,8 @@ describe("resolveInitialSkinMode", () => {
             state: "pending_skin",
             submission_id: "player-knife",
           },
-        })
-      )
+        }),
+      ),
     ).toBe("upload");
   });
 
@@ -81,8 +77,8 @@ describe("resolveInitialSkinMode", () => {
               kind: "handheld",
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toBe("pick");
   });
 

@@ -268,7 +268,7 @@ export function resolveEntryTexture(contentsDir, entry) {
     "assets",
     entry.namespace,
     "models",
-    `${entry.modelPath}.json`
+    `${entry.modelPath}.json`,
   );
   if (!existsSync(modelFile)) return { reason: `model not on disk: ${entry.modelPath}` };
   let model;
@@ -341,11 +341,16 @@ export function resolveId(contentsDir, entries) {
  */
 export function collectReferencedIds(stationsDir) {
   const counts = new Map();
-  for (const file of readdirSync(stationsDir).filter((f) => f.endsWith(".yml")).sort()) {
+  for (const file of readdirSync(stationsDir)
+    .filter((f) => f.endsWith(".yml"))
+    .sort()) {
     const text = readFileSync(path.join(stationsDir, file), "utf8");
     for (const match of text.matchAll(/itemsadder\{([^}]*)\}/g)) {
       // `id="tfmc:pet_house"` is quoted in some configs.
-      const id = match[1].match(/(?:^|[,;])\s*id=([^,;]+)/)?.[1]?.trim().replace(/^(["'])(.*)\1$/, "$2");
+      const id = match[1]
+        .match(/(?:^|[,;])\s*id=([^,;]+)/)?.[1]
+        ?.trim()
+        .replace(/^(["'])(.*)\1$/, "$2");
       if (!id) continue;
       const bare = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
       if (HIDDEN_OUTPUTS.has(`itemsadder:${bare}`)) continue;
@@ -361,7 +366,9 @@ export function collectReferencedMmoItems(stationsDir) {
   const add = (id) => {
     if (typeof id === "string" && id) counts.set(id, (counts.get(id) ?? 0) + 1);
   };
-  for (const file of readdirSync(stationsDir).filter((f) => f.endsWith(".yml")).sort()) {
+  for (const file of readdirSync(stationsDir)
+    .filter((f) => f.endsWith(".yml"))
+    .sort()) {
     const { recipes } = parseStationRecipes(readFileSync(path.join(stationsDir, file), "utf8"));
     for (const recipe of recipes) {
       const ingredients = Array.isArray(recipe.fields.ingredients)
@@ -408,7 +415,7 @@ function readModel(packRoot, ref, seen = new Set()) {
   const parent = typeof own.parent === "string" ? readModel(packRoot, own.parent, seen) : null;
   return {
     file,
-    textures: { ...(parent?.textures ?? {}), ...(isMap(own.textures) ? own.textures : {}) },
+    textures: { ...parent?.textures, ...(isMap(own.textures) ? own.textures : {}) },
   };
 }
 
@@ -436,7 +443,7 @@ function resolveMmoItemTexture(contentsDir, item) {
       "minecraft",
       "models",
       "item",
-      `${item.material.toLowerCase()}.json`
+      `${item.material.toLowerCase()}.json`,
     );
     if (!existsSync(baseModel)) continue;
     let model;
@@ -453,8 +460,9 @@ function resolveMmoItemTexture(contentsDir, item) {
     if (typeof override?.model !== "string") continue;
     const resolvedModel = readModel(packRoot, override.model);
     if (!resolvedModel) continue;
-    const textureKeys = ["layer0", "0", ...Object.keys(resolvedModel.textures).sort()]
-      .filter((value, index, all) => value !== "particle" && all.indexOf(value) === index);
+    const textureKeys = ["layer0", "0", ...Object.keys(resolvedModel.textures).sort()].filter(
+      (value, index, all) => value !== "particle" && all.indexOf(value) === index,
+    );
     let sourceTexture = null;
     for (const key of textureKeys) {
       const ref = resolveTextureVariable(resolvedModel.textures, key);
@@ -483,10 +491,18 @@ function resolveMmoItemTexture(contentsDir, item) {
 // model selected by CMD, and the model path proves which sprite Minecraft uses.
 // Items configured with CMD or `model:` must not be listed here: resolving
 // through those definitions keeps their icons in sync with the configured art.
-const NAMED_MMOITEM_MODELS = new Map([
-  "ABYSSALITE_AXE", "ABYSSALITE_HOE", "ABYSSALITE_PICKAXE", "ABYSSALITE_SHOVEL",
-  "MYTHRIL_AXE", "MYTHRIL_HOE", "MYTHRIL_PICKAXE", "MYTHRIL_SHOVEL",
-].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]));
+const NAMED_MMOITEM_MODELS = new Map(
+  [
+    "ABYSSALITE_AXE",
+    "ABYSSALITE_HOE",
+    "ABYSSALITE_PICKAXE",
+    "ABYSSALITE_SHOVEL",
+    "MYTHRIL_AXE",
+    "MYTHRIL_HOE",
+    "MYTHRIL_PICKAXE",
+    "MYTHRIL_SHOVEL",
+  ].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]),
+);
 
 /**
  * Resolves an MMOItems `model:` (item_model component) through
@@ -578,7 +594,7 @@ async function extractMmoItemsTextures(contentsDir, stationsDir, itemDir) {
         unresolved.push(
           item.itemModel
             ? `${id} (x${count}): no pack item definition for model ${item.itemModel}`
-            : `${id} (x${count}): no pack override for ${item.material} CMD ${item.customModelData}`
+            : `${id} (x${count}): no pack override for ${item.material} CMD ${item.customModelData}`,
         );
       }
     } else {
@@ -612,12 +628,15 @@ if (isMain) {
   const contentsDir = process.argv[2] ?? DEFAULT_CONTENTS_DIR;
   const stationsDir = process.argv[3] ?? DEFAULT_STATIONS_DIR;
   const itemDir = process.argv[4] ?? path.join(stationsDir, "..", "item");
-  for (const [label, dir] of [["ItemsAdder contents", contentsDir], ["crafting stations", stationsDir]]) {
+  for (const [label, dir] of [
+    ["ItemsAdder contents", contentsDir],
+    ["crafting stations", stationsDir],
+  ]) {
     if (!existsSync(dir) || !statSync(dir).isDirectory()) {
       console.error(
         `\nextract-itemsadder-textures: ${label} directory not found:\n  ${dir}\n\n` +
           "Both live outside this repository. Pass them explicitly:\n" +
-          "  node scripts/extract-itemsadder-textures.mjs <ItemsAdder/contents> <MMOItems/crafting-stations>\n"
+          "  node scripts/extract-itemsadder-textures.mjs <ItemsAdder/contents> <MMOItems/crafting-stations>\n",
       );
       process.exit(1);
     }
@@ -658,7 +677,7 @@ if (isMain) {
         copied += 1;
         lines.push(
           `COPY      ${id} (x${count}) <- ${texture.entry.pack}:${texture.entry.source} ` +
-            `-> ${ITEMSADDER_TEXTURE_DIR}/${destName}`
+            `-> ${ITEMSADDER_TEXTURE_DIR}/${destName}`,
         );
       }
       record.texture = `${ITEMSADDER_TEXTURE_DIR}/${destName}`;
@@ -681,7 +700,7 @@ if (isMain) {
   console.log(
     `\n${referenced.size} referenced ItemsAdder ids; ${withTexture} with a sprite ` +
       `(${copied} copied, ${kept} already present); ` +
-      `manifest: ${path.relative(FRONTEND_ROOT, OUTPUT_MANIFEST).split(path.sep).join("/")}`
+      `manifest: ${path.relative(FRONTEND_ROOT, OUTPUT_MANIFEST).split(path.sep).join("/")}`,
   );
 
   const mmo = await extractMmoItemsTextures(contentsDir, stationsDir, itemDir);
@@ -689,6 +708,6 @@ if (isMain) {
   console.log(
     `${mmo.referenced} referenced MMOItems ids; ${mmo.customConfigured} configure custom-model-data; ` +
       `${mmo.customResolved} resolved to exact pack sprites (${mmo.copied} copied, ${mmo.kept} unchanged); ` +
-      `manifest: ${path.relative(FRONTEND_ROOT, MMOITEMS_OUTPUT_MANIFEST).split(path.sep).join("/")}`
+      `manifest: ${path.relative(FRONTEND_ROOT, MMOITEMS_OUTPUT_MANIFEST).split(path.sep).join("/")}`,
   );
 }

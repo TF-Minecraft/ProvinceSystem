@@ -41,10 +41,24 @@ const MMOITEMS_MANIFEST = path.join(FRONTEND_ROOT, "app", "wiki", "data", "gener
  * deliberately not searchable here.
  */
 const ITEM_TEXTURE_DIRS = [
-  "ammunition", "crops", "currency", "farming", "fishing-rods", "furniture",
-  "gems", "goldsmith-tools", "gun-parts", "instruments", "jewellery",
-  "magic_crafting", "materials", "pets", "skin-scrolls", "smithing-tools",
-  "tools", "vanilla",
+  "ammunition",
+  "crops",
+  "currency",
+  "farming",
+  "fishing-rods",
+  "furniture",
+  "gems",
+  "goldsmith-tools",
+  "gun-parts",
+  "instruments",
+  "jewellery",
+  "magic_crafting",
+  "materials",
+  "pets",
+  "skin-scrolls",
+  "smithing-tools",
+  "tools",
+  "vanilla",
 ];
 
 /**
@@ -80,7 +94,10 @@ const CLASS_REQUIREMENT_LABELS = { Bard: "Bard class" };
 
 /** Outputs staff asked to keep off the wiki, by item identity. */
 export const HIDDEN_OUTPUTS = new Set([
-  "itemsadder:yellow_chip", "itemsadder:red_chip", "itemsadder:blue_chip", "itemsadder:green_chip",
+  "itemsadder:yellow_chip",
+  "itemsadder:red_chip",
+  "itemsadder:blue_chip",
+  "itemsadder:green_chip",
 ]);
 
 /** Resolve item references from the server configuration to available pack assets. */
@@ -123,9 +140,15 @@ export function parseStationRecipes(text) {
   for (let i = 0; i < lines.length; i += 1) {
     const raw = lines[i];
     if (!raw.trim() || raw.trim().startsWith("#")) continue;
-    if (/^recipes:\s*$/.test(raw)) { inRecipes = true; continue; }
+    if (/^recipes:\s*$/.test(raw)) {
+      inRecipes = true;
+      continue;
+    }
     if (!inRecipes) continue;
-    if (/^\S/.test(raw)) { inRecipes = false; continue; }
+    if (/^\S/.test(raw)) {
+      inRecipes = false;
+      continue;
+    }
 
     const indent = raw.length - raw.trimStart().length;
     const body = stripComment(raw.trim());
@@ -133,7 +156,10 @@ export function parseStationRecipes(text) {
     keyIndent ??= indent;
     if (indent === keyIndent) {
       const m = body.match(/^([^:]+):\s*$/);
-      if (!m) { unparsed.push({ line: i + 1, text: raw }); continue; }
+      if (!m) {
+        unparsed.push({ line: i + 1, text: raw });
+        continue;
+      }
       recipe = { key: m[1].trim(), fields: {} };
       field = null;
       fieldIndent = null;
@@ -141,12 +167,18 @@ export function parseStationRecipes(text) {
       recipes.push(recipe);
       continue;
     }
-    if (!recipe) { unparsed.push({ line: i + 1, text: raw }); continue; }
+    if (!recipe) {
+      unparsed.push({ line: i + 1, text: raw });
+      continue;
+    }
     if (indent > keyIndent) fieldIndent ??= indent;
     if (indent > fieldIndent) nestedIndent ??= indent;
 
     if (indent === fieldIndent && body.startsWith("- ")) {
-      if (!field) { unparsed.push({ line: i + 1, text: raw }); continue; }
+      if (!field) {
+        unparsed.push({ line: i + 1, text: raw });
+        continue;
+      }
       const item = unquote(body.slice(2).trim());
       const existing = recipe.fields[field];
       if (Array.isArray(existing)) existing.push(item);
@@ -155,7 +187,10 @@ export function parseStationRecipes(text) {
     }
     if (indent === fieldIndent) {
       const m = body.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-      if (!m) { unparsed.push({ line: i + 1, text: raw }); continue; }
+      if (!m) {
+        unparsed.push({ line: i + 1, text: raw });
+        continue;
+      }
       field = m[1];
       recipe.fields[field] = m[2] === "" ? {} : unquote(m[2]);
       continue;
@@ -177,8 +212,14 @@ function stripComment(value) {
   let quote = null;
   for (let i = 0; i < value.length; i += 1) {
     const ch = value[i];
-    if (quote) { if (ch === quote) quote = null; continue; }
-    if (ch === "'" || ch === '"') { quote = ch; continue; }
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      continue;
+    }
     if (ch === "#" && i > 0 && /\s/.test(value[i - 1])) return value.slice(0, i).trimEnd();
   }
   return value;
@@ -214,13 +255,29 @@ export function parseRef(value) {
   let seenEquals = false;
   const commit = () => {
     if (key || buffer) attrs[key.trim()] = unquote(buffer);
-    key = ""; buffer = ""; seenEquals = false;
+    key = "";
+    buffer = "";
+    seenEquals = false;
   };
   for (const ch of m[2]) {
-    if (quote) { buffer += ch; if (ch === quote) quote = null; continue; }
-    if (ch === "'" || ch === '"') { buffer += ch; quote = ch; continue; }
-    if (ch === "=" && !seenEquals) { seenEquals = true; continue; }
-    if (ch === "," || ch === ";") { commit(); continue; }
+    if (quote) {
+      buffer += ch;
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      buffer += ch;
+      quote = ch;
+      continue;
+    }
+    if (ch === "=" && !seenEquals) {
+      seenEquals = true;
+      continue;
+    }
+    if (ch === "," || ch === ";") {
+      commit();
+      continue;
+    }
     if (seenEquals) buffer += ch;
     else key += ch;
   }
@@ -254,11 +311,16 @@ export function stripColours(value) {
 export function buildItemIndex(itemDir) {
   const byId = new Map();
   if (!itemDir || !existsSync(itemDir) || !statSync(itemDir).isDirectory()) return byId;
-  for (const file of readdirSync(itemDir).filter((f) => f.endsWith(".yml")).sort()) {
+  for (const file of readdirSync(itemDir)
+    .filter((f) => f.endsWith(".yml"))
+    .sort()) {
     let id = null;
     for (const line of readFileSync(path.join(itemDir, file), "utf8").split(/\r?\n/)) {
       const head = line.match(/^([A-Z0-9_]+):(?:\s*#.*)?\s*$/);
-      if (head) { id = head[1]; continue; }
+      if (head) {
+        id = head[1];
+        continue;
+      }
       if (!id) continue;
       const name = line.match(/^ {4}name:\s*(.+)$/);
       if (name) {
@@ -473,7 +535,10 @@ const CATEGORY_RULES = [
     /grass|fern|bush|dandelion|poppy|orchid|allium|bluet|tulip|daisy|cornflower|lily|eyeblossom|rose|sunflower|lilac|peony|pitcher_plant|torchflower|cactus_flower|petals|wildflowers|blossom|dripleaf|vine|roots|seagrass|sea_pickle|sprouts|chorus_flower|glow_lichen|azalea/,
     () => "Plants & Flowers",
   ],
-  [/^(dirt|podzol|mud|packed_mud|rooted_dirt|gravel|sand|red_sand|clay|terracotta|grass_block|soul_sand|soul_soil)$/, () => "Earth & Sediment"],
+  [
+    /^(dirt|podzol|mud|packed_mud|rooted_dirt|gravel|sand|red_sand|clay|terracotta|grass_block|soul_sand|soul_soil)$/,
+    () => "Earth & Sediment",
+  ],
   [/ice$|^snow_block$/, () => "Ice & Snow"],
   [/nether|blackstone|basalt|^end_stone$|purpur|netherite/, () => "Nether & End"],
   [/^bee_nest$|^beehive$|^honey/, () => "Bees & Honey"],
@@ -592,7 +657,9 @@ export function build({
   itemsAdder = new Map(),
   mmoItemsTextures = new Map(),
 }) {
-  const files = readdirSync(sourceDir).filter((f) => f.endsWith(".yml")).sort();
+  const files = readdirSync(sourceDir)
+    .filter((f) => f.endsWith(".yml"))
+    .sort();
   const parsed = [];
   const unparsed = [];
   for (const file of files) {
@@ -634,7 +701,7 @@ export function build({
     if (recovered) return recovered;
     if (ref.kind === "itemsadder") return titleCase(bareItemsAdderId(ref));
     if (ref.kind === "cooking") return titleCase(cookingOrigin(ref) ?? "");
-    return titleCase(ref.kind === "vanilla" ? ref.attrs.type ?? "" : ref.attrs.id ?? "");
+    return titleCase(ref.kind === "vanilla" ? (ref.attrs.type ?? "") : (ref.attrs.id ?? ""));
   };
 
   const vanillaTexture = (type) => {
@@ -711,12 +778,18 @@ export function build({
     const fileSlug = file.replace(/\.yml$/, "");
     for (const r of fileRecipes) {
       const output = outputRef(r.fields.output);
-      if (!output) { stats.badRefs.push(`${file}:${r.key} output`); continue; }
+      if (!output) {
+        stats.badRefs.push(`${file}:${r.key} output`);
+        continue;
+      }
       if (isHiddenOutput(r.fields.output)) continue;
       const ingredients = [];
       for (const raw of asList(r.fields.ingredients)) {
         const ref = parseRef(raw);
-        if (!ref) { stats.badRefs.push(`${file}:${r.key} ingredient "${raw}"`); continue; }
+        if (!ref) {
+          stats.badRefs.push(`${file}:${r.key} ingredient "${raw}"`);
+          continue;
+        }
         ingredients.push(slot(ref));
       }
       const outputSlot = slot(output);
@@ -805,7 +878,7 @@ if (isMain) {
       `\nbuild-station-recipes: source directory not found:\n  ${sourceDir}\n\n` +
         "The MMOItems crafting-station YAML files live outside this repository.\n" +
         "Pass the directory explicitly:\n" +
-        "  node scripts/build-station-recipes.mjs <path-to-MMOItems/crafting-stations>\n"
+        "  node scripts/build-station-recipes.mjs <path-to-MMOItems/crafting-stations>\n",
     );
     process.exit(1);
   }
@@ -816,25 +889,23 @@ if (isMain) {
     console.warn(
       `build-station-recipes: no MMOItems item configs at ${itemDir}; ` +
         "output names will fall back to title-cased item ids, and custom items " +
-        "will lose the vanilla sprite they are built on."
+        "will lose the vanilla sprite they are built on.",
     );
   }
 
   const textureIndex = buildTextureIndex();
   const nameTextureIndex = buildMaterialNameTextureIndex(
-    path.join(FRONTEND_ROOT, "app", "wiki", "data", "materials.ts")
+    path.join(FRONTEND_ROOT, "app", "wiki", "data", "materials.ts"),
   );
   if (nameTextureIndex.ambiguous.size) {
-    console.log(
-      `Ambiguous display names skipped (materials.ts): ${[...nameTextureIndex.ambiguous].sort().join(", ")}`
-    );
+    console.log(`Ambiguous display names skipped (materials.ts): ${[...nameTextureIndex.ambiguous].sort().join(", ")}`);
   }
   const itemsAdder = buildItemsAdderIndex(ITEMSADDER_MANIFEST);
   if (!itemsAdder.size) {
     console.warn(
       `build-station-recipes: no ItemsAdder manifest at ${ITEMSADDER_MANIFEST}; ` +
         "`itemsadder{...}` slots will lose their sprites and fall back to title-cased ids. " +
-        "Re-create it with scripts/extract-itemsadder-textures.mjs."
+        "Re-create it with scripts/extract-itemsadder-textures.mjs.",
     );
   }
   const mmoItemsTextures = buildMmoItemsTextureIndex(MMOITEMS_MANIFEST);
@@ -842,7 +913,7 @@ if (isMain) {
     console.warn(
       `build-station-recipes: no MMOItems texture manifest at ${MMOITEMS_MANIFEST}; ` +
         "custom-model-data items will fall back to their configured base material. " +
-        "Re-create it with scripts/extract-itemsadder-textures.mjs."
+        "Re-create it with scripts/extract-itemsadder-textures.mjs.",
     );
   }
   const { recipes, unparsed, stats } = build({
@@ -873,7 +944,7 @@ if (isMain) {
   for (const [station, count] of [...perStation].sort()) console.log(`  ${station}: ${count}`);
   console.log(
     `Texture coverage: ${stats.textured}/${stats.slots} slots ` +
-      `(${((stats.textured / stats.slots) * 100).toFixed(1)}%)`
+      `(${((stats.textured / stats.slots) * 100).toFixed(1)}%)`,
   );
   if (textureIndex.ambiguous.size) {
     console.log(`Ambiguous texture basenames skipped: ${[...textureIndex.ambiguous].sort().join(", ")}`);

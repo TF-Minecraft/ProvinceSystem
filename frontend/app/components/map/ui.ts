@@ -13,8 +13,7 @@ export const mapFrameClass =
   "rounded-[10px] border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_94%,transparent)] text-[var(--tfmc-cream)] shadow-[0_8px_24px_rgb(0_0_0/0.35)] backdrop-blur-[8px]";
 
 /** A panel's header strip. */
-export const mapFrameHeaderClass =
-  "border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
+export const mapFrameHeaderClass = "border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
 
 /**
  * A control's colours and states, without corners or an outline: the zoom

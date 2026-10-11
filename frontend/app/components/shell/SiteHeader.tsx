@@ -42,10 +42,7 @@ export default function SiteHeader() {
   // Only a hint for showing the link: the panel and its API check the role.
   const [isAdmin, setIsAdmin] = useState(false);
   const [viewing, setViewing] = useState<{ name: string; expiresAt: string } | null>(null);
-  const links = [
-    ...staticLinks,
-    ...(isAdmin ? [adminLink] : []),
-  ];
+  const links = [...staticLinks, ...(isAdmin ? [adminLink] : [])];
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -129,9 +126,7 @@ export default function SiteHeader() {
 
   return (
     <>
-      <header
-        className="sticky top-0 z-[100] grid h-[var(--tfmc-header-h)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6"
-      >
+      <header className="sticky top-0 z-[100] grid h-[var(--tfmc-header-h)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6">
         <button
           ref={toggleRef}
           type="button"
@@ -142,7 +137,14 @@ export default function SiteHeader() {
           onClick={() => setOpen((value) => !value)}
           className="flex h-10 w-12 items-center justify-center justify-self-start rounded-md text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] lg:hidden"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="h-7 w-7"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
         </button>
@@ -190,11 +192,7 @@ export default function SiteHeader() {
         }}
         className={`fixed inset-y-0 left-0 z-[120] flex w-[70%] max-w-xs flex-col overflow-y-auto overscroll-contain border-r border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-xl transition-transform duration-500 ease-out lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <Link
-          href="/"
-          aria-label="TFMC home"
-          className="mb-6 self-center rounded-full"
-        >
+        <Link href="/" aria-label="TFMC home" className="mb-6 self-center rounded-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={LOGO_SRC} alt="" width={96} height={96} className="block h-24 w-24" />
         </Link>

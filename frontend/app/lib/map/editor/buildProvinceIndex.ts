@@ -17,9 +17,7 @@ export type ProvinceIndex = {
 
 export type ProvincePixelIndex = Map<number, Uint32Array>;
 
-export function buildProvincePixelIndex(
-  provinceMap: Int32Array
-): ProvincePixelIndex {
+export function buildProvincePixelIndex(provinceMap: Int32Array): ProvincePixelIndex {
   const buckets = new Map<number, number[]>();
 
   for (let i = 0; i < provinceMap.length; i++) {
@@ -73,9 +71,7 @@ export function deserializeProvinceIdGrid(bytes: ArrayBuffer): {
   const expectedBody = pixelCount * 2;
 
   if (bytes.byteLength !== 8 + expectedBody) {
-    throw new Error(
-      `province id grid body length mismatch for ${width}x${height}`
-    );
+    throw new Error(`province id grid body length mismatch for ${width}x${height}`);
   }
 
   const ids = new Uint16Array(bytes, 8, pixelCount);
@@ -86,7 +82,7 @@ export function buildProvinceIndexFromGrid(
   provinces: EditorProvinceRow[],
   width: number,
   height: number,
-  ids: Uint16Array
+  ids: Uint16Array,
 ): ProvinceIndex {
   const pixelCount = width * height;
   if (ids.length !== pixelCount) {
@@ -181,27 +177,16 @@ export type ProvinceRunIndex = {
 };
 
 export function isProvinceRunIndex(value: unknown): value is ProvinceRunIndex {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { kind?: unknown }).kind === "province-runs"
-  );
+  return typeof value === "object" && value !== null && (value as { kind?: unknown }).kind === "province-runs";
 }
 
-export function deserializeProvinceIdRuns(
-  bytes: ArrayBuffer
-): DecodedProvinceRuns {
+export function deserializeProvinceIdRuns(bytes: ArrayBuffer): DecodedProvinceRuns {
   if (bytes.byteLength < PROVINCE_RUNS_HEADER_SIZE) {
     throw new Error("province id runs data too short for header");
   }
 
   const view = new DataView(bytes);
-  const magic = String.fromCharCode(
-    view.getUint8(0),
-    view.getUint8(1),
-    view.getUint8(2),
-    view.getUint8(3)
-  );
+  const magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
   if (magic !== PROVINCE_RUNS_MAGIC) {
     throw new Error(`bad province id runs magic: ${JSON.stringify(magic)}`);
   }
@@ -226,16 +211,14 @@ export function deserializeProvinceIdRuns(
   if (bytes.byteLength !== expected) {
     throw new Error(
       `province id runs length ${bytes.byteLength} != expected ${expected} ` +
-        `for runCount=${runCount} provinceCount=${provinceCount}`
+        `for runCount=${runCount} provinceCount=${provinceCount}`,
     );
   }
 
   // slice() rather than a view: the sections are not guaranteed to be
   // aligned for typed-array views once provinceCount is odd, and the copy
   // is ~1.5 MB, not 82 MB.
-  const runLengths = new Uint32Array(
-    bytes.slice(PROVINCE_RUNS_HEADER_SIZE, idsStart)
-  );
+  const runLengths = new Uint32Array(bytes.slice(PROVINCE_RUNS_HEADER_SIZE, idsStart));
   const runIds = new Uint16Array(bytes.slice(idsStart, runsEnd));
 
   let total = 0;
@@ -247,9 +230,7 @@ export function deserializeProvinceIdRuns(
     total += length;
   }
   if (total !== width * height) {
-    throw new Error(
-      `province id runs cover ${total} pixels, expected ${width * height}`
-    );
+    throw new Error(`province id runs cover ${total} pixels, expected ${width * height}`);
   }
 
   const bbox = new Map<number, ProvinceBBox>();
@@ -271,7 +252,7 @@ export function buildProvinceRunIndex(
   height: number,
   runLengths: Uint32Array,
   runIds: Uint16Array,
-  bbox: Map<number, ProvinceBBox> = new Map()
+  bbox: Map<number, ProvinceBBox> = new Map(),
 ): ProvinceRunIndex {
   if (runLengths.length !== runIds.length) {
     throw new Error("province run lengths/ids length mismatch");
@@ -290,9 +271,7 @@ export function buildProvinceRunIndex(
   }
 
   if (cursor !== width * height) {
-    throw new Error(
-      `province id runs cover ${cursor} pixels, expected ${width * height}`
-    );
+    throw new Error(`province id runs cover ${cursor} pixels, expected ${width * height}`);
   }
 
   const runsByProvince = new Map<number, Uint32Array>();
@@ -323,10 +302,7 @@ export function buildProvinceRunIndex(
 }
 
 /** Province id at a flat pixel offset, or -1. Matches provinceMap[i]. */
-export function provinceAtPixel(
-  runIndex: ProvinceRunIndex,
-  pixel: number
-): number {
+export function provinceAtPixel(runIndex: ProvinceRunIndex, pixel: number): number {
   if (pixel < 0 || pixel >= runIndex.width * runIndex.height) return -1;
 
   const { runStarts } = runIndex;
@@ -343,11 +319,7 @@ export function provinceAtPixel(
 }
 
 /** Province id at (x, y), or -1. Matches provinceMap[y * width + x]. */
-export function provinceAt(
-  runIndex: ProvinceRunIndex,
-  x: number,
-  y: number
-): number {
+export function provinceAt(runIndex: ProvinceRunIndex, x: number, y: number): number {
   if (x < 0 || y < 0 || x >= runIndex.width || y >= runIndex.height) return -1;
   return provinceAtPixel(runIndex, y * runIndex.width + x);
 }
@@ -356,7 +328,7 @@ export function provinceAt(
 export function forEachProvinceRun(
   runIndex: ProvinceRunIndex,
   provinceId: number,
-  visit: (start: number, length: number) => void
+  visit: (start: number, length: number) => void,
 ): void {
   const runs = runIndex.runsByProvince.get(provinceId);
   if (!runs) return;
@@ -366,10 +338,7 @@ export function forEachProvinceRun(
   }
 }
 
-export function provincePixelCount(
-  runIndex: ProvinceRunIndex,
-  provinceId: number
-): number {
+export function provincePixelCount(runIndex: ProvinceRunIndex, provinceId: number): number {
   let total = 0;
   forEachProvinceRun(runIndex, provinceId, (_start, length) => {
     total += length;
@@ -377,10 +346,7 @@ export function provincePixelCount(
   return total;
 }
 
-export function getProvinceBBox(
-  runIndex: ProvinceRunIndex,
-  provinceId: number
-): ProvinceBBox | null {
+export function getProvinceBBox(runIndex: ProvinceRunIndex, provinceId: number): ProvinceBBox | null {
   return runIndex.bbox.get(provinceId) ?? null;
 }
 
@@ -411,9 +377,7 @@ export function provinceMapFromRuns(runIndex: ProvinceRunIndex): Int32Array {
  * from a flat map. Used by the equivalence tests; the paint path uses the
  * run spans directly instead and never allocates this.
  */
-export function buildProvincePixelIndexFromRuns(
-  runIndex: ProvinceRunIndex
-): ProvincePixelIndex {
+export function buildProvincePixelIndexFromRuns(runIndex: ProvinceRunIndex): ProvincePixelIndex {
   const result: ProvincePixelIndex = new Map();
 
   for (const pid of runIndex.runsByProvince.keys()) {
@@ -435,10 +399,7 @@ export function buildProvincePixelIndexFromRuns(
   return ordered;
 }
 
-export function buildProvinceIndexFromRuns(
-  provinces: EditorProvinceRow[],
-  runIndex: ProvinceRunIndex
-): ProvinceIndex {
+export function buildProvinceIndexFromRuns(provinces: EditorProvinceRow[], runIndex: ProvinceRunIndex): ProvinceIndex {
   const { rgbToProvinceId, provinceToRgb } = buildCatalogRgbMaps(provinces);
 
   // provinceMap is materialised lazily. Expanding the runs costs a 40.96M-entry

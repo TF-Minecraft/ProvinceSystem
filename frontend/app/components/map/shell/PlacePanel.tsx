@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 
 import { fetchMapJson } from "@/lib/map/api";
 import type { PlaceProfile } from "@/app/lib/map/placeProfile";
-import {
-  buildProvinceCountyNames,
-  type CountyNameEntry,
-} from "@/app/lib/map/provinceCounty";
+import { buildProvinceCountyNames, type CountyNameEntry } from "@/app/lib/map/provinceCounty";
 import { cleanRegionName } from "@/app/lib/mapLabels";
 import { resolveMarkerImageSrc, type MapMarker } from "@/app/lib/mapMarkers";
 
@@ -35,11 +32,7 @@ function countyNames(mapId: MapId, sessionToken?: string | null) {
   return names;
 }
 
-function useCountyName(
-  mapId: MapId,
-  provinces: number[],
-  sessionToken?: string | null
-): string | null {
+function useCountyName(mapId: MapId, provinces: number[], sessionToken?: string | null): string | null {
   const [name, setName] = useState<string | null>(null);
   const first = provinces[0];
   useEffect(() => {
@@ -86,14 +79,10 @@ export function PlacePanelContent({
   onSelectGuild,
 }: PlacePanelProps) {
   const guildsHere =
-    place.provinces.length > 0 && place.kindLabel !== "Battle"
-      ? guildsInProvince(regionData, place.provinces[0])
-      : [];
+    place.provinces.length > 0 && place.kindLabel !== "Battle" ? guildsInProvince(regionData, place.provinces[0]) : [];
   const county = useCountyName(mapId, place.provinces, sessionToken);
   const owner = place.ownerId ? regionData?.[place.ownerId] : undefined;
-  const ownerName = place.ownerId
-    ? cleanRegionName(owner?.name ?? place.ownerId) || place.ownerId
-    : null;
+  const ownerName = place.ownerId ? cleanRegionName(owner?.name ?? place.ownerId) || place.ownerId : null;
   // A settlement is a capital of its realm or of a guild, never the other way
   // round: say whose, by name.
   const onlyGuild = guildsHere.length === 1 ? guildsHere[0] : null;
@@ -157,16 +146,12 @@ export function PlacePanelContent({
         }
       />
 
-      {place.note ? (
-        <p className="mb-4 whitespace-pre-line text-sm text-[var(--tfmc-stone)]">{place.note}</p>
-      ) : null}
+      {place.note ? <p className="mb-4 whitespace-pre-line text-sm text-[var(--tfmc-stone)]">{place.note}</p> : null}
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         {place.population !== null ? <Fact label="Population">{place.population}</Fact> : null}
         {county ? <Fact label="County">{county}</Fact> : null}
-        {place.provinces.length > 1 ? (
-          <Fact label="Provinces">{place.provinces.length}</Fact>
-        ) : null}
+        {place.provinces.length > 1 ? <Fact label="Provinces">{place.provinces.length}</Fact> : null}
         <Fact label="Coordinates">
           <span className="tabular-nums">
             x {Math.round(place.mapX)}, z {Math.round(place.mapY)}

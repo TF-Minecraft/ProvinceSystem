@@ -1,24 +1,13 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ButtonHTMLAttributes,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type RefObject } from "react";
 
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 import { tileUrl, useTileManifest } from "@/app/hooks/useTileManifest";
 import type { TileManifest } from "@/app/lib/map/tilePyramid";
 
 import { DRILL_STACK_OVERLAY_OPACITY, PROVINCE_MODE_OVERLAY_OPACITY } from "../MapCanvas";
-import {
-  mapModeOptions,
-  mapModeTileLayer,
-  REGION_TILE_MODES,
-} from "../mapModes";
+import { mapModeOptions, mapModeTileLayer, REGION_TILE_MODES } from "../mapModes";
 import type { MapId, MapMode } from "../types";
 import {
   layerTileButtonClass,
@@ -115,9 +104,7 @@ function ModePreview({
           fetchPriority="low"
           className="absolute inset-0 h-full w-full object-cover"
           style={{
-            opacity: REGION_TILE_MODES.has(mode)
-              ? DRILL_STACK_OVERLAY_OPACITY
-              : PROVINCE_MODE_OVERLAY_OPACITY,
+            opacity: REGION_TILE_MODES.has(mode) ? DRILL_STACK_OVERLAY_OPACITY : PROVINCE_MODE_OVERLAY_OPACITY,
           }}
         />
       ) : null}
@@ -153,9 +140,7 @@ export default function MapLayersMenu(props: MapLayersMenuProps) {
     };
   }, [open]);
 
-  const panel = open ? (
-    <LayersPanel {...props} onClose={() => setOpen(false)} />
-  ) : null;
+  const panel = open ? <LayersPanel {...props} onClose={() => setOpen(false)} /> : null;
 
   if (props.placement === "desktop") {
     return (
@@ -184,11 +169,7 @@ export default function MapLayersMenu(props: MapLayersMenuProps) {
       </button>
       {open ? (
         <>
-          <div
-            aria-hidden
-            className="fixed inset-0 z-30 bg-black/45"
-            onClick={() => setOpen(false)}
-          />
+          <div aria-hidden className="fixed inset-0 z-30 bg-black/45" onClick={() => setOpen(false)} />
           {panel}
         </>
       ) : null}
@@ -269,12 +250,7 @@ function DesktopLayers({
                   onClick={() => onMapTypeChange(option.value)}
                 >
                   <span className={`${stripFrameClass} ${layerTileRingClass(active)}`}>
-                    <ModePreview
-                      mapId={mapId}
-                      mode={option.value}
-                      base={base}
-                      enabled={previews && warm}
-                    />
+                    <ModePreview mapId={mapId} mode={option.value} base={base} enabled={previews && warm} />
                   </span>
                 </StripTile>
               );
@@ -315,8 +291,7 @@ function DesktopLayers({
 }
 
 /** The strip's tiles: the panel's, two sizes smaller. */
-const stripFrameClass =
-  "relative block h-10 w-10 overflow-hidden rounded-lg transition-shadow";
+const stripFrameClass = "relative block h-10 w-10 overflow-hidden rounded-lg transition-shadow";
 
 function StripTile({
   label,
@@ -404,12 +379,7 @@ function LayersPanel({
                   className={layerTileButtonClass}
                 >
                   <span className={`${layerTileFrameClass} ${layerTileRingClass(active)}`}>
-                    <ModePreview
-                      mapId={mapId}
-                      mode={option.value}
-                      base={base}
-                      enabled={previews}
-                    />
+                    <ModePreview mapId={mapId} mode={option.value} base={base} enabled={previews} />
                   </span>
                   <span lang="en" className={layerTileLabelClass(active)}>
                     {option.label}

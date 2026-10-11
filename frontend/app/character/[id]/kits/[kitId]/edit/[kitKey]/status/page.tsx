@@ -4,16 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import CustomiseStatusCard from "../../../../../../../components/character/CustomiseStatusCard";
-import {
-  CharactersApiError,
-  listLoreItems,
-  type LoreItemRow,
-} from "../../../../../../../../lib/characters/api";
+import { CharactersApiError, listLoreItems, type LoreItemRow } from "../../../../../../../../lib/characters/api";
 import { logoutProfile } from "../../../../../../../../lib/profile/uploads";
-import {
-  UI_DEV_LORE_CHARACTER_ID,
-  uiDevLoreItemsResponse,
-} from "../../../../../../../../lib/characters/loreItemsDev";
+import { UI_DEV_LORE_CHARACTER_ID, uiDevLoreItemsResponse } from "../../../../../../../../lib/characters/loreItemsDev";
 import {
   clearSession,
   getSession,
@@ -23,17 +16,26 @@ import {
 import { isCharacterUiDev, uiDevSession } from "../../../../../../../../lib/characters/uiDev";
 
 function customiseState(item: LoreItemRow): string {
-  const fromRow = String(item.state || "").trim().toLowerCase();
+  const fromRow = String(item.state || "")
+    .trim()
+    .toLowerCase();
   if (fromRow) return fromRow;
-  return String(item.draft?.state || "").trim().toLowerCase();
+  return String(item.draft?.state || "")
+    .trim()
+    .toLowerCase();
 }
 
 export default function CharacterKitCustomiseStatusPage() {
   const router = useRouter();
   const params = useParams();
   const characterId = String(params?.id || "").trim();
-  const kitId = String(params?.kitId || "").trim().toLowerCase() || "starter";
-  const kitKey = String(params?.kitKey || "").trim().toLowerCase();
+  const kitId =
+    String(params?.kitId || "")
+      .trim()
+      .toLowerCase() || "starter";
+  const kitKey = String(params?.kitKey || "")
+    .trim()
+    .toLowerCase();
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
@@ -48,20 +50,14 @@ export default function CharacterKitCustomiseStatusPage() {
       setError(null);
       try {
         if (uiDev) {
-          const data = uiDevLoreItemsResponse(
-            characterId || UI_DEV_LORE_CHARACTER_ID
-          );
-          const match =
-            data.items.find((r) => r.kit_key.toLowerCase() === kitKey) ||
-            data.items[0] ||
-            null;
+          const data = uiDevLoreItemsResponse(characterId || UI_DEV_LORE_CHARACTER_ID);
+          const match = data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || data.items[0] || null;
           setItem(match);
           if (!match) setError("Editable item not found.");
           return;
         }
         const data = await listLoreItems(token, characterId, kitId);
-        const match =
-          data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
+        const match = data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
         setItem(match);
         if (!match) setError("This item can't be edited.");
       } catch (err) {
@@ -70,11 +66,11 @@ export default function CharacterKitCustomiseStatusPage() {
             ? err.message
             : err instanceof Error
               ? err.message
-              : "Failed to load status"
+              : "Failed to load status",
         );
       }
     },
-    [characterId, kitId, kitKey, uiDev]
+    [characterId, kitId, kitKey, uiDev],
   );
 
   useEffect(() => {
@@ -123,9 +119,7 @@ export default function CharacterKitCustomiseStatusPage() {
   }
 
   if (!ready) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   const kitHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
@@ -151,9 +145,7 @@ export default function CharacterKitCustomiseStatusPage() {
         </button>
       </div>
 
-      <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Item status
-      </h1>
+      <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Item status</h1>
 
       {error ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">
@@ -172,10 +164,7 @@ export default function CharacterKitCustomiseStatusPage() {
               {refreshing ? "Refreshing…" : "Refresh status"}
             </button>
             {denied ? (
-              <Link
-                href={editHref}
-                className="text-sm text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
-              >
+              <Link href={editHref} className="text-sm text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
                 Edit again
               </Link>
             ) : null}

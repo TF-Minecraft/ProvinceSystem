@@ -64,11 +64,7 @@ function levelScale(manifest: TileManifest, level: number): number {
  * zoom, so tiles are never stretched when a sharper level exists. Past full
  * size there is nothing sharper: the top level is stretched.
  */
-export function pickTileLevel(
-  manifest: TileManifest,
-  displayScale: number,
-  devicePixelRatio = 1
-): number {
+export function pickTileLevel(manifest: TileManifest, displayScale: number, devicePixelRatio = 1): number {
   const wanted = displayScale * Math.max(1, devicePixelRatio);
   for (let level = 0; level <= manifest.max_level; level++) {
     if (levelScale(manifest, level) >= wanted * 0.999) return level;
@@ -149,12 +145,7 @@ export function allTiles(manifest: TileManifest, level: number): PlacedTile[] {
  * The tiles of `level` that intersect the viewport, plus `margin` tiles on
  * each side so a short pan does not reveal an edge before the next settle.
  */
-export function visibleTiles(
-  manifest: TileManifest,
-  level: number,
-  view: TileView,
-  margin = 1
-): PlacedTile[] {
+export function visibleTiles(manifest: TileManifest, level: number, view: TileView, margin = 1): PlacedTile[] {
   if (view.displayScale <= 0 || view.viewportW <= 0 || view.viewportH <= 0) {
     return [];
   }
@@ -191,11 +182,7 @@ export function visibleTiles(
  * as that still has a pixel per device pixel. Capped to what the backend
  * serves.
  */
-export function overlayLod(
-  displayScale: number,
-  devicePixelRatio = 1,
-  maxLod = 3
-): number {
+export function overlayLod(displayScale: number, devicePixelRatio = 1, maxLod = 3): number {
   const wanted = displayScale * Math.max(1, devicePixelRatio);
   if (!(wanted > 0)) return 0;
   return Math.max(0, Math.min(maxLod, Math.floor(Math.log2(1 / wanted))));

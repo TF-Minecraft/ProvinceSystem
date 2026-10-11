@@ -1,18 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { TitleLayers } from "@/app/lib/titleProvinces";
-import {
-  resolveCountyProvinces,
-  resolveDuchyProvinces,
-  resolveKingdomProvinces,
-} from "@/app/lib/titleProvinces";
+import { resolveCountyProvinces, resolveDuchyProvinces, resolveKingdomProvinces } from "@/app/lib/titleProvinces";
 
 import { buildProvincePixelIndex } from "./buildProvinceIndex";
-import {
-  diffCountyPaintSnapshot,
-  extractCountyPaintSnapshot,
-  isCountyPaintDiffEmpty,
-} from "./editorPaintSnapshot";
+import { diffCountyPaintSnapshot, extractCountyPaintSnapshot, isCountyPaintDiffEmpty } from "./editorPaintSnapshot";
 import {
   fillProvincePixels,
   paintParentActiveLayerFull,
@@ -22,10 +14,7 @@ import {
   updateCountySelectionSubset,
 } from "./paintTitleLayers";
 
-function makeImageData(
-  width: number,
-  height: number
-): ImageData {
+function makeImageData(width: number, height: number): ImageData {
   return {
     width,
     height,
@@ -120,23 +109,10 @@ describe("paintTitleLayers", () => {
 
     const fullColors = { COUNTY_1: "180,80,80" };
     const fullImage = makeImageData(2, 2);
-    paintSelectionLayerFull(
-      fullImage,
-      provinceMap,
-      provinceToRgb,
-      provinceToCounty,
-      fullColors
-    );
+    paintSelectionLayerFull(fullImage, provinceMap, provinceToRgb, provinceToCounty, fullColors);
 
     const subsetImage = makeImageData(2, 2);
-    updateCountySelectionSubset(
-      subsetImage,
-      pixelIndex,
-      [1, 2],
-      provinceToRgb,
-      provinceToCounty,
-      fullColors
-    );
+    updateCountySelectionSubset(subsetImage, pixelIndex, [1, 2], provinceToRgb, provinceToCounty, fullColors);
 
     expect(Array.from(subsetImage.data)).toEqual(Array.from(fullImage.data));
   });
@@ -163,14 +139,9 @@ describe("paintTitleLayers", () => {
       COUNTY_2: { rgb: "40,123,42", provinces: [3] },
     };
 
-    paintParentActiveLayerFull(
-      painted,
-      provinceMap,
-      ["COUNTY_1"],
-      "180,80,80",
-      resolveCountyProvinces,
-      { county: countyDraft }
-    );
+    paintParentActiveLayerFull(painted, provinceMap, ["COUNTY_1"], "180,80,80", resolveCountyProvinces, {
+      county: countyDraft,
+    });
 
     expect(painted.data[0]).toBe(180);
     expect(painted.data[1]).toBe(80);
@@ -182,14 +153,7 @@ describe("paintTitleLayers", () => {
     const provinceMap = new Int32Array([1, 2, 3, 4]);
     const painted = makeImageData(2, 2);
 
-    paintParentActiveLayerFull(
-      painted,
-      provinceMap,
-      ["DUCHY_1"],
-      "200,100,50",
-      resolveDuchyProvinces,
-      fixtureLayers
-    );
+    paintParentActiveLayerFull(painted, provinceMap, ["DUCHY_1"], "200,100,50", resolveDuchyProvinces, fixtureLayers);
 
     expect(painted.data[0]).toBe(200);
     expect(painted.data[1]).toBe(100);
@@ -208,7 +172,7 @@ describe("paintTitleLayers", () => {
       ["KINGDOM_1", "KINGDOM_2"],
       "90,60,120",
       resolveKingdomProvinces,
-      fixtureLayers
+      fixtureLayers,
     );
 
     expect(painted.data[0]).toBe(90);
@@ -228,7 +192,7 @@ describe("editorPaintSnapshot", () => {
       {
         COUNTY_1: { name: "Elvaris Prime", rgb: "180,80,80", provinces: [1, 2] },
       },
-      "COUNTY_1"
+      "COUNTY_1",
     );
 
     const diff = diffCountyPaintSnapshot(prev, next);

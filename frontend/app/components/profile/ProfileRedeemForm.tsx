@@ -1,14 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  CharactersApiError,
-  redeemProfile,
-} from "../../../lib/characters/api";
-import {
-  setSession,
-  type ProfileSession,
-} from "../../../lib/profile/session";
+import { CharactersApiError, redeemProfile } from "../../../lib/characters/api";
+import { setSession, type ProfileSession } from "../../../lib/profile/session";
 
 type Props = {
   onRedeemed: (session: ProfileSession) => void;
@@ -57,9 +51,7 @@ export default function ProfileRedeemForm({ onRedeemed }: Props) {
   return (
     <form onSubmit={onSubmit} className="mt-4 flex w-full flex-col gap-4">
       <label className="flex flex-col gap-2 text-left">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Log in with code
-        </span>
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">Log in with code</span>
         <input
           type="text"
           name="code"

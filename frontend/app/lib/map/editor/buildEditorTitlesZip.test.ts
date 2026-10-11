@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { unzipSync } from "fflate";
 
-import {
-  buildEditorTitlesZip,
-  EDITOR_TIER_FILES,
-  editorTitlesZipFilename,
-} from "./buildEditorTitlesZip";
+import { buildEditorTitlesZip, EDITOR_TIER_FILES, editorTitlesZipFilename } from "./buildEditorTitlesZip";
 
 describe("buildEditorTitlesZip", () => {
   it("builds a zip with four tier json files", () => {
@@ -23,9 +19,7 @@ describe("buildEditorTitlesZip", () => {
     });
 
     const entries = unzipSync(zipBytes);
-    expect(Object.keys(entries).sort()).toEqual(
-      Object.values(EDITOR_TIER_FILES).sort()
-    );
+    expect(Object.keys(entries).sort()).toEqual(Object.values(EDITOR_TIER_FILES).sort());
   });
 
   it("serializes county json with provinces array", () => {

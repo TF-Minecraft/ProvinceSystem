@@ -2,10 +2,7 @@ import { memo, useMemo } from "react";
 
 import type { WarExport } from "./types";
 import type { ProvinceCentroids } from "../../lib/mapLabels";
-import {
-  buildWarCampaignPathPair,
-  warLineStrokeStyle,
-} from "../../lib/warCampaignLine";
+import { buildWarCampaignPathPair, warLineStrokeStyle } from "../../lib/warCampaignLine";
 
 type WarCampaignLineLayerProps = {
   wars: WarExport[];
@@ -22,12 +19,7 @@ type PathStroke = {
 
 export default memo(WarCampaignLineLayer);
 
-function WarCampaignLineLayer({
-  wars,
-  centroids = null,
-  mapW,
-  mapH,
-}: WarCampaignLineLayerProps) {
+function WarCampaignLineLayer({ wars, centroids = null, mapW, mapH }: WarCampaignLineLayerProps) {
   const strokes = useMemo(() => {
     const rendered: PathStroke[] = [];
     for (const war of wars) {

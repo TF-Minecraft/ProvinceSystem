@@ -192,10 +192,8 @@ type DirectoryPage = {
   coreprotect: CoreProtectStatus & { server_label: string | null };
 };
 
-export type PlayerDirectory = DirectoryPage & (
-  | { view: "discord" | "minecraft"; rows: PlayerSummary[] }
-  | { view: "character"; rows: CharacterRow[] }
-);
+export type PlayerDirectory = DirectoryPage &
+  ({ view: "discord" | "minecraft"; rows: PlayerSummary[] } | { view: "character"; rows: CharacterRow[] });
 
 export type PlayerProfile = {
   uuid: string;
@@ -326,9 +324,13 @@ function query(params: Record<string, string | number | null | undefined>): stri
   return text ? `?${text}` : "";
 }
 
-export function getPlayers(
-  params: { q?: string; view?: PlayerView; sort?: PlayerSort; order?: SortOrder; page?: number },
-): Promise<PlayerDirectory> {
+export function getPlayers(params: {
+  q?: string;
+  view?: PlayerView;
+  sort?: PlayerSort;
+  order?: SortOrder;
+  page?: number;
+}): Promise<PlayerDirectory> {
   const { q, view, sort, order, page } = params;
   return adminRequest(`/admin/players${query({ q: q?.trim(), view, sort, order, page })}`);
 }
@@ -343,9 +345,9 @@ export function getPlayerSessions(uuid: string, before?: string | null): Promise
 
 export function getPlayerActivity(
   uuid: string,
-  params: { before?: string | null; kinds?: string[] } = {}
+  params: { before?: string | null; kinds?: string[] } = {},
 ): Promise<ActivityPage> {
   return adminRequest(
-    `/admin/players/${encodeURIComponent(uuid)}/activity${query({ before: params.before, kinds: params.kinds?.join(",") })}`
+    `/admin/players/${encodeURIComponent(uuid)}/activity${query({ before: params.before, kinds: params.kinds?.join(",") })}`,
   );
 }

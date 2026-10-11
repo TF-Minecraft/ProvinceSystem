@@ -4,19 +4,27 @@ import { detectorRecipes, signalTable } from "../data/detector";
 
 export default function ArcaneTraceDetectorPage() {
   return (
-    <WikiPage lastModified="2026-09-27" title="Arcane Trace Detector" intro={<>
-        Somewhere in the
-        world, at all times, there is a single hidden source of Arcane Radiation. The Arcane Trace
-        Detector senses where it is: hold it and it shows glowing particle rings and starts clicking,
-        faster and faster as you get closer. The moment you claim it, the source vanishes and reappears
-        somewhere else entirely. It is a serverwide loot race: there is only ever one source, and
-        whoever reaches it first gets to collect it.
-      </>}>
-
-      <WikiSectionHeading intro={<>
-        Everything here is crafted at the <StationLink name="Engineer Station" />. The recharging step needs no profession, so you can trade or buy the
-        detector and fuel from other players and keep recharging it yourself.
-      </>}>
+    <WikiPage
+      lastModified="2026-09-27"
+      title="Arcane Trace Detector"
+      intro={
+        <>
+          Somewhere in the world, at all times, there is a single hidden source of Arcane Radiation. The Arcane Trace
+          Detector senses where it is: hold it and it shows glowing particle rings and starts clicking, faster and
+          faster as you get closer. The moment you claim it, the source vanishes and reappears somewhere else entirely.
+          It is a serverwide loot race: there is only ever one source, and whoever reaches it first gets to collect it.
+        </>
+      }
+    >
+      <WikiSectionHeading
+        intro={
+          <>
+            Everything here is crafted at the <StationLink name="Engineer Station" />. The recharging step needs no
+            profession, so you can trade or buy the detector and fuel from other players and keep recharging it
+            yourself.
+          </>
+        }
+      >
         Step 1: Get a detector
       </WikiSectionHeading>
       <div className="mt-4 flex flex-col gap-4">
@@ -54,14 +62,19 @@ export default function ArcaneTraceDetectorPage() {
         </table>
       </div>
 
-      <WikiSectionHeading intro={<>
-        Claiming the source turns your detector into an <WikiItemLink name="Unpowered Trace Detector" />:
-        <br />
-        <code className="text-[var(--tfmc-accent)]">&quot;Your Trace Detector has run out of fuel...&quot;</code>
-        <br />
-        You do not need to re-craft the detector: combine it with a single <WikiItemLink name="Arcane Fuel" /> at the
-        <StationLink name="Engineer Station" /> to power it back up. You can collect 1 source per rolling 24 hours.
-      </>}>
+      <WikiSectionHeading
+        intro={
+          <>
+            Claiming the source turns your detector into an <WikiItemLink name="Unpowered Trace Detector" />:
+            <br />
+            <code className="text-[var(--tfmc-accent)]">&quot;Your Trace Detector has run out of fuel...&quot;</code>
+            <br />
+            You do not need to re-craft the detector: combine it with a single <WikiItemLink name="Arcane Fuel" /> at
+            the
+            <StationLink name="Engineer Station" /> to power it back up. You can collect 1 source per rolling 24 hours.
+          </>
+        }
+      >
         Step 4: Recharge and go again
       </WikiSectionHeading>
 
@@ -70,29 +83,30 @@ export default function ArcaneTraceDetectorPage() {
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;My detector shows nothing.&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            Check that it&apos;s the Arcane Trace Detector and not the greyed-out <WikiItemLink name="Unpowered Trace Detector">Unpowered version</WikiItemLink>.
-            If unpowered, recharge it with one <WikiItemLink name="Arcane Fuel" /> at the <StationLink name="Engineer Station" />.
+            Check that it&apos;s the Arcane Trace Detector and not the greyed-out{" "}
+            <WikiItemLink name="Unpowered Trace Detector">Unpowered version</WikiItemLink>. If unpowered, recharge it
+            with one <WikiItemLink name="Arcane Fuel" /> at the <StationLink name="Engineer Station" />.
           </dd>
         </div>
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;Somebody else collected the source before me.&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            That happens: there is only one, and it&apos;s a race. It has already relocated, so keep
-            hunting; the reading you get now is completely fresh.
+            That happens: there is only one, and it&apos;s a race. It has already relocated, so keep hunting; the
+            reading you get now is completely fresh.
           </dd>
         </div>
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;I walked right over the source and nothing happened.&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            You&apos;re probably at your limit of 1 claim per rolling 24 hours. The source is untouched and
-            still there for someone else.
+            You&apos;re probably at your limit of 1 claim per rolling 24 hours. The source is untouched and still there
+            for someone else.
           </dd>
         </div>
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;Can I keep my detector after claiming?&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            Yes. It just runs out of charge. One <WikiItemLink name="Arcane Fuel" /> at the <StationLink name="Engineer Station" /> recharges it
-            to full power, so carry spare fuel.
+            Yes. It just runs out of charge. One <WikiItemLink name="Arcane Fuel" /> at the{" "}
+            <StationLink name="Engineer Station" /> recharges it to full power, so carry spare fuel.
           </dd>
         </div>
       </dl>

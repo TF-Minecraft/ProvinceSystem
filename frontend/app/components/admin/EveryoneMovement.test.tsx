@@ -60,7 +60,14 @@ beforeEach(() => {
     as_of: T,
     worlds: ["TFMC_Map", "TFMC_Map_the_end"],
     players: [
-      { uuid: A, minecraft_name: "Alice", points: [[T - 120, 0, 10, 64, 20, 2], [T - 60, 0, 11, 64, 21, 2]] },
+      {
+        uuid: A,
+        minecraft_name: "Alice",
+        points: [
+          [T - 120, 0, 10, 64, 20, 2],
+          [T - 60, 0, 11, 64, 21, 2],
+        ],
+      },
       { uuid: B, minecraft_name: "Bob", points: [[T - 150, 1, 5, 64, 5, 2]] },
     ],
     complete_from: T - 3600,

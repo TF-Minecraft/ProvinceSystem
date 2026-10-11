@@ -6,12 +6,12 @@ export default function AdminMovementPage() {
   // The view lives in the URL's query, which needs a Suspense boundary.
   return (
     <Suspense
-        fallback={
-          <AdminColumn>
-            <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
-          </AdminColumn>
-        }
-      >
+      fallback={
+        <AdminColumn>
+          <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+        </AdminColumn>
+      }
+    >
       <EveryoneMovement />
     </Suspense>
   );

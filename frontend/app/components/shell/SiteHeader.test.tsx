@@ -13,8 +13,11 @@ vi.mock("@/lib/account/api", () => ({
   getAccount: () =>
     Promise.resolve(
       accountRole
-        ? { user: { role: accountRole, discord_global_name: "Steve", discord_username: "steve" }, viewing_as: viewingAs }
-        : null
+        ? {
+            user: { role: accountRole, discord_global_name: "Steve", discord_username: "steve" },
+            viewing_as: viewingAs,
+          }
+        : null,
     ),
 }));
 const leaveExpiredView = vi.fn();

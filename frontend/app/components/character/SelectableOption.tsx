@@ -40,14 +40,8 @@ function formatDelta(delta: number, kind: "attribute" | "experience"): string {
 
 function ModifierRow({ line }: { line: ModifierPreviewLine }) {
   const muted = line.delta === 0;
-  const deltaClass =
-    line.delta > 0
-      ? "text-[var(--tfmc-accent)]"
-      : line.delta < 0
-        ? "text-[#e8a0a0]"
-        : "";
-  const current =
-    line.kind === "experience" ? `${line.current}%` : String(line.current);
+  const deltaClass = line.delta > 0 ? "text-[var(--tfmc-accent)]" : line.delta < 0 ? "text-[#e8a0a0]" : "";
+  const current = line.kind === "experience" ? `${line.current}%` : String(line.current);
   const deltaText = formatDelta(line.delta, line.kind);
 
   return (
@@ -81,9 +75,7 @@ export default function SelectableOption({
   const [shaking, setShaking] = useState(false);
   const showCost = cost != null && Number(cost) !== 0;
   const lines = descriptionLines.filter((l) => String(l || "").trim());
-  const attrDesc = attributeDescriptionLines.filter((l) =>
-    String(l || "").trim()
-  );
+  const attrDesc = attributeDescriptionLines.filter((l) => String(l || "").trim());
   const exclusive = mutuallyExclusive.filter((l) => String(l || "").trim());
   const attrs = modifierLines.filter((l) => l.kind === "attribute");
   const xp = modifierLines.filter((l) => l.kind === "experience");
@@ -135,9 +127,7 @@ export default function SelectableOption({
         {showCost ? (
           <span
             className={`shrink-0 text-xs ${
-              Number(cost) < 0
-                ? "text-[var(--tfmc-accent)]"
-                : "text-[var(--tfmc-stone)]"
+              Number(cost) < 0 ? "text-[var(--tfmc-accent)]" : "text-[var(--tfmc-stone)]"
             }`}
           >
             {Number(cost) > 0 ? "+" : ""}
@@ -145,41 +135,29 @@ export default function SelectableOption({
           </span>
         ) : null}
       </span>
-      {disabledReason && !selected ? (
-        <p className="mt-1 text-xs text-[#e8a0a0]">{disabledReason}</p>
-      ) : null}
+      {disabledReason && !selected ? <p className="mt-1 text-xs text-[#e8a0a0]">{disabledReason}</p> : null}
       {showConflict && !disabledReason ? (
         <p className="mt-1 text-xs text-[#e8a0a0]">Conflicts with a chosen trait</p>
       ) : null}
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
-          selected && hasExpand
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+          selected && hasExpand ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">
           {hasExpand ? (
             <div className="mt-2 flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
               {lines.map((line, i) => (
-                <p
-                  key={`${title}-desc-${i}`}
-                  className="text-sm leading-relaxed text-[var(--tfmc-mist)]"
-                >
+                <p key={`${title}-desc-${i}`} className="text-sm leading-relaxed text-[var(--tfmc-mist)]">
                   {line}
                 </p>
               ))}
 
               {dependency?.names?.length ? (
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-[var(--tfmc-stone)]">
-                    {dependencyHeading(dependency.mode)}
-                  </p>
+                  <p className="text-xs font-medium text-[var(--tfmc-stone)]">{dependencyHeading(dependency.mode)}</p>
                   {dependency.names.map((name) => (
-                    <p
-                      key={`${title}-dep-${name}`}
-                      className="text-sm text-[var(--tfmc-mist)]"
-                    >
+                    <p key={`${title}-dep-${name}`} className="text-sm text-[var(--tfmc-mist)]">
                       {name}
                     </p>
                   ))}
@@ -188,14 +166,9 @@ export default function SelectableOption({
 
               {exclusive.length ? (
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-[var(--tfmc-stone)]">
-                    Can&apos;t combine with:
-                  </p>
+                  <p className="text-xs font-medium text-[var(--tfmc-stone)]">Can&apos;t combine with:</p>
                   {exclusive.map((name) => (
-                    <p
-                      key={`${title}-ex-${name}`}
-                      className="text-sm text-[var(--tfmc-mist)]"
-                    >
+                    <p key={`${title}-ex-${name}`} className="text-sm text-[var(--tfmc-mist)]">
                       {name}
                     </p>
                   ))}
@@ -205,16 +178,10 @@ export default function SelectableOption({
               {attrs.length || xp.length ? (
                 <div className="flex flex-col gap-1">
                   {attrs.map((line) => (
-                    <ModifierRow
-                      key={`${title}-attr-${line.label}`}
-                      line={line}
-                    />
+                    <ModifierRow key={`${title}-attr-${line.label}`} line={line} />
                   ))}
                   {attrs.length && xp.length ? (
-                    <div
-                      className="my-1 h-px bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]"
-                      aria-hidden
-                    />
+                    <div className="my-1 h-px bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]" aria-hidden />
                   ) : null}
                   {xp.map((line) => (
                     <ModifierRow key={`${title}-xp-${line.label}`} line={line} />
@@ -223,18 +190,14 @@ export default function SelectableOption({
               ) : null}
 
               {attrDesc.map((line, i) => (
-                <p
-                  key={`${title}-attrdesc-${i}`}
-                  className="text-sm leading-relaxed text-[var(--tfmc-mist)]"
-                >
+                <p key={`${title}-attrdesc-${i}`} className="text-sm leading-relaxed text-[var(--tfmc-mist)]">
                   {line}
                 </p>
               ))}
 
               {showCostInBody && showCost ? (
                 <p className="text-sm text-[var(--tfmc-stone)]">
-                  Cost:{" "}
-                  <span className="text-[var(--tfmc-mist)]">{Number(cost)}</span>
+                  Cost: <span className="text-[var(--tfmc-mist)]">{Number(cost)}</span>
                 </p>
               ) : null}
             </div>

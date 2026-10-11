@@ -102,11 +102,7 @@ export function RegionLink({
   const name = regionName(regionData, id);
   if (!known) return <span>{name}</span>;
   return (
-    <button
-      type="button"
-      onClick={() => onSelectRegion(id)}
-      className={`${mapLinkClass} text-left`}
-    >
+    <button type="button" onClick={() => onSelectRegion(id)} className={`${mapLinkClass} text-left`}>
       {name}
     </button>
   );
@@ -115,9 +111,7 @@ export function RegionLink({
 export function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-[var(--tfmc-mist)]">
-        {label}
-      </dt>
+      <dt className="text-xs text-[var(--tfmc-mist)]">{label}</dt>
       <dd className="mt-0.5 break-words text-sm text-[var(--tfmc-cream)]">{children}</dd>
     </div>
   );
@@ -171,10 +165,7 @@ function RelationRow({
   );
 }
 
-function PanelActions({
-  onFocusRegion,
-  onShowSubjects,
-}: Pick<RealmPanelProps, "onFocusRegion" | "onShowSubjects">) {
+function PanelActions({ onFocusRegion, onShowSubjects }: Pick<RealmPanelProps, "onFocusRegion" | "onShowSubjects">) {
   if (!onFocusRegion && !onShowSubjects) return null;
   return (
     <div className="mt-4 flex flex-wrap gap-2">
@@ -194,23 +185,8 @@ function PanelActions({
   );
 }
 
-function RealmBody({
-  profile,
-  props,
-}: {
-  profile: RealmProfile;
-  props: RealmPanelProps;
-}) {
-  const {
-    mapId,
-    mapType,
-    regionData,
-    sessionToken,
-    settlements,
-    onSelectRegion,
-    onFocusPoint,
-    onSelectPlace,
-  } = props;
+function RealmBody({ profile, props }: { profile: RealmProfile; props: RealmPanelProps }) {
+  const { mapId, mapType, regionData, sessionToken, settlements, onSelectRegion, onFocusPoint, onSelectPlace } = props;
   const capital = realmCapitalSettlement(profile, settlements);
   const relations = sortRealmRelations(profile.relations);
   const guilds = realmGuilds(profile.id, regionData[profile.id]);
@@ -224,9 +200,7 @@ function RealmBody({
         <Fact label="Faith">{profile.religion ?? "—"}</Fact>
         <Fact label="Capital">
           {capital ? (
-            typeof capital.map_x === "number" &&
-            typeof capital.map_y === "number" &&
-            onFocusPoint ? (
+            typeof capital.map_x === "number" && typeof capital.map_y === "number" && onFocusPoint ? (
               <button
                 type="button"
                 onClick={() => {
@@ -249,14 +223,10 @@ function RealmBody({
         <Fact label="Realm size">
           {profile.realmSize} {profile.realmSize === 1 ? "province" : "provinces"}
           {subjectSize > 0 ? (
-            <span className="block text-xs text-[var(--tfmc-stone)]">
-              {subjectSize} held by subjects
-            </span>
+            <span className="block text-xs text-[var(--tfmc-stone)]">{subjectSize} held by subjects</span>
           ) : null}
         </Fact>
-        <Fact label="Founded">
-          {profile.foundedAt !== null ? formatFoundedDate(profile.foundedAt) : "—"}
-        </Fact>
+        <Fact label="Founded">{profile.foundedAt !== null ? formatFoundedDate(profile.foundedAt) : "—"}</Fact>
       </dl>
 
       <PanelActions onFocusRegion={props.onFocusRegion} onShowSubjects={props.onShowSubjects} />
@@ -328,15 +298,12 @@ export function RealmPanelContent(props: RealmPanelProps) {
   const raw = regionData[regionId];
 
   const profile = useMemo(
-    () =>
-      mapType === "nation" && raw
-        ? buildRealmProfile(regionId, raw as Record<string, unknown>)
-        : null,
-    [mapType, raw, regionId]
+    () => (mapType === "nation" && raw ? buildRealmProfile(regionId, raw as Record<string, unknown>) : null),
+    [mapType, raw, regionId],
   );
   const info = useMemo(
     () => (raw ? buildRegionInfo(regionId, raw, mapType, regionData) : null),
-    [raw, regionId, mapType, regionData]
+    [raw, regionId, mapType, regionData],
   );
   if (!raw || !info) return null;
 
@@ -348,9 +315,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
       <PanelHeader
         onClose={props.onClose}
         title={name}
-        eyebrow={
-          profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier
-        }
+        eyebrow={profile?.rank ? `${profile.rank} realm` : mapType === "trade" ? "Trade area" : info.tier}
         visual={
           <Banner
             mapId={mapId}
@@ -383,17 +348,13 @@ export function RealmPanelContent(props: RealmPanelProps) {
               realm whose leader SimpleFactions has not yet seen online under
               a character says so, rather than naming their account. */}
           <div className="mb-4 flex items-baseline gap-2 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] bg-black/20 px-3 py-2">
-            <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">
-              {profile.rulerTitle ?? "Ruler"}
-            </span>
+            <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">{profile.rulerTitle ?? "Ruler"}</span>
             {profile.leader ? (
               <span className="truncate font-[family-name:var(--font-fraunces)] text-base text-[var(--tfmc-cream)]">
                 {profile.leader}
               </span>
             ) : (
-              <span className="truncate text-sm italic text-[var(--tfmc-stone)]">
-                Unknown
-              </span>
+              <span className="truncate text-sm italic text-[var(--tfmc-stone)]">Unknown</span>
             )}
           </div>
           <RealmBody profile={profile} props={props} />

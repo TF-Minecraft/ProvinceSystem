@@ -103,20 +103,14 @@ describe("chronicle route hrefs", () => {
   });
 
   it("builds a day href under the studio route", () => {
-    expect(chronicleDayHref("main", "2026-08-25")).toBe(
-      "/map/main/chronicle/2026-08-25"
-    );
-    expect(chronicleDayHref("dev", "2026-08-25")).toBe(
-      "/map/r3b1rth/chronicle/2026-08-25"
-    );
+    expect(chronicleDayHref("main", "2026-08-25")).toBe("/map/main/chronicle/2026-08-25");
+    expect(chronicleDayHref("dev", "2026-08-25")).toBe("/map/r3b1rth/chronicle/2026-08-25");
   });
 
   it("encodes the day segment rather than interpolating it raw", () => {
     // Never reachable through a validated day, but the helper must not be the
     // weak link if some future caller passes something unvalidated.
-    expect(chronicleDayHref("main", "../secret")).toBe(
-      "/map/main/chronicle/..%2Fsecret"
-    );
+    expect(chronicleDayHref("main", "../secret")).toBe("/map/main/chronicle/..%2Fsecret");
   });
 
   it("leaves the two-argument form free of a query string", () => {
@@ -130,14 +124,14 @@ describe("chronicle route hrefs", () => {
       chronicleDayHref("main", "2026-08-25", {
         start: "2026-08-01",
         end: "2026-08-31",
-      })
+      }),
     ).toBe("/map/main/chronicle/2026-08-25?from=2026-08-01&to=2026-08-31");
   });
 
   it("encodes the range values too", () => {
-    expect(
-      chronicleDayHref("main", "2026-08-25", { start: "a&b", end: "c d" })
-    ).toBe("/map/main/chronicle/2026-08-25?from=a%26b&to=c%20d");
+    expect(chronicleDayHref("main", "2026-08-25", { start: "a&b", end: "c d" })).toBe(
+      "/map/main/chronicle/2026-08-25?from=a%26b&to=c%20d",
+    );
   });
 });
 
@@ -203,11 +197,7 @@ describe("chronicleDayWalk", () => {
   it("still offers neighbours for a day that is not in the list", () => {
     // A reader can land on a day the timelapse skipped; navigation must not
     // dead-end there.
-    const walk = chronicleDayWalk(
-      ["2026-08-01", "2026-08-04"],
-      "2026-08-02",
-      null
-    );
+    const walk = chronicleDayWalk(["2026-08-01", "2026-08-04"], "2026-08-02", null);
     expect(walk.position).toBe(0);
     expect(walk.previous).toBe("2026-08-01");
     expect(walk.next).toBe("2026-08-04");
@@ -226,11 +216,7 @@ describe("chronicleDayWalk", () => {
   });
 
   it("sorts and dedupes, and drops entries that are not days", () => {
-    const walk = chronicleDayWalk(
-      ["2026-08-03", "2026-08-01", "2026-08-03", "latest", null, 42],
-      "2026-08-01",
-      null
-    );
+    const walk = chronicleDayWalk(["2026-08-03", "2026-08-01", "2026-08-03", "latest", null, 42], "2026-08-01", null);
     expect(walk.days).toEqual(["2026-08-01", "2026-08-03"]);
     expect(walk.next).toBe("2026-08-03");
   });

@@ -18,9 +18,41 @@ const PRIVATE_SELECTORS = [
 function cleanText(node) {
   if (!node) return "";
   const blockTags = new Set([
-    "ARTICLE", "ASIDE", "BLOCKQUOTE", "BR", "CAPTION", "DD", "DIV", "DL", "DT",
-    "FIGCAPTION", "FIGURE", "H1", "H2", "H3", "H4", "H5", "H6", "HEADER", "LI",
-    "BUTTON", "LABEL", "MAIN", "OL", "OPTION", "P", "SECTION", "SELECT", "TABLE", "TBODY", "TD", "TFOOT", "TH", "THEAD", "TR", "UL",
+    "ARTICLE",
+    "ASIDE",
+    "BLOCKQUOTE",
+    "BR",
+    "CAPTION",
+    "DD",
+    "DIV",
+    "DL",
+    "DT",
+    "FIGCAPTION",
+    "FIGURE",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "HEADER",
+    "LI",
+    "BUTTON",
+    "LABEL",
+    "MAIN",
+    "OL",
+    "OPTION",
+    "P",
+    "SECTION",
+    "SELECT",
+    "TABLE",
+    "TBODY",
+    "TD",
+    "TFOOT",
+    "TH",
+    "THEAD",
+    "TR",
+    "UL",
   ]);
   const parts = [];
   const visit = (current) => {
@@ -52,7 +84,10 @@ function cleanText(node) {
 
 export function routeFromHtmlPath(filePath, wikiRoot) {
   if (path.resolve(filePath) === path.resolve(`${wikiRoot}.html`)) return "/wiki";
-  const relative = path.relative(wikiRoot, filePath).replaceAll(path.sep, "/").replace(/\.html$/, "");
+  const relative = path
+    .relative(wikiRoot, filePath)
+    .replaceAll(path.sep, "/")
+    .replace(/\.html$/, "");
   const route = relative === "index" || relative === "wiki" ? "" : relative.replace(/\/index$/, "");
   return `/wiki${route ? `/${route}` : ""}`;
 }
@@ -114,7 +149,7 @@ async function findHtmlFiles(directory) {
   const output = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) output.push(...await findHtmlFiles(fullPath));
+    if (entry.isDirectory()) output.push(...(await findHtmlFiles(fullPath)));
     else if (entry.isFile() && entry.name.endsWith(".html")) output.push(fullPath);
   }
   return output;

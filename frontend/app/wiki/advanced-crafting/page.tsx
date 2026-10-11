@@ -73,12 +73,36 @@ const socketTrackLabel: Record<StationRecipeTemplate["socketGroup"], string> = {
 };
 
 const smithingTools = [
-  { name: "Hammer Tool", image: "/wiki/textures/smithing-tools/hammer-tool.png", detail: "Metal tool · Performs a regular hammer hit." },
-  { name: "Small Hammer Tool", image: "/wiki/textures/smithing-tools/small-hammer-tool.png", detail: "Metal tool · Performs a small hammer hit." },
-  { name: "Etching Tool", image: "/wiki/textures/smithing-tools/etching-tool.png", detail: "Artisan tool · Performs an etching hit." },
-  { name: "Whittling Tool", image: "/wiki/textures/smithing-tools/whittling-tool.png", detail: "Artisan tool · Performs a whittling hit." },
-  { name: "Engraving Tool", image: "/wiki/textures/smithing-tools/engraving-tool.png", detail: "Artisan tool · Performs an engraving hit." },
-  { name: "Sewing Needle", image: "/wiki/textures/smithing-tools/sewing-needle.png", detail: "Artisan tool · Performs a sewing hit." },
+  {
+    name: "Hammer Tool",
+    image: "/wiki/textures/smithing-tools/hammer-tool.png",
+    detail: "Metal tool · Performs a regular hammer hit.",
+  },
+  {
+    name: "Small Hammer Tool",
+    image: "/wiki/textures/smithing-tools/small-hammer-tool.png",
+    detail: "Metal tool · Performs a small hammer hit.",
+  },
+  {
+    name: "Etching Tool",
+    image: "/wiki/textures/smithing-tools/etching-tool.png",
+    detail: "Artisan tool · Performs an etching hit.",
+  },
+  {
+    name: "Whittling Tool",
+    image: "/wiki/textures/smithing-tools/whittling-tool.png",
+    detail: "Artisan tool · Performs a whittling hit.",
+  },
+  {
+    name: "Engraving Tool",
+    image: "/wiki/textures/smithing-tools/engraving-tool.png",
+    detail: "Artisan tool · Performs an engraving hit.",
+  },
+  {
+    name: "Sewing Needle",
+    image: "/wiki/textures/smithing-tools/sewing-needle.png",
+    detail: "Artisan tool · Performs a sewing hit.",
+  },
 ];
 
 const baseMetalsAndWoods = [
@@ -201,66 +225,66 @@ export default function AdvancedCraftingPage() {
       title="Advanced Crafting"
       intro={
         <>
-          Hands-on blacksmithing: pick a recipe at a <strong><StationLink name="Forging Station" /></strong>, feed it raw
-          materials, then physically hammer, carve, etch or sew it with smithing tools. Every
-          ingredient you load adds a number of required hits per tool, and you work the station
-          until each tool&apos;s counter is full. The finished item has a quality
-          grade, stats and socket slots. A second station, the <strong><StationLink name="Alloy Forge" /></strong>, lets you invent and
-          name your own metal alloys, which anyone can then use as an ingredient.
+          Hands-on blacksmithing: pick a recipe at a{" "}
+          <strong>
+            <StationLink name="Forging Station" />
+          </strong>
+          , feed it raw materials, then physically hammer, carve, etch or sew it with smithing tools. Every ingredient
+          you load adds a number of required hits per tool, and you work the station until each tool&apos;s counter is
+          full. The finished item has a quality grade, stats and socket slots. A second station, the{" "}
+          <strong>
+            <StationLink name="Alloy Forge" />
+          </strong>
+          , lets you invent and name your own metal alloys, which anyone can then use as an ingredient.
         </>
       }
-
     >
       <Callout variant="note" title="Material ranks matter">
-        Metals and woods unlock as you advance through the matching crafting profession. If a
-        station refuses a material, continue that profession until you reach its required rank.
+        Metals and woods unlock as you advance through the matching crafting profession. If a station refuses a
+        material, continue that profession until you reach its required rank.
       </Callout>
 
-      <WikiSectionHeading id="crafting-a-weapon">
-        Crafting a weapon or piece of armour
-      </WikiSectionHeading>
+      <WikiSectionHeading id="crafting-a-weapon">Crafting a weapon or piece of armour</WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Place a <StationLink name="Forging Station" />. Recipe below.</li>
         <li>
-          Right-click it. A <strong>Select Category</strong> menu opens (Armor / Weapons / Bows),
-          then a <strong>Select Recipe</strong> menu. Pick one: a station can only hold one
-          recipe at a time.
+          Place a <StationLink name="Forging Station" />. Recipe below.
         </li>
         <li>
-          Right-click the station while holding each required ingredient to load it in. A recipe
-          asks for ingredient <em>types</em> and counts (e.g. &quot;metal ×4&quot;), so you choose
-          which specific metal or wood to use.
+          Right-click it. A <strong>Select Category</strong> menu opens (Armor / Weapons / Bows), then a{" "}
+          <strong>Select Recipe</strong> menu. Pick one: a station can only hold one recipe at a time.
         </li>
         <li>
-          Right-click the station while holding each required smithing tool to apply hits. Every
-          ingredient you loaded adds its own number of required hits per tool; an on-screen title
-          tracks current/needed for each.
+          Right-click the station while holding each required ingredient to load it in. A recipe asks for ingredient{" "}
+          <em>types</em> and counts (e.g. &quot;metal ×4&quot;), so you choose which specific metal or wood to use.
+        </li>
+        <li>
+          Right-click the station while holding each required smithing tool to apply hits. Every ingredient you loaded
+          adds its own number of required hits per tool; an on-screen title tracks current/needed for each.
         </li>
         <li>Finish the craft once every ingredient is loaded and every hit is completed.</li>
       </ol>
       <Callout variant="warning">
-        Breaking the station mid-craft cancels the project and drops everything you had already
-        inserted.
+        Breaking the station mid-craft cancels the project and drops everything you had already inserted.
       </Callout>
 
       <WikiSectionHeading
         id="recipes"
-        intro={<>All 35 <StationLink name="Forging Station" /> recipes.</>}
+        intro={
+          <>
+            All 35 <StationLink name="Forging Station" /> recipes.
+          </>
+        }
       >
         <StationLink name="Forging Station" /> recipes
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Quantities are ingredient <em>types</em>: &quot;4 × Metal&quot; means any four metal
-        ingredients, such as four Iron Ingots, four <WikiItemLink name="Mythril Ingot">Mythril Ingots</WikiItemLink>, a mix, or your own alloy.
-        What you pick changes the finished item.{" "}
-        <span className="italic text-[var(--tfmc-accent)]">Material</span> in each name below is
-        filled in when you craft. None of the 35 has a crafting time, a cost or a level
-        requirement.
+        Quantities are ingredient <em>types</em>: &quot;4 × Metal&quot; means any four metal ingredients, such as four
+        Iron Ingots, four <WikiItemLink name="Mythril Ingot">Mythril Ingots</WikiItemLink>, a mix, or your own alloy.
+        What you pick changes the finished item. <span className="italic text-[var(--tfmc-accent)]">Material</span> in
+        each name below is filled in when you craft. None of the 35 has a crafting time, a cost or a level requirement.
       </p>
 
-      <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">
-        Armor · 20 recipes
-      </h3>
+      <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">Armor · 20 recipes</h3>
       <DataTable
         columns={[
           { header: "Class", nowrap: true },
@@ -290,9 +314,7 @@ export default function AdvancedCraftingPage() {
         rowKey={(_row, index) => weaponRecipeTemplates[index].id}
       />
 
-      <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">
-        Bows · 3 recipes
-      </h3>
+      <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">Bows · 3 recipes</h3>
       <DataTable
         columns={[{ header: "Item" }, { header: "Ingredients" }]}
         rows={bowRecipeTemplates.map((recipe) => [
@@ -302,8 +324,8 @@ export default function AdvancedCraftingPage() {
         rowKey={(_row, index) => bowRecipeTemplates[index].id}
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Every weapon and bow, and all armour except Mage armour, takes Gemstone sockets. Mage armour
-        is the only recipe group on the Armor Rune track.
+        Every weapon and bow, and all armour except Mage armour, takes Gemstone sockets. Mage armour is the only recipe
+        group on the Armor Rune track.
       </p>
       <WikiSectionHeading
         id="quality"
@@ -321,9 +343,9 @@ export default function AdvancedCraftingPage() {
         rows={qualityTiers}
       />
       <Callout variant="note" className="mt-4">
-        Mage armour uses a separate socket track instead of the Gemstone track above: Minor /
-        Lesser / Greater / Ascendant Armor Rune, at the same thresholds. In both tracks the
-        lowest grade, Rusted, grants no socket at all, so only the top four grades give you one.
+        Mage armour uses a separate socket track instead of the Gemstone track above: Minor / Lesser / Greater /
+        Ascendant Armor Rune, at the same thresholds. In both tracks the lowest grade, Rusted, grants no socket at all,
+        so only the top four grades give you one.
       </Callout>
       <WikiSectionHeading id="tools" intro="Right-click the station while holding one of these.">
         Smithing tools
@@ -339,11 +361,13 @@ export default function AdvancedCraftingPage() {
         <CraftingGrid recipe={alloyForgeRecipe} />
       </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        The <strong><StationLink name="Ingredient Converter" /></strong> turns a raw material into an Advanced Crafting
-        ingredient: right-click it holding a listed material and it opens a{" "}
-        <strong>Stat Preview</strong> showing what stats that ingredient contributes. Holding
-        something with no matching stats gives &quot;This item has no stats matching any
-        template.&quot;
+        The{" "}
+        <strong>
+          <StationLink name="Ingredient Converter" />
+        </strong>{" "}
+        turns a raw material into an Advanced Crafting ingredient: right-click it holding a listed material and it opens
+        a <strong>Stat Preview</strong> showing what stats that ingredient contributes. Holding something with no
+        matching stats gives &quot;This item has no stats matching any template.&quot;
       </p>
 
       <WikiSectionHeading
@@ -352,23 +376,27 @@ export default function AdvancedCraftingPage() {
       >
         Ingredients
       </WikiSectionHeading>
-      <p className="text-sm text-[var(--tfmc-mist)]">Base metals and woods: the only ingredients that can be an alloy's base.</p>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Base metals and woods: the only ingredients that can be an alloy's base.
+      </p>
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {[{ label: "Metals", type: "Metal" }, { label: "Woods", type: "Wood" }].map(({ label, type }) => (
+        {[
+          { label: "Metals", type: "Metal" },
+          { label: "Woods", type: "Wood" },
+        ].map(({ label, type }) => (
           <section
             key={type}
             className="rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] p-3"
           >
             <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">{label}</h3>
             <ul className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
-              {baseMetalsAndWoods.filter(([, itemType]) => itemType === type).map(([name]) => (
-                <li key={name as string} className="text-sm">
-                  <ItemChip
-                    name={name as string}
-                    texture={name === "Iron Ingot" ? V("iron_ingot.png") : undefined}
-                  />
-                </li>
-              ))}
+              {baseMetalsAndWoods
+                .filter(([, itemType]) => itemType === type)
+                .map(([name]) => (
+                  <li key={name as string} className="text-sm">
+                    <ItemChip name={name as string} texture={name === "Iron Ingot" ? V("iron_ingot.png") : undefined} />
+                  </li>
+                ))}
             </ul>
           </section>
         ))}
@@ -394,15 +422,22 @@ export default function AdvancedCraftingPage() {
             className="rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] px-3 py-2 text-sm"
           >
             {name === "Raw Tin" ? (
-              <Link href="/wiki/materials/tin" className="underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline">
+              <Link
+                href="/wiki/materials/tin"
+                className="underline-offset-2 hover:text-[var(--tfmc-accent)] hover:underline"
+              >
                 <ItemChip name={name} texture={catalystTextures[name]} link={false} />
               </Link>
-            ) : <ItemChip name={name as string} texture={catalystTextures[name as string]} />}
+            ) : (
+              <ItemChip name={name as string} texture={catalystTextures[name as string]} />
+            )}
           </li>
         ))}
       </ul>
 
-      <p className="mt-6 text-sm text-[var(--tfmc-mist)]"><WikiItemLink name="Leather" />, feather, wool, paper and dust.</p>
+      <p className="mt-6 text-sm text-[var(--tfmc-mist)]">
+        <WikiItemLink name="Leather" />, feather, wool, paper and dust.
+      </p>
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {["Leather", "Feather", "Wool", "Paper", "Enchanted Dust"].map((type) => (
           <section
@@ -411,38 +446,46 @@ export default function AdvancedCraftingPage() {
           >
             <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">{type}</h3>
             <ul className="mt-2 space-y-2 text-sm">
-              {clothAndAnimal.filter(([, itemType]) => itemType === type).map(([name]) => (
-                <li key={name as string}>
-                  <ItemChip name={name as string} texture={clothTextures[name as string]} />
-                </li>
-              ))}
+              {clothAndAnimal
+                .filter(([, itemType]) => itemType === type)
+                .map(([name]) => (
+                  <li key={name as string}>
+                    <ItemChip name={name as string} texture={clothTextures[name as string]} />
+                  </li>
+                ))}
             </ul>
           </section>
         ))}
       </div>
 
-      <WikiSectionHeading id="alloy-forge" intro={<>Invent your own named metal at the <StationLink name="Alloy Forge" />.</>}>
+      <WikiSectionHeading
+        id="alloy-forge"
+        intro={
+          <>
+            Invent your own named metal at the <StationLink name="Alloy Forge" />.
+          </>
+        }
+      >
         Inventing an alloy
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Place an <StationLink name="Alloy Forge" /> (recipe above).</li>
+        <li>
+          Place an <StationLink name="Alloy Forge" /> (recipe above).
+        </li>
         <li>Right-click the forge holding ingredients to load them.</li>
         <li>
-          The forge tracks one Base: only a metal or wood ingredient can fill it. The only
-          catalysts a metal or wood base accepts are <strong>crystal</strong> ingredients: the
-          gemstones and other crystals listed above. <WikiItemLink name="Leather" />, feather, wool, paper and <WikiItemLink name="Enchanted Dust">enchanted dust</WikiItemLink>{" "}
-          are not valid alloy catalysts.
+          The forge tracks one Base: only a metal or wood ingredient can fill it. The only catalysts a metal or wood
+          base accepts are <strong>crystal</strong> ingredients: the gemstones and other crystals listed above.{" "}
+          <WikiItemLink name="Leather" />, feather, wool, paper and{" "}
+          <WikiItemLink name="Enchanted Dust">enchanted dust</WikiItemLink> are not valid alloy catalysts.
         </li>
         <li>Forge it. You need at least 2 ingredients total (a base plus at least one catalyst).</li>
         <li>
           If the resulting alloy is new, you get a 60-second naming prompt: run{" "}
-          <code className="text-[var(--tfmc-accent)]">/alloy name &lt;NewName&gt;</code> (letters
-          and underscores only; use _ for a space).
+          <code className="text-[var(--tfmc-accent)]">/alloy name &lt;NewName&gt;</code> (letters and underscores only;
+          use _ for a space).
         </li>
-        <li>
-          Once named, the alloy is stored server-wide and anyone can use it as a crafting
-          ingredient.
-        </li>
+        <li>Once named, the alloy is stored server-wide and anyone can use it as a crafting ingredient.</li>
       </ol>
       <StatGrid
         className="mt-4"
@@ -454,10 +497,7 @@ export default function AdvancedCraftingPage() {
       />
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable
-        commands={advancedCraftingCommands.commands}
-        showAliases={false}
-      />
+      <CommandTable commands={advancedCraftingCommands.commands} showAliases={false} />
 
       <SeeAlso hrefs={["/wiki/materials", "/wiki/stations", "/wiki/commands", "/wiki/recycler"]} />
     </WikiPage>

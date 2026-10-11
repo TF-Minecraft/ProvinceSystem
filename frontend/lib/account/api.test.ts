@@ -15,7 +15,9 @@ import {
 const fetchMock = vi.fn();
 
 function json(status: number, body: unknown) {
-  return Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }));
+  return Promise.resolve(
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }),
+  );
 }
 
 beforeEach(() => {
@@ -31,7 +33,7 @@ afterEach(() => {
 describe("account api", () => {
   it("builds the Discord sign-in URL with an encoded return path", () => {
     expect(discordSignInUrl("/account?x=1")).toBe(
-      "https://www.tfminecraft.net/api/auth/discord/start?return_to=%2Faccount%3Fx%3D1"
+      "https://www.tfminecraft.net/api/auth/discord/start?return_to=%2Faccount%3Fx%3D1",
     );
   });
 

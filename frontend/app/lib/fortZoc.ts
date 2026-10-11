@@ -11,10 +11,7 @@ export function installationIdFromMarkerId(markerId: string): string | null {
   return installationId || null;
 }
 
-export function lookupFortZocOverlay(
-  marker: MapMarker,
-  forts: FortMarker[]
-): HoverOverlay | null {
+export function lookupFortZocOverlay(marker: MapMarker, forts: FortMarker[]): HoverOverlay | null {
   if (marker.kind !== "fort") {
     return null;
   }

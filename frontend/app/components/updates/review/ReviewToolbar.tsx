@@ -75,12 +75,7 @@ export default function ReviewToolbar({
         >
           Deny with feedback
         </button>
-        <button
-          className={reviewButtonClass}
-          type="button"
-          disabled={disabled}
-          onClick={() => onConfirmSelect("sort")}
-        >
+        <button className={reviewButtonClass} type="button" disabled={disabled} onClick={() => onConfirmSelect("sort")}>
           Sort with Sol
         </button>
         <button
@@ -154,12 +149,7 @@ export default function ReviewToolbar({
             >
               Send
             </button>
-            <button
-              className={reviewButtonClass}
-              type="button"
-              disabled={disabled}
-              onClick={onFeedbackCancel}
-            >
+            <button className={reviewButtonClass} type="button" disabled={disabled} onClick={onFeedbackCancel}>
               Cancel
             </button>
             <span className="pt-1 text-xs text-[var(--tfmc-stone)]">{feedback.length}/1000</span>

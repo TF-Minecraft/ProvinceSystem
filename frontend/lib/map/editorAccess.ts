@@ -13,10 +13,7 @@ export function editorUrl(mapId: MapId): string {
   return `/map/editor?map=${encodeURIComponent(mapId)}`;
 }
 
-export async function probeCanEditMap(
-  mapId: MapId,
-  sessionToken: string
-): Promise<boolean> {
+export async function probeCanEditMap(mapId: MapId, sessionToken: string): Promise<boolean> {
   if (!isMapEditorEnabled()) {
     return false;
   }

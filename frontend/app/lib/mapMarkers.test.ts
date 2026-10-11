@@ -17,9 +17,7 @@ import {
 } from "./mapMarkers";
 
 describe("mapMarkers", () => {
-  const sampleMarker = (
-    overrides: Partial<MapMarker> = {}
-  ): MapMarker => ({
+  const sampleMarker = (overrides: Partial<MapMarker> = {}): MapMarker => ({
     id: "a",
     kind: "settlement",
     markerSize: "small",
@@ -31,24 +29,16 @@ describe("mapMarkers", () => {
   });
 
   it("resolveMarkerImageSrc picks capital and normal assets", () => {
-    expect(resolveMarkerImageSrc("faction_capital", "small")).toBe(
-      "/capital_settlement_small.png"
-    );
-    expect(resolveMarkerImageSrc("settlement", "large")).toBe(
-      "/settlement_large.png"
-    );
-    expect(resolveMarkerImageSrc(undefined, undefined)).toBe(
-      "/settlement_small.png"
-    );
+    expect(resolveMarkerImageSrc("faction_capital", "small")).toBe("/capital_settlement_small.png");
+    expect(resolveMarkerImageSrc("settlement", "large")).toBe("/settlement_large.png");
+    expect(resolveMarkerImageSrc(undefined, undefined)).toBe("/settlement_small.png");
   });
 
   it("resolveMarkerImageSrc picks installation assets", () => {
     expect(resolveMarkerImageSrc("fort", "small")).toBe("/fort.png");
     expect(resolveMarkerImageSrc("port", undefined)).toBe("/port.png");
     expect(resolveMarkerImageSrc("airport", "large")).toBe("/airport.png");
-    expect(resolveMarkerImageSrc("train_station", "small")).toBe(
-      "/train_station.png"
-    );
+    expect(resolveMarkerImageSrc("train_station", "small")).toBe("/train_station.png");
   });
 
   it("resolveMarkerImageSrc picks battle asset", () => {
@@ -146,9 +136,7 @@ describe("mapMarkers", () => {
     const layout = markerLayout(marker.mapX, marker.mapY, marker.markerSize);
     const bounds = markerHitBounds(layout, marker.label);
 
-    expect(
-      pickMapMarkerAt([marker], bounds.x + bounds.w / 2, bounds.y + bounds.h / 2)
-    ).toBe(marker);
+    expect(pickMapMarkerAt([marker], bounds.x + bounds.w / 2, bounds.y + bounds.h / 2)).toBe(marker);
     expect(pickMapMarkerAt([marker], bounds.x - 5, bounds.y - 5)).toBeNull();
   });
 
@@ -157,24 +145,11 @@ describe("mapMarkers", () => {
       kind: "fort",
       showLabelOnlyOnHover: true,
     });
-    const layout = markerLayout(
-      marker.mapX,
-      marker.mapY,
-      marker.markerSize,
-      marker.kind
-    );
+    const layout = markerLayout(marker.mapX, marker.mapY, marker.markerSize, marker.kind);
     const iconBounds = markerHitBounds(layout, marker.label, false);
 
-    expect(
-      pickMapMarkerAt([marker], layout.imageX + layout.size / 2, layout.imageY + layout.size / 2)
-    ).toBe(marker);
-    expect(
-      pickMapMarkerAt(
-        [marker],
-        iconBounds.x + iconBounds.w / 2,
-        iconBounds.y + iconBounds.h + 40
-      )
-    ).toBeNull();
+    expect(pickMapMarkerAt([marker], layout.imageX + layout.size / 2, layout.imageY + layout.size / 2)).toBe(marker);
+    expect(pickMapMarkerAt([marker], iconBounds.x + iconBounds.w / 2, iconBounds.y + iconBounds.h + 40)).toBeNull();
   });
 
   it("pickMapMarkerAt prefers later markers when overlapping", () => {

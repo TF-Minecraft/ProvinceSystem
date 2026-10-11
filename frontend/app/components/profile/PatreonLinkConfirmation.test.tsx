@@ -18,7 +18,11 @@ beforeEach(() => {
   fetchMock.mockReset();
   window.history.replaceState({}, "", "/patreon/linked#confirm=secret-token");
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 it("removes the fragment, names both accounts, and waits for an explicit confirmation", async () => {
   fetchMock.mockResolvedValueOnce(response(pending)).mockResolvedValueOnce(response({ status: "ok", tier: "noble" }));
@@ -37,7 +41,8 @@ it("removes the fragment, names both accounts, and waits for an explicit confirm
 });
 
 it("cancels without calling confirm and displays fixed cancellation copy", async () => {
-  fetchMock.mockResolvedValueOnce(response({ ...pending, target_kind: "minecraft", target_name: "AttackerSteve" }))
+  fetchMock
+    .mockResolvedValueOnce(response({ ...pending, target_kind: "minecraft", target_name: "AttackerSteve" }))
     .mockResolvedValueOnce(response({ status: "ok" }));
   render(<PatreonLinkConfirmation fallback={fallback} />);
   expect(await screen.findByText("AttackerSteve")).toBeTruthy();
@@ -47,12 +52,15 @@ it("cancels without calling confirm and displays fixed cancellation copy", async
   expect(fetchMock.mock.calls[1][0]).toMatch(/\/link\/cancel$/);
 });
 
-it.each(["ok", "not_a_member", "already_linked", "relink_cooldown", "expired", "error"])("shows fixed copy for confirmation status %s", async (status) => {
-  fetchMock.mockResolvedValueOnce(response(pending)).mockResolvedValueOnce(response({ status, tier: "" }));
-  render(<PatreonLinkConfirmation fallback={fallback} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
-  expect(await screen.findByText(getPatreonLinkedResult(status, null).title)).toBeTruthy();
-});
+it.each(["ok", "not_a_member", "already_linked", "relink_cooldown", "expired", "error"])(
+  "shows fixed copy for confirmation status %s",
+  async (status) => {
+    fetchMock.mockResolvedValueOnce(response(pending)).mockResolvedValueOnce(response({ status, tier: "" }));
+    render(<PatreonLinkConfirmation fallback={fallback} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
+    expect(await screen.findByText(getPatreonLinkedResult(status, null).title)).toBeTruthy();
+  },
+);
 
 it("uses query result copy when there is no confirmation fragment", async () => {
   window.history.replaceState({}, "", "/patreon/linked?status=denied");
@@ -87,8 +95,14 @@ it("shows fixed error copy on a network failure", async () => {
 
 it("keeps the token through StrictMode effect replay", async () => {
   fetchMock.mockResolvedValue(response(pending));
-  render(<StrictMode><PatreonLinkConfirmation fallback={fallback} /></StrictMode>);
+  render(
+    <StrictMode>
+      <PatreonLinkConfirmation fallback={fallback} />
+    </StrictMode>,
+  );
   expect(await screen.findByText("AttackerDiscord")).toBeTruthy();
-  await waitFor(() => expect(fetchMock.mock.calls.every((call) => call[1].body === JSON.stringify({ token: "secret-token" }))).toBe(true));
+  await waitFor(() =>
+    expect(fetchMock.mock.calls.every((call) => call[1].body === JSON.stringify({ token: "secret-token" }))).toBe(true),
+  );
   expect(window.location.hash).toBe("");
 });

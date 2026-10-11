@@ -34,8 +34,7 @@ export function GuildPanelContent({
   onClose,
 }: GuildPanelProps) {
   const realm = regionData?.[guild.factionId];
-  const seatPlaced =
-    seat && typeof seat.map_x === "number" && typeof seat.map_y === "number" ? seat : null;
+  const seatPlaced = seat && typeof seat.map_x === "number" && typeof seat.map_y === "number" ? seat : null;
 
   return (
     <article aria-label={guild.name}>
@@ -70,9 +69,7 @@ export function GuildPanelContent({
             {guild.leader}
           </span>
         ) : (
-          <span className="truncate text-sm italic text-[var(--tfmc-stone)]">
-            Unknown
-          </span>
+          <span className="truncate text-sm italic text-[var(--tfmc-stone)]">Unknown</span>
         )}
       </div>
 
@@ -85,11 +82,7 @@ export function GuildPanelContent({
         ) : null}
         <Fact label="Capital">
           {seat ? (
-            <button
-              type="button"
-              onClick={() => onSelectPlace(seat.id)}
-              className={`${mapLinkClass} text-left`}
-            >
+            <button type="button" onClick={() => onSelectPlace(seat.id)} className={`${mapLinkClass} text-left`}>
               {cleanRegionName(seat.name)}
             </button>
           ) : (
@@ -124,12 +117,8 @@ export function GuildPanelContent({
           <ul className="space-y-1.5">
             {guild.branches.map((branch) => (
               <li key={branch.id} className="flex items-center gap-3 text-sm">
-                <span className="min-w-0 flex-1 truncate text-[var(--tfmc-cream)]">
-                  {branch.label}
-                </span>
-                <span className="shrink-0 tabular-nums text-[var(--tfmc-stone)]">
-                  Level {branch.level}
-                </span>
+                <span className="min-w-0 flex-1 truncate text-[var(--tfmc-cream)]">{branch.label}</span>
+                <span className="shrink-0 tabular-nums text-[var(--tfmc-stone)]">Level {branch.level}</span>
               </li>
             ))}
           </ul>
@@ -140,13 +129,7 @@ export function GuildPanelContent({
 }
 
 /** A clickable list of guilds, for the realm and place cards. */
-export function GuildList({
-  guilds,
-  onSelectGuild,
-}: {
-  guilds: GuildProfile[];
-  onSelectGuild: (key: string) => void;
-}) {
+export function GuildList({ guilds, onSelectGuild }: { guilds: GuildProfile[]; onSelectGuild: (key: string) => void }) {
   return (
     <ul className="space-y-1">
       {guilds.map((guild) => (
@@ -163,9 +146,7 @@ export function GuildList({
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-[var(--tfmc-cream)]">{guild.name}</span>
-              <span className="block truncate text-xs text-[var(--tfmc-stone)]">
-                {guild.leader ?? guild.typeLabel}
-              </span>
+              <span className="block truncate text-xs text-[var(--tfmc-stone)]">{guild.leader ?? guild.typeLabel}</span>
             </span>
             <span className="shrink-0 text-xs tabular-nums text-[var(--tfmc-stone)]">
               {guild.members} {guild.members === 1 ? "member" : "members"}

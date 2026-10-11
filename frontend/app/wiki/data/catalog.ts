@@ -47,15 +47,23 @@ function buildMaterialCatalog(): Map<string, MaterialCatalogEntry> {
   // where most material recipes now live.
   for (const entry of map.values()) {
     const identity = customItemIdentity(entry);
-    entry.recipes = identity ? allRecipes.filter((r) => customItemIdentity(r.output) === identity && !entry.unpackingRecipes.some((unpacking) => unpacking.key === r.key)) : [];
+    entry.recipes = identity
+      ? allRecipes.filter(
+          (r) =>
+            customItemIdentity(r.output) === identity &&
+            !entry.unpackingRecipes.some((unpacking) => unpacking.key === r.key),
+        )
+      : [];
     if (!entry.recipe) entry.recipe = entry.recipes[0];
   }
 
   for (const r of allRecipes) {
     for (const ing of r.ingredients) {
       const identity = customItemIdentity(ing);
-      const entry = identity ? [...map.values()].find(material => customItemIdentity(material) === identity) : undefined;
-      if (entry && !entry.usedIn.some(recipe => recipe.key === r.key)) {
+      const entry = identity
+        ? [...map.values()].find((material) => customItemIdentity(material) === identity)
+        : undefined;
+      if (entry && !entry.usedIn.some((recipe) => recipe.key === r.key)) {
         entry.usedIn.push(r);
       }
     }

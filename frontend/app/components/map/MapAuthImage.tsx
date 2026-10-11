@@ -57,12 +57,7 @@ export default function MapAuthImage({
   // placeholder never delays the real image. If the preview route 404s or
   // isn't deployed yet, `previewUrl` just stays null and we render exactly
   // what this component rendered before the preview existed.
-  const { url: previewUrl } = useMapAssetUrl(
-    mapId,
-    previewPath,
-    sessionToken,
-    hasPreview && Boolean(path)
-  );
+  const { url: previewUrl } = useMapAssetUrl(mapId, previewPath, sessionToken, hasPreview && Boolean(path));
 
   const [fullLoaded, setFullLoaded] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);

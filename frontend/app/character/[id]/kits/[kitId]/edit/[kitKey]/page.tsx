@@ -24,18 +24,19 @@ import {
   isSessionValid as isCharacterSessionValid,
   type CharacterSession,
 } from "../../../../../../../lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-  uiDevSession,
-} from "../../../../../../../lib/characters/uiDev";
+import { isCharacterUiDev, UI_DEV_SESSION_TOKEN, uiDevSession } from "../../../../../../../lib/characters/uiDev";
 
 export default function CharacterKitEditPage() {
   const router = useRouter();
   const params = useParams();
   const characterId = String(params?.id || "").trim();
-  const kitId = String(params?.kitId || "").trim().toLowerCase() || "starter";
-  const kitKey = String(params?.kitKey || "").trim().toLowerCase();
+  const kitId =
+    String(params?.kitId || "")
+      .trim()
+      .toLowerCase() || "starter";
+  const kitKey = String(params?.kitKey || "")
+    .trim()
+    .toLowerCase();
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
@@ -56,33 +57,23 @@ export default function CharacterKitEditPage() {
       setFormError(null);
       try {
         if (uiDev) {
-          const data = uiDevLoreItemsResponse(
-            characterId || UI_DEV_LORE_CHARACTER_ID
-          );
-          const match =
-            data.items.find((r) => r.kit_key.toLowerCase() === kitKey) ||
-            data.items[0] ||
-            null;
+          const data = uiDevLoreItemsResponse(characterId || UI_DEV_LORE_CHARACTER_ID);
+          const match = data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || data.items[0] || null;
           setItem(match);
           if (!match) setError("Editable item not found.");
           return;
         }
         const data = await listLoreItems(token, characterId, kitId);
-        const match =
-          data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
+        const match = data.items.find((r) => r.kit_key.toLowerCase() === kitKey) || null;
         setItem(match);
         if (!match) setError("This item can't be edited.");
       } catch (err) {
         setError(
-          err instanceof CharactersApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Failed to load item"
+          err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Failed to load item",
         );
       }
     },
-    [characterId, kitId, kitKey, uiDev]
+    [characterId, kitId, kitKey, uiDev],
   );
 
   useEffect(() => {
@@ -141,21 +132,11 @@ export default function CharacterKitEditPage() {
         router.push(statusHref);
         return;
       }
-      await customiseLoreItem(
-        session.session_token,
-        characterId,
-        item.kit_key,
-        input,
-        kitId
-      );
+      await customiseLoreItem(session.session_token, characterId, item.kit_key, input, kitId);
       router.push(statusHref);
     } catch (err) {
       setFormError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Submit failed"
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Submit failed",
       );
       setSubmitting(false);
     }
@@ -171,29 +152,18 @@ export default function CharacterKitEditPage() {
         router.push(backHref);
         return;
       }
-      await deleteLoreItemCustomise(
-        session.session_token,
-        characterId,
-        item.kit_key,
-        kitId
-      );
+      await deleteLoreItemCustomise(session.session_token, characterId, item.kit_key, kitId);
       router.push(backHref);
     } catch (err) {
       setFormError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Delete failed"
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Delete failed",
       );
       setDeleting(false);
     }
   }
 
   if (!ready) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   return (
@@ -215,9 +185,7 @@ export default function CharacterKitEditPage() {
         </button>
       </div>
 
-      <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Edit item
-      </h1>
+      <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Edit item</h1>
 
       {error ? (
         <p className="text-sm text-[#e8a0a0]">{error}</p>

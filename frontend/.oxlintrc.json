@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "nextjs", "import", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": ["public/**", "assets/**"],
+  "rules": {
+    "react/exhaustive-deps": "warn",
+    "react/set-state-in-effect": "warn",
+    "react/refs": "warn",
+    "react/purity": "warn",
+    "nextjs/no-img-element": "off",
+    "unicorn/no-new-array": "off",
+    "vitest/valid-expect": [
+      "error",
+      {
+        "maxArgs": 2
+      }
+    ],
+    "vitest/valid-title": [
+      "error",
+      {
+        "ignoreTypeOfDescribeName": true
+      }
+    ],
+    "vitest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/require-to-throw-message": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs"],
+      "rules": {
+        "nextjs/no-html-link-for-pages": "off"
+      }
+    }
+  ]
+}

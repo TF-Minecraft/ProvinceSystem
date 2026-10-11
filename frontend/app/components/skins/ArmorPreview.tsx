@@ -50,8 +50,7 @@ export default function ArmorPreview({
   showOuterLayerRef.current = showOuterLayer;
 
   const hasLayers = Boolean(layer1File || layer2File);
-  const use3dHelm =
-    helmet3d && Boolean(helmetModelFile) && Boolean(helmetTextureFile);
+  const use3dHelm = helmet3d && Boolean(helmetModelFile) && Boolean(helmetTextureFile);
 
   useEffect(() => {
     if (steveLiveRef.current) {
@@ -130,13 +129,7 @@ export default function ArmorPreview({
             helmetItemTex.dispose();
             return;
           }
-          const group = buildJavaModelGroup(
-            json,
-            helmetItemTex,
-            loaded.width,
-            loaded.height,
-            { center: false }
-          );
+          const group = buildJavaModelGroup(json, helmetItemTex, loaded.width, loaded.height, { center: false });
           const held = new THREE.Group();
           held.name = "heldHelmet3d";
           const tab = resolveDisplayTab(json, "head", "helmet_3d");
@@ -161,19 +154,10 @@ export default function ArmorPreview({
         renderer.domElement.className = "h-full w-full touch-none";
         renderer.domElement.style.display = "block";
 
-        const camera = new THREE.PerspectiveCamera(
-          35,
-          widthPx / heightPx,
-          0.1,
-          500
-        );
+        const camera = new THREE.PerspectiveCamera(35, widthPx / heightPx, 0.1, 500);
         const focus = new THREE.Vector3(0, 14, 0);
         const frameSize = 32;
-        camera.position.set(
-          focus.x + frameSize * 1.4,
-          focus.y + frameSize * 0.55,
-          focus.z + frameSize * 1.6
-        );
+        camera.position.set(focus.x + frameSize * 1.4, focus.y + frameSize * 0.55, focus.z + frameSize * 1.6);
         camera.lookAt(focus);
 
         scene.add(steveRoot);
@@ -229,33 +213,16 @@ export default function ArmorPreview({
       renderer?.dispose();
       host.replaceChildren();
     };
-  }, [
-    layer1File,
-    layer2File,
-    helmet3d,
-    helmetModelFile,
-    helmetTextureFile,
-    playerSkinFile,
-    use3dHelm,
-    hasLayers,
-  ]);
+  }, [layer1File, layer2File, helmet3d, helmetModelFile, helmetTextureFile, playerSkinFile, use3dHelm, hasLayers]);
 
   if (!hasLayers) {
-    return (
-      <p className={`text-xs text-[var(--tfmc-mist)] ${className}`}>
-        Upload a layer to preview.
-      </p>
-    );
+    return <p className={`text-xs text-[var(--tfmc-mist)] ${className}`}>Upload a layer to preview.</p>;
   }
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-        Armor preview
-      </span>
-      <div
-        className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]"
-      >
+      <span className="text-sm font-medium text-[var(--tfmc-stone)]">Armor preview</span>
+      <div className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]">
         <div ref={hostRef} className="absolute inset-0" />
         {status === "loading" ? (
           <div
@@ -280,9 +247,7 @@ export default function ArmorPreview({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-w-0 flex-1 flex-col gap-1 text-left sm:flex-initial">
-          <span className="text-xs font-medium text-[var(--tfmc-stone)]">
-            Preview skin
-          </span>
+          <span className="text-xs font-medium text-[var(--tfmc-stone)]">Preview skin</span>
           <input
             type="file"
             accept="image/png,.png"
@@ -316,11 +281,7 @@ export default function ArmorPreview({
           </button>
         ) : null}
       </div>
-      {status === "ready" ? (
-        <p className="text-xs text-[var(--tfmc-mist)]">
-          Drag to rotate, scroll to zoom.
-        </p>
-      ) : null}
+      {status === "ready" ? <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p> : null}
     </div>
   );
 }

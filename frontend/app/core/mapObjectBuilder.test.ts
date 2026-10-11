@@ -107,11 +107,7 @@ describe("resolveHoverTarget", () => {
     objects.find((o) => o.id === "imperium")!.visible = false;
     objects.find((o) => o.nested)!.visible = true;
 
-    const target = resolveHoverTarget(
-      "imperium",
-      empire,
-      buildMapObjectIndex(objects)
-    );
+    const target = resolveHoverTarget("imperium", empire, buildMapObjectIndex(objects));
     expect(target?.object.path).toBe("10_20_30_nested");
   });
 
@@ -134,9 +130,7 @@ describe("resolveHoverTarget", () => {
     const objects = buildMapObjectsFromRegionData(cyclic);
     expect(objects.every((o) => o.visible === false)).toBe(true);
 
-    expect(
-      resolveHoverTarget("A", cyclic, buildMapObjectIndex(objects))
-    ).toBeNull();
+    expect(resolveHoverTarget("A", cyclic, buildMapObjectIndex(objects))).toBeNull();
   }, 2000);
 
   it("terminates on a self-referential overlord", () => {
@@ -146,9 +140,7 @@ describe("resolveHoverTarget", () => {
     const objects = buildMapObjectsFromRegionData(selfLoop);
     objects[0].visible = false;
 
-    expect(
-      resolveHoverTarget("A", selfLoop, buildMapObjectIndex(objects))
-    ).toBeNull();
+    expect(resolveHoverTarget("A", selfLoop, buildMapObjectIndex(objects))).toBeNull();
   }, 2000);
 
   it("ignores a non-string overlord", () => {

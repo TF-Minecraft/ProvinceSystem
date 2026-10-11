@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildNationColorLut, type NationOwnership } from "./chroniclePaint";
-import {
-  CHRONICLE_TRADE_LEAGUE_ALPHA,
-  buildTradeLeagueColorLut,
-} from "./chronicleTradeLeagues";
+import { CHRONICLE_TRADE_LEAGUE_ALPHA, buildTradeLeagueColorLut } from "./chronicleTradeLeagues";
 
 /** The served `trade.json` shape, which is `nation.json`'s shape. */
 const leagues: NationOwnership = {
@@ -12,12 +9,7 @@ const leagues: NationOwnership = {
   Lantel_Shipping: { rgb: "107,90,230", provinces: [695] },
 };
 
-const unpack = (value: number) => [
-  (value >>> 24) & 0xff,
-  (value >>> 16) & 0xff,
-  (value >>> 8) & 0xff,
-  value & 0xff,
-];
+const unpack = (value: number) => [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
 
 describe("buildTradeLeagueColorLut", () => {
   it("paints each league's provinces in its own colour", () => {

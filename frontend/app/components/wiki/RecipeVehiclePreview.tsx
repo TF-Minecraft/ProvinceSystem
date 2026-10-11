@@ -17,7 +17,9 @@ export default function RecipeVehiclePreview({ name, qty, model, slug }: Props) 
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={thumbnail} alt="" loading="lazy" width={56} height={56} className="h-full w-full object-cover" />
-      {qty && qty > 1 ? <span className="absolute bottom-0 right-0.5 text-[10px] text-[var(--tfmc-cream)]">{qty}</span> : null}
+      {qty && qty > 1 ? (
+        <span className="absolute bottom-0 right-0.5 text-[10px] text-[var(--tfmc-cream)]">{qty}</span>
+      ) : null}
     </Link>
   );
 }

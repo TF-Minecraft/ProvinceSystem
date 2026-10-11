@@ -25,9 +25,23 @@ import McText from "./McText";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
 import { PlayerResults } from "./RanksOverview";
 import { SERVERS } from "./RankPlayer";
-import { badgeClass, buttonClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "../ui";
+import {
+  badgeClass,
+  buttonClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  quietButtonClass,
+  rowClass,
+  warnClass,
+} from "../ui";
 
-type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; data: LpGroupDetail };
+type Load =
+  | { kind: "loading" }
+  | { kind: GateKind }
+  | { kind: "failed"; message: string }
+  | { kind: "ready"; data: LpGroupDetail };
 type Pending = { key: string; summary: ReactNode; ops: LpOp[]; label?: string; warning?: string };
 
 export default function RankGroup({ name }: { name: string }) {
@@ -45,7 +59,9 @@ export default function RankGroup({ name }: { name: string }) {
       setMembers(data.members);
     } catch (err) {
       const status = err instanceof AccountApiError ? err.status : 0;
-      setLoad(status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) });
+      setLoad(
+        status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) },
+      );
     }
   }, [name]);
 
@@ -92,8 +108,12 @@ export default function RankGroup({ name }: { name: string }) {
       <header className="mt-6">
         <h2 className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           {group.name}
-          {group.min_role === "root" ? <span className={`${badgeClass} ml-3 bg-[#5a2a2a] align-middle text-[#f0c0c0]`}>Owner only</span> : null}
-          {group.patreon ? <span className={`${badgeClass} ml-2 bg-[#4a3a1a] align-middle text-[#f0d79a]`}>Patreon</span> : null}
+          {group.min_role === "root" ? (
+            <span className={`${badgeClass} ml-3 bg-[#5a2a2a] align-middle text-[#f0c0c0]`}>Owner only</span>
+          ) : null}
+          {group.patreon ? (
+            <span className={`${badgeClass} ml-2 bg-[#4a3a1a] align-middle text-[#f0d79a]`}>Patreon</span>
+          ) : null}
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           {group.prefix ? (
@@ -115,24 +135,21 @@ export default function RankGroup({ name }: { name: string }) {
       <section className={panelClass} aria-label="Inheritance">
         <h3 className={headingClass}>Inheritance</h3>
         <p className={`mt-2 ${mutedClass}`}>
-          Inherits:{" "}
-          {group.inherits.length ? group.inherits.map((g) => <GroupChip key={g} name={g} />) : "nothing"}
+          Inherits: {group.inherits.length ? group.inherits.map((g) => <GroupChip key={g} name={g} />) : "nothing"}
         </p>
         <p className={`mt-2 ${mutedClass}`}>
-          Inherited by: {group.children.length ? group.children.map((g) => <GroupChip key={g} name={g} />) : "no other group"}
+          Inherited by:{" "}
+          {group.children.length ? group.children.map((g) => <GroupChip key={g} name={g} />) : "no other group"}
         </p>
       </section>
 
       {canEdit ? (
         <section className={panelClass} aria-label="Settings">
           <h3 className={headingClass}>Settings</h3>
-          <p className={`mt-1 ${warnClass}`}>Changes here affect everyone in {group.name} and every group that inherits it.</p>
-          <SettingsForm
-            group={group.name}
-            weightNode={weightNode}
-            prefixNode={prefixNode}
-            onAsk={setPending}
-          />
+          <p className={`mt-1 ${warnClass}`}>
+            Changes here affect everyone in {group.name} and every group that inherits it.
+          </p>
+          <SettingsForm group={group.name} weightNode={weightNode} prefixNode={prefixNode} onAsk={setPending} />
           {confirm("settings")}
         </section>
       ) : null}
@@ -149,7 +166,9 @@ export default function RankGroup({ name }: { name: string }) {
       <section className={panelClass} aria-label="Members" id="members">
         <h3 className={headingClass}>
           Players in {group.name}{" "}
-          <span className="whitespace-nowrap text-[var(--tfmc-mist)]">· {(members?.total ?? group.members).toLocaleString()}</span>
+          <span className="whitespace-nowrap text-[var(--tfmc-mist)]">
+            · {(members?.total ?? group.members).toLocaleString()}
+          </span>
         </h3>
         <p className={`mt-1 ${mutedClass}`}>Direct members only. Chips show their other groups.</p>
         {members ? (
@@ -243,10 +262,15 @@ function SettingsForm({
       key: "settings",
       summary: (
         <>
-          {weight !== currentWeight ? <>Weight {currentWeight || "none"} → {weight || "none"}. </> : null}
+          {weight !== currentWeight ? (
+            <>
+              Weight {currentWeight || "none"} → {weight || "none"}.{" "}
+            </>
+          ) : null}
           {prefixChanged ? (
             <>
-              Prefix {currentPrefix ? <McText text={currentPrefix} /> : "none"} → {prefix ? <McText text={prefix} /> : "none"}
+              Prefix {currentPrefix ? <McText text={currentPrefix} /> : "none"} →{" "}
+              {prefix ? <McText text={prefix} /> : "none"}
               {prefix ? ` (priority ${priority || 0})` : ""}.
             </>
           ) : null}
@@ -261,22 +285,42 @@ function SettingsForm({
     <div className="mt-3 flex flex-wrap items-end gap-3">
       <label className="flex w-28 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
         Weight
-        <input value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={inputClass} />
+        <input
+          value={weight}
+          onChange={(e) => setWeight(e.target.value.replace(/[^0-9]/g, ""))}
+          inputMode="numeric"
+          className={inputClass}
+        />
       </label>
       <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
         Prefix (&amp; colour codes)
-        <input value={prefix} onChange={(e) => setPrefix(e.target.value)} spellCheck={false} className={`${inputClass} font-mono`} />
+        <input
+          value={prefix}
+          onChange={(e) => setPrefix(e.target.value)}
+          spellCheck={false}
+          className={`${inputClass} font-mono`}
+        />
       </label>
       <label className="flex w-28 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
         Priority
-        <input value={priority} onChange={(e) => setPriority(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={inputClass} />
+        <input
+          value={priority}
+          onChange={(e) => setPriority(e.target.value.replace(/[^0-9]/g, ""))}
+          inputMode="numeric"
+          className={inputClass}
+        />
       </label>
       {prefix ? (
         <span className="pb-2 text-sm">
           Preview <McText text={prefix} />
         </span>
       ) : null}
-      <button type="button" className={buttonClass} onClick={save} disabled={weight === currentWeight && !prefixChanged}>
+      <button
+        type="button"
+        className={buttonClass}
+        onClick={save}
+        disabled={weight === currentWeight && !prefixChanged}
+      >
         Save
       </button>
     </div>
@@ -336,12 +380,16 @@ function NodesPanel({
                 inherits <GroupChip name={node.group ?? ""} />
               </span>
             ) : (
-              <span className={`font-mono text-xs ${node.value ? "text-[var(--tfmc-cream)]" : "text-[#e8a0a0] line-through"}`}>
+              <span
+                className={`font-mono text-xs ${node.value ? "text-[var(--tfmc-cream)]" : "text-[#e8a0a0] line-through"}`}
+              >
                 {node.kind === "meta" ? <McText text={node.key} /> : node.key}
               </span>
             )}
             {!node.value ? <span className="text-xs text-[#e8a0a0]">false</span> : null}
-            {contextLabel(node.contexts) ? <span className="text-xs text-[var(--tfmc-stone)]">{contextLabel(node.contexts)}</span> : null}
+            {contextLabel(node.contexts) ? (
+              <span className="text-xs text-[var(--tfmc-stone)]">{contextLabel(node.contexts)}</span>
+            ) : null}
             {node.expiry ? <span className="text-xs text-[#e8c48a]">{expiryLabel(node.expiry)}</span> : null}
             {canEdit ? (
               <button
@@ -385,11 +433,12 @@ function NodesPanel({
               className={buttonClass}
               disabled={!parent}
               onClick={() =>
-                addNode({ key: `group.${parent}` }, (
+                addNode(
+                  { key: `group.${parent}` },
                   <>
                     Make {group} inherit <strong>{parent}</strong>.
-                  </>
-                ))
+                  </>,
+                )
               }
             >
               Add
@@ -401,21 +450,32 @@ function NodesPanel({
               e.preventDefault();
               const contexts: Record<string, string[]> = server ? { server: [server] } : {};
               const node = { key, value, contexts };
-              addNode(node, (
+              addNode(
+                node,
                 <>
                   Set <span className="font-mono">{node.key}</span> to {String(value)} on {group}
                   {server ? ` (${server} only)` : ""}.
-                </>
-              ));
+                </>,
+              );
             }}
           >
             <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
               Set permission
-              <input value={key} onChange={(e) => setKey(e.target.value)} spellCheck={false} autoCapitalize="none" className={`${inputClass} font-mono`} />
+              <input
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                spellCheck={false}
+                autoCapitalize="none"
+                className={`${inputClass} font-mono`}
+              />
             </label>
             <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
               Value
-              <select value={String(value)} onChange={(e) => setValue(e.target.value === "true")} className={inputClass}>
+              <select
+                value={String(value)}
+                onChange={(e) => setValue(e.target.value === "true")}
+                className={inputClass}
+              >
                 <option value="true">true</option>
                 <option value="false">false</option>
               </select>

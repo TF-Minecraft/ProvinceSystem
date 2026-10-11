@@ -2,9 +2,7 @@ import { getPlayerMeta, SkinsApiError } from "@/lib/skins/api";
 
 export const SITE_STAFF_PERMISSION = "tfmc.map.staff";
 
-export function playerMetaHasSiteStaffAccess(
-  permissionFlags: Record<string, boolean> | undefined
-): boolean {
+export function playerMetaHasSiteStaffAccess(permissionFlags: Record<string, boolean> | undefined): boolean {
   return permissionFlags?.[SITE_STAFF_PERMISSION] === true;
 }
 

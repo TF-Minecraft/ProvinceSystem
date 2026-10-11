@@ -14,11 +14,7 @@ function makeGrid(ids: number[], width: number, height: number): ProvinceIdGrid 
 }
 
 /** `fill(x, y)` -> province id, evaluated row-major over the whole grid. */
-function gridOf(
-  width: number,
-  height: number,
-  fill: (x: number, y: number) => number
-): ProvinceIdGrid {
+function gridOf(width: number, height: number, fill: (x: number, y: number) => number): ProvinceIdGrid {
   const ids = new Uint16Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) ids[y * width + x] = fill(x, y);
@@ -42,9 +38,7 @@ describe("computeChronicleBorderMask", () => {
   it("inks a nation's rim, dilated out and in, and leaves the interior clear", () => {
     // A 10x10 RED block on 16x16 ocean, spanning x,y 3..12. Rim pixels are the
     // block's outermost ring; the stamp reaches one pixel beyond it each way.
-    const grid = gridOf(16, 16, (x, y) =>
-      x >= 3 && x <= 12 && y >= 3 && y <= 12 ? 1 : 0
-    );
+    const grid = gridOf(16, 16, (x, y) => (x >= 3 && x <= 12 && y >= 3 && y <= 12 ? 1 : 0));
     const mask = computeChronicleBorderMask(grid, red);
 
     expect(bitAt(mask, 3, 3)).toBe(1); // the rim itself
@@ -122,32 +116,19 @@ describe("computeChronicleBorderMask", () => {
   });
 
   it("rejects a grid whose id count does not match its size", () => {
-    expect(() =>
-      computeChronicleBorderMask(makeGrid([1, 1], 4, 4), red)
-    ).toThrow(/province id grid/);
+    expect(() => computeChronicleBorderMask(makeGrid([1, 1], 4, 4), red)).toThrow(/province id grid/);
   });
 
   it("rejects oversized or malformed dimensions before allocating anything", () => {
     // 7000x7000 exceeds the 6400x6400 native source cap; checked before the
     // id-count comparison so a lying header never sizes a buffer.
-    expect(() =>
-      computeChronicleBorderMask(
-        { width: 7000, height: 7000, ids: new Uint16Array(0) },
-        red
-      )
-    ).toThrow(/outside/);
-    expect(() =>
-      computeChronicleBorderMask(
-        { width: 2.5, height: 4, ids: new Uint16Array(10) },
-        red
-      )
-    ).toThrow(/outside/);
-    expect(() =>
-      computeChronicleBorderMask(
-        { width: -4, height: 4, ids: new Uint16Array(0) },
-        red
-      )
-    ).toThrow(/outside/);
+    expect(() => computeChronicleBorderMask({ width: 7000, height: 7000, ids: new Uint16Array(0) }, red)).toThrow(
+      /outside/,
+    );
+    expect(() => computeChronicleBorderMask({ width: 2.5, height: 4, ids: new Uint16Array(10) }, red)).toThrow(
+      /outside/,
+    );
+    expect(() => computeChronicleBorderMask({ width: -4, height: 4, ids: new Uint16Array(0) }, red)).toThrow(/outside/);
   });
 });
 
@@ -161,9 +142,7 @@ describe("chronicleBorderThickness", () => {
 });
 
 describe("expandChronicleBorderMask", () => {
-  const grid = gridOf(16, 16, (x, y) =>
-    x >= 3 && x <= 12 && y >= 3 && y <= 12 ? 1 : 0
-  );
+  const grid = gridOf(16, 16, (x, y) => (x >= 3 && x <= 12 && y >= 3 && y <= 12 ? 1 : 0));
   const mask = computeChronicleBorderMask(grid, red);
   const [r, g, b, a] = CHRONICLE_BORDER_INK_RGBA;
 
@@ -191,17 +170,12 @@ describe("expandChronicleBorderMask", () => {
   });
 
   it("rejects a wrongly sized output buffer", () => {
-    expect(() =>
-      expandChronicleBorderMask(mask, new Uint8ClampedArray(16))
-    ).toThrow(/border buffer/);
+    expect(() => expandChronicleBorderMask(mask, new Uint8ClampedArray(16))).toThrow(/border buffer/);
   });
 
   it("rejects a mask whose byte count does not match its dimensions", () => {
     expect(() =>
-      expandChronicleBorderMask(
-        { width: 16, height: 16, bits: new Uint8Array(3) },
-        new Uint8ClampedArray(16 * 16 * 4)
-      )
+      expandChronicleBorderMask({ width: 16, height: 16, bits: new Uint8Array(3) }, new Uint8ClampedArray(16 * 16 * 4)),
     ).toThrow(/border mask/);
   });
 });

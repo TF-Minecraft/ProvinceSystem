@@ -54,10 +54,7 @@ function linePointsFromCampaign(war: WarExport): MapPoint[] {
   return resolved;
 }
 
-function linePointsFromCentroids(
-  war: WarExport,
-  centroids: ProvinceCentroids
-): MapPoint[] {
+function linePointsFromCentroids(war: WarExport, centroids: ProvinceCentroids): MapPoint[] {
   const provinces = war.campaign_provinces;
   if (!provinces?.length) return [];
 
@@ -76,16 +73,9 @@ function linePointsFromCentroids(
   return resolved;
 }
 
-function maybePrependAttackerCapital(
-  waypoints: MapPoint[],
-  war: WarExport
-): MapPoint[] {
+function maybePrependAttackerCapital(waypoints: MapPoint[], war: WarExport): MapPoint[] {
   const capital = war.attacker_capital;
-  if (
-    !capital ||
-    !Number.isFinite(capital.map_x) ||
-    !Number.isFinite(capital.map_y)
-  ) {
+  if (!capital || !Number.isFinite(capital.map_x) || !Number.isFinite(capital.map_y)) {
     return waypoints;
   }
 
@@ -100,11 +90,7 @@ function maybePrependAttackerCapital(
 
   const capitalProvinceId = capital.province_id;
   const firstLineProvinceId = war.campaign_line_points?.[0]?.province_id;
-  if (
-    capitalProvinceId != null &&
-    firstLineProvinceId != null &&
-    capitalProvinceId === firstLineProvinceId
-  ) {
+  if (capitalProvinceId != null && firstLineProvinceId != null && capitalProvinceId === firstLineProvinceId) {
     return waypoints;
   }
 
@@ -131,10 +117,7 @@ function slotHasCoords(slot: WarScheduleSlot): boolean {
 }
 
 function collectScheduleSlots(war: WarExport): WarScheduleSlot[] {
-  return [
-    ...(war.campaign_battle_schedule ?? []),
-    ...(war.campaign_counter_schedule ?? []),
-  ];
+  return [...(war.campaign_battle_schedule ?? []), ...(war.campaign_counter_schedule ?? [])];
 }
 
 function battleSiteByProvince(war: WarExport): Map<number, MapPoint> {
@@ -187,11 +170,7 @@ function isSiegeSiteSlot(slot: WarScheduleSlot): boolean {
   return false;
 }
 
-function pointToSegmentDistance2(
-  point: MapPoint,
-  a: MapPoint,
-  b: MapPoint
-): number {
+function pointToSegmentDistance2(point: MapPoint, a: MapPoint, b: MapPoint): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const length2 = dx * dx + dy * dy;
@@ -247,10 +226,7 @@ function insertSiegeForts(waypoints: MapPoint[], war: WarExport): MapPoint[] {
 }
 
 export function nextBattleSlot(war: WarExport): WarScheduleSlot | null {
-  const schedules = [
-    war.campaign_battle_schedule ?? [],
-    war.campaign_counter_schedule ?? [],
-  ];
+  const schedules = [war.campaign_battle_schedule ?? [], war.campaign_counter_schedule ?? []];
   for (const schedule of schedules) {
     for (const slot of schedule) {
       if (slot.status === "next" && slotHasCoords(slot)) {
@@ -261,10 +237,7 @@ export function nextBattleSlot(war: WarExport): WarScheduleSlot | null {
   return null;
 }
 
-export function resolveWarWaypoints(
-  war: WarExport,
-  centroids?: ProvinceCentroids | null
-): MapPoint[] {
+export function resolveWarWaypoints(war: WarExport, centroids?: ProvinceCentroids | null): MapPoint[] {
   let waypoints = linePointsFromCampaign(war);
   if (waypoints.length < 2 && centroids) {
     waypoints = linePointsFromCentroids(war, centroids);
@@ -281,14 +254,7 @@ export function resolveWarWaypoints(
   return valid;
 }
 
-function catmullRomPoint(
-  p0: MapPoint,
-  p1: MapPoint,
-  p2: MapPoint,
-  p3: MapPoint,
-  t: number,
-  tension: number
-): MapPoint {
+function catmullRomPoint(p0: MapPoint, p1: MapPoint, p2: MapPoint, p3: MapPoint, t: number, tension: number): MapPoint {
   const t2 = t * t;
   const t3 = t2 * t;
   const s = (1 - tension) / 2;
@@ -308,10 +274,7 @@ function catmullRomPoint(
   };
 }
 
-export function catmullRomSpline(
-  points: MapPoint[],
-  options: CatmullRomOptions = {}
-): MapPoint[] {
+export function catmullRomSpline(points: MapPoint[], options: CatmullRomOptions = {}): MapPoint[] {
   if (points.length < 2) return [];
   if (points.length === 2) return [...points];
 
@@ -345,14 +308,9 @@ export function buildSvgPathD(points: MapPoint[]): string {
   return `M ${first.x} ${first.y} ${segments.join(" ")}`;
 }
 
-export function warLineStrokeStyle(
-  segment: "progressed" | "remaining"
-): WarLineStrokeStyle {
+export function warLineStrokeStyle(segment: "progressed" | "remaining"): WarLineStrokeStyle {
   return {
-    dashColor:
-      segment === "progressed"
-        ? WAR_LINE_PROGRESSED_COLOR
-        : WAR_LINE_REMAINING_COLOR,
+    dashColor: segment === "progressed" ? WAR_LINE_PROGRESSED_COLOR : WAR_LINE_REMAINING_COLOR,
     dashWidth: WAR_LINE_DASH_WIDTH,
     dashArray: WAR_LINE_DASH_ARRAY,
     opacity: WAR_LINE_OPACITY,
@@ -379,11 +337,7 @@ export function campaignFrontAxisIndex(war: WarExport): number {
 function prependedCapital(waypoints: MapPoint[], war: WarExport): boolean {
   if (waypoints.length < 2) return false;
   const capital = war.attacker_capital;
-  if (
-    !capital ||
-    !Number.isFinite(capital.map_x) ||
-    !Number.isFinite(capital.map_y)
-  ) {
+  if (!capital || !Number.isFinite(capital.map_x) || !Number.isFinite(capital.map_y)) {
     return false;
   }
   return pointsEqual(waypoints[0], { x: capital.map_x!, y: capital.map_y! });
@@ -398,9 +352,7 @@ export function frontWaypointIndex(war: WarExport, waypoints: MapPoint[]): numbe
   const next = nextBattleSlot(war);
   if (!next) return walked;
 
-  const nextIndex = waypoints.findIndex(
-    (waypoint) => waypoint.provinceId === next.province_id
-  );
+  const nextIndex = waypoints.findIndex((waypoint) => waypoint.provinceId === next.province_id);
   if (nextIndex < 0) return walked;
   return Math.min(walked, nextIndex);
 }
@@ -425,10 +377,7 @@ function nearestSplineIndex(spline: MapPoint[], target: MapPoint): number {
   return best;
 }
 
-export function splitSplineAtIndex(
-  spline: MapPoint[],
-  splitIndex: number
-): { before: MapPoint[]; after: MapPoint[] } {
+export function splitSplineAtIndex(spline: MapPoint[], splitIndex: number): { before: MapPoint[]; after: MapPoint[] } {
   if (spline.length < 2) {
     return { before: [], after: [] };
   }
@@ -438,20 +387,14 @@ export function splitSplineAtIndex(
   return { before, after };
 }
 
-export function buildWarCampaignPathD(
-  war: WarExport,
-  centroids?: ProvinceCentroids | null
-): string {
+export function buildWarCampaignPathD(war: WarExport, centroids?: ProvinceCentroids | null): string {
   const waypoints = resolveWarWaypoints(war, centroids);
   if (waypoints.length < 2) return "";
   const spline = catmullRomSpline(waypoints);
   return buildSvgPathD(spline);
 }
 
-export function buildWarCampaignPathPair(
-  war: WarExport,
-  centroids?: ProvinceCentroids | null
-): WarCampaignPathPair {
+export function buildWarCampaignPathPair(war: WarExport, centroids?: ProvinceCentroids | null): WarCampaignPathPair {
   const empty = { progressedD: "", remainingD: "" };
   const waypoints = resolveWarWaypoints(war, centroids);
   if (waypoints.length < 2) return empty;

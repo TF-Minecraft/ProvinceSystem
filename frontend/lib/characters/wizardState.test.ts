@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CreationCatalog } from "./api";
-import {
-  newDraft,
-  setTraitsForKey,
-  stripInjuriesReplacedByProsthetics,
-  toCreateBody,
-} from "./wizardState";
+import { newDraft, setTraitsForKey, stripInjuriesReplacedByProsthetics, toCreateBody } from "./wizardState";
 
 function catalog(): CreationCatalog {
   return {
@@ -38,21 +33,16 @@ function catalog(): CreationCatalog {
 
 describe("stripInjuriesReplacedByProsthetics", () => {
   it("drops matching injury when prosthetic is selected", () => {
-    expect(
-      stripInjuriesReplacedByProsthetics(
-        ["one_handed", "wooden_claw_arm", "blind"],
-        catalog()
-      )
-    ).toEqual(["wooden_claw_arm", "blind"]);
+    expect(stripInjuriesReplacedByProsthetics(["one_handed", "wooden_claw_arm", "blind"], catalog())).toEqual([
+      "wooden_claw_arm",
+      "blind",
+    ]);
   });
 
   it("is case-insensitive on injury ids", () => {
-    expect(
-      stripInjuriesReplacedByProsthetics(
-        ["One_Handed", "wooden_claw_arm"],
-        catalog()
-      )
-    ).toEqual(["wooden_claw_arm"]);
+    expect(stripInjuriesReplacedByProsthetics(["One_Handed", "wooden_claw_arm"], catalog())).toEqual([
+      "wooden_claw_arm",
+    ]);
   });
 });
 

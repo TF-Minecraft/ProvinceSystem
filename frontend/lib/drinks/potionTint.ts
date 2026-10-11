@@ -52,18 +52,12 @@ export async function loadDrinkAssetImages(): Promise<DrinkAssetImages> {
     loadDrinkAsset("glass_bottle.png"),
   ]);
   const width = Math.max(overlay.naturalWidth || 16, bottle.naturalWidth || 16);
-  const height = Math.max(
-    overlay.naturalHeight || 16,
-    bottle.naturalHeight || 16
-  );
+  const height = Math.max(overlay.naturalHeight || 16, bottle.naturalHeight || 16);
   cachedAssets = { overlay, bottle, width, height };
   return cachedAssets;
 }
 
-export function composeTintedPotionCanvas(
-  color: string,
-  assets: DrinkAssetImages
-): HTMLCanvasElement | null {
+export function composeTintedPotionCanvas(color: string, assets: DrinkAssetImages): HTMLCanvasElement | null {
   const rgb = parseHex(color);
   if (!rgb) return null;
   const { overlay, bottle, width, height } = assets;

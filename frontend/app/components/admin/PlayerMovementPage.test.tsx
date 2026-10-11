@@ -71,7 +71,11 @@ const SESSION: PlayerSession = {
 
 beforeEach(() => {
   nav.state.params = new URLSearchParams();
-  vi.mocked(getPlayerSessions).mockResolvedValue({ sessions: [SESSION], next: null, coreprotect: { status: "available" } });
+  vi.mocked(getPlayerSessions).mockResolvedValue({
+    sessions: [SESSION],
+    next: null,
+    coreprotect: { status: "available" },
+  });
   vi.mocked(getSessionMovement).mockResolvedValue({
     session: SESSION,
     since: T,
@@ -119,7 +123,13 @@ it("steps between observations and explains estimates", async () => {
 
 it("applies a typed range and refuses times the clocks skip", async () => {
   vi.mocked(getPlayerMovement).mockResolvedValue({
-    since: T - 3600, until: T, worlds: [], points: [], complete_from: T - 3600, pings_since: null, as_of: T,
+    since: T - 3600,
+    until: T,
+    worlds: [],
+    points: [],
+    complete_from: T - 3600,
+    pings_since: null,
+    as_of: T,
     coreprotect: status,
   });
   render(<PlayerMovementPage uuid={UUID} />);
@@ -154,9 +164,16 @@ it("frames a new session only once its own answer is in", async () => {
   expect(screen.getByTestId("map").dataset.fit).toBe("");
   await act(async () =>
     answer({
-      session: { ...SESSION, id: "s2" }, since: T, until: T + 600, worlds: ["TFMC_Map"],
-      points: [[T, 0, 500, 64, 0, 1]], complete_from: T, pings_since: null, as_of: T, coreprotect: status,
-    })
+      session: { ...SESSION, id: "s2" },
+      since: T,
+      until: T + 600,
+      worlds: ["TFMC_Map"],
+      points: [[T, 0, 500, 64, 0, 1]],
+      complete_from: T,
+      pings_since: null,
+      as_of: T,
+      coreprotect: status,
+    }),
   );
   await waitFor(() => expect(screen.getByTestId("map").dataset.fit).toBe("session:s2"));
 });

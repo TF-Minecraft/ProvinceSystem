@@ -18,7 +18,8 @@ type Props = {
 };
 
 /** For the map itself: filling its square, framed. */
-export const mapFrameClass = "h-full w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]";
+export const mapFrameClass =
+  "h-full w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]";
 
 const asideClass = "flex min-w-0 flex-col gap-3";
 // Each column scrolls on its own when taller than the map, with room for focus rings at the edge.
@@ -32,7 +33,15 @@ const xlScroll = "xl:max-h-[var(--map-h)] xl:overflow-y-auto xl:overscroll-conta
  * lg everything stacks: panel, map and strip, inspector. The map's side never depends on what the
  * panels hold, so selecting something never resizes it.
  */
-export default function MapWorkspace({ panel, map, strip, inspector, stripHeight = "0px", above = "0px", mapFirst = false }: Props) {
+export default function MapWorkspace({
+  panel,
+  map,
+  strip,
+  inspector,
+  stripHeight = "0px",
+  above = "0px",
+  mapFirst = false,
+}: Props) {
   // The site header, the staff title and tabs (69px), this workspace's top margin and the page's bottom padding.
   const style = {
     "--map-h": `max(26rem, calc(100dvh - var(--tfmc-header-h) - 69px - 2.75rem - ${above}))`,
@@ -45,7 +54,9 @@ export default function MapWorkspace({ panel, map, strip, inspector, stripHeight
     >
       {/* One scrolling column on lg; below lg and from xl its two panels are laid out on their own. */}
       <div className={`contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-6 ${lgScroll} xl:contents`}>
-        <aside className={`${asideClass} order-1 lg:order-none xl:col-start-1 xl:row-start-1 ${xlScroll}`}>{panel}</aside>
+        <aside className={`${asideClass} order-1 lg:order-none xl:col-start-1 xl:row-start-1 ${xlScroll}`}>
+          {panel}
+        </aside>
         {inspector ? (
           <aside className={`${asideClass} order-3 lg:order-none xl:col-start-3 xl:row-start-1 ${xlScroll}`}>
             {inspector}

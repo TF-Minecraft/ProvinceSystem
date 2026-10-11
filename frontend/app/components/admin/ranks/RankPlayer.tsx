@@ -22,14 +22,28 @@ import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import ChangeConfirm from "./ChangeConfirm";
 import McText from "./McText";
 import { ChangeHistory, GroupChip, StatusLine } from "./parts";
-import { buttonClass, chipClass, headingClass, inputClass, mutedClass, panelClass, quietButtonClass, rowClass, warnClass } from "../ui";
+import {
+  buttonClass,
+  chipClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  quietButtonClass,
+  rowClass,
+  warnClass,
+} from "../ui";
 
 /** Servers that share this LuckPerms storage; a node may apply to just one. */
 export const SERVERS = ["main", "dev", "tutorial"] as const;
 const PATREON_NOTE =
   "For linked patrons, Patreon may reset permanent all-server changes to this group within 30 minutes.";
 
-type Load = { kind: "loading" } | { kind: GateKind } | { kind: "failed"; message: string } | { kind: "ready"; data: LpPlayer };
+type Load =
+  | { kind: "loading" }
+  | { kind: GateKind }
+  | { kind: "failed"; message: string }
+  | { kind: "ready"; data: LpPlayer };
 
 type Pending = { key: string; summary: ReactNode; ops: LpOp[]; warning?: string; label?: string };
 
@@ -42,7 +56,9 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
       setLoad({ kind: "ready", data: await getLpPlayer(uuid) });
     } catch (err) {
       const status = err instanceof AccountApiError ? err.status : 0;
-      setLoad(status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) });
+      setLoad(
+        status === 400 || status === 404 ? { kind: "failed", message: lpRequestMessage(err) } : { kind: gateKind(err) },
+      );
     }
   }, [uuid]);
 
@@ -106,9 +122,14 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           Rank {player.rank ?? "default"}
           {player.account?.discord_username ? ` · Discord @${player.account.discord_username}` : " · No Discord link"}
-          {player.account?.role && player.account.role !== "player" ? ` · Website ${roleLabel(player.account.role)}` : ""}
+          {player.account?.role && player.account.role !== "player"
+            ? ` · Website ${roleLabel(player.account.role)}`
+            : ""}
           {" · "}
-          <Link href={`/admin/players/${player.uuid}`} className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline">
+          <Link
+            href={`/admin/players/${player.uuid}`}
+            className="text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
+          >
             Player profile
           </Link>
         </p>
@@ -123,7 +144,8 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
         ) : null}
         {rights.change_players && !rights.change_this_player && !rights.read_only ? (
           <p className={`mt-2 ${mutedClass}`}>
-            You can view {name}’s ranks but not change them: they are you, website staff at or above your role, or in-game staff.
+            You can view {name}’s ranks but not change them: they are you, website staff at or above your role, or
+            in-game staff.
           </p>
         ) : null}
       </header>
@@ -159,7 +181,10 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
                               summary: (
                                 <>
                                   Demote {name} on <strong>{track.name}</strong>
-                                  {track.position === 0 ? `, off the track` : ` to ${track.groups[(track.position ?? 1) - 1]}`}.
+                                  {track.position === 0
+                                    ? `, off the track`
+                                    : ` to ${track.groups[(track.position ?? 1) - 1]}`}
+                                  .
                                 </>
                               ),
                               ops: [{ op: "demote", track: track.name }],
@@ -194,7 +219,9 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
                     </span>
                   ) : null}
                 </div>
-                {track.ambiguous ? <p className={`mt-1 ${warnClass}`}>Holds more than one group on this track.</p> : null}
+                {track.ambiguous ? (
+                  <p className={`mt-1 ${warnClass}`}>Holds more than one group on this track.</p>
+                ) : null}
                 {confirmFor(`track-${track.name}`)}
               </li>
             ))}
@@ -256,7 +283,11 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
         name={name}
         adminPermissions={rights.edit_definitions ? null : rights.admin_permissions}
         onAsk={ask}
-        confirm={pending && (pending.key === "add-permission" || otherNodes.some((n) => nodeKey(n) === pending.key)) ? confirmFor(pending.key) : null}
+        confirm={
+          pending && (pending.key === "add-permission" || otherNodes.some((n) => nodeKey(n) === pending.key))
+            ? confirmFor(pending.key)
+            : null
+        }
       />
 
       <section className={panelClass} aria-label="Changes">
@@ -268,7 +299,10 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
 }
 
 function describeScope(node: LpNode): string {
-  const parts = [contextLabel(node.contexts) ? `on ${contextLabel(node.contexts)}` : "", expiryLabel(node.expiry).toLowerCase()];
+  const parts = [
+    contextLabel(node.contexts) ? `on ${contextLabel(node.contexts)}` : "",
+    expiryLabel(node.expiry).toLowerCase(),
+  ];
   const text = parts.filter(Boolean).join(", ");
   return text ? ` (${text})` : "";
 }
@@ -287,7 +321,9 @@ function NodeRow({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
       {children}
-      {contextLabel(node.contexts) ? <span className="text-xs text-[var(--tfmc-stone)]">{contextLabel(node.contexts)}</span> : null}
+      {contextLabel(node.contexts) ? (
+        <span className="text-xs text-[var(--tfmc-stone)]">{contextLabel(node.contexts)}</span>
+      ) : null}
       {node.expiry ? <span className="text-xs text-[#e8c48a]">{expiryLabel(node.expiry)}</span> : null}
       {canChange && node.editable ? (
         <button type="button" className={`${quietButtonClass} ml-auto`} onClick={onRemove}>
@@ -462,7 +498,9 @@ function PermissionsPanel({
                 })
               }
             >
-              <span className={`font-mono text-xs ${node.value ? "text-[var(--tfmc-cream)]" : "text-[#e8a0a0] line-through"}`}>
+              <span
+                className={`font-mono text-xs ${node.value ? "text-[var(--tfmc-cream)]" : "text-[#e8a0a0] line-through"}`}
+              >
                 {node.kind === "meta" ? <McText text={node.key} /> : node.key}
               </span>
               {!node.value ? <span className="text-xs text-[#e8a0a0]">false</span> : null}
@@ -493,7 +531,14 @@ function PermissionsPanel({
         >
           <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
             Set permission
-            <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="professions.chef_1" spellCheck={false} autoCapitalize="none" className={`${inputClass} font-mono`} />
+            <input
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="professions.chef_1"
+              spellCheck={false}
+              autoCapitalize="none"
+              className={`${inputClass} font-mono`}
+            />
           </label>
           <label className="flex flex-col gap-1 text-sm text-[var(--tfmc-stone)]">
             Value
@@ -509,7 +554,9 @@ function PermissionsPanel({
         </form>
       ) : null}
       {canChange && adminPermissions ? (
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">Admins may set {adminPermissions.join(", ")}. Anything else needs the owner.</p>
+        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
+          Admins may set {adminPermissions.join(", ")}. Anything else needs the owner.
+        </p>
       ) : null}
       {confirm}
     </section>

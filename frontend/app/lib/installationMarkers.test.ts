@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  filterPlacedInstallations,
-  installationToMapMarker,
-} from "./installationMarkers";
+import { filterPlacedInstallations, installationToMapMarker } from "./installationMarkers";
 
 describe("installationMarkers", () => {
   it("filterPlacedInstallations keeps only finite map coords", () => {

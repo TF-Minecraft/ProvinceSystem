@@ -1,7 +1,4 @@
-import {
-  MAX_PAINTABLE_PROVINCE_ID,
-  type NationColorLut,
-} from "./chroniclePaint";
+import { MAX_PAINTABLE_PROVINCE_ID, type NationColorLut } from "./chroniclePaint";
 
 /**
  * The prosperity heat map for one stored day, built from the captured
@@ -64,11 +61,7 @@ export const CHRONICLE_PROSPERITY_ALPHA = 140;
  * collapses for deuteranopes — and not a diverging ramp either, since
  * prosperity has a floor rather than a meaningful midpoint.
  */
-export const CHRONICLE_PROSPERITY_RAMP: readonly (readonly [
-  number,
-  number,
-  number,
-])[] = [
+export const CHRONICLE_PROSPERITY_RAMP: readonly (readonly [number, number, number])[] = [
   [68, 1, 84],
   [59, 82, 139],
   [33, 144, 140],
@@ -97,9 +90,7 @@ export function chronicleProsperityFraction(value: number): number {
 }
 
 /** Linear interpolation between the ramp's stops. `t` is clamped to 0..1. */
-export function chronicleProsperityRgb(
-  t: number
-): [number, number, number] {
+export function chronicleProsperityRgb(t: number): [number, number, number] {
   const stops = CHRONICLE_PROSPERITY_RAMP;
   const clamped = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
   const scaled = clamped * (stops.length - 1);
@@ -140,12 +131,7 @@ export function buildProsperityColorLut(payload: unknown): NationColorLut {
   for (const row of rows) {
     if (typeof row !== "object" || row === null) continue;
     const { id, prosperity } = row as ChronicleProvinceDatum;
-    if (
-      typeof id !== "number" ||
-      !Number.isInteger(id) ||
-      id <= 0 ||
-      id > MAX_PAINTABLE_PROVINCE_ID
-    ) {
+    if (typeof id !== "number" || !Number.isInteger(id) || id <= 0 || id > MAX_PAINTABLE_PROVINCE_ID) {
       continue;
     }
     if (typeof prosperity !== "number" || !Number.isFinite(prosperity)) {
@@ -167,8 +153,7 @@ export function buildProsperityColorLut(payload: unknown): NationColorLut {
     let packed = cache.get(key);
     if (packed === undefined) {
       const [r, g, b] = chronicleProsperityRgb(key / 512);
-      packed =
-        ((r << 24) | (g << 16) | (b << 8) | CHRONICLE_PROSPERITY_ALPHA) >>> 0;
+      packed = ((r << 24) | (g << 16) | (b << 8) | CHRONICLE_PROSPERITY_ALPHA) >>> 0;
       cache.set(key, packed);
     }
     lut[id] = packed;

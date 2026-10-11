@@ -19,12 +19,7 @@ type Props = {
   reuseDisabled?: boolean;
 };
 
-export default function AppearancePicker({
-  value,
-  onChange,
-  allowTexture,
-  reuseDisabled,
-}: Props) {
+export default function AppearancePicker({ value, onChange, allowTexture, reuseDisabled }: Props) {
   const [buzzKey, setBuzzKey] = useState<AppearanceMode | null>(null);
 
   const options: Option[] = [
@@ -61,19 +56,11 @@ export default function AppearancePicker({
 
   return (
     <fieldset className="flex flex-col gap-3 border-0 p-0">
-      <legend className="float-none w-auto px-0 text-sm font-medium text-[var(--tfmc-stone)]">
-        Appearance
-      </legend>
+      <legend className="float-none w-auto px-0 text-sm font-medium text-[var(--tfmc-stone)]">Appearance</legend>
       {!allowTexture ? (
-        <p className="text-xs text-[var(--tfmc-mist)]">
-          Your rank is colour-only (no custom texture).
-        </p>
+        <p className="text-xs text-[var(--tfmc-mist)]">Your rank is colour-only (no custom texture).</p>
       ) : null}
-      <div
-        role="radiogroup"
-        aria-label="Drink appearance"
-        className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-      >
+      <div role="radiogroup" aria-label="Drink appearance" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {options.map((opt) => {
           const selected = value === opt.value;
           const buzzing = buzzKey === opt.value;
@@ -95,14 +82,8 @@ export default function AppearancePicker({
                     : "border-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--tfmc-accent)_45%,var(--tfmc-cream))]"
               }`}
             >
-              <span className="block text-sm font-medium text-[var(--tfmc-cream)]">
-                {opt.label}
-              </span>
-              <span
-                className={`mt-0.5 block text-xs ${
-                  opt.locked ? "text-[#e8a0a0]" : "text-[var(--tfmc-mist)]"
-                }`}
-              >
+              <span className="block text-sm font-medium text-[var(--tfmc-cream)]">{opt.label}</span>
+              <span className={`mt-0.5 block text-xs ${opt.locked ? "text-[#e8a0a0]" : "text-[var(--tfmc-mist)]"}`}>
                 {opt.detail}
               </span>
             </button>

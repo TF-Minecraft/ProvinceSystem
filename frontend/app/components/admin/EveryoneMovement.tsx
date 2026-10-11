@@ -91,16 +91,16 @@ export default function EveryoneMovement() {
   // Shown at the top of either view's panel.
   const viewSwitch = (
     <div className="flex gap-2" role="group" aria-label="Movement view">
-        <button type="button" className={tab(!ranged)} aria-pressed={!ranged} onClick={() => writeUrl(pathname, false)}>
-          Now
-        </button>
-        <button
-          type="button"
-          className={tab(ranged)}
-          aria-pressed={ranged}
-          onClick={() => writeUrl(`${pathname}?view=range`, false)}
-        >
-          Time range
+      <button type="button" className={tab(!ranged)} aria-pressed={!ranged} onClick={() => writeUrl(pathname, false)}>
+        Now
+      </button>
+      <button
+        type="button"
+        className={tab(ranged)}
+        aria-pressed={ranged}
+        onClick={() => writeUrl(`${pathname}?view=range`, false)}
+      >
+        Time range
       </button>
     </div>
   );
@@ -135,12 +135,14 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
       }
       writeUrl(`${pathname}?${next.toString()}`, replace);
     },
-    [pathname, search]
+    [pathname, search],
   );
   // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
-  const { at, move: setMoment, cancel: cancelMoment } = useLiveMoment(urlAt, momentView, (time) =>
-    update({ at: String(time) }, true)
-  );
+  const {
+    at,
+    move: setMoment,
+    cancel: cancelMoment,
+  } = useLiveMoment(urlAt, momentView, (time) => update({ at: String(time) }, true));
 
   const now = useMinuteClock(follow);
   const range: Range = follow ? { from: now - (to - from), to: now, follow: true } : { from, to, follow: false };
@@ -152,7 +154,8 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
     let live = true;
     setLoad((prev) => ({
       kind: "loading",
-      previous: prev.kind === "ready" ? prev.data : prev.kind === "loading" || prev.kind === "failed" ? prev.previous : null,
+      previous:
+        prev.kind === "ready" ? prev.data : prev.kind === "loading" || prev.kind === "failed" ? prev.previous : null,
     }));
     getEveryoneMovement(range.from, range.to)
       .then((data) => live && setLoad({ kind: "ready", data, key: viewKey }))
@@ -161,8 +164,12 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
         const gate = gateKind(err);
         setLoad((prev) =>
           gate === "error"
-            ? { kind: "failed", message: adminErrorMessage(err), previous: prev.kind === "loading" ? prev.previous : null }
-            : { kind: gate }
+            ? {
+                kind: "failed",
+                message: adminErrorMessage(err),
+                previous: prev.kind === "loading" ? prev.previous : null,
+              }
+            : { kind: gate },
         );
       });
     return () => {
@@ -171,7 +178,8 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range.from, range.to, retry]);
 
-  const data = load.kind === "ready" ? load.data : load.kind === "loading" || load.kind === "failed" ? load.previous : null;
+  const data =
+    load.kind === "ready" ? load.data : load.kind === "loading" || load.kind === "failed" ? load.previous : null;
   const all = useMemo<MovementTrail[]>(
     () =>
       data
@@ -182,17 +190,22 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
             stretches: stretches(player.points, data.worlds, data.coreprotect.ping_seconds),
           }))
         : [],
-    [data]
+    [data],
   );
   const drawn = useMemo(
     () => (onlyChosen && chosen.size ? all.filter((t) => chosen.has(t.key)) : all),
-    [all, chosen, onlyChosen]
+    [all, chosen, onlyChosen],
   );
   const since = data?.since ?? range.from;
   const until = data?.until ?? range.to;
   const times = useMemo(
-    () => observationTimes(drawn.flatMap((t) => t.stretches), data?.complete_from ?? since, until),
-    [drawn, data, since, until]
+    () =>
+      observationTimes(
+        drawn.flatMap((t) => t.stretches),
+        data?.complete_from ?? since,
+        until,
+      ),
+    [drawn, data, since, until],
   );
 
   if (load.kind === "forbidden") {
@@ -222,8 +235,8 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
   const perPlayer = drawn.length <= 8;
   const bands = drawn.flatMap((t, row) =>
     observedBands(clipStretches(t.stretches, completeFrom, until)).map(([a, b]) =>
-      perPlayer ? { from: a, to: b, colour: t.colour, row } : { from: a, to: b }
-    )
+      perPlayer ? { from: a, to: b, colour: t.colour, row } : { from: a, to: b },
+    ),
   );
   const needle = query.trim().toLowerCase();
   const listed = all.filter((t) => !needle || t.label.toLowerCase().includes(needle));
@@ -329,9 +342,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                 : "Nothing to show."}
           </InspectBar>
           {data && completeFrom > since ? (
-            <p className={mutedClass}>
-              Too many positions to show; the range starts at {formatMoment(completeFrom)}.
-            </p>
+            <p className={mutedClass}>Too many positions to show; the range starts at {formatMoment(completeFrom)}.</p>
           ) : null}
           {data && data.pings_since !== null && data.pings_since > since ? (
             <p className={mutedClass}>Before {formatMoment(data.pings_since)}, only login and logout locations.</p>
@@ -356,13 +367,20 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                 Only selected ({chosen.size})
               </label>
               {chosen.size ? (
-                <button type="button" className="text-[var(--tfmc-stone)] underline" onClick={() => update({ players: null, only: null }, true)}>
+                <button
+                  type="button"
+                  className="text-[var(--tfmc-stone)] underline"
+                  onClick={() => update({ players: null, only: null }, true)}
+                >
                   Clear selection
                 </button>
               ) : null}
             </div>
             {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
-            <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible" aria-label="Players in this range">
+            <ul
+              className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"
+              aria-label="Players in this range"
+            >
               {listed.map((trail) => (
                 <li
                   key={trail.key}

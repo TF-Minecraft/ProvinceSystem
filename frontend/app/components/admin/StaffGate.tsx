@@ -21,7 +21,8 @@ export function StaffGateMessage({ kind }: { kind: GateKind }) {
     );
   }
   if (kind === "forbidden") return <p className="mt-6 text-[var(--tfmc-mist)]">This page is for TFMC staff only.</p>;
-  if (kind === "unavailable") return <p className="mt-6 text-[var(--tfmc-mist)]">The staff panel isn’t available yet.</p>;
+  if (kind === "unavailable")
+    return <p className="mt-6 text-[var(--tfmc-mist)]">The staff panel isn’t available yet.</p>;
   return (
     <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">
       We couldn’t load the staff panel. Please refresh the page.

@@ -15,78 +15,30 @@
     "Offers protection against Diseases.",
     "WARNING: Usage outside of medical RP is strictly forbidden!"
   ],
-  "mmoitem:BOOKS:SKILL_REALLOCATION_BOOK": [
-    "Right Click to gain a Skill Reallocation Point."
-  ],
+  "mmoitem:BOOKS:SKILL_REALLOCATION_BOOK": ["Right Click to gain a Skill Reallocation Point."],
   "mmoitem:CONSUMABLES:UNSOCKET_TOOL": [
     "Drag & Click onto an item to unsocket",
     "its upgrade item, Gemstone, or Rune."
   ],
-  "mmoitem:CURRENCY:GOLD_COIN": [
-    "Currency of a fallen empire.",
-    "Worth: 1d"
-  ],
-  "mmoitem:CURRENCY:HANDFUL_OF_COINS": [
-    "Currency of a fallen empire.",
-    "Worth: 5d"
-  ],
-  "mmoitem:CURRENCY:STACK_OF_COINS": [
-    "Currency of a fallen empire.",
-    "Worth: 10d"
-  ],
-  "mmoitem:CURRENCY:POUCH_OF_COINS": [
-    "Currency of a fallen empire.",
-    "Worth: 100d"
-  ],
-  "mmoitem:CURRENCY:SILVER_COIN": [
-    "Currency of a fallen empire.",
-    "Worth: 0.01d"
-  ],
-  "mmoitem:CURRENCY:SILVER_COIN5": [
-    "Currency of a fallen empire.",
-    "Worth: 0.05d"
-  ],
-  "mmoitem:CURRENCY:SILVER_COIN10": [
-    "Currency of a fallen empire.",
-    "Worth: 0.1d"
-  ],
-  "mmoitem:CURRENCY:ENCHANTED_DUST": [
-    "A mystical ingredient used in",
-    "the crafting of Magical items."
-  ],
-  "mmoitem:INSTRUMENTS:ACCORDION": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:BAGPIPE": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:CELTIC_HARP": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:DULCIMER": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:FLUTE": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:KALIMBA": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:LUTE": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:TRUMPET": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:INSTRUMENTS:VIELLE": [
-    "Hold in off-hand to play it"
-  ],
-  "mmoitem:KEYS:IRON_KEY": [
-    "Requires a Basic Lockpicking Set to be Lockpicked."
-  ],
-  "mmoitem:KEYS:KEY_CHAIN": [
-    "Can hold up to five keys."
-  ],
+  "mmoitem:CURRENCY:GOLD_COIN": ["Currency of a fallen empire.", "Worth: 1d"],
+  "mmoitem:CURRENCY:HANDFUL_OF_COINS": ["Currency of a fallen empire.", "Worth: 5d"],
+  "mmoitem:CURRENCY:STACK_OF_COINS": ["Currency of a fallen empire.", "Worth: 10d"],
+  "mmoitem:CURRENCY:POUCH_OF_COINS": ["Currency of a fallen empire.", "Worth: 100d"],
+  "mmoitem:CURRENCY:SILVER_COIN": ["Currency of a fallen empire.", "Worth: 0.01d"],
+  "mmoitem:CURRENCY:SILVER_COIN5": ["Currency of a fallen empire.", "Worth: 0.05d"],
+  "mmoitem:CURRENCY:SILVER_COIN10": ["Currency of a fallen empire.", "Worth: 0.1d"],
+  "mmoitem:CURRENCY:ENCHANTED_DUST": ["A mystical ingredient used in", "the crafting of Magical items."],
+  "mmoitem:INSTRUMENTS:ACCORDION": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:BAGPIPE": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:CELTIC_HARP": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:DULCIMER": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:FLUTE": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:KALIMBA": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:LUTE": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:TRUMPET": ["Hold in off-hand to play it"],
+  "mmoitem:INSTRUMENTS:VIELLE": ["Hold in off-hand to play it"],
+  "mmoitem:KEYS:IRON_KEY": ["Requires a Basic Lockpicking Set to be Lockpicked."],
+  "mmoitem:KEYS:KEY_CHAIN": ["Can hold up to five keys."],
   "mmoitem:LOCKPICKS:BASIC_LOCKPICK": [
     "Success Chance: 5%",
     "Break Chance: 40%",
@@ -107,46 +59,18 @@
     "HINT: The more Gemstones you infuse at a time,",
     "the lower the average Success Chance of each."
   ],
-  "mmoitem:LOOT:MINOR_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:LESSER_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:GREATER_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:ASCENDANT_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE": [
-    "Research this Rune to unlock its Spell!"
-  ],
-  "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL": [
-    "Used to Reskin an item.",
-    "Type /armourshop to use."
-  ],
-  "mmoitem:MATERIALS:IGNITIUM": [
-    "An uncommon crystal used as",
-    "the catalyst in Coke production."
-  ],
-  "mmoitem:MATERIALS:COKE": [
-    "A highly carbonic fuel primarily",
-    "used in the production of Steel."
-  ],
-  "mmoitem:MATERIALS:RAW_TIN": [
-    "A rare, malleable metal often used",
-    "to produce alloys such as Bronze."
-  ],
+  "mmoitem:LOOT:MINOR_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:LESSER_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:GREATER_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:ASCENDANT_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE": ["Research this Rune to unlock its Spell!"],
+  "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL": ["Used to Reskin an item.", "Type /armourshop to use."],
+  "mmoitem:MATERIALS:IGNITIUM": ["An uncommon crystal used as", "the catalyst in Coke production."],
+  "mmoitem:MATERIALS:COKE": ["A highly carbonic fuel primarily", "used in the production of Steel."],
+  "mmoitem:MATERIALS:RAW_TIN": ["A rare, malleable metal often used", "to produce alloys such as Bronze."],
   "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT": [
     "An extremely tough fragment of metal,",
     "serving as an ideal upgrade to Steel."
@@ -161,237 +85,80 @@
     "of Cerrith; it the key to unlocking",
     "the untapped potential of Mythril."
   ],
-  "mmoitem:MATERIALS:ALCHEMY_POWDER": [
-    "Used in various alchemical recipes."
-  ],
-  "mmoitem:MATERIALS:TRANSMUTATION_POWDER": [
-    "Used in various alchemical recipes."
-  ],
-  "mmoitem:MATERIALS:CARBON_POWDER": [
-    "One of the three components",
-    "in the Black Powder Triangle."
-  ],
-  "mmoitem:MATERIALS:SULFUR": [
-    "One of the three components",
-    "in the Black Powder Triangle."
-  ],
-  "mmoitem:MATERIALS:SALTPETER": [
-    "One of the three components",
-    "in the Black Powder Triangle."
-  ],
-  "mmoitem:MATERIALS:DETOXED_LEATHER": [
-    "Used to craft the Plague Doctor outfit."
-  ],
-  "mmoitem:MATERIALS:ARCANE_CRYSTAL": [
-    "A crystal found deep below the",
-    "earth, but not of this Plane..."
-  ],
-  "mmoitem:MATERIALS:RAWIRON_FRAGMENT": [
-    "Crafted into Iron Ingots",
-    "in a Fishing Station."
-  ],
-  "mmoitem:MATERIALS:RAWGOLD_FRAGMENT": [
-    "Crafted into Gold Ingots",
-    "in a Fishing Station."
-  ],
-  "mmoitem:MATERIALS:DIAMOND_FRAGMENT": [
-    "Crafted into Diamonds",
-    "in a Fishing Station."
-  ],
-  "mmoitem:MATERIALS:ENCHANTED_CHARGE_1": [
-    "Use on a magic weapon to imbue resonance"
-  ],
-  "mmoitem:MATERIALS:ENCHANTED_CHARGE_2": [
-    "Use on a magic weapon to imbue resonance"
-  ],
-  "mmoitem:MATERIALS:ENCHANTED_CHARGE_3": [
-    "Use on a magic weapon to imbue resonance"
-  ],
-  "mmoitem:MATERIALS:ENCHANTED_CHARGE_4": [
-    "Use on a magic weapon to imbue resonance"
-  ],
-  "mmoitem:MEDICINES:MINOR_FOCUS_POTION": [
-    "Restores 50 Mental Points."
-  ],
-  "mmoitem:MEDICINES:HERB_MIXTURE": [
-    "A mixture of various herbs."
-  ],
-  "mmoitem:MEDICINES:VIRAL_SERUM": [
-    "A potent but effective serum."
-  ],
-  "mmoitem:MEDICINES:ROOT_MIXTURE": [
-    "A mixture of various roots."
-  ],
-  "mmoitem:MEDICINES:COOLING_SERUM": [
-    "Cold to the touch."
-  ],
-  "mmoitem:MEDICINES:STABILIZING_SERUM": [
-    "Stabilizes a patient on death's door."
-  ],
-  "mmoitem:MEDICINES:FEVER_FLUSH": [
-    "Extremely strong medication."
-  ],
-  "mmoitem:MEDICINES:FIRELEAF_BREW": [
-    "Warm to the touch."
-  ],
-  "mmoitem:MEDICINES:FROST_SERUM": [
-    "Feels oddly freezing."
-  ],
-  "mmoitem:MEDICINES:RERYTHMETIZER": [
-    "Pulsating rhythmically."
-  ],
-  "mmoitem:MEDICINES:NASAL_FLUSH": [
-    "Highly unpleasant."
-  ],
-  "mmoitem:MEDICINES:SHROOM_SERUM": [
-    "A fungal concoction."
-  ],
-  "mmoitem:MEDICINES:NEURON_STABILIZER": [
-    "Soothing and stabilizing."
-  ],
-  "mmoitem:MEDICINES:VEIN_DETOXIFIER": [
-    "Purifies the blood."
-  ],
-  "mmoitem:MEDICINES:MUSCLE_STIMULATOR": [
-    "Helps to build strength."
-  ],
-  "mmoitem:MEDICINES:COUGH_SYRUP": [
-    "Calms an irritated throat."
-  ],
-  "mmoitem:MUSIC:DISC_FRAGMENT": [
-    "The broken piece of a Music Disc."
-  ],
-  "mmoitem:MUSIC:BROKEN_DISC": [
-    "Can become any Music Disc."
-  ],
-  "mmoitem:MUSIC:DISC1": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC2": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC3": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC4": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC5": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC6": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC7": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC8": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC9": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC10": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC11": [
-    "Right Click to play without a Jukebox!"
-  ],
-  "mmoitem:MUSIC:DISC12": [
-    "Right Click to play without a Jukebox!",
-    "The TFMC: Season 5 Combat Theme"
-  ],
-  "mmoitem:MUSIC:DISC13": [
-    "Right Click to play without a Jukebox!",
-    "The TFMC: Season 5 Main Theme"
-  ],
-  "mmoitem:PETS:TAMING_ITEM": [
-    "Used to tame an animal.",
-    "Right Click an animal to tame it."
-  ],
+  "mmoitem:MATERIALS:ALCHEMY_POWDER": ["Used in various alchemical recipes."],
+  "mmoitem:MATERIALS:TRANSMUTATION_POWDER": ["Used in various alchemical recipes."],
+  "mmoitem:MATERIALS:CARBON_POWDER": ["One of the three components", "in the Black Powder Triangle."],
+  "mmoitem:MATERIALS:SULFUR": ["One of the three components", "in the Black Powder Triangle."],
+  "mmoitem:MATERIALS:SALTPETER": ["One of the three components", "in the Black Powder Triangle."],
+  "mmoitem:MATERIALS:DETOXED_LEATHER": ["Used to craft the Plague Doctor outfit."],
+  "mmoitem:MATERIALS:ARCANE_CRYSTAL": ["A crystal found deep below the", "earth, but not of this Plane..."],
+  "mmoitem:MATERIALS:RAWIRON_FRAGMENT": ["Crafted into Iron Ingots", "in a Fishing Station."],
+  "mmoitem:MATERIALS:RAWGOLD_FRAGMENT": ["Crafted into Gold Ingots", "in a Fishing Station."],
+  "mmoitem:MATERIALS:DIAMOND_FRAGMENT": ["Crafted into Diamonds", "in a Fishing Station."],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_1": ["Use on a magic weapon to imbue resonance"],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_2": ["Use on a magic weapon to imbue resonance"],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_3": ["Use on a magic weapon to imbue resonance"],
+  "mmoitem:MATERIALS:ENCHANTED_CHARGE_4": ["Use on a magic weapon to imbue resonance"],
+  "mmoitem:MEDICINES:MINOR_FOCUS_POTION": ["Restores 50 Mental Points."],
+  "mmoitem:MEDICINES:HERB_MIXTURE": ["A mixture of various herbs."],
+  "mmoitem:MEDICINES:VIRAL_SERUM": ["A potent but effective serum."],
+  "mmoitem:MEDICINES:ROOT_MIXTURE": ["A mixture of various roots."],
+  "mmoitem:MEDICINES:COOLING_SERUM": ["Cold to the touch."],
+  "mmoitem:MEDICINES:STABILIZING_SERUM": ["Stabilizes a patient on death's door."],
+  "mmoitem:MEDICINES:FEVER_FLUSH": ["Extremely strong medication."],
+  "mmoitem:MEDICINES:FIRELEAF_BREW": ["Warm to the touch."],
+  "mmoitem:MEDICINES:FROST_SERUM": ["Feels oddly freezing."],
+  "mmoitem:MEDICINES:RERYTHMETIZER": ["Pulsating rhythmically."],
+  "mmoitem:MEDICINES:NASAL_FLUSH": ["Highly unpleasant."],
+  "mmoitem:MEDICINES:SHROOM_SERUM": ["A fungal concoction."],
+  "mmoitem:MEDICINES:NEURON_STABILIZER": ["Soothing and stabilizing."],
+  "mmoitem:MEDICINES:VEIN_DETOXIFIER": ["Purifies the blood."],
+  "mmoitem:MEDICINES:MUSCLE_STIMULATOR": ["Helps to build strength."],
+  "mmoitem:MEDICINES:COUGH_SYRUP": ["Calms an irritated throat."],
+  "mmoitem:MUSIC:DISC_FRAGMENT": ["The broken piece of a Music Disc."],
+  "mmoitem:MUSIC:BROKEN_DISC": ["Can become any Music Disc."],
+  "mmoitem:MUSIC:DISC1": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC2": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC3": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC4": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC5": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC6": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC7": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC8": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC9": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC10": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC11": ["Right Click to play without a Jukebox!"],
+  "mmoitem:MUSIC:DISC12": ["Right Click to play without a Jukebox!", "The TFMC: Season 5 Combat Theme"],
+  "mmoitem:MUSIC:DISC13": ["Right Click to play without a Jukebox!", "The TFMC: Season 5 Main Theme"],
+  "mmoitem:PETS:TAMING_ITEM": ["Used to tame an animal.", "Right Click an animal to tame it."],
   "mmoitem:PETS:COOWNERSHIP_ITEM": [
     "Shares the ownership of an animal.",
     "Right Click an animal to select it.",
     "Right Click a player to give co-ownership.",
     "Linked tokens can be used directly by other players."
   ],
-  "mmoitem:PETS:ANIMAL_WHISTLE": [
-    "Used to find mounts.",
-    "Right Click to locate nearby mounts."
-  ],
-  "mmoitem:PETS:CARING_ITEM": [
-    "Used daily to pet your animals.",
-    "Right Click an animal to",
-    "boost its happiness."
-  ],
-  "mmoitem:PETS:NEUTERING_ITEM": [
-    "Right Click to neuter",
-    "an animal."
-  ],
-  "mmoitem:PETS:MEAT_TREAT": [
-    "A meat meal for any companion pet.",
-    "Right-click a companion to restore 35 hunger."
-  ],
-  "mmoitem:PETS:FISH_TREAT": [
-    "A fish meal for any companion pet.",
-    "Right-click a companion to restore 35 hunger."
-  ],
-  "mmoitem:PETS:PET_BEAGLE_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CHIHUAHUA_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CORGI_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_GOLDEN_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CATBLACK_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CATFUNNY_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CATORANGE_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_FOX_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_FROG_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_BALL": [
-    "A soft fabric ball for companion pets.",
-    "Throw it for your companion to fetch."
-  ],
+  "mmoitem:PETS:ANIMAL_WHISTLE": ["Used to find mounts.", "Right Click to locate nearby mounts."],
+  "mmoitem:PETS:CARING_ITEM": ["Used daily to pet your animals.", "Right Click an animal to", "boost its happiness."],
+  "mmoitem:PETS:NEUTERING_ITEM": ["Right Click to neuter", "an animal."],
+  "mmoitem:PETS:MEAT_TREAT": ["A meat meal for any companion pet.", "Right-click a companion to restore 35 hunger."],
+  "mmoitem:PETS:FISH_TREAT": ["A fish meal for any companion pet.", "Right-click a companion to restore 35 hunger."],
+  "mmoitem:PETS:PET_BEAGLE_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CHIHUAHUA_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CORGI_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_GOLDEN_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CATBLACK_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CATFUNNY_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CATORANGE_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_FOX_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_FROG_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_BALL": ["A soft fabric ball for companion pets.", "Throw it for your companion to fetch."],
   "mmoitem:PETS:PET_CHEW_BONE": [
     "A bone-shaped fabric toy for companion pets.",
     "Throw it for your companion to fetch."
   ],
-  "mmoitem:PETS:PET_TUG_ROPE": [
-    "A knotted rope toy for companion pets.",
-    "Throw it for your companion to fetch."
-  ],
-  "mmoitem:PETS:PET_MOUSE_PLUSH": [
-    "A soft mouse toy for companion pets.",
-    "Throw it for your companion to fetch."
-  ],
-  "mmoitem:PETS:PET_TEDDY_PLUSH": [
-    "A little teddy bear for companion pets.",
-    "Throw it for your companion to fetch."
-  ],
+  "mmoitem:PETS:PET_TUG_ROPE": ["A knotted rope toy for companion pets.", "Throw it for your companion to fetch."],
+  "mmoitem:PETS:PET_MOUSE_PLUSH": ["A soft mouse toy for companion pets.", "Throw it for your companion to fetch."],
+  "mmoitem:PETS:PET_TEDDY_PLUSH": ["A little teddy bear for companion pets.", "Throw it for your companion to fetch."],
   "mmoitem:PETS:FISH_SNACK": [
     "A fish-shaped crunchy treat for any companion.",
     "Hold to train; right-click to give the reward."
@@ -410,42 +177,15 @@
     "Right-click a sick companion to treat it.",
     "One dose is consumed per treatment."
   ],
-  "mmoitem:PETS:PET_HUSKY_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_MAINECOON_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_BERNESSE_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_BORDERCOLLIE_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CATGRAY_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_CATTABBY_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_LAGOTTOROMAGNOLO_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_YORKSHIRE_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
-  "mmoitem:PETS:PET_BORDERCOLLIEGRAY_EGG": [
-    "Right-click to hatch your companion.",
-    "Choose its name in chat."
-  ],
+  "mmoitem:PETS:PET_HUSKY_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_MAINECOON_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_BERNESSE_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_BORDERCOLLIE_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CATGRAY_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_CATTABBY_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_LAGOTTOROMAGNOLO_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_YORKSHIRE_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
+  "mmoitem:PETS:PET_BORDERCOLLIEGRAY_EGG": ["Right-click to hatch your companion.", "Choose its name in chat."],
   "mmoitem:RESEARCH:SCRIBE_PAPER": [
     "Used to create various Research",
     "Papers in a Cartography Table.",
@@ -532,50 +272,20 @@
     "Research this paper in a Lectern",
     "to unlock its secrets and gain EXP!"
   ],
-  "mmoitem:SURGERY:DEFIBRILLATOR": [
-    "A sharp whiff revives a",
-    "patient who has collapsed",
-    "on the table."
-  ],
-  "mmoitem:SURGERY:PINS": [
-    "Binds the pieces of a shattered",
-    "bone together so it can be set."
-  ],
-  "mmoitem:SURGERY:SURGICAL_GLOVE": [
-    "Dresses the injury once it",
-    "has been set and treated."
-  ],
-  "mmoitem:SURGERY:ANTIBIOTICS": [
-    "A bitter tincture that brings",
-    "a fever down."
-  ],
-  "mmoitem:SURGERY:CLAMP": [
-    "Spencer Wells forceps. Clamp a",
-    "bleeding vessel while the",
-    "wound is open."
-  ],
+  "mmoitem:SURGERY:DEFIBRILLATOR": ["A sharp whiff revives a", "patient who has collapsed", "on the table."],
+  "mmoitem:SURGERY:PINS": ["Binds the pieces of a shattered", "bone together so it can be set."],
+  "mmoitem:SURGERY:SURGICAL_GLOVE": ["Dresses the injury once it", "has been set and treated."],
+  "mmoitem:SURGERY:ANTIBIOTICS": ["A bitter tincture that brings", "a fever down."],
+  "mmoitem:SURGERY:CLAMP": ["Spencer Wells forceps. Clamp a", "bleeding vessel while the", "wound is open."],
   "mmoitem:SURGERY:ULTRASOUND": [
     "A turned-wood tube for listening",
     "to the chest. Examine the patient",
     "to learn what must be done."
   ],
-  "mmoitem:SURGERY:LAB_KIT": [
-    "Takes the patient's temperature",
-    "so a fever can be treated."
-  ],
-  "mmoitem:SURGERY:TRANSFUSION": [
-    "A brass syringe for giving",
-    "blood. Strengthens a weak pulse."
-  ],
-  "mmoitem:SURGERY:SCALPEL": [
-    "Ebony handle, steel blade.",
-    "Only ever cut a patient",
-    "who is under chloroform."
-  ],
-  "mmoitem:SURGERY:STITCHES": [
-    "A curved needle and gut thread",
-    "for closing incisions."
-  ],
+  "mmoitem:SURGERY:LAB_KIT": ["Takes the patient's temperature", "so a fever can be treated."],
+  "mmoitem:SURGERY:TRANSFUSION": ["A brass syringe for giving", "blood. Strengthens a weak pulse."],
+  "mmoitem:SURGERY:SCALPEL": ["Ebony handle, steel blade.", "Only ever cut a patient", "who is under chloroform."],
+  "mmoitem:SURGERY:STITCHES": ["A curved needle and gut thread", "for closing incisions."],
   "mmoitem:SURGERY:ANESTHETIC": [
     "A few drops on a cloth put",
     "the patient under. Too much,",
@@ -586,39 +296,16 @@
     "operation site and keeps",
     "fever from setting in."
   ],
-  "mmoitem:SURGERY:SPLINT": [
-    "Wooden boards and linen strips",
-    "to set a broken bone."
-  ],
-  "mmoitem:SURGERY:SPONGE": [
-    "Mops up blood so you can see",
-    "what you are doing, steadying",
-    "your next move."
-  ],
-  "mmoitem:TOOLS:IRON_HUNTING_KNIFE": [
-    "Concealable during an RP search."
-  ],
-  "mmoitem:TOOLS:STEEL_HOE": [
-    "Harvest I"
-  ],
-  "mmoitem:TOOLS:ABYSSALITE_HOE": [
-    "Harvest II"
-  ],
-  "mmoitem:TOOLS:MYTHRIL_HOE": [
-    "Harvest III"
-  ],
-  "mmoitem:TOOLS:IRON_ALCHEMY_COLLECTOR": [
-    "Can harvest Alchemy Materials from certain things..."
-  ],
-  "mmoitem:TOOLS:STEEL_ALCHEMY_COLLECTOR": [
-    "Can harvest Alchemy Materials from certain things..."
-  ],
-  "mmoitem:TOOLS:ABYSSALITE_ALCHEMY_COLLECTOR": [
-    "Can harvest Alchemy Materials from certain things..."
-  ],
-  "mmoitem:TOOLS:MYTHRIL_ALCHEMY_COLLECTOR": [
-    "Can harvest Alchemy Materials from certain things..."
-  ],
+  "mmoitem:SURGERY:SPLINT": ["Wooden boards and linen strips", "to set a broken bone."],
+  "mmoitem:SURGERY:SPONGE": ["Mops up blood so you can see", "what you are doing, steadying", "your next move."],
+  "mmoitem:TOOLS:IRON_HUNTING_KNIFE": ["Concealable during an RP search."],
+  "mmoitem:TOOLS:STEEL_HOE": ["Harvest I"],
+  "mmoitem:TOOLS:ABYSSALITE_HOE": ["Harvest II"],
+  "mmoitem:TOOLS:MYTHRIL_HOE": ["Harvest III"],
+  "mmoitem:TOOLS:IRON_ALCHEMY_COLLECTOR": ["Can harvest Alchemy Materials from certain things..."],
+  "mmoitem:TOOLS:STEEL_ALCHEMY_COLLECTOR": ["Can harvest Alchemy Materials from certain things..."],
+  "mmoitem:TOOLS:ABYSSALITE_ALCHEMY_COLLECTOR": ["Can harvest Alchemy Materials from certain things..."],
+  "mmoitem:TOOLS:MYTHRIL_ALCHEMY_COLLECTOR": ["Can harvest Alchemy Materials from certain things..."],
   "mmoitem:TOOLS:GOLDSMITH_BRANDING_TOOL": [
     "A tool used in Goldsmithing at a Smithing Table.",
     "Right Click to start a project.",
@@ -700,46 +387,20 @@
     "A tool used in Artisanship at a Woodworking Table",
     "Left Click to peform a regular sewing hit."
   ],
-  "mmoitem:TOOLS:GEIGER_COUNTER": [
-    "A device that detects traces of Arcanum"
-  ],
-  "mmoitem:TOOLS:DEAD_GEIGER_COUNTER": [
-    "A device that detects traces of Arcanum"
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_KNIFE": [
-    "Hold Left Click fill to cut.",
-    "Most delicate. Late release stays tight."
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_SPOON": [
-    "Hold Left Click fill to cut.",
-    "Most delicate. Late release stays tight."
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_HANDPICK": [
-    "Hold Left Click fill to cut.",
-    "Working cut. Late opens a wider face."
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_TROWEL": [
-    "Hold Left Click fill to cut.",
-    "Working cut. Late opens a wider face."
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_PICK": [
-    "Hold Left Click fill to cut.",
-    "Most powerful. Late strips a lot of fill."
-  ],
-  "mmoitem:TOOLS:ARCHEOLOGY_SHOVEL": [
-    "Hold Left Click fill to cut.",
-    "Most powerful. Late strips a lot of fill."
-  ],
+  "mmoitem:TOOLS:GEIGER_COUNTER": ["A device that detects traces of Arcanum"],
+  "mmoitem:TOOLS:DEAD_GEIGER_COUNTER": ["A device that detects traces of Arcanum"],
+  "mmoitem:TOOLS:ARCHEOLOGY_KNIFE": ["Hold Left Click fill to cut.", "Most delicate. Late release stays tight."],
+  "mmoitem:TOOLS:ARCHEOLOGY_SPOON": ["Hold Left Click fill to cut.", "Most delicate. Late release stays tight."],
+  "mmoitem:TOOLS:ARCHEOLOGY_HANDPICK": ["Hold Left Click fill to cut.", "Working cut. Late opens a wider face."],
+  "mmoitem:TOOLS:ARCHEOLOGY_TROWEL": ["Hold Left Click fill to cut.", "Working cut. Late opens a wider face."],
+  "mmoitem:TOOLS:ARCHEOLOGY_PICK": ["Hold Left Click fill to cut.", "Most powerful. Late strips a lot of fill."],
+  "mmoitem:TOOLS:ARCHEOLOGY_SHOVEL": ["Hold Left Click fill to cut.", "Most powerful. Late strips a lot of fill."],
   "mmoitem:UTILS:THERMOMETER": [
     "Right Click to check someone's body temperature.",
     "Shift-Right Click to check your own temperature."
   ],
-  "mmoitem:UTILS:LORESTONE": [
-    "Drag & Click onto an item to add a line of custom lore."
-  ],
-  "mmoitem:UTILS:NAMESTONE": [
-    "Drag & Click onto an item to give it a custom name."
-  ],
+  "mmoitem:UTILS:LORESTONE": ["Drag & Click onto an item to add a line of custom lore."],
+  "mmoitem:UTILS:NAMESTONE": ["Drag & Click onto an item to give it a custom name."],
   "mmoitem:UTILS:GRAVE_INSURANCE": [
     "Allows you to fetch your Grave",
     "Chest from anywhere in the world.",

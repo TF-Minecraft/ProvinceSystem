@@ -16,20 +16,39 @@ export default function VehiclePreview({ skins: allSkins }: { skins: VehicleSkin
       {skins.length > 1 ? (
         <label className="mb-3 flex flex-wrap items-center gap-3 text-sm text-[var(--tfmc-cream)]">
           Preview skin
-          <select value={skin.id} onChange={(event) => setSelected(event.target.value)}
-            className="rounded border border-[var(--tfmc-stone)] bg-[var(--tfmc-forest-deep)] px-3 py-2">
-            {skins.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          <select
+            value={skin.id}
+            onChange={(event) => setSelected(event.target.value)}
+            className="rounded border border-[var(--tfmc-stone)] bg-[var(--tfmc-forest-deep)] px-3 py-2"
+          >
+            {skins.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </select>
         </label>
       ) : null}
       {skin.modelUrl ? (
-        <WikiModelViewer key={skin.id} modelUrl={skin.modelUrl} skinUvUrl={skin.skinUvUrl} textures={skin.textures} label={skin.name} height="lg" />
-      ): (
-        <div role="note" className="flex min-h-64 items-center justify-center rounded border border-dashed border-[var(--tfmc-accent)] p-8 text-center text-[var(--tfmc-cream)]">
+        <WikiModelViewer
+          key={skin.id}
+          modelUrl={skin.modelUrl}
+          skinUvUrl={skin.skinUvUrl}
+          textures={skin.textures}
+          label={skin.name}
+          height="lg"
+        />
+      ) : (
+        <div
+          role="note"
+          className="flex min-h-64 items-center justify-center rounded border border-dashed border-[var(--tfmc-accent)] p-8 text-center text-[var(--tfmc-cream)]"
+        >
           {skin.name}: preview unavailable.
         </div>
       )}
-      <p className="mt-2 text-xs text-[var(--tfmc-mist)]">Drag to rotate; scroll to zoom. Choose a skin to see it on this vehicle.</p>
+      <p className="mt-2 text-xs text-[var(--tfmc-mist)]">
+        Drag to rotate; scroll to zoom. Choose a skin to see it on this vehicle.
+      </p>
     </section>
   );
 }

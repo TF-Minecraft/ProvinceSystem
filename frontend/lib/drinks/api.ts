@@ -109,10 +109,7 @@ export async function redeemDrink(code: string): Promise<DrinkRedeemResult> {
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new DrinksApiError(
-      detailMessage(data, `Redeem failed (${res.status})`),
-      res.status
-    );
+    throw new DrinksApiError(detailMessage(data, `Redeem failed (${res.status})`), res.status);
   }
   return readDrinkRedeemResult(res, data);
 }
@@ -147,12 +144,8 @@ function readDrinkRedeemResult(res: Response, data: unknown): DrinkRedeemResult 
     ...(typeof body.realm_id === "string" && body.realm_id.trim()
       ? { realm_id: body.realm_id.trim().toLowerCase() }
       : {}),
-    ...(typeof body.allow_drink_texture === "boolean"
-      ? { allow_drink_texture: body.allow_drink_texture }
-      : {}),
-    ...(typeof body.allow_drink_message === "boolean"
-      ? { allow_drink_message: body.allow_drink_message }
-      : {}),
+    ...(typeof body.allow_drink_texture === "boolean" ? { allow_drink_texture: body.allow_drink_texture } : {}),
+    ...(typeof body.allow_drink_message === "boolean" ? { allow_drink_message: body.allow_drink_message } : {}),
     ...(typeof body.name_colour_stops === "number"
       ? { name_colour_stops: Math.max(0, Math.floor(body.name_colour_stops)) }
       : {}),
@@ -163,10 +156,7 @@ export async function getCatalog(): Promise<DrinkCatalog> {
   const res = await apiFetch(`${getApiBase()}/drinks/catalog`);
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new DrinksApiError(
-      detailMessage(data, `Catalog failed (${res.status})`),
-      res.status
-    );
+    throw new DrinksApiError(detailMessage(data, `Catalog failed (${res.status})`), res.status);
   }
   const body = data as { catalog?: Partial<DrinkCatalog> };
   const catalog = body.catalog || {};
@@ -174,7 +164,9 @@ export async function getCatalog(): Promise<DrinkCatalog> {
   const categories: Record<string, string> = {};
   if (categoriesRaw && typeof categoriesRaw === "object") {
     for (const [key, label] of Object.entries(categoriesRaw)) {
-      const id = String(key || "").trim().toLowerCase();
+      const id = String(key || "")
+        .trim()
+        .toLowerCase();
       if (!id) continue;
       categories[id] = String(label || id).trim() || id;
     }
@@ -189,25 +181,18 @@ export async function getCatalog(): Promise<DrinkCatalog> {
   };
 }
 
-export async function getTextures(
-  sessionToken: string
-): Promise<DrinkTexture[]> {
+export async function getTextures(sessionToken: string): Promise<DrinkTexture[]> {
   const res = await apiFetch(`${getApiBase()}/drinks/textures`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new DrinksApiError(
-      detailMessage(data, `Textures failed (${res.status})`),
-      res.status
-    );
+    throw new DrinksApiError(detailMessage(data, `Textures failed (${res.status})`), res.status);
   }
   const body = data as { textures?: DrinkTexture[] };
   const list = Array.isArray(body.textures) ? body.textures : [];
   // Belt-and-suspenders: API returns applied-only; still filter client-side.
-  return list.filter(
-    (t) => t && t.applied !== false && t.cmd != null && Number(t.cmd) > 0
-  );
+  return list.filter((t) => t && t.applied !== false && t.cmd != null && Number(t.cmd) > 0);
 }
 
 export async function createSubmission(input: {
@@ -231,28 +216,18 @@ export async function createSubmission(input: {
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new DrinksApiError(
-      detailMessage(data, `Submit failed (${res.status})`),
-      res.status
-    );
+    throw new DrinksApiError(detailMessage(data, `Submit failed (${res.status})`), res.status);
   }
   return data as DrinkSubmissionPublic;
 }
 
-export async function getSubmission(
-  id: string,
-  sessionToken: string
-): Promise<DrinkSubmissionPublic> {
-  const res = await apiFetch(
-    `${getApiBase()}/drinks/submissions/${encodeURIComponent(id)}`,
-    { headers: { Authorization: `Bearer ${sessionToken}` } }
-  );
+export async function getSubmission(id: string, sessionToken: string): Promise<DrinkSubmissionPublic> {
+  const res = await apiFetch(`${getApiBase()}/drinks/submissions/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new DrinksApiError(
-      detailMessage(data, `Load failed (${res.status})`),
-      res.status
-    );
+    throw new DrinksApiError(detailMessage(data, `Load failed (${res.status})`), res.status);
   }
   return data as DrinkSubmissionPublic;
 }

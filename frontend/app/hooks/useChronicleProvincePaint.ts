@@ -3,14 +3,8 @@ import { useEffect, useState } from "react";
 import type { MapId, MapMode } from "../components/map/types";
 import { MapAccessError, staffMapAccessReason } from "@/lib/map/api";
 import type { MapAccessGateReason } from "../components/map/MapAccessGate";
-import {
-  fetchChronicleDayFile,
-  isChronicleDayFileMissing,
-} from "../lib/map/chronicleData";
-import {
-  chronicleProvincePaintLut,
-  chronicleProvincePaintSource,
-} from "../lib/map/chronicleDayModes";
+import { fetchChronicleDayFile, isChronicleDayFileMissing } from "../lib/map/chronicleData";
+import { chronicleProvincePaintLut, chronicleProvincePaintSource } from "../lib/map/chronicleDayModes";
 import type { NationColorLut } from "../lib/map/chroniclePaint";
 
 /**
@@ -55,9 +49,7 @@ export function useChronicleProvincePaint({
   const [lut, setLut] = useState<NationColorLut | null>(null);
   const [loading, setLoading] = useState(false);
   const [dayFileMissing, setDayFileMissing] = useState(false);
-  const [accessError, setAccessError] = useState<MapAccessGateReason | null>(
-    null
-  );
+  const [accessError, setAccessError] = useState<MapAccessGateReason | null>(null);
 
   useEffect(() => {
     const source = chronicleProvincePaintSource(mapType, day);
@@ -83,13 +75,7 @@ export function useChronicleProvincePaint({
     setDayFileMissing(false);
     setAccessError(null);
 
-    void fetchChronicleDayFile<unknown>(
-      mapId,
-      source.day,
-      source.file,
-      sessionToken,
-      controller.signal
-    )
+    void fetchChronicleDayFile<unknown>(mapId, source.day, source.file, sessionToken, controller.signal)
       .then((file) => {
         if (cancelled) return;
         setLut(chronicleProvincePaintLut(source.mapType, file.value));

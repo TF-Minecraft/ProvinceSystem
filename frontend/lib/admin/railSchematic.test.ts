@@ -31,11 +31,36 @@ const NETWORK: RailNetwork = {
       line: 0,
       length: 3000,
       loop: false,
-      points: [[0, 1000], [1000, 1000], [1700, 900], [2000, 0]],
-      broken: [{ from: 500, to: 520, points: [[500, 1000], [520, 1000]] }],
+      points: [
+        [0, 1000],
+        [1000, 1000],
+        [1700, 900],
+        [2000, 0],
+      ],
+      broken: [
+        {
+          from: 500,
+          to: 520,
+          points: [
+            [500, 1000],
+            [520, 1000],
+          ],
+        },
+      ],
       damaged: [],
     },
-    { id: "branch", line: 1, length: 800, loop: false, points: [[1000, 1000], [1100, 1800]], broken: [], damaged: [] },
+    {
+      id: "branch",
+      line: 1,
+      length: 800,
+      loop: false,
+      points: [
+        [1000, 1000],
+        [1100, 1800],
+      ],
+      broken: [],
+      damaged: [],
+    },
   ],
   junctions: [{ id: "j", stem: "main", branch: "branch", at: [1000, 1001], thrown: false }],
   stops: [
@@ -56,13 +81,27 @@ const isOctilinear = ([ax, ay]: Pt, [bx, by]: Pt) => {
 
 describe("octilinear", () => {
   it("keeps straight and diagonal runs as they are", () => {
-    expect(octilinear([0, 0], [50, 0], null)).toEqual([[0, 0], [50, 0]]);
-    expect(octilinear([0, 0], [50, 50], null)).toEqual([[0, 0], [50, 50]]);
+    expect(octilinear([0, 0], [50, 0], null)).toEqual([
+      [0, 0],
+      [50, 0],
+    ]);
+    expect(octilinear([0, 0], [50, 50], null)).toEqual([
+      [0, 0],
+      [50, 50],
+    ]);
   });
 
   it("bends once, on the side nearer the real track", () => {
-    expect(octilinear([0, 0], [100, 25], [12, 12])).toEqual([[0, 0], [25, 25], [100, 25]]);
-    expect(octilinear([0, 0], [100, 25], [80, 2])).toEqual([[0, 0], [75, 0], [100, 25]]);
+    expect(octilinear([0, 0], [100, 25], [12, 12])).toEqual([
+      [0, 0],
+      [25, 25],
+      [100, 25],
+    ]);
+    expect(octilinear([0, 0], [100, 25], [80, 2])).toEqual([
+      [0, 0],
+      [75, 0],
+      [100, 25],
+    ]);
   });
 });
 
@@ -136,7 +175,25 @@ describe("buildSchematic", () => {
 
 describe("roundedPath", () => {
   it("rounds corners and keeps straight points straight", () => {
-    expect(roundedPath([[0, 0], [50, 0], [100, 0]], 10)).toBe("M0 0L50 0L100 0");
-    expect(roundedPath([[0, 0], [100, 0], [100, 100]], 10)).toBe("M0 0L90 0Q100 0 100 10L100 100");
+    expect(
+      roundedPath(
+        [
+          [0, 0],
+          [50, 0],
+          [100, 0],
+        ],
+        10,
+      ),
+    ).toBe("M0 0L50 0L100 0");
+    expect(
+      roundedPath(
+        [
+          [0, 0],
+          [100, 0],
+          [100, 100],
+        ],
+        10,
+      ),
+    ).toBe("M0 0L90 0Q100 0 100 10L100 100");
   });
 });

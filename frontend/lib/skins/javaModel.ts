@@ -42,10 +42,7 @@ type JavaFace = {
   rotation?: number;
 };
 
-const FACE_DIRS: Record<
-  FaceName,
-  { normal: [number, number, number]; corners: number[][] }
-> = {
+const FACE_DIRS: Record<FaceName, { normal: [number, number, number]; corners: number[][] }> = {
   // corners in MC face order for UV mapping (matching common viewers)
   north: {
     normal: [0, 0, -1],
@@ -103,11 +100,8 @@ const FACE_DIRS: Record<
   },
 };
 
-function rotateUv(
-  uvs: [number, number][],
-  rotation: number
-): [number, number][] {
-  const turns = ((rotation % 360) + 360) % 360 / 90;
+function rotateUv(uvs: [number, number][], rotation: number): [number, number][] {
+  const turns = (((rotation % 360) + 360) % 360) / 90;
   const out = uvs.slice() as [number, number][];
   for (let i = 0; i < turns; i++) {
     out.unshift(out.pop()!);
@@ -115,11 +109,7 @@ function rotateUv(
   return out;
 }
 
-function faceUvs(
-  face: FaceName,
-  uv: [number, number, number, number],
-  rotation = 0
-): [number, number][] {
+function faceUvs(face: FaceName, uv: [number, number, number, number], rotation = 0): [number, number][] {
   // Java models: UV is in 1/16ths of a block; 0–16 spans the full texture
   // regardless of PNG resolution (16×16, 64×64, …).
   const u1 = uv[0] / 16;
@@ -152,7 +142,7 @@ function faceUvs(
 function defaultUv(
   face: FaceName,
   from: [number, number, number],
-  to: [number, number, number]
+  to: [number, number, number],
 ): [number, number, number, number] {
   const [x0, y0, z0] = from;
   const [x1, y1, z1] = to;
@@ -178,7 +168,7 @@ export function buildJavaModelGroup(
   texture: THREE.Texture,
   texWidth: number,
   texHeight: number,
-  options: BuildJavaModelOptions = {}
+  options: BuildJavaModelOptions = {},
 ): THREE.Group {
   const center = options.center !== false;
   const elements = json.elements;
@@ -233,32 +223,18 @@ export function buildJavaModelGroup(
 
       for (let i = 0; i < 4; i++) {
         const [cx, cy, cz] = def.corners[i];
-        positions.push(
-          fx + cx * sizeX,
-          fy + cy * sizeY,
-          fz + cz * sizeZ
-        );
+        positions.push(fx + cx * sizeX, fy + cy * sizeY, fz + cz * sizeZ);
         normals.push(...def.normal);
         uvs.push(cornerUvs[i][0], cornerUvs[i][1]);
       }
-      indices.push(
-        vertexOffset,
-        vertexOffset + 1,
-        vertexOffset + 2,
-        vertexOffset,
-        vertexOffset + 2,
-        vertexOffset + 3
-      );
+      indices.push(vertexOffset, vertexOffset + 1, vertexOffset + 2, vertexOffset, vertexOffset + 2, vertexOffset + 3);
       vertexOffset += 4;
     }
 
     if (positions.length === 0) continue;
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
@@ -295,23 +271,15 @@ export function buildJavaModelGroup(
   return root;
 }
 
-export const JAVA_MODEL_EXPORT_HINT =
-  "Export in Blockbench as Java Block/Item (not Java Item).";
-export const JAVA_MODEL_ROTATION_ERROR =
-  "Cubes may only rotate on one axis by 22.5° or 45°. " + JAVA_MODEL_EXPORT_HINT;
-export const JAVA_MODEL_NO_ELEMENTS_ERROR =
-  "Model has no elements. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_EXPORT_HINT = "Export in Blockbench as Java Block/Item (not Java Item).";
+export const JAVA_MODEL_ROTATION_ERROR = "Cubes may only rotate on one axis by 22.5° or 45°. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_NO_ELEMENTS_ERROR = "Model has no elements. " + JAVA_MODEL_EXPORT_HINT;
 export const JAVA_MODEL_ITEM_WRAPPER_ERROR =
-  "This looks like a Minecraft item definition, not a Java Block/Item model. " +
-  JAVA_MODEL_EXPORT_HINT;
-export const JAVA_MODEL_PROJECT_FILE_ERROR =
-  "This looks like a Blockbench project file. " + JAVA_MODEL_EXPORT_HINT;
-export const JAVA_MODEL_BOUNDS_ERROR =
-  "Cube coordinates must be between -16 and 32.";
-export const JAVA_MODEL_TEXTURES_ERROR =
-  "Model textures must be a map of texture ids to paths.";
-export const JAVA_MODEL_CUBE_ERROR =
-  "Each cube needs from and to as three numbers.";
+  "This looks like a Minecraft item definition, not a Java Block/Item model. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_PROJECT_FILE_ERROR = "This looks like a Blockbench project file. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_BOUNDS_ERROR = "Cube coordinates must be between -16 and 32.";
+export const JAVA_MODEL_TEXTURES_ERROR = "Model textures must be a map of texture ids to paths.";
+export const JAVA_MODEL_CUBE_ERROR = "Each cube needs from and to as three numbers.";
 
 const ALLOWED_AXES = new Set(["x", "y", "z"]);
 const ALLOWED_ANGLES = [-45, -22.5, 0, 22.5, 45];
@@ -328,11 +296,7 @@ function angleAllowed(value: unknown): boolean {
 }
 
 function isVec3(value: unknown): value is [number, number, number] {
-  return (
-    Array.isArray(value) &&
-    value.length === 3 &&
-    value.every((n) => isFiniteNumber(n))
-  );
+  return Array.isArray(value) && value.length === 3 && value.every((n) => isFiniteNumber(n));
 }
 
 function coordsInBounds(vec: [number, number, number]): boolean {
@@ -349,12 +313,7 @@ export function assertVanillaJavaBlockModel(data: unknown): void {
   }
   const model = data as Record<string, unknown>;
   const nested = model.model;
-  if (
-    nested &&
-    typeof nested === "object" &&
-    !Array.isArray(nested) &&
-    "type" in nested
-  ) {
+  if (nested && typeof nested === "object" && !Array.isArray(nested) && "type" in nested) {
     throw new Error(JAVA_MODEL_ITEM_WRAPPER_ERROR);
   }
   if ("meta" in model) {
@@ -398,17 +357,10 @@ export function assertVanillaJavaBlockModel(data: unknown): void {
       throw new Error(JAVA_MODEL_ROTATION_ERROR);
     }
     const rotation = rot as Record<string, unknown>;
-    if (
-      ("x" in rotation || "y" in rotation || "z" in rotation) &&
-      !("axis" in rotation)
-    ) {
+    if (("x" in rotation || "y" in rotation || "z" in rotation) && !("axis" in rotation)) {
       throw new Error(JAVA_MODEL_ROTATION_ERROR);
     }
-    if (
-      !ALLOWED_AXES.has(String(rotation.axis)) ||
-      !angleAllowed(rotation.angle) ||
-      !isVec3(rotation.origin)
-    ) {
+    if (!ALLOWED_AXES.has(String(rotation.axis)) || !angleAllowed(rotation.angle) || !isVec3(rotation.origin)) {
       throw new Error(JAVA_MODEL_ROTATION_ERROR);
     }
   }
@@ -431,7 +383,7 @@ export async function assertVanillaJavaBlockModelFile(file: File): Promise<void>
 }
 
 export async function loadTextureFromFile(
-  file: File
+  file: File,
 ): Promise<{ texture: THREE.Texture; width: number; height: number }> {
   const url = URL.createObjectURL(file);
   try {

@@ -34,13 +34,7 @@ export default function WardrobeSlotFrame({
   const pending = Boolean(slot.apply_pending) && slot.filled && !locked;
   const canOpen = slot.unlocked;
   const [buzz, setBuzz] = useState(false);
-  const showEquip =
-    Boolean(onEquip) &&
-    slot.unlocked &&
-    slot.filled &&
-    slot.slot !== "masked" &&
-    !active &&
-    !pending;
+  const showEquip = Boolean(onEquip) && slot.unlocked && slot.filled && slot.slot !== "masked" && !active && !pending;
 
   function onFrameClick() {
     if (locked) {
@@ -52,11 +46,7 @@ export default function WardrobeSlotFrame({
   }
 
   return (
-    <div
-      className={`flex w-[7.5rem] flex-col gap-2 sm:w-36 ${
-        buzz ? "animate-char-option-shake" : ""
-      }`}
-    >
+    <div className={`flex w-[7.5rem] flex-col gap-2 sm:w-36 ${buzz ? "animate-char-option-shake" : ""}`}>
       <button
         type="button"
         disabled={pending && !locked}
@@ -71,11 +61,7 @@ export default function WardrobeSlotFrame({
                 : "border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
         }`}
         aria-label={
-          locked
-            ? `${label} locked`
-            : pending
-              ? `${label} pending`
-              : `${label}${slot.filled ? "" : " empty"} - edit`
+          locked ? `${label} locked` : pending ? `${label} pending` : `${label}${slot.filled ? "" : " empty"} - edit`
         }
       >
         {locked ? (
@@ -85,11 +71,7 @@ export default function WardrobeSlotFrame({
             </span>
             <p className="text-center text-[10px] leading-snug text-[#e8a0a0]">
               You need{" "}
-              {lockRuns && lockRuns.length > 0 ? (
-                <FormattedMcRuns runs={lockRuns} />
-              ) : (
-                lockPlain || "a higher rank"
-              )}
+              {lockRuns && lockRuns.length > 0 ? <FormattedMcRuns runs={lockRuns} /> : lockPlain || "a higher rank"}
             </p>
           </div>
         ) : (

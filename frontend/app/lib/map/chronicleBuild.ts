@@ -51,10 +51,7 @@ export type ChronicleRangeSelection = {
   error: string | null;
 };
 
-export type ChronicleRangeIndex = Pick<
-  ChronicleIndex,
-  "days" | "incomplete_days"
->;
+export type ChronicleRangeIndex = Pick<ChronicleIndex, "days" | "incomplete_days">;
 
 /**
  * Both endpoints must be days the map actually stored: a range anchored on a
@@ -65,7 +62,7 @@ export type ChronicleRangeIndex = Pick<
 export function selectChronicleRange(
   index: ChronicleRangeIndex,
   start: string | null,
-  end: string | null
+  end: string | null,
 ): ChronicleRangeSelection {
   const empty = { days: [], incompleteDays: [] };
   // Both of these come from unvalidated network JSON. `?? []` covers null and
@@ -97,9 +94,7 @@ export function selectChronicleRange(
 
   const days = available.filter((day) => day >= start && day <= end);
   const incomplete = new Set(
-    (Array.isArray(index.incomplete_days) ? index.incomplete_days : []).map(
-      (entry) => entry?.day
-    )
+    (Array.isArray(index.incomplete_days) ? index.incomplete_days : []).map((entry) => entry?.day),
   );
 
   return {
@@ -161,10 +156,7 @@ export type ChronicleEstimate = {
   overCeiling: boolean;
 };
 
-export function chronicleFrameBytes(
-  renderWidth: number,
-  renderHeight: number
-): number {
+export function chronicleFrameBytes(renderWidth: number, renderHeight: number): number {
   return Math.max(0, renderWidth) * Math.max(0, renderHeight) * 4;
 }
 
@@ -195,21 +187,16 @@ export function estimateChronicleBuild(options: {
   const staleSample = sample.signature != null && sample.signature !== signature;
   const usable = !staleSample;
 
-  const cpuMsPerDay =
-    (usable ? sample.cpuMsPerDay : null) ?? CHRONICLE_FALLBACK_COST.cpuMsPerDay;
-  const bytesPerDay =
-    (usable ? sample.bytesPerDay : null) ?? CHRONICLE_FALLBACK_COST.bytesPerDay;
+  const cpuMsPerDay = (usable ? sample.cpuMsPerDay : null) ?? CHRONICLE_FALLBACK_COST.cpuMsPerDay;
+  const bytesPerDay = (usable ? sample.bytesPerDay : null) ?? CHRONICLE_FALLBACK_COST.bytesPerDay;
   const sampledBytesPerMs = usable ? sample.bytesPerMs : null;
   const bytesPerMs =
-    sampledBytesPerMs && sampledBytesPerMs > 0
-      ? sampledBytesPerMs
-      : CHRONICLE_FALLBACK_COST.bytesPerMs;
+    sampledBytesPerMs && sampledBytesPerMs > 0 ? sampledBytesPerMs : CHRONICLE_FALLBACK_COST.bytesPerMs;
 
   const days = Math.max(0, Math.floor(dayCount));
   const bytesPerFrame = chronicleFrameBytes(renderWidth, renderHeight);
   const memoryBytes = days * bytesPerFrame;
-  const fetchMs =
-    (days * bytesPerDay) / bytesPerMs / CHRONICLE_FETCH_PARALLEL_SPEEDUP;
+  const fetchMs = (days * bytesPerDay) / bytesPerMs / CHRONICLE_FETCH_PARALLEL_SPEEDUP;
   const cpuMs = days * cpuMsPerDay;
 
   return {
@@ -312,9 +299,7 @@ export class ChronicleBuildCancelled extends Error {
   }
 }
 
-export function isChronicleBuildCancelled(
-  error: unknown
-): error is ChronicleBuildCancelled {
+export function isChronicleBuildCancelled(error: unknown): error is ChronicleBuildCancelled {
   return error instanceof ChronicleBuildCancelled;
 }
 
@@ -350,11 +335,7 @@ export type ChronicleFrame<TImage, TLayers> = {
   reusedImage: boolean;
 };
 
-export type ChronicleBuildEffects<
-  TLoad extends ChronicleDayLoad,
-  TImage,
-  TLayers,
-> = {
+export type ChronicleBuildEffects<TLoad extends ChronicleDayLoad, TImage, TLayers> = {
   /** Returns null for a day whose sources are absent — it is skipped, not fatal. */
   loadDay: (day: string, signal?: AbortSignal) => Promise<TLoad | null>;
   renderDay: (day: string, load: TLoad) => Promise<TImage | null>;
@@ -388,7 +369,7 @@ export type ChronicleBuildResult<TImage, TLayers> = {
  */
 export function disposeChronicleFrames<TImage, TLayers>(
   frames: ChronicleFrame<TImage, TLayers>[],
-  disposeImage: (image: TImage) => void
+  disposeImage: (image: TImage) => void,
 ): void {
   const seen = new Set<TImage>();
   for (const frame of frames) {
@@ -411,11 +392,7 @@ function throwIfCancelled(signal: AbortSignal | undefined): void {
  * Cancelling disposes the frames it already built; a half-built timelapse is
  * never handed back.
  */
-export async function runChronicleBuild<
-  TLoad extends ChronicleDayLoad,
-  TImage,
-  TLayers,
->(options: {
+export async function runChronicleBuild<TLoad extends ChronicleDayLoad, TImage, TLayers>(options: {
   days: string[];
   effects: ChronicleBuildEffects<TLoad, TImage, TLayers>;
   concurrency?: number;
@@ -435,8 +412,7 @@ export async function runChronicleBuild<
   let painted = 0;
   let reused = 0;
   let bytesFetched = 0;
-  let previous: { fingerprint: string | null; image: TImage | null } | null =
-    null;
+  let previous: { fingerprint: string | null; image: TImage | null } | null = null;
 
   const startLoad = (index: number) => {
     if (index >= days.length || pending.has(index)) return;
@@ -464,9 +440,7 @@ export async function runChronicleBuild<
         bytesFetched += load.byteLength;
 
         const canReuse =
-          previous != null &&
-          load.imageFingerprint != null &&
-          load.imageFingerprint === previous.fingerprint;
+          previous != null && load.imageFingerprint != null && load.imageFingerprint === previous.fingerprint;
 
         let image: TImage | null;
         if (canReuse) {

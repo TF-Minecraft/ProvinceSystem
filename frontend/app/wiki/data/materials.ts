@@ -165,19 +165,35 @@ export const serverCraftedMaterials: CatalogMaterial[] = [
 // Gathered/loot materials may also have unpacking recipes. Acquisition evidence:
 // https://github.com/TF-Minecraft/Docs/blob/main/projects/ProvinceSystem/docs/wiki-research/material-acquisition.md (cloned server config + local drop implementation).
 export const dropOnlyMaterials: DropOnlyMaterial[] = [
-  { name: "Enchanted Dust", texture: T("magic_crafting/enchanted_dust.png"), lore: "A magical crafting ingredient used in equipment and material recipes." },
   {
-    name: "Ignitium", texture: T("materials/ignitium.png"), lore: "Uncommon crystal: catalyst in Coke production.",
+    name: "Enchanted Dust",
+    texture: T("magic_crafting/enchanted_dust.png"),
+    lore: "A magical crafting ingredient used in equipment and material recipes.",
+  },
+  {
+    name: "Ignitium",
+    texture: T("materials/ignitium.png"),
+    lore: "Uncommon crystal: catalyst in Coke production.",
     unpackingRecipeKeys: ["gen-ingot-station-ignitium-block2"],
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
-      { method: "Logging with Tree Gatherer IV", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV." },
+      {
+        method: "Mining with Lucky Miner I",
+        detail:
+          "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I.",
+      },
+      {
+        method: "Logging with Tree Gatherer IV",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV.",
+      },
       { method: "Detector rewards", detail: "Find a source with the detector." },
       { method: "Pouch of Rare Materials", detail: "Right-click a Pouch of Rare Materials to receive Ignitium." },
     ],
   },
   {
-    name: "Tin", texture: T("materials/raw_tin.png"), lore: "Malleable metal used to produce alloys like Bronze.",
+    name: "Tin",
+    texture: T("materials/raw_tin.png"),
+    lore: "Malleable metal used to produce alloys like Bronze.",
     unpackingRecipeKeys: ["gen-ingot-station-tin-block2"],
   },
   {
@@ -200,26 +216,86 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
   { name: "Necromancy Essence", texture: T("magic_crafting/necromancy_essence.png") },
   { name: "Wood Core", texture: T("materials/wood_core.png") },
   { name: "Flower Core", texture: T("materials/flower_core.png") },
-  { name: "Valewood", texture: T("materials/valewood.png"), acquisition: [
-    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
-    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Valewood in its output pool." },
-  ] },
-  { name: "Runebark", texture: T("materials/runebark.png"), acquisition: [
-    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
-    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Runebark in its output pool." },
-  ] },
-  { name: "Amberpine", texture: T("materials/amberpine.png"), acquisition: [
-    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
-    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Amberpine in its output pool." },
-  ] },
-  { name: "Goldmaple", texture: T("materials/goldmaple.png"), acquisition: [
-    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
-    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Goldmaple in its output pool." },
-  ] },
-  { name: "Silk", texture: T("materials/silk.png"), acquisition: [
-    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
-    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Silk in its output pool." },
-  ] },
+  {
+    name: "Valewood",
+    texture: T("materials/valewood.png"),
+    acquisition: [
+      {
+        method: "Logging with Tree Gatherer III",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III.",
+      },
+      {
+        method: "Rare Wood Forestry production",
+        detail:
+          "Select the Rare Wood Forestry production focus on a Forestry resource node to include Valewood in its output pool.",
+      },
+    ],
+  },
+  {
+    name: "Runebark",
+    texture: T("materials/runebark.png"),
+    acquisition: [
+      {
+        method: "Logging with Tree Gatherer III",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III.",
+      },
+      {
+        method: "Rare Wood Forestry production",
+        detail:
+          "Select the Rare Wood Forestry production focus on a Forestry resource node to include Runebark in its output pool.",
+      },
+    ],
+  },
+  {
+    name: "Amberpine",
+    texture: T("materials/amberpine.png"),
+    acquisition: [
+      {
+        method: "Logging with Tree Gatherer III",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III.",
+      },
+      {
+        method: "Rare Wood Forestry production",
+        detail:
+          "Select the Rare Wood Forestry production focus on a Forestry resource node to include Amberpine in its output pool.",
+      },
+    ],
+  },
+  {
+    name: "Goldmaple",
+    texture: T("materials/goldmaple.png"),
+    acquisition: [
+      {
+        method: "Logging with Tree Gatherer III",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III.",
+      },
+      {
+        method: "Rare Wood Forestry production",
+        detail:
+          "Select the Rare Wood Forestry production focus on a Forestry resource node to include Goldmaple in its output pool.",
+      },
+    ],
+  },
+  {
+    name: "Silk",
+    texture: T("materials/silk.png"),
+    acquisition: [
+      {
+        method: "Logging with Tree Gatherer III",
+        detail:
+          "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III.",
+      },
+      {
+        method: "Rare Wood Forestry production",
+        detail:
+          "Select the Rare Wood Forestry production focus on a Forestry resource node to include Silk in its output pool.",
+      },
+    ],
+  },
   {
     name: "Moldable Gold",
     texture: T("materials/moldable_gold.png"),
@@ -236,40 +312,105 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
     lore: "Rare gold variant with Goldsmithing applications.",
   },
   {
-    name: "Arcane Crystal", texture: T("materials/arcane_crystal.png"), lore: "Found deep below the earth: not of this Plane.",
+    name: "Arcane Crystal",
+    texture: T("materials/arcane_crystal.png"),
+    lore: "Found deep below the earth: not of this Plane.",
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
-      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Arcane Crystal in its output pool." },
+      {
+        method: "Mining with Lucky Miner I",
+        detail:
+          "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I.",
+      },
+      {
+        method: "Rare Ore Mine production",
+        detail:
+          "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Arcane Crystal in its output pool.",
+      },
       { method: "Trial Room loot", detail: "Arcane Crystals are in the Trial Room loot pool." },
     ],
   },
   {
-    name: "Niter", texture: T("materials/niter.png"),
+    name: "Niter",
+    texture: T("materials/niter.png"),
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
-      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Niter in its output pool." },
+      {
+        method: "Mining with Lucky Miner I",
+        detail:
+          "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I.",
+      },
+      {
+        method: "Rare Ore Mine production",
+        detail:
+          "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Niter in its output pool.",
+      },
     ],
   },
   { name: "Smokeless Powder", texture: T("materials/smokeless_powder.png") },
-  { name: "Raw Iron Fragment", texture: T("materials/rawiron_fragment.png"), lore: "Four make one Raw Iron at a Fishing Station." },
-  { name: "Raw Gold Fragment", texture: T("materials/rawgold_fragment.png"), lore: "Four make one Raw Gold at a Fishing Station." },
-  { name: "Diamond Fragment", texture: T("materials/diamond_fragment.png"), lore: "Four make one Diamond at a Fishing Station." },
+  {
+    name: "Raw Iron Fragment",
+    texture: T("materials/rawiron_fragment.png"),
+    lore: "Four make one Raw Iron at a Fishing Station.",
+  },
+  {
+    name: "Raw Gold Fragment",
+    texture: T("materials/rawgold_fragment.png"),
+    lore: "Four make one Raw Gold at a Fishing Station.",
+  },
+  {
+    name: "Diamond Fragment",
+    texture: T("materials/diamond_fragment.png"),
+    lore: "Four make one Diamond at a Fishing Station.",
+  },
   { name: "Fossil", texture: T("materials/fossil.png") },
-  { name: "Good Quality Leather", texture: T("pets/rareleather.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Great Quality Leather", texture: T("pets/epicleather.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Perfect Quality Leather", texture: T("pets/legendaryleather.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Good Quality Feather", texture: T("pets/rarefeather.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Great Quality Feather", texture: T("pets/epicfeather.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Perfect Quality Feather", texture: T("pets/legendaryfeather.png"), lore: "Used to make weapons and armor on the Anvil." },
+  {
+    name: "Good Quality Leather",
+    texture: T("pets/rareleather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
+  {
+    name: "Great Quality Leather",
+    texture: T("pets/epicleather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
+  {
+    name: "Perfect Quality Leather",
+    texture: T("pets/legendaryleather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
+  {
+    name: "Good Quality Feather",
+    texture: T("pets/rarefeather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
+  {
+    name: "Great Quality Feather",
+    texture: T("pets/epicfeather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
+  {
+    name: "Perfect Quality Feather",
+    texture: T("pets/legendaryfeather.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
   { name: "Good Quality Wool", texture: T("pets/rarewool.png"), lore: "Used to make weapons and armor on the Anvil." },
   { name: "Great Quality Wool", texture: T("pets/epicwool.png"), lore: "Used to make weapons and armor on the Anvil." },
-  { name: "Perfect Quality Wool", texture: T("pets/legendarywool.png"), lore: "Used to make weapons and armor on the Anvil." },
+  {
+    name: "Perfect Quality Wool",
+    texture: T("pets/legendarywool.png"),
+    lore: "Used to make weapons and armor on the Anvil.",
+  },
   // Alchemy herbs: every herb an Alchemist Collector can gather on the main server.
   ...collectorHerbMaterials,
   {
-    name: "Universal Feed", texture: T("mmoitems/universal_feed.png"), lore: "Used daily to feed your animals.",
+    name: "Universal Feed",
+    texture: T("mmoitems/universal_feed.png"),
+    lore: "Used daily to feed your animals.",
     acquisition: [
-      { method: "Made in a Trough", detail: "Craft a Trough at the Animal Station, place it, and fill it with any vegetable mix to make Universal Feed." },
+      {
+        method: "Made in a Trough",
+        detail:
+          "Craft a Trough at the Animal Station, place it, and fill it with any vegetable mix to make Universal Feed.",
+      },
     ],
   },
 ];
@@ -279,8 +420,7 @@ export const materialsSection: WikiSection = {
     href: "/wiki/materials",
     label: "Materials",
     category: "reference",
-    blurb:
-      "The full custom material catalogue: Mythril, Coke, and everything else players craft or find.",
+    blurb: "The full custom material catalogue: Mythril, Coke, and everything else players craft or find.",
   },
   recipes: materialRecipes,
 };

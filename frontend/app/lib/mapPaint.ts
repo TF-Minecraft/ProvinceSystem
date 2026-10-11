@@ -13,14 +13,7 @@
 
 export type PaintTool = "brush" | "arrow" | "eraser" | "stamp" | "text" | "move";
 
-export type PaintColorId =
-  | "attack"
-  | "friendly"
-  | "objective"
-  | "warning"
-  | "naval"
-  | "note"
-  | "earth";
+export type PaintColorId = "attack" | "friendly" | "objective" | "warning" | "naval" | "note" | "earth";
 
 /**
  * Stroke size, as a continuous value in the same reference screen pixels the
@@ -129,11 +122,7 @@ export type PaintTextShape = PaintShapeBase &
     text: string;
   };
 
-export type PaintShape =
-  | PaintBrushShape
-  | PaintArrowShape
-  | PaintStampShape
-  | PaintTextShape;
+export type PaintShape = PaintBrushShape | PaintArrowShape | PaintStampShape | PaintTextShape;
 
 /**
  * Planning ink, drawn from the game's own hex palette (the one StringFormatter
@@ -168,15 +157,7 @@ export const PAINT_COLOR_LABELS: Record<PaintColorId, string> = {
   earth: "Earth",
 };
 
-export const PAINT_COLOR_IDS: PaintColorId[] = [
-  "attack",
-  "friendly",
-  "objective",
-  "warning",
-  "naval",
-  "note",
-  "earth",
-];
+export const PAINT_COLOR_IDS: PaintColorId[] = ["attack", "friendly", "objective", "warning", "naval", "note", "earth"];
 
 export const PAINT_WIDTH_MIN = 1;
 export const PAINT_WIDTH_MAX = 5;
@@ -255,10 +236,7 @@ export function paintTextBgColor(bg: PaintTextBgId, ink: PaintColorId): string {
 }
 
 function isTextBgId(value: unknown): value is PaintTextBgId {
-  return (
-    typeof value === "string" &&
-    (value === "ink" || value === "dark" || value in PAINT_COLORS)
-  );
+  return typeof value === "string" && (value === "ink" || value === "dark" || value in PAINT_COLORS);
 }
 
 export const PAINT_TEXT_STYLE_DEFAULT: PaintTextStyle = {
@@ -290,9 +268,7 @@ export function paintTextStyleOf(shape: PaintTextShape): PaintTextStyle {
     underline: shape.underline ?? PAINT_TEXT_STYLE_DEFAULT.underline,
     strike: shape.strike ?? PAINT_TEXT_STYLE_DEFAULT.strike,
     bgOpacity:
-      shape.bgOpacity === undefined
-        ? PAINT_TEXT_STYLE_DEFAULT.bgOpacity
-        : clampPaintBgOpacity(shape.bgOpacity),
+      shape.bgOpacity === undefined ? PAINT_TEXT_STYLE_DEFAULT.bgOpacity : clampPaintBgOpacity(shape.bgOpacity),
   };
 }
 
@@ -303,10 +279,7 @@ export function paintTextCss(style: PaintTextStyle): {
   fontStyle: "normal" | "italic";
   textDecoration: string;
 } {
-  const decorations = [
-    style.underline ? "underline" : null,
-    style.strike ? "line-through" : null,
-  ].filter(Boolean);
+  const decorations = [style.underline ? "underline" : null, style.strike ? "line-through" : null].filter(Boolean);
   return {
     fontFamily: PAINT_FONTS[style.font],
     fontWeight: style.bold ? 700 : 500,
@@ -363,11 +336,7 @@ export type PaintStrokeStyle = {
   backing: string;
 };
 
-export function paintStrokeStyle(
-  width: PaintWidth,
-  color: PaintColorId,
-  scale = 1
-): PaintStrokeStyle {
+export function paintStrokeStyle(width: PaintWidth, color: PaintColorId, scale = 1): PaintStrokeStyle {
   const strokeWidth = paintMapPx(clampPaintWidth(width)) * scale;
   return {
     strokeWidth,
@@ -432,12 +401,10 @@ export type PaintEffectiveSizes = {
  */
 export function paintEffectiveSizes(
   shape: PaintShape,
-  sizes: PaintSizesMapPx = PAINT_SIZES_MAP_PX
+  sizes: PaintSizesMapPx = PAINT_SIZES_MAP_PX,
 ): PaintEffectiveSizes {
   const scale = paintShapeScale(shape);
-  const width = clampPaintWidth(
-    shape.type === "stamp" ? PAINT_WIDTH_DEFAULT : shape.width
-  );
+  const width = clampPaintWidth(shape.type === "stamp" ? PAINT_WIDTH_DEFAULT : shape.width);
   return {
     strokeWidth: paintMapPx(width) * scale,
     fontSize: paintMapPx(width * PAINT_TEXT_SIZE_RATIO) * scale,
@@ -455,12 +422,7 @@ export function createPaintShapeId(prefix = "s"): string {
 
 function isPaintPoint(value: unknown): value is PaintPoint {
   const point = value as PaintPoint | null;
-  return (
-    !!point &&
-    typeof point === "object" &&
-    Number.isFinite(point.x) &&
-    Number.isFinite(point.y)
-  );
+  return !!point && typeof point === "object" && Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
 function isColorId(value: unknown): value is PaintColorId {
@@ -472,9 +434,7 @@ function isWidth(value: unknown): value is PaintWidth {
 }
 
 function isStampIconId(value: unknown): value is PaintStampIconId {
-  return (
-    typeof value === "string" && (PAINT_STAMP_ICON_IDS as string[]).includes(value)
-  );
+  return typeof value === "string" && (PAINT_STAMP_ICON_IDS as string[]).includes(value);
 }
 
 /**

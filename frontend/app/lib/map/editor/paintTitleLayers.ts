@@ -1,14 +1,8 @@
 import { parseRgbString } from "@/app/lib/map/titleRgb";
 import type { TitleEntity, TitleLayers } from "@/app/lib/titleProvinces";
 
-import type {
-  ProvincePixelIndex,
-  ProvinceRunIndex,
-} from "./buildProvinceIndex";
-import {
-  forEachProvinceRun,
-  isProvinceRunIndex,
-} from "./buildProvinceIndex";
+import type { ProvincePixelIndex, ProvinceRunIndex } from "./buildProvinceIndex";
+import { forEachProvinceRun, isProvinceRunIndex } from "./buildProvinceIndex";
 import { EDITOR_SELECTION_HIGHLIGHT } from "./editorConstants";
 
 /**
@@ -40,15 +34,8 @@ const LITTLE_ENDIAN = (() => {
  * would. Exported because the chronicle painter fills whole frames through the
  * same view and must not re-derive the byte order on its own.
  */
-export function packRgbaForU32View(
-  r: number,
-  g: number,
-  b: number,
-  a: number
-): number {
-  return LITTLE_ENDIAN
-    ? (((a << 24) | (b << 16) | (g << 8) | r) >>> 0)
-    : (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
+export function packRgbaForU32View(r: number, g: number, b: number, a: number): number {
+  return LITTLE_ENDIAN ? ((a << 24) | (b << 16) | (g << 8) | r) >>> 0 : ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
 }
 
 /**
@@ -56,9 +43,7 @@ export function packRgbaForU32View(
  * length rules one out (or the engine refuses the view outright) — callers must
  * keep a per-byte path for that case.
  */
-export function createRgbaU32View(
-  data: Uint8ClampedArray
-): Uint32Array | null {
+export function createRgbaU32View(data: Uint8ClampedArray): Uint32Array | null {
   if (data.byteOffset % 4 !== 0 || data.length % 4 !== 0) return null;
   try {
     return new Uint32Array(data.buffer, data.byteOffset, data.length >>> 2);
@@ -73,7 +58,7 @@ export function createRgbaU32View(
  * 32-bit view, and otherwise falls back to the identical per-byte loop.
  */
 function makeSpanWriter(
-  imageData: ImageData
+  imageData: ImageData,
 ): (start: number, length: number, r: number, g: number, b: number, a: number) => void {
   const { data } = imageData;
 
@@ -103,7 +88,7 @@ export function paintProvinceRuns(
   imageData: ImageData,
   runIndex: ProvinceRunIndex,
   provinceId: number,
-  rgb: [number, number, number]
+  rgb: [number, number, number],
 ): void {
   const write = makeSpanWriter(imageData);
   const [r, g, b] = rgb;
@@ -113,11 +98,7 @@ export function paintProvinceRuns(
 }
 
 /** Clear every row-span of one province from the run index. */
-export function clearProvinceRuns(
-  imageData: ImageData,
-  runIndex: ProvinceRunIndex,
-  provinceId: number
-): void {
+export function clearProvinceRuns(imageData: ImageData, runIndex: ProvinceRunIndex, provinceId: number): void {
   const write = makeSpanWriter(imageData);
   forEachProvinceRun(runIndex, provinceId, (start, length) => {
     write(start, length, 0, 0, 0, 0);
@@ -128,7 +109,7 @@ function paintRegion(
   imageData: ImageData,
   source: ProvinceRegionIndex,
   provinceId: number,
-  rgb: [number, number, number]
+  rgb: [number, number, number],
 ): void {
   if (isProvinceRunIndex(source)) {
     paintProvinceRuns(imageData, source, provinceId, rgb);
@@ -138,11 +119,7 @@ function paintRegion(
   if (indices) paintPixelIndices(imageData, indices, rgb);
 }
 
-function clearRegion(
-  imageData: ImageData,
-  source: ProvinceRegionIndex,
-  provinceId: number
-): void {
+function clearRegion(imageData: ImageData, source: ProvinceRegionIndex, provinceId: number): void {
   if (isProvinceRunIndex(source)) {
     clearProvinceRuns(imageData, source, provinceId);
     return;
@@ -154,7 +131,7 @@ function clearRegion(
 export function paintPixelIndices(
   imageData: ImageData,
   indices: Uint32Array | readonly number[],
-  rgb: [number, number, number]
+  rgb: [number, number, number],
 ): void {
   const { data } = imageData;
   const [r, g, b] = rgb;
@@ -169,10 +146,7 @@ export function paintPixelIndices(
   }
 }
 
-export function clearPixelIndices(
-  imageData: ImageData,
-  indices: Uint32Array | readonly number[]
-): void {
+export function clearPixelIndices(imageData: ImageData, indices: Uint32Array | readonly number[]): void {
   const { data } = imageData;
 
   for (let j = 0; j < indices.length; j++) {
@@ -189,7 +163,7 @@ function resolveCountySelectionRgb(
   pid: number,
   provinceToRgb: Record<number, string>,
   provinceToCounty: Map<number, string>,
-  countyColors: Record<string, string>
+  countyColors: Record<string, string>,
 ): [number, number, number] | null {
   const countyId = provinceToCounty.get(pid);
   if (countyId) {
@@ -202,10 +176,9 @@ export function fillProvincePixels(
   imageData: ImageData,
   provinceMap: ProvinceGeometrySource,
   provinceIds: ReadonlySet<number> | readonly number[],
-  rgb: [number, number, number]
+  rgb: [number, number, number],
 ): void {
-  const idSet =
-    provinceIds instanceof Set ? provinceIds : new Set(provinceIds);
+  const idSet = provinceIds instanceof Set ? provinceIds : new Set(provinceIds);
 
   if (isProvinceRunIndex(provinceMap)) {
     for (const pid of idSet) {
@@ -233,7 +206,7 @@ export function paintSelectionLayerFull(
   provinceMap: ProvinceGeometrySource,
   provinceToRgb: Record<number, string>,
   provinceToCounty: Map<number, string>,
-  countyColors: Record<string, string>
+  countyColors: Record<string, string>,
 ): void {
   if (isProvinceRunIndex(provinceMap)) {
     const write = makeSpanWriter(imageData);
@@ -243,12 +216,7 @@ export function paintSelectionLayerFull(
       const pid = runIds[i]!;
       if (pid === 0) continue;
 
-      const rgb = resolveCountySelectionRgb(
-        pid,
-        provinceToRgb,
-        provinceToCounty,
-        countyColors
-      );
+      const rgb = resolveCountySelectionRgb(pid, provinceToRgb, provinceToCounty, countyColors);
       if (!rgb) continue;
 
       write(runStarts[i]!, runLengths[i]!, rgb[0], rgb[1], rgb[2], 255);
@@ -262,12 +230,7 @@ export function paintSelectionLayerFull(
     const pid = provinceMap[i];
     if (pid < 0) continue;
 
-    const rgb = resolveCountySelectionRgb(
-      pid,
-      provinceToRgb,
-      provinceToCounty,
-      countyColors
-    );
+    const rgb = resolveCountySelectionRgb(pid, provinceToRgb, provinceToCounty, countyColors);
     if (!rgb) continue;
 
     const offset = i * 4;
@@ -284,15 +247,10 @@ export function updateCountySelectionSubset(
   provinceIds: readonly number[],
   provinceToRgb: Record<number, string>,
   provinceToCounty: Map<number, string>,
-  countyColors: Record<string, string>
+  countyColors: Record<string, string>,
 ): void {
   for (const pid of provinceIds) {
-    const rgb = resolveCountySelectionRgb(
-      pid,
-      provinceToRgb,
-      provinceToCounty,
-      countyColors
-    );
+    const rgb = resolveCountySelectionRgb(pid, provinceToRgb, provinceToCounty, countyColors);
     if (!rgb) continue;
 
     paintRegion(imageData, pixelIndex, pid, rgb);
@@ -305,7 +263,7 @@ export function paintActiveLayerFull(
   activeMembers: readonly number[] | undefined,
   activeRgb: string | undefined,
   selectionIds: ReadonlySet<number>,
-  highlightRgb: string = EDITOR_SELECTION_HIGHLIGHT
+  highlightRgb: string = EDITOR_SELECTION_HIGHLIGHT,
 ): void {
   const activeParsed = parseLayerRgb(activeRgb);
   if (activeMembers && activeParsed) {
@@ -323,7 +281,7 @@ export function updateCountyActiveSubset(
   pixelIndex: ProvinceRegionIndex,
   activeProvinceIds: readonly number[],
   activeRgb: string | undefined,
-  clearProvinceIds: readonly number[] = []
+  clearProvinceIds: readonly number[] = [],
 ): void {
   for (const pid of clearProvinceIds) {
     clearRegion(imageData, pixelIndex, pid);
@@ -344,7 +302,7 @@ export function paintChildSelectionLayerFull(
   provinceMap: ProvinceGeometrySource,
   childDraft: Record<string, ChildPaintEntry>,
   resolveFn: (childId: string, layers: TitleLayers) => number[],
-  layers: TitleLayers
+  layers: TitleLayers,
 ): void {
   for (const [childId, entry] of Object.entries(childDraft)) {
     const rgb = parseLayerRgb(entry.rgb);
@@ -360,7 +318,7 @@ export function updateChildSelectionSubset(
   childIds: readonly string[],
   childColors: Record<string, string>,
   resolveFn: (childId: string, layers: TitleLayers) => number[],
-  layers: TitleLayers
+  layers: TitleLayers,
 ): void {
   for (const childId of childIds) {
     const rgb = parseLayerRgb(childColors[childId]);
@@ -379,7 +337,7 @@ export function paintParentActiveLayerFull(
   memberChildIds: readonly string[] | undefined,
   parentRgb: string | undefined,
   resolveFn: (childId: string, layers: TitleLayers) => number[],
-  layers: TitleLayers
+  layers: TitleLayers,
 ): void {
   const activeParsed = parseLayerRgb(parentRgb);
   if (!memberChildIds || memberChildIds.length === 0 || !activeParsed) return;
@@ -398,7 +356,7 @@ export function updateParentActiveSubset(
   parentRgb: string | undefined,
   resolveFn: (childId: string, layers: TitleLayers) => number[],
   layers: TitleLayers,
-  clearChildIds: readonly string[] = []
+  clearChildIds: readonly string[] = [],
 ): void {
   for (const childId of clearChildIds) {
     const provinceIds = resolveFn(childId, layers);

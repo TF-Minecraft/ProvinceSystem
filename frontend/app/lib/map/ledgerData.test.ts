@@ -38,9 +38,7 @@ describe("ledger data paths", () => {
       factions: ["abc123", "def456"],
       fields: "full",
     });
-    expect(path).toBe(
-      "/dev/ledger/series?start=2026-08-01&end=2026-08-31&factions=abc123%2Cdef456&fields=full"
-    );
+    expect(path).toBe("/dev/ledger/series?start=2026-08-01&end=2026-08-31&factions=abc123%2Cdef456&fields=full");
   });
 
   it("omits factions/fields entirely when not requested", () => {
@@ -51,7 +49,7 @@ describe("ledger data paths", () => {
   it("builds a faction path with the key encoded", () => {
     expect(ledgerFactionPath("dev", "a b/c")).toBe("/dev/ledger/faction/a%20b%2Fc");
     expect(ledgerFactionPath("dev", "key1", { start: "2026-08-01", end: "2026-08-31" })).toBe(
-      "/dev/ledger/faction/key1?start=2026-08-01&end=2026-08-31"
+      "/dev/ledger/faction/key1?start=2026-08-01&end=2026-08-31",
     );
   });
 
@@ -130,14 +128,9 @@ describe("ledger data fetches", () => {
   });
 
   it("surfaces a non-OK response as MapAccessError", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ detail: "range too large" }, 400))
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "range too large" }, 400)));
 
-    const err = await fetchLedgerSeries("dev", { start: "2000-01-01" }, "tok").catch(
-      (caught: unknown) => caught
-    );
+    const err = await fetchLedgerSeries("dev", { start: "2000-01-01" }, "tok").catch((caught: unknown) => caught);
 
     expect(err).toBeInstanceOf(MapAccessError);
     expect((err as MapAccessError).status).toBe(400);

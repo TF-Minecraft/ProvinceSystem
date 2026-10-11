@@ -11,16 +11,9 @@ function singleValue(value: string | string[] | undefined): string | null {
   return typeof value === "string" ? value : null;
 }
 
-export default async function PatreonLinkedPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function PatreonLinkedPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
-  const result = getPatreonLinkedResult(
-    singleValue(params.status),
-    singleValue(params.tier)
-  );
+  const result = getPatreonLinkedResult(singleValue(params.status), singleValue(params.tier));
 
   return (
     <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl flex-col justify-center px-6 py-16">

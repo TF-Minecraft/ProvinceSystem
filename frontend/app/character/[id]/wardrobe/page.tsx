@@ -3,18 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  getCreationCatalog,
-  type CreationCatalog,
-  type SlotLimits,
-} from "../../../../lib/characters/api";
+import { getCreationCatalog, type CreationCatalog, type SlotLimits } from "../../../../lib/characters/api";
 import { logoutProfile } from "../../../../lib/profile/uploads";
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  type CharacterSession,
-} from "../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
@@ -23,10 +14,7 @@ import WardrobeEditor from "../../../components/character/WardrobeEditor";
 function parseUiDevUnlocked(): number {
   if (typeof window === "undefined") return 1;
   const search = new URLSearchParams(window.location.search);
-  const raw =
-    search.get("wardrobeSlots") ??
-    search.get("skinslots") ??
-    search.get("skinSlots");
+  const raw = search.get("wardrobeSlots") ?? search.get("skinslots") ?? search.get("skinSlots");
   if (raw == null || raw === "") return 1;
   return Math.max(1, Math.min(3, Number(raw) || 1));
 }
@@ -72,12 +60,10 @@ export default function CharacterWardrobePage() {
         setSlotLimits(uiDevSlotLimits());
         return;
       }
-      const catalog = await getCreationCatalog(token).catch(
-        () => null as CreationCatalog | null
-      );
+      const catalog = await getCreationCatalog(token).catch(() => null as CreationCatalog | null);
       setSlotLimits(catalog?.slot_limits);
     },
-    [uiDev]
+    [uiDev],
   );
 
   useEffect(() => {
@@ -114,9 +100,7 @@ export default function CharacterWardrobePage() {
   }
 
   if (!ready) {
-    return (
-      <p className="text-sm text-[var(--tfmc-mist)]">Loading wardrobe…</p>
-    );
+    return <p className="text-sm text-[var(--tfmc-mist)]">Loading wardrobe…</p>;
   }
 
   if (!characterId || !session) {
@@ -137,15 +121,10 @@ export default function CharacterWardrobePage() {
           >
             ← Character
           </Link>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--tfmc-cream)]">
-            Wardrobe
-          </h1>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--tfmc-cream)]">Wardrobe</h1>
           {uiDev ? (
             <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-              UI-dev: 3 swappable frames ·{" "}
-              <span className="text-[var(--tfmc-cream)]">
-                {uiDevUnlocked} unlocked
-              </span>{" "}
+              UI-dev: 3 swappable frames · <span className="text-[var(--tfmc-cream)]">{uiDevUnlocked} unlocked</span>{" "}
               (?wardrobeSlots=1|2|3)
             </p>
           ) : null}

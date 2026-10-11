@@ -40,10 +40,7 @@ type Region = RegionRecord[string];
  * `regionData[id]` would hand back something off `Object.prototype` (a
  * function for `toString`, the prototype object itself for `__proto__`).
  */
-function readRegion(
-  regionData: RegionRecord | null | undefined,
-  regionId: string
-): Region | null {
+function readRegion(regionData: RegionRecord | null | undefined, regionId: string): Region | null {
   if (!regionData || typeof regionId !== "string") return null;
   if (!Object.prototype.hasOwnProperty.call(regionData, regionId)) return null;
   const region = regionData[regionId];
@@ -79,9 +76,7 @@ function keepPaintableProvinces(ids: number[]): number[] {
 
 function subjectIds(region: Region | null): string[] {
   if (!region || !Array.isArray(region.subjects)) return [];
-  return region.subjects.filter(
-    (id): id is string => typeof id === "string" && id.length > 0
-  );
+  return region.subjects.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
 /**
@@ -106,7 +101,7 @@ function subjectIds(region: Region | null): string[] {
 function collectSubtreeProvinces(
   regionData: RegionRecord | null | undefined,
   rootId: string,
-  visited: Set<string>
+  visited: Set<string>,
 ): number[] {
   const provinces: number[] = [];
   const stack: string[] = [rootId];
@@ -145,9 +140,7 @@ function collectSubtreeProvinces(
  * a pick canvas painted from this record makes hover, click, nation details and
  * drill-down day-correct with no change to any hover code.
  */
-export function directOwnership(
-  regionData: RegionRecord | null | undefined
-): NationOwnership {
+export function directOwnership(regionData: RegionRecord | null | undefined): NationOwnership {
   const ownership: NationOwnership = Object.create(null);
   if (!regionData) return ownership;
 
@@ -204,7 +197,7 @@ export function directOwnership(
  */
 export function visibleOwnership(
   regionData: RegionRecord | null | undefined,
-  mapObjects: MapObject[] | null | undefined
+  mapObjects: MapObject[] | null | undefined,
 ): NationOwnership {
   const ownership: NationOwnership = Object.create(null);
   if (!regionData || !Array.isArray(mapObjects)) return ownership;
@@ -270,7 +263,7 @@ function resolveOverviewRoot(regionData: RegionRecord, startId: string): string 
 export function chronicleRealmContains(
   regionData: RegionRecord | null | undefined,
   realmId: string,
-  memberId: string
+  memberId: string,
 ): boolean {
   if (!realmId || !memberId) return false;
   if (memberId === realmId) return true;
@@ -298,9 +291,7 @@ export function chronicleRealmContains(
  * still that vassal's — with an empty home list so the fill does not also
  * paint the vassal's own land a second colour.
  */
-export function overviewFillOwnership(
-  regionData: RegionRecord | null | undefined
-): NationOwnership {
+export function overviewFillOwnership(regionData: RegionRecord | null | undefined): NationOwnership {
   const ownership: NationOwnership = Object.create(null);
   if (!regionData) return ownership;
 

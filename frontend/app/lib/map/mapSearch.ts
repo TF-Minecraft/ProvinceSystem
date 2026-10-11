@@ -1,8 +1,4 @@
-import type {
-  InstallationMarker,
-  RegionRecord,
-  SettlementMarker,
-} from "@/app/components/map/types";
+import type { InstallationMarker, RegionRecord, SettlementMarker } from "@/app/components/map/types";
 import { cleanRegionName } from "@/app/lib/mapLabels";
 import { allGuilds } from "./guildProfile";
 
@@ -54,10 +50,7 @@ export function normaliseSearchText(value: string): string {
     .trim();
 }
 
-function ownerName(
-  factionId: string | undefined,
-  regionData: RegionRecord | null
-): string | null {
+function ownerName(factionId: string | undefined, regionData: RegionRecord | null): string | null {
   if (!factionId) return null;
   const name = regionData?.[factionId]?.name;
   return name ? cleanRegionName(name) : null;
@@ -91,7 +84,7 @@ export function buildMapSearchIndex({
       key: `region:${regionId}`,
       regionId,
       label,
-      detail: overlord ? `Subject of ${overlord}` : region.tier ?? tierLabel,
+      detail: overlord ? `Subject of ${overlord}` : (region.tier ?? tierLabel),
       rgb: region.rgb ?? null,
     });
   }
@@ -112,7 +105,7 @@ export function buildMapSearchIndex({
   const guildCapitals = new Set(
     allGuilds(regionData)
       .map((guild) => guild.homeProvince)
-      .filter((province): province is number => province !== null)
+      .filter((province): province is number => province !== null),
   );
 
   for (const settlement of settlements) {
@@ -127,7 +120,7 @@ export function buildMapSearchIndex({
       typeof settlement.province_id === "number" &&
       guildCapitals.has(settlement.province_id)
         ? "Guild capital"
-        : SETTLEMENT_LABELS[settlement.kind ?? "settlement"] ?? "Settlement";
+        : (SETTLEMENT_LABELS[settlement.kind ?? "settlement"] ?? "Settlement");
     entries.push({
       kind: "place",
       key: `settlement:${settlement.id}`,
@@ -139,10 +132,7 @@ export function buildMapSearchIndex({
   }
 
   for (const installation of installations) {
-    if (
-      typeof installation.map_x !== "number" ||
-      typeof installation.map_y !== "number"
-    ) {
+    if (typeof installation.map_x !== "number" || typeof installation.map_y !== "number") {
       continue;
     }
     const label = cleanRegionName(installation.name);
@@ -172,11 +162,7 @@ function kindRank(entry: MapSearchEntry): number {
  * in it starting with the query, then the query anywhere. Ties go to regions
  * over places and then to the shorter name, which is usually the one meant.
  */
-export function searchMap(
-  entries: MapSearchEntry[],
-  query: string,
-  limit = 8
-): MapSearchEntry[] {
+export function searchMap(entries: MapSearchEntry[], query: string, limit = 8): MapSearchEntry[] {
   const needle = normaliseSearchText(query);
   if (!needle) return [];
 
@@ -196,7 +182,7 @@ export function searchMap(
       a.score - b.score ||
       kindRank(a.entry) - kindRank(b.entry) ||
       a.entry.label.length - b.entry.label.length ||
-      a.entry.label.localeCompare(b.entry.label)
+      a.entry.label.localeCompare(b.entry.label),
   );
   return scored.slice(0, limit).map(({ entry }) => entry);
 }

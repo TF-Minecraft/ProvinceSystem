@@ -26,11 +26,7 @@ const thalendor = {
       members: ["someplayer", "another", "third"],
       balance: 1041.62,
       loans: [{ amount: 50 }],
-      branches: [
-        { id: "guild_halls", level: 6 },
-        { id: "storehouses", level: 11 },
-        { bad: true },
-      ],
+      branches: [{ id: "guild_halls", level: 6 }, { id: "storehouses", level: 11 }, { bad: true }],
     },
     { id: "Small", name: "Small", type: "guild", leader: "x", capital: 161, members: ["x"] },
   ],
@@ -66,10 +62,7 @@ describe("buildGuildProfile", () => {
 
 describe("realm guilds", () => {
   it("lists the guilds, not the realm's own, largest first", () => {
-    expect(realmGuilds("Thalendor", thalendor).map((guild) => guild.id)).toEqual([
-      "Oyfthyr",
-      "Small",
-    ]);
+    expect(realmGuilds("Thalendor", thalendor).map((guild) => guild.id)).toEqual(["Oyfthyr", "Small"]);
   });
 
   it("finds a guild by key and by province", () => {
@@ -84,7 +77,7 @@ describe("realm guilds", () => {
       guildSeat(guild, [
         { id: "Elsewhere", name: "Elsewhere", province_id: 1 },
         { id: "Oyfthyr", name: "Oyfthyr", province_id: 163, faction_id: "Thalendor" },
-      ])?.id
+      ])?.id,
     ).toBe("Oyfthyr");
     expect(guildSeat({ ...guild, homeProvince: null }, [])).toBeNull();
   });

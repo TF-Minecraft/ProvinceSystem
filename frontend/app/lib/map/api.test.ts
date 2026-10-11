@@ -24,9 +24,7 @@ describe("map api", () => {
   });
 
   it("fetchMapApi attaches Bearer when session token provided", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 })
-    );
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await fetchMapApi("/dev/data/nation", { sessionToken: "abc-token" });
@@ -36,7 +34,7 @@ describe("map api", () => {
       expect.objectContaining({
         headers: { Authorization: "Bearer abc-token" },
         cache: "no-cache",
-      })
+      }),
     );
   });
 
@@ -56,17 +54,15 @@ describe("map api", () => {
     expect(fetchMock.mock.calls[1][1].cache).toBe("reload");
   });
 
-  it.each([
-    "/maps/accessible",
-    "/main/editor/province-runs",
-    "/main/data/nation",
-    "/main/tiles/base/manifest",
-  ])("continues to revalidate %s", async (path) => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
-    vi.stubGlobal("fetch", fetchMock);
-    await fetchMapApi(path);
-    expect(fetchMock.mock.calls[0][1].cache).toBe("no-cache");
-  });
+  it.each(["/maps/accessible", "/main/editor/province-runs", "/main/data/nation", "/main/tiles/base/manifest"])(
+    "continues to revalidate %s",
+    async (path) => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+      vi.stubGlobal("fetch", fetchMock);
+      await fetchMapApi(path);
+      expect(fetchMock.mock.calls[0][1].cache).toBe("no-cache");
+    },
+  );
 
   it("fetchMapApi re-throws an abort instead of masking it as a failure", async () => {
     // A user who pressed Cancel was being shown "Request failed. Please try
@@ -91,19 +87,16 @@ describe("map api", () => {
 
     expect(err).toBeInstanceOf(MapAccessError);
     expect((err as MapAccessError).status).toBe(0);
-    expect((err as MapAccessError).message).toBe(
-      "Request failed. Please try again."
-    );
+    expect((err as MapAccessError).message).toBe("Request failed. Please try again.");
     expect(isAbortError(err)).toBe(false);
   });
 
   it("fetchMapMarkers requests markers endpoint with session token", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ map_id: "main", exported_at: null, settlements: [] }),
-        { status: 200 }
-      )
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ map_id: "main", exported_at: null, settlements: [] }), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     await fetchMapMarkers("main", "token-1");
@@ -113,7 +106,7 @@ describe("map api", () => {
       expect.objectContaining({
         headers: { Authorization: "Bearer token-1" },
         cache: "no-cache",
-      })
+      }),
     );
   });
 
@@ -123,8 +116,8 @@ describe("map api", () => {
       vi.fn().mockResolvedValue(
         new Response(JSON.stringify({ detail: STAFF_MAP_PERMISSION_DETAIL }), {
           status: 403,
-        })
-      )
+        }),
+      ),
     );
 
     await expect(fetchMapJson("/dev/data/nation")).rejects.toMatchObject({
@@ -149,9 +142,9 @@ describe("map api", () => {
               },
             ],
           }),
-          { status: 200 }
-        )
-      )
+          { status: 200 },
+        ),
+      ),
     );
 
     const data = await fetchAccessibleMaps();
@@ -160,23 +153,13 @@ describe("map api", () => {
   });
 
   it("staffMapAccessReason maps backend detail strings", () => {
+    expect(staffMapAccessReason(new MapAccessError(STAFF_MAP_ACCESS_DETAIL, 403, STAFF_MAP_ACCESS_DETAIL))).toBe(
+      "login",
+    );
     expect(
-      staffMapAccessReason(
-        new MapAccessError(STAFF_MAP_ACCESS_DETAIL, 403, STAFF_MAP_ACCESS_DETAIL)
-      )
-    ).toBe("login");
-    expect(
-      staffMapAccessReason(
-        new MapAccessError(
-          STAFF_MAP_PERMISSION_DETAIL,
-          403,
-          STAFF_MAP_PERMISSION_DETAIL
-        )
-      )
+      staffMapAccessReason(new MapAccessError(STAFF_MAP_PERMISSION_DETAIL, 403, STAFF_MAP_PERMISSION_DETAIL)),
     ).toBe("permission");
-    expect(
-      staffMapAccessReason(new MapAccessError("Other", 404, "Map not found"))
-    ).toBe("unknown");
+    expect(staffMapAccessReason(new MapAccessError("Other", 404, "Map not found"))).toBe("unknown");
   });
 
   it("mapRequiresAuth uses public from the accessible list when present", () => {
@@ -190,7 +173,7 @@ describe("map api", () => {
           public: true,
           archived: true,
         },
-      ])
+      ]),
     ).toBe(false);
     expect(
       mapRequiresAuth("dev", [
@@ -200,7 +183,7 @@ describe("map api", () => {
           public: false,
           archived: false,
         },
-      ])
+      ]),
     ).toBe(true);
   });
 });

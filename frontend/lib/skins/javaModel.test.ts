@@ -10,9 +10,7 @@ import {
   parseJavaModelJson,
 } from "./javaModel";
 
-function cube(
-  overrides: Record<string, unknown> = {}
-): Record<string, unknown> {
+function cube(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     from: [7, 0, 7],
     to: [9, 16, 9],
@@ -63,25 +61,19 @@ describe("assertVanillaJavaBlockModel", () => {
     (model.elements as unknown[]).push(
       cube({
         rotation: { x: -75, y: -20, z: 15, origin: [7.6, 25.3, 2.1] },
-      })
+      }),
     );
-    expect(() => assertVanillaJavaBlockModel(model)).toThrow(
-      JAVA_MODEL_ROTATION_ERROR
-    );
+    expect(() => assertVanillaJavaBlockModel(model)).toThrow(JAVA_MODEL_ROTATION_ERROR);
   });
 
   it("rejects rotation arrays", () => {
     const model = classicKnife();
     (model.elements as Record<string, unknown>[])[0].rotation = [0, 45, 0];
-    expect(() => assertVanillaJavaBlockModel(model)).toThrow(
-      JAVA_MODEL_ROTATION_ERROR
-    );
+    expect(() => assertVanillaJavaBlockModel(model)).toThrow(JAVA_MODEL_ROTATION_ERROR);
   });
 
   it("rejects empty elements", () => {
-    expect(() => assertVanillaJavaBlockModel({ elements: [] })).toThrow(
-      JAVA_MODEL_NO_ELEMENTS_ERROR
-    );
+    expect(() => assertVanillaJavaBlockModel({ elements: [] })).toThrow(JAVA_MODEL_NO_ELEMENTS_ERROR);
   });
 
   it("rejects 1.21 item wrappers", () => {
@@ -91,7 +83,7 @@ describe("assertVanillaJavaBlockModel", () => {
           type: "minecraft:model",
           model: "tfmc_submissions:item/staff",
         },
-      })
+      }),
     ).toThrow(JAVA_MODEL_ITEM_WRAPPER_ERROR);
   });
 
@@ -100,7 +92,7 @@ describe("assertVanillaJavaBlockModel", () => {
       assertVanillaJavaBlockModel({
         meta: { format_version: "4.10" },
         elements: [cube()],
-      })
+      }),
     ).toThrow(JAVA_MODEL_PROJECT_FILE_ERROR);
   });
 
@@ -109,7 +101,7 @@ describe("assertVanillaJavaBlockModel", () => {
       assertVanillaJavaBlockModel({
         textures: [{ name: "0", source: "data:image/png" }],
         elements: [cube()],
-      })
+      }),
     ).toThrow(JAVA_MODEL_PROJECT_FILE_ERROR);
   });
 
@@ -117,9 +109,7 @@ describe("assertVanillaJavaBlockModel", () => {
     const model = classicKnife();
     (model.elements as Record<string, unknown>[])[0].from = [7, 40, 7];
     (model.elements as Record<string, unknown>[])[0].to = [8, 41, 8];
-    expect(() => assertVanillaJavaBlockModel(model)).toThrow(
-      JAVA_MODEL_BOUNDS_ERROR
-    );
+    expect(() => assertVanillaJavaBlockModel(model)).toThrow(JAVA_MODEL_BOUNDS_ERROR);
   });
 });
 
@@ -137,8 +127,6 @@ describe("parseJavaModelJson", () => {
       z: 15,
       origin: [8, 8, 8],
     };
-    expect(() => parseJavaModelJson(JSON.stringify(model))).toThrow(
-      JAVA_MODEL_ROTATION_ERROR
-    );
+    expect(() => parseJavaModelJson(JSON.stringify(model))).toThrow(JAVA_MODEL_ROTATION_ERROR);
   });
 });

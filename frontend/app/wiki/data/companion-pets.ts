@@ -35,11 +35,24 @@ export const companionPetItems = {
 // Configured eggs retain their vanilla material appearance: no pack overrides.
 // All eighteen modeled companions are registered in TF Dev.
 const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
-  beagle: "wolf", chihuahua: "wolf", corgi: "wolf", golden: "wolf", husky: "wolf",
-  mainecoon: "cat", catblack: "cat", catfunny: "cat", catorange: "cat",
-  fox: "fox", frog: "frog",
-  bernesse: "wolf", bordercollie: "wolf", bordercolliegray: "wolf", catgray: "cat", cattabby: "cat",
-  lagottoromagnolo: "wolf", yorkshire: "wolf",
+  beagle: "wolf",
+  chihuahua: "wolf",
+  corgi: "wolf",
+  golden: "wolf",
+  husky: "wolf",
+  mainecoon: "cat",
+  catblack: "cat",
+  catfunny: "cat",
+  catorange: "cat",
+  fox: "fox",
+  frog: "frog",
+  bernesse: "wolf",
+  bordercollie: "wolf",
+  bordercolliegray: "wolf",
+  catgray: "cat",
+  cattabby: "cat",
+  lagottoromagnolo: "wolf",
+  yorkshire: "wolf",
 };
 
 type PetUnlock = "Pet Master" | "Noble" | "Gilded" | "Ascended" | "Legacy";

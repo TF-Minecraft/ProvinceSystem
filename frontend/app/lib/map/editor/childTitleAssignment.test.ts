@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildChildToParentId,
-  canSelectChild,
-  findDuplicateChildIds,
-  getChildOwnerName,
-} from "./childTitleAssignment";
+import { buildChildToParentId, canSelectChild, findDuplicateChildIds, getChildOwnerName } from "./childTitleAssignment";
 
 describe("childTitleAssignment", () => {
-    const draft = {
-      PARENT_1: { name: "Valoris", rgb: "1,2,3", titles: ["CHILD_1", "CHILD_2"] },
-      PARENT_2: { name: "North", rgb: "4,5,6", titles: ["CHILD_3"] },
-    };
+  const draft = {
+    PARENT_1: { name: "Valoris", rgb: "1,2,3", titles: ["CHILD_1", "CHILD_2"] },
+    PARENT_2: { name: "North", rgb: "4,5,6", titles: ["CHILD_3"] },
+  };
 
   const assignment = buildChildToParentId(draft);
 

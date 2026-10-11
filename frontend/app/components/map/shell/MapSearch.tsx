@@ -156,12 +156,8 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
                   <PinIcon size={15} className="shrink-0 text-[var(--tfmc-stone)]" />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-[var(--tfmc-cream)]">
-                    {entry.label}
-                  </span>
-                  <span className="block truncate text-xs text-[var(--tfmc-stone)]">
-                    {entry.detail}
-                  </span>
+                  <span className="block truncate text-sm text-[var(--tfmc-cream)]">{entry.label}</span>
+                  <span className="block truncate text-xs text-[var(--tfmc-stone)]">{entry.detail}</span>
                 </span>
               </li>
             ))

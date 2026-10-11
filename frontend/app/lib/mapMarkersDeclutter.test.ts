@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  hiddenMarkerLabels,
-  markerDimensions,
-  pickMapMarkerAt,
-  type MapMarker,
-} from "./mapMarkers";
+import { hiddenMarkerLabels, markerDimensions, pickMapMarkerAt, type MapMarker } from "./mapMarkers";
 
 const pin = (id: string, x: number, y: number, extra: Partial<MapMarker> = {}): MapMarker => ({
   id,
@@ -36,10 +31,7 @@ describe("hiddenMarkerLabels", () => {
   });
 
   it("breaks a tie by population", () => {
-    const markers = [
-      pin("Small", 1000, 1000, { weight: 3 }),
-      pin("Bigger", 1000, 1020, { weight: 9 }),
-    ];
+    const markers = [pin("Small", 1000, 1000, { weight: 3 }), pin("Bigger", 1000, 1020, { weight: 9 })];
     expect([...hiddenMarkerLabels(markers, SCALE)]).toEqual(["Small"]);
   });
 
@@ -50,10 +42,7 @@ describe("hiddenMarkerLabels", () => {
   });
 
   it("ignores hover-only labels (installations)", () => {
-    const markers = [
-      pin("Town", 1000, 1000),
-      pin("Port", 1005, 1000, { kind: "port", showLabelOnlyOnHover: true }),
-    ];
+    const markers = [pin("Town", 1000, 1000), pin("Port", 1005, 1000, { kind: "port", showLabelOnlyOnHover: true })];
     // The port's pin still blocks the town's name, but the port has no label to hide.
     expect(hiddenMarkerLabels(markers, SCALE).has("Port")).toBe(false);
   });

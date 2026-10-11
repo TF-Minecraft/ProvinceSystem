@@ -22,11 +22,7 @@
  */
 
 import { ByteWriter, lzwCompress, writeSubBlocks } from "./gifLzw";
-import {
-  buildGifPalette,
-  mapFrameToPaletteIndices,
-  NearestColorCache,
-} from "./gifPalette";
+import { buildGifPalette, mapFrameToPaletteIndices, NearestColorCache } from "./gifPalette";
 
 export type GifSourceFrame = {
   /** RGBA, width*height*4, straight out of `ImageData.data`. */
@@ -85,9 +81,7 @@ function validate(options: EncodeGifOptions): void {
   for (let i = 0; i < frames.length; i++) {
     const data = frames[i]?.data;
     if (!data || data.length !== expected) {
-      throw new Error(
-        `gif frame ${i} holds ${data?.length ?? 0} bytes, expected ${expected} for ${width}x${height}`
-      );
+      throw new Error(`gif frame ${i} holds ${data?.length ?? 0} bytes, expected ${expected} for ${width}x${height}`);
     }
   }
 }
@@ -107,16 +101,14 @@ function validate(options: EncodeGifOptions): void {
  * execute their body until then. Both drivers below step immediately, so a bad
  * request still throws before anything observable happens.
  */
-export function* encodeGifSteps(
-  options: EncodeGifOptions
-): Generator<number, Uint8Array, void> {
+export function* encodeGifSteps(options: EncodeGifOptions): Generator<number, Uint8Array, void> {
   validate(options);
   const { width, height, frames } = options;
   const loop = options.loop ?? true;
 
   const palette = buildGifPalette(
     frames.map((frame) => frame.data),
-    width
+    width,
   );
   const tableSize = palette.table.length / 3;
   // The colour table size travels as an exponent minus one across three bits,

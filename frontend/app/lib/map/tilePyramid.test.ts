@@ -90,7 +90,12 @@ describe("tiles", () => {
       viewportH: 500,
     };
     const tiles = visibleTiles(manifest, 5, view, 0);
-    expect(tiles.map((tile) => tile.x).sort((a, b) => a - b).at(-1)).toBe(3);
+    expect(
+      tiles
+        .map((tile) => tile.x)
+        .sort((a, b) => a - b)
+        .at(-1),
+    ).toBe(3);
     expect(Math.max(...tiles.map((tile) => tile.y))).toBe(1);
     expect(tiles).toHaveLength(4 * 2);
 
@@ -103,7 +108,7 @@ describe("tiles", () => {
       manifest,
       5,
       { displayScale: 1, translateX: -2560, translateY: -2560, viewportW: 256, viewportH: 256 },
-      0
+      0,
     );
     expect(tiles.map((tile) => tile.key)).toEqual(["5/10/10"]);
   });
@@ -116,7 +121,7 @@ describe("tiles", () => {
         translateY: 0,
         viewportW: 0,
         viewportH: 0,
-      })
+      }),
     ).toEqual([]);
   });
 });
@@ -125,14 +130,14 @@ describe("backdropClipPath", () => {
   it("cuts the hole out of the box, in percentages of it", () => {
     expect(backdropClipPath(200, 100, { left: 20, top: 30, right: 120, bottom: 70 })).toBe(
       "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
-        "10% 30%, 10% 70%, 60% 70%, 60% 30%, 10% 30%, 0% 0%)"
+        "10% 30%, 10% 70%, 60% 70%, 60% 30%, 10% 30%, 0% 0%)",
     );
   });
 
   it("clamps a hole that reaches past the box", () => {
     expect(backdropClipPath(100, 100, { left: -10, top: 90, right: 50, bottom: 140 })).toBe(
       "polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, " +
-        "0% 90%, 0% 100%, 50% 100%, 50% 90%, 0% 90%, 0% 0%)"
+        "0% 90%, 0% 100%, 50% 100%, 50% 90%, 0% 90%, 0% 0%)",
     );
   });
 });

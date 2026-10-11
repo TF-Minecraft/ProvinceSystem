@@ -22,12 +22,9 @@ function loadImage(src: string | Blob): Promise<HTMLImageElement> {
 export async function composeMaskedFromBase(
   baseFile: File | Blob,
   templateBlob: Blob,
-  filename = "masked.png"
+  filename = "masked.png",
 ): Promise<File> {
-  const [base, templ] = await Promise.all([
-    loadImage(baseFile),
-    loadImage(templateBlob),
-  ]);
+  const [base, templ] = await Promise.all([loadImage(baseFile), loadImage(templateBlob)]);
   if (
     base.naturalWidth !== 64 ||
     base.naturalHeight !== 64 ||
@@ -45,10 +42,7 @@ export async function composeMaskedFromBase(
   ctx.drawImage(templ, 0, 0);
   ctx.drawImage(base, 0, 0, 64, 16, 0, 0, 64, 16);
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("PNG encode failed"))),
-      "image/png"
-    );
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG encode failed"))), "image/png");
   });
   return new File([blob], filename, { type: "image/png" });
 }

@@ -5,10 +5,7 @@ import { useCallback, useState } from "react";
 import type { MapId } from "@/app/components/map/types";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
 import { downloadBlob } from "@/app/lib/downloadBlob";
-import {
-  buildEditorTitlesZip,
-  editorTitlesZipFilename,
-} from "@/app/lib/map/editor/buildEditorTitlesZip";
+import { buildEditorTitlesZip, editorTitlesZipFilename } from "@/app/lib/map/editor/buildEditorTitlesZip";
 import { EDITOR_TITLE_TIERS } from "@/app/lib/map/editor/editorTiers";
 import { validateAllTiersForExport } from "@/app/lib/map/editor/validateAllTiersForExport";
 import { fetchMapJson, type EditorTier } from "@/lib/map/api";
@@ -20,7 +17,7 @@ type TierDraftMapNullable = Record<EditorTier, TitleDraft | null>;
 async function resolveAllTierDrafts(
   mapId: MapId,
   sessionToken: string,
-  cached: TierDraftMapNullable
+  cached: TierDraftMapNullable,
 ): Promise<Record<EditorTier, TitleDraft>> {
   const resolved = {} as Record<EditorTier, TitleDraft>;
 
@@ -30,11 +27,8 @@ async function resolveAllTierDrafts(
         resolved[tier] = cached[tier]!;
         return;
       }
-      resolved[tier] = await fetchMapJson<TitleDraft>(
-        `/${mapId}/data/${tier}`,
-        { sessionToken }
-      );
-    })
+      resolved[tier] = await fetchMapJson<TitleDraft>(`/${mapId}/data/${tier}`, { sessionToken });
+    }),
   );
 
   return resolved;
@@ -70,11 +64,7 @@ export function useEditorExport({
     setExportState("exporting");
 
     try {
-      const drafts = await resolveAllTierDrafts(
-        mapId,
-        sessionToken,
-        getTierDraftsForExport()
-      );
+      const drafts = await resolveAllTierDrafts(mapId, sessionToken, getTierDraftsForExport());
 
       const validation = validateAllTiersForExport(drafts);
       if (!validation.ok) {
@@ -91,8 +81,7 @@ export function useEditorExport({
       setExportError(null);
       setValidationErrors([]);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to prepare title ZIP";
+      const message = err instanceof Error ? err.message : "Failed to prepare title ZIP";
       setExportError(message);
       setExportState("error");
     }

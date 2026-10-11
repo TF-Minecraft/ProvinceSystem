@@ -24,18 +24,9 @@ const IDENTITY_TAB: Required<DisplayTab> = {
   scale: [1, 1, 1],
 };
 
-export type DisplayKind =
-  | "item_3d"
-  | "gun"
-  | "shield"
-  | "helmet_3d"
-  | "mask"
-  | string;
+export type DisplayKind = "item_3d" | "gun" | "shield" | "helmet_3d" | "mask" | string;
 
-function asVec3(
-  value: unknown,
-  fallback: [number, number, number]
-): [number, number, number] {
+function asVec3(value: unknown, fallback: [number, number, number]): [number, number, number] {
   if (!Array.isArray(value) || value.length < 3) return fallback;
   const x = Number(value[0]);
   const y = Number(value[1]);
@@ -45,8 +36,7 @@ function asVec3(
 }
 
 function normalizeTab(raw: unknown): Required<DisplayTab> {
-  const src =
-    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const src = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   return {
     rotation: asVec3(src.rotation, IDENTITY_TAB.rotation),
     translation: asVec3(src.translation, IDENTITY_TAB.translation),
@@ -61,7 +51,7 @@ function normalizeTab(raw: unknown): Required<DisplayTab> {
 export function resolveDisplayTab(
   json: JavaModelJson & { display?: Record<string, unknown> },
   tabName: DisplayTabName,
-  _kind?: DisplayKind
+  _kind?: DisplayKind,
 ): Required<DisplayTab> {
   const submitted = json.display?.[tabName];
   if (submitted && typeof submitted === "object") {
@@ -80,11 +70,7 @@ export function resolveDisplayTab(
  * Pass the *righthand* display tab with mirrorLeft on the left arm so the hold
  * mirrors the calibrated right pose (inward on both sides).
  */
-export function applyDisplayToObject(
-  obj: THREE.Object3D,
-  tab: DisplayTab,
-  options?: { mirrorLeft?: boolean }
-): void {
+export function applyDisplayToObject(obj: THREE.Object3D, tab: DisplayTab, options?: { mirrorLeft?: boolean }): void {
   const rotation = tab.rotation ?? [0, 0, 0];
   const translation = tab.translation ?? [0, 0, 0];
   const scale = tab.scale ?? [1, 1, 1];
@@ -96,7 +82,7 @@ export function applyDisplayToObject(
   obj.rotation.set(
     THREE.MathUtils.degToRad(rotation[0]),
     THREE.MathUtils.degToRad(rotation[1] * mx),
-    THREE.MathUtils.degToRad(rotation[2] * mx)
+    THREE.MathUtils.degToRad(rotation[2] * mx),
   );
   obj.scale.set(scale[0] * mx, scale[1], scale[2]);
 }

@@ -4,23 +4,11 @@ import type { SkinKind } from "./sizes";
  * One armour submission is one metal line: up to one set per type, all the same
  * metal. Mirrors backend ARMOR_TYPES / ARMOR_METALS.
  */
-export const ARMOR_TYPES = [
-  "light",
-  "medium",
-  "heavy",
-  "infantry",
-  "mage",
-] as const;
+export const ARMOR_TYPES = ["light", "medium", "heavy", "infantry", "mage"] as const;
 
 export type ArmorType = (typeof ARMOR_TYPES)[number];
 
-export const ARMOR_METALS = [
-  "iron",
-  "steel",
-  "bronze",
-  "abyssalite",
-  "mythril",
-] as const;
+export const ARMOR_METALS = ["iron", "steel", "bronze", "abyssalite", "mythril"] as const;
 
 /** Tier id sent to the backend: `light_iron`. Its shop base set is `light iron`. */
 export function armorTier(type: string, metal: string): string {
@@ -47,12 +35,7 @@ const HANDHELD = [
   "knives",
 ] as const;
 
-const LARGE_HANDHELD = [
-  "spears",
-  "polearms",
-  "greathammers",
-  "staffs",
-] as const;
+const LARGE_HANDHELD = ["spears", "polearms", "greathammers", "staffs"] as const;
 
 /** Mirrors backend BASE_SETS; armour picks its metal here. */
 export const BASE_SETS: Record<SkinKind, readonly string[]> = {

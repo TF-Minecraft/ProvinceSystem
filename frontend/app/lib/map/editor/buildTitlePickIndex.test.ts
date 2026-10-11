@@ -1,15 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildRgbToTitleId,
-  pickTitleIdAt,
-} from "./buildTitlePickIndex";
+import { buildRgbToTitleId, pickTitleIdAt } from "./buildTitlePickIndex";
 
-function makeImageData(
-  width: number,
-  height: number,
-  pixels: Array<[number, number, number]>
-): ImageData {
+function makeImageData(width: number, height: number, pixels: Array<[number, number, number]>): ImageData {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let i = 0; i < pixels.length; i++) {
     const [r, g, b] = pixels[i]!;

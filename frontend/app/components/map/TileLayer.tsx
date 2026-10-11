@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  memo,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
   allTiles,
@@ -112,7 +104,7 @@ function TileLayer({
   const backdropTiles = useMemo(() => allTiles(manifest, backdrop), [manifest, backdrop]);
   const currentTiles = useMemo(
     () => (level === backdrop ? [] : visibleTiles(manifest, level, view)),
-    [manifest, level, backdrop, view]
+    [manifest, level, backdrop, view],
   );
 
   const loadedRef = useRef(new Set<string>());
@@ -149,13 +141,10 @@ function TileLayer({
   // screen, not merely loaded: loaded is when they start fading in, and
   // standing down then left them see-through over black, the last one to
   // load a dark square, for a few frames after every zoom.
-  const currentShown =
-    currentTiles.length > 0 &&
-    currentTiles.every((tile) => shownRef.current.has(loadedKey(tile)));
+  const currentShown = currentTiles.length > 0 && currentTiles.every((tile) => shownRef.current.has(loadedKey(tile)));
 
   const backdropLoaded =
-    backdropTiles.length > 0 &&
-    backdropTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
+    backdropTiles.length > 0 && backdropTiles.every((tile) => loadedRef.current.has(loadedKey(tile)));
 
   // At the backdrop's level there are no sharp tiles to wait for: it settles
   // once the backdrop has loaded. Otherwise a level settled before stayed held
@@ -178,7 +167,7 @@ function TileLayer({
       settledLevel !== level && settledLevel !== backdrop && settledLevel <= manifest.max_level
         ? visibleTiles(manifest, settledLevel, view)
         : [],
-    [manifest, settledLevel, level, backdrop, view]
+    [manifest, settledLevel, level, backdrop, view],
   );
 
   // Loaded means this layer's <img> for the tile has loaded, not that the
@@ -187,9 +176,7 @@ function TileLayer({
   // the backdrop down at once and the map was black until each new element
   // had painted, square by square. So a tile whose element is gone forgets.
   useLayoutEffect(() => {
-    const rendered = new Set(
-      [...backdropTiles, ...holdTiles, ...currentTiles].map((tile) => loadedKey(tile))
-    );
+    const rendered = new Set([...backdropTiles, ...holdTiles, ...currentTiles].map((tile) => loadedKey(tile)));
     for (const set of [loadedRef.current, shownRef.current]) {
       for (const key of set) {
         if (!rendered.has(key)) set.delete(key);
@@ -303,11 +290,7 @@ function TileLayer({
   };
 
   return (
-    <div
-      className={`pointer-events-none absolute inset-0 ${className ?? ""}`}
-      style={style}
-      aria-hidden
-    >
+    <div className={`pointer-events-none absolute inset-0 ${className ?? ""}`} style={style} aria-hidden>
       <div
         className="absolute left-0 top-0"
         style={{
@@ -325,10 +308,7 @@ function TileLayer({
             ? backdropClipPath(
                 manifest.width,
                 manifest.height,
-                inset(
-                  coverage(currentTiles, snap),
-                  seeThrough ? 0 : BACKDROP_UNDERLAP_PX / view.displayScale
-                )
+                inset(coverage(currentTiles, snap), seeThrough ? 0 : BACKDROP_UNDERLAP_PX / view.displayScale),
               )
             : undefined,
         }}
@@ -340,7 +320,7 @@ function TileLayer({
       {[
         // A held level coarser than the backdrop only covers for it while it loads.
         ...holdTiles.map((tile) =>
-          renderTile(tile, false, currentShown || (settledLevel < backdrop && backdropLoaded))
+          renderTile(tile, false, currentShown || (settledLevel < backdrop && backdropLoaded)),
         ),
         ...currentTiles.map((tile) => renderTile(tile, true)),
       ]}

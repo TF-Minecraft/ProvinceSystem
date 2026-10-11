@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  isSectionName,
-  SECTION_LABELS,
-  SECTION_ORDER,
-  type SectionName,
-} from "@/lib/patchnotes/notes";
+import { isSectionName, SECTION_LABELS, SECTION_ORDER, type SectionName } from "@/lib/patchnotes/notes";
 
 import { reviewButtonClass, reviewInputClass } from "./ReviewLine";
 
@@ -18,14 +13,7 @@ type AddLineProps = {
   onAdd: () => void;
 };
 
-export default function AddLine({
-  section,
-  text,
-  disabled,
-  onSectionChange,
-  onTextChange,
-  onAdd,
-}: AddLineProps) {
+export default function AddLine({ section, text, disabled, onSectionChange, onTextChange, onAdd }: AddLineProps) {
   return (
     <section className="mt-5 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] pt-3">
       <h3 className="text-sm font-semibold text-[var(--tfmc-cream)]">Add a line</h3>
@@ -52,12 +40,7 @@ export default function AddLine({
           disabled={disabled}
           onChange={(event) => onTextChange(event.target.value)}
         />
-        <button
-          className={reviewButtonClass}
-          type="button"
-          disabled={disabled || !text.trim()}
-          onClick={onAdd}
-        >
+        <button className={reviewButtonClass} type="button" disabled={disabled || !text.trim()} onClick={onAdd}>
           Add line
         </button>
       </div>

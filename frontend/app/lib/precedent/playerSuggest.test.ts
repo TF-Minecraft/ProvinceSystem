@@ -26,10 +26,7 @@ const KNOWN = ["alterind", "drterror23", "Gvinno", "hydra_dr", "noobz___"];
 
 describe("collectKnownPlayers", () => {
   it("dedupes case-insensitively and sorts", () => {
-    const out = collectKnownPlayers([
-      caseWith(["Gvinno", "alterind"]),
-      caseWith(["gvinno", " alterind "]),
-    ]);
+    const out = collectKnownPlayers([caseWith(["Gvinno", "alterind"]), caseWith(["gvinno", " alterind "])]);
     expect(out).toEqual(["alterind", "Gvinno"]);
   });
 
@@ -57,10 +54,7 @@ describe("currentToken", () => {
 
 describe("committedNames", () => {
   it("excludes the token still being typed", () => {
-    expect(committedNames("Gvinno, alterind, drt")).toEqual([
-      "Gvinno",
-      "alterind",
-    ]);
+    expect(committedNames("Gvinno, alterind, drt")).toEqual(["Gvinno", "alterind"]);
   });
 
   it("is empty when nothing is committed yet", () => {
@@ -102,9 +96,7 @@ describe("applySuggestion", () => {
   });
 
   it("replaces only the token being typed", () => {
-    expect(applySuggestion("Gvinno, drt", "drterror23")).toBe(
-      "Gvinno, drterror23, "
-    );
+    expect(applySuggestion("Gvinno, drt", "drterror23")).toBe("Gvinno, drterror23, ");
   });
 
   it("works when the token is empty", () => {

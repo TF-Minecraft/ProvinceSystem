@@ -170,7 +170,7 @@ export default function WikiModelViewer({
         (tex) =>
           new THREE.MeshLambertMaterial({
             map: tex ?? undefined,
-            color: tex ? 0xffffff: 0x8ea58e,
+            color: tex ? 0xffffff : 0x8ea58e,
             side: THREE.DoubleSide,
             transparent: true,
             alphaTest: 0.3,
@@ -181,7 +181,7 @@ export default function WikiModelViewer({
       const slotOf = new Map(keys.map((k, i) => [k, i] as const));
       const buffers = buildModelBuffers(model, materials.length, (textureKey) => {
         if (!textureKey) return -1;
-        const bare = textureKey.startsWith("#") ? textureKey.slice(1): textureKey;
+        const bare = textureKey.startsWith("#") ? textureKey.slice(1) : textureKey;
         return slotOf.get(bare) ?? -1;
       });
 
@@ -225,7 +225,7 @@ export default function WikiModelViewer({
       const camera = new THREE.PerspectiveCamera(45, width / heightPx, 0.05, maxDim * 20);
       // Fit the bounding sphere in the narrower field of view, including phones.
       const halfFov = Math.atan(Math.tan(Math.PI / 8) * Math.min(1, width / heightPx));
-      const distance = size.length() / 2 / Math.sin(halfFov) * 1.1;
+      const distance = (size.length() / 2 / Math.sin(halfFov)) * 1.1;
       camera.position.copy(new THREE.Vector3(1.1, 0.8, 1.1).normalize().multiplyScalar(distance));
       camera.lookAt(0, 0, 0);
 
@@ -307,11 +307,11 @@ export default function WikiModelViewer({
         <p className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-[var(--tfmc-mist)]">
           {error}
         </p>
-      ): !ready ? (
+      ) : !ready ? (
         <p className="absolute inset-0 flex items-center justify-center text-xs text-[var(--tfmc-mist)]">
           Loading {label}&hellip;
         </p>
-      ): null}
+      ) : null}
     </div>
   );
 }

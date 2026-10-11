@@ -14,10 +14,7 @@ import {
   type CatalogStage,
   type CreationCatalog,
 } from "../../../lib/characters/api";
-import {
-  assertWardrobeSkinPng,
-  friendlyWardrobeUploadError,
-} from "../../../lib/characters/wardrobeSkin";
+import { assertWardrobeSkinPng, friendlyWardrobeUploadError } from "../../../lib/characters/wardrobeSkin";
 import WardrobeEditor, {
   type WardrobeDraftFiles,
   type WardrobeDraftModels,
@@ -59,12 +56,7 @@ import {
   traitsForStage,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
-import {
-  DISPLAY_NAME_HINT,
-  displayNameError,
-  optionalDisplayNameError,
-  proseError,
-} from "../../../lib/textValidation";
+import { DISPLAY_NAME_HINT, displayNameError, optionalDisplayNameError, proseError } from "../../../lib/textValidation";
 import NameColourPicker from "../shared/NameColourPicker";
 
 type Props = {
@@ -134,10 +126,7 @@ function StageBody({
     return (
       <div className="flex flex-col gap-4">
         {copy.bodyLines.map((line, i) => (
-          <p
-            key={`${stage.id}-body-${i}`}
-            className="text-sm leading-relaxed text-[var(--tfmc-mist)]"
-          >
+          <p key={`${stage.id}-body-${i}`} className="text-sm leading-relaxed text-[var(--tfmc-mist)]">
             {line}
           </p>
         ))}
@@ -165,10 +154,7 @@ function StageBody({
           {copy.title || stageDisplayTitle(stage)}
         </h2>
         {copy.bodyLines.map((line, i) => (
-          <p
-            key={`${stage.id}-body-${i}`}
-            className="text-base leading-relaxed text-[var(--tfmc-mist)]"
-          >
+          <p key={`${stage.id}-body-${i}`} className="text-base leading-relaxed text-[var(--tfmc-mist)]">
             {line}
           </p>
         ))}
@@ -179,9 +165,7 @@ function StageBody({
   if (type === "setter" && target === "real_age") {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Are you 18+ in real life?
-        </p>
+        <p className="text-sm text-[var(--tfmc-mist)]">Are you 18+ in real life?</p>
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: "Yes", value: true },
@@ -204,9 +188,7 @@ function StageBody({
             );
           })}
         </div>
-        <p className="text-xs text-[var(--tfmc-stone)]">
-          Lying about this results in a permanent ban with no appeal.
-        </p>
+        <p className="text-xs text-[var(--tfmc-stone)]">Lying about this results in a permanent ban with no appeal.</p>
       </div>
     );
   }
@@ -215,9 +197,7 @@ function StageBody({
     const min = catalog.validation?.name?.min_length ?? 1;
     const max = catalog.validation?.name?.max_length ?? 32;
     const nameErr =
-      draft.name.trim().length > 0
-        ? displayNameError(draft.name, { minLen: min, maxLen: max, field: "name" })
-        : null;
+      draft.name.trim().length > 0 ? displayNameError(draft.name, { minLen: min, maxLen: max, field: "name" }) : null;
     const colourCap = Math.max(0, Math.min(8, nameColourStops));
     return (
       <div className="flex flex-col gap-4">
@@ -229,12 +209,8 @@ function StageBody({
             placeholder="Character name"
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
           />
-          <span className="text-xs text-[var(--tfmc-mist)]">
-            Allowed: {DISPLAY_NAME_HINT}
-          </span>
-          {nameErr ? (
-            <span className="text-xs text-[#e8a0a0]">{nameErr}</span>
-          ) : null}
+          <span className="text-xs text-[var(--tfmc-mist)]">Allowed: {DISPLAY_NAME_HINT}</span>
+          {nameErr ? <span className="text-xs text-[#e8a0a0]">{nameErr}</span> : null}
         </label>
         <NameColourPicker
           colours={draft.name_colours}
@@ -251,18 +227,10 @@ function StageBody({
     const min = Number(catalog.validation?.age?.minimum ?? 1) || 1;
     const race = (catalog.races || []).find((r) => r.id === draft.race_id);
     const raceMax = Number(race?.age_max);
-    const max =
-      Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
+    const max = Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
     const cal = catalog.validation?.calendar;
-    const ageForBirthday =
-      String(draft.age || "").trim() || String(min);
-    const birthdayLabel =
-      fictionalBirthdayLabel(
-        ageForBirthday,
-        draft.client_request_id,
-        cal,
-        draft.birthday
-      ) || "";
+    const ageForBirthday = String(draft.age || "").trim() || String(min);
+    const birthdayLabel = fictionalBirthdayLabel(ageForBirthday, draft.client_request_id, cal, draft.birthday) || "";
     const { eraSuffix } = resolveCalendarConfig(cal);
 
     return (
@@ -272,9 +240,7 @@ function StageBody({
         max={max}
         birthdayValue={birthdayLabel}
         birthdayHint={`DD/MM/YYYY${eraSuffix ? ` ${eraSuffix}` : ""}`}
-        onChange={(age) =>
-          setDraft({ ...draft, age, birthday: null })
-        }
+        onChange={(age) => setDraft({ ...draft, age, birthday: null })}
         onBirthdayApply={(raw) => {
           const iso = parseBirthdayInput(raw, cal);
           if (!iso) {
@@ -315,36 +281,26 @@ function StageBody({
     });
     return (
       <div className="flex flex-col gap-4">
-        {copy.bodyLines[0] ? (
-          <p className="text-sm text-[var(--tfmc-mist)]">{copy.bodyLines[0]}</p>
-        ) : null}
+        {copy.bodyLines[0] ? <p className="text-sm text-[var(--tfmc-mist)]">{copy.bodyLines[0]}</p> : null}
         <label className="flex flex-col gap-2">
           <span className="text-sm text-[var(--tfmc-stone)]">Description</span>
           <textarea
             rows={5}
             value={draft.description}
-            onChange={(e) =>
-              setDraft({ ...draft, description: e.target.value })
-            }
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
           />
-          {descErr ? (
-            <span className="text-xs text-[#e8a0a0]">{descErr}</span>
-          ) : null}
+          {descErr ? <span className="text-xs text-[#e8a0a0]">{descErr}</span> : null}
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm text-[var(--tfmc-stone)]">
-            Gender (optional)
-          </span>
+          <span className="text-sm text-[var(--tfmc-stone)]">Gender (optional)</span>
           <input
             value={draft.gender}
             onChange={(e) => setDraft({ ...draft, gender: e.target.value })}
             placeholder="unspecified"
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)]"
           />
-          {genderErr ? (
-            <span className="text-xs text-[#e8a0a0]">{genderErr}</span>
-          ) : null}
+          {genderErr ? <span className="text-xs text-[#e8a0a0]">{genderErr}</span> : null}
         </label>
       </div>
     );
@@ -387,11 +343,7 @@ function StageBody({
                 title={displayName(r)}
                 selected={selected}
                 descriptionLines={optionDescriptionLines(r)}
-                modifierLines={optionModifierPreview(
-                  modifierTotals,
-                  r,
-                  catalog
-                )}
+                modifierLines={optionModifierPreview(modifierTotals, r, catalog)}
                 onSelect={() =>
                   setDraft({
                     ...draft,
@@ -414,9 +366,7 @@ function StageBody({
     const min = Number(stage.min_select ?? 0);
     const budget = Number(stage.points ?? 0);
     const hasBudget = budget > 0;
-    const remaining = hasBudget
-      ? traitPointsRemaining(draft, catalog, key, budget)
-      : 0;
+    const remaining = hasBudget ? traitPointsRemaining(draft, catalog, key, budget) : 0;
 
     function toggle(id: string) {
       const set = new Set(selected);
@@ -427,9 +377,7 @@ function StageBody({
         if (!trait) return;
         if (traitPlaytimeBlocked(trait, accountAgeSeconds)) return;
         const cost = traitCost(trait);
-        const outsideKey = draft.traitIds.filter(
-          (tid) => !options.some((o) => o.id === tid)
-        );
+        const outsideKey = draft.traitIds.filter((tid) => !options.some((o) => o.id === tid));
         let nextInKey: string[];
         if (max <= 1) {
           nextInKey = [id];
@@ -454,12 +402,7 @@ function StageBody({
         ? `Selected ${selected.length}/${max}`
         : [
             `Selected ${selected.length}`,
-            `(${[
-              min > 1 ? `Min ${min}` : null,
-              `Max ${max}`,
-            ]
-              .filter(Boolean)
-              .join(", ")})`,
+            `(${[min > 1 ? `Min ${min}` : null, `Max ${max}`].filter(Boolean).join(", ")})`,
           ].join(" ");
 
     return (
@@ -474,24 +417,12 @@ function StageBody({
             const cost = traitCost(t);
             const playtimeBlocked = traitPlaytimeBlocked(t, accountAgeSeconds);
             const wouldOverSelect = !on && max > 1 && selected.length >= max;
-            const wouldOverSpend =
-              !on && hasBudget && cost > remaining && !(max <= 1);
-            const singleTooExpensive =
-              !on && max <= 1 && hasBudget && cost > budget;
-            const outsideKey = draft.traitIds.filter(
-              (tid) => !options.some((o) => o.id === tid)
-            );
-            const exclusivePeers =
-              max <= 1
-                ? outsideKey
-                : [...outsideKey, ...selected.filter((id) => id !== t.id)];
-            const exclusiveConflict =
-              !on && traitExclusiveBlocked(t, exclusivePeers, catalog);
-            const blocked =
-              playtimeBlocked ||
-              wouldOverSelect ||
-              wouldOverSpend ||
-              singleTooExpensive;
+            const wouldOverSpend = !on && hasBudget && cost > remaining && !(max <= 1);
+            const singleTooExpensive = !on && max <= 1 && hasBudget && cost > budget;
+            const outsideKey = draft.traitIds.filter((tid) => !options.some((o) => o.id === tid));
+            const exclusivePeers = max <= 1 ? outsideKey : [...outsideKey, ...selected.filter((id) => id !== t.id)];
+            const exclusiveConflict = !on && traitExclusiveBlocked(t, exclusivePeers, catalog);
+            const blocked = playtimeBlocked || wouldOverSelect || wouldOverSpend || singleTooExpensive;
             return (
               <li key={t.id}>
                 <SelectableOption
@@ -501,22 +432,14 @@ function StageBody({
                   showCostInBody={cost !== 0}
                   descriptionLines={[
                     ...optionDescriptionLines(t),
-                    ...(t.fuel_disclaimer
-                      ? ["Requires arcane fuel to stay powered."]
-                      : []),
+                    ...(t.fuel_disclaimer ? ["Requires arcane fuel to stay powered."] : []),
                   ]}
                   dependency={resolveTraitDependencyNames(t, catalog)}
                   mutuallyExclusive={resolveMutuallyExclusiveNames(t, catalog)}
-                  modifierLines={optionModifierPreview(
-                    modifierTotals,
-                    t,
-                    catalog
-                  )}
+                  modifierLines={optionModifierPreview(modifierTotals, t, catalog)}
                   disabled={blocked}
                   exclusiveConflict={exclusiveConflict}
-                  disabledReason={
-                    playtimeBlocked ? traitPlaytimeReason(t) : null
-                  }
+                  disabledReason={playtimeBlocked ? traitPlaytimeReason(t) : null}
                   onSelect={() => toggle(t.id)}
                 />
               </li>
@@ -562,39 +485,17 @@ function StageBody({
 
     return (
       <div className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto pr-1 text-sm text-[var(--tfmc-mist)]">
-        <SummaryLine
-          label="Name"
-          value={draft.name}
-          onEdit={() => onJump("name")}
-        />
+        <SummaryLine label="Name" value={draft.name} onEdit={() => onJump("name")} />
         {!skipRealAge ? (
           <SummaryLine
             label="18+"
-            value={
-              draft.eighteen === true
-                ? "Yes"
-                : draft.eighteen === false
-                  ? "No"
-                  : "-"
-            }
+            value={draft.eighteen === true ? "Yes" : draft.eighteen === false ? "No" : "-"}
             onEdit={() => onJump("real_age")}
           />
         ) : null}
-        <SummaryLine
-          label="Age"
-          value={draft.age}
-          onEdit={() => onJump("age")}
-        />
-        <SummaryLine
-          label="Race"
-          value={race ? displayName(race) : draft.race_id}
-          onEdit={() => onJump("race")}
-        />
-        <SummaryLine
-          label="Class"
-          value={klass ? displayName(klass) : draft.class_id}
-          onEdit={() => onJump("class")}
-        />
+        <SummaryLine label="Age" value={draft.age} onEdit={() => onJump("age")} />
+        <SummaryLine label="Race" value={race ? displayName(race) : draft.race_id} onEdit={() => onJump("race")} />
+        <SummaryLine label="Class" value={klass ? displayName(klass) : draft.class_id} onEdit={() => onJump("class")} />
         <SummaryLine
           label="Attributes"
           value={Object.entries(draft.attributes)
@@ -602,16 +503,8 @@ function StageBody({
             .join(", ")}
           onEdit={() => onJump("attributes")}
         />
-        <SummaryLine
-          label="Traits"
-          value={traitNames.join(", ") || "-"}
-          onEdit={() => onJump("trait")}
-        />
-        <SummaryLine
-          label="Description"
-          value={draft.description}
-          onEdit={() => onJump("description")}
-        />
+        <SummaryLine label="Traits" value={traitNames.join(", ") || "-"} onEdit={() => onJump("trait")} />
+        <SummaryLine label="Description" value={draft.description} onEdit={() => onJump("description")} />
         <SummaryLine
           label="Clues"
           value={draft.clues.filter((c) => c.trim()).join(" · ") || "-"}
@@ -621,48 +514,24 @@ function StageBody({
     );
   }
 
-  return (
-    <p className="text-[var(--tfmc-mist)]">
-      Nothing to fill in here. Press Next.
-    </p>
-  );
+  return <p className="text-[var(--tfmc-mist)]">Nothing to fill in here. Press Next.</p>;
 }
 
-function SummaryLine({
-  label,
-  value,
-  onEdit,
-}: {
-  label: string;
-  value: string;
-  onEdit: () => void;
-}) {
+function SummaryLine({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pb-3">
       <div>
-        <p className="text-xs uppercase tracking-wide text-[var(--tfmc-stone)]">
-          {label}
-        </p>
+        <p className="text-xs uppercase tracking-wide text-[var(--tfmc-stone)]">{label}</p>
         <p className="mt-1 text-[var(--tfmc-cream)]">{value || "-"}</p>
       </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="shrink-0 text-xs text-[var(--tfmc-accent)] hover:underline"
-      >
+      <button type="button" onClick={onEdit} className="shrink-0 text-xs text-[var(--tfmc-accent)] hover:underline">
         Edit
       </button>
     </div>
   );
 }
 
-function PeekCard({
-  stage,
-  position,
-}: {
-  stage: CatalogStage;
-  position: "prev" | "next";
-}) {
+function PeekCard({ stage, position }: { stage: CatalogStage; position: "prev" | "next" }) {
   const title = stageDisplayTitle(stage);
   return (
     <div
@@ -674,9 +543,7 @@ function PeekCard({
       aria-hidden
     >
       <div className="rounded-[0.25rem] border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_45%,transparent)] px-4 py-[0.65rem]">
-        <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
-          {title}
-        </p>
+        <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{title}</p>
       </div>
     </div>
   );
@@ -697,10 +564,8 @@ export default function CreationWizard({
   const router = useRouter();
   const [draft, setDraft] = useState(() => newDraft(catalog));
   const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraftFiles>({});
-  const [wardrobeDraftNames, setWardrobeDraftNames] =
-    useState<WardrobeDraftNames>({});
-  const [wardrobeDraftModels, setWardrobeDraftModels] =
-    useState<WardrobeDraftModels>({});
+  const [wardrobeDraftNames, setWardrobeDraftNames] = useState<WardrobeDraftNames>({});
+  const [wardrobeDraftModels, setWardrobeDraftModels] = useState<WardrobeDraftModels>({});
   const [wardrobeAutoMasked, setWardrobeAutoMasked] = useState(false);
   const [pendingCreateId, setPendingCreateId] = useState<string | null>(null);
   const stages = useMemo(
@@ -711,7 +576,7 @@ export default function CreationWizard({
         accountAgeSeconds,
         selectedTraitIds: draft.traitIds,
       }),
-    [catalog, skipRealAge, evilUnlocked, accountAgeSeconds, draft.traitIds]
+    [catalog, skipRealAge, evilUnlocked, accountAgeSeconds, draft.traitIds],
   );
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState<"forward" | "back">("forward");
@@ -741,13 +606,9 @@ export default function CreationWizard({
   const prevStage = index > 0 ? stages[index - 1] : null;
   const nextStage = index < stages.length - 1 ? stages[index + 1] : null;
   const isLast = index >= stages.length - 1;
-  const canNext = stage
-    ? stageCanContinue(stage, draft, catalog)
-    : false;
+  const canNext = stage ? stageCanContinue(stage, draft, catalog) : false;
   const clueBlockReason =
-    stage && String(stage.type || "").toLowerCase() === "clue"
-      ? clueContinueBlockReason(draft, catalog)
-      : null;
+    stage && String(stage.type || "").toLowerCase() === "clue" ? clueContinueBlockReason(draft, catalog) : null;
   const progress = interactiveProgress(stages, index);
 
   function go(to: number) {
@@ -792,10 +653,7 @@ export default function CreationWizard({
       }
       let createId = pendingCreateId;
       if (!createId) {
-        const created = await createCharacter(
-          sessionToken,
-          toCreateBody(draft, { nameColourStops, catalog })
-        );
+        const created = await createCharacter(sessionToken, toCreateBody(draft, { nameColourStops, catalog }));
         createId = String(created.id || "").trim();
         if (!createId) {
           throw new Error("Something went wrong. Please try again.");
@@ -803,14 +661,10 @@ export default function CreationWizard({
         setPendingCreateId(createId);
       }
 
-      const slots = Object.entries(wardrobeDraft).filter(
-        ([, file]) => file instanceof File
-      ) as [string, File][];
+      const slots = Object.entries(wardrobeDraft).filter(([, file]) => file instanceof File) as [string, File][];
       const order = ["base", "extra_1", "extra_2", "masked"] as const;
       slots.sort(
-        (a, b) =>
-          order.indexOf(a[0] as (typeof order)[number]) -
-          order.indexOf(b[0] as (typeof order)[number])
+        (a, b) => order.indexOf(a[0] as (typeof order)[number]) - order.indexOf(b[0] as (typeof order)[number]),
       );
       for (const [slot, file] of slots) {
         if (slot === "masked" && wardrobeAutoMasked) {
@@ -820,8 +674,7 @@ export default function CreationWizard({
         try {
           await assertWardrobeSkinPng(file);
         } catch (err) {
-          const detail =
-            err instanceof Error ? err.message : "Invalid skin file";
+          const detail = err instanceof Error ? err.message : "Invalid skin file";
           throw new Error(`${wardrobeSlotLabel(slot)}: ${detail}`);
         }
       }
@@ -838,23 +691,16 @@ export default function CreationWizard({
           file,
           wardrobeDraftNames[slot as keyof WardrobeDraftNames] ?? null,
           {
-            createMasked:
-              slot === "base" && wardrobeAutoMasked,
-            model: armModelToWardrobeModel(
-              wardrobeDraftModels[slot as keyof WardrobeDraftModels] ?? "default"
-            ),
-          }
+            createMasked: slot === "base" && wardrobeAutoMasked,
+            model: armModelToWardrobeModel(wardrobeDraftModels[slot as keyof WardrobeDraftModels] ?? "default"),
+          },
         );
       }
       setError(null);
       router.replace("/profile");
     } catch (err) {
       const raw =
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Create failed";
+        err instanceof CharactersApiError ? err.message : err instanceof Error ? err.message : "Create failed";
       setError(friendlyWardrobeUploadError(raw));
     } finally {
       setUploadStatus(null);
@@ -863,11 +709,7 @@ export default function CreationWizard({
   }
 
   if (!stage) {
-    return (
-      <p className="mt-8 text-[var(--tfmc-mist)]">
-        Character creation is unavailable right now.
-      </p>
-    );
+    return <p className="mt-8 text-[var(--tfmc-mist)]">Character creation is unavailable right now.</p>;
   }
 
   const type = String(stage.type || "").toLowerCase();
@@ -880,9 +722,7 @@ export default function CreationWizard({
     <div className="mt-4 flex flex-1 flex-col">
       <div className="mb-2 flex items-center justify-between gap-3">
         <p className="text-xs tabular-nums text-[var(--tfmc-stone)]">
-          {progress
-            ? `Step ${progress.current} / ${progress.total}`
-            : "Info"}
+          {progress ? `Step ${progress.current} / ${progress.total}` : "Info"}
         </p>
         <button
           type="button"
@@ -895,9 +735,7 @@ export default function CreationWizard({
       </div>
 
       <div className="relative flex min-h-[min(62vh,520px)] flex-1 flex-col gap-[0.35rem] [mask-image:linear-gradient(to_bottom,transparent_0%,#000_12%,#000_88%,transparent_100%)]">
-        {prevStage ? <PeekCard stage={prevStage} position="prev" /> : (
-          <div className="h-11 shrink-0" aria-hidden />
-        )}
+        {prevStage ? <PeekCard stage={prevStage} position="prev" /> : <div className="h-11 shrink-0" aria-hidden />}
 
         <div
           key={`${stage.id}-${dir}`}
@@ -933,9 +771,7 @@ export default function CreationWizard({
           </div>
         </div>
 
-        {nextStage ? <PeekCard stage={nextStage} position="next" /> : (
-          <div className="h-11 shrink-0" aria-hidden />
-        )}
+        {nextStage ? <PeekCard stage={nextStage} position="next" /> : <div className="h-11 shrink-0" aria-hidden />}
       </div>
 
       {error ? (
@@ -974,11 +810,7 @@ export default function CreationWizard({
             onClick={() => void onSubmit()}
             className="flex-1 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50"
           >
-            {submitting
-              ? "Creating…"
-              : uiDev
-                ? "Create (UI-dev)"
-                : "Create character"}
+            {submitting ? "Creating…" : uiDev ? "Create (UI-dev)" : "Create character"}
           </button>
         ) : (
           <button

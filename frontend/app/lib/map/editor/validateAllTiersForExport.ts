@@ -19,9 +19,7 @@ const CHILD_TIER_FOR: Partial<Record<EditorTier, EditorTier>> = {
 
 export type TierDraftMap = Record<EditorTier, TitleDraft>;
 
-export function validateAllTiersForExport(
-  drafts: TierDraftMap
-): ValidationResult {
+export function validateAllTiersForExport(drafts: TierDraftMap): ValidationResult {
   const errors: string[] = [];
 
   for (const tier of EDITOR_TITLE_TIERS) {

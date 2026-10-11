@@ -15,7 +15,9 @@ if (!sourceDirectory) throw new Error("Pass the directory containing the pet .bb
 const modelsDir = join(frontend, "public/wiki/models/companion-pets");
 const texturesDir = join(frontend, "public/wiki/textures/companion-pets");
 const catalogue = {};
-const files = readdirSync(sourceDirectory).filter((file) => file.endsWith(".bbmodel")).sort();
+const files = readdirSync(sourceDirectory)
+  .filter((file) => file.endsWith(".bbmodel"))
+  .sort();
 if (!files.length) throw new Error("No pet .bbmodel files found.");
 
 for (const file of files) {
@@ -40,8 +42,7 @@ for (const file of files) {
   }
   const preview = {
     modelUrl: `/wiki/models/companion-pets/${id}.json`,
-    textures: Object.fromEntries(Object.entries(result.textures)
-      .map(([key, path]) => [key, `/wiki/textures/${path}`])),
+    textures: Object.fromEntries(Object.entries(result.textures).map(([key, path]) => [key, `/wiki/textures/${path}`])),
   };
   // Furniture has its own preview; it is not a hatchable companion.
   if (id === "pethouse") {

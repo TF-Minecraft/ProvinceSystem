@@ -9,15 +9,8 @@ import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
 import { mapDisplayName, type MapId } from "../map/types";
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
-import {
-  MapAccessError,
-  mapRequiresAuth,
-  staffMapAccessReason,
-} from "@/lib/map/api";
-import {
-  fetchChronicleIndex,
-  type ChronicleIndex,
-} from "../../lib/map/chronicleData";
+import { MapAccessError, mapRequiresAuth, staffMapAccessReason } from "@/lib/map/api";
+import { fetchChronicleIndex, type ChronicleIndex } from "../../lib/map/chronicleData";
 import {
   chronicleDayHref,
   chronicleDayWalk,
@@ -32,8 +25,7 @@ import { BackIcon, ChevronIcon } from "../map/shell/MapIcons";
 import { chroniclePanelClass } from "./ChroniclePanels";
 import { mapControlClass, mapRoundControlClass } from "../map/ui";
 
-const bannerLinkClass =
-  "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
+const bannerLinkClass = "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
 
 const shellClass =
   "flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center";
@@ -71,21 +63,13 @@ type DayStatus =
  * not an array of day strings — see `ChronicleIncompleteDay` in
  * `chronicleData.ts`.
  */
-export function describeChronicleDay(
-  index: ChronicleIndex,
-  day: string
-): DayStatus {
+export function describeChronicleDay(index: ChronicleIndex, day: string): DayStatus {
   const days = Array.isArray(index.days) ? index.days : [];
   if (!days.includes(day)) return { kind: "unknown-day" };
 
-  const entries = Array.isArray(index.incomplete_days)
-    ? index.incomplete_days
-    : [];
+  const entries = Array.isArray(index.incomplete_days) ? index.incomplete_days : [];
   const incomplete = entries.some(
-    (entry) =>
-      typeof entry === "object" &&
-      entry !== null &&
-      (entry as { day?: unknown }).day === day
+    (entry) => typeof entry === "object" && entry !== null && (entry as { day?: unknown }).day === day,
   );
 
   /**
@@ -94,8 +78,7 @@ export function describeChronicleDay(
    * rather than the `ChronicleIndex` type so an older backend (field absent)
    * behaves exactly as before.
    */
-  const staleDays = (index as { stale_geometry_days?: unknown })
-    .stale_geometry_days;
+  const staleDays = (index as { stale_geometry_days?: unknown }).stale_geometry_days;
   const staleGeometry = Array.isArray(staleDays) ? staleDays.includes(day) : false;
 
   return { kind: "ready", incomplete, staleGeometry, days };
@@ -178,9 +161,7 @@ function ChronicleDayBar({
         )}
       </div>
       {incomplete ? (
-        <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
-          Parts of this day may be missing.
-        </p>
+        <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">Parts of this day may be missing.</p>
       ) : null}
       {staleGeometry ? (
         <p className="mt-1.5 px-1 text-xs leading-snug text-[var(--tfmc-accent)]">
@@ -214,13 +195,7 @@ function ChronicleDayFallbackLinks({ mapId }: { mapId: MapId }) {
  * guaranteed fallback so a missing provider can never quietly hand `null` to
  * `MapViewer` and render the live map under a historical date.
  */
-export default function ChronicleDayViewer({
-  mapId,
-  day,
-}: {
-  mapId: MapId;
-  day: string;
-}) {
+export default function ChronicleDayViewer({ mapId, day }: { mapId: MapId; day: string }) {
   const sessionToken = useCharacterSessionToken();
   const { maps } = useAccessibleMaps();
   const authToken = mapRequiresAuth(mapId, maps) ? sessionToken : null;
@@ -242,13 +217,8 @@ export default function ChronicleDayViewer({
   const range = useMemo(() => parseChronicleDayRange(from, to), [from, to]);
 
   const walk = useMemo(
-    () =>
-      chronicleDayWalk(
-        status.kind === "ready" ? status.days : [],
-        activeDay,
-        range
-      ),
-    [status, activeDay, range]
+    () => chronicleDayWalk(status.kind === "ready" ? status.days : [], activeDay, range),
+    [status, activeDay, range],
   );
 
   useEffect(() => {
@@ -277,10 +247,7 @@ export default function ChronicleDayViewer({
         }
         setStatus({
           kind: "error",
-          message:
-            err instanceof Error
-              ? err.message
-              : "Couldn't load the map history.",
+          message: err instanceof Error ? err.message : "Couldn't load the map history.",
         });
       });
 
@@ -290,17 +257,13 @@ export default function ChronicleDayViewer({
   }, [mapId, authToken, activeDay]);
 
   if (status.kind === "gated") {
-    return (
-      <MapAccessGate reason={status.reason} mapDisplayName={displayName} />
-    );
+    return <MapAccessGate reason={status.reason} mapDisplayName={displayName} />;
   }
 
   if (status.kind === "loading") {
     return (
       <div className={shellClass}>
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-          Loading…
-        </p>
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading…</p>
       </div>
     );
   }
@@ -311,9 +274,7 @@ export default function ChronicleDayViewer({
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           Couldn&rsquo;t load this day
         </p>
-        <p className="max-w-md text-sm leading-snug text-[var(--tfmc-accent)]">
-          {status.message}
-        </p>
+        <p className="max-w-md text-sm leading-snug text-[var(--tfmc-accent)]">{status.message}</p>
         <ChronicleDayFallbackLinks mapId={mapId} />
       </div>
     );
@@ -322,9 +283,7 @@ export default function ChronicleDayViewer({
   if (status.kind === "unknown-day") {
     return (
       <div className={shellClass}>
-        <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-          {displayName} timelapse
-        </p>
+        <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">{displayName} timelapse</p>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           No record of {formatChronicleDay(activeDay)}
         </p>

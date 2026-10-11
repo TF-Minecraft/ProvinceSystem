@@ -211,10 +211,10 @@ export default function LinkedAccounts({
   const viewOnly = Boolean(account.viewing_as);
 
   return (
-      <fieldset disabled={viewOnly} className="m-0 min-w-0 border-0 p-0">
-        {viewOnly ? (
-          <legend className="mb-2 text-sm text-[#e8c48a]">View only: you can’t change their accounts.</legend>
-        ) : null}
+    <fieldset disabled={viewOnly} className="m-0 min-w-0 border-0 p-0">
+      {viewOnly ? (
+        <legend className="mb-2 text-sm text-[#e8c48a]">View only: you can’t change their accounts.</legend>
+      ) : null}
       <ul
         ref={cardRef}
         className={`${cardClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`}
@@ -283,7 +283,12 @@ export default function LinkedAccounts({
                   <button type="button" onClick={() => void onUnlink()} disabled={busy} className={buttonClass}>
                     Unlink
                   </button>
-                  <button type="button" onClick={() => setConfirmUnlink(false)} disabled={busy} className={quietButtonClass}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmUnlink(false)}
+                    disabled={busy}
+                    className={quietButtonClass}
+                  >
                     Keep it
                   </button>
                 </div>
@@ -319,7 +324,7 @@ export default function LinkedAccounts({
           />
         ) : null}
       </ul>
-      </fieldset>
+    </fieldset>
   );
 }
 
@@ -378,10 +383,7 @@ function AccountRow({
   children: ReactNode;
 }) {
   return (
-    <li
-      aria-label={label}
-      className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5"
-    >
+    <li aria-label={label} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5">
       <span className="flex shrink-0">{icon}</span>
       <div className="min-w-0 flex-1 basis-40">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">{service}</p>
@@ -424,9 +426,12 @@ function PatreonRow({
   );
   if (!patreon.linked) {
     return (
-      <AccountRow label="Patreon" service="Patreon" icon={<EmptyIcon />} action={
-        <PatreonConnectButton onClick={onConnect} disabled={busy} />
-      }>
+      <AccountRow
+        label="Patreon"
+        service="Patreon"
+        icon={<EmptyIcon />}
+        action={<PatreonConnectButton onClick={onConnect} disabled={busy} />}
+      >
         <p className="text-[var(--tfmc-stone)]">Not connected</p>
       </AccountRow>
     );
@@ -466,7 +471,9 @@ function PatreonRow({
       </p>
       {confirm ? (
         <div className="mt-3 flex flex-wrap items-center gap-4">
-          <span className="text-sm text-[var(--tfmc-mist)]">Disconnect Patreon? Your supporter perks will be removed.</span>
+          <span className="text-sm text-[var(--tfmc-mist)]">
+            Disconnect Patreon? Your supporter perks will be removed.
+          </span>
           <button type="button" onClick={onDisconnect} disabled={busy} className={buttonClass}>
             Disconnect
           </button>

@@ -66,20 +66,16 @@ export default function WikiPage({
   width = "md",
   children,
 }: WikiPageProps) {
-  const modifiedDate = lastModified && isIsoCalendarDate(lastModified)
-    ? lastModified
-    : WIKI_LAST_MODIFIED;
+  const modifiedDate = lastModified && isIsoCalendarDate(lastModified) ? lastModified : WIKI_LAST_MODIFIED;
 
   return (
     <article className={WIDTHS[width]}>
       {beforeTitle}
       <div className={titleVisual ? "mt-3 flex items-center gap-4" : undefined}>
         {titleVisual}
-        <h1 className={cx(wikiDisplayFont, "text-3xl text-[var(--tfmc-cream)] sm:text-4xl")}>
-          {title}
-        </h1>
+        <h1 className={cx(wikiDisplayFont, "text-3xl text-[var(--tfmc-cream)] sm:text-4xl")}>{title}</h1>
       </div>
-      {intro ? <p className={cx("mt-2", wikiBodyText)}>{intro}</p>: null}
+      {intro ? <p className={cx("mt-2", wikiBodyText)}>{intro}</p> : null}
       <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
         Updated <time dateTime={modifiedDate}>{formatWikiDate(modifiedDate)}</time>
       </p>

@@ -71,7 +71,8 @@ type Load =
   | { kind: "gate"; gate: GateKind };
 
 function spanOrLastHour(since: number, until: number): Range {
-  if (since && until > since && until - since <= PLAYER_WINDOW_SECONDS) return { from: since, to: until, follow: false };
+  if (since && until > since && until - since <= PLAYER_WINDOW_SECONDS)
+    return { from: since, to: until, follow: false };
   const now = Math.floor(Date.now() / 1000);
   return { from: now - 3600, to: now, follow: false };
 }
@@ -124,12 +125,14 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
       }
       writeUrl(`${pathname}?${next.toString()}`, replace);
     },
-    [pathname, search]
+    [pathname, search],
   );
   // The inspected moment moves at once and reaches the URL when it rests (see useLiveMoment).
-  const { at, move: setCursor, cancel: cancelMoment } = useLiveMoment(urlAt, momentView, (time) =>
-    update({ at: String(time) }, true)
-  );
+  const {
+    at,
+    move: setCursor,
+    cancel: cancelMoment,
+  } = useLiveMoment(urlAt, momentView, (time) => update({ at: String(time) }, true));
 
   const name = usePlayer()?.profile.minecraft_name ?? null;
 
@@ -142,7 +145,8 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
         : { from, to, follow: false }
       : null;
   // What the camera frames: a new session or range, not a refresh of the same one.
-  const viewKey = mode === "session" ? `session:${sessionId}` : follow ? `follow:${(to ?? 0) - (from ?? 0)}` : `range:${from}:${to}`;
+  const viewKey =
+    mode === "session" ? `session:${sessionId}` : follow ? `follow:${(to ?? 0) - (from ?? 0)}` : `range:${from}:${to}`;
   const fetchKey =
     mode === "session"
       ? sessionId
@@ -157,7 +161,11 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
   useEffect(() => {
     if (fetchKey === null) return;
     let live = true;
-    setLoad((prev) => ({ kind: "loading", previous: prev.kind === "ready" ? prev.view : prev.kind === "loading" || prev.kind === "failed" ? prev.previous : null }));
+    setLoad((prev) => ({
+      kind: "loading",
+      previous:
+        prev.kind === "ready" ? prev.view : prev.kind === "loading" || prev.kind === "failed" ? prev.previous : null,
+    }));
     const request =
       mode === "session"
         ? getSessionMovement(uuid, sessionId!).then((data): View => ({
@@ -208,16 +216,14 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchKey, uuid, retry]);
 
-  const view = load.kind === "ready" ? load.view : load.kind === "loading" || load.kind === "failed" ? load.previous : null;
+  const view =
+    load.kind === "ready" ? load.view : load.kind === "loading" || load.kind === "failed" ? load.previous : null;
   const stale = view !== null && load.kind !== "ready";
-  const parts = useMemo(
-    () => (view ? stretches(view.points, view.worlds, view.coreprotect.ping_seconds) : []),
-    [view]
-  );
+  const parts = useMemo(() => (view ? stretches(view.points, view.worlds, view.coreprotect.ping_seconds) : []), [view]);
   const trails = useMemo(() => [{ key: uuid, label: name ?? "Player", stretches: parts }], [uuid, name, parts]);
   const times = useMemo(
     () => observationTimes(parts, view?.completeFrom ?? view?.since ?? 0, view?.until ?? 0),
-    [parts, view]
+    [parts, view],
   );
 
   if (load.kind === "gate") {
@@ -293,7 +299,10 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
           {load.kind === "loading" ? (
             <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
           ) : null}
-          <div className="flex gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3" role="tablist">
+          <div
+            className="flex gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3"
+            role="tablist"
+          >
             {(["session", "range"] as const).map((t) => (
               <button
                 key={t}
@@ -372,7 +381,15 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                   <p className="text-[var(--tfmc-cream)]">
                     Nothing recorded between {describeSpan(since, until)}.{" "}
                     {mode === "range" ? (
-                      <button type="button" className="underline" onClick={() => { setTab("session"); cancelMoment(); update({ from: null, to: null, follow: null, at: null }); }}>
+                      <button
+                        type="button"
+                        className="underline"
+                        onClick={() => {
+                          setTab("session");
+                          cancelMoment();
+                          update({ from: null, to: null, follow: null, at: null });
+                        }}
+                      >
                         Show their latest session
                       </button>
                     ) : null}
@@ -393,9 +410,7 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
                   <p>Too many positions to show; the route starts at {formatMoment(view.completeFrom)}.</p>
                 ) : null}
                 {view.pingsSince !== null && view.pingsSince > since ? (
-                  <p>
-                    Before {formatMoment(view.pingsSince)}, only login and logout locations.
-                  </p>
+                  <p>Before {formatMoment(view.pingsSince)}, only login and logout locations.</p>
                 ) : null}
               </div>
             </>
@@ -444,15 +459,7 @@ function Heading({
   return <p className="text-[var(--tfmc-cream)]">{describeSpan(view.since, view.until)}</p>;
 }
 
-function Readout({
-  found,
-  cursor,
-  mapWorld,
-}: {
-  found: ReturnType<typeof inspect>;
-  cursor: number;
-  mapWorld: string;
-}) {
+function Readout({ found, cursor, mapWorld }: { found: ReturnType<typeof inspect>; cursor: number; mapWorld: string }) {
   const when = formatClock(cursor, true);
   const where = (world: string | null) => (world === mapWorld ? "" : ` in ${worldLabel(world)}`);
   switch (found.kind) {
@@ -464,7 +471,9 @@ function Readout({
             {when} · {s.x}, {s.y}, {s.z}
             {where(found.world)}
           </span>
-          {found.world === mapWorld ? <CopyButton text={`/tp ${s.x} ${s.y} ${s.z}`} label="Copy teleport command" /> : null}
+          {found.world === mapWorld ? (
+            <CopyButton text={`/tp ${s.x} ${s.y} ${s.z}`} label="Copy teleport command" />
+          ) : null}
         </div>
       );
     }
@@ -472,16 +481,14 @@ function Readout({
       return (
         <span>
           {when} · about {Math.round(found.x)}, {Math.round(found.z)} (estimated between{" "}
-          {formatClock(found.before.time, true)} and {formatClock(found.after.time, true)})
-          {where(found.world)}
+          {formatClock(found.before.time, true)} and {formatClock(found.after.time, true)}){where(found.world)}
         </span>
       );
     case "unobserved":
       return (
         <span>
-          {when} · unknown; moved from {found.before.x}, {found.before.z} (
-          {formatClock(found.before.time, true)}) to {found.after.x}, {found.after.z} ({formatClock(found.after.time, true)})
-          {where(found.world)}
+          {when} · unknown; moved from {found.before.x}, {found.before.z} ({formatClock(found.before.time, true)}) to{" "}
+          {found.after.x}, {found.after.z} ({formatClock(found.after.time, true)}){where(found.world)}
         </span>
       );
     case "stale":

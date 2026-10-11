@@ -2,9 +2,7 @@ import { T } from "./helpers";
 import type { WikiCommandSet, WikiSection } from "./types";
 
 export const cardSuits = ["Cerrith", "Mitlan", "Oseni", "Seithr"] as const;
-export const cardRankLabels = [
-  "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King",
-] as const;
+export const cardRankLabels = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"] as const;
 
 export type PlayingCard = {
   id: string;

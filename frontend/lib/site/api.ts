@@ -18,9 +18,7 @@ export function detailMessage(data: unknown, fallback: string): string {
     if (Array.isArray(detail)) {
       return detail
         .map((item) =>
-          typeof item === "object" && item && "msg" in item
-            ? String((item as { msg: unknown }).msg)
-            : String(item)
+          typeof item === "object" && item && "msg" in item ? String((item as { msg: unknown }).msg) : String(item),
         )
         .join("; ");
     }

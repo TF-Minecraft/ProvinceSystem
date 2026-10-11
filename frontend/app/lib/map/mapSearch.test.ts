@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildMapSearchIndex,
-  normaliseSearchText,
-  searchMap,
-} from "./mapSearch";
+import { buildMapSearchIndex, normaliseSearchText, searchMap } from "./mapSearch";
 
 const regionData = {
   Huoyaoguo: { name: "Huǒyàoguó", rgb: "200,80,80" },
@@ -27,9 +23,7 @@ const index = buildMapSearchIndex({
     },
     { id: "s2", name: "Unplaced Town" },
   ],
-  installations: [
-    { id: "i1", name: "Holy Harbour", kind: "port", map_x: 5, map_y: 6 },
-  ],
+  installations: [{ id: "i1", name: "Holy Harbour", kind: "port", map_x: 5, map_y: 6 }],
 });
 
 describe("normaliseSearchText", () => {
@@ -94,7 +88,7 @@ describe("searchMap", () => {
         { kind: "place", key: "p", label: "Rat Hill", detail: "", mapX: 0, mapY: 0 },
         { kind: "region", key: "r", regionId: "Rat_Hill", label: "Rat Hill", detail: "", rgb: null },
       ],
-      "rat"
+      "rat",
     );
 
     expect(results[0]?.kind).toBe("region");
@@ -130,4 +124,3 @@ describe("guild search", () => {
     expect(searchMap(withGuilds, "thal").map((entry) => entry.kind)).toEqual(["region"]);
   });
 });
-

@@ -4,10 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { MapId } from "../components/map/types";
 import { fetchMapJson } from "@/lib/map/api";
 import { fetchChronicleDayFile } from "../lib/map/chronicleData";
-import {
-  buildProvinceCountyNames,
-  type CountyNameEntry,
-} from "../lib/map/provinceCounty";
+import { buildProvinceCountyNames, type CountyNameEntry } from "../lib/map/provinceCounty";
 
 /**
  * The subset of a province the tooltip actually renders. The live
@@ -40,13 +37,9 @@ export function storedTradeShares(trade: unknown): Record<string, number> {
   const amounts: Array<[string, number]> = [];
   let total = 0;
 
-  for (const [guild, value] of Object.entries(
-    trade as Record<string, unknown>
-  )) {
+  for (const [guild, value] of Object.entries(trade as Record<string, unknown>)) {
     const raw =
-      value && typeof value === "object" && !Array.isArray(value)
-        ? (value as { trade?: unknown }).trade
-        : value;
+      value && typeof value === "object" && !Array.isArray(value) ? (value as { trade?: unknown }).trade : value;
     const amount = typeof raw === "number" ? raw : Number.NaN;
     if (!Number.isFinite(amount) || amount <= 0) continue;
     amounts.push([guild, amount]);
@@ -63,9 +56,7 @@ export function storedTradeShares(trade: unknown): Record<string, number> {
  * `/compiled_data/provinces`. Indexing it once per day keeps the hover path a
  * plain lookup.
  */
-export function indexStoredProvinceData(
-  value: unknown
-): Record<number, TooltipProvince> {
+export function indexStoredProvinceData(value: unknown): Record<number, TooltipProvince> {
   const byId: Record<number, TooltipProvince> = Object.create(null);
   if (!Array.isArray(value)) return byId;
 
@@ -75,10 +66,7 @@ export function indexStoredProvinceData(
     const id = typeof row.id === "number" ? row.id : Number.NaN;
     if (!Number.isInteger(id)) continue;
     const province: TooltipProvince = {
-      prosperity:
-        typeof row.prosperity === "number" && Number.isFinite(row.prosperity)
-          ? row.prosperity
-          : 0,
+      prosperity: typeof row.prosperity === "number" && Number.isFinite(row.prosperity) ? row.prosperity : 0,
       trade_shares: storedTradeShares(row.trade),
     };
     if (typeof row.terrain === "string") province.terrain = row.terrain;
@@ -104,13 +92,7 @@ export type ProvinceHoverResult = {
 };
 
 /** Live modes whose hover reads `/compiled_data/provinces`. */
-const PROVINCE_FIGURE_MODES = new Set([
-  "terrain",
-  "fertility",
-  "prosperity",
-  "infestation",
-  "trade",
-]);
+const PROVINCE_FIGURE_MODES = new Set(["terrain", "fertility", "prosperity", "infestation", "trade"]);
 
 export function useProvinceHover({
   mapId,
@@ -165,9 +147,7 @@ export function useProvinceHover({
   const countyPendingRef = useRef<string | null>(null);
 
   /** `/compiled_data/provinces` for the live map, fetched once per map. */
-  const liveCompiledRef = useRef<{ key: string; byId: Record<number, any> } | null>(
-    null
-  );
+  const liveCompiledRef = useRef<{ key: string; byId: Record<number, any> } | null>(null);
   const liveCompiledPendingRef = useRef<string | null>(null);
 
   const onDataReadyRef = useRef(onDataReady);
@@ -200,12 +180,7 @@ export function useProvinceHover({
 
   const capitalize = (v: string) => v[0].toUpperCase() + v.slice(1);
 
-  const handleProvinceHover = (
-    x: number,
-    y: number,
-    screenX: number,
-    screenY: number
-  ): ProvinceHoverResult => {
+  const handleProvinceHover = (x: number, y: number, screenX: number, screenY: number): ProvinceHoverResult => {
     const active =
       mapType === "terrain" ||
       mapType === "fertility" ||
@@ -229,35 +204,22 @@ export function useProvinceHover({
 
       const lines = [`x: ${x}  z: ${y}`];
 
-      if (mapType === "terrain")
-        lines.push(`Terrain: ${capitalize(data.terrain)}`);
+      if (mapType === "terrain") lines.push(`Terrain: ${capitalize(data.terrain)}`);
       if (mapType === "fertility") lines.push(`Fertility: ${data.fertility}`);
-      if (mapType === "prosperity")
-        lines.push(`Prosperity: ${data.prosperity ?? 0}`);
+      if (mapType === "prosperity") lines.push(`Prosperity: ${data.prosperity ?? 0}`);
       if (mapType === "infestation") {
         const severity = data.infestation_severity;
         const group = data.infestation_display || data.infestation_group;
         if (severity) {
-          const label =
-            String(severity).charAt(0).toUpperCase() +
-            String(severity).slice(1);
-          lines.push(
-            group
-              ? `Infestation: ${label} (${group})`
-              : `Infestation: ${label}`
-          );
+          const label = String(severity).charAt(0).toUpperCase() + String(severity).slice(1);
+          lines.push(group ? `Infestation: ${label} (${group})` : `Infestation: ${label}`);
         } else {
           lines.push("Infestation: None");
         }
       }
 
-      if (
-        (mapType === "trade" || mapType === "prosperity") &&
-        data.trade_shares
-      ) {
-        const entries = Object.entries(
-          data.trade_shares as Record<string, number>
-        ).sort((a, b) => b[1] - a[1]);
+      if ((mapType === "trade" || mapType === "prosperity") && data.trade_shares) {
+        const entries = Object.entries(data.trade_shares as Record<string, number>).sort((a, b) => b[1] - a[1]);
 
         let used = 0;
         const max = Math.min(5, entries.length);
@@ -268,8 +230,7 @@ export function useProvinceHover({
           const [guild, ratio] = entries[i];
           used += ratio;
 
-          const name =
-            guildNameCacheRef?.current[guild] ?? guild.replace(/_/g, " ");
+          const name = guildNameCacheRef?.current[guild] ?? guild.replace(/_/g, " ");
 
           lines.push(`• ${name}: ${(ratio * 100).toFixed(1)}%`);
         }
@@ -353,11 +314,7 @@ export function useProvinceHover({
     }
 
     if (mapType === "province") {
-      const renderProvince = (
-        pid: number,
-        terrain: unknown,
-        names: Map<number, string> | null
-      ) => {
+      const renderProvince = (pid: number, terrain: unknown, names: Map<number, string> | null) => {
         const lines = [`x: ${x}  z: ${y}`, `Province: ${pid}`];
         if (typeof terrain === "string" && terrain.length > 0) {
           lines.push(`Terrain: ${capitalize(terrain)}`);
@@ -371,10 +328,10 @@ export function useProvinceHover({
         });
       };
 
-      void fetchMapJson<{ province_id?: number; terrain?: unknown }>(
-        `/${mapId}/province/${x},${y}/meta`,
-        { sessionToken, cache: "no-store" }
-      )
+      void fetchMapJson<{ province_id?: number; terrain?: unknown }>(`/${mapId}/province/${x},${y}/meta`, {
+        sessionToken,
+        cache: "no-store",
+      })
         .then((meta) => {
           if (!meta?.province_id) return;
           const pid = meta.province_id;
@@ -386,10 +343,7 @@ export function useProvinceHover({
           renderProvince(pid, meta.terrain, null);
           if (countyPendingRef.current === mapId) return;
           countyPendingRef.current = mapId;
-          void fetchMapJson<Record<string, CountyNameEntry>>(
-            `/${mapId}/data/county`,
-            { sessionToken }
-          )
+          void fetchMapJson<Record<string, CountyNameEntry>>(`/${mapId}/data/county`, { sessionToken })
             .then((counties) => {
               const names = buildProvinceCountyNames(counties);
               countyCacheRef.current = { key: mapId, names };
@@ -421,12 +375,7 @@ export function useProvinceHover({
 
       if (dayPendingRef.current !== key) {
         dayPendingRef.current = key;
-        void fetchChronicleDayFile<unknown>(
-          mapId,
-          day,
-          "province_data",
-          sessionToken
-        )
+        void fetchChronicleDayFile<unknown>(mapId, day, "province_data", sessionToken)
           .then((file) => {
             const byId = indexStoredProvinceData(file.value);
             dayCacheRef.current = { key, byId };
@@ -449,20 +398,20 @@ export function useProvinceHover({
     // province replies cannot alternate with region hover.
     if (!consumesHover) return { consumed: false, lines: null };
 
-    void fetchMapJson<{ province_id?: number }>(
-      `/${mapId}/province/${x},${y}/meta`,
-      { sessionToken, cache: "no-store" }
-    )
+    void fetchMapJson<{ province_id?: number }>(`/${mapId}/province/${x},${y}/meta`, {
+      sessionToken,
+      cache: "no-store",
+    })
       .then((meta) => {
         if (!meta?.province_id) return;
 
         const pid = meta.province_id;
 
         if (!provinceCache.current[pid]) {
-          void fetchMapJson<Record<number, any>>(
-            `/${mapId}/compiled_data/provinces`,
-            { sessionToken, cache: "no-store" }
-          ).then((all) => {
+          void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
+            sessionToken,
+            cache: "no-store",
+          }).then((all) => {
             provinceCache.current = all;
             render(all[pid]);
           });

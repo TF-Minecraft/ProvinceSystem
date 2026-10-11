@@ -34,7 +34,10 @@ export function MicrosoftSignInButton(props: ButtonHTMLAttributes<HTMLButtonElem
   );
 }
 
-export function PatreonConnectButton({ children = "Connect Patreon", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+export function PatreonConnectButton({
+  children = "Connect Patreon",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"

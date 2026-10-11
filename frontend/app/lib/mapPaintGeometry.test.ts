@@ -122,7 +122,7 @@ describe("brushPathD", () => {
       brushPathD([
         { x: 0, y: 0 },
         { x: 1, y: 2 },
-      ])
+      ]),
     ).toBe("M 0 0 L 1 2");
   });
 
@@ -198,9 +198,7 @@ describe("pickTopPaintShapeAt", () => {
   it("returns the last-drawn shape when shapes overlap", () => {
     const lower: PaintStampShape = { ...stamp, id: "lower" };
     const upper: PaintStampShape = { ...stamp, id: "upper" };
-    expect(pickTopPaintShapeAt([lower, upper], { x: 1000, y: 1000 }, 0, sizes)?.id).toBe(
-      "upper"
-    );
+    expect(pickTopPaintShapeAt([lower, upper], { x: 1000, y: 1000 }, 0, sizes)?.id).toBe("upper");
   });
 
   it("returns null for an empty list or a miss", () => {
@@ -428,11 +426,7 @@ describe("scalePaintShape when rotated", () => {
     // The grabbed corner travels with the shape, so compare where that corner
     // ends up rather than where it used to be.
     const grown = paintShapeBounds(bigger, sizes);
-    const screenAfter = rotatePoint(
-      { x: grown.x, y: grown.y },
-      boundsCentre(grown),
-      37
-    );
+    const screenAfter = rotatePoint({ x: grown.x, y: grown.y }, boundsCentre(grown), 37);
 
     expect(screenAfter.x).toBeCloseTo(screenBefore.x, 6);
     expect(screenAfter.y).toBeCloseTo(screenBefore.y, 6);

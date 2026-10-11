@@ -235,7 +235,11 @@ function Name({ name, at, side, reach }: { name: string; at: Pt; side: Pt; reach
   const lead = FONT * 1.05;
   // Beside the line the block of rows is centred on the tick; above or below it grows away from the line.
   const top =
-    anchor !== "middle" ? y - ((rows.length - 1) * lead) / 2 + FONT * 0.35 : sy < 0 ? y - (rows.length - 1) * lead : y + FONT * 0.8;
+    anchor !== "middle"
+      ? y - ((rows.length - 1) * lead) / 2 + FONT * 0.35
+      : sy < 0
+        ? y - (rows.length - 1) * lead
+        : y + FONT * 0.8;
   return (
     <text
       x={x}

@@ -43,11 +43,7 @@ export function committedNames(value: string): string[] {
  * Suggestions for the token under the cursor. Prefix matches rank above
  * mid-string matches so typing "dr" offers "drterror23" before "hydra".
  */
-export function suggestPlayers(
-  value: string,
-  known: string[],
-  limit = 8
-): string[] {
+export function suggestPlayers(value: string, known: string[], limit = 8): string[] {
   const token = currentToken(value).toLowerCase();
   if (!token) return [];
   const taken = new Set(committedNames(value).map((n) => n.toLowerCase()));

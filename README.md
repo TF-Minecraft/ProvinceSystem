@@ -38,6 +38,10 @@ and run the frontend Vitest and backend pytest suites with the same JUnit output
 (cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q --junitxml=../test-results/backend.xml)
 ```
 
+CI also lints the frontend with oxlint and checks its formatting with oxfmt.
+From `frontend/`, `npm run lint` and `npm run format:check` run the same checks;
+`npm run format` rewrites files in place.
+
 CI uploads `test-results/frontend.xml` and `test-results/backend.xml`, then builds
 the Next.js frontend. No coverage threshold is enforced. The suites exercise
 website components, application logic, and APIs in isolation; they do not run a

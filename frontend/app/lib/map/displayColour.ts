@@ -63,38 +63,23 @@ function hlsToRgb(h: number, l: number, s: number): [number, number, number] {
   if (s === 0) return [l, l, l];
   const m2 = l <= 0.5 ? l * (1 + s) : l + s - l * s;
   const m1 = 2 * l - m2;
-  return [
-    hlsChannel(m1, m2, h + 1 / 3),
-    hlsChannel(m1, m2, h),
-    hlsChannel(m1, m2, h - 1 / 3),
-  ];
+  return [hlsChannel(m1, m2, h + 1 / 3), hlsChannel(m1, m2, h), hlsChannel(m1, m2, h - 1 / 3)];
 }
 
 /**
  * `display_colour.parchment_wash_rgb` / `display_rgb`. Home-land colour for a
  * realm overlay.
  */
-export function parchmentWashRgb(
-  rgb: readonly [number, number, number]
-): [number, number, number] {
-  let [hue, lightness, saturation] = rgbToHls(
-    rgb[0] / 255,
-    rgb[1] / 255,
-    rgb[2] / 255
-  );
+export function parchmentWashRgb(rgb: readonly [number, number, number]): [number, number, number] {
+  let [hue, lightness, saturation] = rgbToHls(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
   if (hue >= GREEN_HUE_MIN && hue <= GREEN_HUE_MAX) {
     hue = hue + (WARM_HUE_CENTER - hue) * WARM_HUE_PULL;
   }
-  lightness =
-    FILL_LIGHTNESS_MIN + lightness * (FILL_LIGHTNESS_MAX - FILL_LIGHTNESS_MIN);
+  lightness = FILL_LIGHTNESS_MIN + lightness * (FILL_LIGHTNESS_MAX - FILL_LIGHTNESS_MIN);
   saturation = Math.min(saturation * SATURATION_SCALE, FILL_SATURATION_MAX);
 
   const [r, g, b] = hlsToRgb(hue, lightness, saturation);
-  const washed: [number, number, number] = [
-    clampByte(r * 255),
-    clampByte(g * 255),
-    clampByte(b * 255),
-  ];
+  const washed: [number, number, number] = [clampByte(r * 255), clampByte(g * 255), clampByte(b * 255)];
   // `_lerp_rgb` truncates with `int()`. Re-rounding would miss the server by a
   // level on colours that land just under an integer.
   return [

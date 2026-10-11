@@ -88,14 +88,9 @@ describe("connectedComponents", () => {
       "12": [10, 11, 3],
     };
 
-    const components = connectedComponents(
-      [1, 2, 3, 10, 11, 12],
-      labelNeighbors
-    );
+    const components = connectedComponents([1, 2, 3, 10, 11, 12], labelNeighbors);
     expect(components).toHaveLength(1);
-    expect(components[0].sort((a, b) => a - b)).toEqual([
-      1, 2, 3, 10, 11, 12,
-    ]);
+    expect(components[0].sort((a, b) => a - b)).toEqual([1, 2, 3, 10, 11, 12]);
   });
 });
 
@@ -167,11 +162,11 @@ describe("extendLabelEndpoints", () => {
   it("grows a diagonal chord along its own axis", () => {
     const extended = extendLabelEndpoints(0, 0, 60, 80, 0.5);
 
-    expect(labelAngleDeg(extended.x1, extended.y1, extended.x2, extended.y2))
-      .toBeCloseTo(labelAngleDeg(0, 0, 60, 80), 5);
-    expect(
-      segmentPixelLength(extended.x1, extended.y1, extended.x2, extended.y2)
-    ).toBeCloseTo(100 * 1.5, 5);
+    expect(labelAngleDeg(extended.x1, extended.y1, extended.x2, extended.y2)).toBeCloseTo(
+      labelAngleDeg(0, 0, 60, 80),
+      5,
+    );
+    expect(segmentPixelLength(extended.x1, extended.y1, extended.x2, extended.y2)).toBeCloseTo(100 * 1.5, 5);
   });
 
   it("leaves a degenerate chord and a zero ratio alone", () => {
@@ -203,26 +198,17 @@ describe("orientLabelEndpoints", () => {
 
 describe("fontSizeForLabel", () => {
   it("scales fontSize from segment length and character count", () => {
-    expect(fontSizeForLabel(600, "Nimbus")).toBe(
-      Math.round(600 / (6 * LABEL_GLYPH_WIDTH_EM))
-    );
-    expect(fontSizeForLabel(200, "Test")).toBe(
-      Math.round(200 / (4 * LABEL_GLYPH_WIDTH_EM))
-    );
+    expect(fontSizeForLabel(600, "Nimbus")).toBe(Math.round(600 / (6 * LABEL_GLYPH_WIDTH_EM)));
+    expect(fontSizeForLabel(200, "Test")).toBe(Math.round(200 / (4 * LABEL_GLYPH_WIDTH_EM)));
   });
 
   it("estimates rendered width near segment length", () => {
     const fontSize = fontSizeForLabel(500, "Grand Drakhanate");
-    expect(estimatedLabelWidthPx(fontSize, "Grand Drakhanate")).toBeCloseTo(
-      500,
-      -1
-    );
+    expect(estimatedLabelWidthPx(fontSize, "Grand Drakhanate")).toBeCloseTo(500, -1);
   });
 
   it("uses one unit for empty names", () => {
-    expect(fontSizeForLabel(80, "   ")).toBe(
-      Math.round(80 / LABEL_GLYPH_WIDTH_EM)
-    );
+    expect(fontSizeForLabel(80, "   ")).toBe(Math.round(80 / LABEL_GLYPH_WIDTH_EM));
   });
 });
 
@@ -242,9 +228,7 @@ describe("shouldShowLabelAtScreenSize", () => {
     const minFont = LABEL_MIN_SCREEN_PX / displayScale;
     expect(shouldShowLabelAtScreenSize(minFont, displayScale)).toBe(true);
     expect(shouldShowLabelAtScreenSize(minFont + 1, displayScale)).toBe(true);
-    expect(
-      shouldShowLabelAtScreenSize(minFont - 1, displayScale)
-    ).toBe(false);
+    expect(shouldShowLabelAtScreenSize(minFont - 1, displayScale)).toBe(false);
   });
 
   it("keeps large labels visible when zoomed in", () => {
@@ -280,7 +264,7 @@ describe("computeNationLabels", () => {
       { TestNation: { name: "Test", provinces: [1, 2, 3] } },
       chainNeighbors,
       chainCentroids,
-      { minPixelArea: 10000 }
+      { minPixelArea: 10000 },
     );
 
     expect(labels).toHaveLength(1);
@@ -309,7 +293,7 @@ describe("computeNationLabels", () => {
       { TestNation: { name: "COUNTY_45", provinces: [1, 2, 3] } },
       chainNeighbors,
       chainCentroids,
-      { minPixelArea: 10000 }
+      { minPixelArea: 10000 },
     );
 
     expect(labels).toHaveLength(1);
@@ -321,13 +305,10 @@ describe("computeNationLabels", () => {
       Number(label.pathD.split(" ")[6]),
       Number(label.pathD.split(" ")[7]),
     ];
-    expect(segmentPixelLength(startX, startY, endX, endY)).toBeCloseTo(
-      200 * (1 + LABEL_PATH_OVERSHOOT_RATIO),
-      5
+    expect(segmentPixelLength(startX, startY, endX, endY)).toBeCloseTo(200 * (1 + LABEL_PATH_OVERSHOOT_RATIO), 5);
+    expect(segmentPixelLength(startX, startY, endX, endY)).toBeGreaterThan(
+      estimatedLabelWidthPx(label.fontSize, label.text),
     );
-    expect(
-      segmentPixelLength(startX, startY, endX, endY)
-    ).toBeGreaterThan(estimatedLabelWidthPx(label.fontSize, label.text));
 
     // Sizing and placement still describe the real chord: hover scaling and the
     // GIF export's flat re-layout read these, not `pathD`.
@@ -361,7 +342,7 @@ describe("computeNationLabels", () => {
       { ExclaveNation: { name: "Exclave", provinces: [1, 2, 3, 10, 11, 12] } },
       neighbors,
       centroids,
-      { minPixelArea: 10000 }
+      { minPixelArea: 10000 },
     );
 
     expect(labels).toHaveLength(2);
@@ -377,7 +358,7 @@ describe("computeNationLabels", () => {
       {
         "1": { x: 0, y: 0, pixel_count: 8000 },
         "2": { x: 10, y: 0, pixel_count: 8000 },
-      }
+      },
     );
 
     expect(labels).toHaveLength(1);
@@ -391,11 +372,7 @@ describe("computeNationLabels", () => {
       mapHeight: 30,
       gridWidth: 7,
       gridHeight: 3,
-      cells: new Uint16Array([
-        0, 1, 1, 1, 1, 1, 0,
-        0, 1, 1, 1, 1, 1, 0,
-        0, 0, 0, 0, 0, 0, 0,
-      ]),
+      cells: new Uint16Array([0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]),
       scaleX: 10,
       scaleY: 10,
     };
@@ -407,7 +384,7 @@ describe("computeNationLabels", () => {
       {},
       { "1": { x: 35, y: 15, pixel_count: 20000 } },
       "full",
-      { grid, minPixelArea: 10000 }
+      { grid, minPixelArea: 10000 },
     );
 
     expect(labels).toHaveLength(1);
@@ -423,19 +400,16 @@ describe("computeNationLabels", () => {
         "2": { x: 10, y: 0, pixel_count: 1000 },
         "3": { x: 20, y: 0, pixel_count: 1000 },
       },
-      { minPixelArea: MIN_PIXEL_AREA }
+      { minPixelArea: MIN_PIXEL_AREA },
     );
 
     expect(labels).toHaveLength(0);
   });
 
   it("skips nations without a name", () => {
-    const labels = computeNationLabels(
-      { NoName: { provinces: [1, 2, 3] } },
-      chainNeighbors,
-      chainCentroids,
-      { minPixelArea: 10000 }
-    );
+    const labels = computeNationLabels({ NoName: { provinces: [1, 2, 3] } }, chainNeighbors, chainCentroids, {
+      minPixelArea: 10000,
+    });
 
     expect(labels).toHaveLength(0);
   });
@@ -445,7 +419,7 @@ describe("computeNationLabels", () => {
       { Partial: { name: "Partial", provinces: [1, 2, 3, 99] } },
       chainNeighbors,
       chainCentroids,
-      { minPixelArea: 10000 }
+      { minPixelArea: 10000 },
     );
 
     expect(labels).toHaveLength(1);
@@ -470,15 +444,9 @@ describe("computeNationLabels", () => {
       "12": { x: 600, y: 0, pixel_count: 6000 },
     };
 
-    const labels = labelsForProvinces(
-      "Sized",
-      "Sized",
-      [1, 2, 3, 10, 11, 12],
-      neighbors,
-      centroids,
-      "full",
-      { minPixelArea: 10000 }
-    );
+    const labels = labelsForProvinces("Sized", "Sized", [1, 2, 3, 10, 11, 12], neighbors, centroids, "full", {
+      minPixelArea: 10000,
+    });
 
     expect(labels).toHaveLength(2);
     const smallBlob = labels.find((label) => label.componentIndex === 0);
@@ -511,15 +479,10 @@ describe("computeNationLabels", () => {
       "12": { x: 600, y: 0, pixel_count: 6000 },
     };
 
-    const labels = labelsForProvinces(
-      "Bridged",
-      "Bridged",
-      [1, 2, 3, 10, 11, 12],
-      strictNeighbors,
-      centroids,
-      "full",
-      { minPixelArea: 10000, labelNeighbors }
-    );
+    const labels = labelsForProvinces("Bridged", "Bridged", [1, 2, 3, 10, 11, 12], strictNeighbors, centroids, "full", {
+      minPixelArea: 10000,
+      labelNeighbors,
+    });
 
     expect(labels).toHaveLength(1);
     expect(labels[0].text).toBe("Bridged");
@@ -615,36 +578,24 @@ describe("label visibility helpers", () => {
   });
 
   it("returns direct holdings without subject provinces", () => {
-    expect(directHoldingProvinces("imperium", empireRegionData)).toEqual([
-      1, 2, 3,
-    ]);
+    expect(directHoldingProvinces("imperium", empireRegionData)).toEqual([1, 2, 3]);
   });
 
   it("unions direct holdings with recursive subject provinces for full realm", () => {
-    expect(fullRealmProvinces("imperium", empireRegionData)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8,
-    ]);
-    expect(fullRealmProvinces("independent", empireRegionData)).toEqual([
-      10, 11, 12,
-    ]);
+    expect(fullRealmProvinces("imperium", empireRegionData)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(fullRealmProvinces("independent", empireRegionData)).toEqual([10, 11, 12]);
   });
 
   it("resolves full provinces at overview and direct provinces when drilled", () => {
-    expect(
-      provincesForNationLabel("imperium", empireRegionData, overviewMapObjects)
-    ).toEqual({
+    expect(provincesForNationLabel("imperium", empireRegionData, overviewMapObjects)).toEqual({
       provinces: [1, 2, 3, 4, 5, 6, 7, 8],
       scope: "full",
     });
-    expect(
-      provincesForNationLabel("imperium", empireRegionData, drilledMapObjects)
-    ).toEqual({
+    expect(provincesForNationLabel("imperium", empireRegionData, drilledMapObjects)).toEqual({
       provinces: [1, 2, 3],
       scope: "direct",
     });
-    expect(
-      provincesForNationLabel("vassalA", empireRegionData, overviewMapObjects)
-    ).toBeNull();
+    expect(provincesForNationLabel("vassalA", empireRegionData, overviewMapObjects)).toBeNull();
   });
 
   it("moves occupied provinces from de jure owner to occupier for labels", () => {
@@ -663,12 +614,8 @@ describe("label visibility helpers", () => {
       { id: "loyalists", visible: true, nested: false, baseId: "loyalists" },
       { id: "rebels", visible: true, nested: false, baseId: "rebels" },
     ];
-    expect(labelControlProvinces("loyalists", occupiedData, [1, 2, 3])).toEqual([
-      1, 2,
-    ]);
-    expect(labelControlProvinces("rebels", occupiedData, [10, 11, 12])).toEqual([
-      10, 11, 12, 3,
-    ]);
+    expect(labelControlProvinces("loyalists", occupiedData, [1, 2, 3])).toEqual([1, 2]);
+    expect(labelControlProvinces("rebels", occupiedData, [10, 11, 12])).toEqual([10, 11, 12, 3]);
     expect(provincesForNationLabel("loyalists", occupiedData, overview)).toEqual({
       provinces: [1, 2],
       scope: "full",
@@ -682,13 +629,9 @@ describe("label visibility helpers", () => {
 
 describe("computeVisibleNationLabels", () => {
   it("labels visible independent nations and skips hidden vassals at overview", () => {
-    const labels = computeVisibleNationLabels(
-      empireRegionData,
-      empireNeighbors,
-      empireCentroids,
-      overviewMapObjects,
-      { minPixelArea: 10000 }
-    );
+    const labels = computeVisibleNationLabels(empireRegionData, empireNeighbors, empireCentroids, overviewMapObjects, {
+      minPixelArea: 10000,
+    });
 
     const nationIds = labels.map((label) => label.nationId);
     expect(nationIds).toContain("imperium");
@@ -698,34 +641,24 @@ describe("computeVisibleNationLabels", () => {
     const empireLabels = labels.filter((label) => label.nationId === "imperium");
     expect(empireLabels).toHaveLength(3);
     expect(empireLabels.every((label) => label.scope === "full")).toBe(true);
-    expect(empireLabels.every((label) => label.text === "Grand Drakhanate")).toBe(
-      true
-    );
+    expect(empireLabels.every((label) => label.text === "Grand Drakhanate")).toBe(true);
 
     const directBlob = empireLabels.find((label) => label.x2 === 200 && label.x1 === 0);
     const vassalBlob = empireLabels.find((label) => label.x2 === 500);
-    const nestedBlob = empireLabels.find(
-      (label) => label.x1 === 300 && label.x2 === 400
-    );
+    const nestedBlob = empireLabels.find((label) => label.x1 === 300 && label.x2 === 400);
     expect(directBlob?.segmentPx).toBe(200);
     expect(vassalBlob?.segmentPx).toBe(200);
     expect(nestedBlob?.segmentPx).toBe(100);
-    expect(vassalBlob?.fontSize).toBe(
-      fontSizeForLabel(200, "Grand Drakhanate")
-    );
+    expect(vassalBlob?.fontSize).toBe(fontSizeForLabel(200, "Grand Drakhanate"));
 
     const nimbusLabel = labels.find((label) => label.nationId === "independent");
     expect(nimbusLabel!.fontSize).toBe(fontSizeForLabel(200, "Nimbus"));
   });
 
   it("labels visible subjects and uses direct holdings for drilled suzerain", () => {
-    const labels = computeVisibleNationLabels(
-      empireRegionData,
-      empireNeighbors,
-      empireCentroids,
-      drilledMapObjects,
-      { minPixelArea: 10000 }
-    );
+    const labels = computeVisibleNationLabels(empireRegionData, empireNeighbors, empireCentroids, drilledMapObjects, {
+      minPixelArea: 10000,
+    });
 
     const nationIds = labels.map((label) => label.nationId);
     expect(nationIds).toContain("imperium");
@@ -750,13 +683,9 @@ describe("computeVisibleNationLabels", () => {
     ];
 
     expect(
-      computeVisibleNationLabels(
-        empireRegionData,
-        empireNeighbors,
-        empireCentroids,
-        hiddenObjects,
-        { minPixelArea: 10000 }
-      )
+      computeVisibleNationLabels(empireRegionData, empireNeighbors, empireCentroids, hiddenObjects, {
+        minPixelArea: 10000,
+      }),
     ).toEqual([]);
   });
 });
@@ -771,13 +700,9 @@ describe("region label geometry cache", () => {
       null,
       empireNeighbors,
       empireCentroids,
-      nationOptions
+      nationOptions,
     );
-    const filtered = filterRegionLabelsForMapObjects(
-      geometry,
-      "nation",
-      overviewMapObjects
-    );
+    const filtered = filterRegionLabelsForMapObjects(geometry, "nation", overviewMapObjects);
     const direct = computeVisibleRegionLabels(
       "nation",
       empireRegionData,
@@ -785,7 +710,7 @@ describe("region label geometry cache", () => {
       empireNeighbors,
       empireCentroids,
       overviewMapObjects,
-      nationOptions
+      nationOptions,
     );
 
     expect(filtered).toEqual(direct);
@@ -798,13 +723,9 @@ describe("region label geometry cache", () => {
       null,
       empireNeighbors,
       empireCentroids,
-      nationOptions
+      nationOptions,
     );
-    const filtered = filterRegionLabelsForMapObjects(
-      geometry,
-      "nation",
-      drilledMapObjects
-    );
+    const filtered = filterRegionLabelsForMapObjects(geometry, "nation", drilledMapObjects);
     const direct = computeVisibleRegionLabels(
       "nation",
       empireRegionData,
@@ -812,7 +733,7 @@ describe("region label geometry cache", () => {
       empireNeighbors,
       empireCentroids,
       drilledMapObjects,
-      nationOptions
+      nationOptions,
     );
 
     expect(filtered).toEqual(direct);
@@ -825,28 +746,14 @@ describe("region label geometry cache", () => {
       null,
       empireNeighbors,
       empireCentroids,
-      nationOptions
+      nationOptions,
     );
-    const overview = filterRegionLabelsForMapObjects(
-      geometry,
-      "nation",
-      overviewMapObjects
-    );
-    const drilled = filterRegionLabelsForMapObjects(
-      geometry,
-      "nation",
-      drilledMapObjects
-    );
+    const overview = filterRegionLabelsForMapObjects(geometry, "nation", overviewMapObjects);
+    const drilled = filterRegionLabelsForMapObjects(geometry, "nation", drilledMapObjects);
 
     expect(overview).not.toEqual(drilled);
-    expect(
-      overview.some((label) => label.nationId === "imperium" && label.scope === "full")
-    ).toBe(true);
-    expect(
-      drilled.some(
-        (label) => label.nationId === "imperium" && label.scope === "direct"
-      )
-    ).toBe(true);
+    expect(overview.some((label) => label.nationId === "imperium" && label.scope === "full")).toBe(true);
+    expect(drilled.some((label) => label.nationId === "imperium" && label.scope === "direct")).toBe(true);
   });
 });
 
@@ -907,7 +814,7 @@ describe("computeVisibleRegionLabels", () => {
       chainNeighbors,
       chainCentroids,
       [],
-      { minPixelArea: 1000, minProvinces: 3 }
+      { minPixelArea: 1000, minProvinces: 3 },
     );
 
     expect(labels).toHaveLength(1);
@@ -916,15 +823,10 @@ describe("computeVisibleRegionLabels", () => {
   });
 
   it("labels county mode without title layers", () => {
-    const labels = computeVisibleRegionLabels(
-      "county",
-      titleRegionData,
-      null,
-      chainNeighbors,
-      chainCentroids,
-      [],
-      { minPixelArea: 1000, minProvinces: 3 }
-    );
+    const labels = computeVisibleRegionLabels("county", titleRegionData, null, chainNeighbors, chainCentroids, [], {
+      minPixelArea: 1000,
+      minProvinces: 3,
+    });
 
     expect(labels).toHaveLength(1);
     expect(labels[0].nationId).toBe("COUNTY_1");
@@ -938,7 +840,7 @@ describe("computeVisibleRegionLabels", () => {
       chainNeighbors,
       chainCentroids,
       [],
-      { minPixelArea: 1000, minProvinces: 3 }
+      { minPixelArea: 1000, minProvinces: 3 },
     );
 
     const revenor = labels.find((label) => label.nationId === "KINGDOM_1");
@@ -954,16 +856,12 @@ describe("computeVisibleRegionLabels", () => {
       exclaveNeighbors,
       exclaveCentroids,
       [],
-      { minPixelArea: 1000, minProvinces: 3 }
+      { minPixelArea: 1000, minProvinces: 3 },
     );
 
-    const exclaveLabels = labels.filter(
-      (label) => label.nationId === "KINGDOM_EXCLAVE"
-    );
+    const exclaveLabels = labels.filter((label) => label.nationId === "KINGDOM_EXCLAVE");
     expect(exclaveLabels).toHaveLength(2);
-    expect(exclaveLabels.every((label) => label.text === "Exclave Realm")).toBe(
-      true
-    );
+    expect(exclaveLabels.every((label) => label.text === "Exclave Realm")).toBe(true);
   });
 
   it("labels trade guild from provinces list", () => {
@@ -996,7 +894,7 @@ describe("computeVisibleRegionLabels", () => {
       chainNeighbors,
       chainCentroids,
       [],
-      { minPixelArea: 1000, minProvinces: 3 }
+      { minPixelArea: 1000, minProvinces: 3 },
     );
 
     expect(labels).toHaveLength(1);
@@ -1027,16 +925,12 @@ describe("computeVisibleRegionLabels", () => {
       exclaveNeighbors,
       exclaveCentroids,
       [],
-      { minPixelArea: 1000, minProvinces: 3 }
+      { minPixelArea: 1000, minProvinces: 3 },
     );
 
-    const exclaveLabels = labels.filter(
-      (label) => label.nationId === "guild_exclave"
-    );
+    const exclaveLabels = labels.filter((label) => label.nationId === "guild_exclave");
     expect(exclaveLabels).toHaveLength(2);
-    expect(exclaveLabels.every((label) => label.text === "Exclave Guild")).toBe(
-      true
-    );
+    expect(exclaveLabels.every((label) => label.text === "Exclave Guild")).toBe(true);
   });
 });
 

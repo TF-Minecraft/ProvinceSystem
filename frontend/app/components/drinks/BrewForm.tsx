@@ -19,11 +19,7 @@ import {
   WOOD_OPTIONS,
   effectLabel,
 } from "../../../lib/drinks/constants";
-import {
-  setLastSubmissionId,
-  setSession,
-  type DrinksSession,
-} from "../../../lib/drinks/session";
+import { setLastSubmissionId, setSession, type DrinksSession } from "../../../lib/drinks/session";
 import NameColourPicker from "../shared/NameColourPicker";
 import LoreLinesEditor from "../shared/LoreLinesEditor";
 import ModelPreview from "../skins/ModelPreview";
@@ -42,21 +38,14 @@ type Props = {
 const fieldClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)] disabled:opacity-60";
 
-const btnGhost =
-  "text-xs text-[var(--tfmc-accent)] hover:underline disabled:opacity-50";
+const btnGhost = "text-xs text-[var(--tfmc-accent)] hover:underline disabled:opacity-50";
 const btnDanger = "text-xs text-[#e8a0a0] hover:underline";
 
 export default function BrewForm({ session }: Props) {
   const router = useRouter();
-  const [allowTexture, setAllowTexture] = useState(
-    session.allow_drink_texture === true
-  );
-  const [allowDrinkMessage, setAllowDrinkMessage] = useState(
-    session.allow_drink_message === true
-  );
-  const [colourStops, setColourStops] = useState(
-    Math.max(0, Math.floor(session.name_colour_stops ?? 0))
-  );
+  const [allowTexture, setAllowTexture] = useState(session.allow_drink_texture === true);
+  const [allowDrinkMessage, setAllowDrinkMessage] = useState(session.allow_drink_message === true);
+  const [colourStops, setColourStops] = useState(Math.max(0, Math.floor(session.name_colour_stops ?? 0)));
   const [metaSynced, setMetaSynced] = useState(true);
 
   const [catalog, setCatalog] = useState<DrinkCatalog | null>(null);
@@ -143,11 +132,7 @@ export default function BrewForm({ session }: Props) {
       } catch (err) {
         if (cancelled) return;
         setLoadError(
-          err instanceof DrinksApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Failed to load catalog"
+          err instanceof DrinksApiError ? err.message : err instanceof Error ? err.message : "Failed to load catalog",
         );
       } finally {
         if (!cancelled) setLoadingCatalog(false);
@@ -180,9 +165,7 @@ export default function BrewForm({ session }: Props) {
   }, [catalog]);
 
   const effectChoices = useMemo(() => {
-    const blacklist = new Set(
-      (catalog?.effects_blacklist || []).map((e) => e.toLowerCase())
-    );
+    const blacklist = new Set((catalog?.effects_blacklist || []).map((e) => e.toLowerCase()));
     return COMMON_EFFECTS.filter((e) => !blacklist.has(e));
   }, [catalog]);
 
@@ -229,11 +212,7 @@ export default function BrewForm({ session }: Props) {
 
     const names =
       nameBad.trim() || nameGood.trim()
-        ? [
-            nameBad.trim() || name.trim(),
-            name.trim(),
-            nameGood.trim() || name.trim(),
-          ]
+        ? [nameBad.trim() || name.trim(), name.trim(), nameGood.trim() || name.trim()]
         : undefined;
 
     const recipe = {
@@ -262,9 +241,7 @@ export default function BrewForm({ session }: Props) {
       ...(messageEnabled && allowDrinkMessage
         ? {
             drink_message: drinkMessage.trim() || null,
-            ...(drinkMessageColours.length
-              ? { drink_message_colours: drinkMessageColours }
-              : {}),
+            ...(drinkMessageColours.length ? { drink_message_colours: drinkMessageColours } : {}),
           }
         : {}),
       glint,
@@ -285,28 +262,19 @@ export default function BrewForm({ session }: Props) {
         sessionToken: session.session_token,
         recipe,
         texture: appearance === "upload" ? textureFile : null,
-        existingTextureId:
-          appearance === "reuse" ? existingTextureId.trim() : null,
+        existingTextureId: appearance === "reuse" ? existingTextureId.trim() : null,
       });
       setLastSubmissionId(created.id);
       router.push(`/drinks/${created.id}`);
     } catch (err) {
-      setError(
-        err instanceof DrinksApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Submit failed"
-      );
+      setError(err instanceof DrinksApiError ? err.message : err instanceof Error ? err.message : "Submit failed");
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loadingCatalog) {
-    return (
-      <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
-    );
+    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
 
   if (loadError) {
@@ -326,23 +294,15 @@ export default function BrewForm({ session }: Props) {
   }
 
   const categories = catalog.categories || {};
-  const editingIngredient =
-    ingredientModal.editIndex != null
-      ? ingredients[ingredientModal.editIndex] || null
-      : null;
-  const editingEffect =
-    effectModal.editIndex != null
-      ? effects[effectModal.editIndex] || null
-      : null;
+  const editingIngredient = ingredientModal.editIndex != null ? ingredients[ingredientModal.editIndex] || null : null;
+  const editingEffect = effectModal.editIndex != null ? effects[effectModal.editIndex] || null : null;
 
   return (
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-8">
       <section className="space-y-4">
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Names</h2>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs text-[var(--tfmc-mist)]">
-            Drink name (normal quality)
-          </span>
+          <span className="text-xs text-[var(--tfmc-mist)]">Drink name (normal quality)</span>
           <input
             className={fieldClass}
             value={name}
@@ -353,20 +313,11 @@ export default function BrewForm({ session }: Props) {
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs text-[var(--tfmc-mist)]">
-              Bad quality name (optional)
-            </span>
-            <input
-              className={fieldClass}
-              value={nameBad}
-              onChange={(e) => setNameBad(e.target.value)}
-              maxLength={48}
-            />
+            <span className="text-xs text-[var(--tfmc-mist)]">Bad quality name (optional)</span>
+            <input className={fieldClass} value={nameBad} onChange={(e) => setNameBad(e.target.value)} maxLength={48} />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs text-[var(--tfmc-mist)]">
-              Good quality name (optional)
-            </span>
+            <span className="text-xs text-[var(--tfmc-mist)]">Good quality name (optional)</span>
             <input
               className={fieldClass}
               value={nameGood}
@@ -386,15 +337,11 @@ export default function BrewForm({ session }: Props) {
               : "Name colours require a donator rank"
           }
         />
-        <p className="text-xs text-[var(--tfmc-mist)]">
-          Same colours apply to normal, bad, and good quality names.
-        </p>
+        <p className="text-xs text-[var(--tfmc-mist)]">Same colours apply to normal, bad, and good quality names.</p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Ingredients
-        </h2>
+        <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Ingredients</h2>
         {ingredients.length === 0 ? (
           <p className="text-xs text-[var(--tfmc-mist)]">No ingredients yet.</p>
         ) : (
@@ -409,29 +356,22 @@ export default function BrewForm({ session }: Props) {
                 >
                   <div className="min-w-0">
                     <p className="text-sm text-[var(--tfmc-cream)]">
-                      {item?.label || row.id}{" "}
-                      <span className="text-[var(--tfmc-mist)]">×{row.amount}</span>
+                      {item?.label || row.id} <span className="text-[var(--tfmc-mist)]">×{row.amount}</span>
                     </p>
-                    <p className="text-xs text-[var(--tfmc-mist)]">
-                      {categories[cat] || cat}
-                    </p>
+                    <p className="text-xs text-[var(--tfmc-mist)]">{categories[cat] || cat}</p>
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       className={btnGhost}
-                      onClick={() =>
-                        setIngredientModal({ open: true, editIndex: idx })
-                      }
+                      onClick={() => setIngredientModal({ open: true, editIndex: idx })}
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       className={btnDanger}
-                      onClick={() =>
-                        setIngredients((rows) => rows.filter((_, i) => i !== idx))
-                      }
+                      onClick={() => setIngredients((rows) => rows.filter((_, i) => i !== idx))}
                     >
                       Delete
                     </button>
@@ -451,34 +391,13 @@ export default function BrewForm({ session }: Props) {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">
-        <NumberField
-          label="Cooking time (minutes)"
-          value={cookingTime}
-          onChange={setCookingTime}
-          min={0}
-        />
+        <NumberField label="Cooking time (minutes)" value={cookingTime} onChange={setCookingTime} min={0} />
         <NumberField label="Age (years)" value={age} onChange={setAge} min={0} />
-        <NumberField
-          label="Difficulty (1–10)"
-          value={difficulty}
-          onChange={setDifficulty}
-          min={1}
-          max={10}
-        />
-        <NumberField
-          label="Alcohol (0–100)"
-          value={alcohol}
-          onChange={setAlcohol}
-          min={0}
-          max={100}
-        />
+        <NumberField label="Difficulty (1–10)" value={difficulty} onChange={setDifficulty} min={1} max={10} />
+        <NumberField label="Alcohol (0–100)" value={alcohol} onChange={setAlcohol} min={0} max={100} />
         <label className="flex flex-col gap-1.5 sm:col-span-2">
           <span className="text-xs text-[var(--tfmc-mist)]">Barrel wood</span>
-          <select
-            className={fieldClass}
-            value={wood}
-            onChange={(e) => setWood(e.target.value)}
-          >
+          <select className={fieldClass} value={wood} onChange={(e) => setWood(e.target.value)}>
             {WOOD_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
                 {opt.label}
@@ -487,25 +406,11 @@ export default function BrewForm({ session }: Props) {
           </select>
         </label>
         <div className="sm:col-span-2 space-y-3">
-          <FancyCheckbox
-            checked={distillEnabled}
-            onChange={setDistillEnabled}
-            label="Distill"
-          />
+          <FancyCheckbox checked={distillEnabled} onChange={setDistillEnabled} label="Distill" />
           {distillEnabled ? (
             <div className="grid gap-3 sm:grid-cols-2">
-              <NumberField
-                label="Distill runs"
-                value={distillRuns}
-                onChange={setDistillRuns}
-                min={1}
-              />
-              <NumberField
-                label="Distill time"
-                value={distillTime}
-                onChange={setDistillTime}
-                min={0}
-              />
+              <NumberField label="Distill runs" value={distillRuns} onChange={setDistillRuns} min={1} />
+              <NumberField label="Distill time" value={distillTime} onChange={setDistillTime} min={0} />
             </div>
           ) : null}
         </div>
@@ -532,18 +437,14 @@ export default function BrewForm({ session }: Props) {
                   <button
                     type="button"
                     className={btnGhost}
-                    onClick={() =>
-                      setEffectModal({ open: true, editIndex: idx })
-                    }
+                    onClick={() => setEffectModal({ open: true, editIndex: idx })}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     className={btnDanger}
-                    onClick={() =>
-                      setEffects((rows) => rows.filter((_, i) => i !== idx))
-                    }
+                    onClick={() => setEffects((rows) => rows.filter((_, i) => i !== idx))}
                   >
                     Delete
                   </button>
@@ -591,8 +492,7 @@ export default function BrewForm({ session }: Props) {
         {appearance === "upload" ? (
           <div className="flex flex-col gap-2">
             <span className="text-xs text-[var(--tfmc-mist)]">
-              {EXPECTED_PNG_SIZE}×{EXPECTED_PNG_SIZE} PNG potion icon (max{" "}
-              {Math.floor(MAX_PNG_BYTES / 1024)} KB)
+              {EXPECTED_PNG_SIZE}×{EXPECTED_PNG_SIZE} PNG potion icon (max {Math.floor(MAX_PNG_BYTES / 1024)} KB)
             </span>
             <label className="inline-flex w-fit cursor-pointer items-center justify-center rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition hover:brightness-110">
               {textureFile ? "Change file" : "Choose PNG file"}
@@ -603,9 +503,7 @@ export default function BrewForm({ session }: Props) {
                 onChange={(e) => setTextureFile(e.target.files?.[0] || null)}
               />
             </label>
-            {textureFile ? (
-              <p className="text-xs text-[var(--tfmc-mist)]">{textureFile.name}</p>
-            ) : null}
+            {textureFile ? <p className="text-xs text-[var(--tfmc-mist)]">{textureFile.name}</p> : null}
           </div>
         ) : null}
         {/* Reuse is locked in AppearancePicker when there are no textures. */}
@@ -713,18 +611,14 @@ export default function BrewForm({ session }: Props) {
       <IngredientPickerModal
         open={ingredientModal.open}
         onClose={() => setIngredientModal({ open: false, editIndex: null })}
-        title={
-          ingredientModal.editIndex != null ? "Edit ingredient" : "Add ingredient"
-        }
+        title={ingredientModal.editIndex != null ? "Edit ingredient" : "Add ingredient"}
         ingredients={catalog.ingredients}
         categories={categories}
         initial={editingIngredient}
         onSave={(row) => {
           setIngredients((rows) => {
             if (ingredientModal.editIndex != null) {
-              return rows.map((r, i) =>
-                i === ingredientModal.editIndex ? row : r
-              );
+              return rows.map((r, i) => (i === ingredientModal.editIndex ? row : r));
             }
             return [...rows, row];
           });
@@ -733,17 +627,13 @@ export default function BrewForm({ session }: Props) {
       <EffectPickerModal
         open={effectModal.open}
         onClose={() => setEffectModal({ open: false, editIndex: null })}
-        title={
-          effectModal.editIndex != null ? "Edit potion effect" : "Add potion effect"
-        }
+        title={effectModal.editIndex != null ? "Edit potion effect" : "Add potion effect"}
         effectChoices={[...effectChoices]}
         initial={editingEffect}
         onSave={(row) => {
           setEffects((rows) => {
             if (effectModal.editIndex != null) {
-              return rows.map((r, i) =>
-                i === effectModal.editIndex ? row : r
-              );
+              return rows.map((r, i) => (i === effectModal.editIndex ? row : r));
             }
             return [...rows, row];
           });

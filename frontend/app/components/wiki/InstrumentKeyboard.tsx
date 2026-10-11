@@ -21,7 +21,7 @@ function Key({
       className={`flex h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded border text-sm font-semibold transition-all duration-100 sm:h-20 ${
         playing
           ? "-translate-y-0.5 border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_35%,var(--tfmc-forest))] text-[var(--tfmc-cream)] shadow-[0_4px_10px_rgba(0,0,0,0.4)]"
-         : "border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,transparent)] text-[var(--tfmc-stone)] hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
+          : "border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,transparent)] text-[var(--tfmc-stone)] hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
       }`}
     >
       <span className="text-base sm:text-lg">{keyData.note}</span>
@@ -84,7 +84,7 @@ export default function InstrumentKeyboard({ instrument }: { instrument: Instrum
     }
     setActiveSound(key.sound);
     window.setTimeout(() => {
-      setActiveSound((cur) => (cur === key.sound ? null: cur));
+      setActiveSound((cur) => (cur === key.sound ? null : cur));
     }, 220);
   }
 
@@ -93,7 +93,7 @@ export default function InstrumentKeyboard({ instrument }: { instrument: Instrum
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-[var(--tfmc-mist)]">
           Click a key to preview its sound: off-hand keys 1-8, and
-          {instrument.mode === "chord" ? " Shift+1-8 for chords": " Shift+1-8 for the octave above"}.
+          {instrument.mode === "chord" ? " Shift+1-8 for chords" : " Shift+1-8 for the octave above"}.
         </p>
 
         <label className="flex shrink-0 items-center gap-2 text-xs text-[var(--tfmc-mist)]">
@@ -128,7 +128,7 @@ export default function InstrumentKeyboard({ instrument }: { instrument: Instrum
           <Key
             key={`row2-${k.num}`}
             keyData={k}
-            label={instrument.mode === "chord" ? `Shift+${i + 1}`: String(k.num)}
+            label={instrument.mode === "chord" ? `Shift+${i + 1}` : String(k.num)}
             onPlay={play}
             playing={activeSound === k.sound}
           />

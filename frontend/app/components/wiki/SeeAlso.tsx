@@ -30,7 +30,7 @@ function unresolved(href: string) {
     throw new Error(
       `SeeAlso: "${href}" is not a registered wiki page. Add its WikiSection to ` +
         `app/wiki/data/registry.ts, or fix the href: link labels are resolved ` +
-        `from the nav registry and are never hand-written.`
+        `from the nav registry and are never hand-written.`,
     );
   }
   return (
@@ -61,16 +61,11 @@ export default function SeeAlso({ hrefs, title = "See also", hideBlurbs, classNa
                 className={cx(wikiCard, "block transition-colors hover:border-[var(--tfmc-accent)]")}
               >
                 <span
-                  className={cx(
-                    wikiDisplayFont,
-                    "flex flex-wrap items-center gap-2 text-lg text-[var(--tfmc-cream)]"
-                  )}
+                  className={cx(wikiDisplayFont, "flex flex-wrap items-center gap-2 text-lg text-[var(--tfmc-cream)]")}
                 >
                   {item.label}
                 </span>
-                {hideBlurbs ? null: (
-                  <span className="mt-1 block text-sm text-[var(--tfmc-mist)]">{item.blurb}</span>
-                )}
+                {hideBlurbs ? null : <span className="mt-1 block text-sm text-[var(--tfmc-mist)]">{item.blurb}</span>}
               </Link>
             </li>
           );

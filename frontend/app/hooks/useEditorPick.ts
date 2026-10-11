@@ -7,14 +7,8 @@ import type { TitleDraft } from "@/app/hooks/useEditorDraft";
 import type { ProvinceIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
 import { pickTitleIdAt } from "@/app/lib/map/editor/buildTitlePickIndex";
-import {
-  canSelectChild,
-  getChildOwnerName,
-} from "@/app/lib/map/editor/childTitleAssignment";
-import {
-  canSelectProvince,
-  getProvinceOwnerName,
-} from "@/app/lib/map/editor/countyAssignment";
+import { canSelectChild, getChildOwnerName } from "@/app/lib/map/editor/childTitleAssignment";
+import { canSelectProvince, getProvinceOwnerName } from "@/app/lib/map/editor/countyAssignment";
 import type { ChildTierEditorConfig } from "@/app/lib/map/editor/editorTierConfig";
 import { getMapCoords, type MapPickViewport } from "@/app/hooks/useMapCoords";
 import type { EditorTier } from "@/lib/map/api";
@@ -26,11 +20,7 @@ type CursorTooltip = {
   text: string;
 } | null;
 
-function pickProvinceAt(
-  index: ProvinceIndex,
-  x: number,
-  y: number
-): number | null {
+function pickProvinceAt(index: ProvinceIndex, x: number, y: number): number | null {
   if (x < 0 || y < 0 || x >= index.width || y >= index.height) {
     return null;
   }
@@ -38,17 +28,8 @@ function pickProvinceAt(
   return pid >= 0 ? pid : null;
 }
 
-function pickChildAt(
-  childPick: TitlePickIndex,
-  x: number,
-  y: number
-): string | null {
-  return pickTitleIdAt(
-    childPick.imageData,
-    x,
-    y,
-    childPick.rgbToTitleId
-  );
+function pickChildAt(childPick: TitlePickIndex, x: number, y: number): string | null {
+  return pickTitleIdAt(childPick.imageData, x, y, childPick.rgbToTitleId);
 }
 
 export function useEditorPick({
@@ -94,19 +75,16 @@ export function useEditorPick({
   const isChildTier = childTierConfig !== null;
 
   const resolvePick = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>): {
+    (
+      event: React.MouseEvent<HTMLCanvasElement>,
+    ): {
       provinceId: number | null;
       childId: string | null;
     } => {
       if (!enabled) return { provinceId: null, childId: null };
 
       const canvas = pickCanvasRef.current ?? event.currentTarget;
-      const coords = getMapCoords(
-        event,
-        canvas,
-        mapId,
-        viewportCoordsRef.current
-      );
+      const coords = getMapCoords(event, canvas, mapId, viewportCoordsRef.current);
       if (!coords) return { provinceId: null, childId: null };
 
       if (tier === "county" && index) {
@@ -125,16 +103,7 @@ export function useEditorPick({
 
       return { provinceId: null, childId: null };
     },
-    [
-      enabled,
-      tier,
-      isChildTier,
-      index,
-      childPick,
-      mapId,
-      pickCanvasRef,
-      viewportCoordsRef,
-    ]
+    [enabled, tier, isChildTier, index, childPick, mapId, pickCanvasRef, viewportCoordsRef],
   );
 
   const onClick = useCallback(
@@ -170,7 +139,7 @@ export function useEditorPick({
       draft,
       onProvinceClick,
       onChildClick,
-    ]
+    ],
   );
 
   const onMouseMove = useCallback(
@@ -196,11 +165,7 @@ export function useEditorPick({
           clickable = true;
           text = `Province ${provinceId} - click to remove`;
         } else {
-          const ownerName = getProvinceOwnerName(
-            provinceId,
-            provinceAssignment,
-            draft
-          );
+          const ownerName = getProvinceOwnerName(provinceId, provinceAssignment, draft);
           text = `Assigned to ${ownerName ?? owner}`;
         }
 
@@ -228,11 +193,7 @@ export function useEditorPick({
           clickable = true;
           text = `${childTierConfig.childLabel} ${childId} - click to remove`;
         } else {
-          const ownerName = getChildOwnerName(
-            childId,
-            childAssignment,
-            draft
-          );
+          const ownerName = getChildOwnerName(childId, childAssignment, draft);
           text = `Assigned to ${ownerName ?? owner}`;
         }
 
@@ -244,16 +205,7 @@ export function useEditorPick({
       setCursorTooltip(null);
       setIsHoveringClickable(false);
     },
-    [
-      resolvePick,
-      tier,
-      isChildTier,
-      childTierConfig,
-      selectedId,
-      provinceAssignment,
-      childAssignment,
-      draft,
-    ]
+    [resolvePick, tier, isChildTier, childTierConfig, selectedId, provinceAssignment, childAssignment, draft],
   );
 
   const onMouseLeave = useCallback(() => {

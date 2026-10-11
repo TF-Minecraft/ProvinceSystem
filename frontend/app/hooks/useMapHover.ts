@@ -1,25 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  getMapCoords,
-  mapPixelToPickCanvas,
-  type MapPickViewport,
-} from "./useMapCoords";
+import { getMapCoords, mapPixelToPickCanvas, type MapPickViewport } from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
-import {
-  provinceHoverBlocksRegionPick,
-  resolveRegionAtPickPixel,
-  resolveRegionById,
-} from "./regionPick";
+import { provinceHoverBlocksRegionPick, resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
 import type { MapId, MapMode, MapObject, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
-import {
-  filterVisibleMapMarkers,
-  hiddenMarkerLabels,
-  isMarkerMapMode,
-  pickMapMarkerAt,
-} from "../lib/mapMarkers";
+import { filterVisibleMapMarkers, hiddenMarkerLabels, isMarkerMapMode, pickMapMarkerAt } from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
 import { pickRegionLabelAt, type NationLabelSpec } from "../lib/mapLabels";
 import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
@@ -42,7 +29,7 @@ type UseMapHoverProps = {
     mapType: string,
     mapId: string,
     regionId: string,
-    regionData: RegionRecord
+    regionData: RegionRecord,
   ) => {
     regionId: string | null;
     imagePath: string | null;
@@ -83,34 +70,18 @@ type PointerPosition = {
  * exact same "did what is visible change?" question answered.
  */
 export function mapObjectsVisibilityKey(mapObjects: MapObject[]): string {
-  return mapObjects
-    .map((obj) => `${obj.id}:${obj.visible ? 1 : 0}`)
-    .join("|");
+  return mapObjects.map((obj) => `${obj.id}:${obj.visible ? 1 : 0}`).join("|");
 }
 
 /** The region whose drawn name is under map point (x, y), where names are hoverable. */
-function labelRegionAt(
-  props: UseMapHoverProps,
-  x: number,
-  y: number,
-  displayScale: number
-): string | null {
+function labelRegionAt(props: UseMapHoverProps, x: number, y: number, displayScale: number): string | null {
   if (!props.labels?.length || provinceHoverBlocksRegionPick(props.mapType)) return null;
   return pickRegionLabelAt(props.labels, x, y, displayScale);
 }
 
 export function useMapHover(props: UseMapHoverProps) {
-  const {
-    mapId,
-    mapType,
-    loading,
-    regionData,
-    setCursorTooltip,
-    guildNameCacheRef,
-    mapObjects,
-    markers,
-    forts,
-  } = props;
+  const { mapId, mapType, loading, regionData, setCursorTooltip, guildNameCacheRef, mapObjects, markers, forts } =
+    props;
 
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -137,12 +108,7 @@ export function useMapHover(props: UseMapHoverProps) {
   const resolveProvinceId = useCallback((x: number, y: number) => {
     const grid = propsRef.current.chronicleGrid;
     if (!grid) return null;
-    const point = mapPixelToPickCanvas(
-      x,
-      y,
-      propsRef.current.viewportCoordsRef.current?.mapSize,
-      grid
-    );
+    const point = mapPixelToPickCanvas(x, y, propsRef.current.viewportCoordsRef.current?.mapSize, grid);
     if (!point) return null;
     const id = grid.ids[point.y * grid.width + point.x];
     // Id 0 is ocean / no province.
@@ -190,12 +156,7 @@ export function useMapHover(props: UseMapHoverProps) {
 
     const surface = current.pickSurfaceRef.current ?? EMPTY_PICK_SURFACE;
 
-    const coords = getMapCoords(
-      event,
-      null,
-      current.mapId,
-      current.viewportCoordsRef.current
-    );
+    const coords = getMapCoords(event, null, current.mapId, current.viewportCoordsRef.current);
     if (!coords) {
       current.setCursorTooltip(null);
       current.setHoveredMarkerId?.(null);
@@ -206,16 +167,14 @@ export function useMapHover(props: UseMapHoverProps) {
     }
 
     const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
-    const visibleMarkers = current.markers?.length
-      ? filterVisibleMapMarkers(current.markers, displayScale)
-      : [];
+    const visibleMarkers = current.markers?.length ? filterVisibleMapMarkers(current.markers, displayScale) : [];
     const markerHit = visibleMarkers.length
       ? pickMapMarkerAt(
           visibleMarkers,
           coords.x,
           coords.y,
           displayScale,
-          hiddenMarkerLabels(current.markers ?? [], displayScale)
+          hiddenMarkerLabels(current.markers ?? [], displayScale),
         )
       : null;
     current.setHoveredMarkerId?.(markerHit?.id ?? null);
@@ -226,7 +185,7 @@ export function useMapHover(props: UseMapHoverProps) {
         coords.x,
         coords.y,
         current.viewportCoordsRef.current?.mapSize,
-        surface
+        surface,
       );
       if (markerPickPixel) {
         handleRegionHoverRef.current(
@@ -235,7 +194,7 @@ export function useMapHover(props: UseMapHoverProps) {
           markerPickPixel.y,
           coords.screenX,
           coords.screenY,
-          () => {}
+          () => {},
         );
       } else {
         current.setHoveredOverlay(null);
@@ -244,9 +203,7 @@ export function useMapHover(props: UseMapHoverProps) {
       }
       current.setCursorTooltip(null);
       if (isMarkerMapMode(current.mapType)) {
-        current.setHoveredFortZoc?.(
-          lookupFortZocOverlay(markerHit, current.forts ?? [])
-        );
+        current.setHoveredFortZoc?.(lookupFortZocOverlay(markerHit, current.forts ?? []));
       } else {
         current.setHoveredFortZoc?.(null);
       }
@@ -267,25 +224,18 @@ export function useMapHover(props: UseMapHoverProps) {
           coords.screenX,
           coords.screenY,
           current.setCursorTooltip,
-          labelRegionId
-        )
+          labelRegionId,
+        ),
       );
       return;
     }
 
-    const province = handleProvinceHoverRef.current(
-      coords.x,
-      coords.y,
-      coords.screenX,
-      coords.screenY
-    );
+    const province = handleProvinceHoverRef.current(coords.x, coords.y, coords.screenX, coords.screenY);
     if (province.consumed) {
       // `undefined`: the answer is on its way and will draw itself.
       if (province.lines !== undefined) {
         current.setCursorTooltip(
-          province.lines
-            ? { x: coords.screenX, y: coords.screenY, text: province.lines.join("\n") }
-            : null
+          province.lines ? { x: coords.screenX, y: coords.screenY, text: province.lines.join("\n") } : null,
         );
       }
       if (provinceHoverBlocksRegionPick(current.mapType)) {
@@ -304,24 +254,17 @@ export function useMapHover(props: UseMapHoverProps) {
             tooltip
               ? {
                   ...tooltip,
-                  hint: [...provinceLines.slice(1), tooltip.hint]
-                    .filter(Boolean)
-                    .join("\n"),
+                  hint: [...provinceLines.slice(1), tooltip.hint].filter(Boolean).join("\n"),
                 }
               : {
                   x: coords.screenX,
                   y: coords.screenY,
                   text: provinceLines.slice(1).join("\n"),
-                }
+                },
           )
       : current.setCursorTooltip;
 
-    const pickPixel = mapPixelToPickCanvas(
-      coords.x,
-      coords.y,
-      current.viewportCoordsRef.current?.mapSize,
-      surface
-    );
+    const pickPixel = mapPixelToPickCanvas(coords.x, coords.y, current.viewportCoordsRef.current?.mapSize, surface);
     if (!pickPixel) {
       current.setCursorTooltip(null);
       current.setHoveredOverlay(null);
@@ -336,7 +279,7 @@ export function useMapHover(props: UseMapHoverProps) {
       pickPixel.y,
       coords.screenX,
       coords.screenY,
-      setTooltip
+      setTooltip,
     );
     setIsHoveringClickable(clickable);
   }, []);
@@ -351,15 +294,9 @@ export function useMapHover(props: UseMapHoverProps) {
     } as React.MouseEvent<Element>);
   };
 
-  const mapObjectsVisibility = useMemo(
-    () => mapObjectsVisibilityKey(mapObjects),
-    [mapObjects]
-  );
+  const mapObjectsVisibility = useMemo(() => mapObjectsVisibilityKey(mapObjects), [mapObjects]);
 
-  const fortsKey = useMemo(
-    () => (forts ?? []).map((fort) => fort.id).join("|"),
-    [forts]
-  );
+  const fortsKey = useMemo(() => (forts ?? []).map((fort) => fort.id).join("|"), [forts]);
 
   useEffect(() => {
     if (loading) return;
@@ -372,13 +309,7 @@ export function useMapHover(props: UseMapHoverProps) {
       clientX: pointer.clientX,
       clientY: pointer.clientY,
     } as React.MouseEvent<Element>);
-  }, [
-    loading,
-    mapObjectsVisibility,
-    fortsKey,
-    markers?.length,
-    processHover,
-  ]);
+  }, [loading, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
   const onMouseMove = (event: React.MouseEvent<Element>) => {
     if (loading) return;
@@ -422,18 +353,11 @@ export function useMapHover(props: UseMapHoverProps) {
 
       const surface = current.pickSurfaceRef.current ?? EMPTY_PICK_SURFACE;
 
-      const coords = getMapCoords(
-        event,
-        null,
-        current.mapId,
-        current.viewportCoordsRef.current
-      );
+      const coords = getMapCoords(event, null, current.mapId, current.viewportCoordsRef.current);
       if (!coords) return null;
 
       const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
-      const visibleMarkers = current.markers?.length
-        ? filterVisibleMapMarkers(current.markers, displayScale)
-        : [];
+      const visibleMarkers = current.markers?.length ? filterVisibleMapMarkers(current.markers, displayScale) : [];
       if (
         visibleMarkers.length &&
         pickMapMarkerAt(
@@ -441,7 +365,7 @@ export function useMapHover(props: UseMapHoverProps) {
           coords.x,
           coords.y,
           displayScale,
-          hiddenMarkerLabels(current.markers ?? [], displayScale)
+          hiddenMarkerLabels(current.markers ?? [], displayScale),
         )
       ) {
         return null;
@@ -453,21 +377,13 @@ export function useMapHover(props: UseMapHoverProps) {
 
       const labelRegionId = labelRegionAt(current, coords.x, coords.y, displayScale);
       if (labelRegionId) {
-        return resolveRegionById(
-          labelRegionId,
-          current.getHoverRegion,
-          current.mapType,
-          current.mapId,
-          current.regionData
-        )?.regionId ?? null;
+        return (
+          resolveRegionById(labelRegionId, current.getHoverRegion, current.mapType, current.mapId, current.regionData)
+            ?.regionId ?? null
+        );
       }
 
-      const pickPixel = mapPixelToPickCanvas(
-        coords.x,
-        coords.y,
-        current.viewportCoordsRef.current?.mapSize,
-        surface
-      );
+      const pickPixel = mapPixelToPickCanvas(coords.x, coords.y, current.viewportCoordsRef.current?.mapSize, surface);
       if (!pickPixel) return null;
 
       const picked = resolveRegionAtPickPixel(
@@ -478,36 +394,28 @@ export function useMapHover(props: UseMapHoverProps) {
         current.getHoverRegion,
         current.mapType,
         current.mapId,
-        current.regionData
+        current.regionData,
       );
       return picked?.regionId ?? null;
     },
-    [rgbToId]
+    [rgbToId],
   );
 
   /** The marker under a click, if any; markers sit above regions. */
-  const pickMarkerAtEvent = useCallback(
-    (event: React.MouseEvent<Element>): MapMarker | null => {
-      const current = propsRef.current;
-      if (!current.markers?.length) return null;
-      const coords = getMapCoords(
-        event,
-        null,
-        current.mapId,
-        current.viewportCoordsRef.current
-      );
-      if (!coords) return null;
-      const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
-      return pickMapMarkerAt(
-        filterVisibleMapMarkers(current.markers, displayScale),
-        coords.x,
-        coords.y,
-        displayScale,
-        hiddenMarkerLabels(current.markers, displayScale)
-      );
-    },
-    []
-  );
+  const pickMarkerAtEvent = useCallback((event: React.MouseEvent<Element>): MapMarker | null => {
+    const current = propsRef.current;
+    if (!current.markers?.length) return null;
+    const coords = getMapCoords(event, null, current.mapId, current.viewportCoordsRef.current);
+    if (!coords) return null;
+    const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
+    return pickMapMarkerAt(
+      filterVisibleMapMarkers(current.markers, displayScale),
+      coords.x,
+      coords.y,
+      displayScale,
+      hiddenMarkerLabels(current.markers, displayScale),
+    );
+  }, []);
 
   return {
     onMouseMove,

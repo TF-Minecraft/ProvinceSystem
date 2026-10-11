@@ -80,11 +80,7 @@ function finite(value: number, fallback: number): number {
  * `naturalWidth`, so a base image that failed to load can legitimately leave a
  * zero here, and an export that comes out letterboxed beats a blank page.
  */
-export function chronicleGifTransform(
-  mapW: number,
-  mapH: number,
-  size: number
-): ChronicleGifTransform {
+export function chronicleGifTransform(mapW: number, mapH: number, size: number): ChronicleGifTransform {
   const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
   const w = finite(mapW, 0) > 0 ? mapW : edge;
   const h = finite(mapH, 0) > 0 ? mapH : edge;
@@ -101,17 +97,11 @@ export function chronicleGifTransform(
   };
 }
 
-export function chronicleGifMapX(
-  transform: ChronicleGifTransform,
-  x: number
-): number {
+export function chronicleGifMapX(transform: ChronicleGifTransform, x: number): number {
   return transform.offsetX + x * transform.scale;
 }
 
-export function chronicleGifMapY(
-  transform: ChronicleGifTransform,
-  y: number
-): number {
+export function chronicleGifMapY(transform: ChronicleGifTransform, y: number): number {
   return transform.offsetY + y * transform.scale;
 }
 
@@ -138,28 +128,17 @@ export type ChronicleGifMarkerLayout = {
  */
 export function chronicleGifMarkerLayout(
   transform: ChronicleGifTransform,
-  marker: MapMarker
+  marker: MapMarker,
 ): ChronicleGifMarkerLayout | null {
   if (!Number.isFinite(marker.mapX) || !Number.isFinite(marker.mapY)) {
     return null;
   }
-  const layout = markerLayout(
-    marker.mapX,
-    marker.mapY,
-    marker.markerSize,
-    marker.kind
-  );
+  const layout = markerLayout(marker.mapX, marker.mapY, marker.markerSize, marker.kind);
 
-  const iconSize = Math.max(
-    MIN_GIF_MARKER_ICON_PX,
-    layout.iconSize * transform.scale
-  );
+  const iconSize = Math.max(MIN_GIF_MARKER_ICON_PX, layout.iconSize * transform.scale);
   const centerX = chronicleGifMapX(transform, layout.mapX);
   const centerY = chronicleGifMapY(transform, layout.mapY);
-  const fontSize = Math.max(
-    MIN_GIF_MARKER_FONT_PX,
-    layout.fontSize * transform.scale
-  );
+  const fontSize = Math.max(MIN_GIF_MARKER_FONT_PX, layout.fontSize * transform.scale);
 
   // `textY` is the *top* of the chip on screen. Canvas text is positioned from
   // its baseline, and the chip's own vertical padding sits above the glyphs, so
@@ -195,14 +174,9 @@ export type ChronicleGifLabelLayout = {
  */
 export function chronicleGifLabelLayout(
   transform: ChronicleGifTransform,
-  label: NationLabelSpec
+  label: NationLabelSpec,
 ): ChronicleGifLabelLayout | null {
-  if (
-    !label.text ||
-    !Number.isFinite(label.cx) ||
-    !Number.isFinite(label.cy) ||
-    !Number.isFinite(label.fontSize)
-  ) {
+  if (!label.text || !Number.isFinite(label.cx) || !Number.isFinite(label.cy) || !Number.isFinite(label.fontSize)) {
     return null;
   }
   const fontSize = label.fontSize * transform.scale;
@@ -238,7 +212,7 @@ export type ChronicleGifLabelArc = {
  */
 export function chronicleGifLabelArc(
   transform: ChronicleGifTransform,
-  label: NationLabelSpec
+  label: NationLabelSpec,
 ): ChronicleGifLabelArc | null {
   const layout = chronicleGifLabelLayout(transform, label);
   if (
@@ -280,10 +254,7 @@ export type ArcGlyphPlacement = {
   angleRad: number;
 };
 
-function quadraticPoint(
-  arc: ChronicleGifLabelArc,
-  t: number
-): { x: number; y: number } {
+function quadraticPoint(arc: ChronicleGifLabelArc, t: number): { x: number; y: number } {
   const u = 1 - t;
   return {
     x: u * u * arc.ax + 2 * u * t * arc.cx + t * t * arc.bx,
@@ -291,10 +262,7 @@ function quadraticPoint(
   };
 }
 
-function quadraticTangent(
-  arc: ChronicleGifLabelArc,
-  t: number
-): { x: number; y: number } {
+function quadraticTangent(arc: ChronicleGifLabelArc, t: number): { x: number; y: number } {
   return {
     x: 2 * (1 - t) * (arc.cx - arc.ax) + 2 * t * (arc.bx - arc.cx),
     y: 2 * (1 - t) * (arc.cy - arc.ay) + 2 * t * (arc.by - arc.cy),
@@ -306,14 +274,9 @@ function quadraticTangent(
  * `<textPath startOffset="50%" text-anchor="middle">` centers a run. Widths
  * come from the canvas that will draw them; this only places them.
  */
-export function arcGlyphPlacements(
-  arc: ChronicleGifLabelArc,
-  glyphWidths: readonly number[]
-): ArcGlyphPlacement[] {
+export function arcGlyphPlacements(arc: ChronicleGifLabelArc, glyphWidths: readonly number[]): ArcGlyphPlacement[] {
   const samples = 48;
-  const points = Array.from({ length: samples + 1 }, (_, index) =>
-    quadraticPoint(arc, index / samples)
-  );
+  const points = Array.from({ length: samples + 1 }, (_, index) => quadraticPoint(arc, index / samples));
   const cumulative = [0];
   for (let index = 1; index < points.length; index++) {
     const previous = points[index - 1]!;
@@ -328,12 +291,11 @@ export function arcGlyphPlacements(
   const atDistance = (distance: number): ArcGlyphPlacement => {
     const startTangent = quadraticTangent(arc, 0);
     const endTangent = quadraticTangent(arc, 1);
-    const angleOf = (tangent: { x: number; y: number }) =>
-      Math.atan2(tangent.y, tangent.x);
+    const angleOf = (tangent: { x: number; y: number }) => Math.atan2(tangent.y, tangent.x);
     const step = (
       origin: { x: number; y: number },
       tangent: { x: number; y: number },
-      extra: number
+      extra: number,
     ): ArcGlyphPlacement => {
       const length = Math.hypot(tangent.x, tangent.y) || 1;
       return {
@@ -397,11 +359,7 @@ export type ChronicleWatermarkLayout = {
 export const CHRONICLE_WATERMARK_TEXT = "discord.gg/tfmc";
 
 /** Which corner of the export the TFMC mark sits in. */
-export type ChronicleWatermarkCorner =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type ChronicleWatermarkCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export const CHRONICLE_WATERMARK_CORNERS: { value: ChronicleWatermarkCorner; label: string }[] = [
   { value: "top-left", label: "Top left" },
@@ -452,20 +410,14 @@ export function chronicleWatermarkLayout(
   textWidth: number,
   dateWidth?: number | null,
   corner: ChronicleWatermarkCorner = DEFAULT_CHRONICLE_WATERMARK_CORNER,
-  parts?: ChronicleWatermarkParts
+  parts?: ChronicleWatermarkParts,
 ): ChronicleWatermarkLayout {
   const showLogo = parts?.logo !== false;
   const showLink = parts?.link !== false;
   const layout =
     showLogo && showLink
       ? chronicleBottomLeftWatermarkLayout(size, textWidth, dateWidth)
-      : chronicleReducedWatermarkLayout(
-          size,
-          textWidth,
-          dateWidth,
-          showLogo,
-          showLink
-        );
+      : chronicleReducedWatermarkLayout(size, textWidth, dateWidth, showLogo, showLink);
   const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
   const { scrim } = layout;
   // Mirrored margins: as far from the right edge as it was from the left,
@@ -475,11 +427,7 @@ export function chronicleWatermarkLayout(
   return shiftWatermarkLayout(layout, dx, dy);
 }
 
-function shiftWatermarkLayout(
-  layout: ChronicleWatermarkLayout,
-  dx: number,
-  dy: number
-): ChronicleWatermarkLayout {
+function shiftWatermarkLayout(layout: ChronicleWatermarkLayout, dx: number, dy: number): ChronicleWatermarkLayout {
   if (dx === 0 && dy === 0) return layout;
   return {
     ...layout,
@@ -501,7 +449,7 @@ function shiftWatermarkLayout(
 function chronicleBottomLeftWatermarkLayout(
   size: number,
   textWidth: number,
-  dateWidth?: number | null
+  dateWidth?: number | null,
 ): ChronicleWatermarkLayout {
   const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
   const measured = Math.max(0, finite(textWidth, 0));
@@ -543,9 +491,7 @@ function chronicleBottomLeftWatermarkLayout(
   // With a date the whole two-line stack is centred against the row instead,
   // so the pair reads as one block beside the logo.
   const stackTop = rowTop + (rowHeight - textStackHeight) / 2;
-  const textBaselineY = hasDate
-    ? stackTop + fontSize
-    : logoY + logoSize / 2 + fontSize * 0.36;
+  const textBaselineY = hasDate ? stackTop + fontSize : logoY + logoSize / 2 + fontSize * 0.36;
   const dateTextBaselineY = hasDate ? textBaselineY + lineGap + dateFontSize : 0;
 
   const pad = Math.round(fontSize * 0.5);
@@ -553,10 +499,7 @@ function chronicleBottomLeftWatermarkLayout(
   const scrimY = Math.max(0, Math.min(logoY, hasDate ? stackTop : logoY) - pad);
   const widestLine = Math.max(measured, hasDate ? dateMeasured : 0);
   const scrimRight = Math.min(edge, textX + widestLine + pad);
-  const contentBottom = Math.max(
-    logoY + logoSize,
-    hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0
-  );
+  const contentBottom = Math.max(logoY + logoSize, hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0);
   const scrimBottom = Math.min(edge, contentBottom + pad);
 
   return {
@@ -598,7 +541,7 @@ function chronicleReducedWatermarkLayout(
   textWidth: number,
   dateWidth: number | null | undefined,
   showLogo: boolean,
-  showLink: boolean
+  showLink: boolean,
 ): ChronicleWatermarkLayout {
   const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
   const margin = Math.round(clamp(edge * 0.028, 10, 32));
@@ -618,13 +561,11 @@ function chronicleReducedWatermarkLayout(
   if (!showLogo && !showLink && !hasDate) return empty;
 
   const dateFontSize = hasDate ? Math.max(11, Math.round(fontSize * 0.68)) : 0;
-  const lineGap =
-    showLink && hasDate ? Math.round(clamp(fontSize * 0.28, 3, 10)) : 0;
+  const lineGap = showLink && hasDate ? Math.round(clamp(fontSize * 0.28, 3, 10)) : 0;
   const fullLogo = Math.round(clamp(edge * 0.1, 40, 100));
   const logoSize = showLogo ? fullLogo : 0;
   const hasText = showLink || hasDate;
-  const gap =
-    showLogo && hasText ? Math.round(clamp(edge * 0.018, 6, 18)) : 0;
+  const gap = showLogo && hasText ? Math.round(clamp(edge * 0.018, 6, 18)) : 0;
 
   const logoX = margin;
   const blockBottom = edge - margin;
@@ -656,18 +597,12 @@ function chronicleReducedWatermarkLayout(
   const measured = showLink ? Math.max(0, finite(textWidth, 0)) : 0;
   const dateMeasured = hasDate ? Math.max(0, finite(dateWidth, 0)) : 0;
   const pad = Math.round(fontSize * 0.5);
-  const contentTop = showLogo
-    ? hasText
-      ? Math.min(logoY, stackTop)
-      : logoY
-    : stackTop;
-  const contentRight = hasText
-    ? textX + Math.max(measured, dateMeasured)
-    : logoX + logoSize;
+  const contentTop = showLogo ? (hasText ? Math.min(logoY, stackTop) : logoY) : stackTop;
+  const contentRight = hasText ? textX + Math.max(measured, dateMeasured) : logoX + logoSize;
   const contentBottom = Math.max(
     showLogo ? logoY + logoSize : 0,
     showLink ? textBaselineY + fontSize * 0.25 : 0,
-    hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0
+    hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0,
   );
   const scrimX = Math.max(0, (showLogo ? logoX : textX) - pad);
   const scrimY = Math.max(0, contentTop - pad);
@@ -709,8 +644,7 @@ export function chronicleGifDelayMs(speed: number): number {
   const fps = finite(speed, 1);
   if (fps <= 0) return 1000;
   const raw = 1000 / fps;
-  const quantised =
-    Math.round(raw / GIF_DELAY_QUANTUM_MS) * GIF_DELAY_QUANTUM_MS;
+  const quantised = Math.round(raw / GIF_DELAY_QUANTUM_MS) * GIF_DELAY_QUANTUM_MS;
   return Math.max(MIN_GIF_DELAY_MS, quantised);
 }
 
@@ -722,15 +656,14 @@ export function chronicleGifDelayMs(speed: number): number {
 export function chronicleGifFilename(
   mapDisplayName: string,
   firstDay: string | null | undefined,
-  lastDay: string | null | undefined
+  lastDay: string | null | undefined,
 ): string {
   const slug =
     (mapDisplayName || "")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "map";
-  const clean = (day: string | null | undefined) =>
-    (day || "").replace(/[^0-9a-zA-Z-]/g, "");
+  const clean = (day: string | null | undefined) => (day || "").replace(/[^0-9a-zA-Z-]/g, "");
   const start = clean(firstDay);
   const end = clean(lastDay);
   const span = start && end && start !== end ? `${start}-to-${end}` : start || end;

@@ -1,7 +1,4 @@
-import {
-  assertChronicleGridShape,
-  type ChronicleBorderMask,
-} from "./chronicleBorderMask";
+import { assertChronicleGridShape, type ChronicleBorderMask } from "./chronicleBorderMask";
 import { MAX_PAINTABLE_PROVINCE_ID, type ProvinceIdGrid } from "./chroniclePaint";
 import type { MapMarkersResponse } from "../../components/map/types";
 
@@ -66,9 +63,7 @@ export function chronicleZocHatchMetrics(gridWidth: number): {
  * shape-checked before being walked — `?? []` would still let an object
  * through to `for...of` and blank the page mid-render.
  */
-export function fortZocProvinceIds(
-  markers: MapMarkersResponse | null
-): number[] {
+export function fortZocProvinceIds(markers: MapMarkersResponse | null): number[] {
   const forts = Array.isArray(markers?.forts) ? markers.forts : [];
   const seen = new Set<number>();
   for (const fort of forts) {
@@ -93,10 +88,7 @@ export function fortZocProvinceIds(
  * Null when no fort on this day holds a zone, so a day before any fort existed
  * allocates nothing and leaves the overlay canvas unmounted.
  */
-export function computeChronicleZocMask(
-  grid: ProvinceIdGrid,
-  zocProvinceIds: number[]
-): ChronicleBorderMask | null {
+export function computeChronicleZocMask(grid: ProvinceIdGrid, zocProvinceIds: number[]): ChronicleBorderMask | null {
   if (!zocProvinceIds.length) return null;
   const pixelCount = assertChronicleGridShape(grid);
   const { width, height, ids } = grid;

@@ -60,4 +60,3 @@ export const marketBlockSection: WikiSection = {
   recipes: [marketBlockRecipe],
   commands: marketBlockCommands,
 };
-

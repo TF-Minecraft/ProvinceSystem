@@ -22,8 +22,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Alchemist Collector", qty: 1, sourceId: "mmoitem:TOOLS:IRON_ALCHEMY_COLLECTOR", texture: "/wiki/textures/mmoitems/iron_alchemy_collector.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Alchemist Collector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_ALCHEMY_COLLECTOR",
+      texture: "/wiki/textures/mmoitems/iron_alchemy_collector.png",
+    },
   },
   {
     key: "gen-alchemy-station-steel-alchemy-collector",
@@ -32,8 +39,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Alchemy Collector Maker I",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Steel Alchemist Collector", qty: 1, sourceId: "mmoitem:TOOLS:STEEL_ALCHEMY_COLLECTOR", texture: "/wiki/textures/mmoitems/steel_alchemy_collector.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Steel Alchemist Collector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:STEEL_ALCHEMY_COLLECTOR",
+      texture: "/wiki/textures/mmoitems/steel_alchemy_collector.png",
+    },
   },
   {
     key: "gen-alchemy-station-abyssalite-alchemy-collector",
@@ -42,8 +61,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Alchemy Collector Maker II",
     category: "Tools",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Abyssalite Alchemist Collector", qty: 1, sourceId: "mmoitem:TOOLS:ABYSSALITE_ALCHEMY_COLLECTOR", texture: "/wiki/textures/mmoitems/abyssalite_alchemy_collector.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Abyssalite Alchemist Collector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ABYSSALITE_ALCHEMY_COLLECTOR",
+      texture: "/wiki/textures/mmoitems/abyssalite_alchemy_collector.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythril-alchemy-collector",
@@ -52,8 +83,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Alchemy Collector Maker III",
     category: "Tools",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Mythril Alchemist Collector", qty: 1, sourceId: "mmoitem:TOOLS:MYTHRIL_ALCHEMY_COLLECTOR", texture: "/wiki/textures/mmoitems/mythril_alchemy_collector.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Alchemist Collector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:MYTHRIL_ALCHEMY_COLLECTOR",
+      texture: "/wiki/textures/mmoitems/mythril_alchemy_collector.png",
+    },
   },
   {
     key: "gen-alchemy-station-nether-wart",
@@ -61,8 +104,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 2,
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wheat Seeds", qty: 8, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Nether Wart", qty: 1, sourceId: "vanilla:nether_wart", texture: "/wiki/textures/vanilla/nether_wart.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 8,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Nether Wart",
+      qty: 1,
+      sourceId: "vanilla:nether_wart",
+      texture: "/wiki/textures/vanilla/nether_wart.png",
+    },
   },
   {
     key: "gen-alchemy-station-soul-sand",
@@ -71,7 +126,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Earth & Sediment",
     ingredients: [{ name: "Sand", qty: 8, sourceId: "vanilla:sand", texture: "/wiki/textures/vanilla/sand.png" }],
-    output: { name: "Soul Sand", qty: 8, sourceId: "vanilla:soul_sand", texture: "/wiki/textures/vanilla/soul_sand.png" },
+    output: {
+      name: "Soul Sand",
+      qty: 8,
+      sourceId: "vanilla:soul_sand",
+      texture: "/wiki/textures/vanilla/soul_sand.png",
+    },
   },
   {
     key: "gen-alchemy-station-soul-soil",
@@ -79,8 +139,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Soul Sand", qty: 2, sourceId: "vanilla:soul_sand", texture: "/wiki/textures/vanilla/soul_sand.png" }],
-    output: { name: "Soul Soil", qty: 8, sourceId: "vanilla:soul_soil", texture: "/wiki/textures/vanilla/soul_soil.png" },
+    ingredients: [
+      { name: "Soul Sand", qty: 2, sourceId: "vanilla:soul_sand", texture: "/wiki/textures/vanilla/soul_sand.png" },
+    ],
+    output: {
+      name: "Soul Soil",
+      qty: 8,
+      sourceId: "vanilla:soul_soil",
+      texture: "/wiki/textures/vanilla/soul_soil.png",
+    },
   },
   {
     key: "gen-alchemy-station-alchemy-powder",
@@ -89,8 +156,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Nether Wart", qty: 8, sourceId: "vanilla:nether_wart", texture: "/wiki/textures/vanilla/nether_wart.png" }],
-    output: { name: "Alchemy Powder", qty: 2, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" },
+    ingredients: [
+      {
+        name: "Nether Wart",
+        qty: 8,
+        sourceId: "vanilla:nether_wart",
+        texture: "/wiki/textures/vanilla/nether_wart.png",
+      },
+    ],
+    output: {
+      name: "Alchemy Powder",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+      texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+    },
   },
   {
     key: "gen-alchemy-station-transmutation-powder",
@@ -99,8 +178,27 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation II",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 2, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 2, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Transmutation Powder", qty: 2, sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER", texture: "/wiki/textures/mmoitems/transmutation_powder.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 2,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Transmutation Powder",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER",
+      texture: "/wiki/textures/mmoitems/transmutation_powder.png",
+    },
   },
   {
     key: "gen-alchemy-station-potion-focus",
@@ -109,8 +207,33 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer I",
     category: "Medicines",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Birch Seed", qty: 2, sourceId: "mmoitem:HERBS:BIRCH_SEED", texture: "/wiki/textures/mmoitems/birch_seed.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Focus Potion", qty: 2, sourceId: "mmoitem:MEDICINES:MINOR_FOCUS_POTION", texture: "/wiki/textures/mmoitems/minor_focus_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Birch Seed",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:BIRCH_SEED",
+        texture: "/wiki/textures/mmoitems/birch_seed.png",
+      },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Focus Potion",
+      qty: 2,
+      sourceId: "mmoitem:MEDICINES:MINOR_FOCUS_POTION",
+      texture: "/wiki/textures/mmoitems/minor_focus_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-minor-health",
@@ -119,8 +242,33 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer I",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Minor Health Potion", qty: 2, sourceId: "mmoitem:CONSUMABLES:MINOR_HEALTH_POTION", texture: "/wiki/textures/mmoitems/minor_health_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Minor Health Potion",
+      qty: 2,
+      sourceId: "mmoitem:CONSUMABLES:MINOR_HEALTH_POTION",
+      texture: "/wiki/textures/mmoitems/minor_health_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-minor-mana",
@@ -129,8 +277,33 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer I",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Minor Mana Potion", qty: 2, sourceId: "mmoitem:CONSUMABLES:MINOR_MANA_POTION", texture: "/wiki/textures/mmoitems/minor_mana_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Minor Mana Potion",
+      qty: 2,
+      sourceId: "mmoitem:CONSUMABLES:MINOR_MANA_POTION",
+      texture: "/wiki/textures/mmoitems/minor_mana_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-lesser-health",
@@ -139,8 +312,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer I",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Lesser Health Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:LESSER_HEALTH_POTION", texture: "/wiki/textures/mmoitems/lesser_health_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Lesser Health Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:LESSER_HEALTH_POTION",
+      texture: "/wiki/textures/mmoitems/lesser_health_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-lesser-mana",
@@ -149,8 +352,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer I",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }, { name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Lesser Mana Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:LESSER_MANA_POTION", texture: "/wiki/textures/mmoitems/lesser_mana_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Lesser Mana Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:LESSER_MANA_POTION",
+      texture: "/wiki/textures/mmoitems/lesser_mana_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-major-health",
@@ -159,8 +392,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer II",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Abyssalite Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Major Health Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:MAJOR_HEALTH_POTION", texture: "/wiki/textures/mmoitems/major_health_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      {
+        name: "Abyssalite Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Major Health Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:MAJOR_HEALTH_POTION",
+      texture: "/wiki/textures/mmoitems/major_health_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-major-mana",
@@ -169,8 +432,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer II",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }, { name: "Abyssalite Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Major Mana Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:MAJOR_MANA_POTION", texture: "/wiki/textures/mmoitems/major_mana_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+      {
+        name: "Abyssalite Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Major Mana Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:MAJOR_MANA_POTION",
+      texture: "/wiki/textures/mmoitems/major_mana_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-greater-health",
@@ -179,8 +472,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer II",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Mythril Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Greater Health Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:GREATER_HEALTH_POTION", texture: "/wiki/textures/mmoitems/greater_health_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      {
+        name: "Mythril Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Greater Health Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:GREATER_HEALTH_POTION",
+      texture: "/wiki/textures/mmoitems/greater_health_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-greater-mana",
@@ -189,8 +512,38 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Potion Brewer II",
     category: "Consumables",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }, { name: "Mythril Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Greater Mana Potion", qty: 1, sourceId: "mmoitem:CONSUMABLES:GREATER_MANA_POTION", texture: "/wiki/textures/mmoitems/greater_mana_potion.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+      {
+        name: "Mythril Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Greater Mana Potion",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:GREATER_MANA_POTION",
+      texture: "/wiki/textures/mmoitems/greater_mana_potion.png",
+    },
   },
   {
     key: "gen-alchemy-station-coal",
@@ -199,7 +552,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Fire Leaf", qty: 2, sourceId: "mmoitem:HERBS:FIRE_LEAF", texture: "/wiki/textures/mmoitems/fire_leaf.png" }],
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Fire Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:FIRE_LEAF",
+        texture: "/wiki/textures/mmoitems/fire_leaf.png",
+      },
+    ],
     output: { name: "Coal", qty: 64, sourceId: "vanilla:coal", texture: "/wiki/textures/vanilla/coal.png" },
   },
   {
@@ -209,7 +575,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Burrow Root", qty: 2, sourceId: "mmoitem:HERBS:BURROW_ROOT", texture: "/wiki/textures/mmoitems/burrow_root.png" }],
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Burrow Root",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:BURROW_ROOT",
+        texture: "/wiki/textures/mmoitems/burrow_root.png",
+      },
+    ],
     output: { name: "Bone", qty: 2, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" },
   },
   {
@@ -219,8 +598,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Spot Leaf", qty: 2, sourceId: "mmoitem:HERBS:SPOT_LEAF", texture: "/wiki/textures/mmoitems/spot_leaf.png" }],
-    output: { name: "Synthetic Ink", qty: 2, sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK", texture: "/wiki/textures/mmoitems/synthetic_ink.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Spot Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:SPOT_LEAF",
+        texture: "/wiki/textures/mmoitems/spot_leaf.png",
+      },
+    ],
+    output: {
+      name: "Synthetic Ink",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK",
+      texture: "/wiki/textures/mmoitems/synthetic_ink.png",
+    },
   },
   {
     key: "gen-alchemy-station-potash",
@@ -229,8 +626,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" }],
-    output: { name: "Potash", qty: 2, sourceId: "mmoitem:MATERIALS:POTASH", texture: "/wiki/textures/mmoitems/potash.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      { name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" },
+    ],
+    output: {
+      name: "Potash",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:POTASH",
+      texture: "/wiki/textures/mmoitems/potash.png",
+    },
   },
   {
     key: "gen-alchemy-station-carbon-powder",
@@ -239,8 +649,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Thorn Root", qty: 2, sourceId: "mmoitem:HERBS:THORN_ROOT", texture: "/wiki/textures/mmoitems/thorn_root.png" }],
-    output: { name: "Carbon Powder", qty: 2, sourceId: "mmoitem:MATERIALS:CARBON_POWDER", texture: "/wiki/textures/mmoitems/carbon_powder.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Thorn Root",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:THORN_ROOT",
+        texture: "/wiki/textures/mmoitems/thorn_root.png",
+      },
+    ],
+    output: {
+      name: "Carbon Powder",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:CARBON_POWDER",
+      texture: "/wiki/textures/mmoitems/carbon_powder.png",
+    },
   },
   {
     key: "gen-alchemy-station-sulfur",
@@ -249,8 +677,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Long Leaf", qty: 2, sourceId: "mmoitem:HERBS:LONG_LEAF", texture: "/wiki/textures/mmoitems/long_leaf.png" }],
-    output: { name: "Sulfur", qty: 2, sourceId: "mmoitem:MATERIALS:SULFUR", texture: "/wiki/textures/mmoitems/sulfur.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Long Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:LONG_LEAF",
+        texture: "/wiki/textures/mmoitems/long_leaf.png",
+      },
+    ],
+    output: {
+      name: "Sulfur",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:SULFUR",
+      texture: "/wiki/textures/mmoitems/sulfur.png",
+    },
   },
   {
     key: "gen-alchemy-station-saltpeter",
@@ -259,8 +705,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation I",
     category: "Materials",
-    ingredients: [{ name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }, { name: "Dwindle Leaf", qty: 2, sourceId: "mmoitem:HERBS:DWINDLE_LEAF", texture: "/wiki/textures/mmoitems/dwindle_leaf.png" }],
-    output: { name: "Saltpeter", qty: 2, sourceId: "mmoitem:MATERIALS:SALTPETER", texture: "/wiki/textures/mmoitems/saltpeter.png" },
+    ingredients: [
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+      {
+        name: "Dwindle Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DWINDLE_LEAF",
+        texture: "/wiki/textures/mmoitems/dwindle_leaf.png",
+      },
+    ],
+    output: {
+      name: "Saltpeter",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:SALTPETER",
+      texture: "/wiki/textures/mmoitems/saltpeter.png",
+    },
   },
   {
     key: "gen-alchemy-station-fertilizer",
@@ -269,8 +733,27 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation II",
     category: "Materials",
-    ingredients: [{ name: "Transmutation Powder", qty: 1, sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER", texture: "/wiki/textures/mmoitems/transmutation_powder.png" }, { name: "Kelpberry", qty: 2, sourceId: "mmoitem:HERBS:KELPBERRY", texture: "/wiki/textures/mmoitems/kelpberry.png" }, { name: "Potash", qty: 2, sourceId: "mmoitem:MATERIALS:POTASH", texture: "/wiki/textures/mmoitems/potash.png" }],
-    output: { name: "Fertilizer", qty: 2, sourceId: "mmoitem:MATERIALS:FERTILIZER", texture: "/wiki/textures/mmoitems/fertilizer.png" },
+    ingredients: [
+      {
+        name: "Transmutation Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER",
+        texture: "/wiki/textures/mmoitems/transmutation_powder.png",
+      },
+      {
+        name: "Kelpberry",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:KELPBERRY",
+        texture: "/wiki/textures/mmoitems/kelpberry.png",
+      },
+      { name: "Potash", qty: 2, sourceId: "mmoitem:MATERIALS:POTASH", texture: "/wiki/textures/mmoitems/potash.png" },
+    ],
+    output: {
+      name: "Fertilizer",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:FERTILIZER",
+      texture: "/wiki/textures/mmoitems/fertilizer.png",
+    },
   },
   {
     key: "gen-alchemy-station-raw-gold",
@@ -279,7 +762,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation II",
     category: "Materials",
-    ingredients: [{ name: "Transmutation Powder", qty: 1, sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER", texture: "/wiki/textures/mmoitems/transmutation_powder.png" }, { name: "Pumpkin Spore", qty: 2, sourceId: "mmoitem:HERBS:PUMPKIN_SPORE", texture: "/wiki/textures/mmoitems/pumpkin_spore.png" }, { name: "Synthetic Ink", qty: 2, sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK", texture: "/wiki/textures/mmoitems/synthetic_ink.png" }],
+    ingredients: [
+      {
+        name: "Transmutation Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER",
+        texture: "/wiki/textures/mmoitems/transmutation_powder.png",
+      },
+      {
+        name: "Pumpkin Spore",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:PUMPKIN_SPORE",
+        texture: "/wiki/textures/mmoitems/pumpkin_spore.png",
+      },
+      {
+        name: "Synthetic Ink",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK",
+        texture: "/wiki/textures/mmoitems/synthetic_ink.png",
+      },
+    ],
     output: { name: "Raw Gold", qty: 2, sourceId: "vanilla:raw_gold", texture: "/wiki/textures/vanilla/raw_gold.png" },
   },
   {
@@ -289,8 +791,27 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation II",
     category: "Materials",
-    ingredients: [{ name: "Carbon Powder", qty: 2, sourceId: "mmoitem:MATERIALS:CARBON_POWDER", texture: "/wiki/textures/mmoitems/carbon_powder.png" }, { name: "Sulfur", qty: 2, sourceId: "mmoitem:MATERIALS:SULFUR", texture: "/wiki/textures/mmoitems/sulfur.png" }, { name: "Saltpeter", qty: 2, sourceId: "mmoitem:MATERIALS:SALTPETER", texture: "/wiki/textures/mmoitems/saltpeter.png" }],
-    output: { name: "Gunpowder", qty: 2, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ingredients: [
+      {
+        name: "Carbon Powder",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:CARBON_POWDER",
+        texture: "/wiki/textures/mmoitems/carbon_powder.png",
+      },
+      { name: "Sulfur", qty: 2, sourceId: "mmoitem:MATERIALS:SULFUR", texture: "/wiki/textures/mmoitems/sulfur.png" },
+      {
+        name: "Saltpeter",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:SALTPETER",
+        texture: "/wiki/textures/mmoitems/saltpeter.png",
+      },
+    ],
+    output: {
+      name: "Gunpowder",
+      qty: 2,
+      sourceId: "vanilla:gunpowder",
+      texture: "/wiki/textures/vanilla/gunpowder.png",
+    },
   },
   {
     key: "gen-alchemy-station-big-gunpowder",
@@ -299,8 +820,27 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Transmutation II",
     category: "Materials",
-    ingredients: [{ name: "Carbon Powder", qty: 16, sourceId: "mmoitem:MATERIALS:CARBON_POWDER", texture: "/wiki/textures/mmoitems/carbon_powder.png" }, { name: "Sulfur", qty: 16, sourceId: "mmoitem:MATERIALS:SULFUR", texture: "/wiki/textures/mmoitems/sulfur.png" }, { name: "Saltpeter", qty: 16, sourceId: "mmoitem:MATERIALS:SALTPETER", texture: "/wiki/textures/mmoitems/saltpeter.png" }],
-    output: { name: "Gunpowder", qty: 16, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ingredients: [
+      {
+        name: "Carbon Powder",
+        qty: 16,
+        sourceId: "mmoitem:MATERIALS:CARBON_POWDER",
+        texture: "/wiki/textures/mmoitems/carbon_powder.png",
+      },
+      { name: "Sulfur", qty: 16, sourceId: "mmoitem:MATERIALS:SULFUR", texture: "/wiki/textures/mmoitems/sulfur.png" },
+      {
+        name: "Saltpeter",
+        qty: 16,
+        sourceId: "mmoitem:MATERIALS:SALTPETER",
+        texture: "/wiki/textures/mmoitems/saltpeter.png",
+      },
+    ],
+    output: {
+      name: "Gunpowder",
+      qty: 16,
+      sourceId: "vanilla:gunpowder",
+      texture: "/wiki/textures/vanilla/gunpowder.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironshot",
@@ -308,8 +848,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Shot", qty: 64, sourceId: "mmoitem:UTILS:IRONSHOT", texture: "/wiki/textures/mmoitems/ironshot.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Shot",
+      qty: 64,
+      sourceId: "mmoitem:UTILS:IRONSHOT",
+      texture: "/wiki/textures/mmoitems/ironshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelshot",
@@ -317,8 +864,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Steel Shot", qty: 32, sourceId: "mmoitem:UTILS:STEELSHOT", texture: "/wiki/textures/mmoitems/steelshot.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Steel Shot",
+      qty: 32,
+      sourceId: "mmoitem:UTILS:STEELSHOT",
+      texture: "/wiki/textures/mmoitems/steelshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzeshot",
@@ -326,8 +885,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }],
-    output: { name: "Bronze Shot", qty: 16, sourceId: "mmoitem:UTILS:BRONZESHOT", texture: "/wiki/textures/mmoitems/bronzeshot.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+    ],
+    output: {
+      name: "Bronze Shot",
+      qty: 16,
+      sourceId: "mmoitem:UTILS:BRONZESHOT",
+      texture: "/wiki/textures/mmoitems/bronzeshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilshot",
@@ -335,8 +906,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Mythril Shot", qty: 8, sourceId: "mmoitem:UTILS:MYTHRILSHOT", texture: "/wiki/textures/mmoitems/mythrilshot.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Shot",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:MYTHRILSHOT",
+      texture: "/wiki/textures/mmoitems/mythrilshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironspreadshot",
@@ -344,8 +927,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Spreadshot", qty: 32, sourceId: "mmoitem:UTILS:IRONSPREADSHOT", texture: "/wiki/textures/mmoitems/ironspreadshot.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Spreadshot",
+      qty: 32,
+      sourceId: "mmoitem:UTILS:IRONSPREADSHOT",
+      texture: "/wiki/textures/mmoitems/ironspreadshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelspreadshot",
@@ -353,8 +943,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Steel Spreadshot", qty: 16, sourceId: "mmoitem:UTILS:STEELSPREADSHOT", texture: "/wiki/textures/mmoitems/steelspreadshot.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Steel Spreadshot",
+      qty: 16,
+      sourceId: "mmoitem:UTILS:STEELSPREADSHOT",
+      texture: "/wiki/textures/mmoitems/steelspreadshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzespreadshot",
@@ -362,8 +964,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }],
-    output: { name: "Bronze Spreadshot", qty: 8, sourceId: "mmoitem:UTILS:BRONZESPREADSHOT", texture: "/wiki/textures/mmoitems/bronzespreadshot.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+    ],
+    output: {
+      name: "Bronze Spreadshot",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:BRONZESPREADSHOT",
+      texture: "/wiki/textures/mmoitems/bronzespreadshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilspreadshot",
@@ -371,8 +985,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Mythril Spreadshot", qty: 4, sourceId: "mmoitem:UTILS:MYTHRILSPREADSHOT", texture: "/wiki/textures/mmoitems/mythrilspreadshot.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Spreadshot",
+      qty: 4,
+      sourceId: "mmoitem:UTILS:MYTHRILSPREADSHOT",
+      texture: "/wiki/textures/mmoitems/mythrilspreadshot.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironrocket",
@@ -380,8 +1006,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Rocket", qty: 8, sourceId: "mmoitem:UTILS:IRONROCKET", texture: "/wiki/textures/mmoitems/ironrocket.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Rocket",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:IRONROCKET",
+      texture: "/wiki/textures/mmoitems/ironrocket.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelrocket",
@@ -389,8 +1022,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Steel Rocket", qty: 4, sourceId: "mmoitem:UTILS:STEELROCKET", texture: "/wiki/textures/mmoitems/steelrocket.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Steel Rocket",
+      qty: 4,
+      sourceId: "mmoitem:UTILS:STEELROCKET",
+      texture: "/wiki/textures/mmoitems/steelrocket.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzerocket",
@@ -398,8 +1043,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }],
-    output: { name: "Bronze Rocket", qty: 2, sourceId: "mmoitem:UTILS:BRONZEROCKET", texture: "/wiki/textures/mmoitems/bronzerocket.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+    ],
+    output: {
+      name: "Bronze Rocket",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:BRONZEROCKET",
+      texture: "/wiki/textures/mmoitems/bronzerocket.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilrocket",
@@ -407,8 +1064,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Mythril Rocket", qty: 1, sourceId: "mmoitem:UTILS:MYTHRILROCKET", texture: "/wiki/textures/mmoitems/mythrilrocket.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Rocket",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:MYTHRILROCKET",
+      texture: "/wiki/textures/mmoitems/mythrilrocket.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironshot-powered",
@@ -416,8 +1085,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Iron Shot", qty: 64, sourceId: "mmoitem:UTILS:IRONSHOT_POWERED", texture: "/wiki/textures/mmoitems/ironshot_powered.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Iron Shot",
+      qty: 64,
+      sourceId: "mmoitem:UTILS:IRONSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/ironshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelshot-powered",
@@ -425,8 +1102,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Steel Shot", qty: 32, sourceId: "mmoitem:UTILS:STEELSHOT_POWERED", texture: "/wiki/textures/mmoitems/steelshot_powered.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Steel Shot",
+      qty: 32,
+      sourceId: "mmoitem:UTILS:STEELSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/steelshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzeshot-powered",
@@ -434,8 +1124,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Bronze Shot", qty: 16, sourceId: "mmoitem:UTILS:BRONZESHOT_POWERED", texture: "/wiki/textures/mmoitems/bronzeshot_powered.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Bronze Shot",
+      qty: 16,
+      sourceId: "mmoitem:UTILS:BRONZESHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/bronzeshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilshot-powered",
@@ -443,8 +1146,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Mythril Shot", qty: 8, sourceId: "mmoitem:UTILS:MYTHRILSHOT_POWERED", texture: "/wiki/textures/mmoitems/mythrilshot_powered.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Mythril Shot",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:MYTHRILSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/mythrilshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironspreadshot-powered",
@@ -452,8 +1168,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Iron Spreadshot", qty: 32, sourceId: "mmoitem:UTILS:IRONSPREADSHOT_POWERED", texture: "/wiki/textures/mmoitems/ironspreadshot_powered.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Iron Spreadshot",
+      qty: 32,
+      sourceId: "mmoitem:UTILS:IRONSPREADSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/ironspreadshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelspreadshot-powered",
@@ -461,8 +1185,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Steel Spreadshot", qty: 16, sourceId: "mmoitem:UTILS:STEELSPREADSHOT_POWERED", texture: "/wiki/textures/mmoitems/steelspreadshot_powered.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Steel Spreadshot",
+      qty: 16,
+      sourceId: "mmoitem:UTILS:STEELSPREADSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/steelspreadshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzespreadshot-powered",
@@ -470,8 +1207,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Bronze Spreadshot", qty: 8, sourceId: "mmoitem:UTILS:BRONZESPREADSHOT_POWERED", texture: "/wiki/textures/mmoitems/bronzespreadshot_powered.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Bronze Spreadshot",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:BRONZESPREADSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/bronzespreadshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilspreadshot-powered",
@@ -479,8 +1229,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Mythril Spreadshot", qty: 4, sourceId: "mmoitem:UTILS:MYTHRILSPREADSHOT_POWERED", texture: "/wiki/textures/mmoitems/mythrilspreadshot_powered.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Mythril Spreadshot",
+      qty: 4,
+      sourceId: "mmoitem:UTILS:MYTHRILSPREADSHOT_POWERED",
+      texture: "/wiki/textures/mmoitems/mythrilspreadshot_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-ironrocket-powered",
@@ -488,8 +1251,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Iron Rocket", qty: 8, sourceId: "mmoitem:UTILS:IRONROCKET_POWERED", texture: "/wiki/textures/mmoitems/ironrocket_powered.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Iron Rocket",
+      qty: 8,
+      sourceId: "mmoitem:UTILS:IRONROCKET_POWERED",
+      texture: "/wiki/textures/mmoitems/ironrocket_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-steelrocket-powered",
@@ -497,8 +1268,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Steel Rocket", qty: 4, sourceId: "mmoitem:UTILS:STEELROCKET_POWERED", texture: "/wiki/textures/mmoitems/steelrocket_powered.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Steel Rocket",
+      qty: 4,
+      sourceId: "mmoitem:UTILS:STEELROCKET_POWERED",
+      texture: "/wiki/textures/mmoitems/steelrocket_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-bronzerocket-powered",
@@ -506,8 +1290,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Bronze Rocket", qty: 2, sourceId: "mmoitem:UTILS:BRONZEROCKET_POWERED", texture: "/wiki/textures/mmoitems/bronzerocket_powered.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Bronze Rocket",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:BRONZEROCKET_POWERED",
+      texture: "/wiki/textures/mmoitems/bronzerocket_powered.png",
+    },
   },
   {
     key: "gen-alchemy-station-mythrilrocket-powered",
@@ -515,8 +1312,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Alchemy Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Powered Mythril Rocket", qty: 1, sourceId: "mmoitem:UTILS:MYTHRILROCKET_POWERED", texture: "/wiki/textures/mmoitems/mythrilrocket_powered.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Powered Mythril Rocket",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:MYTHRILROCKET_POWERED",
+      texture: "/wiki/textures/mmoitems/mythrilrocket_powered.png",
+    },
   },
   {
     key: "gen-animal-station-companion-bordercolliegray-egg",
@@ -526,7 +1336,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Legacy",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Gray Border Collie Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_BORDERCOLLIEGRAY_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Gray Border Collie Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BORDERCOLLIEGRAY_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-bernesse-egg",
@@ -536,7 +1351,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Ascended",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Bernese Mountain Dog Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_BERNESSE_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Bernese Mountain Dog Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BERNESSE_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-bordercollie-egg",
@@ -546,7 +1366,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Noble",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Border Collie Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_BORDERCOLLIE_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Border Collie Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BORDERCOLLIE_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-catgray-egg",
@@ -555,8 +1380,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Gilded",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Gray Cat Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CATGRAY_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Gray Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CATGRAY_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-cattabby-egg",
@@ -565,8 +1397,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Gilded",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Tabby Cat Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CATTABBY_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Tabby Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CATTABBY_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-lagottoromagnolo-egg",
@@ -576,7 +1415,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Gilded",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Lagotto Romagnolo Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_LAGOTTOROMAGNOLO_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Lagotto Romagnolo Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_LAGOTTOROMAGNOLO_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-yorkshire-egg",
@@ -586,7 +1430,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Ascended",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Yorkshire Terrier Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_YORKSHIRE_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Yorkshire Terrier Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_YORKSHIRE_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-beagle-egg",
@@ -596,7 +1445,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Pet Master",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Beagle Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_BEAGLE_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Beagle Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BEAGLE_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-chihuahua-egg",
@@ -606,7 +1460,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Pet Master",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Chihuahua Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CHIHUAHUA_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Chihuahua Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CHIHUAHUA_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-corgi-egg",
@@ -616,7 +1475,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Pet Master",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Corgi Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CORGI_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Corgi Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CORGI_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-golden-egg",
@@ -626,7 +1490,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Pet Master",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Golden Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_GOLDEN_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Golden Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_GOLDEN_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-husky-egg",
@@ -636,7 +1505,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Noble",
     category: "Pet Supplies",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Husky Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_HUSKY_EGG", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Husky Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_HUSKY_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-catblack-egg",
@@ -645,8 +1519,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Pet Master",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Black Cat Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CATBLACK_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Black Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CATBLACK_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-catfunny-egg",
@@ -655,8 +1536,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Pet Master",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Funny Cat Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CATFUNNY_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Funny Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CATFUNNY_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-catorange-egg",
@@ -665,8 +1553,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Pet Master",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Orange Cat Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_CATORANGE_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Orange Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CATORANGE_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-mainecoon-egg",
@@ -675,8 +1570,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Noble",
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Maine Coon Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_MAINECOON_EGG", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Maine Coon Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_MAINECOON_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-fox-egg",
@@ -685,8 +1587,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Pet Master",
     category: "Pet Supplies",
-    ingredients: [{ name: "Sweet Berries", qty: 16, sourceId: "vanilla:sweet_berries", texture: "/wiki/textures/vanilla/sweet_berries.png" }],
-    output: { name: "Fox Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_FOX_EGG", texture: "/wiki/textures/vanilla/fox_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Sweet Berries",
+        qty: 16,
+        sourceId: "vanilla:sweet_berries",
+        texture: "/wiki/textures/vanilla/sweet_berries.png",
+      },
+    ],
+    output: {
+      name: "Fox Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_FOX_EGG",
+      texture: "/wiki/textures/vanilla/fox_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-companion-frog-egg",
@@ -695,8 +1609,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Pet Master",
     category: "Pet Supplies",
-    ingredients: [{ name: "Lily Pad", qty: 16, sourceId: "vanilla:lily_pad", texture: "/wiki/textures/vanilla/lily_pad.png" }],
-    output: { name: "Frog Companion Egg", qty: 1, sourceId: "mmoitem:PETS:PET_FROG_EGG", texture: "/wiki/textures/vanilla/frog_spawn_egg.png" },
+    ingredients: [
+      { name: "Lily Pad", qty: 16, sourceId: "vanilla:lily_pad", texture: "/wiki/textures/vanilla/lily_pad.png" },
+    ],
+    output: {
+      name: "Frog Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_FROG_EGG",
+      texture: "/wiki/textures/vanilla/frog_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-pet-ball",
@@ -704,8 +1625,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Red Wool", qty: 2, sourceId: "vanilla:red_wool", texture: "/wiki/textures/vanilla/red_wool.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Pet Ball", qty: 1, sourceId: "mmoitem:PETS:PET_BALL", texture: "/wiki/textures/mmoitems/pet_ball.png" },
+    ingredients: [
+      { name: "Red Wool", qty: 2, sourceId: "vanilla:red_wool", texture: "/wiki/textures/vanilla/red_wool.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Pet Ball",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BALL",
+      texture: "/wiki/textures/mmoitems/pet_ball.png",
+    },
   },
   {
     key: "gen-animal-station-pet-chew-bone",
@@ -713,8 +1642,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "White Wool", qty: 4, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Bone Plush", qty: 1, sourceId: "mmoitem:PETS:PET_CHEW_BONE", texture: "/wiki/textures/mmoitems/pet_chew_bone.png" },
+    ingredients: [
+      { name: "White Wool", qty: 4, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Bone Plush",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CHEW_BONE",
+      texture: "/wiki/textures/mmoitems/pet_chew_bone.png",
+    },
   },
   {
     key: "gen-animal-station-pet-tug-rope",
@@ -723,7 +1660,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     category: "Pet Supplies",
     ingredients: [{ name: "String", qty: 4, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Tug Rope", qty: 1, sourceId: "mmoitem:PETS:PET_TUG_ROPE", texture: "/wiki/textures/mmoitems/pet_tug_rope.png" },
+    output: {
+      name: "Tug Rope",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_TUG_ROPE",
+      texture: "/wiki/textures/mmoitems/pet_tug_rope.png",
+    },
   },
   {
     key: "gen-animal-station-pet-mouse-plush",
@@ -731,8 +1673,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Gray Wool", qty: 4, sourceId: "vanilla:gray_wool", texture: "/wiki/textures/vanilla/gray_wool.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Mouse Plush", qty: 1, sourceId: "mmoitem:PETS:PET_MOUSE_PLUSH", texture: "/wiki/textures/mmoitems/pet_mouse_plush.png" },
+    ingredients: [
+      { name: "Gray Wool", qty: 4, sourceId: "vanilla:gray_wool", texture: "/wiki/textures/vanilla/gray_wool.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Mouse Plush",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_MOUSE_PLUSH",
+      texture: "/wiki/textures/mmoitems/pet_mouse_plush.png",
+    },
   },
   {
     key: "gen-animal-station-pet-teddy-plush",
@@ -740,8 +1690,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Brown Wool", qty: 4, sourceId: "vanilla:brown_wool", texture: "/wiki/textures/vanilla/brown_wool.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Teddy Bear Plush", qty: 1, sourceId: "mmoitem:PETS:PET_TEDDY_PLUSH", texture: "/wiki/textures/mmoitems/pet_teddy_plush.png" },
+    ingredients: [
+      { name: "Brown Wool", qty: 4, sourceId: "vanilla:brown_wool", texture: "/wiki/textures/vanilla/brown_wool.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Teddy Bear Plush",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_TEDDY_PLUSH",
+      texture: "/wiki/textures/mmoitems/pet_teddy_plush.png",
+    },
   },
   {
     key: "gen-animal-station-fish-snack",
@@ -749,8 +1707,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Salmon", qty: 2, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }, { name: "Wheat", qty: 1, sourceId: "vanilla:wheat", texture: "/wiki/textures/vanilla/wheat.png" }],
-    output: { name: "Fish Snack", qty: 1, sourceId: "mmoitem:PETS:FISH_SNACK", texture: "/wiki/textures/mmoitems/fish_snack.png" },
+    ingredients: [
+      { name: "Salmon", qty: 2, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+      { name: "Wheat", qty: 1, sourceId: "vanilla:wheat", texture: "/wiki/textures/vanilla/wheat.png" },
+    ],
+    output: {
+      name: "Fish Snack",
+      qty: 1,
+      sourceId: "mmoitem:PETS:FISH_SNACK",
+      texture: "/wiki/textures/mmoitems/fish_snack.png",
+    },
   },
   {
     key: "gen-animal-station-biscuit-treat",
@@ -758,8 +1724,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Wheat", qty: 2, sourceId: "vanilla:wheat", texture: "/wiki/textures/vanilla/wheat.png" }, { name: "Carrot", qty: 1, sourceId: "vanilla:carrot", texture: "/wiki/textures/vanilla/carrot.png" }],
-    output: { name: "Biscuit Treat", qty: 1, sourceId: "mmoitem:PETS:BISCUIT_TREAT", texture: "/wiki/textures/mmoitems/biscuit_treat.png" },
+    ingredients: [
+      { name: "Wheat", qty: 2, sourceId: "vanilla:wheat", texture: "/wiki/textures/vanilla/wheat.png" },
+      { name: "Carrot", qty: 1, sourceId: "vanilla:carrot", texture: "/wiki/textures/vanilla/carrot.png" },
+    ],
+    output: {
+      name: "Biscuit Treat",
+      qty: 1,
+      sourceId: "mmoitem:PETS:BISCUIT_TREAT",
+      texture: "/wiki/textures/mmoitems/biscuit_treat.png",
+    },
   },
   {
     key: "gen-animal-station-pet-house",
@@ -767,8 +1741,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Oak Planks", qty: 8, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }, { name: "White Wool", qty: 2, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" }],
-    output: { name: "Pet House", qty: 1, sourceId: "itemsadder:pet_house", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 8, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+      { name: "White Wool", qty: 2, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ],
+    output: {
+      name: "Pet House",
+      qty: 1,
+      sourceId: "itemsadder:pet_house",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-animal-station-ownership-token",
@@ -776,8 +1758,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Iron Nugget", qty: 1, sourceId: "vanilla:iron_nugget", texture: "/wiki/textures/vanilla/iron_nugget.png" }],
-    output: { name: "Ownership Token", qty: 1, sourceId: "mmoitem:PETS:TAMING_ITEM", texture: "/wiki/textures/mmoitems/taming_item.png" },
+    ingredients: [
+      {
+        name: "Iron Nugget",
+        qty: 1,
+        sourceId: "vanilla:iron_nugget",
+        texture: "/wiki/textures/vanilla/iron_nugget.png",
+      },
+    ],
+    output: {
+      name: "Ownership Token",
+      qty: 1,
+      sourceId: "mmoitem:PETS:TAMING_ITEM",
+      texture: "/wiki/textures/mmoitems/taming_item.png",
+    },
   },
   {
     key: "gen-animal-station-coownership-token",
@@ -785,8 +1779,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Iron Nugget", qty: 1, sourceId: "vanilla:iron_nugget", texture: "/wiki/textures/vanilla/iron_nugget.png" }],
-    output: { name: "Co-Ownership Token", qty: 1, sourceId: "mmoitem:PETS:COOWNERSHIP_ITEM", texture: "/wiki/textures/mmoitems/coownership_item.png" },
+    ingredients: [
+      {
+        name: "Iron Nugget",
+        qty: 1,
+        sourceId: "vanilla:iron_nugget",
+        texture: "/wiki/textures/vanilla/iron_nugget.png",
+      },
+    ],
+    output: {
+      name: "Co-Ownership Token",
+      qty: 1,
+      sourceId: "mmoitem:PETS:COOWNERSHIP_ITEM",
+      texture: "/wiki/textures/mmoitems/coownership_item.png",
+    },
   },
   {
     key: "gen-animal-station-glove",
@@ -794,8 +1800,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Glove", qty: 1, sourceId: "mmoitem:PETS:CARING_ITEM", texture: "/wiki/textures/mmoitems/caring_item.png" },
+    ingredients: [
+      { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Glove",
+      qty: 1,
+      sourceId: "mmoitem:PETS:CARING_ITEM",
+      texture: "/wiki/textures/mmoitems/caring_item.png",
+    },
   },
   {
     key: "gen-animal-station-pet-brush",
@@ -803,8 +1816,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }, { name: "White Wool", qty: 1, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" }],
-    output: { name: "Pet Brush", qty: 1, sourceId: "mmoitem:PETS:PET_BRUSH", texture: "/wiki/textures/mmoitems/pet_brush.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+      { name: "White Wool", qty: 1, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ],
+    output: {
+      name: "Pet Brush",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_BRUSH",
+      texture: "/wiki/textures/mmoitems/pet_brush.png",
+    },
   },
   {
     key: "gen-animal-station-neutering-tool",
@@ -812,8 +1833,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Neutering Tool", qty: 1, sourceId: "mmoitem:PETS:NEUTERING_ITEM", texture: "/wiki/textures/mmoitems/neutering_item.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Neutering Tool",
+      qty: 1,
+      sourceId: "mmoitem:PETS:NEUTERING_ITEM",
+      texture: "/wiki/textures/mmoitems/neutering_item.png",
+    },
   },
   {
     key: "gen-animal-station-trough",
@@ -821,7 +1849,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
     output: { name: "Trough", qty: 1, sourceId: "itemsadder:trough", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -830,8 +1860,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Gold Nugget", qty: 1, sourceId: "vanilla:gold_nugget", texture: "/wiki/textures/vanilla/gold_nugget.png" }, { name: "Iron Nugget", qty: 1, sourceId: "vanilla:iron_nugget", texture: "/wiki/textures/vanilla/iron_nugget.png" }],
-    output: { name: "Mount Whistle", qty: 1, sourceId: "mmoitem:PETS:ANIMAL_WHISTLE", texture: "/wiki/textures/mmoitems/animal_whistle.png" },
+    ingredients: [
+      {
+        name: "Gold Nugget",
+        qty: 1,
+        sourceId: "vanilla:gold_nugget",
+        texture: "/wiki/textures/vanilla/gold_nugget.png",
+      },
+      {
+        name: "Iron Nugget",
+        qty: 1,
+        sourceId: "vanilla:iron_nugget",
+        texture: "/wiki/textures/vanilla/iron_nugget.png",
+      },
+    ],
+    output: {
+      name: "Mount Whistle",
+      qty: 1,
+      sourceId: "mmoitem:PETS:ANIMAL_WHISTLE",
+      texture: "/wiki/textures/mmoitems/animal_whistle.png",
+    },
   },
   {
     key: "gen-animal-station-goat-egg",
@@ -840,8 +1888,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Goat Spawn Egg", qty: 1, sourceId: "vanilla:goat_spawn_egg", texture: "/wiki/textures/vanilla/goat_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Goat Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:goat_spawn_egg",
+      texture: "/wiki/textures/vanilla/goat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-frog-egg",
@@ -850,8 +1910,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Lily Pad", qty: 16, sourceId: "vanilla:lily_pad", texture: "/wiki/textures/vanilla/lily_pad.png" }],
-    output: { name: "Frog Spawn Egg", qty: 1, sourceId: "vanilla:frog_spawn_egg", texture: "/wiki/textures/vanilla/frog_spawn_egg.png" },
+    ingredients: [
+      { name: "Lily Pad", qty: 16, sourceId: "vanilla:lily_pad", texture: "/wiki/textures/vanilla/lily_pad.png" },
+    ],
+    output: {
+      name: "Frog Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:frog_spawn_egg",
+      texture: "/wiki/textures/vanilla/frog_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-wolf-egg",
@@ -861,7 +1928,12 @@ export const generatedStationRecipes: Recipe[] = [
     requirement: "Breeder I",
     category: "Spawn Eggs",
     ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
-    output: { name: "Wolf Spawn Egg", qty: 1, sourceId: "vanilla:wolf_spawn_egg", texture: "/wiki/textures/vanilla/wolf_spawn_egg.png" },
+    output: {
+      name: "Wolf Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:wolf_spawn_egg",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-cat-egg",
@@ -870,8 +1942,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Cat Spawn Egg", qty: 1, sourceId: "vanilla:cat_spawn_egg", texture: "/wiki/textures/vanilla/cat_spawn_egg.png" },
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Cat Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:cat_spawn_egg",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-parrot-egg",
@@ -880,8 +1959,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Parrot Spawn Egg", qty: 1, sourceId: "vanilla:parrot_spawn_egg", texture: "/wiki/textures/vanilla/parrot_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Parrot Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:parrot_spawn_egg",
+      texture: "/wiki/textures/vanilla/parrot_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-panda-egg",
@@ -890,8 +1981,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Bamboo", qty: 64, sourceId: "vanilla:bamboo", texture: "/wiki/textures/vanilla/bamboo.png" }],
-    output: { name: "Panda Spawn Egg", qty: 1, sourceId: "vanilla:panda_spawn_egg", texture: "/wiki/textures/vanilla/panda_spawn_egg.png" },
+    ingredients: [
+      { name: "Bamboo", qty: 64, sourceId: "vanilla:bamboo", texture: "/wiki/textures/vanilla/bamboo.png" },
+    ],
+    output: {
+      name: "Panda Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:panda_spawn_egg",
+      texture: "/wiki/textures/vanilla/panda_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-bee-egg",
@@ -900,8 +1998,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Bee Spawn Egg", qty: 1, sourceId: "vanilla:bee_spawn_egg", texture: "/wiki/textures/vanilla/bee_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Bee Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:bee_spawn_egg",
+      texture: "/wiki/textures/vanilla/bee_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-fox-egg",
@@ -910,8 +2020,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Sweet Berries", qty: 16, sourceId: "vanilla:sweet_berries", texture: "/wiki/textures/vanilla/sweet_berries.png" }],
-    output: { name: "Fox Spawn Egg", qty: 1, sourceId: "vanilla:fox_spawn_egg", texture: "/wiki/textures/vanilla/fox_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Sweet Berries",
+        qty: 16,
+        sourceId: "vanilla:sweet_berries",
+        texture: "/wiki/textures/vanilla/sweet_berries.png",
+      },
+    ],
+    output: {
+      name: "Fox Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:fox_spawn_egg",
+      texture: "/wiki/textures/vanilla/fox_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-turtle-egg",
@@ -920,8 +2042,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Seagrass", qty: 64, sourceId: "vanilla:seagrass", texture: "/wiki/textures/vanilla/seagrass.png" }],
-    output: { name: "Turtle Spawn Egg", qty: 1, sourceId: "vanilla:turtle_spawn_egg", texture: "/wiki/textures/vanilla/turtle_spawn_egg.png" },
+    ingredients: [
+      { name: "Seagrass", qty: 64, sourceId: "vanilla:seagrass", texture: "/wiki/textures/vanilla/seagrass.png" },
+    ],
+    output: {
+      name: "Turtle Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:turtle_spawn_egg",
+      texture: "/wiki/textures/vanilla/turtle_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-axolotl-egg",
@@ -930,8 +2059,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder I",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Tropical Fish", qty: 64, sourceId: "vanilla:tropical_fish", texture: "/wiki/textures/vanilla/tropical_fish.png" }],
-    output: { name: "Axolotl Spawn Egg", qty: 1, sourceId: "vanilla:axolotl_spawn_egg", texture: "/wiki/textures/vanilla/axolotl_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Tropical Fish",
+        qty: 64,
+        sourceId: "vanilla:tropical_fish",
+        texture: "/wiki/textures/vanilla/tropical_fish.png",
+      },
+    ],
+    output: {
+      name: "Axolotl Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:axolotl_spawn_egg",
+      texture: "/wiki/textures/vanilla/axolotl_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-horse-egg",
@@ -940,8 +2081,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder II",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Horse Spawn Egg", qty: 1, sourceId: "vanilla:horse_spawn_egg", texture: "/wiki/textures/vanilla/horse_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Horse Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:horse_spawn_egg",
+      texture: "/wiki/textures/vanilla/horse_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-donkey-egg",
@@ -950,8 +2103,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder II",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Donkey Spawn Egg", qty: 1, sourceId: "vanilla:donkey_spawn_egg", texture: "/wiki/textures/vanilla/donkey_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Donkey Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:donkey_spawn_egg",
+      texture: "/wiki/textures/vanilla/donkey_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-camel-egg",
@@ -960,8 +2125,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder II",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Cactus", qty: 64, sourceId: "vanilla:cactus", texture: "/wiki/textures/vanilla/cactus.png" }],
-    output: { name: "Camel Spawn Egg", qty: 1, sourceId: "vanilla:camel_spawn_egg", texture: "/wiki/textures/vanilla/camel_spawn_egg.png" },
+    ingredients: [
+      { name: "Cactus", qty: 64, sourceId: "vanilla:cactus", texture: "/wiki/textures/vanilla/cactus.png" },
+    ],
+    output: {
+      name: "Camel Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:camel_spawn_egg",
+      texture: "/wiki/textures/vanilla/camel_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-llama-egg",
@@ -970,8 +2142,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder II",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Llama Spawn Egg", qty: 1, sourceId: "vanilla:llama_spawn_egg", texture: "/wiki/textures/vanilla/llama_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Llama Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:llama_spawn_egg",
+      texture: "/wiki/textures/vanilla/llama_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-rabbit-egg",
@@ -980,8 +2164,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder III",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Rabbit Spawn Egg", qty: 1, sourceId: "vanilla:rabbit_spawn_egg", texture: "/wiki/textures/vanilla/rabbit_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Rabbit Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:rabbit_spawn_egg",
+      texture: "/wiki/textures/vanilla/rabbit_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-pig-egg",
@@ -990,8 +2186,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder III",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Pig Spawn Egg", qty: 1, sourceId: "vanilla:pig_spawn_egg", texture: "/wiki/textures/vanilla/pig_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Pig Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:pig_spawn_egg",
+      texture: "/wiki/textures/vanilla/pig_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-sheep-egg",
@@ -1000,8 +2208,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder III",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Sheep Spawn Egg", qty: 1, sourceId: "vanilla:sheep_spawn_egg", texture: "/wiki/textures/vanilla/sheep_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Sheep Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:sheep_spawn_egg",
+      texture: "/wiki/textures/vanilla/sheep_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-cow-egg",
@@ -1010,8 +2230,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder III",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Cow Spawn Egg", qty: 1, sourceId: "vanilla:cow_spawn_egg", texture: "/wiki/textures/vanilla/cow_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Cow Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:cow_spawn_egg",
+      texture: "/wiki/textures/vanilla/cow_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-chicken-egg",
@@ -1020,8 +2252,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Breeder III",
     category: "Spawn Eggs",
-    ingredients: [{ name: "Wheat Seeds", qty: 64, sourceId: "vanilla:wheat_seeds", texture: "/wiki/textures/vanilla/wheat_seeds.png" }],
-    output: { name: "Chicken Spawn Egg", qty: 1, sourceId: "vanilla:chicken_spawn_egg", texture: "/wiki/textures/vanilla/chicken_spawn_egg.png" },
+    ingredients: [
+      {
+        name: "Wheat Seeds",
+        qty: 64,
+        sourceId: "vanilla:wheat_seeds",
+        texture: "/wiki/textures/vanilla/wheat_seeds.png",
+      },
+    ],
+    output: {
+      name: "Chicken Spawn Egg",
+      qty: 1,
+      sourceId: "vanilla:chicken_spawn_egg",
+      texture: "/wiki/textures/vanilla/chicken_spawn_egg.png",
+    },
   },
   {
     key: "gen-animal-station-fish-treat",
@@ -1030,7 +2274,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     category: "Pet Supplies",
     ingredients: [{ name: "Salmon", qty: 4, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" }],
-    output: { name: "Fish Meal", qty: 1, sourceId: "mmoitem:PETS:FISH_TREAT", texture: "/wiki/textures/mmoitems/fish_treat.png" },
+    output: {
+      name: "Fish Meal",
+      qty: 1,
+      sourceId: "mmoitem:PETS:FISH_TREAT",
+      texture: "/wiki/textures/mmoitems/fish_treat.png",
+    },
   },
   {
     key: "gen-animal-station-meat-treat",
@@ -1038,8 +2287,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Animal Station",
     time: 5,
     category: "Pet Supplies",
-    ingredients: [{ name: "Beef Steak", qty: 2, sourceId: "vanilla:beef", texture: "/wiki/textures/vanilla/beef.png" }, { name: "Egg", qty: 1, sourceId: "vanilla:egg", texture: "/wiki/textures/vanilla/egg.png" }],
-    output: { name: "Meat Meal", qty: 1, sourceId: "mmoitem:PETS:MEAT_TREAT", texture: "/wiki/textures/mmoitems/meat_treat.png" },
+    ingredients: [
+      { name: "Beef Steak", qty: 2, sourceId: "vanilla:beef", texture: "/wiki/textures/vanilla/beef.png" },
+      { name: "Egg", qty: 1, sourceId: "vanilla:egg", texture: "/wiki/textures/vanilla/egg.png" },
+    ],
+    output: {
+      name: "Meat Meal",
+      qty: 1,
+      sourceId: "mmoitem:PETS:MEAT_TREAT",
+      texture: "/wiki/textures/mmoitems/meat_treat.png",
+    },
   },
   {
     key: "gen-archeology-station-archaeo-tracker",
@@ -1047,8 +2304,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Redstone Torch", qty: 1, sourceId: "vanilla:redstone_torch", texture: "/wiki/textures/vanilla/redstone_torch.png" }],
-    output: { name: "Field Compass", qty: 1, sourceId: "mmoitem:TOOLS:ARCHAEO_TRACKER", texture: "/wiki/textures/mmoitems/archaeo_tracker.png" },
+    ingredients: [
+      {
+        name: "Redstone Torch",
+        qty: 1,
+        sourceId: "vanilla:redstone_torch",
+        texture: "/wiki/textures/vanilla/redstone_torch.png",
+      },
+    ],
+    output: {
+      name: "Field Compass",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHAEO_TRACKER",
+      texture: "/wiki/textures/mmoitems/archaeo_tracker.png",
+    },
   },
   {
     key: "gen-archeology-station-archaeo-prospect",
@@ -1056,8 +2325,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Soil Probe", qty: 1, sourceId: "mmoitem:TOOLS:ARCHAEO_PROSPECT", texture: "/wiki/textures/vanilla/stone_hoe.png" },
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Soil Probe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHAEO_PROSPECT",
+      texture: "/wiki/textures/vanilla/stone_hoe.png",
+    },
   },
   {
     key: "gen-archeology-station-archaeo-establish",
@@ -1065,8 +2347,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }, { name: "Stick", qty: 4, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "White Wool", qty: 2, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" }],
-    output: { name: "Camp Kit", qty: 1, sourceId: "mmoitem:TOOLS:ARCHAEO_ESTABLISH", texture: "/wiki/textures/vanilla/campfire.png" },
+    ingredients: [
+      { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+      { name: "Stick", qty: 4, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "White Wool", qty: 2, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ],
+    output: {
+      name: "Camp Kit",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHAEO_ESTABLISH",
+      texture: "/wiki/textures/vanilla/campfire.png",
+    },
   },
   {
     key: "gen-archeology-station-archaeo-pencil",
@@ -1074,8 +2365,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" }, { name: "Coal", qty: 1, sourceId: "vanilla:coal", texture: "/wiki/textures/vanilla/coal.png" }],
-    output: { name: "Field Pencil", qty: 1, sourceId: "mmoitem:TOOLS:ARCHAEO_PENCIL", texture: "/wiki/textures/mmoitems/archaeo_pencil.png" },
+    ingredients: [
+      { name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" },
+      { name: "Coal", qty: 1, sourceId: "vanilla:coal", texture: "/wiki/textures/vanilla/coal.png" },
+    ],
+    output: {
+      name: "Field Pencil",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHAEO_PENCIL",
+      texture: "/wiki/textures/mmoitems/archaeo_pencil.png",
+    },
   },
   {
     key: "gen-archeology-station-field-brush",
@@ -1083,7 +2382,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" }, { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }, { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
+    ingredients: [
+      { name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" },
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+      { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
     output: { name: "Brush", qty: 1, sourceId: "vanilla:brush", texture: "/wiki/textures/vanilla/brush.png" },
   },
   {
@@ -1092,8 +2400,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Knife", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_KNIFE", texture: "/wiki/textures/mmoitems/archeology_knife.png" },
+    ingredients: [
+      { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Knife",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_KNIFE",
+      texture: "/wiki/textures/mmoitems/archeology_knife.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-spoon",
@@ -1101,8 +2417,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Spoon", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_SPOON", texture: "/wiki/textures/mmoitems/archeology_spoon.png" },
+    ingredients: [
+      { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Spoon",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_SPOON",
+      texture: "/wiki/textures/mmoitems/archeology_spoon.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-handpick",
@@ -1110,8 +2434,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Hand Pick", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_HANDPICK", texture: "/wiki/textures/mmoitems/archeology_handpick.png" },
+    ingredients: [
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Hand Pick",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_HANDPICK",
+      texture: "/wiki/textures/mmoitems/archeology_handpick.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-trowel",
@@ -1119,8 +2451,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Trowel", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_TROWEL", texture: "/wiki/textures/mmoitems/archeology_trowel.png" },
+    ingredients: [
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Trowel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_TROWEL",
+      texture: "/wiki/textures/mmoitems/archeology_trowel.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-pick",
@@ -1128,8 +2468,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 3, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Breaker Pick", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_PICK", texture: "/wiki/textures/vanilla/iron_pickaxe.png" },
+    ingredients: [
+      { name: "Stick", qty: 3, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Breaker Pick",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_PICK",
+      texture: "/wiki/textures/vanilla/iron_pickaxe.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-shovel",
@@ -1137,8 +2485,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Stick", qty: 3, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Spoil Shovel", qty: 1, sourceId: "mmoitem:TOOLS:ARCHEOLOGY_SHOVEL", texture: "/wiki/textures/vanilla/iron_shovel.png" },
+    ingredients: [
+      { name: "Stick", qty: 3, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Spoil Shovel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ARCHEOLOGY_SHOVEL",
+      texture: "/wiki/textures/vanilla/iron_shovel.png",
+    },
   },
   {
     key: "gen-archeology-station-archeology-cabinet",
@@ -1146,8 +2502,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Archeology Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Archeology Cabinet", qty: 1, sourceId: "itemsadder:archeology_cabinet", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Archeology Cabinet",
+      qty: 1,
+      sourceId: "itemsadder:archeology_cabinet",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-cobblestone",
@@ -1155,8 +2518,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Cobblestone", qty: 64, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Cobblestone",
+      qty: 64,
+      sourceId: "vanilla:cobblestone",
+      texture: "/wiki/textures/vanilla/cobblestone.png",
+    },
   },
   {
     key: "gen-block-station-andesite",
@@ -1164,7 +2539,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Andesite", qty: 64, sourceId: "vanilla:andesite", texture: "/wiki/textures/vanilla/andesite.png" },
   },
   {
@@ -1173,7 +2555,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Granite", qty: 64, sourceId: "vanilla:granite", texture: "/wiki/textures/vanilla/granite.png" },
   },
   {
@@ -1182,7 +2571,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Diorite", qty: 64, sourceId: "vanilla:diorite", texture: "/wiki/textures/vanilla/diorite.png" },
   },
   {
@@ -1191,7 +2587,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Calcite", qty: 64, sourceId: "vanilla:calcite", texture: "/wiki/textures/vanilla/calcite.png" },
   },
   {
@@ -1200,8 +2603,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Deepslate", qty: 64, sourceId: "vanilla:deepslate", texture: "/wiki/textures/vanilla/deepslate.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Deepslate",
+      qty: 64,
+      sourceId: "vanilla:deepslate",
+      texture: "/wiki/textures/vanilla/deepslate.png",
+    },
   },
   {
     key: "gen-block-station-tuff",
@@ -1209,7 +2624,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Tuff", qty: 64, sourceId: "vanilla:tuff", texture: "/wiki/textures/vanilla/tuff.png" },
   },
   {
@@ -1218,8 +2640,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Quartz Block", qty: 64, sourceId: "vanilla:quartz_block", texture: "/wiki/textures/vanilla/quartz_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Quartz Block",
+      qty: 64,
+      sourceId: "vanilla:quartz_block",
+      texture: "/wiki/textures/vanilla/quartz_block.png",
+    },
   },
   {
     key: "gen-block-station-bricks",
@@ -1227,7 +2661,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Bricks", qty: 64, sourceId: "vanilla:bricks", texture: "/wiki/textures/vanilla/bricks.png" },
   },
   {
@@ -1236,8 +2677,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Amethyst Block", qty: 64, sourceId: "vanilla:amethyst_block", texture: "/wiki/textures/vanilla/amethyst_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Amethyst Block",
+      qty: 64,
+      sourceId: "vanilla:amethyst_block",
+      texture: "/wiki/textures/vanilla/amethyst_block.png",
+    },
   },
   {
     key: "gen-block-station-sculk",
@@ -1245,7 +2698,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Sculk",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Sculk", qty: 64, sourceId: "vanilla:sculk", texture: "/wiki/textures/vanilla/sculk.png" },
   },
   {
@@ -1254,8 +2714,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Sculk",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sculk Sensor", qty: 64, sourceId: "vanilla:sculk_sensor", texture: "/wiki/textures/vanilla/sculk_sensor.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sculk Sensor",
+      qty: 64,
+      sourceId: "vanilla:sculk_sensor",
+      texture: "/wiki/textures/vanilla/sculk_sensor.png",
+    },
   },
   {
     key: "gen-block-station-sculk-catalyst",
@@ -1263,8 +2735,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Sculk",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sculk Catalyst", qty: 64, sourceId: "vanilla:sculk_catalyst", texture: "/wiki/textures/vanilla/sculk_catalyst.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sculk Catalyst",
+      qty: 64,
+      sourceId: "vanilla:sculk_catalyst",
+      texture: "/wiki/textures/vanilla/sculk_catalyst.png",
+    },
   },
   {
     key: "gen-block-station-sculk-shrieker",
@@ -1272,8 +2756,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Sculk",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sculk Shrieker", qty: 64, sourceId: "vanilla:sculk_shrieker", texture: "/wiki/textures/vanilla/sculk_shrieker.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sculk Shrieker",
+      qty: 64,
+      sourceId: "vanilla:sculk_shrieker",
+      texture: "/wiki/textures/vanilla/sculk_shrieker.png",
+    },
   },
   {
     key: "gen-block-station-sculk-vein",
@@ -1281,8 +2777,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Sculk",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sculk Vein", qty: 64, sourceId: "vanilla:sculk_vein", texture: "/wiki/textures/vanilla/sculk_vein.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sculk Vein",
+      qty: 64,
+      sourceId: "vanilla:sculk_vein",
+      texture: "/wiki/textures/vanilla/sculk_vein.png",
+    },
   },
   {
     key: "gen-block-station-dripstone-block",
@@ -1290,8 +2798,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Dripstone Block", qty: 64, sourceId: "vanilla:dripstone_block", texture: "/wiki/textures/vanilla/dripstone_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Dripstone Block",
+      qty: 64,
+      sourceId: "vanilla:dripstone_block",
+      texture: "/wiki/textures/vanilla/dripstone_block.png",
+    },
   },
   {
     key: "gen-block-station-pointed-dripstone",
@@ -1299,8 +2819,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Pointed Dripstone", qty: 64, sourceId: "vanilla:pointed_dripstone", texture: "/wiki/textures/vanilla/pointed_dripstone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Pointed Dripstone",
+      qty: 64,
+      sourceId: "vanilla:pointed_dripstone",
+      texture: "/wiki/textures/vanilla/pointed_dripstone.png",
+    },
   },
   {
     key: "gen-block-station-magma-block",
@@ -1308,8 +2840,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Magma Block", qty: 64, sourceId: "vanilla:magma_block", texture: "/wiki/textures/vanilla/magma_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Magma Block",
+      qty: 64,
+      sourceId: "vanilla:magma_block",
+      texture: "/wiki/textures/vanilla/magma_block.png",
+    },
   },
   {
     key: "gen-block-station-prismarine-block",
@@ -1317,8 +2861,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Prismarine", qty: 64, sourceId: "vanilla:prismarine", texture: "/wiki/textures/vanilla/prismarine.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Prismarine",
+      qty: 64,
+      sourceId: "vanilla:prismarine",
+      texture: "/wiki/textures/vanilla/prismarine.png",
+    },
   },
   {
     key: "gen-block-station-prismarine-brick",
@@ -1326,8 +2882,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Prismarine Bricks", qty: 64, sourceId: "vanilla:prismarine_bricks", texture: "/wiki/textures/vanilla/prismarine_bricks.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Prismarine Bricks",
+      qty: 64,
+      sourceId: "vanilla:prismarine_bricks",
+      texture: "/wiki/textures/vanilla/prismarine_bricks.png",
+    },
   },
   {
     key: "gen-block-station-dark-prismarine-block",
@@ -1335,8 +2903,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Dark Prismarine", qty: 64, sourceId: "vanilla:dark_prismarine", texture: "/wiki/textures/vanilla/dark_prismarine.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Dark Prismarine",
+      qty: 64,
+      sourceId: "vanilla:dark_prismarine",
+      texture: "/wiki/textures/vanilla/dark_prismarine.png",
+    },
   },
   {
     key: "gen-block-station-sea-lantern",
@@ -1344,8 +2924,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sea Lantern", qty: 64, sourceId: "vanilla:sea_lantern", texture: "/wiki/textures/vanilla/sea_lantern.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sea Lantern",
+      qty: 64,
+      sourceId: "vanilla:sea_lantern",
+      texture: "/wiki/textures/vanilla/sea_lantern.png",
+    },
   },
   {
     key: "gen-block-station-tube-coral-block",
@@ -1353,8 +2945,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Tube Coral Block", qty: 64, sourceId: "vanilla:tube_coral_block", texture: "/wiki/textures/vanilla/tube_coral_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Tube Coral Block",
+      qty: 64,
+      sourceId: "vanilla:tube_coral_block",
+      texture: "/wiki/textures/vanilla/tube_coral_block.png",
+    },
   },
   {
     key: "gen-block-station-brain-coral-block",
@@ -1362,8 +2966,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Brain Coral Block", qty: 64, sourceId: "vanilla:brain_coral_block", texture: "/wiki/textures/vanilla/brain_coral_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Brain Coral Block",
+      qty: 64,
+      sourceId: "vanilla:brain_coral_block",
+      texture: "/wiki/textures/vanilla/brain_coral_block.png",
+    },
   },
   {
     key: "gen-block-station-bubble-coral-block",
@@ -1371,8 +2987,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Bubble Coral Block", qty: 64, sourceId: "vanilla:bubble_coral_block", texture: "/wiki/textures/vanilla/bubble_coral_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Bubble Coral Block",
+      qty: 64,
+      sourceId: "vanilla:bubble_coral_block",
+      texture: "/wiki/textures/vanilla/bubble_coral_block.png",
+    },
   },
   {
     key: "gen-block-station-fire-coral-block",
@@ -1380,8 +3008,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Fire Coral Block", qty: 64, sourceId: "vanilla:fire_coral_block", texture: "/wiki/textures/vanilla/fire_coral_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Fire Coral Block",
+      qty: 64,
+      sourceId: "vanilla:fire_coral_block",
+      texture: "/wiki/textures/vanilla/fire_coral_block.png",
+    },
   },
   {
     key: "gen-block-station-horn-coral-block",
@@ -1389,8 +3029,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Horn Coral Block", qty: 64, sourceId: "vanilla:horn_coral_block", texture: "/wiki/textures/vanilla/horn_coral_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Horn Coral Block",
+      qty: 64,
+      sourceId: "vanilla:horn_coral_block",
+      texture: "/wiki/textures/vanilla/horn_coral_block.png",
+    },
   },
   {
     key: "gen-block-station-tube-coral",
@@ -1398,8 +3050,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Tube Coral", qty: 64, sourceId: "vanilla:tube_coral", texture: "/wiki/textures/vanilla/tube_coral.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Tube Coral",
+      qty: 64,
+      sourceId: "vanilla:tube_coral",
+      texture: "/wiki/textures/vanilla/tube_coral.png",
+    },
   },
   {
     key: "gen-block-station-brain-coral",
@@ -1407,8 +3071,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Brain Coral", qty: 64, sourceId: "vanilla:brain_coral", texture: "/wiki/textures/vanilla/brain_coral.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Brain Coral",
+      qty: 64,
+      sourceId: "vanilla:brain_coral",
+      texture: "/wiki/textures/vanilla/brain_coral.png",
+    },
   },
   {
     key: "gen-block-station-bubble-coral",
@@ -1416,8 +3092,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Bubble Coral", qty: 64, sourceId: "vanilla:bubble_coral", texture: "/wiki/textures/vanilla/bubble_coral.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Bubble Coral",
+      qty: 64,
+      sourceId: "vanilla:bubble_coral",
+      texture: "/wiki/textures/vanilla/bubble_coral.png",
+    },
   },
   {
     key: "gen-block-station-fire-coral",
@@ -1425,8 +3113,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Fire Coral", qty: 64, sourceId: "vanilla:fire_coral", texture: "/wiki/textures/vanilla/fire_coral.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Fire Coral",
+      qty: 64,
+      sourceId: "vanilla:fire_coral",
+      texture: "/wiki/textures/vanilla/fire_coral.png",
+    },
   },
   {
     key: "gen-block-station-horn-coral",
@@ -1434,8 +3134,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Horn Coral", qty: 64, sourceId: "vanilla:horn_coral", texture: "/wiki/textures/vanilla/horn_coral.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Horn Coral",
+      qty: 64,
+      sourceId: "vanilla:horn_coral",
+      texture: "/wiki/textures/vanilla/horn_coral.png",
+    },
   },
   {
     key: "gen-block-station-tube-coral-fan",
@@ -1443,8 +3155,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Tube Coral Fan", qty: 64, sourceId: "vanilla:tube_coral_fan", texture: "/wiki/textures/vanilla/tube_coral_fan.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Tube Coral Fan",
+      qty: 64,
+      sourceId: "vanilla:tube_coral_fan",
+      texture: "/wiki/textures/vanilla/tube_coral_fan.png",
+    },
   },
   {
     key: "gen-block-station-brain-coral-fan",
@@ -1452,8 +3176,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Brain Coral Fan", qty: 64, sourceId: "vanilla:brain_coral_fan", texture: "/wiki/textures/vanilla/brain_coral_fan.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Brain Coral Fan",
+      qty: 64,
+      sourceId: "vanilla:brain_coral_fan",
+      texture: "/wiki/textures/vanilla/brain_coral_fan.png",
+    },
   },
   {
     key: "gen-block-station-bubble-coral-fan",
@@ -1461,8 +3197,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Bubble Coral Fan", qty: 64, sourceId: "vanilla:bubble_coral_fan", texture: "/wiki/textures/vanilla/bubble_coral_fan.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Bubble Coral Fan",
+      qty: 64,
+      sourceId: "vanilla:bubble_coral_fan",
+      texture: "/wiki/textures/vanilla/bubble_coral_fan.png",
+    },
   },
   {
     key: "gen-block-station-fire-coral-fan",
@@ -1470,8 +3218,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Fire Coral Fan", qty: 64, sourceId: "vanilla:fire_coral_fan", texture: "/wiki/textures/vanilla/fire_coral_fan.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Fire Coral Fan",
+      qty: 64,
+      sourceId: "vanilla:fire_coral_fan",
+      texture: "/wiki/textures/vanilla/fire_coral_fan.png",
+    },
   },
   {
     key: "gen-block-station-horn-coral-fan",
@@ -1479,8 +3239,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Coral",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Horn Coral Fan", qty: 64, sourceId: "vanilla:horn_coral_fan", texture: "/wiki/textures/vanilla/horn_coral_fan.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Horn Coral Fan",
+      qty: 64,
+      sourceId: "vanilla:horn_coral_fan",
+      texture: "/wiki/textures/vanilla/horn_coral_fan.png",
+    },
   },
   {
     key: "gen-block-station-ochre-froglight",
@@ -1488,8 +3260,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Ochre Froglight", qty: 64, sourceId: "vanilla:ochre_froglight", texture: "/wiki/textures/vanilla/ochre_froglight.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Ochre Froglight",
+      qty: 64,
+      sourceId: "vanilla:ochre_froglight",
+      texture: "/wiki/textures/vanilla/ochre_froglight.png",
+    },
   },
   {
     key: "gen-block-station-verdant-froglight",
@@ -1497,8 +3281,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Verdant Froglight", qty: 64, sourceId: "vanilla:verdant_froglight", texture: "/wiki/textures/vanilla/verdant_froglight.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Verdant Froglight",
+      qty: 64,
+      sourceId: "vanilla:verdant_froglight",
+      texture: "/wiki/textures/vanilla/verdant_froglight.png",
+    },
   },
   {
     key: "gen-block-station-pearlescent-froglight",
@@ -1506,8 +3302,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Pearlescent Froglight", qty: 64, sourceId: "vanilla:pearlescent_froglight", texture: "/wiki/textures/vanilla/pearlescent_froglight.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Pearlescent Froglight",
+      qty: 64,
+      sourceId: "vanilla:pearlescent_froglight",
+      texture: "/wiki/textures/vanilla/pearlescent_froglight.png",
+    },
   },
   {
     key: "gen-block-station-gravel",
@@ -1515,7 +3323,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Gravel", qty: 64, sourceId: "vanilla:gravel", texture: "/wiki/textures/vanilla/gravel.png" },
   },
   {
@@ -1524,7 +3339,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Sand", qty: 64, sourceId: "vanilla:sand", texture: "/wiki/textures/vanilla/sand.png" },
   },
   {
@@ -1533,8 +3355,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Sandstone", qty: 64, sourceId: "vanilla:sandstone", texture: "/wiki/textures/vanilla/sandstone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Sandstone",
+      qty: 64,
+      sourceId: "vanilla:sandstone",
+      texture: "/wiki/textures/vanilla/sandstone.png",
+    },
   },
   {
     key: "gen-block-station-red-sand",
@@ -1542,7 +3376,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Red Sand", qty: 64, sourceId: "vanilla:red_sand", texture: "/wiki/textures/vanilla/red_sand.png" },
   },
   {
@@ -1551,8 +3392,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Red Sandstone", qty: 64, sourceId: "vanilla:red_sandstone", texture: "/wiki/textures/vanilla/red_sandstone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Red Sandstone",
+      qty: 64,
+      sourceId: "vanilla:red_sandstone",
+      texture: "/wiki/textures/vanilla/red_sandstone.png",
+    },
   },
   {
     key: "gen-block-station-clay",
@@ -1560,7 +3413,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Clay", qty: 64, sourceId: "vanilla:clay", texture: "/wiki/textures/vanilla/clay.png" },
   },
   {
@@ -1569,8 +3429,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Terracotta", qty: 64, sourceId: "vanilla:terracotta", texture: "/wiki/textures/vanilla/terracotta.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Terracotta",
+      qty: 64,
+      sourceId: "vanilla:terracotta",
+      texture: "/wiki/textures/vanilla/terracotta.png",
+    },
   },
   {
     key: "gen-block-station-white-concrete",
@@ -1578,8 +3450,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "White Concrete", qty: 64, sourceId: "vanilla:white_concrete", texture: "/wiki/textures/vanilla/white_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "White Concrete",
+      qty: 64,
+      sourceId: "vanilla:white_concrete",
+      texture: "/wiki/textures/vanilla/white_concrete.png",
+    },
   },
   {
     key: "gen-block-station-light-gray-concrete",
@@ -1587,8 +3471,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Light Gray Concrete", qty: 64, sourceId: "vanilla:light_gray_concrete", texture: "/wiki/textures/vanilla/light_gray_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Light Gray Concrete",
+      qty: 64,
+      sourceId: "vanilla:light_gray_concrete",
+      texture: "/wiki/textures/vanilla/light_gray_concrete.png",
+    },
   },
   {
     key: "gen-block-station-gray-concrete",
@@ -1596,8 +3492,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Gray Concrete", qty: 64, sourceId: "vanilla:gray_concrete", texture: "/wiki/textures/vanilla/gray_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Gray Concrete",
+      qty: 64,
+      sourceId: "vanilla:gray_concrete",
+      texture: "/wiki/textures/vanilla/gray_concrete.png",
+    },
   },
   {
     key: "gen-block-station-black-concrete",
@@ -1605,8 +3513,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Black Concrete", qty: 64, sourceId: "vanilla:black_concrete", texture: "/wiki/textures/vanilla/black_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Black Concrete",
+      qty: 64,
+      sourceId: "vanilla:black_concrete",
+      texture: "/wiki/textures/vanilla/black_concrete.png",
+    },
   },
   {
     key: "gen-block-station-brown-concrete",
@@ -1614,8 +3534,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Brown Concrete", qty: 64, sourceId: "vanilla:brown_concrete", texture: "/wiki/textures/vanilla/brown_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Brown Concrete",
+      qty: 64,
+      sourceId: "vanilla:brown_concrete",
+      texture: "/wiki/textures/vanilla/brown_concrete.png",
+    },
   },
   {
     key: "gen-block-station-red-concrete",
@@ -1623,8 +3555,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Red Concrete", qty: 64, sourceId: "vanilla:red_concrete", texture: "/wiki/textures/vanilla/red_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Red Concrete",
+      qty: 64,
+      sourceId: "vanilla:red_concrete",
+      texture: "/wiki/textures/vanilla/red_concrete.png",
+    },
   },
   {
     key: "gen-block-station-orange-concrete",
@@ -1632,8 +3576,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Orange Concrete", qty: 64, sourceId: "vanilla:orange_concrete", texture: "/wiki/textures/vanilla/orange_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Orange Concrete",
+      qty: 64,
+      sourceId: "vanilla:orange_concrete",
+      texture: "/wiki/textures/vanilla/orange_concrete.png",
+    },
   },
   {
     key: "gen-block-station-yellow-concrete",
@@ -1641,8 +3597,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Yellow Concrete", qty: 64, sourceId: "vanilla:yellow_concrete", texture: "/wiki/textures/vanilla/yellow_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Yellow Concrete",
+      qty: 64,
+      sourceId: "vanilla:yellow_concrete",
+      texture: "/wiki/textures/vanilla/yellow_concrete.png",
+    },
   },
   {
     key: "gen-block-station-lime-concrete",
@@ -1650,8 +3618,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Lime Concrete", qty: 64, sourceId: "vanilla:lime_concrete", texture: "/wiki/textures/vanilla/lime_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Lime Concrete",
+      qty: 64,
+      sourceId: "vanilla:lime_concrete",
+      texture: "/wiki/textures/vanilla/lime_concrete.png",
+    },
   },
   {
     key: "gen-block-station-green-concrete",
@@ -1659,8 +3639,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Green Concrete", qty: 64, sourceId: "vanilla:green_concrete", texture: "/wiki/textures/vanilla/green_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Green Concrete",
+      qty: 64,
+      sourceId: "vanilla:green_concrete",
+      texture: "/wiki/textures/vanilla/green_concrete.png",
+    },
   },
   {
     key: "gen-block-station-cyan-concrete",
@@ -1668,8 +3660,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Cyan Concrete", qty: 64, sourceId: "vanilla:cyan_concrete", texture: "/wiki/textures/vanilla/cyan_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Cyan Concrete",
+      qty: 64,
+      sourceId: "vanilla:cyan_concrete",
+      texture: "/wiki/textures/vanilla/cyan_concrete.png",
+    },
   },
   {
     key: "gen-block-station-light-blue-concrete",
@@ -1677,8 +3681,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Light Blue Concrete", qty: 64, sourceId: "vanilla:light_blue_concrete", texture: "/wiki/textures/vanilla/light_blue_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Light Blue Concrete",
+      qty: 64,
+      sourceId: "vanilla:light_blue_concrete",
+      texture: "/wiki/textures/vanilla/light_blue_concrete.png",
+    },
   },
   {
     key: "gen-block-station-blue-concrete",
@@ -1686,8 +3702,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Blue Concrete", qty: 64, sourceId: "vanilla:blue_concrete", texture: "/wiki/textures/vanilla/blue_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Blue Concrete",
+      qty: 64,
+      sourceId: "vanilla:blue_concrete",
+      texture: "/wiki/textures/vanilla/blue_concrete.png",
+    },
   },
   {
     key: "gen-block-station-purple-concrete",
@@ -1695,8 +3723,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Purple Concrete", qty: 64, sourceId: "vanilla:purple_concrete", texture: "/wiki/textures/vanilla/purple_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Purple Concrete",
+      qty: 64,
+      sourceId: "vanilla:purple_concrete",
+      texture: "/wiki/textures/vanilla/purple_concrete.png",
+    },
   },
   {
     key: "gen-block-station-magenta-concrete",
@@ -1704,8 +3744,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Magenta Concrete", qty: 64, sourceId: "vanilla:magenta_concrete", texture: "/wiki/textures/vanilla/magenta_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Magenta Concrete",
+      qty: 64,
+      sourceId: "vanilla:magenta_concrete",
+      texture: "/wiki/textures/vanilla/magenta_concrete.png",
+    },
   },
   {
     key: "gen-block-station-pink-concrete",
@@ -1713,8 +3765,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Concrete",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Pink Concrete", qty: 64, sourceId: "vanilla:pink_concrete", texture: "/wiki/textures/vanilla/pink_concrete.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Pink Concrete",
+      qty: 64,
+      sourceId: "vanilla:pink_concrete",
+      texture: "/wiki/textures/vanilla/pink_concrete.png",
+    },
   },
   {
     key: "gen-block-station-netherrack",
@@ -1722,8 +3786,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Netherrack", qty: 64, sourceId: "vanilla:netherrack", texture: "/wiki/textures/vanilla/netherrack.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Netherrack",
+      qty: 64,
+      sourceId: "vanilla:netherrack",
+      texture: "/wiki/textures/vanilla/netherrack.png",
+    },
   },
   {
     key: "gen-block-station-nether-bricks",
@@ -1731,8 +3807,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Nether Bricks", qty: 64, sourceId: "vanilla:nether_bricks", texture: "/wiki/textures/vanilla/nether_bricks.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Nether Bricks",
+      qty: 64,
+      sourceId: "vanilla:nether_bricks",
+      texture: "/wiki/textures/vanilla/nether_bricks.png",
+    },
   },
   {
     key: "gen-block-station-red-nether-bricks",
@@ -1740,8 +3828,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Red Nether Bricks", qty: 64, sourceId: "vanilla:red_nether_bricks", texture: "/wiki/textures/vanilla/red_nether_bricks.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Red Nether Bricks",
+      qty: 64,
+      sourceId: "vanilla:red_nether_bricks",
+      texture: "/wiki/textures/vanilla/red_nether_bricks.png",
+    },
   },
   {
     key: "gen-block-station-warped-nylium",
@@ -1749,8 +3849,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Warped Nylium", qty: 64, sourceId: "vanilla:warped_nylium", texture: "/wiki/textures/vanilla/warped_nylium.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Warped Nylium",
+      qty: 64,
+      sourceId: "vanilla:warped_nylium",
+      texture: "/wiki/textures/vanilla/warped_nylium.png",
+    },
   },
   {
     key: "gen-block-station-crimson-nylium",
@@ -1758,8 +3870,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Crimson Nylium", qty: 64, sourceId: "vanilla:crimson_nylium", texture: "/wiki/textures/vanilla/crimson_nylium.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Crimson Nylium",
+      qty: 64,
+      sourceId: "vanilla:crimson_nylium",
+      texture: "/wiki/textures/vanilla/crimson_nylium.png",
+    },
   },
   {
     key: "gen-block-station-basalt",
@@ -1767,7 +3891,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Basalt", qty: 64, sourceId: "vanilla:basalt", texture: "/wiki/textures/vanilla/basalt.png" },
   },
   {
@@ -1776,7 +3907,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "Obsidian", qty: 64, sourceId: "vanilla:obsidian", texture: "/wiki/textures/vanilla/obsidian.png" },
   },
   {
@@ -1785,8 +3923,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Blackstone", qty: 64, sourceId: "vanilla:blackstone", texture: "/wiki/textures/vanilla/blackstone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Blackstone",
+      qty: 64,
+      sourceId: "vanilla:blackstone",
+      texture: "/wiki/textures/vanilla/blackstone.png",
+    },
   },
   {
     key: "gen-block-station-gilded-blackstone",
@@ -1794,8 +3944,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Gilded Blackstone", qty: 64, sourceId: "vanilla:gilded_blackstone", texture: "/wiki/textures/vanilla/gilded_blackstone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Gilded Blackstone",
+      qty: 64,
+      sourceId: "vanilla:gilded_blackstone",
+      texture: "/wiki/textures/vanilla/gilded_blackstone.png",
+    },
   },
   {
     key: "gen-block-station-lodestone",
@@ -1803,8 +3965,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Lodestone", qty: 64, sourceId: "vanilla:lodestone", texture: "/wiki/textures/vanilla/lodestone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Lodestone",
+      qty: 64,
+      sourceId: "vanilla:lodestone",
+      texture: "/wiki/textures/vanilla/lodestone.png",
+    },
   },
   {
     key: "gen-block-station-end-stone",
@@ -1812,8 +3986,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "End Stone", qty: 64, sourceId: "vanilla:end_stone", texture: "/wiki/textures/vanilla/end_stone.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "End Stone",
+      qty: 64,
+      sourceId: "vanilla:end_stone",
+      texture: "/wiki/textures/vanilla/end_stone.png",
+    },
   },
   {
     key: "gen-block-station-purpur-block",
@@ -1821,8 +4007,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Purpur Block", qty: 64, sourceId: "vanilla:purpur_block", texture: "/wiki/textures/vanilla/purpur_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Purpur Block",
+      qty: 64,
+      sourceId: "vanilla:purpur_block",
+      texture: "/wiki/textures/vanilla/purpur_block.png",
+    },
   },
   {
     key: "gen-block-station-end-rod",
@@ -1830,7 +4028,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
     output: { name: "End Rod", qty: 64, sourceId: "vanilla:end_rod", texture: "/wiki/textures/vanilla/end_rod.png" },
   },
   {
@@ -1839,8 +4044,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Plants & Flowers",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Chorus Flower", qty: 64, sourceId: "vanilla:chorus_flower", texture: "/wiki/textures/vanilla/chorus_flower.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Chorus Flower",
+      qty: 64,
+      sourceId: "vanilla:chorus_flower",
+      texture: "/wiki/textures/vanilla/chorus_flower.png",
+    },
   },
   {
     key: "gen-block-station-reinforced-deepslate",
@@ -1848,8 +4065,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Reinforced Deepslate", qty: 64, sourceId: "vanilla:reinforced_deepslate", texture: "/wiki/textures/vanilla/reinforced_deepslate.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Reinforced Deepslate",
+      qty: 64,
+      sourceId: "vanilla:reinforced_deepslate",
+      texture: "/wiki/textures/vanilla/reinforced_deepslate.png",
+    },
   },
   {
     key: "gen-block-station-netherite-block",
@@ -1857,8 +4086,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Nether & End",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Netherite Block", qty: 64, sourceId: "vanilla:netherite_block", texture: "/wiki/textures/vanilla/netherite_block.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Netherite Block",
+      qty: 64,
+      sourceId: "vanilla:netherite_block",
+      texture: "/wiki/textures/vanilla/netherite_block.png",
+    },
   },
   {
     key: "gen-block-station-redstone-lamp",
@@ -1866,8 +4107,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Light Sources",
-    ingredients: [{ name: "Stone Core", qty: 1, sourceId: "mmoitem:MATERIALS:STONE_CORE", texture: "/wiki/textures/mmoitems/stone_core.png" }],
-    output: { name: "Redstone Lamp", qty: 64, sourceId: "vanilla:redstone_lamp", texture: "/wiki/textures/vanilla/redstone_lamp.png" },
+    ingredients: [
+      {
+        name: "Stone Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STONE_CORE",
+        texture: "/wiki/textures/mmoitems/stone_core.png",
+      },
+    ],
+    output: {
+      name: "Redstone Lamp",
+      qty: 64,
+      sourceId: "vanilla:redstone_lamp",
+      texture: "/wiki/textures/vanilla/redstone_lamp.png",
+    },
   },
   {
     key: "gen-block-station-train-track",
@@ -1875,8 +4128,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Train Track", qty: 64, sourceId: "itemsadder:train_track", texture: "/wiki/textures/itemsadder/train_track.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Train Track",
+      qty: 64,
+      sourceId: "itemsadder:train_track",
+      texture: "/wiki/textures/itemsadder/train_track.png",
+    },
   },
   {
     key: "gen-block-station-snow-block",
@@ -1885,7 +4145,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Ice & Snow",
     ingredients: [{ name: "Dirt", qty: 2, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Snow Block", qty: 64, sourceId: "vanilla:snow_block", texture: "/wiki/textures/vanilla/snow_block.png" },
+    output: {
+      name: "Snow Block",
+      qty: 64,
+      sourceId: "vanilla:snow_block",
+      texture: "/wiki/textures/vanilla/snow_block.png",
+    },
   },
   {
     key: "gen-block-station-mud",
@@ -1903,7 +4168,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Earth & Sediment",
     ingredients: [{ name: "Dirt", qty: 2, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Packed Mud", qty: 64, sourceId: "vanilla:packed_mud", texture: "/wiki/textures/vanilla/packed_mud.png" },
+    output: {
+      name: "Packed Mud",
+      qty: 64,
+      sourceId: "vanilla:packed_mud",
+      texture: "/wiki/textures/vanilla/packed_mud.png",
+    },
   },
   {
     key: "gen-block-station-podzol",
@@ -1921,7 +4191,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Plants & Flowers",
     ingredients: [{ name: "Dirt", qty: 8, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Grass Block", qty: 8, sourceId: "vanilla:grass_block", texture: "/wiki/textures/vanilla/grass_block.png" },
+    output: {
+      name: "Grass Block",
+      qty: 8,
+      sourceId: "vanilla:grass_block",
+      texture: "/wiki/textures/vanilla/grass_block.png",
+    },
   },
   {
     key: "gen-block-station-dirt",
@@ -1929,7 +4204,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Earth & Sediment",
-    ingredients: [{ name: "Coarse Dirt", qty: 8, sourceId: "vanilla:coarse_dirt", texture: "/wiki/textures/vanilla/coarse_dirt.png" }],
+    ingredients: [
+      {
+        name: "Coarse Dirt",
+        qty: 8,
+        sourceId: "vanilla:coarse_dirt",
+        texture: "/wiki/textures/vanilla/coarse_dirt.png",
+      },
+    ],
     output: { name: "Dirt", qty: 8, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" },
   },
   {
@@ -1939,7 +4221,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Earth & Sediment",
     ingredients: [{ name: "Dirt", qty: 8, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Rooted Dirt", qty: 8, sourceId: "vanilla:rooted_dirt", texture: "/wiki/textures/vanilla/rooted_dirt.png" },
+    output: {
+      name: "Rooted Dirt",
+      qty: 8,
+      sourceId: "vanilla:rooted_dirt",
+      texture: "/wiki/textures/vanilla/rooted_dirt.png",
+    },
   },
   {
     key: "gen-block-station-mycelium",
@@ -1957,7 +4244,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Bees & Honey",
     ingredients: [{ name: "Dirt", qty: 8, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Honeycomb Block", qty: 8, sourceId: "vanilla:honeycomb_block", texture: "/wiki/textures/vanilla/honeycomb_block.png" },
+    output: {
+      name: "Honeycomb Block",
+      qty: 8,
+      sourceId: "vanilla:honeycomb_block",
+      texture: "/wiki/textures/vanilla/honeycomb_block.png",
+    },
   },
   {
     key: "gen-block-station-honey-block",
@@ -1966,7 +4258,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Bees & Honey",
     ingredients: [{ name: "Dirt", qty: 8, sourceId: "vanilla:dirt", texture: "/wiki/textures/vanilla/dirt.png" }],
-    output: { name: "Honey Block", qty: 8, sourceId: "vanilla:honey_block", texture: "/wiki/textures/vanilla/honey_block.png" },
+    output: {
+      name: "Honey Block",
+      qty: 8,
+      sourceId: "vanilla:honey_block",
+      texture: "/wiki/textures/vanilla/honey_block.png",
+    },
   },
   {
     key: "gen-block-station-ice",
@@ -1974,7 +4271,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Ice & Snow",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
     output: { name: "Ice", qty: 64, sourceId: "vanilla:ice", texture: "/wiki/textures/vanilla/ice.png" },
   },
   {
@@ -1983,8 +4287,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Ice & Snow",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
-    output: { name: "Packed Ice", qty: 64, sourceId: "vanilla:packed_ice", texture: "/wiki/textures/vanilla/packed_ice.png" },
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
+    output: {
+      name: "Packed Ice",
+      qty: 64,
+      sourceId: "vanilla:packed_ice",
+      texture: "/wiki/textures/vanilla/packed_ice.png",
+    },
   },
   {
     key: "gen-block-station-blue-ice",
@@ -1992,7 +4308,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Ice & Snow",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
     output: { name: "Blue Ice", qty: 64, sourceId: "vanilla:blue_ice", texture: "/wiki/textures/vanilla/blue_ice.png" },
   },
   {
@@ -2001,8 +4324,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Obsidian", qty: 8, sourceId: "vanilla:obsidian", texture: "/wiki/textures/vanilla/obsidian.png" }],
-    output: { name: "Crying Obsidian", qty: 8, sourceId: "vanilla:crying_obsidian", texture: "/wiki/textures/vanilla/crying_obsidian.png" },
+    ingredients: [
+      { name: "Obsidian", qty: 8, sourceId: "vanilla:obsidian", texture: "/wiki/textures/vanilla/obsidian.png" },
+    ],
+    output: {
+      name: "Crying Obsidian",
+      qty: 8,
+      sourceId: "vanilla:crying_obsidian",
+      texture: "/wiki/textures/vanilla/crying_obsidian.png",
+    },
   },
   {
     key: "gen-block-station-glow-ink",
@@ -2010,8 +4340,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Synthetic Ink", qty: 1, sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK", texture: "/wiki/textures/mmoitems/synthetic_ink.png" }],
-    output: { name: "Glow Ink Sac", qty: 8, sourceId: "vanilla:glow_ink_sac", texture: "/wiki/textures/vanilla/glow_ink_sac.png" },
+    ingredients: [
+      {
+        name: "Synthetic Ink",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:SYNTHETIC_INK",
+        texture: "/wiki/textures/mmoitems/synthetic_ink.png",
+      },
+    ],
+    output: {
+      name: "Glow Ink Sac",
+      qty: 8,
+      sourceId: "vanilla:glow_ink_sac",
+      texture: "/wiki/textures/vanilla/glow_ink_sac.png",
+    },
   },
   {
     key: "gen-block-station-scaffolding",
@@ -2020,7 +4362,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Blocks & Building",
     ingredients: [{ name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Scaffolding", qty: 8, sourceId: "vanilla:scaffolding", texture: "/wiki/textures/vanilla/scaffolding.png" },
+    output: {
+      name: "Scaffolding",
+      qty: 8,
+      sourceId: "vanilla:scaffolding",
+      texture: "/wiki/textures/vanilla/scaffolding.png",
+    },
   },
   {
     key: "gen-block-station-quartz",
@@ -2028,7 +4375,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
     output: { name: "Quartz", qty: 8, sourceId: "vanilla:quartz", texture: "/wiki/textures/vanilla/quartz.png" },
   },
   {
@@ -2037,8 +4391,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
-    output: { name: "Amethyst Shard", qty: 8, sourceId: "vanilla:amethyst_shard", texture: "/wiki/textures/vanilla/amethyst_shard.png" },
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
+    output: {
+      name: "Amethyst Shard",
+      qty: 8,
+      sourceId: "vanilla:amethyst_shard",
+      texture: "/wiki/textures/vanilla/amethyst_shard.png",
+    },
   },
   {
     key: "gen-block-station-amethyst-cluster",
@@ -2046,8 +4412,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Amethyst Shard", qty: 8, sourceId: "vanilla:amethyst_shard", texture: "/wiki/textures/vanilla/amethyst_shard.png" }],
-    output: { name: "Amethyst Cluster", qty: 2, sourceId: "vanilla:amethyst_cluster", texture: "/wiki/textures/vanilla/amethyst_cluster.png" },
+    ingredients: [
+      {
+        name: "Amethyst Shard",
+        qty: 8,
+        sourceId: "vanilla:amethyst_shard",
+        texture: "/wiki/textures/vanilla/amethyst_shard.png",
+      },
+    ],
+    output: {
+      name: "Amethyst Cluster",
+      qty: 2,
+      sourceId: "vanilla:amethyst_cluster",
+      texture: "/wiki/textures/vanilla/amethyst_cluster.png",
+    },
   },
   {
     key: "gen-block-station-heavy-core",
@@ -2055,8 +4433,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Heavy Core", qty: 2, sourceId: "vanilla:heavy_core", texture: "/wiki/textures/vanilla/heavy_core.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Heavy Core",
+      qty: 2,
+      sourceId: "vanilla:heavy_core",
+      texture: "/wiki/textures/vanilla/heavy_core.png",
+    },
   },
   {
     key: "gen-block-station-bell",
@@ -2064,7 +4449,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Blocks & Building",
-    ingredients: [{ name: "Gold Ingot", qty: 1, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" }],
+    ingredients: [
+      { name: "Gold Ingot", qty: 1, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" },
+    ],
     output: { name: "Bell", qty: 2, sourceId: "vanilla:bell", texture: "/wiki/textures/vanilla/bell.png" },
   },
   {
@@ -2082,8 +4469,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Honeycomb", qty: 1, sourceId: "vanilla:honeycomb", texture: "/wiki/textures/vanilla/honeycomb.png" }],
-    output: { name: "Slime Ball", qty: 2, sourceId: "vanilla:slime_ball", texture: "/wiki/textures/vanilla/slime_ball.png" },
+    ingredients: [
+      { name: "Honeycomb", qty: 1, sourceId: "vanilla:honeycomb", texture: "/wiki/textures/vanilla/honeycomb.png" },
+    ],
+    output: {
+      name: "Slime Ball",
+      qty: 2,
+      sourceId: "vanilla:slime_ball",
+      texture: "/wiki/textures/vanilla/slime_ball.png",
+    },
   },
   {
     key: "gen-block-station-blaze-rod",
@@ -2091,8 +4485,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Blaze Rod", qty: 2, sourceId: "vanilla:blaze_rod", texture: "/wiki/textures/vanilla/blaze_rod.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Blaze Rod",
+      qty: 2,
+      sourceId: "vanilla:blaze_rod",
+      texture: "/wiki/textures/vanilla/blaze_rod.png",
+    },
   },
   {
     key: "gen-block-station-glowstone-dust",
@@ -2100,8 +4501,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Honeycomb", qty: 1, sourceId: "vanilla:honeycomb", texture: "/wiki/textures/vanilla/honeycomb.png" }],
-    output: { name: "Glowstone Dust", qty: 2, sourceId: "vanilla:glowstone_dust", texture: "/wiki/textures/vanilla/glowstone_dust.png" },
+    ingredients: [
+      { name: "Honeycomb", qty: 1, sourceId: "vanilla:honeycomb", texture: "/wiki/textures/vanilla/honeycomb.png" },
+    ],
+    output: {
+      name: "Glowstone Dust",
+      qty: 2,
+      sourceId: "vanilla:glowstone_dust",
+      texture: "/wiki/textures/vanilla/glowstone_dust.png",
+    },
   },
   {
     key: "gen-block-station-pedestal",
@@ -2109,7 +4517,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
     output: { name: "Pedestal", qty: 1, sourceId: "itemsadder:pedestal", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -2118,8 +4533,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
-    output: { name: "Artifact Display", qty: 1, sourceId: "itemsadder:artifact_display", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
+    output: {
+      name: "Artifact Display",
+      qty: 1,
+      sourceId: "itemsadder:artifact_display",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-lure",
@@ -2127,7 +4554,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
     output: { name: "Lure", qty: 1, sourceId: "itemsadder:lure", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -2136,8 +4565,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Voting Booth", qty: 1, sourceId: "itemsadder:voting_booth", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 2, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Voting Booth",
+      qty: 1,
+      sourceId: "itemsadder:voting_booth",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-small-coins",
@@ -2145,8 +4581,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Gold Denar", qty: 5, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" }],
-    output: { name: "Marauder Coins Small", qty: 1, sourceId: "itemsadder:marauder_coins_small", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      {
+        name: "Gold Denar",
+        qty: 5,
+        sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+        texture: "/wiki/textures/mmoitems/gold_coin.png",
+      },
+    ],
+    output: {
+      name: "Marauder Coins Small",
+      qty: 1,
+      sourceId: "itemsadder:marauder_coins_small",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-coins",
@@ -2154,8 +4602,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Gold Denar", qty: 25, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" }],
-    output: { name: "Marauder Coins", qty: 1, sourceId: "itemsadder:marauder_coins", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      {
+        name: "Gold Denar",
+        qty: 25,
+        sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+        texture: "/wiki/textures/mmoitems/gold_coin.png",
+      },
+    ],
+    output: {
+      name: "Marauder Coins",
+      qty: 1,
+      sourceId: "itemsadder:marauder_coins",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-coin-bars",
@@ -2163,8 +4623,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Gold Denar", qty: 50, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" }],
-    output: { name: "Marauder Goldbars", qty: 1, sourceId: "itemsadder:marauder_goldbars", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      {
+        name: "Gold Denar",
+        qty: 50,
+        sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+        texture: "/wiki/textures/mmoitems/gold_coin.png",
+      },
+    ],
+    output: {
+      name: "Marauder Goldbars",
+      qty: 1,
+      sourceId: "itemsadder:marauder_goldbars",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-coin-bag",
@@ -2172,8 +4644,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Gold Denar", qty: 100, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" }],
-    output: { name: "Marauder Bag with Gold", qty: 1, sourceId: "itemsadder:marauder_goldbag", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      {
+        name: "Gold Denar",
+        qty: 100,
+        sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+        texture: "/wiki/textures/mmoitems/gold_coin.png",
+      },
+    ],
+    output: {
+      name: "Marauder Bag with Gold",
+      qty: 1,
+      sourceId: "itemsadder:marauder_goldbag",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-block-station-5-denar",
@@ -2181,8 +4665,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Marauder Coins Small", qty: 1, sourceId: "itemsadder:marauder_coins_small", texture: "/wiki/textures/vanilla/paper.png" }],
-    output: { name: "Gold Denar", qty: 5, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" },
+    ingredients: [
+      {
+        name: "Marauder Coins Small",
+        qty: 1,
+        sourceId: "itemsadder:marauder_coins_small",
+        texture: "/wiki/textures/vanilla/paper.png",
+      },
+    ],
+    output: {
+      name: "Gold Denar",
+      qty: 5,
+      sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+      texture: "/wiki/textures/mmoitems/gold_coin.png",
+    },
   },
   {
     key: "gen-block-station-25-denar",
@@ -2190,8 +4686,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Marauder Coins", qty: 1, sourceId: "itemsadder:marauder_coins", texture: "/wiki/textures/vanilla/paper.png" }],
-    output: { name: "Gold Denar", qty: 25, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" },
+    ingredients: [
+      {
+        name: "Marauder Coins",
+        qty: 1,
+        sourceId: "itemsadder:marauder_coins",
+        texture: "/wiki/textures/vanilla/paper.png",
+      },
+    ],
+    output: {
+      name: "Gold Denar",
+      qty: 25,
+      sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+      texture: "/wiki/textures/mmoitems/gold_coin.png",
+    },
   },
   {
     key: "gen-block-station-50-denar",
@@ -2199,8 +4707,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Marauder Goldbars", qty: 1, sourceId: "itemsadder:marauder_goldbars", texture: "/wiki/textures/vanilla/paper.png" }],
-    output: { name: "Gold Denar", qty: 50, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" },
+    ingredients: [
+      {
+        name: "Marauder Goldbars",
+        qty: 1,
+        sourceId: "itemsadder:marauder_goldbars",
+        texture: "/wiki/textures/vanilla/paper.png",
+      },
+    ],
+    output: {
+      name: "Gold Denar",
+      qty: 50,
+      sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+      texture: "/wiki/textures/mmoitems/gold_coin.png",
+    },
   },
   {
     key: "gen-block-station-100-denar",
@@ -2208,8 +4728,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Currency",
-    ingredients: [{ name: "Marauder Bag with Coins", qty: 1, sourceId: "itemsadder:marauder_goldbag", texture: "/wiki/textures/vanilla/paper.png" }],
-    output: { name: "Gold Denar", qty: 100, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" },
+    ingredients: [
+      {
+        name: "Marauder Bag with Coins",
+        qty: 1,
+        sourceId: "itemsadder:marauder_goldbag",
+        texture: "/wiki/textures/vanilla/paper.png",
+      },
+    ],
+    output: {
+      name: "Gold Denar",
+      qty: 100,
+      sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+      texture: "/wiki/textures/mmoitems/gold_coin.png",
+    },
   },
   {
     key: "gen-block-station-white_wool",
@@ -2217,8 +4749,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Light Gray Wool", qty: 8, sourceId: "vanilla:light_gray_wool", texture: "/wiki/textures/vanilla/light_gray_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Light Gray Wool",
+        qty: 8,
+        sourceId: "vanilla:light_gray_wool",
+        texture: "/wiki/textures/vanilla/light_gray_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool1",
@@ -2226,8 +4770,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Gray Wool", qty: 8, sourceId: "vanilla:gray_wool", texture: "/wiki/textures/vanilla/gray_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Gray Wool", qty: 8, sourceId: "vanilla:gray_wool", texture: "/wiki/textures/vanilla/gray_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool2",
@@ -2235,8 +4786,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Black Wool", qty: 8, sourceId: "vanilla:black_wool", texture: "/wiki/textures/vanilla/black_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Black Wool", qty: 8, sourceId: "vanilla:black_wool", texture: "/wiki/textures/vanilla/black_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool3",
@@ -2244,8 +4802,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Brown Wool", qty: 8, sourceId: "vanilla:brown_wool", texture: "/wiki/textures/vanilla/brown_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Brown Wool", qty: 8, sourceId: "vanilla:brown_wool", texture: "/wiki/textures/vanilla/brown_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool4",
@@ -2253,8 +4818,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Red Wool", qty: 8, sourceId: "vanilla:red_wool", texture: "/wiki/textures/vanilla/red_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Red Wool", qty: 8, sourceId: "vanilla:red_wool", texture: "/wiki/textures/vanilla/red_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool5",
@@ -2262,8 +4834,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Orange Wool", qty: 8, sourceId: "vanilla:orange_wool", texture: "/wiki/textures/vanilla/orange_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Orange Wool",
+        qty: 8,
+        sourceId: "vanilla:orange_wool",
+        texture: "/wiki/textures/vanilla/orange_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool6",
@@ -2271,8 +4855,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Yellow Wool", qty: 8, sourceId: "vanilla:yellow_wool", texture: "/wiki/textures/vanilla/yellow_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Yellow Wool",
+        qty: 8,
+        sourceId: "vanilla:yellow_wool",
+        texture: "/wiki/textures/vanilla/yellow_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool7",
@@ -2280,8 +4876,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Lime Wool", qty: 8, sourceId: "vanilla:lime_wool", texture: "/wiki/textures/vanilla/lime_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Lime Wool", qty: 8, sourceId: "vanilla:lime_wool", texture: "/wiki/textures/vanilla/lime_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool8",
@@ -2289,8 +4892,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Green Wool", qty: 8, sourceId: "vanilla:green_wool", texture: "/wiki/textures/vanilla/green_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Green Wool", qty: 8, sourceId: "vanilla:green_wool", texture: "/wiki/textures/vanilla/green_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool9",
@@ -2298,8 +4908,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Cyan Wool", qty: 8, sourceId: "vanilla:cyan_wool", texture: "/wiki/textures/vanilla/cyan_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Cyan Wool", qty: 8, sourceId: "vanilla:cyan_wool", texture: "/wiki/textures/vanilla/cyan_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool10",
@@ -2307,8 +4924,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Light Blue Wool", qty: 8, sourceId: "vanilla:light_blue_wool", texture: "/wiki/textures/vanilla/light_blue_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Light Blue Wool",
+        qty: 8,
+        sourceId: "vanilla:light_blue_wool",
+        texture: "/wiki/textures/vanilla/light_blue_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool11",
@@ -2316,8 +4945,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Blue Wool", qty: 8, sourceId: "vanilla:blue_wool", texture: "/wiki/textures/vanilla/blue_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Blue Wool", qty: 8, sourceId: "vanilla:blue_wool", texture: "/wiki/textures/vanilla/blue_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool12",
@@ -2325,8 +4961,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Purple Wool", qty: 8, sourceId: "vanilla:purple_wool", texture: "/wiki/textures/vanilla/purple_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Purple Wool",
+        qty: 8,
+        sourceId: "vanilla:purple_wool",
+        texture: "/wiki/textures/vanilla/purple_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool13",
@@ -2334,8 +4982,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Magenta Wool", qty: 8, sourceId: "vanilla:magenta_wool", texture: "/wiki/textures/vanilla/magenta_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      {
+        name: "Magenta Wool",
+        qty: 8,
+        sourceId: "vanilla:magenta_wool",
+        texture: "/wiki/textures/vanilla/magenta_wool.png",
+      },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-block-station-white_wool14",
@@ -2343,8 +5003,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Block Station",
     time: 5,
     category: "Wool",
-    ingredients: [{ name: "Pink Wool", qty: 8, sourceId: "vanilla:pink_wool", texture: "/wiki/textures/vanilla/pink_wool.png" }],
-    output: { name: "White Wool", qty: 8, sourceId: "vanilla:white_wool", texture: "/wiki/textures/vanilla/white_wool.png" },
+    ingredients: [
+      { name: "Pink Wool", qty: 8, sourceId: "vanilla:pink_wool", texture: "/wiki/textures/vanilla/pink_wool.png" },
+    ],
+    output: {
+      name: "White Wool",
+      qty: 8,
+      sourceId: "vanilla:white_wool",
+      texture: "/wiki/textures/vanilla/white_wool.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper",
@@ -2352,8 +5019,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Copper", qty: 32, sourceId: "vanilla:exposed_copper", texture: "/wiki/textures/vanilla/exposed_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper",
+      qty: 32,
+      sourceId: "vanilla:exposed_copper",
+      texture: "/wiki/textures/vanilla/exposed_copper.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper",
@@ -2361,8 +5040,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Copper", qty: 32, sourceId: "vanilla:weathered_copper", texture: "/wiki/textures/vanilla/weathered_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper",
+      qty: 32,
+      sourceId: "vanilla:weathered_copper",
+      texture: "/wiki/textures/vanilla/weathered_copper.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper",
@@ -2370,8 +5061,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Copper", qty: 32, sourceId: "vanilla:oxidized_copper", texture: "/wiki/textures/vanilla/oxidized_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper",
+      qty: 32,
+      sourceId: "vanilla:oxidized_copper",
+      texture: "/wiki/textures/vanilla/oxidized_copper.png",
+    },
   },
   {
     key: "gen-copper-station-cut-copper",
@@ -2379,8 +5082,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Cut Copper", qty: 32, sourceId: "vanilla:cut_copper", texture: "/wiki/textures/vanilla/cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:cut_copper",
+      texture: "/wiki/textures/vanilla/cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-cut-copper",
@@ -2388,8 +5103,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Cut Copper", qty: 32, sourceId: "vanilla:exposed_cut_copper", texture: "/wiki/textures/vanilla/exposed_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:exposed_cut_copper",
+      texture: "/wiki/textures/vanilla/exposed_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-cut-copper",
@@ -2397,8 +5124,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Cut Copper", qty: 32, sourceId: "vanilla:weathered_cut_copper", texture: "/wiki/textures/vanilla/weathered_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:weathered_cut_copper",
+      texture: "/wiki/textures/vanilla/weathered_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-cut-copper",
@@ -2406,8 +5145,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Cut Copper", qty: 32, sourceId: "vanilla:oxidized_cut_copper", texture: "/wiki/textures/vanilla/oxidized_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:oxidized_cut_copper",
+      texture: "/wiki/textures/vanilla/oxidized_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-cut-copper-stairs",
@@ -2415,8 +5166,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Cut Copper Stairs", qty: 32, sourceId: "vanilla:cut_copper_stairs", texture: "/wiki/textures/vanilla/cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-cut-copper-stairs",
@@ -2424,8 +5187,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Cut Copper Stairs", qty: 32, sourceId: "vanilla:exposed_cut_copper_stairs", texture: "/wiki/textures/vanilla/exposed_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:exposed_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/exposed_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-cut-copper-stairs",
@@ -2433,8 +5208,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Cut Copper Stairs", qty: 32, sourceId: "vanilla:weathered_cut_copper_stairs", texture: "/wiki/textures/vanilla/weathered_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:weathered_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/weathered_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-cut-copper-stairs",
@@ -2442,8 +5229,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Cut Copper Stairs", qty: 32, sourceId: "vanilla:oxidized_cut_copper_stairs", texture: "/wiki/textures/vanilla/oxidized_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:oxidized_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/oxidized_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-cut-copper-slab",
@@ -2451,8 +5250,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Cut Copper Slab", qty: 32, sourceId: "vanilla:cut_copper_slab", texture: "/wiki/textures/vanilla/cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:cut_copper_slab",
+      texture: "/wiki/textures/vanilla/cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-cut-copper-slab",
@@ -2460,8 +5271,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Cut Copper Slab", qty: 32, sourceId: "vanilla:exposed_cut_copper_slab", texture: "/wiki/textures/vanilla/exposed_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:exposed_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/exposed_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-cut-copper-slab",
@@ -2469,8 +5292,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Cut Copper Slab", qty: 32, sourceId: "vanilla:weathered_cut_copper_slab", texture: "/wiki/textures/vanilla/weathered_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:weathered_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/weathered_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-cut-copper-slab",
@@ -2478,8 +5313,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Cut Copper Slab", qty: 32, sourceId: "vanilla:oxidized_cut_copper_slab", texture: "/wiki/textures/vanilla/oxidized_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:oxidized_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/oxidized_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-chiseled-copper",
@@ -2487,8 +5334,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Chiseled Copper", qty: 32, sourceId: "vanilla:chiseled_copper", texture: "/wiki/textures/vanilla/chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:chiseled_copper",
+      texture: "/wiki/textures/vanilla/chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-chiseled-copper",
@@ -2496,8 +5355,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Chiseled Copper", qty: 32, sourceId: "vanilla:exposed_chiseled_copper", texture: "/wiki/textures/vanilla/exposed_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:exposed_chiseled_copper",
+      texture: "/wiki/textures/vanilla/exposed_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-chiseled-copper",
@@ -2505,8 +5376,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Chiseled Copper", qty: 32, sourceId: "vanilla:weathered_chiseled_copper", texture: "/wiki/textures/vanilla/weathered_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:weathered_chiseled_copper",
+      texture: "/wiki/textures/vanilla/weathered_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-chiseled-copper",
@@ -2514,8 +5397,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Chiseled Copper", qty: 32, sourceId: "vanilla:oxidized_chiseled_copper", texture: "/wiki/textures/vanilla/oxidized_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:oxidized_chiseled_copper",
+      texture: "/wiki/textures/vanilla/oxidized_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-copper-grate",
@@ -2523,8 +5418,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Copper Grate", qty: 32, sourceId: "vanilla:copper_grate", texture: "/wiki/textures/vanilla/copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:copper_grate",
+      texture: "/wiki/textures/vanilla/copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-grate",
@@ -2532,8 +5439,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Copper Grate", qty: 32, sourceId: "vanilla:exposed_copper_grate", texture: "/wiki/textures/vanilla/exposed_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:exposed_copper_grate",
+      texture: "/wiki/textures/vanilla/exposed_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-grate",
@@ -2541,8 +5460,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Copper Grate", qty: 32, sourceId: "vanilla:weathered_copper_grate", texture: "/wiki/textures/vanilla/weathered_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:weathered_copper_grate",
+      texture: "/wiki/textures/vanilla/weathered_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-grate",
@@ -2550,8 +5481,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Copper Grate", qty: 32, sourceId: "vanilla:oxidized_copper_grate", texture: "/wiki/textures/vanilla/oxidized_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:oxidized_copper_grate",
+      texture: "/wiki/textures/vanilla/oxidized_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-copper-bulb",
@@ -2559,8 +5502,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Copper Bulb", qty: 32, sourceId: "vanilla:copper_bulb", texture: "/wiki/textures/vanilla/copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:copper_bulb",
+      texture: "/wiki/textures/vanilla/copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-bulb",
@@ -2568,8 +5523,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Copper Bulb", qty: 32, sourceId: "vanilla:exposed_copper_bulb", texture: "/wiki/textures/vanilla/exposed_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:exposed_copper_bulb",
+      texture: "/wiki/textures/vanilla/exposed_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-bulb",
@@ -2577,8 +5544,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Copper Bulb", qty: 32, sourceId: "vanilla:weathered_copper_bulb", texture: "/wiki/textures/vanilla/weathered_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:weathered_copper_bulb",
+      texture: "/wiki/textures/vanilla/weathered_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-bulb",
@@ -2586,8 +5565,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Copper Bulb", qty: 32, sourceId: "vanilla:oxidized_copper_bulb", texture: "/wiki/textures/vanilla/oxidized_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:oxidized_copper_bulb",
+      texture: "/wiki/textures/vanilla/oxidized_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-copper-chest",
@@ -2595,8 +5586,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Copper Chest", qty: 32, sourceId: "vanilla:copper_chest", texture: "/wiki/textures/vanilla/copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:copper_chest",
+      texture: "/wiki/textures/vanilla/copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-chest",
@@ -2604,8 +5607,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Exposed Copper Chest", qty: 32, sourceId: "vanilla:exposed_copper_chest", texture: "/wiki/textures/vanilla/exposed_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:exposed_copper_chest",
+      texture: "/wiki/textures/vanilla/exposed_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-chest",
@@ -2613,8 +5628,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Weathered Copper Chest", qty: 32, sourceId: "vanilla:weathered_copper_chest", texture: "/wiki/textures/vanilla/weathered_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:weathered_copper_chest",
+      texture: "/wiki/textures/vanilla/weathered_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-chest",
@@ -2622,8 +5649,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Oxidized Copper Chest", qty: 32, sourceId: "vanilla:oxidized_copper_chest", texture: "/wiki/textures/vanilla/oxidized_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:oxidized_copper_chest",
+      texture: "/wiki/textures/vanilla/oxidized_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-copper-door",
@@ -2631,8 +5670,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Door", qty: 4, sourceId: "vanilla:copper_door", texture: "/wiki/textures/vanilla/copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Door",
+      qty: 4,
+      sourceId: "vanilla:copper_door",
+      texture: "/wiki/textures/vanilla/copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-door",
@@ -2640,8 +5691,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Door", qty: 4, sourceId: "vanilla:exposed_copper_door", texture: "/wiki/textures/vanilla/exposed_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Door",
+      qty: 4,
+      sourceId: "vanilla:exposed_copper_door",
+      texture: "/wiki/textures/vanilla/exposed_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-door",
@@ -2649,8 +5712,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Door", qty: 4, sourceId: "vanilla:weathered_copper_door", texture: "/wiki/textures/vanilla/weathered_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Door",
+      qty: 4,
+      sourceId: "vanilla:weathered_copper_door",
+      texture: "/wiki/textures/vanilla/weathered_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-door",
@@ -2658,8 +5733,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Door", qty: 4, sourceId: "vanilla:oxidized_copper_door", texture: "/wiki/textures/vanilla/oxidized_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Door",
+      qty: 4,
+      sourceId: "vanilla:oxidized_copper_door",
+      texture: "/wiki/textures/vanilla/oxidized_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-copper-trapdoor",
@@ -2667,8 +5754,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Trapdoor", qty: 4, sourceId: "vanilla:copper_trapdoor", texture: "/wiki/textures/vanilla/copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:copper_trapdoor",
+      texture: "/wiki/textures/vanilla/copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-trapdoor",
@@ -2676,8 +5775,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Trapdoor", qty: 4, sourceId: "vanilla:exposed_copper_trapdoor", texture: "/wiki/textures/vanilla/exposed_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:exposed_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/exposed_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-trapdoor",
@@ -2685,8 +5796,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Trapdoor", qty: 4, sourceId: "vanilla:weathered_copper_trapdoor", texture: "/wiki/textures/vanilla/weathered_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:weathered_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/weathered_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-trapdoor",
@@ -2694,8 +5817,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Trapdoor", qty: 4, sourceId: "vanilla:oxidized_copper_trapdoor", texture: "/wiki/textures/vanilla/oxidized_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:oxidized_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/oxidized_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-copper-bars",
@@ -2703,8 +5838,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Bars", qty: 4, sourceId: "vanilla:copper_bars", texture: "/wiki/textures/vanilla/copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:copper_bars",
+      texture: "/wiki/textures/vanilla/copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-bars",
@@ -2712,8 +5859,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Bars", qty: 4, sourceId: "vanilla:exposed_copper_bars", texture: "/wiki/textures/vanilla/exposed_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:exposed_copper_bars",
+      texture: "/wiki/textures/vanilla/exposed_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-bars",
@@ -2721,8 +5880,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Bars", qty: 4, sourceId: "vanilla:weathered_copper_bars", texture: "/wiki/textures/vanilla/weathered_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:weathered_copper_bars",
+      texture: "/wiki/textures/vanilla/weathered_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-bars",
@@ -2730,8 +5901,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Bars", qty: 4, sourceId: "vanilla:oxidized_copper_bars", texture: "/wiki/textures/vanilla/oxidized_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:oxidized_copper_bars",
+      texture: "/wiki/textures/vanilla/oxidized_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-copper-chain",
@@ -2739,8 +5922,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Chain", qty: 4, sourceId: "vanilla:copper_chain", texture: "/wiki/textures/vanilla/copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:copper_chain",
+      texture: "/wiki/textures/vanilla/copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-chain",
@@ -2748,8 +5943,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Chain", qty: 4, sourceId: "vanilla:exposed_copper_chain", texture: "/wiki/textures/vanilla/exposed_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:exposed_copper_chain",
+      texture: "/wiki/textures/vanilla/exposed_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-chain",
@@ -2757,8 +5964,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Chain", qty: 4, sourceId: "vanilla:weathered_copper_chain", texture: "/wiki/textures/vanilla/weathered_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:weathered_copper_chain",
+      texture: "/wiki/textures/vanilla/weathered_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-chain",
@@ -2766,8 +5985,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Chain", qty: 4, sourceId: "vanilla:oxidized_copper_chain", texture: "/wiki/textures/vanilla/oxidized_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:oxidized_copper_chain",
+      texture: "/wiki/textures/vanilla/oxidized_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-copper-lantern",
@@ -2775,8 +6006,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Lantern", qty: 4, sourceId: "vanilla:copper_lantern", texture: "/wiki/textures/vanilla/copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:copper_lantern",
+      texture: "/wiki/textures/vanilla/copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-lantern",
@@ -2784,8 +6027,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Lantern", qty: 4, sourceId: "vanilla:exposed_copper_lantern", texture: "/wiki/textures/vanilla/exposed_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:exposed_copper_lantern",
+      texture: "/wiki/textures/vanilla/exposed_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-lantern",
@@ -2793,8 +6048,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Lantern", qty: 4, sourceId: "vanilla:weathered_copper_lantern", texture: "/wiki/textures/vanilla/weathered_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:weathered_copper_lantern",
+      texture: "/wiki/textures/vanilla/weathered_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-lantern",
@@ -2802,8 +6069,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Lantern", qty: 4, sourceId: "vanilla:oxidized_copper_lantern", texture: "/wiki/textures/vanilla/oxidized_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:oxidized_copper_lantern",
+      texture: "/wiki/textures/vanilla/oxidized_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-lightning-rod",
@@ -2811,8 +6090,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Lightning Rod", qty: 4, sourceId: "vanilla:lightning_rod", texture: "/wiki/textures/vanilla/lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:lightning_rod",
+      texture: "/wiki/textures/vanilla/lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-lightning-rod",
@@ -2820,8 +6111,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Lightning Rod", qty: 4, sourceId: "vanilla:exposed_lightning_rod", texture: "/wiki/textures/vanilla/exposed_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:exposed_lightning_rod",
+      texture: "/wiki/textures/vanilla/exposed_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-lightning-rod",
@@ -2829,8 +6132,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Lightning Rod", qty: 4, sourceId: "vanilla:weathered_lightning_rod", texture: "/wiki/textures/vanilla/weathered_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:weathered_lightning_rod",
+      texture: "/wiki/textures/vanilla/weathered_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-lightning-rod",
@@ -2838,8 +6153,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Lightning Rod", qty: 4, sourceId: "vanilla:oxidized_lightning_rod", texture: "/wiki/textures/vanilla/oxidized_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:oxidized_lightning_rod",
+      texture: "/wiki/textures/vanilla/oxidized_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-copper-golem-statue",
@@ -2847,8 +6174,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Golem Statue", qty: 1, sourceId: "vanilla:copper_golem_statue", texture: "/wiki/textures/vanilla/copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:copper_golem_statue",
+      texture: "/wiki/textures/vanilla/copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-exposed-copper-golem-statue",
@@ -2856,8 +6195,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Exposed Copper Golem Statue", qty: 1, sourceId: "vanilla:exposed_copper_golem_statue", texture: "/wiki/textures/vanilla/exposed_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Exposed Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:exposed_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/exposed_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-weathered-copper-golem-statue",
@@ -2865,8 +6216,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Weathered Copper Golem Statue", qty: 1, sourceId: "vanilla:weathered_copper_golem_statue", texture: "/wiki/textures/vanilla/weathered_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Weathered Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:weathered_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/weathered_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-oxidized-copper-golem-statue",
@@ -2874,8 +6237,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Oxidized Copper Golem Statue", qty: 1, sourceId: "vanilla:oxidized_copper_golem_statue", texture: "/wiki/textures/vanilla/oxidized_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:oxidized_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/oxidized_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-block",
@@ -2883,8 +6258,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Copper Block", qty: 32, sourceId: "vanilla:waxed_copper_block", texture: "/wiki/textures/vanilla/waxed_copper_block.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Block",
+      qty: 32,
+      sourceId: "vanilla:waxed_copper_block",
+      texture: "/wiki/textures/vanilla/waxed_copper_block.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper",
@@ -2892,8 +6279,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Copper", qty: 32, sourceId: "vanilla:waxed_exposed_copper", texture: "/wiki/textures/vanilla/waxed_exposed_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_copper",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper",
@@ -2901,8 +6300,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Copper", qty: 32, sourceId: "vanilla:waxed_weathered_copper", texture: "/wiki/textures/vanilla/waxed_weathered_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_copper",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper",
@@ -2910,8 +6321,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 32, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Copper", qty: 32, sourceId: "vanilla:waxed_oxidized_copper", texture: "/wiki/textures/vanilla/waxed_oxidized_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 32,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_copper",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-cut-copper",
@@ -2919,8 +6342,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Cut Copper", qty: 32, sourceId: "vanilla:waxed_cut_copper", texture: "/wiki/textures/vanilla/waxed_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_cut_copper",
+      texture: "/wiki/textures/vanilla/waxed_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-cut-copper",
@@ -2928,8 +6363,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Cut Copper", qty: 32, sourceId: "vanilla:waxed_exposed_cut_copper", texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_cut_copper",
+      texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-cut-copper",
@@ -2937,8 +6384,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Cut Copper", qty: 32, sourceId: "vanilla:waxed_weathered_cut_copper", texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_cut_copper",
+      texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-cut-copper",
@@ -2946,8 +6405,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Cut Copper", qty: 32, sourceId: "vanilla:waxed_oxidized_cut_copper", texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Cut Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_cut_copper",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-cut-copper-stairs",
@@ -2955,8 +6426,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Cut Copper Stairs", qty: 32, sourceId: "vanilla:waxed_cut_copper_stairs", texture: "/wiki/textures/vanilla/waxed_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:waxed_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/waxed_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-cut-copper-stairs",
@@ -2964,8 +6447,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Cut Copper Stairs", qty: 32, sourceId: "vanilla:waxed_exposed_cut_copper_stairs", texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-cut-copper-stairs",
@@ -2973,8 +6468,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Cut Copper Stairs", qty: 32, sourceId: "vanilla:waxed_weathered_cut_copper_stairs", texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-cut-copper-stairs",
@@ -2982,8 +6489,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Cut Copper Stairs", qty: 32, sourceId: "vanilla:waxed_oxidized_cut_copper_stairs", texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper_stairs.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Cut Copper Stairs",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_cut_copper_stairs",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper_stairs.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-cut-copper-slab",
@@ -2991,8 +6510,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Cut Copper Slab", qty: 32, sourceId: "vanilla:waxed_cut_copper_slab", texture: "/wiki/textures/vanilla/waxed_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:waxed_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/waxed_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-cut-copper-slab",
@@ -3000,8 +6531,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Cut Copper Slab", qty: 32, sourceId: "vanilla:waxed_exposed_cut_copper_slab", texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/waxed_exposed_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-cut-copper-slab",
@@ -3009,8 +6552,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Cut Copper Slab", qty: 32, sourceId: "vanilla:waxed_weathered_cut_copper_slab", texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/waxed_weathered_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-cut-copper-slab",
@@ -3018,8 +6573,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Cut Copper Slab", qty: 32, sourceId: "vanilla:waxed_oxidized_cut_copper_slab", texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper_slab.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Cut Copper Slab",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_cut_copper_slab",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_cut_copper_slab.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-chiseled-copper",
@@ -3027,8 +6594,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Chiseled Copper", qty: 32, sourceId: "vanilla:waxed_chiseled_copper", texture: "/wiki/textures/vanilla/waxed_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_chiseled_copper",
+      texture: "/wiki/textures/vanilla/waxed_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-chiseled-copper",
@@ -3036,8 +6615,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Chiseled Copper", qty: 32, sourceId: "vanilla:waxed_exposed_chiseled_copper", texture: "/wiki/textures/vanilla/waxed_exposed_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_chiseled_copper",
+      texture: "/wiki/textures/vanilla/waxed_exposed_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-chiseled-copper",
@@ -3045,8 +6636,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Chiseled Copper", qty: 32, sourceId: "vanilla:waxed_weathered_chiseled_copper", texture: "/wiki/textures/vanilla/waxed_weathered_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_chiseled_copper",
+      texture: "/wiki/textures/vanilla/waxed_weathered_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-chiseled-copper",
@@ -3054,8 +6657,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Chiseled Copper", qty: 32, sourceId: "vanilla:waxed_oxidized_chiseled_copper", texture: "/wiki/textures/vanilla/waxed_oxidized_chiseled_copper.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Chiseled Copper",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_chiseled_copper",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_chiseled_copper.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-grate",
@@ -3063,8 +6678,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Copper Grate", qty: 32, sourceId: "vanilla:waxed_copper_grate", texture: "/wiki/textures/vanilla/waxed_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:waxed_copper_grate",
+      texture: "/wiki/textures/vanilla/waxed_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-grate",
@@ -3072,8 +6699,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Copper Grate", qty: 32, sourceId: "vanilla:waxed_exposed_copper_grate", texture: "/wiki/textures/vanilla/waxed_exposed_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_copper_grate",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-grate",
@@ -3081,8 +6720,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Copper Grate", qty: 32, sourceId: "vanilla:waxed_weathered_copper_grate", texture: "/wiki/textures/vanilla/waxed_weathered_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_copper_grate",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-grate",
@@ -3090,8 +6741,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Copper Grate", qty: 32, sourceId: "vanilla:waxed_oxidized_copper_grate", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_grate.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Grate",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_copper_grate",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_grate.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-bulb",
@@ -3099,8 +6762,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Copper Bulb", qty: 32, sourceId: "vanilla:waxed_copper_bulb", texture: "/wiki/textures/vanilla/waxed_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:waxed_copper_bulb",
+      texture: "/wiki/textures/vanilla/waxed_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-bulb",
@@ -3108,8 +6783,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Copper Bulb", qty: 32, sourceId: "vanilla:waxed_exposed_copper_bulb", texture: "/wiki/textures/vanilla/waxed_exposed_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_copper_bulb",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-bulb",
@@ -3117,8 +6804,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Copper Bulb", qty: 32, sourceId: "vanilla:waxed_weathered_copper_bulb", texture: "/wiki/textures/vanilla/waxed_weathered_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_copper_bulb",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-bulb",
@@ -3126,8 +6825,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Copper Bulb", qty: 32, sourceId: "vanilla:waxed_oxidized_copper_bulb", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_bulb.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Bulb",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_copper_bulb",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_bulb.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-chest",
@@ -3135,8 +6846,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Copper Chest", qty: 32, sourceId: "vanilla:waxed_copper_chest", texture: "/wiki/textures/vanilla/waxed_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:waxed_copper_chest",
+      texture: "/wiki/textures/vanilla/waxed_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-chest",
@@ -3144,8 +6867,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Exposed Copper Chest", qty: 32, sourceId: "vanilla:waxed_exposed_copper_chest", texture: "/wiki/textures/vanilla/waxed_exposed_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:waxed_exposed_copper_chest",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-chest",
@@ -3153,8 +6888,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Weathered Copper Chest", qty: 32, sourceId: "vanilla:waxed_weathered_copper_chest", texture: "/wiki/textures/vanilla/waxed_weathered_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:waxed_weathered_copper_chest",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-chest",
@@ -3162,8 +6909,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Block", qty: 8, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Waxed Oxidized Copper Chest", qty: 32, sourceId: "vanilla:waxed_oxidized_copper_chest", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_chest.png" },
+    ingredients: [
+      {
+        name: "Copper Block",
+        qty: 8,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Chest",
+      qty: 32,
+      sourceId: "vanilla:waxed_oxidized_copper_chest",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_chest.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-door",
@@ -3171,8 +6930,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Door", qty: 4, sourceId: "vanilla:waxed_copper_door", texture: "/wiki/textures/vanilla/waxed_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Door",
+      qty: 4,
+      sourceId: "vanilla:waxed_copper_door",
+      texture: "/wiki/textures/vanilla/waxed_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-door",
@@ -3180,8 +6951,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Door", qty: 4, sourceId: "vanilla:waxed_exposed_copper_door", texture: "/wiki/textures/vanilla/waxed_exposed_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Door",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_copper_door",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-door",
@@ -3189,8 +6972,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Door", qty: 4, sourceId: "vanilla:waxed_weathered_copper_door", texture: "/wiki/textures/vanilla/waxed_weathered_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Door",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_copper_door",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-door",
@@ -3198,8 +6993,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Door", qty: 4, sourceId: "vanilla:waxed_oxidized_copper_door", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_door.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Door",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_copper_door",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_door.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-trapdoor",
@@ -3207,8 +7014,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Trapdoor", qty: 4, sourceId: "vanilla:waxed_copper_trapdoor", texture: "/wiki/textures/vanilla/waxed_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:waxed_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/waxed_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-trapdoor",
@@ -3216,8 +7035,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Trapdoor", qty: 4, sourceId: "vanilla:waxed_exposed_copper_trapdoor", texture: "/wiki/textures/vanilla/waxed_exposed_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-trapdoor",
@@ -3225,8 +7056,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Trapdoor", qty: 4, sourceId: "vanilla:waxed_weathered_copper_trapdoor", texture: "/wiki/textures/vanilla/waxed_weathered_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-trapdoor",
@@ -3234,8 +7077,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Trapdoor", qty: 4, sourceId: "vanilla:waxed_oxidized_copper_trapdoor", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_trapdoor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Trapdoor",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_copper_trapdoor",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_trapdoor.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-bars",
@@ -3243,8 +7098,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Bars", qty: 4, sourceId: "vanilla:waxed_copper_bars", texture: "/wiki/textures/vanilla/waxed_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:waxed_copper_bars",
+      texture: "/wiki/textures/vanilla/waxed_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-bars",
@@ -3252,8 +7119,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Bars", qty: 4, sourceId: "vanilla:waxed_exposed_copper_bars", texture: "/wiki/textures/vanilla/waxed_exposed_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_copper_bars",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-bars",
@@ -3261,8 +7140,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Bars", qty: 4, sourceId: "vanilla:waxed_weathered_copper_bars", texture: "/wiki/textures/vanilla/waxed_weathered_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_copper_bars",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-bars",
@@ -3270,8 +7161,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Bars", qty: 4, sourceId: "vanilla:waxed_oxidized_copper_bars", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_bars.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Bars",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_copper_bars",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_bars.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-chain",
@@ -3279,8 +7182,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Chain", qty: 4, sourceId: "vanilla:waxed_copper_chain", texture: "/wiki/textures/vanilla/waxed_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:waxed_copper_chain",
+      texture: "/wiki/textures/vanilla/waxed_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-chain",
@@ -3288,8 +7203,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Chain", qty: 4, sourceId: "vanilla:waxed_exposed_copper_chain", texture: "/wiki/textures/vanilla/waxed_exposed_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_copper_chain",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-chain",
@@ -3297,8 +7224,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Chain", qty: 4, sourceId: "vanilla:waxed_weathered_copper_chain", texture: "/wiki/textures/vanilla/waxed_weathered_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_copper_chain",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-chain",
@@ -3306,8 +7245,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Chain", qty: 4, sourceId: "vanilla:waxed_oxidized_copper_chain", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_chain.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Chain",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_copper_chain",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_chain.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-lantern",
@@ -3315,8 +7266,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Lantern", qty: 4, sourceId: "vanilla:waxed_copper_lantern", texture: "/wiki/textures/vanilla/waxed_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:waxed_copper_lantern",
+      texture: "/wiki/textures/vanilla/waxed_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-lantern",
@@ -3324,8 +7287,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Lantern", qty: 4, sourceId: "vanilla:waxed_exposed_copper_lantern", texture: "/wiki/textures/vanilla/waxed_exposed_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_copper_lantern",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-lantern",
@@ -3333,8 +7308,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Lantern", qty: 4, sourceId: "vanilla:waxed_weathered_copper_lantern", texture: "/wiki/textures/vanilla/waxed_weathered_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_copper_lantern",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-lantern",
@@ -3342,8 +7329,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Lantern", qty: 4, sourceId: "vanilla:waxed_oxidized_copper_lantern", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_lantern.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Lantern",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_copper_lantern",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_lantern.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-lightning-rod",
@@ -3351,8 +7350,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Lightning Rod", qty: 4, sourceId: "vanilla:waxed_lightning_rod", texture: "/wiki/textures/vanilla/waxed_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:waxed_lightning_rod",
+      texture: "/wiki/textures/vanilla/waxed_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-lightning-rod",
@@ -3360,8 +7371,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Lightning Rod", qty: 4, sourceId: "vanilla:waxed_exposed_lightning_rod", texture: "/wiki/textures/vanilla/waxed_exposed_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:waxed_exposed_lightning_rod",
+      texture: "/wiki/textures/vanilla/waxed_exposed_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-lightning-rod",
@@ -3369,8 +7392,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Lightning Rod", qty: 4, sourceId: "vanilla:waxed_weathered_lightning_rod", texture: "/wiki/textures/vanilla/waxed_weathered_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:waxed_weathered_lightning_rod",
+      texture: "/wiki/textures/vanilla/waxed_weathered_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-lightning-rod",
@@ -3378,8 +7413,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 4, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Lightning Rod", qty: 4, sourceId: "vanilla:waxed_oxidized_lightning_rod", texture: "/wiki/textures/vanilla/waxed_oxidized_lightning_rod.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 4,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Lightning Rod",
+      qty: 4,
+      sourceId: "vanilla:waxed_oxidized_lightning_rod",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_lightning_rod.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-copper-golem-statue",
@@ -3387,8 +7434,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Copper Golem Statue", qty: 1, sourceId: "vanilla:waxed_copper_golem_statue", texture: "/wiki/textures/vanilla/waxed_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:waxed_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/waxed_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-exposed-copper-golem-statue",
@@ -3396,8 +7455,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Exposed Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Exposed Copper Golem Statue", qty: 1, sourceId: "vanilla:waxed_exposed_copper_golem_statue", texture: "/wiki/textures/vanilla/waxed_exposed_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Exposed Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:waxed_exposed_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/waxed_exposed_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-weathered-copper-golem-statue",
@@ -3405,8 +7476,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Weathered Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Weathered Copper Golem Statue", qty: 1, sourceId: "vanilla:waxed_weathered_copper_golem_statue", texture: "/wiki/textures/vanilla/waxed_weathered_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Weathered Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:waxed_weathered_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/waxed_weathered_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-copper-station-waxed-oxidized-copper-golem-statue",
@@ -3414,8 +7497,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Copper Station",
     time: 2,
     category: "Waxed Oxidized Copper",
-    ingredients: [{ name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Waxed Oxidized Copper Golem Statue", qty: 1, sourceId: "vanilla:waxed_oxidized_copper_golem_statue", texture: "/wiki/textures/vanilla/waxed_oxidized_copper_golem_statue.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 1,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Waxed Oxidized Copper Golem Statue",
+      qty: 1,
+      sourceId: "vanilla:waxed_oxidized_copper_golem_statue",
+      texture: "/wiki/textures/vanilla/waxed_oxidized_copper_golem_statue.png",
+    },
   },
   {
     key: "gen-engineer-station-fuel",
@@ -3423,8 +7518,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Arcane Crystal", qty: 1, sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL", texture: "/wiki/textures/mmoitems/arcane_crystal.png" }, { name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Arcane Fuel", qty: 16, sourceId: "mmoitem:UTILS:ARCANE_FUEL", texture: "/wiki/textures/mmoitems/arcane_fuel.png" },
+    ingredients: [
+      {
+        name: "Arcane Crystal",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL",
+        texture: "/wiki/textures/mmoitems/arcane_crystal.png",
+      },
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Arcane Fuel",
+      qty: 16,
+      sourceId: "mmoitem:UTILS:ARCANE_FUEL",
+      texture: "/wiki/textures/mmoitems/arcane_fuel.png",
+    },
   },
   {
     key: "gen-engineer-station-dynamite",
@@ -3432,8 +7545,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Dynamite", qty: 1, sourceId: "mmoitem:MATERIALS:DYNAMITE", texture: "/wiki/textures/mmoitems/dynamite.png" },
+    ingredients: [
+      { name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Dynamite",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:DYNAMITE",
+      texture: "/wiki/textures/mmoitems/dynamite.png",
+    },
   },
   {
     key: "gen-engineer-station-vehicle-paint",
@@ -3442,8 +7563,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Vehicle Mechanic + Gilded+",
     category: "Utilities",
-    ingredients: [{ name: "Common Item Skin Scroll", qty: 1, sourceId: "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL", texture: "/wiki/textures/mmoitems/common_item_skin_scroll.png" }],
-    output: { name: "Vehicle Paint", qty: 1, sourceId: "mmoitem:UTILS:VEHICLE_SKIN", texture: "/wiki/textures/mmoitems/vehicle_skin.png" },
+    ingredients: [
+      {
+        name: "Common Item Skin Scroll",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL",
+        texture: "/wiki/textures/mmoitems/common_item_skin_scroll.png",
+      },
+    ],
+    output: {
+      name: "Vehicle Paint",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:VEHICLE_SKIN",
+      texture: "/wiki/textures/mmoitems/vehicle_skin.png",
+    },
   },
   {
     key: "gen-engineer-station-vehicle-repair",
@@ -3452,8 +7585,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Vehicle Mechanic",
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Vehicle Repair Tool", qty: 1, sourceId: "mmoitem:UTILS:VEHICLE_REPAIR", texture: "/wiki/textures/mmoitems/vehicle_repair.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Vehicle Repair Tool",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:VEHICLE_REPAIR",
+      texture: "/wiki/textures/mmoitems/vehicle_repair.png",
+    },
   },
   {
     key: "gen-engineer-station-train-track-layer",
@@ -3461,8 +7601,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Train Track Layer", qty: 1, sourceId: "mmoitem:UTILS:TRAIN_TRACK_LAYER", texture: "/wiki/textures/mmoitems/train_track_layer.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Train Track Layer",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:TRAIN_TRACK_LAYER",
+      texture: "/wiki/textures/mmoitems/train_track_layer.png",
+    },
   },
   {
     key: "gen-engineer-station-train-track-remover",
@@ -3470,8 +7617,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Train Track Remover", qty: 1, sourceId: "mmoitem:UTILS:TRAIN_TRACK_REMOVER", texture: "/wiki/textures/mmoitems/train_track_remover.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Train Track Remover",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:TRAIN_TRACK_REMOVER",
+      texture: "/wiki/textures/mmoitems/train_track_remover.png",
+    },
   },
   {
     key: "gen-engineer-station-train-track-junction",
@@ -3479,8 +7633,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Train Track Junction", qty: 1, sourceId: "mmoitem:UTILS:TRAIN_TRACK_JUNCTION", texture: "/wiki/textures/mmoitems/train_track_junction.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Train Track Junction",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:TRAIN_TRACK_JUNCTION",
+      texture: "/wiki/textures/mmoitems/train_track_junction.png",
+    },
   },
   {
     key: "gen-engineer-station-train-track-recorder",
@@ -3488,8 +7649,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Train Track Recorder", qty: 1, sourceId: "mmoitem:UTILS:TRAIN_TRACK_RECORDER", texture: "/wiki/textures/mmoitems/train_track_recorder.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Train Track Recorder",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:TRAIN_TRACK_RECORDER",
+      texture: "/wiki/textures/mmoitems/train_track_recorder.png",
+    },
   },
   {
     key: "gen-engineer-station-bullet-box",
@@ -3497,8 +7665,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 1, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Box of Bullets", qty: 32, sourceId: "mmoitem:UTILS:BULLET_BOX", texture: "/wiki/textures/mmoitems/bullet_box.png" },
+    ingredients: [
+      { name: "Niter", qty: 1, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Box of Bullets",
+      qty: 32,
+      sourceId: "mmoitem:UTILS:BULLET_BOX",
+      texture: "/wiki/textures/mmoitems/bullet_box.png",
+    },
   },
   {
     key: "gen-engineer-station-cannonball",
@@ -3506,8 +7682,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Cannonball", qty: 2, sourceId: "mmoitem:UTILS:CANNONBALL", texture: "/wiki/textures/mmoitems/cannonball.png" },
+    ingredients: [
+      { name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Cannonball",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:CANNONBALL",
+      texture: "/wiki/textures/mmoitems/cannonball.png",
+    },
   },
   {
     key: "gen-engineer-station-torpedo",
@@ -3515,8 +7699,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Torpedo", qty: 2, sourceId: "mmoitem:UTILS:TORPEDO", texture: "/wiki/textures/mmoitems/torpedo.png" },
+    ingredients: [
+      { name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Torpedo",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:TORPEDO",
+      texture: "/wiki/textures/mmoitems/torpedo.png",
+    },
   },
   {
     key: "gen-engineer-station-small-bomb",
@@ -3524,8 +7716,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Small Bomb", qty: 2, sourceId: "mmoitem:UTILS:SMALL_BOMB", texture: "/wiki/textures/mmoitems/small_bomb.png" },
+    ingredients: [
+      { name: "Niter", qty: 2, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Small Bomb",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:SMALL_BOMB",
+      texture: "/wiki/textures/mmoitems/small_bomb.png",
+    },
   },
   {
     key: "gen-engineer-station-small-bomb-rack",
@@ -3533,8 +7733,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 16, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 16, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Small Bomb Rack", qty: 2, sourceId: "mmoitem:UTILS:SMALL_BOMB_RACK", texture: "/wiki/textures/mmoitems/small_bomb_rack.png" },
+    ingredients: [
+      { name: "Niter", qty: 16, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 16, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Small Bomb Rack",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:SMALL_BOMB_RACK",
+      texture: "/wiki/textures/mmoitems/small_bomb_rack.png",
+    },
   },
   {
     key: "gen-engineer-station-flak-shells",
@@ -3542,8 +7750,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 4, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Flak Shells", qty: 2, sourceId: "mmoitem:UTILS:FLAK_SHELLS", texture: "/wiki/textures/mmoitems/flak_shells.png" },
+    ingredients: [
+      { name: "Niter", qty: 4, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Flak Shells",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:FLAK_SHELLS",
+      texture: "/wiki/textures/mmoitems/flak_shells.png",
+    },
   },
   {
     key: "gen-engineer-station-clusterbomb",
@@ -3551,8 +7767,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Niter", qty: 4, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" }, { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Clusterbomb", qty: 2, sourceId: "mmoitem:UTILS:CLUSTERBOMB", texture: "/wiki/textures/mmoitems/clusterbomb.png" },
+    ingredients: [
+      { name: "Niter", qty: 4, sourceId: "mmoitem:MATERIALS:NITER", texture: "/wiki/textures/mmoitems/niter.png" },
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Clusterbomb",
+      qty: 2,
+      sourceId: "mmoitem:UTILS:CLUSTERBOMB",
+      texture: "/wiki/textures/mmoitems/clusterbomb.png",
+    },
   },
   {
     key: "gen-engineer-station-dead_geiger_counter",
@@ -3560,8 +7784,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Arcane Crystal", qty: 2, sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL", texture: "/wiki/textures/mmoitems/arcane_crystal.png" }, { name: "Iron Block", qty: 2, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" }],
-    output: { name: "Unpowered Trace Detector", qty: 1, sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER", texture: "/wiki/textures/mmoitems/dead_geiger_counter.png" },
+    ingredients: [
+      {
+        name: "Arcane Crystal",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL",
+        texture: "/wiki/textures/mmoitems/arcane_crystal.png",
+      },
+      { name: "Iron Block", qty: 2, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" },
+    ],
+    output: {
+      name: "Unpowered Trace Detector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER",
+      texture: "/wiki/textures/mmoitems/dead_geiger_counter.png",
+    },
   },
   {
     key: "gen-engineer-station-geiger_counter",
@@ -3569,8 +7806,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Engineer Station",
     time: 5,
     category: "Tools",
-    ingredients: [{ name: "Unpowered Trace Detector", qty: 1, sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER", texture: "/wiki/textures/mmoitems/dead_geiger_counter.png" }, { name: "Arcane Fuel", qty: 1, sourceId: "mmoitem:UTILS:ARCANE_FUEL", texture: "/wiki/textures/mmoitems/arcane_fuel.png" }],
-    output: { name: "Arcane Trace Detector", qty: 1, sourceId: "mmoitem:TOOLS:GEIGER_COUNTER", texture: "/wiki/textures/mmoitems/geiger_counter.png" },
+    ingredients: [
+      {
+        name: "Unpowered Trace Detector",
+        qty: 1,
+        sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER",
+        texture: "/wiki/textures/mmoitems/dead_geiger_counter.png",
+      },
+      {
+        name: "Arcane Fuel",
+        qty: 1,
+        sourceId: "mmoitem:UTILS:ARCANE_FUEL",
+        texture: "/wiki/textures/mmoitems/arcane_fuel.png",
+      },
+    ],
+    output: {
+      name: "Arcane Trace Detector",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:GEIGER_COUNTER",
+      texture: "/wiki/textures/mmoitems/geiger_counter.png",
+    },
   },
   {
     key: "gen-fishing-station-fishing-rod",
@@ -3579,7 +7834,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     category: "Fishing Rods",
     ingredients: [{ name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Rod", qty: 1, sourceId: "mmoitem:FISHING_RODS:FISHING_ROD", texture: "/wiki/textures/vanilla/fishing_rod.png" },
+    output: {
+      name: "Iron Rod",
+      qty: 1,
+      sourceId: "mmoitem:FISHING_RODS:FISHING_ROD",
+      texture: "/wiki/textures/vanilla/fishing_rod.png",
+    },
   },
   {
     key: "gen-fishing-station-steel-rod",
@@ -3588,8 +7848,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Fishing Rods",
-    ingredients: [{ name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Steel Rod", qty: 1, sourceId: "mmoitem:FISHING_RODS:STEEL_ROD", texture: "/wiki/textures/mmoitems/steel_rod.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Steel Rod",
+      qty: 1,
+      sourceId: "mmoitem:FISHING_RODS:STEEL_ROD",
+      texture: "/wiki/textures/mmoitems/steel_rod.png",
+    },
   },
   {
     key: "gen-fishing-station-abyssalite-rod",
@@ -3598,8 +7871,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Fishing Rods",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Abyssalite Rod", qty: 1, sourceId: "mmoitem:FISHING_RODS:ABYSSALITE_ROD", texture: "/wiki/textures/mmoitems/abyssalite_rod.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Abyssalite Rod",
+      qty: 1,
+      sourceId: "mmoitem:FISHING_RODS:ABYSSALITE_ROD",
+      texture: "/wiki/textures/mmoitems/abyssalite_rod.png",
+    },
   },
   {
     key: "gen-fishing-station-mythril-rod",
@@ -3608,8 +7894,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Fishing Rods",
-    ingredients: [{ name: "Mythril Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Mythril Rod", qty: 1, sourceId: "mmoitem:FISHING_RODS:MYTHRIL_ROD", texture: "/wiki/textures/mmoitems/mythril_rod.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Mythril Rod",
+      qty: 1,
+      sourceId: "mmoitem:FISHING_RODS:MYTHRIL_ROD",
+      texture: "/wiki/textures/mmoitems/mythril_rod.png",
+    },
   },
   {
     key: "gen-fishing-station-iron-hook",
@@ -3618,8 +7917,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Hook", qty: 1, sourceId: "mmoitem:UTILS:IRON_HOOK", texture: "/wiki/textures/mmoitems/iron_hook.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Hook",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:IRON_HOOK",
+      texture: "/wiki/textures/mmoitems/iron_hook.png",
+    },
   },
   {
     key: "gen-fishing-station-steel-hook",
@@ -3628,8 +7934,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Steel Hook", qty: 1, sourceId: "mmoitem:UTILS:STEEL_HOOK", texture: "/wiki/textures/mmoitems/steel_hook.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Steel Hook",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:STEEL_HOOK",
+      texture: "/wiki/textures/mmoitems/steel_hook.png",
+    },
   },
   {
     key: "gen-fishing-station-abyssalite-hook",
@@ -3638,8 +7956,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Utilities",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Abyssalite Hook", qty: 1, sourceId: "mmoitem:UTILS:ABYSSALITE_HOOK", texture: "/wiki/textures/mmoitems/abyssalite_hook.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Abyssalite Hook",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:ABYSSALITE_HOOK",
+      texture: "/wiki/textures/mmoitems/abyssalite_hook.png",
+    },
   },
   {
     key: "gen-fishing-station-mythril-hook",
@@ -3648,8 +7978,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Fisher",
     category: "Utilities",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Mythril Hook", qty: 1, sourceId: "mmoitem:UTILS:MYTHRIL_HOOK", texture: "/wiki/textures/mmoitems/mythril_hook.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Hook",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:MYTHRIL_HOOK",
+      texture: "/wiki/textures/mmoitems/mythril_hook.png",
+    },
   },
   {
     key: "gen-fishing-station-recycler1",
@@ -3658,7 +8000,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Recycler I",
     category: "Materials",
-    ingredients: [{ name: "Raw Gold Fragment", qty: 4, sourceId: "mmoitem:MATERIALS:RAWGOLD_FRAGMENT", texture: "/wiki/textures/mmoitems/rawgold_fragment.png" }],
+    ingredients: [
+      {
+        name: "Raw Gold Fragment",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:RAWGOLD_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/rawgold_fragment.png",
+      },
+    ],
     output: { name: "Raw Gold", qty: 1, sourceId: "vanilla:raw_gold", texture: "/wiki/textures/vanilla/raw_gold.png" },
   },
   {
@@ -3668,7 +8017,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Recycler II",
     category: "Other",
-    ingredients: [{ name: "Raw Iron Fragment", qty: 4, sourceId: "mmoitem:MATERIALS:RAWIRON_FRAGMENT", texture: "/wiki/textures/mmoitems/rawiron_fragment.png" }],
+    ingredients: [
+      {
+        name: "Raw Iron Fragment",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:RAWIRON_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/rawiron_fragment.png",
+      },
+    ],
     output: { name: "Raw Iron", qty: 1, sourceId: "vanilla:raw_iron", texture: "/wiki/textures/vanilla/raw_iron.png" },
   },
   {
@@ -3678,7 +8034,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Recycler III",
     category: "Other",
-    ingredients: [{ name: "Diamond Fragment", qty: 4, sourceId: "mmoitem:MATERIALS:DIAMOND_FRAGMENT", texture: "/wiki/textures/mmoitems/diamond_fragment.png" }],
+    ingredients: [
+      {
+        name: "Diamond Fragment",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DIAMOND_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/diamond_fragment.png",
+      },
+    ],
     output: { name: "Diamond", qty: 1, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
   },
   {
@@ -3688,8 +8051,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Disc Fragment", qty: 5, sourceId: "mmoitem:MUSIC:DISC_FRAGMENT", texture: "/wiki/textures/mmoitems/disc_fragment.png" }],
-    output: { name: "Broken Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" },
+    ingredients: [
+      {
+        name: "Disc Fragment",
+        qty: 5,
+        sourceId: "mmoitem:MUSIC:DISC_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/disc_fragment.png",
+      },
+    ],
+    output: {
+      name: "Broken Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+      texture: "/wiki/textures/mmoitems/broken_disc.png",
+    },
   },
   {
     key: "gen-fishing-station-disc1",
@@ -3698,8 +8073,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC1", texture: "/wiki/textures/mmoitems/disc1.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC1",
+      texture: "/wiki/textures/mmoitems/disc1.png",
+    },
   },
   {
     key: "gen-fishing-station-disc2",
@@ -3708,8 +8095,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC2", texture: "/wiki/textures/mmoitems/disc2.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC2",
+      texture: "/wiki/textures/mmoitems/disc2.png",
+    },
   },
   {
     key: "gen-fishing-station-disc3",
@@ -3718,8 +8117,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC3", texture: "/wiki/textures/mmoitems/disc3.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC3",
+      texture: "/wiki/textures/mmoitems/disc3.png",
+    },
   },
   {
     key: "gen-fishing-station-disc4",
@@ -3728,8 +8139,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC4", texture: "/wiki/textures/mmoitems/disc4.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC4",
+      texture: "/wiki/textures/mmoitems/disc4.png",
+    },
   },
   {
     key: "gen-fishing-station-disc5",
@@ -3738,8 +8161,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC5", texture: "/wiki/textures/mmoitems/disc5.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC5",
+      texture: "/wiki/textures/mmoitems/disc5.png",
+    },
   },
   {
     key: "gen-fishing-station-disc6",
@@ -3748,8 +8183,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC6", texture: "/wiki/textures/mmoitems/disc6.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC6",
+      texture: "/wiki/textures/mmoitems/disc6.png",
+    },
   },
   {
     key: "gen-fishing-station-disc7",
@@ -3758,8 +8205,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC7", texture: "/wiki/textures/mmoitems/disc7.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC7",
+      texture: "/wiki/textures/mmoitems/disc7.png",
+    },
   },
   {
     key: "gen-fishing-station-disc8",
@@ -3768,8 +8227,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC8", texture: "/wiki/textures/mmoitems/disc8.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC8",
+      texture: "/wiki/textures/mmoitems/disc8.png",
+    },
   },
   {
     key: "gen-fishing-station-disc9",
@@ -3778,8 +8249,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC9", texture: "/wiki/textures/mmoitems/disc9.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC9",
+      texture: "/wiki/textures/mmoitems/disc9.png",
+    },
   },
   {
     key: "gen-fishing-station-disc10",
@@ -3788,8 +8271,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC10", texture: "/wiki/textures/mmoitems/disc10.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC10",
+      texture: "/wiki/textures/mmoitems/disc10.png",
+    },
   },
   {
     key: "gen-fishing-station-disc11",
@@ -3798,8 +8293,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC11", texture: "/wiki/textures/mmoitems/disc11.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC11",
+      texture: "/wiki/textures/mmoitems/disc11.png",
+    },
   },
   {
     key: "gen-fishing-station-disc12",
@@ -3808,8 +8315,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC12", texture: "/wiki/textures/mmoitems/disc12.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC12",
+      texture: "/wiki/textures/mmoitems/disc12.png",
+    },
   },
   {
     key: "gen-fishing-station-disc13",
@@ -3818,8 +8337,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Broken Disc Maker I",
     category: "Other",
-    ingredients: [{ name: "Broken Disc", qty: 1, sourceId: "mmoitem:MUSIC:BROKEN_DISC", texture: "/wiki/textures/mmoitems/broken_disc.png" }],
-    output: { name: "Music Disc", qty: 1, sourceId: "mmoitem:MUSIC:DISC13", texture: "/wiki/textures/mmoitems/disc13.png" },
+    ingredients: [
+      {
+        name: "Broken Disc",
+        qty: 1,
+        sourceId: "mmoitem:MUSIC:BROKEN_DISC",
+        texture: "/wiki/textures/mmoitems/broken_disc.png",
+      },
+    ],
+    output: {
+      name: "Music Disc",
+      qty: 1,
+      sourceId: "mmoitem:MUSIC:DISC13",
+      texture: "/wiki/textures/mmoitems/disc13.png",
+    },
   },
   {
     key: "gen-forester-station-arrow",
@@ -3827,7 +8358,11 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Forester Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Flint", qty: 4, sourceId: "vanilla:flint", texture: "/wiki/textures/vanilla/flint.png" }, { name: "Stick", qty: 4, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Feather", qty: 4, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" }],
+    ingredients: [
+      { name: "Flint", qty: 4, sourceId: "vanilla:flint", texture: "/wiki/textures/vanilla/flint.png" },
+      { name: "Stick", qty: 4, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Feather", qty: 4, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" },
+    ],
     output: { name: "Arrow", qty: 64, sourceId: "vanilla:arrow", texture: "/wiki/textures/vanilla/arrow.png" },
   },
   {
@@ -3846,7 +8381,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
     output: { name: "Oak Log", qty: 64, sourceId: "vanilla:oak_log", texture: "/wiki/textures/vanilla/oak_log.png" },
   },
   {
@@ -3856,8 +8398,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Spruce Log", qty: 64, sourceId: "vanilla:spruce_log", texture: "/wiki/textures/vanilla/spruce_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Spruce Log",
+      qty: 64,
+      sourceId: "vanilla:spruce_log",
+      texture: "/wiki/textures/vanilla/spruce_log.png",
+    },
   },
   {
     key: "gen-forester-station-birch-log",
@@ -3866,8 +8420,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Birch Log", qty: 64, sourceId: "vanilla:birch_log", texture: "/wiki/textures/vanilla/birch_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Birch Log",
+      qty: 64,
+      sourceId: "vanilla:birch_log",
+      texture: "/wiki/textures/vanilla/birch_log.png",
+    },
   },
   {
     key: "gen-forester-station-jungle-log",
@@ -3876,8 +8442,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Jungle Log", qty: 64, sourceId: "vanilla:jungle_log", texture: "/wiki/textures/vanilla/jungle_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Jungle Log",
+      qty: 64,
+      sourceId: "vanilla:jungle_log",
+      texture: "/wiki/textures/vanilla/jungle_log.png",
+    },
   },
   {
     key: "gen-forester-station-acacia-log",
@@ -3886,8 +8464,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Acacia Log", qty: 64, sourceId: "vanilla:acacia_log", texture: "/wiki/textures/vanilla/acacia_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Acacia Log",
+      qty: 64,
+      sourceId: "vanilla:acacia_log",
+      texture: "/wiki/textures/vanilla/acacia_log.png",
+    },
   },
   {
     key: "gen-forester-station-darkoak-log",
@@ -3896,8 +8486,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafter",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Dark Oak Log", qty: 64, sourceId: "vanilla:dark_oak_log", texture: "/wiki/textures/vanilla/dark_oak_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Dark Oak Log",
+      qty: 64,
+      sourceId: "vanilla:dark_oak_log",
+      texture: "/wiki/textures/vanilla/dark_oak_log.png",
+    },
   },
   {
     key: "gen-forester-station-mangrove-log",
@@ -3906,8 +8508,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Mangrove Log", qty: 64, sourceId: "vanilla:mangrove_log", texture: "/wiki/textures/vanilla/mangrove_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Mangrove Log",
+      qty: 64,
+      sourceId: "vanilla:mangrove_log",
+      texture: "/wiki/textures/vanilla/mangrove_log.png",
+    },
   },
   {
     key: "gen-forester-station-mangrove-roots",
@@ -3916,8 +8530,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Mangrove Roots", qty: 64, sourceId: "vanilla:mangrove_roots", texture: "/wiki/textures/vanilla/mangrove_roots.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Mangrove Roots",
+      qty: 64,
+      sourceId: "vanilla:mangrove_roots",
+      texture: "/wiki/textures/vanilla/mangrove_roots.png",
+    },
   },
   {
     key: "gen-forester-station-cherry-log",
@@ -3926,8 +8552,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Cherry Log", qty: 64, sourceId: "vanilla:cherry_log", texture: "/wiki/textures/vanilla/cherry_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Cherry Log",
+      qty: 64,
+      sourceId: "vanilla:cherry_log",
+      texture: "/wiki/textures/vanilla/cherry_log.png",
+    },
   },
   {
     key: "gen-forester-station-paleoak-log",
@@ -3936,8 +8574,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Pale Oak Log", qty: 64, sourceId: "vanilla:pale_oak_log", texture: "/wiki/textures/vanilla/pale_oak_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Pale Oak Log",
+      qty: 64,
+      sourceId: "vanilla:pale_oak_log",
+      texture: "/wiki/textures/vanilla/pale_oak_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-oak-log",
@@ -3946,8 +8596,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Oak Log", qty: 64, sourceId: "vanilla:stripped_oak_log", texture: "/wiki/textures/vanilla/stripped_oak_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Oak Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_oak_log",
+      texture: "/wiki/textures/vanilla/stripped_oak_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-spruce-log",
@@ -3956,8 +8618,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Spruce Log", qty: 64, sourceId: "vanilla:stripped_spruce_log", texture: "/wiki/textures/vanilla/stripped_spruce_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Spruce Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_spruce_log",
+      texture: "/wiki/textures/vanilla/stripped_spruce_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-birch-log",
@@ -3966,8 +8640,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Birch Log", qty: 64, sourceId: "vanilla:stripped_birch_log", texture: "/wiki/textures/vanilla/stripped_birch_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Birch Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_birch_log",
+      texture: "/wiki/textures/vanilla/stripped_birch_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-jungle-log",
@@ -3976,8 +8662,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Jungle Log", qty: 64, sourceId: "vanilla:stripped_jungle_log", texture: "/wiki/textures/vanilla/stripped_jungle_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Jungle Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_jungle_log",
+      texture: "/wiki/textures/vanilla/stripped_jungle_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-acacia-log",
@@ -3986,8 +8684,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Acacia Log", qty: 64, sourceId: "vanilla:stripped_acacia_log", texture: "/wiki/textures/vanilla/stripped_acacia_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Acacia Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_acacia_log",
+      texture: "/wiki/textures/vanilla/stripped_acacia_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-darkoak-log",
@@ -3996,8 +8706,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Dark Oak Log", qty: 64, sourceId: "vanilla:stripped_dark_oak_log", texture: "/wiki/textures/vanilla/stripped_dark_oak_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Dark Oak Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_dark_oak_log",
+      texture: "/wiki/textures/vanilla/stripped_dark_oak_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-mangrove-log",
@@ -4006,8 +8728,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Mangrove Log", qty: 64, sourceId: "vanilla:stripped_mangrove_log", texture: "/wiki/textures/vanilla/stripped_mangrove_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Mangrove Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_mangrove_log",
+      texture: "/wiki/textures/vanilla/stripped_mangrove_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-cherry-log",
@@ -4016,8 +8750,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Cherry Log", qty: 64, sourceId: "vanilla:stripped_cherry_log", texture: "/wiki/textures/vanilla/stripped_cherry_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Cherry Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_cherry_log",
+      texture: "/wiki/textures/vanilla/stripped_cherry_log.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-paleoak-log",
@@ -4026,8 +8772,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Pale Oak Log", qty: 64, sourceId: "vanilla:stripped_pale_oak_log", texture: "/wiki/textures/vanilla/stripped_pale_oak_log.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Pale Oak Log",
+      qty: 64,
+      sourceId: "vanilla:stripped_pale_oak_log",
+      texture: "/wiki/textures/vanilla/stripped_pale_oak_log.png",
+    },
   },
   {
     key: "gen-forester-station-bamboo-block",
@@ -4036,8 +8794,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Bamboo Block", qty: 64, sourceId: "vanilla:bamboo_block", texture: "/wiki/textures/vanilla/bamboo_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Bamboo Block",
+      qty: 64,
+      sourceId: "vanilla:bamboo_block",
+      texture: "/wiki/textures/vanilla/bamboo_block.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-bamboo-block",
@@ -4046,8 +8816,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Bamboo Block", qty: 64, sourceId: "vanilla:stripped_bamboo_block", texture: "/wiki/textures/vanilla/stripped_bamboo_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Bamboo Block",
+      qty: 64,
+      sourceId: "vanilla:stripped_bamboo_block",
+      texture: "/wiki/textures/vanilla/stripped_bamboo_block.png",
+    },
   },
   {
     key: "gen-forester-station-warped-stem",
@@ -4056,8 +8838,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Warped Stem", qty: 64, sourceId: "vanilla:warped_stem", texture: "/wiki/textures/vanilla/warped_stem.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Warped Stem",
+      qty: 64,
+      sourceId: "vanilla:warped_stem",
+      texture: "/wiki/textures/vanilla/warped_stem.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-warped-stem",
@@ -4066,8 +8860,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Warped Stem", qty: 64, sourceId: "vanilla:stripped_warped_stem", texture: "/wiki/textures/vanilla/stripped_warped_stem.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Warped Stem",
+      qty: 64,
+      sourceId: "vanilla:stripped_warped_stem",
+      texture: "/wiki/textures/vanilla/stripped_warped_stem.png",
+    },
   },
   {
     key: "gen-forester-station-warped-wart-block",
@@ -4076,8 +8882,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Warped Wart Block", qty: 64, sourceId: "vanilla:warped_wart_block", texture: "/wiki/textures/vanilla/warped_wart_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Warped Wart Block",
+      qty: 64,
+      sourceId: "vanilla:warped_wart_block",
+      texture: "/wiki/textures/vanilla/warped_wart_block.png",
+    },
   },
   {
     key: "gen-forester-station-crimson-stem",
@@ -4086,8 +8904,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Crimson Stem", qty: 64, sourceId: "vanilla:crimson_stem", texture: "/wiki/textures/vanilla/crimson_stem.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Crimson Stem",
+      qty: 64,
+      sourceId: "vanilla:crimson_stem",
+      texture: "/wiki/textures/vanilla/crimson_stem.png",
+    },
   },
   {
     key: "gen-forester-station-stripped-crimson-stem",
@@ -4096,8 +8926,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Stripped Crimson Stem", qty: 64, sourceId: "vanilla:stripped_crimson_stem", texture: "/wiki/textures/vanilla/stripped_crimson_stem.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Stripped Crimson Stem",
+      qty: 64,
+      sourceId: "vanilla:stripped_crimson_stem",
+      texture: "/wiki/textures/vanilla/stripped_crimson_stem.png",
+    },
   },
   {
     key: "gen-forester-station-nether-wart-block",
@@ -4106,8 +8948,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Nether Wart Block", qty: 64, sourceId: "vanilla:nether_wart_block", texture: "/wiki/textures/vanilla/nether_wart_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Nether Wart Block",
+      qty: 64,
+      sourceId: "vanilla:nether_wart_block",
+      texture: "/wiki/textures/vanilla/nether_wart_block.png",
+    },
   },
   {
     key: "gen-forester-station-shroomlight",
@@ -4116,8 +8970,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Light Sources",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Shroomlight", qty: 64, sourceId: "vanilla:shroomlight", texture: "/wiki/textures/vanilla/shroomlight.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Shroomlight",
+      qty: 64,
+      sourceId: "vanilla:shroomlight",
+      texture: "/wiki/textures/vanilla/shroomlight.png",
+    },
   },
   {
     key: "gen-forester-station-bookshelf",
@@ -4126,8 +8992,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Bookshelf", qty: 64, sourceId: "vanilla:bookshelf", texture: "/wiki/textures/vanilla/bookshelf.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Bookshelf",
+      qty: 64,
+      sourceId: "vanilla:bookshelf",
+      texture: "/wiki/textures/vanilla/bookshelf.png",
+    },
   },
   {
     key: "gen-forester-station-bee-nest",
@@ -4136,7 +9014,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Bees & Honey",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
     output: { name: "Bee Nest", qty: 64, sourceId: "vanilla:bee_nest", texture: "/wiki/textures/vanilla/bee_nest.png" },
   },
   {
@@ -4146,7 +9031,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Bees & Honey",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
     output: { name: "Beehive", qty: 64, sourceId: "vanilla:beehive", texture: "/wiki/textures/vanilla/beehive.png" },
   },
   {
@@ -4156,8 +9048,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Oak Leaves", qty: 64, sourceId: "vanilla:oak_leaves", texture: "/wiki/textures/vanilla/oak_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Oak Leaves",
+      qty: 64,
+      sourceId: "vanilla:oak_leaves",
+      texture: "/wiki/textures/vanilla/oak_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-spruce-leaves",
@@ -4166,8 +9070,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Spruce Leaves", qty: 64, sourceId: "vanilla:spruce_leaves", texture: "/wiki/textures/vanilla/spruce_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Spruce Leaves",
+      qty: 64,
+      sourceId: "vanilla:spruce_leaves",
+      texture: "/wiki/textures/vanilla/spruce_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-birch-leaves",
@@ -4176,8 +9092,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Birch Leaves", qty: 64, sourceId: "vanilla:birch_leaves", texture: "/wiki/textures/vanilla/birch_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Birch Leaves",
+      qty: 64,
+      sourceId: "vanilla:birch_leaves",
+      texture: "/wiki/textures/vanilla/birch_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-jungle-leaves",
@@ -4186,8 +9114,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Jungle Leaves", qty: 64, sourceId: "vanilla:jungle_leaves", texture: "/wiki/textures/vanilla/jungle_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Jungle Leaves",
+      qty: 64,
+      sourceId: "vanilla:jungle_leaves",
+      texture: "/wiki/textures/vanilla/jungle_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-acacia-leaves",
@@ -4196,8 +9136,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Acacia Leaves", qty: 64, sourceId: "vanilla:acacia_leaves", texture: "/wiki/textures/vanilla/acacia_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Acacia Leaves",
+      qty: 64,
+      sourceId: "vanilla:acacia_leaves",
+      texture: "/wiki/textures/vanilla/acacia_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-darkoak-leaves",
@@ -4206,8 +9158,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Dark Oak Leaves", qty: 64, sourceId: "vanilla:dark_oak_leaves", texture: "/wiki/textures/vanilla/dark_oak_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Dark Oak Leaves",
+      qty: 64,
+      sourceId: "vanilla:dark_oak_leaves",
+      texture: "/wiki/textures/vanilla/dark_oak_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-mangrove-leaves",
@@ -4216,8 +9180,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Mangrove Leaves", qty: 64, sourceId: "vanilla:mangrove_leaves", texture: "/wiki/textures/vanilla/mangrove_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Mangrove Leaves",
+      qty: 64,
+      sourceId: "vanilla:mangrove_leaves",
+      texture: "/wiki/textures/vanilla/mangrove_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-cherry-leaves",
@@ -4226,8 +9202,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Cherry Leaves", qty: 64, sourceId: "vanilla:cherry_leaves", texture: "/wiki/textures/vanilla/cherry_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Cherry Leaves",
+      qty: 64,
+      sourceId: "vanilla:cherry_leaves",
+      texture: "/wiki/textures/vanilla/cherry_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-paleoak-leaves",
@@ -4236,8 +9224,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Pale Oak Leaves", qty: 64, sourceId: "vanilla:pale_oak_leaves", texture: "/wiki/textures/vanilla/pale_oak_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Pale Oak Leaves",
+      qty: 64,
+      sourceId: "vanilla:pale_oak_leaves",
+      texture: "/wiki/textures/vanilla/pale_oak_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-azalea-leaves",
@@ -4246,8 +9246,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Azalea Leaves", qty: 64, sourceId: "vanilla:azalea_leaves", texture: "/wiki/textures/vanilla/azalea_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Azalea Leaves",
+      qty: 64,
+      sourceId: "vanilla:azalea_leaves",
+      texture: "/wiki/textures/vanilla/azalea_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-flowering-azalea-leaves",
@@ -4256,8 +9268,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Flowering Azalea Leaves", qty: 64, sourceId: "vanilla:flowering_azalea_leaves", texture: "/wiki/textures/vanilla/flowering_azalea_leaves.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Flowering Azalea Leaves",
+      qty: 64,
+      sourceId: "vanilla:flowering_azalea_leaves",
+      texture: "/wiki/textures/vanilla/flowering_azalea_leaves.png",
+    },
   },
   {
     key: "gen-forester-station-resin-clump",
@@ -4266,8 +9290,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Resin Clump", qty: 64, sourceId: "vanilla:resin_clump", texture: "/wiki/textures/vanilla/resin_clump.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Resin Clump",
+      qty: 64,
+      sourceId: "vanilla:resin_clump",
+      texture: "/wiki/textures/vanilla/resin_clump.png",
+    },
   },
   {
     key: "gen-forester-station-brown-mushroom",
@@ -4276,8 +9312,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Brown Mushroom Block", qty: 64, sourceId: "vanilla:brown_mushroom_block", texture: "/wiki/textures/vanilla/brown_mushroom_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Brown Mushroom Block",
+      qty: 64,
+      sourceId: "vanilla:brown_mushroom_block",
+      texture: "/wiki/textures/vanilla/brown_mushroom_block.png",
+    },
   },
   {
     key: "gen-forester-station-red-mushroom",
@@ -4286,8 +9334,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Red Mushroom Block", qty: 64, sourceId: "vanilla:red_mushroom_block", texture: "/wiki/textures/vanilla/red_mushroom_block.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Red Mushroom Block",
+      qty: 64,
+      sourceId: "vanilla:red_mushroom_block",
+      texture: "/wiki/textures/vanilla/red_mushroom_block.png",
+    },
   },
   {
     key: "gen-forester-station-mushroom-stem",
@@ -4296,8 +9356,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Logs & Planks",
-    ingredients: [{ name: "Wood Core", qty: 1, sourceId: "mmoitem:MATERIALS:WOOD_CORE", texture: "/wiki/textures/mmoitems/wood_core.png" }],
-    output: { name: "Mushroom Stem", qty: 64, sourceId: "vanilla:mushroom_stem", texture: "/wiki/textures/vanilla/mushroom_stem.png" },
+    ingredients: [
+      {
+        name: "Wood Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:WOOD_CORE",
+        texture: "/wiki/textures/mmoitems/wood_core.png",
+      },
+    ],
+    output: {
+      name: "Mushroom Stem",
+      qty: 64,
+      sourceId: "vanilla:mushroom_stem",
+      texture: "/wiki/textures/vanilla/mushroom_stem.png",
+    },
   },
   {
     key: "gen-forester-station-moss",
@@ -4306,8 +9378,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Moss Block", qty: 64, sourceId: "vanilla:moss_block", texture: "/wiki/textures/vanilla/moss_block.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Moss Block",
+      qty: 64,
+      sourceId: "vanilla:moss_block",
+      texture: "/wiki/textures/vanilla/moss_block.png",
+    },
   },
   {
     key: "gen-forester-station-pale_moss",
@@ -4316,8 +9400,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Pale Moss Block", qty: 64, sourceId: "vanilla:pale_moss_block", texture: "/wiki/textures/vanilla/pale_moss_block.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Pale Moss Block",
+      qty: 64,
+      sourceId: "vanilla:pale_moss_block",
+      texture: "/wiki/textures/vanilla/pale_moss_block.png",
+    },
   },
   {
     key: "gen-forester-station-short-grass",
@@ -4326,8 +9422,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Short Grass", qty: 4, sourceId: "vanilla:short_grass", texture: "/wiki/textures/vanilla/short_grass.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Short Grass",
+      qty: 4,
+      sourceId: "vanilla:short_grass",
+      texture: "/wiki/textures/vanilla/short_grass.png",
+    },
   },
   {
     key: "gen-forester-station-short-dry-grass",
@@ -4336,8 +9444,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Short Dry Grass", qty: 4, sourceId: "vanilla:short_dry_grass", texture: "/wiki/textures/vanilla/short_dry_grass.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Short Dry Grass",
+      qty: 4,
+      sourceId: "vanilla:short_dry_grass",
+      texture: "/wiki/textures/vanilla/short_dry_grass.png",
+    },
   },
   {
     key: "gen-forester-station-fern",
@@ -4346,7 +9466,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Fern", qty: 4, sourceId: "vanilla:fern", texture: "/wiki/textures/vanilla/fern.png" },
   },
   {
@@ -4356,7 +9483,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Bush", qty: 4, sourceId: "vanilla:bush", texture: "/wiki/textures/vanilla/bush.png" },
   },
   {
@@ -4366,8 +9500,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Firefly Bush", qty: 4, sourceId: "vanilla:firefly_bush", texture: "/wiki/textures/vanilla/firefly_bush.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Firefly Bush",
+      qty: 4,
+      sourceId: "vanilla:firefly_bush",
+      texture: "/wiki/textures/vanilla/firefly_bush.png",
+    },
   },
   {
     key: "gen-forester-station-dead-bush",
@@ -4376,8 +9522,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Dead Bush", qty: 4, sourceId: "vanilla:dead_bush", texture: "/wiki/textures/vanilla/dead_bush.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Dead Bush",
+      qty: 4,
+      sourceId: "vanilla:dead_bush",
+      texture: "/wiki/textures/vanilla/dead_bush.png",
+    },
   },
   {
     key: "gen-forester-station-tall-grass",
@@ -4386,8 +9544,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Tall Grass", qty: 4, sourceId: "vanilla:tall_grass", texture: "/wiki/textures/vanilla/tall_grass.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Tall Grass",
+      qty: 4,
+      sourceId: "vanilla:tall_grass",
+      texture: "/wiki/textures/vanilla/tall_grass.png",
+    },
   },
   {
     key: "gen-forester-station-tall-dry-grass",
@@ -4396,8 +9566,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Tall Dry Grass", qty: 4, sourceId: "vanilla:tall_dry_grass", texture: "/wiki/textures/vanilla/tall_dry_grass.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Tall Dry Grass",
+      qty: 4,
+      sourceId: "vanilla:tall_dry_grass",
+      texture: "/wiki/textures/vanilla/tall_dry_grass.png",
+    },
   },
   {
     key: "gen-forester-station-large-fern",
@@ -4406,8 +9588,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Large Fern", qty: 4, sourceId: "vanilla:large_fern", texture: "/wiki/textures/vanilla/large_fern.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Large Fern",
+      qty: 4,
+      sourceId: "vanilla:large_fern",
+      texture: "/wiki/textures/vanilla/large_fern.png",
+    },
   },
   {
     key: "gen-forester-station-dandelion",
@@ -4416,8 +9610,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Dandelion", qty: 4, sourceId: "vanilla:dandelion", texture: "/wiki/textures/vanilla/dandelion.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Dandelion",
+      qty: 4,
+      sourceId: "vanilla:dandelion",
+      texture: "/wiki/textures/vanilla/dandelion.png",
+    },
   },
   {
     key: "gen-forester-station-poppy",
@@ -4426,7 +9632,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Poppy", qty: 4, sourceId: "vanilla:poppy", texture: "/wiki/textures/vanilla/poppy.png" },
   },
   {
@@ -4436,8 +9649,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Blue Orchid", qty: 4, sourceId: "vanilla:blue_orchid", texture: "/wiki/textures/vanilla/blue_orchid.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Blue Orchid",
+      qty: 4,
+      sourceId: "vanilla:blue_orchid",
+      texture: "/wiki/textures/vanilla/blue_orchid.png",
+    },
   },
   {
     key: "gen-forester-station-allium",
@@ -4446,7 +9671,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Allium", qty: 4, sourceId: "vanilla:allium", texture: "/wiki/textures/vanilla/allium.png" },
   },
   {
@@ -4456,8 +9688,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Azure Bluet", qty: 4, sourceId: "vanilla:azure_bluet", texture: "/wiki/textures/vanilla/azure_bluet.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Azure Bluet",
+      qty: 4,
+      sourceId: "vanilla:azure_bluet",
+      texture: "/wiki/textures/vanilla/azure_bluet.png",
+    },
   },
   {
     key: "gen-forester-station-red-tulip",
@@ -4466,8 +9710,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Red Tulip", qty: 4, sourceId: "vanilla:red_tulip", texture: "/wiki/textures/vanilla/red_tulip.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Red Tulip",
+      qty: 4,
+      sourceId: "vanilla:red_tulip",
+      texture: "/wiki/textures/vanilla/red_tulip.png",
+    },
   },
   {
     key: "gen-forester-station-orange-tulip",
@@ -4476,8 +9732,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Orange Tulip", qty: 4, sourceId: "vanilla:orange_tulip", texture: "/wiki/textures/vanilla/orange_tulip.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Orange Tulip",
+      qty: 4,
+      sourceId: "vanilla:orange_tulip",
+      texture: "/wiki/textures/vanilla/orange_tulip.png",
+    },
   },
   {
     key: "gen-forester-station-white-tulip",
@@ -4486,8 +9754,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "White Tulip", qty: 4, sourceId: "vanilla:white_tulip", texture: "/wiki/textures/vanilla/white_tulip.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "White Tulip",
+      qty: 4,
+      sourceId: "vanilla:white_tulip",
+      texture: "/wiki/textures/vanilla/white_tulip.png",
+    },
   },
   {
     key: "gen-forester-station-pink-tulip",
@@ -4496,8 +9776,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Pink Tulip", qty: 4, sourceId: "vanilla:pink_tulip", texture: "/wiki/textures/vanilla/pink_tulip.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Pink Tulip",
+      qty: 4,
+      sourceId: "vanilla:pink_tulip",
+      texture: "/wiki/textures/vanilla/pink_tulip.png",
+    },
   },
   {
     key: "gen-forester-station-oxeye-daisy",
@@ -4506,8 +9798,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Oxeye Daisy", qty: 4, sourceId: "vanilla:oxeye_daisy", texture: "/wiki/textures/vanilla/oxeye_daisy.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Oxeye Daisy",
+      qty: 4,
+      sourceId: "vanilla:oxeye_daisy",
+      texture: "/wiki/textures/vanilla/oxeye_daisy.png",
+    },
   },
   {
     key: "gen-forester-station-cornflower",
@@ -4516,8 +9820,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Cornflower", qty: 4, sourceId: "vanilla:cornflower", texture: "/wiki/textures/vanilla/cornflower.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Cornflower",
+      qty: 4,
+      sourceId: "vanilla:cornflower",
+      texture: "/wiki/textures/vanilla/cornflower.png",
+    },
   },
   {
     key: "gen-forester-station-lily-of-the-valley",
@@ -4526,8 +9842,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Lily Of The Valley", qty: 4, sourceId: "vanilla:lily_of_the_valley", texture: "/wiki/textures/vanilla/lily_of_the_valley.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Lily Of The Valley",
+      qty: 4,
+      sourceId: "vanilla:lily_of_the_valley",
+      texture: "/wiki/textures/vanilla/lily_of_the_valley.png",
+    },
   },
   {
     key: "gen-forester-station-closed-eyeblossom",
@@ -4536,8 +9864,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Closed Eyeblossom", qty: 4, sourceId: "vanilla:closed_eyeblossom", texture: "/wiki/textures/vanilla/closed_eyeblossom.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Closed Eyeblossom",
+      qty: 4,
+      sourceId: "vanilla:closed_eyeblossom",
+      texture: "/wiki/textures/vanilla/closed_eyeblossom.png",
+    },
   },
   {
     key: "gen-forester-station-wither-rose",
@@ -4546,8 +9886,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Wither Rose", qty: 4, sourceId: "vanilla:wither_rose", texture: "/wiki/textures/vanilla/wither_rose.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Wither Rose",
+      qty: 4,
+      sourceId: "vanilla:wither_rose",
+      texture: "/wiki/textures/vanilla/wither_rose.png",
+    },
   },
   {
     key: "gen-forester-station-sunflower",
@@ -4556,8 +9908,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Sunflower", qty: 4, sourceId: "vanilla:sunflower", texture: "/wiki/textures/vanilla/sunflower.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Sunflower",
+      qty: 4,
+      sourceId: "vanilla:sunflower",
+      texture: "/wiki/textures/vanilla/sunflower.png",
+    },
   },
   {
     key: "gen-forester-station-lilac",
@@ -4566,7 +9930,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Lilac", qty: 4, sourceId: "vanilla:lilac", texture: "/wiki/textures/vanilla/lilac.png" },
   },
   {
@@ -4576,8 +9947,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Rose Bush", qty: 4, sourceId: "vanilla:rose_bush", texture: "/wiki/textures/vanilla/rose_bush.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Rose Bush",
+      qty: 4,
+      sourceId: "vanilla:rose_bush",
+      texture: "/wiki/textures/vanilla/rose_bush.png",
+    },
   },
   {
     key: "gen-forester-station-peony",
@@ -4586,7 +9969,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Peony", qty: 4, sourceId: "vanilla:peony", texture: "/wiki/textures/vanilla/peony.png" },
   },
   {
@@ -4596,8 +9986,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Pitcher Plant", qty: 4, sourceId: "vanilla:pitcher_plant", texture: "/wiki/textures/vanilla/pitcher_plant.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Pitcher Plant",
+      qty: 4,
+      sourceId: "vanilla:pitcher_plant",
+      texture: "/wiki/textures/vanilla/pitcher_plant.png",
+    },
   },
   {
     key: "gen-forester-station-torchflower",
@@ -4606,8 +10008,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Torchflower", qty: 4, sourceId: "vanilla:torchflower", texture: "/wiki/textures/vanilla/torchflower.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Torchflower",
+      qty: 4,
+      sourceId: "vanilla:torchflower",
+      texture: "/wiki/textures/vanilla/torchflower.png",
+    },
   },
   {
     key: "gen-forester-station-cactus-flower",
@@ -4616,8 +10030,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Cactus Flower", qty: 4, sourceId: "vanilla:cactus_flower", texture: "/wiki/textures/vanilla/cactus_flower.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Cactus Flower",
+      qty: 4,
+      sourceId: "vanilla:cactus_flower",
+      texture: "/wiki/textures/vanilla/cactus_flower.png",
+    },
   },
   {
     key: "gen-forester-station-pink-petals",
@@ -4626,8 +10052,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Pink Petals", qty: 4, sourceId: "vanilla:pink_petals", texture: "/wiki/textures/vanilla/pink_petals.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Pink Petals",
+      qty: 4,
+      sourceId: "vanilla:pink_petals",
+      texture: "/wiki/textures/vanilla/pink_petals.png",
+    },
   },
   {
     key: "gen-forester-station-leaf-litter",
@@ -4636,8 +10074,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Leaves",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Leaf Litter", qty: 4, sourceId: "vanilla:leaf_litter", texture: "/wiki/textures/vanilla/leaf_litter.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Leaf Litter",
+      qty: 4,
+      sourceId: "vanilla:leaf_litter",
+      texture: "/wiki/textures/vanilla/leaf_litter.png",
+    },
   },
   {
     key: "gen-forester-station-wildflowers",
@@ -4646,8 +10096,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Wildflowers", qty: 4, sourceId: "vanilla:wildflowers", texture: "/wiki/textures/vanilla/wildflowers.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Wildflowers",
+      qty: 4,
+      sourceId: "vanilla:wildflowers",
+      texture: "/wiki/textures/vanilla/wildflowers.png",
+    },
   },
   {
     key: "gen-forester-station-azalea",
@@ -4656,7 +10118,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Azalea", qty: 4, sourceId: "vanilla:azalea", texture: "/wiki/textures/vanilla/azalea.png" },
   },
   {
@@ -4666,8 +10135,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Flowering Azalea", qty: 4, sourceId: "vanilla:flowering_azalea", texture: "/wiki/textures/vanilla/flowering_azalea.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Flowering Azalea",
+      qty: 4,
+      sourceId: "vanilla:flowering_azalea",
+      texture: "/wiki/textures/vanilla/flowering_azalea.png",
+    },
   },
   {
     key: "gen-forester-station-spore-blossom",
@@ -4676,8 +10157,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Spore Blossom", qty: 4, sourceId: "vanilla:spore_blossom", texture: "/wiki/textures/vanilla/spore_blossom.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Spore Blossom",
+      qty: 4,
+      sourceId: "vanilla:spore_blossom",
+      texture: "/wiki/textures/vanilla/spore_blossom.png",
+    },
   },
   {
     key: "gen-forester-station-big-dripleaf",
@@ -4686,8 +10179,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Big Dripleaf", qty: 4, sourceId: "vanilla:big_dripleaf", texture: "/wiki/textures/vanilla/big_dripleaf.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Big Dripleaf",
+      qty: 4,
+      sourceId: "vanilla:big_dripleaf",
+      texture: "/wiki/textures/vanilla/big_dripleaf.png",
+    },
   },
   {
     key: "gen-forester-station-small-dripleaf",
@@ -4696,8 +10201,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Small Dripleaf", qty: 4, sourceId: "vanilla:small_dripleaf", texture: "/wiki/textures/vanilla/small_dripleaf.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Small Dripleaf",
+      qty: 4,
+      sourceId: "vanilla:small_dripleaf",
+      texture: "/wiki/textures/vanilla/small_dripleaf.png",
+    },
   },
   {
     key: "gen-forester-station-lily-pad",
@@ -4706,7 +10223,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Lily Pad", qty: 4, sourceId: "vanilla:lily_pad", texture: "/wiki/textures/vanilla/lily_pad.png" },
   },
   {
@@ -4716,7 +10240,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Vine", qty: 4, sourceId: "vanilla:vine", texture: "/wiki/textures/vanilla/vine.png" },
   },
   {
@@ -4726,8 +10257,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Hanging Roots", qty: 4, sourceId: "vanilla:hanging_roots", texture: "/wiki/textures/vanilla/hanging_roots.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Hanging Roots",
+      qty: 4,
+      sourceId: "vanilla:hanging_roots",
+      texture: "/wiki/textures/vanilla/hanging_roots.png",
+    },
   },
   {
     key: "gen-forester-station-glow-lichen",
@@ -4736,8 +10279,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Glow Lichen", qty: 4, sourceId: "vanilla:glow_lichen", texture: "/wiki/textures/vanilla/glow_lichen.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Glow Lichen",
+      qty: 4,
+      sourceId: "vanilla:glow_lichen",
+      texture: "/wiki/textures/vanilla/glow_lichen.png",
+    },
   },
   {
     key: "gen-forester-station-pale-hanging-moss",
@@ -4746,8 +10301,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Pale Hanging Moss", qty: 4, sourceId: "vanilla:pale_hanging_moss", texture: "/wiki/textures/vanilla/pale_hanging_moss.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Pale Hanging Moss",
+      qty: 4,
+      sourceId: "vanilla:pale_hanging_moss",
+      texture: "/wiki/textures/vanilla/pale_hanging_moss.png",
+    },
   },
   {
     key: "gen-forester-station-seagrass",
@@ -4756,7 +10323,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Seagrass", qty: 4, sourceId: "vanilla:seagrass", texture: "/wiki/textures/vanilla/seagrass.png" },
   },
   {
@@ -4766,8 +10340,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Sea Pickle", qty: 4, sourceId: "vanilla:sea_pickle", texture: "/wiki/textures/vanilla/sea_pickle.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Sea Pickle",
+      qty: 4,
+      sourceId: "vanilla:sea_pickle",
+      texture: "/wiki/textures/vanilla/sea_pickle.png",
+    },
   },
   {
     key: "gen-forester-station-crimson-fungus",
@@ -4776,8 +10362,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Crimson Fungus", qty: 4, sourceId: "vanilla:crimson_fungus", texture: "/wiki/textures/vanilla/crimson_fungus.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Crimson Fungus",
+      qty: 4,
+      sourceId: "vanilla:crimson_fungus",
+      texture: "/wiki/textures/vanilla/crimson_fungus.png",
+    },
   },
   {
     key: "gen-forester-station-warped-fungus",
@@ -4786,8 +10384,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Fungi, Moss & Nether Growth",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Warped Fungus", qty: 4, sourceId: "vanilla:warped_fungus", texture: "/wiki/textures/vanilla/warped_fungus.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Warped Fungus",
+      qty: 4,
+      sourceId: "vanilla:warped_fungus",
+      texture: "/wiki/textures/vanilla/warped_fungus.png",
+    },
   },
   {
     key: "gen-forester-station-crimson-roots",
@@ -4796,8 +10406,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Crimson Roots", qty: 4, sourceId: "vanilla:crimson_roots", texture: "/wiki/textures/vanilla/crimson_roots.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Crimson Roots",
+      qty: 4,
+      sourceId: "vanilla:crimson_roots",
+      texture: "/wiki/textures/vanilla/crimson_roots.png",
+    },
   },
   {
     key: "gen-forester-station-warped-roots",
@@ -4806,8 +10428,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Warped Roots", qty: 4, sourceId: "vanilla:warped_roots", texture: "/wiki/textures/vanilla/warped_roots.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Warped Roots",
+      qty: 4,
+      sourceId: "vanilla:warped_roots",
+      texture: "/wiki/textures/vanilla/warped_roots.png",
+    },
   },
   {
     key: "gen-forester-station-nether-sprouts",
@@ -4816,8 +10450,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Nether Sprouts", qty: 4, sourceId: "vanilla:nether_sprouts", texture: "/wiki/textures/vanilla/nether_sprouts.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Nether Sprouts",
+      qty: 4,
+      sourceId: "vanilla:nether_sprouts",
+      texture: "/wiki/textures/vanilla/nether_sprouts.png",
+    },
   },
   {
     key: "gen-forester-station-weeping-vines",
@@ -4826,8 +10472,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Weeping Vines", qty: 4, sourceId: "vanilla:weeping_vines", texture: "/wiki/textures/vanilla/weeping_vines.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Weeping Vines",
+      qty: 4,
+      sourceId: "vanilla:weeping_vines",
+      texture: "/wiki/textures/vanilla/weeping_vines.png",
+    },
   },
   {
     key: "gen-forester-station-twisting-vines",
@@ -4836,8 +10494,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Plants & Flowers",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Twisting Vines", qty: 4, sourceId: "vanilla:twisting_vines", texture: "/wiki/textures/vanilla/twisting_vines.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Twisting Vines",
+      qty: 4,
+      sourceId: "vanilla:twisting_vines",
+      texture: "/wiki/textures/vanilla/twisting_vines.png",
+    },
   },
   {
     key: "gen-forester-station-light-gray-dye",
@@ -4846,8 +10516,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Light Gray Dye", qty: 4, sourceId: "vanilla:light_gray_dye", texture: "/wiki/textures/vanilla/light_gray_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Light Gray Dye",
+      qty: 4,
+      sourceId: "vanilla:light_gray_dye",
+      texture: "/wiki/textures/vanilla/light_gray_dye.png",
+    },
   },
   {
     key: "gen-forester-station-gray-dye",
@@ -4856,7 +10538,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Gray Dye", qty: 4, sourceId: "vanilla:gray_dye", texture: "/wiki/textures/vanilla/gray_dye.png" },
   },
   {
@@ -4866,8 +10555,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Black Dye", qty: 4, sourceId: "vanilla:black_dye", texture: "/wiki/textures/vanilla/black_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Black Dye",
+      qty: 4,
+      sourceId: "vanilla:black_dye",
+      texture: "/wiki/textures/vanilla/black_dye.png",
+    },
   },
   {
     key: "gen-forester-station-brown-dye",
@@ -4876,8 +10577,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Brown Dye", qty: 4, sourceId: "vanilla:brown_dye", texture: "/wiki/textures/vanilla/brown_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Brown Dye",
+      qty: 4,
+      sourceId: "vanilla:brown_dye",
+      texture: "/wiki/textures/vanilla/brown_dye.png",
+    },
   },
   {
     key: "gen-forester-station-red-dye",
@@ -4886,7 +10599,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Red Dye", qty: 4, sourceId: "vanilla:red_dye", texture: "/wiki/textures/vanilla/red_dye.png" },
   },
   {
@@ -4896,8 +10616,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Orange Dye", qty: 4, sourceId: "vanilla:orange_dye", texture: "/wiki/textures/vanilla/orange_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Orange Dye",
+      qty: 4,
+      sourceId: "vanilla:orange_dye",
+      texture: "/wiki/textures/vanilla/orange_dye.png",
+    },
   },
   {
     key: "gen-forester-station-yellow-dye",
@@ -4906,8 +10638,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Yellow Dye", qty: 4, sourceId: "vanilla:yellow_dye", texture: "/wiki/textures/vanilla/yellow_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Yellow Dye",
+      qty: 4,
+      sourceId: "vanilla:yellow_dye",
+      texture: "/wiki/textures/vanilla/yellow_dye.png",
+    },
   },
   {
     key: "gen-forester-station-lime-dye",
@@ -4916,7 +10660,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Lime Dye", qty: 4, sourceId: "vanilla:lime_dye", texture: "/wiki/textures/vanilla/lime_dye.png" },
   },
   {
@@ -4926,8 +10677,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Green Dye", qty: 4, sourceId: "vanilla:green_dye", texture: "/wiki/textures/vanilla/green_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Green Dye",
+      qty: 4,
+      sourceId: "vanilla:green_dye",
+      texture: "/wiki/textures/vanilla/green_dye.png",
+    },
   },
   {
     key: "gen-forester-station-cyan-dye",
@@ -4936,7 +10699,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Cyan Dye", qty: 4, sourceId: "vanilla:cyan_dye", texture: "/wiki/textures/vanilla/cyan_dye.png" },
   },
   {
@@ -4946,8 +10716,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Light Blue Dye", qty: 4, sourceId: "vanilla:light_blue_dye", texture: "/wiki/textures/vanilla/light_blue_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Light Blue Dye",
+      qty: 4,
+      sourceId: "vanilla:light_blue_dye",
+      texture: "/wiki/textures/vanilla/light_blue_dye.png",
+    },
   },
   {
     key: "gen-forester-station-blue-dye",
@@ -4956,7 +10738,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Blue Dye", qty: 4, sourceId: "vanilla:blue_dye", texture: "/wiki/textures/vanilla/blue_dye.png" },
   },
   {
@@ -4966,8 +10755,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Purple Dye", qty: 4, sourceId: "vanilla:purple_dye", texture: "/wiki/textures/vanilla/purple_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Purple Dye",
+      qty: 4,
+      sourceId: "vanilla:purple_dye",
+      texture: "/wiki/textures/vanilla/purple_dye.png",
+    },
   },
   {
     key: "gen-forester-station-magenta-dye",
@@ -4976,8 +10777,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
-    output: { name: "Magenta Dye", qty: 4, sourceId: "vanilla:magenta_dye", texture: "/wiki/textures/vanilla/magenta_dye.png" },
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
+    output: {
+      name: "Magenta Dye",
+      qty: 4,
+      sourceId: "vanilla:magenta_dye",
+      texture: "/wiki/textures/vanilla/magenta_dye.png",
+    },
   },
   {
     key: "gen-forester-station-pink-dye",
@@ -4986,7 +10799,14 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     requirement: "Tree Crafer",
     category: "Dyes",
-    ingredients: [{ name: "Flower Core", qty: 1, sourceId: "mmoitem:MATERIALS:FLOWER_CORE", texture: "/wiki/textures/mmoitems/flower_core.png" }],
+    ingredients: [
+      {
+        name: "Flower Core",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:FLOWER_CORE",
+        texture: "/wiki/textures/mmoitems/flower_core.png",
+      },
+    ],
     output: { name: "Pink Dye", qty: 4, sourceId: "vanilla:pink_dye", texture: "/wiki/textures/vanilla/pink_dye.png" },
   },
   {
@@ -4995,7 +10815,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Gravel", qty: 2, sourceId: "vanilla:gravel", texture: "/wiki/textures/vanilla/gravel.png" }, { name: "Cobblestone", qty: 2, sourceId: "vanilla:cobblestone", texture: "/wiki/textures/vanilla/cobblestone.png" }],
+    ingredients: [
+      { name: "Gravel", qty: 2, sourceId: "vanilla:gravel", texture: "/wiki/textures/vanilla/gravel.png" },
+      {
+        name: "Cobblestone",
+        qty: 2,
+        sourceId: "vanilla:cobblestone",
+        texture: "/wiki/textures/vanilla/cobblestone.png",
+      },
+    ],
     output: { name: "Flint", qty: 4, sourceId: "vanilla:flint", texture: "/wiki/textures/vanilla/flint.png" },
   },
   {
@@ -5004,7 +10832,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Charcoal", qty: 2, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" }],
+    ingredients: [
+      { name: "Charcoal", qty: 2, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" },
+    ],
     output: { name: "Coal", qty: 4, sourceId: "vanilla:coal", texture: "/wiki/textures/vanilla/coal.png" },
   },
   {
@@ -5013,7 +10843,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 2,
     category: "Materials",
-    ingredients: [{ name: "Charcoal", qty: 32, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" }],
+    ingredients: [
+      { name: "Charcoal", qty: 32, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" },
+    ],
     output: { name: "Coal", qty: 64, sourceId: "vanilla:coal", texture: "/wiki/textures/vanilla/coal.png" },
   },
   {
@@ -5022,7 +10854,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Ignitium", qty: 2, sourceId: "mmoitem:MATERIALS:IGNITIUM", texture: "/wiki/textures/mmoitems/ignitium.png" }, { name: "Coal Block", qty: 1, sourceId: "vanilla:coal_block", texture: "/wiki/textures/vanilla/coal_block.png" }],
+    ingredients: [
+      {
+        name: "Ignitium",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:IGNITIUM",
+        texture: "/wiki/textures/mmoitems/ignitium.png",
+      },
+      { name: "Coal Block", qty: 1, sourceId: "vanilla:coal_block", texture: "/wiki/textures/vanilla/coal_block.png" },
+    ],
     output: { name: "Coke", qty: 1, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
   },
   {
@@ -5031,7 +10871,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Ignitium", qty: 8, sourceId: "mmoitem:MATERIALS:IGNITIUM", texture: "/wiki/textures/mmoitems/ignitium.png" }, { name: "Coal Block", qty: 4, sourceId: "vanilla:coal_block", texture: "/wiki/textures/vanilla/coal_block.png" }],
+    ingredients: [
+      {
+        name: "Ignitium",
+        qty: 8,
+        sourceId: "mmoitem:MATERIALS:IGNITIUM",
+        texture: "/wiki/textures/mmoitems/ignitium.png",
+      },
+      { name: "Coal Block", qty: 4, sourceId: "vanilla:coal_block", texture: "/wiki/textures/vanilla/coal_block.png" },
+    ],
     output: { name: "Coke", qty: 4, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
   },
   {
@@ -5040,8 +10888,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Coke", qty: 2, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" }, { name: "Iron Block", qty: 1, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" }],
-    output: { name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" },
+    ingredients: [
+      { name: "Coke", qty: 2, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
+      { name: "Iron Block", qty: 1, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" },
+    ],
+    output: {
+      name: "Steel Ingot",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+      texture: "/wiki/textures/mmoitems/steel_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-big-steel-ingot",
@@ -5049,8 +10905,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Coke", qty: 8, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" }, { name: "Iron Block", qty: 4, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" }],
-    output: { name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" },
+    ingredients: [
+      { name: "Coke", qty: 8, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
+      { name: "Iron Block", qty: 4, sourceId: "vanilla:iron_block", texture: "/wiki/textures/vanilla/iron_block.png" },
+    ],
+    output: {
+      name: "Steel Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+      texture: "/wiki/textures/mmoitems/steel_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-bronze-ingot",
@@ -5058,8 +10922,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Raw Tin", qty: 2, sourceId: "mmoitem:MATERIALS:RAW_TIN", texture: "/wiki/textures/mmoitems/raw_tin.png" }, { name: "Copper Block", qty: 1, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" },
+    ingredients: [
+      {
+        name: "Raw Tin",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:RAW_TIN",
+        texture: "/wiki/textures/mmoitems/raw_tin.png",
+      },
+      {
+        name: "Copper Block",
+        qty: 1,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Bronze Ingot",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+      texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-big-bronze-ingot",
@@ -5067,8 +10949,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Raw Tin", qty: 8, sourceId: "mmoitem:MATERIALS:RAW_TIN", texture: "/wiki/textures/mmoitems/raw_tin.png" }, { name: "Copper Block", qty: 4, sourceId: "vanilla:copper_block", texture: "/wiki/textures/vanilla/copper_block.png" }],
-    output: { name: "Bronze Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" },
+    ingredients: [
+      {
+        name: "Raw Tin",
+        qty: 8,
+        sourceId: "mmoitem:MATERIALS:RAW_TIN",
+        texture: "/wiki/textures/mmoitems/raw_tin.png",
+      },
+      {
+        name: "Copper Block",
+        qty: 4,
+        sourceId: "vanilla:copper_block",
+        texture: "/wiki/textures/vanilla/copper_block.png",
+      },
+    ],
+    output: {
+      name: "Bronze Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+      texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-abyssalite-ingot",
@@ -5076,8 +10976,32 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Abyssalite Fragment", qty: 2, sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT", texture: "/wiki/textures/mmoitems/abyssalite_fragment.png" }, { name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }, { name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Fragment",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/abyssalite_fragment.png",
+      },
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Abyssalite Ingot",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+      texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-big-abyssalite-ingot",
@@ -5085,8 +11009,32 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Abyssalite Fragment", qty: 8, sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT", texture: "/wiki/textures/mmoitems/abyssalite_fragment.png" }, { name: "Bronze Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }, { name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Abyssalite Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Fragment",
+        qty: 8,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/abyssalite_fragment.png",
+      },
+      {
+        name: "Bronze Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Abyssalite Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+      texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-ingot",
@@ -5094,8 +11042,32 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Mythril Fragment", qty: 2, sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT", texture: "/wiki/textures/mmoitems/mythril_fragment.png" }, { name: "Mythrilite", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRILITE", texture: "/wiki/textures/mmoitems/mythrilite.png" }, { name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Mythril Fragment",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/mythril_fragment.png",
+      },
+      {
+        name: "Mythrilite",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRILITE",
+        texture: "/wiki/textures/mmoitems/mythrilite.png",
+      },
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-big-mythril-ingot",
@@ -5103,8 +11075,32 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Mythril Fragment", qty: 8, sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT", texture: "/wiki/textures/mmoitems/mythril_fragment.png" }, { name: "Mythrilite", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRILITE", texture: "/wiki/textures/mmoitems/mythrilite.png" }, { name: "Abyssalite Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Mythril Fragment",
+        qty: 8,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/mythril_fragment.png",
+      },
+      {
+        name: "Mythrilite",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRILITE",
+        texture: "/wiki/textures/mmoitems/mythrilite.png",
+      },
+      {
+        name: "Abyssalite Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-barkwood",
@@ -5112,8 +11108,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Barkwood", qty: 1, sourceId: "mmoitem:MATERIALS:BARKWOOD", texture: "/wiki/textures/mmoitems/barkwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Barkwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:BARKWOOD",
+      texture: "/wiki/textures/mmoitems/barkwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-barkwood",
@@ -5121,8 +11125,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Barkwood", qty: 4, sourceId: "mmoitem:MATERIALS:BARKWOOD", texture: "/wiki/textures/mmoitems/barkwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Barkwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:BARKWOOD",
+      texture: "/wiki/textures/mmoitems/barkwood.png",
+    },
   },
   {
     key: "gen-ingot-station-maplewood",
@@ -5130,8 +11142,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Maplewood", qty: 1, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" },
+    ingredients: [
+      { name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Maplewood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-maplewood",
@@ -5139,8 +11164,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" },
+    ingredients: [
+      { name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Steel Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Maplewood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-elderwood",
@@ -5148,8 +11186,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Elderwood", qty: 1, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Elderwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-elderwood",
@@ -5157,8 +11208,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Abyssalite Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Abyssalite Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Elderwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-demonwood",
@@ -5166,8 +11230,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Demonwood", qty: 1, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 4, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Demonwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-demonwood",
@@ -5175,8 +11252,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }, { name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" },
+    ingredients: [
+      { name: "Bark", qty: 16, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Demonwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-refined-barkwood",
@@ -5184,8 +11274,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Barkwood", qty: 1, sourceId: "mmoitem:MATERIALS:BARKWOOD", texture: "/wiki/textures/mmoitems/barkwood.png" }],
-    output: { name: "Refined Barkwood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_BARKWOOD", texture: "/wiki/textures/mmoitems/refined_barkwood.png" },
+    ingredients: [
+      {
+        name: "Barkwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BARKWOOD",
+        texture: "/wiki/textures/mmoitems/barkwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Barkwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:REFINED_BARKWOOD",
+      texture: "/wiki/textures/mmoitems/refined_barkwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-refined-barkwood",
@@ -5193,8 +11295,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Barkwood", qty: 4, sourceId: "mmoitem:MATERIALS:BARKWOOD", texture: "/wiki/textures/mmoitems/barkwood.png" }],
-    output: { name: "Refined Barkwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_BARKWOOD", texture: "/wiki/textures/mmoitems/refined_barkwood.png" },
+    ingredients: [
+      {
+        name: "Barkwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:BARKWOOD",
+        texture: "/wiki/textures/mmoitems/barkwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Barkwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_BARKWOOD",
+      texture: "/wiki/textures/mmoitems/refined_barkwood.png",
+    },
   },
   {
     key: "gen-ingot-station-refined-maplewood",
@@ -5202,8 +11316,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Maplewood", qty: 1, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" }],
-    output: { name: "Refined Maplewood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" },
+    ingredients: [
+      {
+        name: "Maplewood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/maplewood.png",
+      },
+    ],
+    output: {
+      name: "Refined Maplewood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-refined-maplewood",
@@ -5211,8 +11337,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" }],
-    output: { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" },
+    ingredients: [
+      {
+        name: "Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/maplewood.png",
+      },
+    ],
+    output: {
+      name: "Refined Maplewood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-refined-elderwood",
@@ -5220,8 +11358,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Elderwood", qty: 1, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" }],
-    output: { name: "Refined Elderwood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" },
+    ingredients: [
+      {
+        name: "Elderwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/elderwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Elderwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-refined-elderwood",
@@ -5229,8 +11379,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" }],
-    output: { name: "Refined Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" },
+    ingredients: [
+      {
+        name: "Elderwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/elderwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Elderwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-refined-demonwood",
@@ -5238,8 +11400,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Demonwood", qty: 1, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" }],
-    output: { name: "Refined Demonwood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" },
+    ingredients: [
+      {
+        name: "Demonwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/demonwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Demonwood",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-big-refined-demonwood",
@@ -5247,8 +11421,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" }],
-    output: { name: "Refined Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" },
+    ingredients: [
+      {
+        name: "Demonwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/demonwood.png",
+      },
+    ],
+    output: {
+      name: "Refined Demonwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-maplewood-log",
@@ -5256,8 +11442,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" }],
-    output: { name: "Maplewood Log", qty: 1, sourceId: "itemsadder:maplewood_log", texture: "/wiki/textures/itemsadder/maplewood_log.png" },
+    ingredients: [
+      {
+        name: "Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/maplewood.png",
+      },
+    ],
+    output: {
+      name: "Maplewood Log",
+      qty: 1,
+      sourceId: "itemsadder:maplewood_log",
+      texture: "/wiki/textures/itemsadder/maplewood_log.png",
+    },
   },
   {
     key: "gen-ingot-station-elderwood-log",
@@ -5265,8 +11463,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" }],
-    output: { name: "Elderwood Log", qty: 1, sourceId: "itemsadder:elderwood_log", texture: "/wiki/textures/itemsadder/elderwood_log.png" },
+    ingredients: [
+      {
+        name: "Elderwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/elderwood.png",
+      },
+    ],
+    output: {
+      name: "Elderwood Log",
+      qty: 1,
+      sourceId: "itemsadder:elderwood_log",
+      texture: "/wiki/textures/itemsadder/elderwood_log.png",
+    },
   },
   {
     key: "gen-ingot-station-demonwood-log",
@@ -5274,8 +11484,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" }],
-    output: { name: "Demonwood Log", qty: 1, sourceId: "itemsadder:demonwood_log", texture: "/wiki/textures/itemsadder/demonwood_log.png" },
+    ingredients: [
+      {
+        name: "Demonwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/demonwood.png",
+      },
+    ],
+    output: {
+      name: "Demonwood Log",
+      qty: 1,
+      sourceId: "itemsadder:demonwood_log",
+      texture: "/wiki/textures/itemsadder/demonwood_log.png",
+    },
   },
   {
     key: "gen-ingot-station-maplewood-plank",
@@ -5283,8 +11505,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" }],
-    output: { name: "Maplewood Plank", qty: 1, sourceId: "itemsadder:maplewood_plank", texture: "/wiki/textures/itemsadder/maplewood_plank.png" },
+    ingredients: [
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+      },
+    ],
+    output: {
+      name: "Maplewood Plank",
+      qty: 1,
+      sourceId: "itemsadder:maplewood_plank",
+      texture: "/wiki/textures/itemsadder/maplewood_plank.png",
+    },
   },
   {
     key: "gen-ingot-station-elderwood-plank",
@@ -5292,8 +11526,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Refined Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" }],
-    output: { name: "Elderwood Plank", qty: 1, sourceId: "itemsadder:elderwood_plank", texture: "/wiki/textures/itemsadder/elderwood_plank.png" },
+    ingredients: [
+      {
+        name: "Refined Elderwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+      },
+    ],
+    output: {
+      name: "Elderwood Plank",
+      qty: 1,
+      sourceId: "itemsadder:elderwood_plank",
+      texture: "/wiki/textures/itemsadder/elderwood_plank.png",
+    },
   },
   {
     key: "gen-ingot-station-demonwood-plank",
@@ -5301,8 +11547,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Logs & Planks",
-    ingredients: [{ name: "Refined Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" }],
-    output: { name: "Demonwood Plank", qty: 1, sourceId: "itemsadder:demonwood_plank", texture: "/wiki/textures/itemsadder/demonwood_plank.png" },
+    ingredients: [
+      {
+        name: "Refined Demonwood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+      },
+    ],
+    output: {
+      name: "Demonwood Plank",
+      qty: 1,
+      sourceId: "itemsadder:demonwood_plank",
+      texture: "/wiki/textures/itemsadder/demonwood_plank.png",
+    },
   },
   {
     key: "gen-ingot-station-jasper",
@@ -5310,8 +11568,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Raw Copper Block", qty: 18, sourceId: "vanilla:raw_copper_block", texture: "/wiki/textures/vanilla/raw_copper_block.png" }, { name: "Redstone Block", qty: 16, sourceId: "vanilla:redstone_block", texture: "/wiki/textures/vanilla/redstone_block.png" }],
-    output: { name: "Jasper", qty: 1, sourceId: "mmoitem:GEMSTONES:JASPER", texture: "/wiki/textures/mmoitems/jasper.png" },
+    ingredients: [
+      {
+        name: "Raw Copper Block",
+        qty: 18,
+        sourceId: "vanilla:raw_copper_block",
+        texture: "/wiki/textures/vanilla/raw_copper_block.png",
+      },
+      {
+        name: "Redstone Block",
+        qty: 16,
+        sourceId: "vanilla:redstone_block",
+        texture: "/wiki/textures/vanilla/redstone_block.png",
+      },
+    ],
+    output: {
+      name: "Jasper",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:JASPER",
+      texture: "/wiki/textures/mmoitems/jasper.png",
+    },
   },
   {
     key: "gen-ingot-station-onyx",
@@ -5319,7 +11595,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Raw Copper Block", qty: 18, sourceId: "vanilla:raw_copper_block", texture: "/wiki/textures/vanilla/raw_copper_block.png" }, { name: "Lapis Block", qty: 8, sourceId: "vanilla:lapis_block", texture: "/wiki/textures/vanilla/lapis_block.png" }],
+    ingredients: [
+      {
+        name: "Raw Copper Block",
+        qty: 18,
+        sourceId: "vanilla:raw_copper_block",
+        texture: "/wiki/textures/vanilla/raw_copper_block.png",
+      },
+      {
+        name: "Lapis Block",
+        qty: 8,
+        sourceId: "vanilla:lapis_block",
+        texture: "/wiki/textures/vanilla/lapis_block.png",
+      },
+    ],
     output: { name: "Onyx", qty: 1, sourceId: "mmoitem:GEMSTONES:ONYX", texture: "/wiki/textures/mmoitems/onyx.png" },
   },
   {
@@ -5328,8 +11617,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Raw Copper Block", qty: 18, sourceId: "vanilla:raw_copper_block", texture: "/wiki/textures/vanilla/raw_copper_block.png" }, { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" }],
-    output: { name: "Pearl", qty: 1, sourceId: "mmoitem:GEMSTONES:PEARL", texture: "/wiki/textures/mmoitems/pearl.png" },
+    ingredients: [
+      {
+        name: "Raw Copper Block",
+        qty: 18,
+        sourceId: "vanilla:raw_copper_block",
+        texture: "/wiki/textures/vanilla/raw_copper_block.png",
+      },
+      { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
+    ],
+    output: {
+      name: "Pearl",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:PEARL",
+      texture: "/wiki/textures/mmoitems/pearl.png",
+    },
   },
   {
     key: "gen-ingot-station-chrysoprase",
@@ -5337,8 +11639,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Raw Copper Block", qty: 18, sourceId: "vanilla:raw_copper_block", texture: "/wiki/textures/vanilla/raw_copper_block.png" }, { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" }],
-    output: { name: "Chrysoprase", qty: 1, sourceId: "mmoitem:GEMSTONES:CHRYSOPRASE", texture: "/wiki/textures/mmoitems/chrysoprase.png" },
+    ingredients: [
+      {
+        name: "Raw Copper Block",
+        qty: 18,
+        sourceId: "vanilla:raw_copper_block",
+        texture: "/wiki/textures/vanilla/raw_copper_block.png",
+      },
+      { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" },
+    ],
+    output: {
+      name: "Chrysoprase",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:CHRYSOPRASE",
+      texture: "/wiki/textures/mmoitems/chrysoprase.png",
+    },
   },
   {
     key: "gen-ingot-station-rhodonite",
@@ -5346,8 +11661,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Redstone Block", qty: 12, sourceId: "vanilla:redstone_block", texture: "/wiki/textures/vanilla/redstone_block.png" }, { name: "Lapis Block", qty: 8, sourceId: "vanilla:lapis_block", texture: "/wiki/textures/vanilla/lapis_block.png" }],
-    output: { name: "Rhodonite", qty: 1, sourceId: "mmoitem:GEMSTONES:RHODONITE", texture: "/wiki/textures/mmoitems/rhodonite.png" },
+    ingredients: [
+      {
+        name: "Redstone Block",
+        qty: 12,
+        sourceId: "vanilla:redstone_block",
+        texture: "/wiki/textures/vanilla/redstone_block.png",
+      },
+      {
+        name: "Lapis Block",
+        qty: 8,
+        sourceId: "vanilla:lapis_block",
+        texture: "/wiki/textures/vanilla/lapis_block.png",
+      },
+    ],
+    output: {
+      name: "Rhodonite",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:RHODONITE",
+      texture: "/wiki/textures/mmoitems/rhodonite.png",
+    },
   },
   {
     key: "gen-ingot-station-coral",
@@ -5355,8 +11688,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Coral",
-    ingredients: [{ name: "Redstone Block", qty: 12, sourceId: "vanilla:redstone_block", texture: "/wiki/textures/vanilla/redstone_block.png" }, { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" }],
-    output: { name: "Coral", qty: 1, sourceId: "mmoitem:GEMSTONES:CORAL", texture: "/wiki/textures/mmoitems/coral.png" },
+    ingredients: [
+      {
+        name: "Redstone Block",
+        qty: 12,
+        sourceId: "vanilla:redstone_block",
+        texture: "/wiki/textures/vanilla/redstone_block.png",
+      },
+      { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
+    ],
+    output: {
+      name: "Coral",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:CORAL",
+      texture: "/wiki/textures/mmoitems/coral.png",
+    },
   },
   {
     key: "gen-ingot-station-tourmaline",
@@ -5364,8 +11710,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Redstone Block", qty: 12, sourceId: "vanilla:redstone_block", texture: "/wiki/textures/vanilla/redstone_block.png" }, { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" }],
-    output: { name: "Tourmaline", qty: 1, sourceId: "mmoitem:GEMSTONES:TOURMALINE", texture: "/wiki/textures/mmoitems/tourmaline.png" },
+    ingredients: [
+      {
+        name: "Redstone Block",
+        qty: 12,
+        sourceId: "vanilla:redstone_block",
+        texture: "/wiki/textures/vanilla/redstone_block.png",
+      },
+      { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" },
+    ],
+    output: {
+      name: "Tourmaline",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:TOURMALINE",
+      texture: "/wiki/textures/mmoitems/tourmaline.png",
+    },
   },
   {
     key: "gen-ingot-station-larimar",
@@ -5373,8 +11732,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Lapis Block", qty: 6, sourceId: "vanilla:lapis_block", texture: "/wiki/textures/vanilla/lapis_block.png" }, { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" }],
-    output: { name: "Larimar", qty: 1, sourceId: "mmoitem:GEMSTONES:LARIMAR", texture: "/wiki/textures/mmoitems/larimar.png" },
+    ingredients: [
+      {
+        name: "Lapis Block",
+        qty: 6,
+        sourceId: "vanilla:lapis_block",
+        texture: "/wiki/textures/vanilla/lapis_block.png",
+      },
+      { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
+    ],
+    output: {
+      name: "Larimar",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:LARIMAR",
+      texture: "/wiki/textures/mmoitems/larimar.png",
+    },
   },
   {
     key: "gen-ingot-station-vesuvianite",
@@ -5382,8 +11754,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Lapis Block", qty: 6, sourceId: "vanilla:lapis_block", texture: "/wiki/textures/vanilla/lapis_block.png" }, { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" }],
-    output: { name: "Vesuvianite", qty: 1, sourceId: "mmoitem:GEMSTONES:VESUVIANITE", texture: "/wiki/textures/mmoitems/vesuvianite.png" },
+    ingredients: [
+      {
+        name: "Lapis Block",
+        qty: 6,
+        sourceId: "vanilla:lapis_block",
+        texture: "/wiki/textures/vanilla/lapis_block.png",
+      },
+      { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" },
+    ],
+    output: {
+      name: "Vesuvianite",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:VESUVIANITE",
+      texture: "/wiki/textures/mmoitems/vesuvianite.png",
+    },
   },
   {
     key: "gen-ingot-station-agate",
@@ -5391,8 +11776,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Diamond", qty: 6, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" }, { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" }],
-    output: { name: "Agate", qty: 1, sourceId: "mmoitem:GEMSTONES:AGATE", texture: "/wiki/textures/mmoitems/agate.png" },
+    ingredients: [
+      { name: "Diamond", qty: 6, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
+      { name: "Emerald", qty: 4, sourceId: "vanilla:emerald", texture: "/wiki/textures/vanilla/emerald.png" },
+    ],
+    output: {
+      name: "Agate",
+      qty: 1,
+      sourceId: "mmoitem:GEMSTONES:AGATE",
+      texture: "/wiki/textures/mmoitems/agate.png",
+    },
   },
   {
     key: "gen-ingot-station-ignitium-block",
@@ -5400,8 +11793,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Ignitium", qty: 4, sourceId: "mmoitem:MATERIALS:IGNITIUM", texture: "/wiki/textures/mmoitems/ignitium.png" }],
-    output: { name: "Block of Ignitium", qty: 1, sourceId: "itemsadder:ignitium_block", texture: "/wiki/textures/itemsadder/ignitium_block.png" },
+    ingredients: [
+      {
+        name: "Ignitium",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:IGNITIUM",
+        texture: "/wiki/textures/mmoitems/ignitium.png",
+      },
+    ],
+    output: {
+      name: "Block of Ignitium",
+      qty: 1,
+      sourceId: "itemsadder:ignitium_block",
+      texture: "/wiki/textures/itemsadder/ignitium_block.png",
+    },
   },
   {
     key: "gen-ingot-station-coke-block",
@@ -5409,8 +11814,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Coke", qty: 4, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" }],
-    output: { name: "Block of Coke", qty: 1, sourceId: "itemsadder:coke_block", texture: "/wiki/textures/itemsadder/coke_block.png" },
+    ingredients: [
+      { name: "Coke", qty: 4, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
+    ],
+    output: {
+      name: "Block of Coke",
+      qty: 1,
+      sourceId: "itemsadder:coke_block",
+      texture: "/wiki/textures/itemsadder/coke_block.png",
+    },
   },
   {
     key: "gen-ingot-station-tin-block",
@@ -5418,8 +11830,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Tin", qty: 4, sourceId: "mmoitem:MATERIALS:RAW_TIN", texture: "/wiki/textures/mmoitems/raw_tin.png" }],
-    output: { name: "Block of Tin", qty: 1, sourceId: "itemsadder:tin_block", texture: "/wiki/textures/itemsadder/tin_block.png" },
+    ingredients: [
+      { name: "Tin", qty: 4, sourceId: "mmoitem:MATERIALS:RAW_TIN", texture: "/wiki/textures/mmoitems/raw_tin.png" },
+    ],
+    output: {
+      name: "Block of Tin",
+      qty: 1,
+      sourceId: "itemsadder:tin_block",
+      texture: "/wiki/textures/itemsadder/tin_block.png",
+    },
   },
   {
     key: "gen-ingot-station-bronze-block",
@@ -5427,8 +11846,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Bronze Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }],
-    output: { name: "Block of Bronze", qty: 1, sourceId: "itemsadder:bronze_block", texture: "/wiki/textures/itemsadder/bronze_block.png" },
+    ingredients: [
+      {
+        name: "Bronze Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+    ],
+    output: {
+      name: "Block of Bronze",
+      qty: 1,
+      sourceId: "itemsadder:bronze_block",
+      texture: "/wiki/textures/itemsadder/bronze_block.png",
+    },
   },
   {
     key: "gen-ingot-station-steel-block",
@@ -5436,8 +11867,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Block of Steel", qty: 1, sourceId: "itemsadder:steel_block", texture: "/wiki/textures/itemsadder/steel_block.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Block of Steel",
+      qty: 1,
+      sourceId: "itemsadder:steel_block",
+      texture: "/wiki/textures/itemsadder/steel_block.png",
+    },
   },
   {
     key: "gen-ingot-station-abyssalite-block",
@@ -5445,8 +11888,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Block of Abyssalite", qty: 1, sourceId: "itemsadder:abyssalite_block", texture: "/wiki/textures/itemsadder/abyssalite_block.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Block of Abyssalite",
+      qty: 1,
+      sourceId: "itemsadder:abyssalite_block",
+      texture: "/wiki/textures/itemsadder/abyssalite_block.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block4",
@@ -5454,8 +11909,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Oxidized Mythril", qty: 1, sourceId: "itemsadder:mythril_block4", texture: "/wiki/textures/itemsadder/mythril_block4.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Oxidized Mythril",
+      qty: 1,
+      sourceId: "itemsadder:mythril_block4",
+      texture: "/wiki/textures/itemsadder/mythril_block4.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block3",
@@ -5463,8 +11930,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Oxidized Mythril", qty: 1, sourceId: "itemsadder:mythril_block4", texture: "/wiki/textures/itemsadder/mythril_block4.png" }],
-    output: { name: "Weathered Mythril", qty: 1, sourceId: "itemsadder:mythril_block3", texture: "/wiki/textures/itemsadder/mythril_block3.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      {
+        name: "Oxidized Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block4",
+        texture: "/wiki/textures/itemsadder/mythril_block4.png",
+      },
+    ],
+    output: {
+      name: "Weathered Mythril",
+      qty: 1,
+      sourceId: "itemsadder:mythril_block3",
+      texture: "/wiki/textures/itemsadder/mythril_block3.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block2",
@@ -5472,8 +11957,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Weathered Mythril", qty: 1, sourceId: "itemsadder:mythril_block3", texture: "/wiki/textures/itemsadder/mythril_block3.png" }],
-    output: { name: "Exposed Mythril", qty: 1, sourceId: "itemsadder:mythril_block2", texture: "/wiki/textures/itemsadder/mythril_block2.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      {
+        name: "Weathered Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block3",
+        texture: "/wiki/textures/itemsadder/mythril_block3.png",
+      },
+    ],
+    output: {
+      name: "Exposed Mythril",
+      qty: 1,
+      sourceId: "itemsadder:mythril_block2",
+      texture: "/wiki/textures/itemsadder/mythril_block2.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block1",
@@ -5481,8 +11984,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Blocks & Building",
-    ingredients: [{ name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Exposed Mythril", qty: 1, sourceId: "itemsadder:mythril_block2", texture: "/wiki/textures/itemsadder/mythril_block2.png" }],
-    output: { name: "Block of Mythril", qty: 1, sourceId: "itemsadder:mythril_block1", texture: "/wiki/textures/itemsadder/mythril_block1.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      {
+        name: "Exposed Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block2",
+        texture: "/wiki/textures/itemsadder/mythril_block2.png",
+      },
+    ],
+    output: {
+      name: "Block of Mythril",
+      qty: 1,
+      sourceId: "itemsadder:mythril_block1",
+      texture: "/wiki/textures/itemsadder/mythril_block1.png",
+    },
   },
   {
     key: "gen-ingot-station-maplewood-log2",
@@ -5490,8 +12011,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Maplewood Log", qty: 1, sourceId: "itemsadder:maplewood_log", texture: "/wiki/textures/itemsadder/maplewood_log.png" }],
-    output: { name: "Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:MAPLEWOOD", texture: "/wiki/textures/mmoitems/maplewood.png" },
+    ingredients: [
+      {
+        name: "Maplewood Log",
+        qty: 1,
+        sourceId: "itemsadder:maplewood_log",
+        texture: "/wiki/textures/itemsadder/maplewood_log.png",
+      },
+    ],
+    output: {
+      name: "Maplewood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-elderwood-log2",
@@ -5499,8 +12032,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Elderwood Log", qty: 1, sourceId: "itemsadder:elderwood_log", texture: "/wiki/textures/itemsadder/elderwood_log.png" }],
-    output: { name: "Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" },
+    ingredients: [
+      {
+        name: "Elderwood Log",
+        qty: 1,
+        sourceId: "itemsadder:elderwood_log",
+        texture: "/wiki/textures/itemsadder/elderwood_log.png",
+      },
+    ],
+    output: {
+      name: "Elderwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-demonwood-log2",
@@ -5508,8 +12053,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Demonwood Log", qty: 1, sourceId: "itemsadder:demonwood_log", texture: "/wiki/textures/itemsadder/demonwood_log.png" }],
-    output: { name: "Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" },
+    ingredients: [
+      {
+        name: "Demonwood Log",
+        qty: 1,
+        sourceId: "itemsadder:demonwood_log",
+        texture: "/wiki/textures/itemsadder/demonwood_log.png",
+      },
+    ],
+    output: {
+      name: "Demonwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-maplewood-plank2",
@@ -5517,8 +12074,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Maplewood Plank", qty: 1, sourceId: "itemsadder:maplewood_plank", texture: "/wiki/textures/itemsadder/maplewood_plank.png" }],
-    output: { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" },
+    ingredients: [
+      {
+        name: "Maplewood Plank",
+        qty: 1,
+        sourceId: "itemsadder:maplewood_plank",
+        texture: "/wiki/textures/itemsadder/maplewood_plank.png",
+      },
+    ],
+    output: {
+      name: "Refined Maplewood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+      texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+    },
   },
   {
     key: "gen-ingot-station-elderwood-plank2",
@@ -5526,8 +12095,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Elderwood Plank", qty: 1, sourceId: "itemsadder:elderwood_plank", texture: "/wiki/textures/itemsadder/elderwood_plank.png" }],
-    output: { name: "Refined Elderwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" },
+    ingredients: [
+      {
+        name: "Elderwood Plank",
+        qty: 1,
+        sourceId: "itemsadder:elderwood_plank",
+        texture: "/wiki/textures/itemsadder/elderwood_plank.png",
+      },
+    ],
+    output: {
+      name: "Refined Elderwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+    },
   },
   {
     key: "gen-ingot-station-demonwood-plank2",
@@ -5535,8 +12116,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Demonwood Plank", qty: 1, sourceId: "itemsadder:demonwood_plank", texture: "/wiki/textures/itemsadder/demonwood_plank.png" }],
-    output: { name: "Refined Demonwood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" },
+    ingredients: [
+      {
+        name: "Demonwood Plank",
+        qty: 1,
+        sourceId: "itemsadder:demonwood_plank",
+        texture: "/wiki/textures/itemsadder/demonwood_plank.png",
+      },
+    ],
+    output: {
+      name: "Refined Demonwood",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+    },
   },
   {
     key: "gen-ingot-station-ignitium-block2",
@@ -5544,8 +12137,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Ignitium", qty: 1, sourceId: "itemsadder:ignitium_block", texture: "/wiki/textures/itemsadder/ignitium_block.png" }],
-    output: { name: "Ignitium", qty: 4, sourceId: "mmoitem:MATERIALS:IGNITIUM", texture: "/wiki/textures/mmoitems/ignitium.png" },
+    ingredients: [
+      {
+        name: "Block of Ignitium",
+        qty: 1,
+        sourceId: "itemsadder:ignitium_block",
+        texture: "/wiki/textures/itemsadder/ignitium_block.png",
+      },
+    ],
+    output: {
+      name: "Ignitium",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:IGNITIUM",
+      texture: "/wiki/textures/mmoitems/ignitium.png",
+    },
   },
   {
     key: "gen-ingot-station-coke-block2",
@@ -5553,7 +12158,14 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Coke", qty: 1, sourceId: "itemsadder:coke_block", texture: "/wiki/textures/itemsadder/coke_block.png" }],
+    ingredients: [
+      {
+        name: "Block of Coke",
+        qty: 1,
+        sourceId: "itemsadder:coke_block",
+        texture: "/wiki/textures/itemsadder/coke_block.png",
+      },
+    ],
     output: { name: "Coke", qty: 4, sourceId: "mmoitem:MATERIALS:COKE", texture: "/wiki/textures/mmoitems/coke.png" },
   },
   {
@@ -5562,8 +12174,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Tin", qty: 1, sourceId: "itemsadder:tin_block", texture: "/wiki/textures/itemsadder/tin_block.png" }],
-    output: { name: "Tin", qty: 4, sourceId: "mmoitem:MATERIALS:RAW_TIN", texture: "/wiki/textures/mmoitems/raw_tin.png" },
+    ingredients: [
+      {
+        name: "Block of Tin",
+        qty: 1,
+        sourceId: "itemsadder:tin_block",
+        texture: "/wiki/textures/itemsadder/tin_block.png",
+      },
+    ],
+    output: {
+      name: "Tin",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:RAW_TIN",
+      texture: "/wiki/textures/mmoitems/raw_tin.png",
+    },
   },
   {
     key: "gen-ingot-station-bronze-block2",
@@ -5571,8 +12195,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Bronze", qty: 1, sourceId: "itemsadder:bronze_block", texture: "/wiki/textures/itemsadder/bronze_block.png" }],
-    output: { name: "Bronze Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" },
+    ingredients: [
+      {
+        name: "Block of Bronze",
+        qty: 1,
+        sourceId: "itemsadder:bronze_block",
+        texture: "/wiki/textures/itemsadder/bronze_block.png",
+      },
+    ],
+    output: {
+      name: "Bronze Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+      texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-steel-block2",
@@ -5580,8 +12216,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Steel", qty: 1, sourceId: "itemsadder:steel_block", texture: "/wiki/textures/itemsadder/steel_block.png" }],
-    output: { name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" },
+    ingredients: [
+      {
+        name: "Block of Steel",
+        qty: 1,
+        sourceId: "itemsadder:steel_block",
+        texture: "/wiki/textures/itemsadder/steel_block.png",
+      },
+    ],
+    output: {
+      name: "Steel Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+      texture: "/wiki/textures/mmoitems/steel_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-abyssalite-block2",
@@ -5589,8 +12237,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Abyssalite", qty: 1, sourceId: "itemsadder:abyssalite_block", texture: "/wiki/textures/itemsadder/abyssalite_block.png" }],
-    output: { name: "Abyssalite Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" },
+    ingredients: [
+      {
+        name: "Block of Abyssalite",
+        qty: 1,
+        sourceId: "itemsadder:abyssalite_block",
+        texture: "/wiki/textures/itemsadder/abyssalite_block.png",
+      },
+    ],
+    output: {
+      name: "Abyssalite Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+      texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block4-2",
@@ -5598,8 +12258,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Oxidized Mythril", qty: 1, sourceId: "itemsadder:mythril_block4", texture: "/wiki/textures/itemsadder/mythril_block4.png" }],
-    output: { name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Oxidized Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block4",
+        texture: "/wiki/textures/itemsadder/mythril_block4.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 4,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block3-2",
@@ -5607,8 +12279,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Weathered Mythril", qty: 1, sourceId: "itemsadder:mythril_block3", texture: "/wiki/textures/itemsadder/mythril_block3.png" }],
-    output: { name: "Mythril Ingot", qty: 8, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Weathered Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block3",
+        texture: "/wiki/textures/itemsadder/mythril_block3.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 8,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block2-2",
@@ -5616,8 +12300,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Exposed Mythril", qty: 1, sourceId: "itemsadder:mythril_block2", texture: "/wiki/textures/itemsadder/mythril_block2.png" }],
-    output: { name: "Mythril Ingot", qty: 12, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Exposed Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block2",
+        texture: "/wiki/textures/itemsadder/mythril_block2.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 12,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-ingot-station-mythril-block1-2",
@@ -5625,8 +12321,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Ingot Station",
     time: 5,
     category: "Materials",
-    ingredients: [{ name: "Block of Mythril", qty: 1, sourceId: "itemsadder:mythril_block1", texture: "/wiki/textures/itemsadder/mythril_block1.png" }],
-    output: { name: "Mythril Ingot", qty: 16, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" },
+    ingredients: [
+      {
+        name: "Block of Mythril",
+        qty: 1,
+        sourceId: "itemsadder:mythril_block1",
+        texture: "/wiki/textures/itemsadder/mythril_block1.png",
+      },
+    ],
+    output: {
+      name: "Mythril Ingot",
+      qty: 16,
+      sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+      texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+    },
   },
   {
     key: "gen-instrument-station-accordion",
@@ -5634,8 +12342,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Oak Planks", qty: 4, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }, { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }, { name: "String", qty: 3, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Accordion", qty: 1, sourceId: "mmoitem:INSTRUMENTS:ACCORDION", texture: "/wiki/textures/mmoitems/accordion.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 4, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+      { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+      { name: "String", qty: 3, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Accordion",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:ACCORDION",
+      texture: "/wiki/textures/mmoitems/accordion.png",
+    },
   },
   {
     key: "gen-instrument-station-bagpipe",
@@ -5643,8 +12360,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Flute", qty: 3, sourceId: "mmoitem:INSTRUMENTS:FLUTE", texture: "/wiki/textures/mmoitems/flute.png" }, { name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Bagpipe", qty: 1, sourceId: "mmoitem:INSTRUMENTS:BAGPIPE", texture: "/wiki/textures/mmoitems/bagpipe.png" },
+    ingredients: [
+      { name: "Flute", qty: 3, sourceId: "mmoitem:INSTRUMENTS:FLUTE", texture: "/wiki/textures/mmoitems/flute.png" },
+      { name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Bagpipe",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:BAGPIPE",
+      texture: "/wiki/textures/mmoitems/bagpipe.png",
+    },
   },
   {
     key: "gen-instrument-station-celtic-harp",
@@ -5652,8 +12377,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Gold Ingot", qty: 3, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Celtic Harp", qty: 1, sourceId: "mmoitem:INSTRUMENTS:CELTIC_HARP", texture: "/wiki/textures/mmoitems/celtic_harp.png" },
+    ingredients: [
+      { name: "Gold Ingot", qty: 3, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Celtic Harp",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:CELTIC_HARP",
+      texture: "/wiki/textures/mmoitems/celtic_harp.png",
+    },
   },
   {
     key: "gen-instrument-station-dulcimer",
@@ -5661,16 +12395,34 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }, { name: "Oak Planks", qty: 4, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Dulcimer", qty: 1, sourceId: "mmoitem:INSTRUMENTS:DULCIMER", texture: "/wiki/textures/mmoitems/dulcimer.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+      { name: "Oak Planks", qty: 4, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Dulcimer",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:DULCIMER",
+      texture: "/wiki/textures/mmoitems/dulcimer.png",
+    },
   },
   {
     key: "gen-instrument-station-flute",
     title: "Flute",
     station: "Instrument Station",
     category: "Instruments",
-    ingredients: [{ name: "Bone", qty: 1, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Flute", qty: 1, sourceId: "mmoitem:INSTRUMENTS:FLUTE", texture: "/wiki/textures/mmoitems/flute.png" },
+    ingredients: [
+      { name: "Bone", qty: 1, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Flute",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:FLUTE",
+      texture: "/wiki/textures/mmoitems/flute.png",
+    },
   },
   {
     key: "gen-instrument-station-kalimba",
@@ -5678,8 +12430,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Note Block", qty: 3, sourceId: "vanilla:note_block", texture: "/wiki/textures/vanilla/note_block.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Kalimba", qty: 1, sourceId: "mmoitem:INSTRUMENTS:KALIMBA", texture: "/wiki/textures/mmoitems/kalimba.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 3, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Note Block", qty: 3, sourceId: "vanilla:note_block", texture: "/wiki/textures/vanilla/note_block.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Kalimba",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:KALIMBA",
+      texture: "/wiki/textures/mmoitems/kalimba.png",
+    },
   },
   {
     key: "gen-instrument-station-lute",
@@ -5687,7 +12448,11 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Oak Planks", qty: 3, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }, { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }, { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 3, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+      { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+      { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
     output: { name: "Lute", qty: 1, sourceId: "mmoitem:INSTRUMENTS:LUTE", texture: "/wiki/textures/mmoitems/lute.png" },
   },
   {
@@ -5696,8 +12461,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Copper Ingot", qty: 3, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Trumpet", qty: 1, sourceId: "mmoitem:INSTRUMENTS:TRUMPET", texture: "/wiki/textures/mmoitems/trumpet.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      {
+        name: "Copper Ingot",
+        qty: 3,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Trumpet",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:TRUMPET",
+      texture: "/wiki/textures/mmoitems/trumpet.png",
+    },
   },
   {
     key: "gen-instrument-station-vielle",
@@ -5705,8 +12483,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Instrument Station",
     time: 10,
     category: "Instruments",
-    ingredients: [{ name: "Oak Log", qty: 3, sourceId: "vanilla:oak_log", texture: "/wiki/textures/vanilla/oak_log.png" }, { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }, { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Vielle", qty: 1, sourceId: "mmoitem:INSTRUMENTS:VIELLE", texture: "/wiki/textures/mmoitems/vielle.png" },
+    ingredients: [
+      { name: "Oak Log", qty: 3, sourceId: "vanilla:oak_log", texture: "/wiki/textures/vanilla/oak_log.png" },
+      { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+      { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Vielle",
+      qty: 1,
+      sourceId: "mmoitem:INSTRUMENTS:VIELLE",
+      texture: "/wiki/textures/mmoitems/vielle.png",
+    },
   },
   {
     key: "gen-meal-prep-station-cutting_knife",
@@ -5714,8 +12501,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Cutting Knife", qty: 1, sourceId: "itemsadder:cutting_knife", texture: "/wiki/textures/itemsadder/cutting_knife.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Cutting Knife",
+      qty: 1,
+      sourceId: "itemsadder:cutting_knife",
+      texture: "/wiki/textures/itemsadder/cutting_knife.png",
+    },
   },
   {
     key: "gen-meal-prep-station-ladle",
@@ -5723,7 +12517,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
     output: { name: "Ladle", qty: 1, sourceId: "itemsadder:ladle", texture: "/wiki/textures/itemsadder/ladle.png" },
   },
   {
@@ -5732,7 +12528,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
     output: { name: "Masher", qty: 1, sourceId: "itemsadder:masher", texture: "/wiki/textures/itemsadder/masher.png" },
   },
   {
@@ -5741,8 +12539,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Frying Pan", qty: 1, sourceId: "itemsadder:frying_pan", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Frying Pan",
+      qty: 1,
+      sourceId: "itemsadder:frying_pan",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-sauce-pan",
@@ -5750,7 +12555,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
     output: { name: "Saucepan", qty: 1, sourceId: "itemsadder:saucepan", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -5759,7 +12566,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
     output: { name: "Pot", qty: 1, sourceId: "itemsadder:pot", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -5768,8 +12577,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Meat Hook", qty: 1, sourceId: "itemsadder:meat_hook", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Meat Hook",
+      qty: 1,
+      sourceId: "itemsadder:meat_hook",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-sausage-maker",
@@ -5777,8 +12593,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Sausage Maker", qty: 1, sourceId: "itemsadder:sausage_maker", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Sausage Maker",
+      qty: 1,
+      sourceId: "itemsadder:sausage_maker",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-liquid-container",
@@ -5786,8 +12609,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Liquid Container", qty: 1, sourceId: "itemsadder:liquid_container", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Liquid Container",
+      qty: 1,
+      sourceId: "itemsadder:liquid_container",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-bread-tray",
@@ -5795,8 +12625,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Bread Tray", qty: 1, sourceId: "itemsadder:bread_tray", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Bread Tray",
+      qty: 1,
+      sourceId: "itemsadder:bread_tray",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-oven-bottom",
@@ -5805,7 +12642,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Other",
     ingredients: [{ name: "Stone", qty: 1, sourceId: "vanilla:stone", texture: "/wiki/textures/vanilla/stone.png" }],
-    output: { name: "Oven Bottom", qty: 1, sourceId: "itemsadder:oven_bottom", texture: "/wiki/textures/vanilla/paper.png" },
+    output: {
+      name: "Oven Bottom",
+      qty: 1,
+      sourceId: "itemsadder:oven_bottom",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-oven-top",
@@ -5823,7 +12665,12 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Other",
     ingredients: [{ name: "Stone", qty: 1, sourceId: "vanilla:stone", texture: "/wiki/textures/vanilla/stone.png" }],
-    output: { name: "Milling Stone", qty: 1, sourceId: "itemsadder:milling_stone", texture: "/wiki/textures/vanilla/paper.png" },
+    output: {
+      name: "Milling Stone",
+      qty: 1,
+      sourceId: "itemsadder:milling_stone",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-tool-shelf",
@@ -5831,8 +12678,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Tool Shelf", qty: 1, sourceId: "itemsadder:tool_shelf", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Tool Shelf",
+      qty: 1,
+      sourceId: "itemsadder:tool_shelf",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-fire-pit",
@@ -5840,7 +12694,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
     output: { name: "Fire Pit", qty: 1, sourceId: "itemsadder:fire_pit", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -5849,8 +12705,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Cutting Board", qty: 1, sourceId: "itemsadder:cutting_board", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Cutting Board",
+      qty: 1,
+      sourceId: "itemsadder:cutting_board",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-butter-churn",
@@ -5858,8 +12721,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Butter Churn", qty: 1, sourceId: "itemsadder:butter_churn", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Butter Churn",
+      qty: 1,
+      sourceId: "itemsadder:butter_churn",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-butter-plate",
@@ -5867,8 +12737,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Butter Plate", qty: 1, sourceId: "itemsadder:butter_plate", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Butter Plate",
+      qty: 1,
+      sourceId: "itemsadder:butter_plate",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-mixing-bowl",
@@ -5876,8 +12753,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Mixing Bowl", qty: 1, sourceId: "itemsadder:mixing_bowl", texture: "/wiki/textures/vanilla/paper.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Mixing Bowl",
+      qty: 1,
+      sourceId: "itemsadder:mixing_bowl",
+      texture: "/wiki/textures/vanilla/paper.png",
+    },
   },
   {
     key: "gen-meal-prep-station-empty-cup",
@@ -5885,8 +12769,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Other",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
-    output: { name: "Empty Cup", qty: 1, sourceId: "itemsadder:empty_cup", texture: "/wiki/textures/itemsadder/empty_cup.png" },
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
+    output: {
+      name: "Empty Cup",
+      qty: 1,
+      sourceId: "itemsadder:empty_cup",
+      texture: "/wiki/textures/itemsadder/empty_cup.png",
+    },
   },
   {
     key: "gen-meal-prep-station-plate",
@@ -5894,7 +12785,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
     output: { name: "Plate", qty: 1, sourceId: "itemsadder:plate", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -5903,7 +12796,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Meal Prep Station",
     time: 2,
     category: "Furniture & Utensils",
-    ingredients: [{ name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" }],
+    ingredients: [
+      { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: "/wiki/textures/vanilla/oak_planks.png" },
+    ],
     output: { name: "Bowl", qty: 1, sourceId: "itemsadder:bowl", texture: "/wiki/textures/vanilla/paper.png" },
   },
   {
@@ -5913,8 +12808,16 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Glass", qty: 2, sourceId: "vanilla:glass", texture: "/wiki/textures/vanilla/glass.png" }],
-    output: { name: "Thermometer", qty: 1, sourceId: "mmoitem:UTILS:THERMOMETER", texture: "/wiki/textures/mmoitems/thermometer.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Glass", qty: 2, sourceId: "vanilla:glass", texture: "/wiki/textures/vanilla/glass.png" },
+    ],
+    output: {
+      name: "Thermometer",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:THERMOMETER",
+      texture: "/wiki/textures/mmoitems/thermometer.png",
+    },
   },
   {
     key: "gen-medicine-station-wood-arm-claw",
@@ -5923,8 +12826,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" }, { name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Wood Claw Arm", qty: 1, sourceId: "mmoitem:UTILS:WOOD_CLAW_ARM", texture: "/wiki/textures/mmoitems/wood_claw_arm.png" },
+    ingredients: [
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Wood Claw Arm",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:WOOD_CLAW_ARM",
+      texture: "/wiki/textures/mmoitems/wood_claw_arm.png",
+    },
   },
   {
     key: "gen-medicine-station-iron-arm-claw",
@@ -5933,8 +12854,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" }],
-    output: { name: "Iron Claw Arm", qty: 1, sourceId: "mmoitem:UTILS:IRON_CLAW_ARM", texture: "/wiki/textures/mmoitems/iron_claw_arm.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+      },
+    ],
+    output: {
+      name: "Iron Claw Arm",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:IRON_CLAW_ARM",
+      texture: "/wiki/textures/mmoitems/iron_claw_arm.png",
+    },
   },
   {
     key: "gen-medicine-station-arcane-arm-claw",
@@ -5943,8 +12882,32 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Enchanted Dust", qty: 4, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" }],
-    output: { name: "Arcane Claw Arm", qty: 1, sourceId: "mmoitem:UTILS:ARCANE_CLAW_ARM", texture: "/wiki/textures/mmoitems/arcane_claw_arm.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 4,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+      },
+    ],
+    output: {
+      name: "Arcane Claw Arm",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:ARCANE_CLAW_ARM",
+      texture: "/wiki/textures/mmoitems/arcane_claw_arm.png",
+    },
   },
   {
     key: "gen-medicine-station-wood-leg-claw",
@@ -5953,8 +12916,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD", texture: "/wiki/textures/mmoitems/refined_maplewood.png" }, { name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Wood Claw Leg", qty: 1, sourceId: "mmoitem:UTILS:WOOD_CLAW_LEG", texture: "/wiki/textures/mmoitems/wood_claw_leg.png" },
+    ingredients: [
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_MAPLEWOOD",
+        texture: "/wiki/textures/mmoitems/refined_maplewood.png",
+      },
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Wood Claw Leg",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:WOOD_CLAW_LEG",
+      texture: "/wiki/textures/mmoitems/wood_claw_leg.png",
+    },
   },
   {
     key: "gen-medicine-station-iron-leg-claw",
@@ -5963,8 +12944,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Steel Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" }],
-    output: { name: "Iron Claw Leg", qty: 1, sourceId: "mmoitem:UTILS:IRON_CLAW_LEG", texture: "/wiki/textures/mmoitems/iron_claw_leg.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+      },
+    ],
+    output: {
+      name: "Iron Claw Leg",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:IRON_CLAW_LEG",
+      texture: "/wiki/textures/mmoitems/iron_claw_leg.png",
+    },
   },
   {
     key: "gen-medicine-station-arcane-leg-claw",
@@ -5973,8 +12972,32 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Utilities",
-    ingredients: [{ name: "Enchanted Dust", qty: 4, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }, { name: "Mythril Ingot", qty: 4, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Refined Maplewood", qty: 4, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" }],
-    output: { name: "Arcane Claw Leg", qty: 1, sourceId: "mmoitem:UTILS:ARCANE_CLAW_LEG", texture: "/wiki/textures/mmoitems/arcane_claw_leg.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 4,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+      {
+        name: "Mythril Ingot",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      {
+        name: "Refined Maplewood",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+      },
+    ],
+    output: {
+      name: "Arcane Claw Leg",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:ARCANE_CLAW_LEG",
+      texture: "/wiki/textures/mmoitems/arcane_claw_leg.png",
+    },
   },
   {
     key: "gen-medicine-station-detoxed-leather",
@@ -5983,8 +13006,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Materials",
-    ingredients: [{ name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Detoxed Leather", qty: 2, sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER", texture: "/wiki/textures/mmoitems/detoxed_leather.png" },
+    ingredients: [
+      { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Detoxed Leather",
+      qty: 2,
+      sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER",
+      texture: "/wiki/textures/mmoitems/detoxed_leather.png",
+    },
   },
   {
     key: "gen-medicine-station-doctor-helmet",
@@ -5993,8 +13023,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Physician",
     category: "Armour",
-    ingredients: [{ name: "Detoxed Leather", qty: 4, sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER", texture: "/wiki/textures/mmoitems/detoxed_leather.png" }],
-    output: { name: "Doctor's Mask", qty: 1, sourceId: "mmoitem:ARMORS:DOCTORS_MASK", texture: "/wiki/textures/vanilla/player_head.png" },
+    ingredients: [
+      {
+        name: "Detoxed Leather",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER",
+        texture: "/wiki/textures/mmoitems/detoxed_leather.png",
+      },
+    ],
+    output: {
+      name: "Doctor's Mask",
+      qty: 1,
+      sourceId: "mmoitem:ARMORS:DOCTORS_MASK",
+      texture: "/wiki/textures/vanilla/player_head.png",
+    },
   },
   {
     key: "gen-medicine-station-doctor-chestplate",
@@ -6003,8 +13045,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Physician",
     category: "Armour",
-    ingredients: [{ name: "Detoxed Leather", qty: 4, sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER", texture: "/wiki/textures/mmoitems/detoxed_leather.png" }],
-    output: { name: "Doctor's Coat", qty: 1, sourceId: "mmoitem:ARMORS:DOCTORS_COAT", texture: "/wiki/textures/vanilla/leather_chestplate.png" },
+    ingredients: [
+      {
+        name: "Detoxed Leather",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER",
+        texture: "/wiki/textures/mmoitems/detoxed_leather.png",
+      },
+    ],
+    output: {
+      name: "Doctor's Coat",
+      qty: 1,
+      sourceId: "mmoitem:ARMORS:DOCTORS_COAT",
+      texture: "/wiki/textures/vanilla/leather_chestplate.png",
+    },
   },
   {
     key: "gen-medicine-station-doctor-leggings",
@@ -6013,8 +13067,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Physician",
     category: "Armour",
-    ingredients: [{ name: "Detoxed Leather", qty: 4, sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER", texture: "/wiki/textures/mmoitems/detoxed_leather.png" }],
-    output: { name: "Doctor's Leggings", qty: 1, sourceId: "mmoitem:ARMORS:DOCTORS_LEGGINGS", texture: "/wiki/textures/vanilla/leather_leggings.png" },
+    ingredients: [
+      {
+        name: "Detoxed Leather",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER",
+        texture: "/wiki/textures/mmoitems/detoxed_leather.png",
+      },
+    ],
+    output: {
+      name: "Doctor's Leggings",
+      qty: 1,
+      sourceId: "mmoitem:ARMORS:DOCTORS_LEGGINGS",
+      texture: "/wiki/textures/vanilla/leather_leggings.png",
+    },
   },
   {
     key: "gen-medicine-station-doctor-boots",
@@ -6023,8 +13089,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Physician",
     category: "Armour",
-    ingredients: [{ name: "Detoxed Leather", qty: 4, sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER", texture: "/wiki/textures/mmoitems/detoxed_leather.png" }],
-    output: { name: "Doctor's Boots", qty: 1, sourceId: "mmoitem:ARMORS:DOCTORS_BOOTS", texture: "/wiki/textures/vanilla/leather_boots.png" },
+    ingredients: [
+      {
+        name: "Detoxed Leather",
+        qty: 4,
+        sourceId: "mmoitem:MATERIALS:DETOXED_LEATHER",
+        texture: "/wiki/textures/mmoitems/detoxed_leather.png",
+      },
+    ],
+    output: {
+      name: "Doctor's Boots",
+      qty: 1,
+      sourceId: "mmoitem:ARMORS:DOCTORS_BOOTS",
+      texture: "/wiki/textures/vanilla/leather_boots.png",
+    },
   },
   {
     key: "gen-medicine-station-herb-mixture",
@@ -6033,8 +13111,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Clover", qty: 1, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" }],
-    output: { name: "Herb Mixture", qty: 1, sourceId: "mmoitem:MEDICINES:HERB_MIXTURE", texture: "/wiki/textures/mmoitems/herb_mixture.png" },
+    ingredients: [
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      { name: "Clover", qty: 1, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" },
+    ],
+    output: {
+      name: "Herb Mixture",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:HERB_MIXTURE",
+      texture: "/wiki/textures/mmoitems/herb_mixture.png",
+    },
   },
   {
     key: "gen-medicine-station-root-mixture",
@@ -6043,8 +13134,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Thorn Root", qty: 2, sourceId: "mmoitem:HERBS:THORN_ROOT", texture: "/wiki/textures/mmoitems/thorn_root.png" }, { name: "Burrow Root", qty: 1, sourceId: "mmoitem:HERBS:BURROW_ROOT", texture: "/wiki/textures/mmoitems/burrow_root.png" }],
-    output: { name: "Root Mixture", qty: 1, sourceId: "mmoitem:MEDICINES:ROOT_MIXTURE", texture: "/wiki/textures/mmoitems/root_mixture.png" },
+    ingredients: [
+      {
+        name: "Thorn Root",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:THORN_ROOT",
+        texture: "/wiki/textures/mmoitems/thorn_root.png",
+      },
+      {
+        name: "Burrow Root",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:BURROW_ROOT",
+        texture: "/wiki/textures/mmoitems/burrow_root.png",
+      },
+    ],
+    output: {
+      name: "Root Mixture",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:ROOT_MIXTURE",
+      texture: "/wiki/textures/mmoitems/root_mixture.png",
+    },
   },
   {
     key: "gen-medicine-station-cooling-serum",
@@ -6053,8 +13162,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" }, { name: "Long Leaf", qty: 1, sourceId: "mmoitem:HERBS:LONG_LEAF", texture: "/wiki/textures/mmoitems/long_leaf.png" }],
-    output: { name: "Cooling Serum", qty: 1, sourceId: "mmoitem:MEDICINES:COOLING_SERUM", texture: "/wiki/textures/mmoitems/cooling_serum.png" },
+    ingredients: [
+      { name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" },
+      {
+        name: "Long Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:LONG_LEAF",
+        texture: "/wiki/textures/mmoitems/long_leaf.png",
+      },
+    ],
+    output: {
+      name: "Cooling Serum",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:COOLING_SERUM",
+      texture: "/wiki/textures/mmoitems/cooling_serum.png",
+    },
   },
   {
     key: "gen-medicine-station-viral-serum",
@@ -6063,8 +13185,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Kelpberry", qty: 2, sourceId: "mmoitem:HERBS:KELPBERRY", texture: "/wiki/textures/mmoitems/kelpberry.png" }, { name: "Dying Leaf", qty: 1, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }],
-    output: { name: "Viral Serum", qty: 1, sourceId: "mmoitem:MEDICINES:VIRAL_SERUM", texture: "/wiki/textures/mmoitems/viral_serum.png" },
+    ingredients: [
+      {
+        name: "Kelpberry",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:KELPBERRY",
+        texture: "/wiki/textures/mmoitems/kelpberry.png",
+      },
+      {
+        name: "Dying Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+    ],
+    output: {
+      name: "Viral Serum",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:VIRAL_SERUM",
+      texture: "/wiki/textures/mmoitems/viral_serum.png",
+    },
   },
   {
     key: "gen-medicine-station-stabilizing-serum",
@@ -6073,8 +13213,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Birch Seed", qty: 2, sourceId: "mmoitem:HERBS:BIRCH_SEED", texture: "/wiki/textures/mmoitems/birch_seed.png" }, { name: "Kelpberry", qty: 1, sourceId: "mmoitem:HERBS:KELPBERRY", texture: "/wiki/textures/mmoitems/kelpberry.png" }],
-    output: { name: "Stabilizing Serum", qty: 1, sourceId: "mmoitem:MEDICINES:STABILIZING_SERUM", texture: "/wiki/textures/mmoitems/stabilizing_serum.png" },
+    ingredients: [
+      {
+        name: "Birch Seed",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:BIRCH_SEED",
+        texture: "/wiki/textures/mmoitems/birch_seed.png",
+      },
+      {
+        name: "Kelpberry",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:KELPBERRY",
+        texture: "/wiki/textures/mmoitems/kelpberry.png",
+      },
+    ],
+    output: {
+      name: "Stabilizing Serum",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:STABILIZING_SERUM",
+      texture: "/wiki/textures/mmoitems/stabilizing_serum.png",
+    },
   },
   {
     key: "gen-medicine-station-fever-flush",
@@ -6083,8 +13241,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Fire Leaf", qty: 2, sourceId: "mmoitem:HERBS:FIRE_LEAF", texture: "/wiki/textures/mmoitems/fire_leaf.png" }, { name: "Autumn Leaf", qty: 1, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }],
-    output: { name: "Fever Flush", qty: 1, sourceId: "mmoitem:MEDICINES:FEVER_FLUSH", texture: "/wiki/textures/mmoitems/fever_flush.png" },
+    ingredients: [
+      {
+        name: "Fire Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:FIRE_LEAF",
+        texture: "/wiki/textures/mmoitems/fire_leaf.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+    ],
+    output: {
+      name: "Fever Flush",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:FEVER_FLUSH",
+      texture: "/wiki/textures/mmoitems/fever_flush.png",
+    },
   },
   {
     key: "gen-medicine-station-fireleaf_brew",
@@ -6093,8 +13269,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }, { name: "Pumpkin Spore", qty: 1, sourceId: "mmoitem:HERBS:PUMPKIN_SPORE", texture: "/wiki/textures/mmoitems/pumpkin_spore.png" }],
-    output: { name: "Fireleaf Brew", qty: 1, sourceId: "mmoitem:MEDICINES:FIRELEAF_BREW", texture: "/wiki/textures/mmoitems/fireleaf_brew.png" },
+    ingredients: [
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+      {
+        name: "Pumpkin Spore",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:PUMPKIN_SPORE",
+        texture: "/wiki/textures/mmoitems/pumpkin_spore.png",
+      },
+    ],
+    output: {
+      name: "Fireleaf Brew",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:FIRELEAF_BREW",
+      texture: "/wiki/textures/mmoitems/fireleaf_brew.png",
+    },
   },
   {
     key: "gen-medicine-station-frost-serum",
@@ -6103,8 +13297,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Pumpkin Spore", qty: 2, sourceId: "mmoitem:HERBS:PUMPKIN_SPORE", texture: "/wiki/textures/mmoitems/pumpkin_spore.png" }, { name: "Fire Leaf", qty: 1, sourceId: "mmoitem:HERBS:FIRE_LEAF", texture: "/wiki/textures/mmoitems/fire_leaf.png" }],
-    output: { name: "Frost Serum", qty: 1, sourceId: "mmoitem:MEDICINES:FROST_SERUM", texture: "/wiki/textures/mmoitems/frost_serum.png" },
+    ingredients: [
+      {
+        name: "Pumpkin Spore",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:PUMPKIN_SPORE",
+        texture: "/wiki/textures/mmoitems/pumpkin_spore.png",
+      },
+      {
+        name: "Fire Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:FIRE_LEAF",
+        texture: "/wiki/textures/mmoitems/fire_leaf.png",
+      },
+    ],
+    output: {
+      name: "Frost Serum",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:FROST_SERUM",
+      texture: "/wiki/textures/mmoitems/frost_serum.png",
+    },
   },
   {
     key: "gen-medicine-station-nasal-flush",
@@ -6113,8 +13325,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" }, { name: "Birch Seed", qty: 1, sourceId: "mmoitem:HERBS:BIRCH_SEED", texture: "/wiki/textures/mmoitems/birch_seed.png" }],
-    output: { name: "Nasal Flush", qty: 1, sourceId: "mmoitem:MEDICINES:NASAL_FLUSH", texture: "/wiki/textures/mmoitems/nasal_flush.png" },
+    ingredients: [
+      { name: "Clover", qty: 2, sourceId: "mmoitem:HERBS:CLOVER", texture: "/wiki/textures/mmoitems/clover.png" },
+      {
+        name: "Birch Seed",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:BIRCH_SEED",
+        texture: "/wiki/textures/mmoitems/birch_seed.png",
+      },
+    ],
+    output: {
+      name: "Nasal Flush",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:NASAL_FLUSH",
+      texture: "/wiki/textures/mmoitems/nasal_flush.png",
+    },
   },
   {
     key: "gen-medicine-station-shroom-serum",
@@ -6123,8 +13348,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Spot Leaf", qty: 2, sourceId: "mmoitem:HERBS:SPOT_LEAF", texture: "/wiki/textures/mmoitems/spot_leaf.png" }, { name: "Dwindle Leaf", qty: 1, sourceId: "mmoitem:HERBS:DWINDLE_LEAF", texture: "/wiki/textures/mmoitems/dwindle_leaf.png" }],
-    output: { name: "Shroom Serum", qty: 1, sourceId: "mmoitem:MEDICINES:SHROOM_SERUM", texture: "/wiki/textures/mmoitems/shroom_serum.png" },
+    ingredients: [
+      {
+        name: "Spot Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:SPOT_LEAF",
+        texture: "/wiki/textures/mmoitems/spot_leaf.png",
+      },
+      {
+        name: "Dwindle Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:DWINDLE_LEAF",
+        texture: "/wiki/textures/mmoitems/dwindle_leaf.png",
+      },
+    ],
+    output: {
+      name: "Shroom Serum",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:SHROOM_SERUM",
+      texture: "/wiki/textures/mmoitems/shroom_serum.png",
+    },
   },
   {
     key: "gen-medicine-station-neuron-stabilizer",
@@ -6133,8 +13376,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Dwindle Leaf", qty: 2, sourceId: "mmoitem:HERBS:DWINDLE_LEAF", texture: "/wiki/textures/mmoitems/dwindle_leaf.png" }, { name: "Spot Leaf", qty: 1, sourceId: "mmoitem:HERBS:SPOT_LEAF", texture: "/wiki/textures/mmoitems/spot_leaf.png" }],
-    output: { name: "Neuron Stabilizer", qty: 1, sourceId: "mmoitem:MEDICINES:NEURON_STABILIZER", texture: "/wiki/textures/mmoitems/neuron_stabilizer.png" },
+    ingredients: [
+      {
+        name: "Dwindle Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DWINDLE_LEAF",
+        texture: "/wiki/textures/mmoitems/dwindle_leaf.png",
+      },
+      {
+        name: "Spot Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:SPOT_LEAF",
+        texture: "/wiki/textures/mmoitems/spot_leaf.png",
+      },
+    ],
+    output: {
+      name: "Neuron Stabilizer",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:NEURON_STABILIZER",
+      texture: "/wiki/textures/mmoitems/neuron_stabilizer.png",
+    },
   },
   {
     key: "gen-medicine-station-vein-detoxifier",
@@ -6143,8 +13404,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Long Leaf", qty: 2, sourceId: "mmoitem:HERBS:LONG_LEAF", texture: "/wiki/textures/mmoitems/long_leaf.png" }, { name: "Fire Leaf", qty: 1, sourceId: "mmoitem:HERBS:FIRE_LEAF", texture: "/wiki/textures/mmoitems/fire_leaf.png" }],
-    output: { name: "Vein Detoxifier", qty: 1, sourceId: "mmoitem:MEDICINES:VEIN_DETOXIFIER", texture: "/wiki/textures/mmoitems/vein_detoxifier.png" },
+    ingredients: [
+      {
+        name: "Long Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:LONG_LEAF",
+        texture: "/wiki/textures/mmoitems/long_leaf.png",
+      },
+      {
+        name: "Fire Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:FIRE_LEAF",
+        texture: "/wiki/textures/mmoitems/fire_leaf.png",
+      },
+    ],
+    output: {
+      name: "Vein Detoxifier",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:VEIN_DETOXIFIER",
+      texture: "/wiki/textures/mmoitems/vein_detoxifier.png",
+    },
   },
   {
     key: "gen-medicine-station-muscle-stimulator",
@@ -6153,8 +13432,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Fire Leaf", qty: 2, sourceId: "mmoitem:HERBS:FIRE_LEAF", texture: "/wiki/textures/mmoitems/fire_leaf.png" }, { name: "Long Leaf", qty: 1, sourceId: "mmoitem:HERBS:LONG_LEAF", texture: "/wiki/textures/mmoitems/long_leaf.png" }],
-    output: { name: "Muscle Stimulant", qty: 1, sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR", texture: "/wiki/textures/mmoitems/muscle_stimulator.png" },
+    ingredients: [
+      {
+        name: "Fire Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:FIRE_LEAF",
+        texture: "/wiki/textures/mmoitems/fire_leaf.png",
+      },
+      {
+        name: "Long Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:LONG_LEAF",
+        texture: "/wiki/textures/mmoitems/long_leaf.png",
+      },
+    ],
+    output: {
+      name: "Muscle Stimulant",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR",
+      texture: "/wiki/textures/mmoitems/muscle_stimulator.png",
+    },
   },
   {
     key: "gen-medicine-station-rerythmetizer",
@@ -6163,8 +13460,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Birch Seed", qty: 2, sourceId: "mmoitem:HERBS:BIRCH_SEED", texture: "/wiki/textures/mmoitems/birch_seed.png" }, { name: "Burrow Root", qty: 1, sourceId: "mmoitem:HERBS:BURROW_ROOT", texture: "/wiki/textures/mmoitems/burrow_root.png" }],
-    output: { name: "Rerythmetizer", qty: 1, sourceId: "mmoitem:MEDICINES:RERYTHMETIZER", texture: "/wiki/textures/mmoitems/rerythmetizer.png" },
+    ingredients: [
+      {
+        name: "Birch Seed",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:BIRCH_SEED",
+        texture: "/wiki/textures/mmoitems/birch_seed.png",
+      },
+      {
+        name: "Burrow Root",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:BURROW_ROOT",
+        texture: "/wiki/textures/mmoitems/burrow_root.png",
+      },
+    ],
+    output: {
+      name: "Rerythmetizer",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:RERYTHMETIZER",
+      texture: "/wiki/textures/mmoitems/rerythmetizer.png",
+    },
   },
   {
     key: "gen-medicine-station-cough-syrup",
@@ -6173,8 +13488,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Medicines",
-    ingredients: [{ name: "Burrow Root", qty: 2, sourceId: "mmoitem:HERBS:BURROW_ROOT", texture: "/wiki/textures/mmoitems/burrow_root.png" }, { name: "Long Leaf", qty: 1, sourceId: "mmoitem:HERBS:LONG_LEAF", texture: "/wiki/textures/mmoitems/long_leaf.png" }],
-    output: { name: "Cough Syrup", qty: 1, sourceId: "mmoitem:MEDICINES:COUGH_SYRUP", texture: "/wiki/textures/mmoitems/cough_syrup.png" },
+    ingredients: [
+      {
+        name: "Burrow Root",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:BURROW_ROOT",
+        texture: "/wiki/textures/mmoitems/burrow_root.png",
+      },
+      {
+        name: "Long Leaf",
+        qty: 1,
+        sourceId: "mmoitem:HERBS:LONG_LEAF",
+        texture: "/wiki/textures/mmoitems/long_leaf.png",
+      },
+    ],
+    output: {
+      name: "Cough Syrup",
+      qty: 1,
+      sourceId: "mmoitem:MEDICINES:COUGH_SYRUP",
+      texture: "/wiki/textures/mmoitems/cough_syrup.png",
+    },
   },
   {
     key: "gen-medicine-station-defibrillator",
@@ -6183,8 +13516,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Stabilizing Serum", qty: 1, sourceId: "mmoitem:MEDICINES:STABILIZING_SERUM", texture: "/wiki/textures/mmoitems/stabilizing_serum.png" }, { name: "Muscle Stimulant", qty: 1, sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR", texture: "/wiki/textures/mmoitems/muscle_stimulator.png" }],
-    output: { name: "Smelling Salts", qty: 8, sourceId: "mmoitem:SURGERY:DEFIBRILLATOR", texture: "/wiki/textures/mmoitems/defibrillator.png" },
+    ingredients: [
+      {
+        name: "Stabilizing Serum",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:STABILIZING_SERUM",
+        texture: "/wiki/textures/mmoitems/stabilizing_serum.png",
+      },
+      {
+        name: "Muscle Stimulant",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR",
+        texture: "/wiki/textures/mmoitems/muscle_stimulator.png",
+      },
+    ],
+    output: {
+      name: "Smelling Salts",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:DEFIBRILLATOR",
+      texture: "/wiki/textures/mmoitems/defibrillator.png",
+    },
   },
   {
     key: "gen-medicine-station-pins",
@@ -6193,8 +13544,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Silver Wire", qty: 8, sourceId: "mmoitem:SURGERY:PINS", texture: "/wiki/textures/mmoitems/pins.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Silver Wire",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:PINS",
+      texture: "/wiki/textures/mmoitems/pins.png",
+    },
   },
   {
     key: "gen-medicine-station-surgical_glove",
@@ -6203,8 +13561,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Viral Serum", qty: 1, sourceId: "mmoitem:MEDICINES:VIRAL_SERUM", texture: "/wiki/textures/mmoitems/viral_serum.png" }, { name: "Leather", qty: 1, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Linen Dressing", qty: 8, sourceId: "mmoitem:SURGERY:SURGICAL_GLOVE", texture: "/wiki/textures/mmoitems/surgical_glove.png" },
+    ingredients: [
+      {
+        name: "Viral Serum",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:VIRAL_SERUM",
+        texture: "/wiki/textures/mmoitems/viral_serum.png",
+      },
+      { name: "Leather", qty: 1, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Linen Dressing",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:SURGICAL_GLOVE",
+      texture: "/wiki/textures/mmoitems/surgical_glove.png",
+    },
   },
   {
     key: "gen-medicine-station-antibiotics",
@@ -6213,8 +13584,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Cough Syrup", qty: 1, sourceId: "mmoitem:MEDICINES:COUGH_SYRUP", texture: "/wiki/textures/mmoitems/cough_syrup.png" }, { name: "Glass Bottle", qty: 1, sourceId: "vanilla:glass_bottle", texture: "/wiki/textures/vanilla/glass_bottle.png" }],
-    output: { name: "Willow-Bark Tincture", qty: 8, sourceId: "mmoitem:SURGERY:ANTIBIOTICS", texture: "/wiki/textures/mmoitems/antibiotics.png" },
+    ingredients: [
+      {
+        name: "Cough Syrup",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:COUGH_SYRUP",
+        texture: "/wiki/textures/mmoitems/cough_syrup.png",
+      },
+      {
+        name: "Glass Bottle",
+        qty: 1,
+        sourceId: "vanilla:glass_bottle",
+        texture: "/wiki/textures/vanilla/glass_bottle.png",
+      },
+    ],
+    output: {
+      name: "Willow-Bark Tincture",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:ANTIBIOTICS",
+      texture: "/wiki/textures/mmoitems/antibiotics.png",
+    },
   },
   {
     key: "gen-medicine-station-clamp",
@@ -6223,8 +13612,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Artery Forceps", qty: 8, sourceId: "mmoitem:SURGERY:CLAMP", texture: "/wiki/textures/mmoitems/clamp.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Artery Forceps",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:CLAMP",
+      texture: "/wiki/textures/mmoitems/clamp.png",
+    },
   },
   {
     key: "gen-medicine-station-ultrasound",
@@ -6233,8 +13629,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Frost Serum", qty: 1, sourceId: "mmoitem:MEDICINES:FROST_SERUM", texture: "/wiki/textures/mmoitems/frost_serum.png" }, { name: "Rerythmetizer", qty: 1, sourceId: "mmoitem:MEDICINES:RERYTHMETIZER", texture: "/wiki/textures/mmoitems/rerythmetizer.png" }],
-    output: { name: "Stethoscope", qty: 8, sourceId: "mmoitem:SURGERY:ULTRASOUND", texture: "/wiki/textures/mmoitems/ultrasound.png" },
+    ingredients: [
+      {
+        name: "Frost Serum",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:FROST_SERUM",
+        texture: "/wiki/textures/mmoitems/frost_serum.png",
+      },
+      {
+        name: "Rerythmetizer",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:RERYTHMETIZER",
+        texture: "/wiki/textures/mmoitems/rerythmetizer.png",
+      },
+    ],
+    output: {
+      name: "Stethoscope",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:ULTRASOUND",
+      texture: "/wiki/textures/mmoitems/ultrasound.png",
+    },
   },
   {
     key: "gen-medicine-station-lab_kit",
@@ -6243,8 +13657,27 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Herb Mixture", qty: 1, sourceId: "mmoitem:MEDICINES:HERB_MIXTURE", texture: "/wiki/textures/mmoitems/herb_mixture.png" }, { name: "Glass Bottle", qty: 1, sourceId: "vanilla:glass_bottle", texture: "/wiki/textures/vanilla/glass_bottle.png" }, { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Clinical Thermometer", qty: 8, sourceId: "mmoitem:SURGERY:LAB_KIT", texture: "/wiki/textures/mmoitems/lab_kit.png" },
+    ingredients: [
+      {
+        name: "Herb Mixture",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:HERB_MIXTURE",
+        texture: "/wiki/textures/mmoitems/herb_mixture.png",
+      },
+      {
+        name: "Glass Bottle",
+        qty: 1,
+        sourceId: "vanilla:glass_bottle",
+        texture: "/wiki/textures/vanilla/glass_bottle.png",
+      },
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Clinical Thermometer",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:LAB_KIT",
+      texture: "/wiki/textures/mmoitems/lab_kit.png",
+    },
   },
   {
     key: "gen-medicine-station-transfusion",
@@ -6253,8 +13686,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Neuron Stabilizer", qty: 1, sourceId: "mmoitem:MEDICINES:NEURON_STABILIZER", texture: "/wiki/textures/mmoitems/neuron_stabilizer.png" }, { name: "Vein Detoxifier", qty: 1, sourceId: "mmoitem:MEDICINES:VEIN_DETOXIFIER", texture: "/wiki/textures/mmoitems/vein_detoxifier.png" }],
-    output: { name: "Transfusion Syringe", qty: 8, sourceId: "mmoitem:SURGERY:TRANSFUSION", texture: "/wiki/textures/mmoitems/transfusion.png" },
+    ingredients: [
+      {
+        name: "Neuron Stabilizer",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:NEURON_STABILIZER",
+        texture: "/wiki/textures/mmoitems/neuron_stabilizer.png",
+      },
+      {
+        name: "Vein Detoxifier",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:VEIN_DETOXIFIER",
+        texture: "/wiki/textures/mmoitems/vein_detoxifier.png",
+      },
+    ],
+    output: {
+      name: "Transfusion Syringe",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:TRANSFUSION",
+      texture: "/wiki/textures/mmoitems/transfusion.png",
+    },
   },
   {
     key: "gen-medicine-station-scalpel",
@@ -6263,8 +13714,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Scalpel", qty: 8, sourceId: "mmoitem:SURGERY:SCALPEL", texture: "/wiki/textures/mmoitems/scalpel.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Scalpel",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:SCALPEL",
+      texture: "/wiki/textures/mmoitems/scalpel.png",
+    },
   },
   {
     key: "gen-medicine-station-stitches",
@@ -6273,8 +13731,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Muscle Stimulant", qty: 1, sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR", texture: "/wiki/textures/mmoitems/muscle_stimulator.png" }, { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Catgut Suture", qty: 8, sourceId: "mmoitem:SURGERY:STITCHES", texture: "/wiki/textures/mmoitems/stitches.png" },
+    ingredients: [
+      {
+        name: "Muscle Stimulant",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:MUSCLE_STIMULATOR",
+        texture: "/wiki/textures/mmoitems/muscle_stimulator.png",
+      },
+      { name: "Iron Ingot", qty: 4, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Catgut Suture",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:STITCHES",
+      texture: "/wiki/textures/mmoitems/stitches.png",
+    },
   },
   {
     key: "gen-medicine-station-anesthetic",
@@ -6283,8 +13754,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Root Mixture", qty: 1, sourceId: "mmoitem:MEDICINES:ROOT_MIXTURE", texture: "/wiki/textures/mmoitems/root_mixture.png" }, { name: "Cooling Serum", qty: 1, sourceId: "mmoitem:MEDICINES:COOLING_SERUM", texture: "/wiki/textures/mmoitems/cooling_serum.png" }],
-    output: { name: "Chloroform", qty: 8, sourceId: "mmoitem:SURGERY:ANESTHETIC", texture: "/wiki/textures/mmoitems/anesthetic.png" },
+    ingredients: [
+      {
+        name: "Root Mixture",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:ROOT_MIXTURE",
+        texture: "/wiki/textures/mmoitems/root_mixture.png",
+      },
+      {
+        name: "Cooling Serum",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:COOLING_SERUM",
+        texture: "/wiki/textures/mmoitems/cooling_serum.png",
+      },
+    ],
+    output: {
+      name: "Chloroform",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:ANESTHETIC",
+      texture: "/wiki/textures/mmoitems/anesthetic.png",
+    },
   },
   {
     key: "gen-medicine-station-antiseptic",
@@ -6293,8 +13782,20 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Fever Flush", qty: 1, sourceId: "mmoitem:MEDICINES:FEVER_FLUSH", texture: "/wiki/textures/mmoitems/fever_flush.png" }],
-    output: { name: "Carbolic Acid", qty: 8, sourceId: "mmoitem:SURGERY:ANTISEPTIC", texture: "/wiki/textures/mmoitems/antiseptic.png" },
+    ingredients: [
+      {
+        name: "Fever Flush",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:FEVER_FLUSH",
+        texture: "/wiki/textures/mmoitems/fever_flush.png",
+      },
+    ],
+    output: {
+      name: "Carbolic Acid",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:ANTISEPTIC",
+      texture: "/wiki/textures/mmoitems/antiseptic.png",
+    },
   },
   {
     key: "gen-medicine-station-splint",
@@ -6303,8 +13804,15 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Bark", qty: 1, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" }],
-    output: { name: "Splint", qty: 8, sourceId: "mmoitem:SURGERY:SPLINT", texture: "/wiki/textures/mmoitems/splint.png" },
+    ingredients: [
+      { name: "Bark", qty: 1, sourceId: "mmoitem:MATERIALS:BARK", texture: "/wiki/textures/mmoitems/bark.png" },
+    ],
+    output: {
+      name: "Splint",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:SPLINT",
+      texture: "/wiki/textures/mmoitems/splint.png",
+    },
   },
   {
     key: "gen-medicine-station-sponge",
@@ -6313,8 +13821,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 1,
     requirement: "Physician",
     category: "Surgery",
-    ingredients: [{ name: "Dying Leaf", qty: 2, sourceId: "mmoitem:HERBS:DYING_LEAF", texture: "/wiki/textures/mmoitems/dying_leaf.png" }, { name: "Autumn Leaf", qty: 2, sourceId: "mmoitem:HERBS:AUTUMN_LEAF", texture: "/wiki/textures/mmoitems/autumn_leaf.png" }],
-    output: { name: "Sea Sponge", qty: 8, sourceId: "mmoitem:SURGERY:SPONGE", texture: "/wiki/textures/mmoitems/sponge.png" },
+    ingredients: [
+      {
+        name: "Dying Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:DYING_LEAF",
+        texture: "/wiki/textures/mmoitems/dying_leaf.png",
+      },
+      {
+        name: "Autumn Leaf",
+        qty: 2,
+        sourceId: "mmoitem:HERBS:AUTUMN_LEAF",
+        texture: "/wiki/textures/mmoitems/autumn_leaf.png",
+      },
+    ],
+    output: {
+      name: "Sea Sponge",
+      qty: 8,
+      sourceId: "mmoitem:SURGERY:SPONGE",
+      texture: "/wiki/textures/mmoitems/sponge.png",
+    },
   },
   {
     key: "gen-medicine-station-pet-medicine",
@@ -6323,8 +13849,26 @@ export const generatedStationRecipes: Recipe[] = [
     time: 5,
     requirement: "Physician",
     category: "Pet Supplies",
-    ingredients: [{ name: "Herb Mixture", qty: 1, sourceId: "mmoitem:MEDICINES:HERB_MIXTURE", texture: "/wiki/textures/mmoitems/herb_mixture.png" }, { name: "Glass Bottle", qty: 1, sourceId: "vanilla:glass_bottle", texture: "/wiki/textures/vanilla/glass_bottle.png" }],
-    output: { name: "Pet Medicine", qty: 1, sourceId: "mmoitem:PETS:PET_MEDICINE", texture: "/wiki/textures/mmoitems/pet_medicine.png" },
+    ingredients: [
+      {
+        name: "Herb Mixture",
+        qty: 1,
+        sourceId: "mmoitem:MEDICINES:HERB_MIXTURE",
+        texture: "/wiki/textures/mmoitems/herb_mixture.png",
+      },
+      {
+        name: "Glass Bottle",
+        qty: 1,
+        sourceId: "vanilla:glass_bottle",
+        texture: "/wiki/textures/vanilla/glass_bottle.png",
+      },
+    ],
+    output: {
+      name: "Pet Medicine",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_MEDICINE",
+      texture: "/wiki/textures/mmoitems/pet_medicine.png",
+    },
   },
   {
     key: "gen-research-station-scribe-paper",
@@ -6332,8 +13876,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 2,
     category: "Research",
-    ingredients: [{ name: "Paper", qty: 1, sourceId: "vanilla:paper", texture: "/wiki/textures/vanilla/paper.png" }, { name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }],
-    output: { name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" },
+    ingredients: [
+      { name: "Paper", qty: 1, sourceId: "vanilla:paper", texture: "/wiki/textures/vanilla/paper.png" },
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+    ],
+    output: {
+      name: "Parchment Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+      texture: "/wiki/textures/mmoitems/scribe_paper.png",
+    },
   },
   {
     key: "gen-research-station-r-rare-research-paper",
@@ -6341,8 +13898,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Lost Knowledge Fragment", qty: 1, sourceId: "mmoitem:RESEARCH:LOST_KNOWLEDGE_SCRAP", texture: "/wiki/textures/mmoitems/lost_knowledge_scrap.png" }],
-    output: { name: "Unknown Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:RARE_RESEARCH_PAPER", texture: "/wiki/textures/mmoitems/rare_research_paper.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Lost Knowledge Fragment",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:LOST_KNOWLEDGE_SCRAP",
+        texture: "/wiki/textures/mmoitems/lost_knowledge_scrap.png",
+      },
+    ],
+    output: {
+      name: "Unknown Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:RARE_RESEARCH_PAPER",
+      texture: "/wiki/textures/mmoitems/rare_research_paper.png",
+    },
   },
   {
     key: "gen-research-station-r-ignitium",
@@ -6350,8 +13925,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Ignitium", qty: 1, sourceId: "mmoitem:MATERIALS:IGNITIUM", texture: "/wiki/textures/mmoitems/ignitium.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_IGNITIUM", texture: "/wiki/textures/mmoitems/r_ignitium.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Ignitium",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:IGNITIUM",
+        texture: "/wiki/textures/mmoitems/ignitium.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_IGNITIUM",
+      texture: "/wiki/textures/mmoitems/r_ignitium.png",
+    },
   },
   {
     key: "gen-research-station-r-bronze",
@@ -6359,8 +13952,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Bronze Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:BRONZE_INGOT", texture: "/wiki/textures/mmoitems/bronze_ingot.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_BRONZE", texture: "/wiki/textures/mmoitems/r_bronze.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Bronze Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:BRONZE_INGOT",
+        texture: "/wiki/textures/mmoitems/bronze_ingot.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_BRONZE",
+      texture: "/wiki/textures/mmoitems/r_bronze.png",
+    },
   },
   {
     key: "gen-research-station-r-abyssalite-fragment",
@@ -6368,8 +13979,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Abyssalite Fragment", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT", texture: "/wiki/textures/mmoitems/abyssalite_fragment.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ABYSSALITE", texture: "/wiki/textures/mmoitems/r_abyssalite.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Abyssalite Fragment",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/abyssalite_fragment.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ABYSSALITE",
+      texture: "/wiki/textures/mmoitems/r_abyssalite.png",
+    },
   },
   {
     key: "gen-research-station-r-abyssalite-ingot",
@@ -6377,8 +14006,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ABYSSALITE", texture: "/wiki/textures/mmoitems/r_abyssalite.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ABYSSALITE",
+      texture: "/wiki/textures/mmoitems/r_abyssalite.png",
+    },
   },
   {
     key: "gen-research-station-r-mythril",
@@ -6386,8 +14033,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Mythril Fragment", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT", texture: "/wiki/textures/mmoitems/mythril_fragment.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_MYTHRIL", texture: "/wiki/textures/mmoitems/r_mythril.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Mythril Fragment",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_FRAGMENT",
+        texture: "/wiki/textures/mmoitems/mythril_fragment.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_MYTHRIL",
+      texture: "/wiki/textures/mmoitems/r_mythril.png",
+    },
   },
   {
     key: "gen-research-station-r-mythrilite",
@@ -6395,8 +14060,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Mythrilite", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRILITE", texture: "/wiki/textures/mmoitems/mythrilite.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_MYTHRIL", texture: "/wiki/textures/mmoitems/r_mythril.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Mythrilite",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRILITE",
+        texture: "/wiki/textures/mmoitems/mythrilite.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_MYTHRIL",
+      texture: "/wiki/textures/mmoitems/r_mythril.png",
+    },
   },
   {
     key: "gen-research-station-r-mythril-ingot",
@@ -6404,8 +14087,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_MYTHRIL", texture: "/wiki/textures/mmoitems/r_mythril.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_MYTHRIL",
+      texture: "/wiki/textures/mmoitems/r_mythril.png",
+    },
   },
   {
     key: "gen-research-station-r-elderwood",
@@ -6413,8 +14114,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Elderwood", qty: 1, sourceId: "mmoitem:MATERIALS:ELDERWOOD", texture: "/wiki/textures/mmoitems/elderwood.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ELDERWOOD", texture: "/wiki/textures/mmoitems/r_elderwood.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Elderwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/elderwood.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/r_elderwood.png",
+    },
   },
   {
     key: "gen-research-station-r-refined-elderwood",
@@ -6422,8 +14141,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Refined Elderwood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD", texture: "/wiki/textures/mmoitems/refined_elderwood.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ELDERWOOD", texture: "/wiki/textures/mmoitems/r_elderwood.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Refined Elderwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:REFINED_ELDERWOOD",
+        texture: "/wiki/textures/mmoitems/refined_elderwood.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ELDERWOOD",
+      texture: "/wiki/textures/mmoitems/r_elderwood.png",
+    },
   },
   {
     key: "gen-research-station-r-demonwood",
@@ -6431,8 +14168,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Demonwood", qty: 1, sourceId: "mmoitem:MATERIALS:DEMONWOOD", texture: "/wiki/textures/mmoitems/demonwood.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DEMONWOOD", texture: "/wiki/textures/mmoitems/r_demonwood.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Demonwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/demonwood.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/r_demonwood.png",
+    },
   },
   {
     key: "gen-research-station-r-refined-demonwood",
@@ -6440,8 +14195,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Refined Demonwood", qty: 1, sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD", texture: "/wiki/textures/mmoitems/refined_demonwood.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DEMONWOOD", texture: "/wiki/textures/mmoitems/r_demonwood.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Refined Demonwood",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:REFINED_DEMONWOOD",
+        texture: "/wiki/textures/mmoitems/refined_demonwood.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DEMONWOOD",
+      texture: "/wiki/textures/mmoitems/r_demonwood.png",
+    },
   },
   {
     key: "gen-research-station-r-enchanted-dust",
@@ -6449,8 +14222,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Enchanted Dust", qty: 1, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/r_enchanted_dust.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Enchanted Dust",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ENCHANTED_DUST",
+      texture: "/wiki/textures/mmoitems/r_enchanted_dust.png",
+    },
   },
   {
     key: "gen-research-station-r-arcane-crystal",
@@ -6458,8 +14249,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Arcane Crystal", qty: 1, sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL", texture: "/wiki/textures/mmoitems/arcane_crystal.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ARCANE_CRYSTAL", texture: "/wiki/textures/mmoitems/r_arcane_crystal.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Arcane Crystal",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ARCANE_CRYSTAL",
+        texture: "/wiki/textures/mmoitems/arcane_crystal.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ARCANE_CRYSTAL",
+      texture: "/wiki/textures/mmoitems/r_arcane_crystal.png",
+    },
   },
   {
     key: "gen-research-station-r-alchemy-powder",
@@ -6467,8 +14276,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Alchemy Powder", qty: 1, sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER", texture: "/wiki/textures/mmoitems/alchemy_powder.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ALCHEMY", texture: "/wiki/textures/mmoitems/r_alchemy.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Alchemy Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ALCHEMY_POWDER",
+        texture: "/wiki/textures/mmoitems/alchemy_powder.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ALCHEMY",
+      texture: "/wiki/textures/mmoitems/r_alchemy.png",
+    },
   },
   {
     key: "gen-research-station-r-transmutation-powder",
@@ -6476,8 +14303,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Transmutation Powder", qty: 1, sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER", texture: "/wiki/textures/mmoitems/transmutation_powder.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_ALCHEMY", texture: "/wiki/textures/mmoitems/r_alchemy.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Transmutation Powder",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:TRANSMUTATION_POWDER",
+        texture: "/wiki/textures/mmoitems/transmutation_powder.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_ALCHEMY",
+      texture: "/wiki/textures/mmoitems/r_alchemy.png",
+    },
   },
   {
     key: "gen-research-station-r-gunpowder",
@@ -6485,8 +14330,21 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_GUNPOWDER", texture: "/wiki/textures/mmoitems/r_gunpowder.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      { name: "Gunpowder", qty: 1, sourceId: "vanilla:gunpowder", texture: "/wiki/textures/vanilla/gunpowder.png" },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_GUNPOWDER",
+      texture: "/wiki/textures/mmoitems/r_gunpowder.png",
+    },
   },
   {
     key: "gen-research-station-r-silver-denar-1",
@@ -6494,8 +14352,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Silver Denar", qty: 1, sourceId: "mmoitem:CURRENCY:SILVER_COIN", texture: "/wiki/textures/mmoitems/silver_coin.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Silver Denar",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:SILVER_COIN",
+        texture: "/wiki/textures/mmoitems/silver_coin.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-silver-denar-5",
@@ -6503,8 +14379,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Handful of Silver Denars", qty: 1, sourceId: "mmoitem:CURRENCY:SILVER_COIN5", texture: "/wiki/textures/mmoitems/silver_coin5.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Handful of Silver Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:SILVER_COIN5",
+        texture: "/wiki/textures/mmoitems/silver_coin5.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-silver-denar-10",
@@ -6512,8 +14406,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Stack of Silver Denars", qty: 1, sourceId: "mmoitem:CURRENCY:SILVER_COIN10", texture: "/wiki/textures/mmoitems/silver_coin10.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Stack of Silver Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:SILVER_COIN10",
+        texture: "/wiki/textures/mmoitems/silver_coin10.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-gold-denar-1",
@@ -6521,8 +14433,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Gold Denar", qty: 1, sourceId: "mmoitem:CURRENCY:GOLD_COIN", texture: "/wiki/textures/mmoitems/gold_coin.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Gold Denar",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:GOLD_COIN",
+        texture: "/wiki/textures/mmoitems/gold_coin.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-gold-denar-5",
@@ -6530,8 +14460,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Handful of Gold Denars", qty: 1, sourceId: "mmoitem:CURRENCY:HANDFUL_OF_COINS", texture: "/wiki/textures/mmoitems/handful_of_coins.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Handful of Gold Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:HANDFUL_OF_COINS",
+        texture: "/wiki/textures/mmoitems/handful_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-gold-denar-10",
@@ -6539,8 +14487,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Stack of Gold Denars", qty: 1, sourceId: "mmoitem:CURRENCY:STACK_OF_COINS", texture: "/wiki/textures/mmoitems/stack_of_coins.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Stack of Gold Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:STACK_OF_COINS",
+        texture: "/wiki/textures/mmoitems/stack_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-gold-denar-100",
@@ -6548,8 +14514,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Pouch of Gold Denars", qty: 1, sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS", texture: "/wiki/textures/mmoitems/pouch_of_coins.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_DENAR", texture: "/wiki/textures/mmoitems/r_denar.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Pouch of Gold Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS",
+        texture: "/wiki/textures/mmoitems/pouch_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_DENAR",
+      texture: "/wiki/textures/mmoitems/r_denar.png",
+    },
   },
   {
     key: "gen-research-station-r-runestone1",
@@ -6557,8 +14541,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Minor Runestone", qty: 1, sourceId: "mmoitem:LOOT:MINOR_RUNESTONE", texture: "/wiki/textures/mmoitems/minor_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Minor Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:MINOR_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/minor_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-runestone2",
@@ -6566,8 +14568,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Lesser Runestone", qty: 1, sourceId: "mmoitem:LOOT:LESSER_RUNESTONE", texture: "/wiki/textures/mmoitems/lesser_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Lesser Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:LESSER_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/lesser_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-runestone3",
@@ -6575,8 +14595,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Greater Runestone", qty: 1, sourceId: "mmoitem:LOOT:GREATER_RUNESTONE", texture: "/wiki/textures/mmoitems/greater_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Greater Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:GREATER_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/greater_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-runestone4",
@@ -6584,8 +14622,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Ascendant Runestone", qty: 1, sourceId: "mmoitem:LOOT:ASCENDANT_RUNESTONE", texture: "/wiki/textures/mmoitems/ascendant_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Ascendant Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:ASCENDANT_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/ascendant_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-arunestone1",
@@ -6593,8 +14649,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Minor Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/minor_armor_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Minor Armor Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/minor_armor_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-arunestone2",
@@ -6602,8 +14676,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Lesser Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/lesser_armor_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Lesser Armor Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/lesser_armor_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-arunestone3",
@@ -6611,8 +14703,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Greater Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/greater_armor_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Greater Armor Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/greater_armor_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-arunestone4",
@@ -6620,8 +14730,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Ascendant Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/ascendant_armor_runestone.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_RUNESTONE", texture: "/wiki/textures/mmoitems/r_runestone.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Ascendant Armor Runestone",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE",
+        texture: "/wiki/textures/mmoitems/ascendant_armor_runestone.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/r_runestone.png",
+    },
   },
   {
     key: "gen-research-station-r-infusion",
@@ -6629,8 +14757,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Infusion Ticket", qty: 1, sourceId: "mmoitem:LOOT:INFUSION_TOKEN", texture: "/wiki/textures/mmoitems/infusion_token.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_INFUSION", texture: "/wiki/textures/mmoitems/r_infusion.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Infusion Ticket",
+        qty: 1,
+        sourceId: "mmoitem:LOOT:INFUSION_TOKEN",
+        texture: "/wiki/textures/mmoitems/infusion_token.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_INFUSION",
+      texture: "/wiki/textures/mmoitems/r_infusion.png",
+    },
   },
   {
     key: "gen-research-station-r-tracedetector",
@@ -6638,8 +14784,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Unpowered Trace Detector", qty: 1, sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER", texture: "/wiki/textures/mmoitems/dead_geiger_counter.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_TRACE_DETECTION", texture: "/wiki/textures/mmoitems/r_trace_detection.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Unpowered Trace Detector",
+        qty: 1,
+        sourceId: "mmoitem:TOOLS:DEAD_GEIGER_COUNTER",
+        texture: "/wiki/textures/mmoitems/dead_geiger_counter.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_TRACE_DETECTION",
+      texture: "/wiki/textures/mmoitems/r_trace_detection.png",
+    },
   },
   {
     key: "gen-research-station-r-arcanetracedetector",
@@ -6647,8 +14811,26 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Research Station",
     time: 5,
     category: "Research",
-    ingredients: [{ name: "Parchment Paper", qty: 1, sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER", texture: "/wiki/textures/mmoitems/scribe_paper.png" }, { name: "Arcane Trace Detector", qty: 1, sourceId: "mmoitem:TOOLS:GEIGER_COUNTER", texture: "/wiki/textures/mmoitems/geiger_counter.png" }],
-    output: { name: "Research Paper", qty: 1, sourceId: "mmoitem:RESEARCH:R_TRACE_DETECTION", texture: "/wiki/textures/mmoitems/r_trace_detection.png" },
+    ingredients: [
+      {
+        name: "Parchment Paper",
+        qty: 1,
+        sourceId: "mmoitem:RESEARCH:SCRIBE_PAPER",
+        texture: "/wiki/textures/mmoitems/scribe_paper.png",
+      },
+      {
+        name: "Arcane Trace Detector",
+        qty: 1,
+        sourceId: "mmoitem:TOOLS:GEIGER_COUNTER",
+        texture: "/wiki/textures/mmoitems/geiger_counter.png",
+      },
+    ],
+    output: {
+      name: "Research Paper",
+      qty: 1,
+      sourceId: "mmoitem:RESEARCH:R_TRACE_DETECTION",
+      texture: "/wiki/textures/mmoitems/r_trace_detection.png",
+    },
   },
   {
     key: "gen-rune-station-minor-runestone",
@@ -6656,8 +14838,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 4, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Minor Runestone", qty: 1, sourceId: "mmoitem:LOOT:MINOR_RUNESTONE", texture: "/wiki/textures/mmoitems/minor_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 4,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Minor Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:MINOR_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/minor_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-lesser-runestone",
@@ -6665,8 +14859,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 8, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Lesser Runestone", qty: 1, sourceId: "mmoitem:LOOT:LESSER_RUNESTONE", texture: "/wiki/textures/mmoitems/lesser_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 8,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Lesser Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:LESSER_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/lesser_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-greater-runestone",
@@ -6674,8 +14880,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 12, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Greater Runestone", qty: 1, sourceId: "mmoitem:LOOT:GREATER_RUNESTONE", texture: "/wiki/textures/mmoitems/greater_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 12,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Greater Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:GREATER_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/greater_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-ascendant-runestone",
@@ -6683,8 +14901,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 16, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Ascendant Runestone", qty: 1, sourceId: "mmoitem:LOOT:ASCENDANT_RUNESTONE", texture: "/wiki/textures/mmoitems/ascendant_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 16,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Ascendant Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:ASCENDANT_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/ascendant_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-minor-armor-runestone",
@@ -6692,8 +14922,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 16, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Minor Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/minor_armor_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 16,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Minor Armor Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:MINOR_ARMOR_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/minor_armor_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-lesser-armor-",
@@ -6701,8 +14943,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 32, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Lesser Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/lesser_armor_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 32,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Lesser Armor Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:LESSER_ARMOR_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/lesser_armor_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-greater-armor-runestone",
@@ -6710,8 +14964,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 48, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Greater Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/greater_armor_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 48,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Greater Armor Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:GREATER_ARMOR_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/greater_armor_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-ascendant-armor-runestone",
@@ -6719,8 +14985,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Loot",
-    ingredients: [{ name: "Enchanted Dust", qty: 64, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Ascendant Armor Runestone", qty: 1, sourceId: "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE", texture: "/wiki/textures/mmoitems/ascendant_armor_runestone.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 64,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Ascendant Armor Runestone",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:ASCENDANT_ARMOR_RUNESTONE",
+      texture: "/wiki/textures/mmoitems/ascendant_armor_runestone.png",
+    },
   },
   {
     key: "gen-rune-station-enchanted-charge-minor",
@@ -6728,8 +15006,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Materials",
-    ingredients: [{ name: "Enchanted Dust", qty: 4, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Enchanted Charge I", qty: 1, sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_1", texture: "/wiki/textures/mmoitems/enchanted_charge_1.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 4,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Enchanted Charge I",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_1",
+      texture: "/wiki/textures/mmoitems/enchanted_charge_1.png",
+    },
   },
   {
     key: "gen-rune-station-enchanted-charge-lesser",
@@ -6737,8 +15027,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Materials",
-    ingredients: [{ name: "Enchanted Dust", qty: 8, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Enchanted Charge II", qty: 1, sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_2", texture: "/wiki/textures/mmoitems/enchanted_charge_2.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 8,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Enchanted Charge II",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_2",
+      texture: "/wiki/textures/mmoitems/enchanted_charge_2.png",
+    },
   },
   {
     key: "gen-rune-station-enchanted-charge-greater",
@@ -6746,8 +15048,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Materials",
-    ingredients: [{ name: "Enchanted Dust", qty: 12, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Enchanted Charge III", qty: 1, sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_3", texture: "/wiki/textures/mmoitems/enchanted_charge_3.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 12,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Enchanted Charge III",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_3",
+      texture: "/wiki/textures/mmoitems/enchanted_charge_3.png",
+    },
   },
   {
     key: "gen-rune-station-enchanted-charge-ascendant",
@@ -6755,8 +15069,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Rune Station",
     time: 10,
     category: "Materials",
-    ingredients: [{ name: "Enchanted Dust", qty: 16, sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST", texture: "/wiki/textures/mmoitems/enchanted_dust.png" }],
-    output: { name: "Enchanted Charge IV", qty: 1, sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_4", texture: "/wiki/textures/mmoitems/enchanted_charge_4.png" },
+    ingredients: [
+      {
+        name: "Enchanted Dust",
+        qty: 16,
+        sourceId: "mmoitem:CURRENCY:ENCHANTED_DUST",
+        texture: "/wiki/textures/mmoitems/enchanted_dust.png",
+      },
+    ],
+    output: {
+      name: "Enchanted Charge IV",
+      qty: 1,
+      sourceId: "mmoitem:MATERIALS:ENCHANTED_CHARGE_4",
+      texture: "/wiki/textures/mmoitems/enchanted_charge_4.png",
+    },
   },
   {
     key: "gen-tool-station-iron-hunting-knife",
@@ -6764,8 +15090,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Hunting Knife", qty: 1, sourceId: "mmoitem:TOOLS:IRON_HUNTING_KNIFE", texture: "/wiki/textures/mmoitems/iron_hunting_knife.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Iron Hunting Knife",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_HUNTING_KNIFE",
+      texture: "/wiki/textures/mmoitems/iron_hunting_knife.png",
+    },
   },
   {
     key: "gen-tool-station-iron-axe",
@@ -6773,8 +15107,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Hatchet", qty: 1, sourceId: "mmoitem:TOOLS:IRON_AXE", texture: "/wiki/textures/mmoitems/iron_axe.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Iron Hatchet",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_AXE",
+      texture: "/wiki/textures/mmoitems/iron_axe.png",
+    },
   },
   {
     key: "gen-tool-station-iron-pickaxe",
@@ -6782,8 +15124,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Pickaxe", qty: 1, sourceId: "mmoitem:TOOLS:IRON_PICKAXE", texture: "/wiki/textures/vanilla/iron_pickaxe.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Iron Pickaxe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_PICKAXE",
+      texture: "/wiki/textures/vanilla/iron_pickaxe.png",
+    },
   },
   {
     key: "gen-tool-station-iron-hoe",
@@ -6791,8 +15141,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Hoe", qty: 1, sourceId: "mmoitem:TOOLS:IRON_HOE", texture: "/wiki/textures/vanilla/iron_hoe.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Iron Hoe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_HOE",
+      texture: "/wiki/textures/vanilla/iron_hoe.png",
+    },
   },
   {
     key: "gen-tool-station-iron-shovel",
@@ -6800,8 +15158,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Iron Shovel", qty: 1, sourceId: "mmoitem:TOOLS:IRON_SHOVEL", texture: "/wiki/textures/vanilla/iron_shovel.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Iron Shovel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:IRON_SHOVEL",
+      texture: "/wiki/textures/vanilla/iron_shovel.png",
+    },
   },
   {
     key: "gen-tool-station-steel-axe",
@@ -6810,8 +15176,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Axe Maker I",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Steel Hatchet", qty: 1, sourceId: "mmoitem:TOOLS:STEEL_AXE", texture: "/wiki/textures/mmoitems/steel_axe.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Steel Hatchet",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:STEEL_AXE",
+      texture: "/wiki/textures/mmoitems/steel_axe.png",
+    },
   },
   {
     key: "gen-tool-station-steel-pickaxe",
@@ -6820,8 +15199,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Pickaxe Maker I",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Steel Pickaxe", qty: 1, sourceId: "mmoitem:TOOLS:STEEL_PICKAXE", texture: "/wiki/textures/mmoitems/steel_pickaxe.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Steel Pickaxe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:STEEL_PICKAXE",
+      texture: "/wiki/textures/mmoitems/steel_pickaxe.png",
+    },
   },
   {
     key: "gen-tool-station-steel-hoe",
@@ -6830,8 +15222,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Hoe Maker I",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Steel Hoe", qty: 1, sourceId: "mmoitem:TOOLS:STEEL_HOE", texture: "/wiki/textures/mmoitems/steel_hoe.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Steel Hoe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:STEEL_HOE",
+      texture: "/wiki/textures/mmoitems/steel_hoe.png",
+    },
   },
   {
     key: "gen-tool-station-steel-shovel",
@@ -6840,8 +15245,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Shovel Maker I",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Steel Shovel", qty: 1, sourceId: "mmoitem:TOOLS:STEEL_SHOVEL", texture: "/wiki/textures/mmoitems/steel_shovel.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Steel Shovel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:STEEL_SHOVEL",
+      texture: "/wiki/textures/mmoitems/steel_shovel.png",
+    },
   },
   {
     key: "gen-tool-station-abyssalite-axe",
@@ -6850,8 +15268,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Axe Maker II",
     category: "Tools",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Abyssalite Hatchet", qty: 1, sourceId: "mmoitem:TOOLS:ABYSSALITE_AXE", texture: "/wiki/textures/mmoitems/abyssalite_axe.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Abyssalite Hatchet",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ABYSSALITE_AXE",
+      texture: "/wiki/textures/mmoitems/abyssalite_axe.png",
+    },
   },
   {
     key: "gen-tool-station-abyssalite-pickaxe",
@@ -6860,8 +15291,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Pickaxe Maker II",
     category: "Tools",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Abyssalite Pickaxe", qty: 1, sourceId: "mmoitem:TOOLS:ABYSSALITE_PICKAXE", texture: "/wiki/textures/mmoitems/abyssalite_pickaxe.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Abyssalite Pickaxe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ABYSSALITE_PICKAXE",
+      texture: "/wiki/textures/mmoitems/abyssalite_pickaxe.png",
+    },
   },
   {
     key: "gen-tool-station-abyssalite-hoe",
@@ -6870,8 +15314,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Hoe Maker II",
     category: "Tools",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Abyssalite Hoe", qty: 1, sourceId: "mmoitem:TOOLS:ABYSSALITE_HOE", texture: "/wiki/textures/mmoitems/abyssalite_hoe.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Abyssalite Hoe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ABYSSALITE_HOE",
+      texture: "/wiki/textures/mmoitems/abyssalite_hoe.png",
+    },
   },
   {
     key: "gen-tool-station-abyssalite-shovel",
@@ -6880,8 +15337,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Shovel Maker II",
     category: "Tools",
-    ingredients: [{ name: "Abyssalite Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT", texture: "/wiki/textures/mmoitems/abyssalite_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Abyssalite Shovel", qty: 1, sourceId: "mmoitem:TOOLS:ABYSSALITE_SHOVEL", texture: "/wiki/textures/mmoitems/abyssalite_shovel.png" },
+    ingredients: [
+      {
+        name: "Abyssalite Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:ABYSSALITE_INGOT",
+        texture: "/wiki/textures/mmoitems/abyssalite_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Abyssalite Shovel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ABYSSALITE_SHOVEL",
+      texture: "/wiki/textures/mmoitems/abyssalite_shovel.png",
+    },
   },
   {
     key: "gen-tool-station-mythril-axe",
@@ -6890,8 +15360,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Axe Maker III",
     category: "Tools",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Mythril Hatchet", qty: 1, sourceId: "mmoitem:TOOLS:MYTHRIL_AXE", texture: "/wiki/textures/mmoitems/mythril_axe.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Mythril Hatchet",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:MYTHRIL_AXE",
+      texture: "/wiki/textures/mmoitems/mythril_axe.png",
+    },
   },
   {
     key: "gen-tool-station-mythril-pickaxe",
@@ -6900,8 +15383,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Pickaxe Maker III",
     category: "Tools",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Mythril Pickaxe", qty: 1, sourceId: "mmoitem:TOOLS:MYTHRIL_PICKAXE", texture: "/wiki/textures/mmoitems/mythril_pickaxe.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Mythril Pickaxe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:MYTHRIL_PICKAXE",
+      texture: "/wiki/textures/mmoitems/mythril_pickaxe.png",
+    },
   },
   {
     key: "gen-tool-station-mythril-hoe",
@@ -6910,8 +15406,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Hoe Maker III",
     category: "Tools",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Mythril Hoe", qty: 1, sourceId: "mmoitem:TOOLS:MYTHRIL_HOE", texture: "/wiki/textures/mmoitems/mythril_hoe.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Mythril Hoe",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:MYTHRIL_HOE",
+      texture: "/wiki/textures/mmoitems/mythril_hoe.png",
+    },
   },
   {
     key: "gen-tool-station-mythril-shovel",
@@ -6920,8 +15429,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Shovel Maker III",
     category: "Tools",
-    ingredients: [{ name: "Mythril Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT", texture: "/wiki/textures/mmoitems/mythril_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Mythril Shovel", qty: 1, sourceId: "mmoitem:TOOLS:MYTHRIL_SHOVEL", texture: "/wiki/textures/mmoitems/mythril_shovel.png" },
+    ingredients: [
+      {
+        name: "Mythril Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:MYTHRIL_INGOT",
+        texture: "/wiki/textures/mmoitems/mythril_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Mythril Shovel",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:MYTHRIL_SHOVEL",
+      texture: "/wiki/textures/mmoitems/mythril_shovel.png",
+    },
   },
   {
     key: "gen-tool-station-forging-branding-tool",
@@ -6929,8 +15451,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Branding Tool", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_BRANDING_TOOL", texture: "/wiki/textures/mmoitems/forging_branding_tool.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Branding Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_BRANDING_TOOL",
+      texture: "/wiki/textures/mmoitems/forging_branding_tool.png",
+    },
   },
   {
     key: "gen-tool-station-forging-hammer-tool",
@@ -6938,8 +15468,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Hammer", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_HAMMER", texture: "/wiki/textures/mmoitems/forging_hammer.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Hammer",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_HAMMER",
+      texture: "/wiki/textures/mmoitems/forging_hammer.png",
+    },
   },
   {
     key: "gen-tool-station-forging-small-hammer-tool",
@@ -6947,8 +15485,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Small Hammer", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_SMALL_HAMMER", texture: "/wiki/textures/mmoitems/forging_small_hammer.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Small Hammer",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_SMALL_HAMMER",
+      texture: "/wiki/textures/mmoitems/forging_small_hammer.png",
+    },
   },
   {
     key: "gen-tool-station-forging-engraving-tool",
@@ -6956,8 +15502,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Engraving Tool", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_ENGRAVING_TOOL", texture: "/wiki/textures/mmoitems/forging_engraving_tool.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Engraving Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_ENGRAVING_TOOL",
+      texture: "/wiki/textures/mmoitems/forging_engraving_tool.png",
+    },
   },
   {
     key: "gen-tool-station-forging-whittling-tool",
@@ -6965,8 +15519,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Whittling Tool", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_WHITTLING_TOOL", texture: "/wiki/textures/mmoitems/forging_whittling_tool.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Whittling Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_WHITTLING_TOOL",
+      texture: "/wiki/textures/mmoitems/forging_whittling_tool.png",
+    },
   },
   {
     key: "gen-tool-station-forging-etching-tool",
@@ -6974,8 +15536,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Forging Etching Tool", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_ETCHING_TOOL", texture: "/wiki/textures/mmoitems/forging_etching_tool.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Forging Etching Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_ETCHING_TOOL",
+      texture: "/wiki/textures/mmoitems/forging_etching_tool.png",
+    },
   },
   {
     key: "gen-tool-station-forging-sewing-tool",
@@ -6983,8 +15553,16 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 10,
     category: "Tools",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Forging Sewing Needle", qty: 1, sourceId: "mmoitem:TOOLS:FORGING_SEWING_NEEDLE", texture: "/wiki/textures/mmoitems/forging_sewing_needle.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Forging Sewing Needle",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:FORGING_SEWING_NEEDLE",
+      texture: "/wiki/textures/mmoitems/forging_sewing_needle.png",
+    },
   },
   {
     key: "gen-tool-station-goldsmith-branding-tool",
@@ -6993,8 +15571,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Goldsmith",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Goldsmith Branding Tool", qty: 1, sourceId: "mmoitem:TOOLS:GOLDSMITH_BRANDING_TOOL", texture: "/wiki/textures/mmoitems/goldsmith_branding_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Goldsmith Branding Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:GOLDSMITH_BRANDING_TOOL",
+      texture: "/wiki/textures/mmoitems/goldsmith_branding_tool.png",
+    },
   },
   {
     key: "gen-tool-station-goldsmith-hammer-tool",
@@ -7003,8 +15594,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Goldsmith",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Goldsmith Hammer", qty: 1, sourceId: "mmoitem:TOOLS:GOLDSMITH_HAMMER", texture: "/wiki/textures/mmoitems/goldsmith_hammer.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Goldsmith Hammer",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:GOLDSMITH_HAMMER",
+      texture: "/wiki/textures/mmoitems/goldsmith_hammer.png",
+    },
   },
   {
     key: "gen-tool-station-goldsmith-small-hammer",
@@ -7013,8 +15617,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Goldsmith",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Goldsmith Small Hammer", qty: 1, sourceId: "mmoitem:TOOLS:SMALL_GOLDSMITH_HAMMER", texture: "/wiki/textures/mmoitems/small_goldsmith_hammer.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Goldsmith Small Hammer",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:SMALL_GOLDSMITH_HAMMER",
+      texture: "/wiki/textures/mmoitems/small_goldsmith_hammer.png",
+    },
   },
   {
     key: "gen-tool-station-goldsmith-tinker-tool",
@@ -7023,8 +15640,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Goldsmith",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Goldsmith Tinker Hammer", qty: 1, sourceId: "mmoitem:TOOLS:GOLDSMITH_TINKER_TOOL", texture: "/wiki/textures/mmoitems/goldsmith_tinker_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Goldsmith Tinker Hammer",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:GOLDSMITH_TINKER_TOOL",
+      texture: "/wiki/textures/mmoitems/goldsmith_tinker_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-branding-tool",
@@ -7033,8 +15663,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Branding Tool", qty: 1, sourceId: "mmoitem:TOOLS:SKIN_BRANDING_TOOL", texture: "/wiki/textures/mmoitems/skin_branding_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Branding Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:SKIN_BRANDING_TOOL",
+      texture: "/wiki/textures/mmoitems/skin_branding_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-engraving-tool",
@@ -7043,8 +15686,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Engraving Tool", qty: 1, sourceId: "mmoitem:TOOLS:ENGRAVING_TOOL", texture: "/wiki/textures/mmoitems/engraving_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Engraving Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ENGRAVING_TOOL",
+      texture: "/wiki/textures/mmoitems/engraving_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-whittling-tool",
@@ -7053,8 +15709,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Whittling Tool", qty: 1, sourceId: "mmoitem:TOOLS:WHITTLING_TOOL", texture: "/wiki/textures/mmoitems/whittling_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Whittling Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:WHITTLING_TOOL",
+      texture: "/wiki/textures/mmoitems/whittling_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-hammer-tool",
@@ -7063,8 +15732,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Hammer Tool", qty: 1, sourceId: "mmoitem:TOOLS:HAMMER_TOOL", texture: "/wiki/textures/mmoitems/hammer_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Hammer Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:HAMMER_TOOL",
+      texture: "/wiki/textures/mmoitems/hammer_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-small-hammer-tool",
@@ -7073,8 +15755,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Small Hammer Tool", qty: 1, sourceId: "mmoitem:TOOLS:SMALL_HAMMER_TOOL", texture: "/wiki/textures/mmoitems/small_hammer_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Small Hammer Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:SMALL_HAMMER_TOOL",
+      texture: "/wiki/textures/mmoitems/small_hammer_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-etching-tool",
@@ -7083,8 +15778,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" }],
-    output: { name: "Etching Tool", qty: 1, sourceId: "mmoitem:TOOLS:ETCHING_TOOL", texture: "/wiki/textures/mmoitems/etching_tool.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "Stick", qty: 2, sourceId: "vanilla:stick", texture: "/wiki/textures/vanilla/stick.png" },
+    ],
+    output: {
+      name: "Etching Tool",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:ETCHING_TOOL",
+      texture: "/wiki/textures/mmoitems/etching_tool.png",
+    },
   },
   {
     key: "gen-tool-station-artisan-sewing-tool",
@@ -7093,8 +15801,21 @@ export const generatedStationRecipes: Recipe[] = [
     time: 10,
     requirement: "Artisan",
     category: "Tools",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }, { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
-    output: { name: "Sewing Needle", qty: 1, sourceId: "mmoitem:TOOLS:SEWING_NEEDLE", texture: "/wiki/textures/mmoitems/sewing_needle.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+      { name: "String", qty: 2, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
+    output: {
+      name: "Sewing Needle",
+      qty: 1,
+      sourceId: "mmoitem:TOOLS:SEWING_NEEDLE",
+      texture: "/wiki/textures/mmoitems/sewing_needle.png",
+    },
   },
   {
     key: "gen-tool-station-watering-can",
@@ -7102,8 +15823,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Watering Can", qty: 1, sourceId: "itemsadder:watering_can", texture: "/wiki/textures/vanilla/golden_horse_armor.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Watering Can",
+      qty: 1,
+      sourceId: "itemsadder:watering_can",
+      texture: "/wiki/textures/vanilla/golden_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-bundle",
@@ -7111,7 +15839,10 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Other",
-    ingredients: [{ name: "Leather", qty: 1, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }, { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" }],
+    ingredients: [
+      { name: "Leather", qty: 1, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+      { name: "String", qty: 1, sourceId: "vanilla:string", texture: "/wiki/textures/vanilla/string.png" },
+    ],
     output: { name: "Bundle", qty: 1, sourceId: "vanilla:bundle", texture: "/wiki/textures/vanilla/bundle.png" },
   },
   {
@@ -7120,8 +15851,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Gold Ingot", qty: 1, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" }],
-    output: { name: "Lorestone", qty: 1, sourceId: "mmoitem:UTILS:LORESTONE", texture: "/wiki/textures/vanilla/gold_nugget.png" },
+    ingredients: [
+      { name: "Gold Ingot", qty: 1, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" },
+    ],
+    output: {
+      name: "Lorestone",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:LORESTONE",
+      texture: "/wiki/textures/vanilla/gold_nugget.png",
+    },
   },
   {
     key: "gen-tool-station-namestone",
@@ -7129,8 +15867,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Namestone", qty: 1, sourceId: "mmoitem:UTILS:NAMESTONE", texture: "/wiki/textures/vanilla/iron_nugget.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Namestone",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:NAMESTONE",
+      texture: "/wiki/textures/vanilla/iron_nugget.png",
+    },
   },
   {
     key: "gen-tool-station-book",
@@ -7138,8 +15883,17 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Books",
-    ingredients: [{ name: "Book", qty: 1, sourceId: "mmoitem:MATERIALS:BOOK", texture: "/wiki/textures/vanilla/book.png" }, { name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" }, { name: "Charcoal", qty: 1, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" }],
-    output: { name: "Book and Quill", qty: 1, sourceId: "mmoitem:BOOKS:WRITABLE_BOOK", texture: "/wiki/textures/vanilla/writable_book.png" },
+    ingredients: [
+      { name: "Book", qty: 1, sourceId: "mmoitem:MATERIALS:BOOK", texture: "/wiki/textures/vanilla/book.png" },
+      { name: "Feather", qty: 1, sourceId: "vanilla:feather", texture: "/wiki/textures/vanilla/feather.png" },
+      { name: "Charcoal", qty: 1, sourceId: "vanilla:charcoal", texture: "/wiki/textures/vanilla/charcoal.png" },
+    ],
+    output: {
+      name: "Book and Quill",
+      qty: 1,
+      sourceId: "mmoitem:BOOKS:WRITABLE_BOOK",
+      texture: "/wiki/textures/vanilla/writable_book.png",
+    },
   },
   {
     key: "gen-tool-station-lead",
@@ -7147,7 +15901,9 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
+    ingredients: [
+      { name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
     output: { name: "Lead", qty: 1, sourceId: "vanilla:lead", texture: "/wiki/textures/vanilla/lead.png" },
   },
   {
@@ -7156,7 +15912,10 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }, { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
+    ingredients: [
+      { name: "Leather", qty: 5, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
     output: { name: "Saddle", qty: 1, sourceId: "vanilla:saddle", texture: "/wiki/textures/vanilla/saddle.png" },
   },
   {
@@ -7165,8 +15924,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Leather", qty: 8, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Leather Horse Armor", qty: 1, sourceId: "vanilla:leather_horse_armor", texture: "/wiki/textures/vanilla/leather_horse_armor.png" },
+    ingredients: [
+      { name: "Leather", qty: 8, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Leather Horse Armor",
+      qty: 1,
+      sourceId: "vanilla:leather_horse_armor",
+      texture: "/wiki/textures/vanilla/leather_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-copper-horse-armor",
@@ -7174,8 +15940,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Copper Ingot", qty: 8, sourceId: "vanilla:copper_ingot", texture: "/wiki/textures/vanilla/copper_ingot.png" }],
-    output: { name: "Copper Horse Armor", qty: 1, sourceId: "vanilla:copper_horse_armor", texture: "/wiki/textures/vanilla/copper_horse_armor.png" },
+    ingredients: [
+      {
+        name: "Copper Ingot",
+        qty: 8,
+        sourceId: "vanilla:copper_ingot",
+        texture: "/wiki/textures/vanilla/copper_ingot.png",
+      },
+    ],
+    output: {
+      name: "Copper Horse Armor",
+      qty: 1,
+      sourceId: "vanilla:copper_horse_armor",
+      texture: "/wiki/textures/vanilla/copper_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-iron-horse-armor",
@@ -7183,8 +15961,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Iron Ingot", qty: 8, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Horse Armor", qty: 1, sourceId: "vanilla:iron_horse_armor", texture: "/wiki/textures/vanilla/iron_horse_armor.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 8, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Horse Armor",
+      qty: 1,
+      sourceId: "vanilla:iron_horse_armor",
+      texture: "/wiki/textures/vanilla/iron_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-gold-horse-armor",
@@ -7192,8 +15977,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Gold Ingot", qty: 8, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" }],
-    output: { name: "Gold Horse Armor", qty: 1, sourceId: "vanilla:golden_horse_armor", texture: "/wiki/textures/vanilla/golden_horse_armor.png" },
+    ingredients: [
+      { name: "Gold Ingot", qty: 8, sourceId: "vanilla:gold_ingot", texture: "/wiki/textures/vanilla/gold_ingot.png" },
+    ],
+    output: {
+      name: "Gold Horse Armor",
+      qty: 1,
+      sourceId: "vanilla:golden_horse_armor",
+      texture: "/wiki/textures/vanilla/golden_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-diamond-horse-armor",
@@ -7201,8 +15993,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Mount Gear",
-    ingredients: [{ name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" }],
-    output: { name: "Diamond Horse Armor", qty: 1, sourceId: "vanilla:diamond_horse_armor", texture: "/wiki/textures/vanilla/diamond_horse_armor.png" },
+    ingredients: [
+      { name: "Diamond", qty: 8, sourceId: "vanilla:diamond", texture: "/wiki/textures/vanilla/diamond.png" },
+    ],
+    output: {
+      name: "Diamond Horse Armor",
+      qty: 1,
+      sourceId: "vanilla:diamond_horse_armor",
+      texture: "/wiki/textures/vanilla/diamond_horse_armor.png",
+    },
   },
   {
     key: "gen-tool-station-unsocket-tool",
@@ -7210,8 +16009,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Consumables",
-    ingredients: [{ name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Unsocket Tool", qty: 1, sourceId: "mmoitem:CONSUMABLES:UNSOCKET_TOOL", texture: "/wiki/textures/mmoitems/unsocket_tool.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Unsocket Tool",
+      qty: 1,
+      sourceId: "mmoitem:CONSUMABLES:UNSOCKET_TOOL",
+      texture: "/wiki/textures/mmoitems/unsocket_tool.png",
+    },
   },
   {
     key: "gen-tool-station-key",
@@ -7219,8 +16025,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Keys",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Iron Key", qty: 1, sourceId: "mmoitem:KEYS:IRON_KEY", texture: "/wiki/textures/mmoitems/iron_key.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Iron Key",
+      qty: 1,
+      sourceId: "mmoitem:KEYS:IRON_KEY",
+      texture: "/wiki/textures/mmoitems/iron_key.png",
+    },
   },
   {
     key: "gen-tool-station-key-chain",
@@ -7228,8 +16041,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Keys",
-    ingredients: [{ name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" }],
-    output: { name: "Key Chain", qty: 1, sourceId: "mmoitem:KEYS:KEY_CHAIN", texture: "/wiki/textures/mmoitems/key_chain.png" },
+    ingredients: [
+      { name: "Iron Ingot", qty: 2, sourceId: "vanilla:iron_ingot", texture: "/wiki/textures/vanilla/iron_ingot.png" },
+    ],
+    output: {
+      name: "Key Chain",
+      qty: 1,
+      sourceId: "mmoitem:KEYS:KEY_CHAIN",
+      texture: "/wiki/textures/mmoitems/key_chain.png",
+    },
   },
   {
     key: "gen-tool-station-basic-lockpick",
@@ -7237,8 +16057,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Lockpicks",
-    ingredients: [{ name: "Steel Ingot", qty: 1, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Basic Lockpick", qty: 1, sourceId: "mmoitem:LOCKPICKS:BASIC_LOCKPICK", texture: "/wiki/textures/mmoitems/basic_lockpick.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 1,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Basic Lockpick",
+      qty: 1,
+      sourceId: "mmoitem:LOCKPICKS:BASIC_LOCKPICK",
+      texture: "/wiki/textures/mmoitems/basic_lockpick.png",
+    },
   },
   {
     key: "gen-tool-station-strong-lockpick",
@@ -7246,8 +16078,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Lockpicks",
-    ingredients: [{ name: "Steel Ingot", qty: 2, sourceId: "mmoitem:MATERIALS:STEEL_INGOT", texture: "/wiki/textures/mmoitems/steel_ingot.png" }],
-    output: { name: "Strong Lockpick", qty: 1, sourceId: "mmoitem:LOCKPICKS:STRONG_LOCKPICK", texture: "/wiki/textures/mmoitems/strong_lockpick.png" },
+    ingredients: [
+      {
+        name: "Steel Ingot",
+        qty: 2,
+        sourceId: "mmoitem:MATERIALS:STEEL_INGOT",
+        texture: "/wiki/textures/mmoitems/steel_ingot.png",
+      },
+    ],
+    output: {
+      name: "Strong Lockpick",
+      qty: 1,
+      sourceId: "mmoitem:LOCKPICKS:STRONG_LOCKPICK",
+      texture: "/wiki/textures/mmoitems/strong_lockpick.png",
+    },
   },
   {
     key: "gen-tool-station-blindfold",
@@ -7255,8 +16099,15 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Armour",
-    ingredients: [{ name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" }],
-    output: { name: "Blindfold", qty: 1, sourceId: "itemsadder:blindfold_helmet", texture: "/wiki/textures/itemsadder/blindfold_helmet.png" },
+    ingredients: [
+      { name: "Leather", qty: 2, sourceId: "mmoitem:MATERIALS:LEATHER", texture: "/wiki/textures/vanilla/leather.png" },
+    ],
+    output: {
+      name: "Blindfold",
+      qty: 1,
+      sourceId: "itemsadder:blindfold_helmet",
+      texture: "/wiki/textures/itemsadder/blindfold_helmet.png",
+    },
   },
   {
     key: "gen-tool-station-infusion-ticket",
@@ -7264,8 +16115,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Loot",
-    ingredients: [{ name: "Pouch of Gold Denars", qty: 1, sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS", texture: "/wiki/textures/mmoitems/pouch_of_coins.png" }],
-    output: { name: "Infusion Ticket", qty: 1, sourceId: "mmoitem:LOOT:INFUSION_TOKEN", texture: "/wiki/textures/mmoitems/infusion_token.png" },
+    ingredients: [
+      {
+        name: "Pouch of Gold Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS",
+        texture: "/wiki/textures/mmoitems/pouch_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Infusion Ticket",
+      qty: 1,
+      sourceId: "mmoitem:LOOT:INFUSION_TOKEN",
+      texture: "/wiki/textures/mmoitems/infusion_token.png",
+    },
   },
   {
     key: "gen-tool-station-insurance-ticket",
@@ -7273,8 +16136,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Utilities",
-    ingredients: [{ name: "Pouch of Gold Denars", qty: 1, sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS", texture: "/wiki/textures/mmoitems/pouch_of_coins.png" }],
-    output: { name: "Grave Insurance", qty: 1, sourceId: "mmoitem:UTILS:GRAVE_INSURANCE", texture: "/wiki/textures/mmoitems/grave_insurance.png" },
+    ingredients: [
+      {
+        name: "Pouch of Gold Denars",
+        qty: 1,
+        sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS",
+        texture: "/wiki/textures/mmoitems/pouch_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Grave Insurance",
+      qty: 1,
+      sourceId: "mmoitem:UTILS:GRAVE_INSURANCE",
+      texture: "/wiki/textures/mmoitems/grave_insurance.png",
+    },
   },
   {
     key: "gen-tool-station-skill-reallocation-point",
@@ -7282,8 +16157,20 @@ export const generatedStationRecipes: Recipe[] = [
     station: "Tool Station",
     time: 5,
     category: "Books",
-    ingredients: [{ name: "Pouch of Gold Denars", qty: 10, sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS", texture: "/wiki/textures/mmoitems/pouch_of_coins.png" }],
-    output: { name: "Skill Retraining Manual", qty: 1, sourceId: "mmoitem:BOOKS:SKILL_REALLOCATION_BOOK", texture: "/wiki/textures/mmoitems/skill_reallocation_book.png" },
+    ingredients: [
+      {
+        name: "Pouch of Gold Denars",
+        qty: 10,
+        sourceId: "mmoitem:CURRENCY:POUCH_OF_COINS",
+        texture: "/wiki/textures/mmoitems/pouch_of_coins.png",
+      },
+    ],
+    output: {
+      name: "Skill Retraining Manual",
+      qty: 1,
+      sourceId: "mmoitem:BOOKS:SKILL_REALLOCATION_BOOK",
+      texture: "/wiki/textures/mmoitems/skill_reallocation_book.png",
+    },
   },
   {
     key: "gen-tool-station-deck-of-cards",
@@ -7292,6 +16179,11 @@ export const generatedStationRecipes: Recipe[] = [
     time: 2,
     category: "Furniture & Utensils",
     ingredients: [{ name: "Paper", qty: 2, sourceId: "vanilla:paper", texture: "/wiki/textures/vanilla/paper.png" }],
-    output: { name: "Deck of Cards", qty: 1, sourceId: "itemsadder:deck", texture: "/wiki/textures/itemsadder/deck.png" },
+    output: {
+      name: "Deck of Cards",
+      qty: 1,
+      sourceId: "itemsadder:deck",
+      texture: "/wiki/textures/itemsadder/deck.png",
+    },
   },
 ];

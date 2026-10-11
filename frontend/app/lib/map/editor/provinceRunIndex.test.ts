@@ -22,7 +22,6 @@ import {
   provinceAt,
   provinceAtPixel,
   provinceIdsInRunIndex,
-  provinceMapFromRuns,
   provincePixelCount,
   type ProvinceRunIndex,
 } from "./buildProvinceIndex";
@@ -66,11 +65,7 @@ function makeImageData(width: number, height: number): ImageData {
  * Written independently of the decoder so the tests exercise the real
  * byte layout rather than a decoder-shaped fiction.
  */
-function encodeProvinceIdRuns(
-  width: number,
-  height: number,
-  ids: Uint16Array
-): ArrayBuffer {
+function encodeProvinceIdRuns(width: number, height: number, ids: Uint16Array): ArrayBuffer {
   const lengths: number[] = [];
   const runIds: number[] = [];
 
@@ -86,10 +81,7 @@ function encodeProvinceIdRuns(
     }
   }
 
-  const boxes = new Map<
-    number,
-    { minX: number; minY: number; maxX: number; maxY: number }
-  >();
+  const boxes = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const pid = ids[y * width + x]!;
@@ -146,41 +138,20 @@ function encodeProvinceIdRuns(
   return buffer;
 }
 
-function runIndexFromIds(
-  width: number,
-  height: number,
-  ids: Uint16Array
-): ProvinceRunIndex {
-  const decoded = deserializeProvinceIdRuns(
-    encodeProvinceIdRuns(width, height, ids)
-  );
+function runIndexFromIds(width: number, height: number, ids: Uint16Array): ProvinceRunIndex {
+  const decoded = deserializeProvinceIdRuns(encodeProvinceIdRuns(width, height, ids));
   expect(decoded.width).toBe(width);
   expect(decoded.height).toBe(height);
-  return buildProvinceRunIndex(
-    decoded.width,
-    decoded.height,
-    decoded.runLengths,
-    decoded.runIds,
-    decoded.bbox
-  );
+  return buildProvinceRunIndex(decoded.width, decoded.height, decoded.runLengths, decoded.runIds, decoded.bbox);
 }
 
-function randomIds(
-  width: number,
-  height: number,
-  provinceCount: number,
-  seed: number
-): Uint16Array {
+function randomIds(width: number, height: number, provinceCount: number, seed: number): Uint16Array {
   const rand = mulberry32(seed);
   const ids = new Uint16Array(width * height);
   // Blobby rather than pure noise, so runs are long enough to be meaningful.
   const seeds: Array<[number, number, number]> = [];
   for (let p = 1; p <= provinceCount; p++) {
-    seeds.push([
-      Math.floor(rand() * width),
-      Math.floor(rand() * height),
-      p,
-    ]);
+    seeds.push([Math.floor(rand() * width), Math.floor(rand() * height), p]);
   }
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -250,9 +221,7 @@ const GRIDS: Array<{ name: string; w: number; h: number; ids: Uint16Array }> = [
     name: "checkerboard (worst case, no runs)",
     w: 8,
     h: 8,
-    ids: Uint16Array.from({ length: 64 }, (_v, i) =>
-      (i + Math.floor(i / 8)) % 2 === 0 ? 1 : 2
-    ),
+    ids: Uint16Array.from({ length: 64 }, (_v, i) => ((i + Math.floor(i / 8)) % 2 === 0 ? 1 : 2)),
   },
   { name: "random blobs A", w: 31, h: 23, ids: randomIds(31, 23, 6, 11) },
   { name: "random blobs B", w: 64, h: 48, ids: randomIds(64, 48, 6, 777) },
@@ -265,20 +234,13 @@ const GRIDS: Array<{ name: string; w: number; h: number; ids: Uint16Array }> = [
 describe("run index vs flat index equivalence", () => {
   for (const grid of GRIDS) {
     describe(grid.name, () => {
-      const flat = buildProvinceIndexFromGrid(
-        CATALOG,
-        grid.w,
-        grid.h,
-        grid.ids
-      );
+      const flat = buildProvinceIndexFromGrid(CATALOG, grid.w, grid.h, grid.ids);
       const runIndex = runIndexFromIds(grid.w, grid.h, grid.ids);
       const runs = buildProvinceIndexFromRuns(CATALOG, runIndex);
 
       it("produces an identical provinceMap", () => {
         expect(runs.provinceMap.length).toBe(flat.provinceMap.length);
-        expect(Array.from(runs.provinceMap)).toEqual(
-          Array.from(flat.provinceMap)
-        );
+        expect(Array.from(runs.provinceMap)).toEqual(Array.from(flat.provinceMap));
       });
 
       it("produces identical dimensions and rgb maps", () => {
@@ -323,9 +285,7 @@ describe("run index vs flat index equivalence", () => {
           if (pid < 0) continue;
           counts.set(pid, (counts.get(pid) ?? 0) + 1);
         }
-        expect(provinceIdsInRunIndex(runIndex).sort((a, b) => a - b)).toEqual(
-          [...counts.keys()].sort((a, b) => a - b)
-        );
+        expect(provinceIdsInRunIndex(runIndex).sort((a, b) => a - b)).toEqual([...counts.keys()].sort((a, b) => a - b));
         for (const [pid, count] of counts) {
           expect(provincePixelCount(runIndex, pid)).toBe(count);
         }
@@ -376,9 +336,7 @@ describe("run index vs flat index equivalence", () => {
   it("attaches the run index to the built ProvinceIndex", () => {
     const runIndex = runIndexFromIds(4, 3, GRIDS[0]!.ids);
     expect(buildProvinceIndexFromRuns(CATALOG, runIndex).runs).toBe(runIndex);
-    expect(
-      buildProvinceIndexFromGrid(CATALOG, 4, 3, GRIDS[0]!.ids).runs
-    ).toBeUndefined();
+    expect(buildProvinceIndexFromGrid(CATALOG, 4, 3, GRIDS[0]!.ids).runs).toBeUndefined();
   });
 
   it("visits province runs in ascending pixel order", () => {
@@ -434,9 +392,7 @@ describe("deserializeProvinceIdRuns rejects bad input", () => {
 
   it("rejects a truncated payload", () => {
     const buffer = valid();
-    expect(() =>
-      deserializeProvinceIdRuns(buffer.slice(0, buffer.byteLength - 4))
-    ).toThrow(/length/);
+    expect(() => deserializeProvinceIdRuns(buffer.slice(0, buffer.byteLength - 4))).toThrow(/length/);
   });
 
   it("rejects a zero-length run", () => {
@@ -452,15 +408,11 @@ describe("deserializeProvinceIdRuns rejects bad input", () => {
   });
 
   it("rejects mismatched run arrays at build time", () => {
-    expect(() =>
-      buildProvinceRunIndex(2, 2, new Uint32Array([4]), new Uint16Array([1, 2]))
-    ).toThrow(/mismatch/);
+    expect(() => buildProvinceRunIndex(2, 2, new Uint32Array([4]), new Uint16Array([1, 2]))).toThrow(/mismatch/);
   });
 
   it("rejects runs whose lengths do not fill the grid at build time", () => {
-    expect(() =>
-      buildProvinceRunIndex(4, 4, new Uint32Array([3]), new Uint16Array([1]))
-    ).toThrow(/pixels/);
+    expect(() => buildProvinceRunIndex(4, 4, new Uint32Array([3]), new Uint16Array([1]))).toThrow(/pixels/);
   });
 });
 
@@ -473,7 +425,7 @@ type PaintCase = {
   run: (
     imageData: ImageData,
     geometry: Int32Array | ProvinceRunIndex,
-    regions: ReturnType<typeof buildProvincePixelIndex> | ProvinceRunIndex
+    regions: ReturnType<typeof buildProvincePixelIndex> | ProvinceRunIndex,
   ) => void;
 };
 
@@ -500,8 +452,7 @@ const CHILD_PROVINCES: Record<string, number[]> = {
   CHILD_B: [2, 5],
   CHILD_C: [3, 6],
 };
-const resolveChild = (childId: string): number[] =>
-  CHILD_PROVINCES[childId] ?? [];
+const resolveChild = (childId: string): number[] => CHILD_PROVINCES[childId] ?? [];
 const EMPTY_LAYERS = {} as TitleLayers;
 
 const PAINT_CASES: PaintCase[] = [
@@ -514,36 +465,19 @@ const PAINT_CASES: PaintCase[] = [
   {
     name: "fillProvincePixels with a Set and an absent id",
     run: (imageData, geometry) => {
-      fillProvincePixels(
-        imageData,
-        geometry,
-        new Set([2, 4, 9999]),
-        [200, 100, 50]
-      );
+      fillProvincePixels(imageData, geometry, new Set([2, 4, 9999]), [200, 100, 50]);
     },
   },
   {
     name: "paintSelectionLayerFull",
     run: (imageData, geometry) => {
-      paintSelectionLayerFull(
-        imageData,
-        geometry,
-        PROVINCE_TO_RGB,
-        PROVINCE_TO_COUNTY,
-        COUNTY_COLORS
-      );
+      paintSelectionLayerFull(imageData, geometry, PROVINCE_TO_RGB, PROVINCE_TO_COUNTY, COUNTY_COLORS);
     },
   },
   {
     name: "paintSelectionLayerFull with no county assignment",
     run: (imageData, geometry) => {
-      paintSelectionLayerFull(
-        imageData,
-        geometry,
-        PROVINCE_TO_RGB,
-        new Map(),
-        {}
-      );
+      paintSelectionLayerFull(imageData, geometry, PROVINCE_TO_RGB, new Map(), {});
     },
   },
   {
@@ -555,13 +489,7 @@ const PAINT_CASES: PaintCase[] = [
   {
     name: "paintActiveLayerFull",
     run: (imageData, geometry) => {
-      paintActiveLayerFull(
-        imageData,
-        geometry,
-        [1, 2],
-        "5,6,7",
-        new Set([3, 4])
-      );
+      paintActiveLayerFull(imageData, geometry, [1, 2], "5,6,7", new Set([3, 4]));
     },
   },
   {
@@ -581,21 +509,14 @@ const PAINT_CASES: PaintCase[] = [
           CHILD_B: { rgb: "4,5,6" } as never,
         },
         resolveChild,
-        EMPTY_LAYERS
+        EMPTY_LAYERS,
       );
     },
   },
   {
     name: "paintParentActiveLayerFull",
     run: (imageData, geometry) => {
-      paintParentActiveLayerFull(
-        imageData,
-        geometry,
-        ["CHILD_A", "CHILD_C"],
-        "9,9,9",
-        resolveChild,
-        EMPTY_LAYERS
-      );
+      paintParentActiveLayerFull(imageData, geometry, ["CHILD_A", "CHILD_C"], "9,9,9", resolveChild, EMPTY_LAYERS);
     },
   },
   {
@@ -607,7 +528,7 @@ const PAINT_CASES: PaintCase[] = [
         [1, 2, 3, 9999],
         PROVINCE_TO_RGB,
         PROVINCE_TO_COUNTY,
-        COUNTY_COLORS
+        COUNTY_COLORS,
       );
     },
   },
@@ -632,22 +553,17 @@ const PAINT_CASES: PaintCase[] = [
         ["CHILD_A", "CHILD_B", "CHILD_MISSING"],
         { CHILD_A: "3,3,3", CHILD_B: "8,8,8" },
         resolveChild,
-        EMPTY_LAYERS
+        EMPTY_LAYERS,
       );
     },
   },
   {
     name: "updateParentActiveSubset with clears",
     run: (imageData, _geometry, regions) => {
-      updateParentActiveSubset(
-        imageData,
-        regions,
-        ["CHILD_A"],
-        "2,4,6",
-        resolveChild,
-        EMPTY_LAYERS,
-        ["CHILD_B", "CHILD_C"]
-      );
+      updateParentActiveSubset(imageData, regions, ["CHILD_A"], "2,4,6", resolveChild, EMPTY_LAYERS, [
+        "CHILD_B",
+        "CHILD_C",
+      ]);
     },
   },
 ];
@@ -719,88 +635,72 @@ describe("span writer fallback", () => {
 // equivalence against the real shipped artifacts (6400x6400)
 // ---------------------------------------------------------------------------
 
-const DEFINES = path.resolve(
-  fileURLToPath(new URL(".", import.meta.url)),
-  "../../../../../backend/src/defines/main"
-);
+const DEFINES = path.resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../../backend/src/defines/main");
 const REAL_GRID = path.join(DEFINES, "province_id_grid.bin.gz");
 const REAL_RUNS = path.join(DEFINES, "province_id_runs.bin.gz");
 
 function toArrayBuffer(buffer: Buffer): ArrayBuffer {
-  return buffer.buffer.slice(
-    buffer.byteOffset,
-    buffer.byteOffset + buffer.byteLength
-  ) as ArrayBuffer;
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
 }
 
 const hasRealArtifacts = existsSync(REAL_GRID) && existsSync(REAL_RUNS);
 
-describe.skipIf(!hasRealArtifacts)(
-  "real main artifacts: runs decode to the same grid",
-  () => {
-    it("matches province_id_grid.bin.gz pixel for pixel", () => {
-      const gridPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_GRID)));
-      const grid = deserializeProvinceIdGrid(gridPayload);
+describe.skipIf(!hasRealArtifacts)("real main artifacts: runs decode to the same grid", () => {
+  it("matches province_id_grid.bin.gz pixel for pixel", () => {
+    const gridPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_GRID)));
+    const grid = deserializeProvinceIdGrid(gridPayload);
 
-      const runsPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS)));
-      const decoded = deserializeProvinceIdRuns(runsPayload);
+    const runsPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS)));
+    const decoded = deserializeProvinceIdRuns(runsPayload);
 
-      expect(decoded.width).toBe(grid.width);
-      expect(decoded.height).toBe(grid.height);
+    expect(decoded.width).toBe(grid.width);
+    expect(decoded.height).toBe(grid.height);
 
-      const runIndex = buildProvinceRunIndex(
-        decoded.width,
-        decoded.height,
-        decoded.runLengths,
-        decoded.runIds,
-        decoded.bbox
-      );
+    const runIndex = buildProvinceRunIndex(
+      decoded.width,
+      decoded.height,
+      decoded.runLengths,
+      decoded.runIds,
+      decoded.bbox,
+    );
 
-      // Walk the runs and check every covered pixel against the flat grid,
-      // without allocating a second full-size array.
-      let covered = 0;
-      let mismatches = 0;
-      for (let i = 0; i < runIndex.runStarts.length; i++) {
-        const start = runIndex.runStarts[i]!;
-        const length = runIndex.runLengths[i]!;
-        const pid = runIndex.runIds[i]!;
-        for (let k = 0; k < length; k++) {
-          if (grid.ids[start + k] !== pid) mismatches++;
-        }
-        covered += length;
+    // Walk the runs and check every covered pixel against the flat grid,
+    // without allocating a second full-size array.
+    let covered = 0;
+    let mismatches = 0;
+    for (let i = 0; i < runIndex.runStarts.length; i++) {
+      const start = runIndex.runStarts[i]!;
+      const length = runIndex.runLengths[i]!;
+      const pid = runIndex.runIds[i]!;
+      for (let k = 0; k < length; k++) {
+        if (grid.ids[start + k] !== pid) mismatches++;
       }
+      covered += length;
+    }
 
-      expect(mismatches).toBe(0);
-      expect(covered).toBe(grid.width * grid.height);
-    });
+    expect(mismatches).toBe(0);
+    expect(covered).toBe(grid.width * grid.height);
+  });
 
-    it("has a bbox row for exactly the province ids present in the grid", () => {
-      const gridPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_GRID)));
-      const grid = deserializeProvinceIdGrid(gridPayload);
-      const decoded = deserializeProvinceIdRuns(
-        toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS)))
-      );
+  it("has a bbox row for exactly the province ids present in the grid", () => {
+    const gridPayload = toArrayBuffer(gunzipSync(readFileSync(REAL_GRID)));
+    const grid = deserializeProvinceIdGrid(gridPayload);
+    const decoded = deserializeProvinceIdRuns(toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS))));
 
-      const present = new Set<number>();
-      for (let i = 0; i < grid.ids.length; i++) {
-        const pid = grid.ids[i]!;
-        if (pid > 0) present.add(pid);
-      }
+    const present = new Set<number>();
+    for (let i = 0; i < grid.ids.length; i++) {
+      const pid = grid.ids[i]!;
+      if (pid > 0) present.add(pid);
+    }
 
-      expect([...decoded.bbox.keys()].sort((a, b) => a - b)).toEqual(
-        [...present].sort((a, b) => a - b)
-      );
-    });
+    expect([...decoded.bbox.keys()].sort((a, b) => a - b)).toEqual([...present].sort((a, b) => a - b));
+  });
 
-    it("is far smaller in memory than the flat grid", () => {
-      const decoded = deserializeProvinceIdRuns(
-        toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS)))
-      );
-      const runBytes =
-        decoded.runLengths.byteLength + decoded.runIds.byteLength;
-      const flatBytes = decoded.width * decoded.height * 4;
+  it("is far smaller in memory than the flat grid", () => {
+    const decoded = deserializeProvinceIdRuns(toArrayBuffer(gunzipSync(readFileSync(REAL_RUNS))));
+    const runBytes = decoded.runLengths.byteLength + decoded.runIds.byteLength;
+    const flatBytes = decoded.width * decoded.height * 4;
 
-      expect(runBytes).toBeLessThan(flatBytes / 50);
-    });
-  }
-);
+    expect(runBytes).toBeLessThan(flatBytes / 50);
+  });
+});

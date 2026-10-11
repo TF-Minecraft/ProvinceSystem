@@ -1,27 +1,12 @@
-import type {
-  MapMarkersResponse,
-  RegionRecord,
-  WarExport,
-} from "../map/types";
+import type { MapMarkersResponse, RegionRecord, WarExport } from "../map/types";
 import { filterPlacedInstallations, installationToMapMarker } from "../../lib/installationMarkers";
-import {
-  filterPlacedSettlements,
-  settlementToMapMarker,
-  visibleSettlementKind,
-} from "../../lib/settlementMarkers";
+import { filterPlacedSettlements, settlementToMapMarker, visibleSettlementKind } from "../../lib/settlementMarkers";
 import { warBattleMarkersFromWars } from "../../lib/warBattleMarkers";
-import {
-  focusChronicleLabels,
-  focusOwnsMarker,
-} from "../../lib/map/chronicleFocus";
+import { focusChronicleLabels, focusOwnsMarker } from "../../lib/map/chronicleFocus";
 import { chronicleRealmContains } from "../../lib/map/chronicleOwnership";
 import type { MapMarker } from "../../lib/mapMarkers";
 import type { ChronicleBorderMask } from "../../lib/map/chronicleBorderMask";
-import type {
-  LabelMapObject,
-  NationLabelSpec,
-  NationRegionInput,
-} from "../../lib/mapLabels";
+import type { LabelMapObject, NationLabelSpec, NationRegionInput } from "../../lib/mapLabels";
 
 /**
  * Turning one stored day's raw payloads into the exact arrays the live map's
@@ -107,12 +92,7 @@ export const CHRONICLE_TOGGLE_ORDER: {
 
 /** Every nation layer reads the same `nation` day file. */
 export function needsNationFile(toggles: ChronicleToggles): boolean {
-  return (
-    toggles.nationFill ||
-    toggles.nationBorders ||
-    toggles.occupation ||
-    toggles.nationNames
-  );
+  return toggles.nationFill || toggles.nationBorders || toggles.occupation || toggles.nationNames;
 }
 
 /**
@@ -139,12 +119,7 @@ export function needsProvinceData(toggles: ChronicleToggles): boolean {
  * restyles pins the three layers above already produced.
  */
 export function needsMarkers(toggles: ChronicleToggles): boolean {
-  return (
-    toggles.settlements ||
-    toggles.forts ||
-    toggles.fortControl ||
-    toggles.wars
-  );
+  return toggles.settlements || toggles.forts || toggles.fortControl || toggles.wars;
 }
 
 /**
@@ -178,12 +153,7 @@ export function needsProvinceGrid(toggles: ChronicleToggles): boolean {
  * whole group.
  */
 export function paintsChronicleFill(toggles: ChronicleToggles): boolean {
-  return (
-    toggles.nationFill ||
-    toggles.occupation ||
-    toggles.tradeLeagues ||
-    toggles.prosperity
-  );
+  return toggles.nationFill || toggles.occupation || toggles.tradeLeagues || toggles.prosperity;
 }
 
 /**
@@ -197,9 +167,7 @@ export function paintsChronicleFill(toggles: ChronicleToggles): boolean {
  * wash over the whole map.
  */
 export function anyChronicleToggleOn(toggles: ChronicleToggles): boolean {
-  return CHRONICLE_TOGGLE_ORDER.some(
-    ({ key }) => key !== "markerNames" && toggles[key]
-  );
+  return CHRONICLE_TOGGLE_ORDER.some(({ key }) => key !== "markerNames" && toggles[key]);
 }
 
 /**
@@ -209,9 +177,7 @@ export function anyChronicleToggleOn(toggles: ChronicleToggles): boolean {
  * from a fixed order so the same set always produces the same string.
  */
 export function chronicleToggleSignature(toggles: ChronicleToggles): string {
-  const on = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).map(
-    ({ key }) => key
-  );
+  const on = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).map(({ key }) => key);
   return on.length ? on.join("+") : "none";
 }
 
@@ -236,9 +202,7 @@ export type ChronicleClip = {
  * with every layer on does not become a paragraph in the player.
  */
 export function chronicleClipLabel(toggles: ChronicleToggles): string {
-  const names = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).map(
-    ({ label }) => label
-  );
+  const names = CHRONICLE_TOGGLE_ORDER.filter(({ key }) => toggles[key]).map(({ label }) => label);
   if (names.length === 0) return "Empty look";
   if (names.length <= 3) return names.join(", ");
   return `${names.slice(0, 2).join(", ")} + ${names.length - 2} more`;
@@ -249,9 +213,7 @@ export function chronicleClipLabel(toggles: ChronicleToggles): string {
  * or no land has nothing to paint and no place to hang a label, and letting it
  * through only produces empty label components.
  */
-export function chronicleRegionData(
-  nationFile: RegionRecord | null
-): Record<string, NationRegionInput> {
+export function chronicleRegionData(nationFile: RegionRecord | null): Record<string, NationRegionInput> {
   // Null-prototype on purpose. Realm ids come from a parsed day file, and
   // `JSON.parse` makes `__proto__` a real own property, so a plain `{}` here
   // turns `out[id] = region` into a call to `Object.prototype.__proto__`'s
@@ -278,7 +240,7 @@ export function chronicleRegionData(
  */
 export function chronicleLabelMapObjects(
   regionData: Record<string, NationRegionInput>,
-  nationFile: RegionRecord | null
+  nationFile: RegionRecord | null,
 ): LabelMapObject[] {
   // `nested`/`baseId` are stated rather than left to be inferred from the id.
   // These are all real region ids — the studio has no drill state and so no
@@ -310,7 +272,7 @@ function asArray<T>(value: T[] | undefined | null | unknown): T[] {
 function factionInFocus(
   factionId: string | null | undefined,
   focusNationId: string | null,
-  nationFile: RegionRecord | null
+  nationFile: RegionRecord | null,
 ): boolean {
   if (!focusNationId) return true;
   if (nationFile && factionId) {
@@ -323,29 +285,22 @@ export function chronicleSettlementMarkers(
   markers: MapMarkersResponse | null,
   labelObjects: LabelMapObject[],
   focusNationId: string | null = null,
-  nationFile: RegionRecord | null = null
+  nationFile: RegionRecord | null = null,
 ): MapMarker[] {
   if (!markers) return [];
   return [
     ...filterPlacedSettlements(asArray(markers.settlements))
-      .filter((settlement) =>
-        factionInFocus(settlement.faction_id, focusNationId, nationFile)
-      )
+      .filter((settlement) => factionInFocus(settlement.faction_id, focusNationId, nationFile))
       .map((settlement) =>
         settlementToMapMarker({
           ...settlement,
-          kind: visibleSettlementKind(
-            settlement.kind,
-            settlement.faction_id,
-            labelObjects
-          ),
-        })
+          kind: visibleSettlementKind(settlement.kind, settlement.faction_id, labelObjects),
+        }),
       ),
     ...filterPlacedInstallations(asArray(markers.installations))
       .filter(
         (installation) =>
-          installation.kind !== "fort" &&
-          factionInFocus(installation.faction_id, focusNationId, nationFile)
+          installation.kind !== "fort" && factionInFocus(installation.faction_id, focusNationId, nationFile),
       )
       .map(installationToMapMarker),
   ];
@@ -354,21 +309,18 @@ export function chronicleSettlementMarkers(
 export function chronicleFortMarkers(
   markers: MapMarkersResponse | null,
   focusNationId: string | null = null,
-  nationFile: RegionRecord | null = null
+  nationFile: RegionRecord | null = null,
 ): MapMarker[] {
   if (!markers) return [];
   return filterPlacedInstallations(asArray(markers.installations))
     .filter(
       (installation) =>
-        installation.kind === "fort" &&
-        factionInFocus(installation.faction_id, focusNationId, nationFile)
+        installation.kind === "fort" && factionInFocus(installation.faction_id, focusNationId, nationFile),
     )
     .map(installationToMapMarker);
 }
 
-export function chronicleWars(
-  markers: MapMarkersResponse | null
-): WarExport[] {
+export function chronicleWars(markers: MapMarkersResponse | null): WarExport[] {
   return asArray<WarExport>(markers?.wars);
 }
 
@@ -453,14 +405,7 @@ export function buildChronicleLayers(options: {
   const nameChips = toggles.markerNames;
 
   if (toggles.settlements) {
-    pins.push(
-      ...chronicleSettlementMarkers(
-        markers,
-        labelObjects,
-        focusNationId,
-        nationFile
-      )
-    );
+    pins.push(...chronicleSettlementMarkers(markers, labelObjects, focusNationId, nationFile));
   }
   if (toggles.forts) {
     pins.push(...chronicleFortMarkers(markers, focusNationId, nationFile));
@@ -476,9 +421,7 @@ export function buildChronicleLayers(options: {
   }
 
   return {
-    labels: toggles.nationNames
-      ? focusChronicleLabels(labels, focusNationId)
-      : [],
+    labels: toggles.nationNames ? focusChronicleLabels(labels, focusNationId) : [],
     borders: toggles.nationBorders ? borders : null,
     occupationSeam: toggles.occupation ? occupationSeam : null,
     fortControl: toggles.fortControl ? fortControl : null,

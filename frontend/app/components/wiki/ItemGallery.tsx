@@ -39,9 +39,11 @@ export default function ItemGallery({
   // the selector grid takes whatever is left.
   return (
     <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <ul className={`grid self-start auto-rows-fr grid-cols-2 gap-2 ${
-        selectorColumns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"
-      }`}>
+      <ul
+        className={`grid self-start auto-rows-fr grid-cols-2 gap-2 ${
+          selectorColumns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"
+        }`}
+      >
         {items.map((item, index) => (
           <li key={item.name}>
             <button
@@ -70,9 +72,11 @@ export default function ItemGallery({
           alt={selected.name}
           className="h-32 w-32 [image-rendering:pixelated]"
         />
-        <h3 className={`mt-4 max-w-full font-[family-name:var(--font-fraunces)] text-[var(--tfmc-cream)] ${
-          widePreview ? "whitespace-nowrap text-lg sm:text-xl" : "text-xl"
-        }`}>
+        <h3
+          className={`mt-4 max-w-full font-[family-name:var(--font-fraunces)] text-[var(--tfmc-cream)] ${
+            widePreview ? "whitespace-nowrap text-lg sm:text-xl" : "text-xl"
+          }`}
+        >
           {selected.name}
         </h3>
         {hasDetail ? (

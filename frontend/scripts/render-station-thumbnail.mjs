@@ -36,16 +36,28 @@ if (!browser) throw new Error("No Chrome/Edge found; set CHROME_PATH.");
 
 const port = 9333;
 const pageUrl = furniture ? `${baseUrl}/wiki/furniture?piece=${slug}` : `${baseUrl}/wiki/stations/${slug}`;
-const output = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "wiki", "thumbnails", furniture ? "furniture" : "stations", `${slug}.webp`);
-const child = spawn(browser, [
-  "--headless=new",
-  `--remote-debugging-port=${port}`,
-  `--user-data-dir=${mkdtempSync(path.join(tmpdir(), "thumb-"))}`,
-  "--enable-unsafe-swiftshader",
-  "--use-angle=swiftshader",
-  "--window-size=1280,900",
-  "about:blank",
-], { stdio: "ignore" });
+const output = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "public",
+  "wiki",
+  "thumbnails",
+  furniture ? "furniture" : "stations",
+  `${slug}.webp`,
+);
+const child = spawn(
+  browser,
+  [
+    "--headless=new",
+    `--remote-debugging-port=${port}`,
+    `--user-data-dir=${mkdtempSync(path.join(tmpdir(), "thumb-"))}`,
+    "--enable-unsafe-swiftshader",
+    "--use-angle=swiftshader",
+    "--window-size=1280,900",
+    "about:blank",
+  ],
+  { stdio: "ignore" },
+);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -67,12 +79,17 @@ try {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
       target = targets.find((entry) => entry.type === "page");
-    } catch { /* browser still starting */ }
+    } catch {
+      /* browser still starting */
+    }
   }
   if (!target) throw new Error("Browser did not expose a DevTools page.");
 
   const socket = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
+  await new Promise((resolve, reject) => {
+    socket.onopen = resolve;
+    socket.onerror = reject;
+  });
   let nextId = 0;
   const pending = new Map();
   socket.onmessage = (event) => {
@@ -82,11 +99,12 @@ try {
       pending.delete(message.id);
     }
   };
-  const send = (method, params = {}) => new Promise((resolve) => {
-    const id = (nextId += 1);
-    pending.set(id, resolve);
-    socket.send(JSON.stringify({ id, method, params }));
-  });
+  const send = (method, params = {}) =>
+    new Promise((resolve) => {
+      const id = (nextId += 1);
+      pending.set(id, resolve);
+      socket.send(JSON.stringify({ id, method, params }));
+    });
 
   await send("Page.enable");
   await send("Page.navigate", { url: pageUrl });

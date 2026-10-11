@@ -19,23 +19,12 @@ type Props = {
  * corpus. A plain <datalist> cannot do this: it matches the whole input value,
  * not the token after the last comma.
  */
-export default function PlayerAutocomplete({
-  id,
-  value,
-  known,
-  disabled,
-  placeholder,
-  className,
-  onChange,
-}: Props) {
+export default function PlayerAutocomplete({ id, value, known, disabled, placeholder, className, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const matches = useMemo(
-    () => suggestPlayers(value, known),
-    [value, known]
-  );
+  const matches = useMemo(() => suggestPlayers(value, known), [value, known]);
 
   // Reset the highlight whenever the candidate list changes underneath it.
   useEffect(() => {

@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ARMOR_METALS,
-  ARMOR_TYPES,
-  armorTier,
-  armorTierLabel,
-  baseSetLabel,
-  baseSetsForKind,
-} from "./baseSets";
+import { ARMOR_METALS, ARMOR_TYPES, armorTier, armorTierLabel, baseSetLabel, baseSetsForKind } from "./baseSets";
 
 describe("lute base set", () => {
   it("offers Lutes for 16×16 handheld and item 3D", () => {

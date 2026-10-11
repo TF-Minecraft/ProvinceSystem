@@ -5,12 +5,7 @@ import type { MapObject, RegionRecord } from "@/app/components/map/types";
 import { buildMapObjectsFromRegionData } from "@/app/core/mapObjectBuilder";
 import { MAX_PAINTABLE_PROVINCE_ID } from "./chroniclePaint";
 
-import {
-  chronicleRealmContains,
-  directOwnership,
-  overviewFillOwnership,
-  visibleOwnership,
-} from "./chronicleOwnership";
+import { chronicleRealmContains, directOwnership, overviewFillOwnership, visibleOwnership } from "./chronicleOwnership";
 
 /**
  * OVERLORD holds 1, its two vassals hold 2 and 3. That is the whole shape the
@@ -101,10 +96,7 @@ describe("visibleOwnership", () => {
   });
 
   it("contributes nothing for an invisible entry", () => {
-    const ownership = visibleOwnership(regionData, [
-      obj("OVERLORD", false),
-      obj("LONER", false),
-    ]);
+    const ownership = visibleOwnership(regionData, [obj("OVERLORD", false), obj("LONER", false)]);
 
     expect(Object.keys(ownership)).toEqual([]);
   });
@@ -132,15 +124,11 @@ describe("visibleOwnership", () => {
   it("does not read a region id off Object.prototype", () => {
     // "toString" is not in the day file: a plain-object read would hand back
     // the inherited function and paint a region that does not exist.
-    expect(visibleOwnership(regionData, [obj("toString", true)])).toEqual(
-      Object.create(null)
-    );
+    expect(visibleOwnership(regionData, [obj("toString", true)])).toEqual(Object.create(null));
   });
 
   it("keeps a __proto__ region as an own key without poisoning the output", () => {
-    const poisoned = JSON.parse(
-      '{"__proto__": {"rgb": "9,9,9", "provinces": [7]}}'
-    ) as RegionRecord;
+    const poisoned = JSON.parse('{"__proto__": {"rgb": "9,9,9", "provinces": [7]}}') as RegionRecord;
 
     const ownership = visibleOwnership(poisoned, [obj("__proto__", true)]);
 
@@ -176,10 +164,7 @@ describe("visibleOwnership", () => {
     const mapObjects = Array.from({ length: N }, (_, i) => obj(`R${i}`, true));
     const ownership = visibleOwnership(chain, mapObjects);
 
-    const retained = Object.values(ownership).reduce(
-      (total, nation) => total + (nation?.provinces?.length ?? 0),
-      0
-    );
+    const retained = Object.values(ownership).reduce((total, nation) => total + (nation?.provinces?.length ?? 0), 0);
 
     // One entry per region, not N*(N+1)/2 = 500 500.
     expect(retained).toBe(N);
@@ -201,9 +186,7 @@ describe("visibleOwnership", () => {
     };
 
     // Exactly what the engine builds and shows for this file.
-    const mapObjects = buildMapObjectsFromRegionData(
-      collision as unknown as Record<string, unknown>
-    );
+    const mapObjects = buildMapObjectsFromRegionData(collision as unknown as Record<string, unknown>);
     expect(mapObjects.map((o) => [o.id, o.visible, o.nested])).toEqual([
       ["Foo", true, false],
       ["Foo_nested", false, true],
@@ -220,9 +203,7 @@ describe("visibleOwnership", () => {
     });
     // ...and Foo is still the rolled-up overlord, not own-provinces-only.
     expect(ownership.Foo!.rgb).toBe("10,10,10");
-    expect([...ownership.Foo!.provinces!].sort((a, b) => a - b)).toEqual([
-      1, 2, 3,
-    ]);
+    expect([...ownership.Foo!.provinces!].sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 
   it("drops province ids the painter could never draw", () => {
@@ -246,11 +227,7 @@ describe("visibleOwnership", () => {
       B: { rgb: "2,2,2", provinces: [3, 9_999_999], overlord: "A" },
     } as unknown as RegionRecord;
 
-    expect(visibleOwnership(junk, [obj("A", true)]).A!.provinces).toEqual([
-      1,
-      MAX_PAINTABLE_PROVINCE_ID,
-      3,
-    ]);
+    expect(visibleOwnership(junk, [obj("A", true)]).A!.provinces).toEqual([1, MAX_PAINTABLE_PROVINCE_ID, 3]);
   });
 
   it("drops out-of-range ids on a drilled (own-provinces-only) entry too", () => {
@@ -259,11 +236,7 @@ describe("visibleOwnership", () => {
       B: { rgb: "2,2,2", provinces: [4], overlord: "A" },
     } as unknown as RegionRecord;
 
-    const ownership = visibleOwnership(junk, [
-      obj("A", false),
-      nestedObj("A", true),
-      obj("B", true),
-    ]);
+    const ownership = visibleOwnership(junk, [obj("A", false), nestedObj("A", true), obj("B", true)]);
 
     expect(ownership.A!.provinces).toEqual([2]);
     expect(ownership.B!.provinces).toEqual([4]);
@@ -298,9 +271,7 @@ describe("overviewFillOwnership", () => {
     expect(overviewFillOwnership(independent).SPORE!.provinces).toEqual([2]);
     expect(overviewFillOwnership(independent).SPORE!.rgb).toBe("40,50,60");
     expect(overviewFillOwnership(sworn).SPORE).toBeUndefined();
-    expect(overviewFillOwnership(sworn).ORDER!.provinces?.slice().sort()).toEqual([
-      1, 2,
-    ]);
+    expect(overviewFillOwnership(sworn).ORDER!.provinces?.slice().sort()).toEqual([1, 2]);
     expect(overviewFillOwnership(sworn).ORDER!.rgb).toBe("10,20,30");
   });
 

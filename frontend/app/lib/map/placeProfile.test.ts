@@ -42,9 +42,7 @@ const marker = (id: string, kind: string, extra = {}) => ({
 
 describe("buildPlaceProfile", () => {
   it("describes a capital with its realm, population and provinces", () => {
-    expect(
-      buildPlaceProfile(marker("Porokhgrad", "faction_capital"), settlements, [], regionData)
-    ).toMatchObject({
+    expect(buildPlaceProfile(marker("Porokhgrad", "faction_capital"), settlements, [], regionData)).toMatchObject({
       name: "Porokhgrad",
       kindLabel: "Capital",
       ownerId: "Huoyaoguo",
@@ -54,9 +52,7 @@ describe("buildPlaceProfile", () => {
   });
 
   it("describes an installation, and drops an owner the map does not know", () => {
-    expect(
-      buildPlaceProfile(marker("installation:harbour", "port"), [], installations, regionData)
-    ).toMatchObject({
+    expect(buildPlaceProfile(marker("installation:harbour", "port"), [], installations, regionData)).toMatchObject({
       name: "Grand Port",
       kindLabel: "Port",
       ownerId: null,
@@ -65,9 +61,10 @@ describe("buildPlaceProfile", () => {
   });
 
   it("falls back to the marker for battles and unknown places", () => {
-    expect(
-      buildPlaceProfile(marker("war-1-slot", "battle", { title: "Siege of X" }), [], [], null)
-    ).toMatchObject({ kindLabel: "Battle", note: "Siege of X" });
+    expect(buildPlaceProfile(marker("war-1-slot", "battle", { title: "Siege of X" }), [], [], null)).toMatchObject({
+      kindLabel: "Battle",
+      note: "Siege of X",
+    });
     expect(buildPlaceProfile(marker("ghost", "settlement"), [], [], null)).toMatchObject({
       name: "Label",
       kindLabel: "Place",
@@ -83,13 +80,13 @@ describe("guild capitals", () => {
         guilds: [{ id: "Oyfthyr", name: "Oyfthyr", type: "guild", capital: 163, members: [] }],
       },
     };
-    const town = [{ id: "Oyfthyr", name: "Oyfthyr", faction_id: "Thalendor", kind: "settlement" as const, province_id: 163 }];
-    expect(
-      buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], withGuild as never).kindLabel
-    ).toBe("Guild capital");
-    expect(
-      buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], regionData).kindLabel
-    ).toBe("Settlement");
+    const town = [
+      { id: "Oyfthyr", name: "Oyfthyr", faction_id: "Thalendor", kind: "settlement" as const, province_id: 163 },
+    ];
+    expect(buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], withGuild as never).kindLabel).toBe(
+      "Guild capital",
+    );
+    expect(buildPlaceProfile(marker("Oyfthyr", "settlement"), town, [], regionData).kindLabel).toBe("Settlement");
   });
 });
 

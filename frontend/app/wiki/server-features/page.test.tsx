@@ -8,22 +8,21 @@ import { stationRecipe } from "../data/station-recipes";
 import ItemDetailPage from "../items/[slug]/page";
 import ServerFeaturesPage from "./page";
 
-const recipes = [
-  stationRecipe("gen-tool-station-lorestone"),
-  stationRecipe("gen-tool-station-namestone"),
-];
+const recipes = [stationRecipe("gen-tool-station-lorestone"), stationRecipe("gen-tool-station-namestone")];
 
 describe("Lorestone and Namestone guide", () => {
   it("uses the two source-generated Tool Station recipes exactly once", () => {
-    expect(recipes.map((recipe) => ({
-      key: recipe.key,
-      station: recipe.station,
-      time: recipe.time,
-      ingredient: recipe.ingredients[0]?.sourceId,
-      ingredientQty: recipe.ingredients[0]?.qty,
-      output: recipe.output.sourceId,
-      outputQty: recipe.output.qty,
-    }))).toEqual([
+    expect(
+      recipes.map((recipe) => ({
+        key: recipe.key,
+        station: recipe.station,
+        time: recipe.time,
+        ingredient: recipe.ingredients[0]?.sourceId,
+        ingredientQty: recipe.ingredients[0]?.qty,
+        output: recipe.output.sourceId,
+        outputQty: recipe.output.qty,
+      })),
+    ).toEqual([
       {
         key: "gen-tool-station-lorestone",
         station: "Tool Station",

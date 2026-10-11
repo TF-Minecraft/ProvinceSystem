@@ -6,10 +6,7 @@ import {
   type ProvinceLabelGrid,
   type ProvinceLabelGridMeta,
 } from "../lib/labelBlobGeometry";
-import type {
-  ProvinceCentroids,
-  ProvinceNeighbors,
-} from "../lib/mapLabels";
+import type { ProvinceCentroids, ProvinceNeighbors } from "../lib/mapLabels";
 import { fetchMapApi } from "@/lib/map/api";
 import type { MapId } from "../components/map/types";
 
@@ -36,11 +33,7 @@ export function mapGeometryDataPaths(mapId: MapId): string[] {
  * build hits "still loading" rather than "this map has no geometry". After
  * ready, names need both neighbor and centroid files.
  */
-export function chronicleNamesSupported(geometry: {
-  ready: boolean;
-  neighbors: unknown;
-  centroids: unknown;
-}): boolean {
+export function chronicleNamesSupported(geometry: { ready: boolean; neighbors: unknown; centroids: unknown }): boolean {
   if (!geometry.ready) return true;
   return Boolean(geometry.neighbors && geometry.centroids);
 }
@@ -53,10 +46,7 @@ const EMPTY_GEOMETRY: MapGeometryState = {
   ready: false,
 };
 
-export function useMapGeometry(
-  mapId: MapId,
-  sessionToken?: string | null
-): MapGeometryState {
+export function useMapGeometry(mapId: MapId, sessionToken?: string | null): MapGeometryState {
   const [state, setState] = useState<MapGeometryState>(EMPTY_GEOMETRY);
 
   useEffect(() => {
@@ -72,16 +62,8 @@ export function useMapGeometry(
       });
 
       try {
-        const [
-          neighborsRes,
-          labelNeighborsRes,
-          centroidsRes,
-          gridMetaRes,
-          gridBinRes,
-        ] = await Promise.all(
-          mapGeometryDataPaths(mapId).map((path) =>
-            fetchMapApi(path, { sessionToken })
-          )
+        const [neighborsRes, labelNeighborsRes, centroidsRes, gridMetaRes, gridBinRes] = await Promise.all(
+          mapGeometryDataPaths(mapId).map((path) => fetchMapApi(path, { sessionToken })),
         );
 
         if (!neighborsRes.ok || !centroidsRes.ok) {
@@ -95,8 +77,7 @@ export function useMapGeometry(
 
         let labelNeighbors: ProvinceNeighbors = neighbors;
         if (labelNeighborsRes.ok) {
-          labelNeighbors =
-            (await labelNeighborsRes.json()) as ProvinceNeighbors;
+          labelNeighbors = (await labelNeighborsRes.json()) as ProvinceNeighbors;
         }
 
         let labelGrid: ProvinceLabelGrid | null = null;

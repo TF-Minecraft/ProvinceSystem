@@ -3,24 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import {
-  composeTintedPotionCanvas,
-  loadDrinkAssetImages,
-} from "../../../lib/drinks/potionTint";
+import { composeTintedPotionCanvas, loadDrinkAssetImages } from "../../../lib/drinks/potionTint";
 import {
   applyDisplayToObject,
   resolveDisplayTab,
   type DisplayKind,
   type DisplayTabName,
 } from "../../../lib/skins/displayTransform";
-import {
-  buildExtrudedItemGroup,
-  loadImageDataFromFile,
-} from "../../../lib/skins/extrudeItem";
-import {
-  resolveFlatDisplayTab,
-  type FlatDisplayKind,
-} from "../../../lib/skins/flatItemDisplay";
+import { buildExtrudedItemGroup, loadImageDataFromFile } from "../../../lib/skins/extrudeItem";
+import { resolveFlatDisplayTab, type FlatDisplayKind } from "../../../lib/skins/flatItemDisplay";
 import { resolveShieldBlockingTab } from "../../../lib/skins/shieldBlockingDisplay";
 import {
   buildJavaModelGroup,
@@ -35,7 +26,6 @@ import {
   inferArmModelFromTexture,
   loadSteveTexture,
   setSteveOuterLayerVisible,
-  type ArmModel,
   type SteveArmPose,
   type SteveMannequin,
 } from "../../../lib/skins/steveMannequin";
@@ -46,29 +36,13 @@ export type GunModels = {
   aim: File | null;
 };
 
-export type FlatFrameId =
-  | "texture"
-  | "pull_0"
-  | "pull_1"
-  | "pull_2"
-  | "charged";
+export type FlatFrameId = "texture" | "pull_0" | "pull_1" | "pull_2" | "charged";
 
 export type FlatFrames = Partial<Record<FlatFrameId, File | null>>;
 
-type ItemSlot =
-  | "model"
-  | "thirdperson_righthand"
-  | "thirdperson_lefthand"
-  | "head";
+type ItemSlot = "model" | "thirdperson_righthand" | "thirdperson_lefthand" | "head";
 
-type GunSlot =
-  | "model"
-  | "carry_right"
-  | "carry_left"
-  | "reload_right"
-  | "reload_left"
-  | "aim_right"
-  | "aim_left";
+type GunSlot = "model" | "carry_right" | "carry_left" | "reload_right" | "reload_left" | "aim_right" | "aim_left";
 
 type PreviewSlot = ItemSlot | GunSlot;
 
@@ -140,10 +114,7 @@ function isFlatKind(kind?: DisplayKind): boolean {
   );
 }
 
-function flatDisplayKind(
-  kind?: DisplayKind,
-  preset?: FlatDisplayKind
-): FlatDisplayKind {
+function flatDisplayKind(kind?: DisplayKind, preset?: FlatDisplayKind): FlatDisplayKind {
   return preset ?? kind ?? "handheld";
 }
 
@@ -156,21 +127,14 @@ function fileIdentity(file: File | null | undefined): string {
   return `${file.name}\0${file.size}\0${file.lastModified}`;
 }
 
-function saveOrbit(
-  camera: THREE.PerspectiveCamera,
-  controls: OrbitControls
-): OrbitState {
+function saveOrbit(camera: THREE.PerspectiveCamera, controls: OrbitControls): OrbitState {
   return {
     position: camera.position.clone(),
     target: controls.target.clone(),
   };
 }
 
-function restoreOrbit(
-  camera: THREE.PerspectiveCamera,
-  controls: OrbitControls,
-  state: OrbitState
-): void {
+function restoreOrbit(camera: THREE.PerspectiveCamera, controls: OrbitControls, state: OrbitState): void {
   camera.position.copy(state.position);
   controls.target.copy(state.target);
   camera.lookAt(state.target);
@@ -181,13 +145,9 @@ function setDefaultOrbit(
   camera: THREE.PerspectiveCamera,
   controls: OrbitControls,
   focus: THREE.Vector3,
-  frameSize: number
+  frameSize: number,
 ): void {
-  camera.position.set(
-    focus.x + frameSize * 1.4,
-    focus.y + frameSize * 0.55,
-    focus.z + frameSize * 1.6
-  );
+  camera.position.set(focus.x + frameSize * 1.4, focus.y + frameSize * 0.55, focus.z + frameSize * 1.6);
   camera.lookAt(focus);
   controls.target.copy(focus);
   controls.update();
@@ -198,16 +158,13 @@ function isPreviewSceneRoot(obj: THREE.Object3D): boolean {
 }
 
 /** Drop mannequin / floating groups from the scene. Item mesh is unparented first so it can be reused. */
-function stripPreviewFromScene(
-  scene: THREE.Scene,
-  content: ContentRefs
-): void {
+function stripPreviewFromScene(scene: THREE.Scene, content: ContentRefs): void {
   content.itemRoot?.removeFromParent();
 
   const toDispose = new Set<THREE.Object3D>();
   if (content.floatingRoot) toDispose.add(content.floatingRoot);
   if (content.steveRoot) toDispose.add(content.steveRoot);
-  for (const child of [...scene.children]) {
+  for (const child of scene.children) {
     if (isPreviewSceneRoot(child)) toDispose.add(child);
   }
   for (const obj of toDispose) {
@@ -239,9 +196,7 @@ function disposeContent(content: ContentRefs, scene?: THREE.Scene): void {
   content.potionCanvas = null;
 }
 
-function itemSlotsForKind(
-  kind?: DisplayKind
-): { id: ItemSlot; label: string }[] {
+function itemSlotsForKind(kind?: DisplayKind): { id: ItemSlot; label: string }[] {
   const base: { id: ItemSlot; label: string }[] = [
     { id: "model", label: "Model" },
     { id: "thirdperson_righthand", label: "Right" },
@@ -264,21 +219,14 @@ const GUN_SLOTS: { id: GunSlot; label: string }[] = [
 ];
 
 function isLeftHandSlot(slot: PreviewSlot): boolean {
-  return (
-    slot === "thirdperson_lefthand" ||
-    slot === "carry_left" ||
-    slot === "reload_left" ||
-    slot === "aim_left"
-  );
+  return slot === "thirdperson_lefthand" || slot === "carry_left" || slot === "reload_left" || slot === "aim_left";
 }
 
 function isAimSlot(slot: PreviewSlot): boolean {
   return slot === "aim_right" || slot === "aim_left";
 }
 
-function gunVariantForSlot(
-  slot: PreviewSlot
-): "carry" | "reload" | "aim" | null {
+function gunVariantForSlot(slot: PreviewSlot): "carry" | "reload" | "aim" | null {
   if (slot === "carry_right" || slot === "carry_left") return "carry";
   if (slot === "reload_right" || slot === "reload_left") return "reload";
   if (slot === "aim_right" || slot === "aim_left") return "aim";
@@ -295,7 +243,7 @@ function resolveActiveModelFile(
   gun: boolean,
   slot: PreviewSlot,
   modelFile: File | null | undefined,
-  gunModels?: GunModels
+  gunModels?: GunModels,
 ): File | null {
   if (!gun) return modelFile ?? null;
   if (!gunModels) return null;
@@ -322,7 +270,7 @@ function resolveFlatTextureFile(
   frame: FlatFrameId,
   flatFrames?: FlatFrames,
   flatTextureFile?: File | null,
-  textureFile?: File | null
+  textureFile?: File | null,
 ): File | null {
   const fromFrames = flatFrames?.[frame] ?? null;
   if (fromFrames) return fromFrames;
@@ -336,25 +284,22 @@ function availableFrames(
   kind: DisplayKind | undefined,
   flatFrames?: FlatFrames,
   flatTextureFile?: File | null,
-  textureFile?: File | null
+  textureFile?: File | null,
 ): FlatFrameId[] {
   if (!isMultiFrameKind(kind)) return ["texture"];
   const ids: FlatFrameId[] =
     kind === "crossbow"
       ? ["texture", "pull_0", "pull_1", "pull_2", "charged"]
       : ["texture", "pull_0", "pull_1", "pull_2"];
-  return ids.filter((id) =>
-    Boolean(resolveFlatTextureFile(id, flatFrames, flatTextureFile, textureFile))
-  );
+  return ids.filter((id) => Boolean(resolveFlatTextureFile(id, flatFrames, flatTextureFile, textureFile)));
 }
 
 function resolveFlatArmPose(
   kind: DisplayKind | undefined,
   frame: FlatFrameId,
-  leftHand: boolean
+  leftHand: boolean,
 ): { pose: SteveArmPose; chargeProgress?: number } {
-  const pull =
-    frame === "pull_0" || frame === "pull_1" || frame === "pull_2";
+  const pull = frame === "pull_0" || frame === "pull_1" || frame === "pull_2";
   if (kind === "bow" || kind === "large_bow") {
     if (pull) {
       return { pose: leftHand ? "bow_pull_left" : "bow_pull" };
@@ -363,8 +308,7 @@ function resolveFlatArmPose(
   }
   if (kind === "crossbow") {
     if (pull) {
-      const chargeProgress =
-        frame === "pull_0" ? 0 : frame === "pull_1" ? 0.5 : 1;
+      const chargeProgress = frame === "pull_0" ? 0 : frame === "pull_1" ? 0.5 : 1;
       return {
         pose: leftHand ? "crossbow_charge_left" : "crossbow_charge",
         chargeProgress,
@@ -422,8 +366,7 @@ export default function ModelPreview({
   const gun = isGunKind(kind);
   const flat = isFlatKind(kind);
   const displayKind = flatDisplayKind(kind, flatDisplayPreset);
-  const potionTintMode =
-    flat && flatDisplayPreset === "generated" && Boolean(potionTintColor);
+  const potionTintMode = flat && flatDisplayPreset === "generated" && Boolean(potionTintColor);
 
   const hostRef = useRef<HTMLDivElement>(null);
   const runtimeRef = useRef<ViewerRuntime | null>(null);
@@ -441,9 +384,7 @@ export default function ModelPreview({
   const steveLiveRef = useRef<SteveMannequin | null>(null);
   const orbitInitializedRef = useRef(false);
   const orbitStateRef = useRef<OrbitState | null>(null);
-  const drinkAssetsRef = useRef<Awaited<
-    ReturnType<typeof loadDrinkAssetImages>
-  > | null>(null);
+  const drinkAssetsRef = useRef<Awaited<ReturnType<typeof loadDrinkAssetImages>> | null>(null);
   const syncGenRef = useRef(0);
   const layoutGenRef = useRef(0);
   const gripYRef = useRef(gripY);
@@ -452,20 +393,17 @@ export default function ModelPreview({
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [slot, setSlot] = useState<PreviewSlot>(
-    gun ? "carry_right" : "thirdperson_righthand"
-  );
+  const [slot, setSlot] = useState<PreviewSlot>(gun ? "carry_right" : "thirdperson_righthand");
   const [frame, setFrame] = useState<FlatFrameId>("texture");
   const [shieldMode, setShieldMode] = useState<"idle" | "blocking">("idle");
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
-  const [armModel, setArmModel] = useState<ArmModel>("default");
   const [showOuterLayer, setShowOuterLayer] = useState(true);
   const [contentVersion, setContentVersion] = useState(0);
   showOuterLayerRef.current = showOuterLayer;
 
   const frameOptions = useMemo(
     () => availableFrames(kind, flatFrames, flatTextureFile, textureFile),
-    [kind, flatFrames, flatTextureFile, textureFile]
+    [kind, flatFrames, flatTextureFile, textureFile],
   );
 
   const previewSlots = useMemo(() => {
@@ -475,20 +413,11 @@ export default function ModelPreview({
 
   const pipelineKey = `${Number(gun)}-${Number(flat)}-${kind ?? ""}-${displayKind}`;
 
-  const activeModelFile = resolveActiveModelFile(
-    gun,
-    slot,
-    modelFile,
-    gunModels
-  );
+  const activeModelFile = resolveActiveModelFile(gun, slot, modelFile, gunModels);
 
-  const activeFlatTexture = flat
-    ? resolveFlatTextureFile(frame, flatFrames, flatTextureFile, textureFile)
-    : null;
+  const activeFlatTexture = flat ? resolveFlatTextureFile(frame, flatFrames, flatTextureFile, textureFile) : null;
 
-  const hasPreview = flat
-    ? Boolean(activeFlatTexture) || potionTintMode
-    : Boolean(activeModelFile && textureFile);
+  const hasPreview = flat ? Boolean(activeFlatTexture) || potionTintMode : Boolean(activeModelFile && textureFile);
 
   const meshOnMannequin = isMannequinSlot(slot, gun);
 
@@ -499,14 +428,7 @@ export default function ModelPreview({
       return `flat:${fileIdentity(activeFlatTexture)}:${placement}`;
     }
     return `3d:${fileIdentity(activeModelFile)}:${fileIdentity(textureFile)}:${placement}`;
-  }, [
-    potionTintMode,
-    flat,
-    activeFlatTexture,
-    activeModelFile,
-    textureFile,
-    meshOnMannequin,
-  ]);
+  }, [potionTintMode, flat, activeFlatTexture, activeModelFile, textureFile, meshOnMannequin]);
 
   const layoutSignature = `${slot}:${frame}:${shieldMode}:${fileIdentity(playerSkinFile)}`;
 
@@ -518,7 +440,7 @@ export default function ModelPreview({
     setSlot(
       (preferred?.id as PreviewSlot | undefined) ??
         (previewSlots[0]?.id as PreviewSlot | undefined) ??
-        (gun ? "carry_right" : "thirdperson_righthand")
+        (gun ? "carry_right" : "thirdperson_righthand"),
     );
   }, [gun, previewSlots, slot]);
 
@@ -542,18 +464,22 @@ export default function ModelPreview({
       setError(message);
       onPreviewError?.(message);
     },
-    [onPreviewError]
+    [onPreviewError],
   );
 
   const buildItemMesh = useCallback(
     async (
       onMannequin: boolean,
-      tintColor: string | null
-    ): Promise<{ root: THREE.Object3D; texture: THREE.Texture; javaJson: JavaModelJson | null; canvas: HTMLCanvasElement | null }> => {
+      tintColor: string | null,
+    ): Promise<{
+      root: THREE.Object3D;
+      texture: THREE.Texture;
+      javaJson: JavaModelJson | null;
+      canvas: HTMLCanvasElement | null;
+    }> => {
       if (flat) {
         if (potionTintMode && tintColor) {
-          const assets =
-            drinkAssetsRef.current ?? (await loadDrinkAssetImages());
+          const assets = drinkAssetsRef.current ?? (await loadDrinkAssetImages());
           drinkAssetsRef.current = assets;
           const canvas = composeTintedPotionCanvas(tintColor, assets);
           if (!canvas) throw new Error("Invalid potion colour");
@@ -584,31 +510,14 @@ export default function ModelPreview({
       const modelText = await activeModelFile.text();
       const javaJson = parseJavaModelJson(modelText);
       const loaded = await loadTextureFromFile(textureFile);
-      const root = buildJavaModelGroup(
-        javaJson,
-        loaded.texture,
-        loaded.width,
-        loaded.height,
-        { center: !onMannequin }
-      );
+      const root = buildJavaModelGroup(javaJson, loaded.texture, loaded.width, loaded.height, { center: !onMannequin });
       return { root, texture: loaded.texture, javaJson, canvas: null };
     },
-    [
-      flat,
-      potionTintMode,
-      activeFlatTexture,
-      activeModelFile,
-      textureFile,
-    ]
+    [flat, potionTintMode, activeFlatTexture, activeModelFile, textureFile],
   );
 
   const applyLayout = useCallback(
-    async (
-      runtime: ViewerRuntime,
-      content: ContentRefs,
-      resetOrbit: boolean,
-      gen: number
-    ): Promise<void> => {
+    async (runtime: ViewerRuntime, content: ContentRefs, resetOrbit: boolean, gen: number): Promise<void> => {
       const { scene, camera, controls } = runtime;
       const onMannequin = isMannequinSlot(slot, gun);
       const leftHand = isLeftHandSlot(slot);
@@ -642,7 +551,6 @@ export default function ModelPreview({
           content.steveTexture = steveTex;
         }
         const detected = inferArmModelFromTexture(content.steveTexture);
-        setArmModel(detected);
         const steveRoot = createSteveMannequin(content.steveTexture, detected);
         if (isStale()) {
           disposeObject3D(steveRoot);
@@ -676,37 +584,21 @@ export default function ModelPreview({
         steveLiveRef.current = steveRoot;
         content.steveRoot = steveRoot;
 
-        const displayTabName: DisplayTabName =
-          slot === "head" ? "head" : "thirdperson_righthand";
+        const displayTabName: DisplayTabName = slot === "head" ? "head" : "thirdperson_righthand";
 
         const held = new THREE.Group();
         held.name = "heldItem";
 
         if (flat) {
-          const tab = resolveFlatDisplayTab(
-            displayKind,
-            "thirdperson_righthand",
-            gripYRef.current
-          );
+          const tab = resolveFlatDisplayTab(displayKind, "thirdperson_righthand", gripYRef.current);
           applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
           heldItemRef.current = held;
           heldMirrorLeftRef.current = leftHand;
-        } else if (
-          kind === "shield" &&
-          shieldMode === "blocking" &&
-          slot !== "head"
-        ) {
-          const tab = resolveShieldBlockingTab(
-            content.javaJson ?? { elements: [] },
-            "thirdperson_righthand"
-          );
+        } else if (kind === "shield" && shieldMode === "blocking" && slot !== "head") {
+          const tab = resolveShieldBlockingTab(content.javaJson ?? { elements: [] }, "thirdperson_righthand");
           applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
         } else {
-          const tab = resolveDisplayTab(
-            content.javaJson ?? { elements: [] },
-            displayTabName,
-            kind
-          );
+          const tab = resolveDisplayTab(content.javaJson ?? { elements: [] }, displayTabName, kind);
           applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
         }
 
@@ -754,7 +646,7 @@ export default function ModelPreview({
         restoreOrbit(camera, controls, orbitStateRef.current);
       }
     },
-    [slot, gun, flat, kind, frame, shieldMode, displayKind, playerSkinFile]
+    [slot, gun, flat, kind, frame, shieldMode, displayKind, playerSkinFile],
   );
 
   // Viewer lifecycle: renderer + camera + controls persist until pipeline changes.
@@ -861,10 +753,7 @@ export default function ModelPreview({
 
     void (async () => {
       try {
-        const built = await buildItemMesh(
-          meshOnMannequin,
-          potionTintColor ?? null
-        );
+        const built = await buildItemMesh(meshOnMannequin, potionTintColor ?? null);
         if (gen !== syncGenRef.current) {
           disposeObject3D(built.root);
           built.texture.dispose();
@@ -886,8 +775,7 @@ export default function ModelPreview({
         reportError(null);
       } catch (err) {
         if (gen !== syncGenRef.current) return;
-        const message =
-          err instanceof Error ? err.message : "Could not build preview";
+        const message = err instanceof Error ? err.message : "Could not build preview";
         reportError(message);
         setStatus("error");
       }
@@ -916,8 +804,7 @@ export default function ModelPreview({
         reportError(null);
       } catch (err) {
         if (gen !== layoutGenRef.current) return;
-        const message =
-          err instanceof Error ? err.message : "Could not update preview";
+        const message = err instanceof Error ? err.message : "Could not update preview";
         reportError(message);
         setStatus("error");
       }
@@ -936,8 +823,7 @@ export default function ModelPreview({
 
     void (async () => {
       try {
-        const assets =
-          drinkAssetsRef.current ?? (await loadDrinkAssetImages());
+        const assets = drinkAssetsRef.current ?? (await loadDrinkAssetImages());
         drinkAssetsRef.current = assets;
         const canvas = composeTintedPotionCanvas(potionTintColor, assets);
         if (!canvas || !content.itemTexture || !content.itemRoot) return;
@@ -956,11 +842,7 @@ export default function ModelPreview({
     const held = heldItemRef.current;
     if (!held || !flat || kind !== "large_handheld") return;
     const leftHand = heldMirrorLeftRef.current;
-    const tab = resolveFlatDisplayTab(
-      displayKind,
-      "thirdperson_righthand",
-      gripY
-    );
+    const tab = resolveFlatDisplayTab(displayKind, "thirdperson_righthand", gripY);
     applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
   }, [gripY, flat, kind, displayKind, slot]);
 
@@ -981,9 +863,7 @@ export default function ModelPreview({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Model preview
-        </span>
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">Model preview</span>
         <div
           role="radiogroup"
           aria-label="Display preview"
@@ -1050,33 +930,29 @@ export default function ModelPreview({
           aria-label="Animation frame"
           className="inline-flex max-w-full flex-wrap self-start rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] p-0.5"
         >
-          {FRAME_CHIPS.filter((chip) => frameOptions.includes(chip.id)).map(
-            (chip) => {
-              const selected = frame === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setFrame(chip.id)}
-                  className={`rounded-sm px-2.5 py-1 text-xs transition ${
-                    selected
-                      ? "bg-[color-mix(in_srgb,var(--tfmc-accent)_22%,var(--tfmc-forest))] text-[var(--tfmc-cream)]"
-                      : "text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              );
-            }
-          )}
+          {FRAME_CHIPS.filter((chip) => frameOptions.includes(chip.id)).map((chip) => {
+            const selected = frame === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setFrame(chip.id)}
+                className={`rounded-sm px-2.5 py-1 text-xs transition ${
+                  selected
+                    ? "bg-[color-mix(in_srgb,var(--tfmc-accent)_22%,var(--tfmc-forest))] text-[var(--tfmc-cream)]"
+                    : "text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
-      <div
-        className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]"
-      >
+      <div className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]">
         <div ref={hostRef} className="absolute inset-0" />
 
         {status === "loading" ? (
@@ -1104,9 +980,7 @@ export default function ModelPreview({
       {mannequinPreview ? (
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-left sm:flex-initial">
-            <span className="text-xs font-medium text-[var(--tfmc-stone)]">
-              Preview skin
-            </span>
+            <span className="text-xs font-medium text-[var(--tfmc-stone)]">Preview skin</span>
             <input
               type="file"
               accept="image/png,.png"
@@ -1141,11 +1015,7 @@ export default function ModelPreview({
           ) : null}
         </div>
       ) : null}
-      {status === "ready" ? (
-        <p className="text-xs text-[var(--tfmc-mist)]">
-          Drag to rotate, scroll to zoom.
-        </p>
-      ) : null}
+      {status === "ready" ? <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p> : null}
     </div>
   );
 }

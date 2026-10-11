@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  indexStoredProvinceData,
-  storedTradeShares,
-} from "./useProvinceHover";
+import { indexStoredProvinceData, storedTradeShares } from "./useProvinceHover";
 
 describe("storedTradeShares", () => {
   it("normalises a stored day's raw per-guild trade into ratios", () => {
-    expect({ ...storedTradeShares({ Lantan: { trade: 0.73, production: 0 } }) })
-      .toEqual({ Lantan: 1 });
+    expect({ ...storedTradeShares({ Lantan: { trade: 0.73, production: 0 } }) }).toEqual({ Lantan: 1 });
   });
 
   it("splits proportionally across guilds and ignores production", () => {
@@ -42,9 +38,7 @@ describe("storedTradeShares", () => {
   it("has no prototype, so a guild named __proto__ is an own key", () => {
     // Object-literal `__proto__` sets the prototype rather than a key, so the
     // hostile input is built the way it actually arrives: parsed JSON.
-    const shares = storedTradeShares(
-      JSON.parse('{"__proto__": {"trade": 1}}')
-    );
+    const shares = storedTradeShares(JSON.parse('{"__proto__": {"trade": 1}}'));
     expect(Object.getPrototypeOf(shares)).toBeNull();
     expect(Object.keys(shares)).toEqual(["__proto__"]);
   });

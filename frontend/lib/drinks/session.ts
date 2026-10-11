@@ -65,10 +65,7 @@ function readStored(): StoredSession | null {
     if (stops !== undefined) {
       out.name_colour_stops = stops;
     }
-    const lastId =
-      typeof parsed.last_submission_id === "string"
-        ? parsed.last_submission_id.trim()
-        : "";
+    const lastId = typeof parsed.last_submission_id === "string" ? parsed.last_submission_id.trim() : "";
     if (lastId) {
       out.last_submission_id = lastId;
     }
@@ -135,9 +132,7 @@ export function drinksSessionFrom(result: DrinkRedeemResult): DrinksSession {
     allow_drink_texture: result.allow_drink_texture === true,
     allow_drink_message: result.allow_drink_message === true,
     name_colour_stops:
-      typeof result.name_colour_stops === "number"
-        ? Math.max(0, Math.floor(result.name_colour_stops))
-        : 0,
+      typeof result.name_colour_stops === "number" ? Math.max(0, Math.floor(result.name_colour_stops)) : 0,
   };
 }
 
@@ -168,9 +163,7 @@ export function clearSession(): void {
   sessionStorage.removeItem(STORAGE_KEY);
 }
 
-export function isSessionValid(
-  session: DrinksSession | null = getSession()
-): boolean {
+export function isSessionValid(session: DrinksSession | null = getSession()): boolean {
   if (!session) return false;
   const exp = Date.parse(session.expires_at);
   if (Number.isNaN(exp)) return false;

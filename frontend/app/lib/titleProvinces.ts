@@ -13,10 +13,7 @@ export type TitleLayers = {
   trade?: Record<string, TitleEntity>;
 };
 
-function unionEntityProvinces(
-  entity: TitleEntity | undefined,
-  resolveChild: (childId: string) => number[]
-): number[] {
+function unionEntityProvinces(entity: TitleEntity | undefined, resolveChild: (childId: string) => number[]): number[] {
   if (!entity) return [];
 
   const ids: number[] = [];
@@ -33,81 +30,50 @@ function dedupe(ids: number[]): number[] {
   return [...new Set(ids)];
 }
 
-export function resolveCountyProvinces(
-  countyId: string,
-  layers: TitleLayers
-): number[] {
+export function resolveCountyProvinces(countyId: string, layers: TitleLayers): number[] {
   const entity = layers.county[countyId];
   if (!entity) {
     return [];
   }
-  return unionEntityProvinces(entity, (childId) =>
-    resolveCountyProvinces(childId, layers)
-  );
+  return unionEntityProvinces(entity, (childId) => resolveCountyProvinces(childId, layers));
 }
 
-export function resolveDuchyProvinces(
-  duchyId: string,
-  layers: TitleLayers
-): number[] {
+export function resolveDuchyProvinces(duchyId: string, layers: TitleLayers): number[] {
   const entity = layers.duchy?.[duchyId];
   if (entity) {
-    return unionEntityProvinces(entity, (childId) =>
-      resolveCountyProvinces(childId, layers)
-    );
+    return unionEntityProvinces(entity, (childId) => resolveCountyProvinces(childId, layers));
   }
 
   return resolveCountyProvinces(duchyId, layers);
 }
 
-export function resolveKingdomProvinces(
-  kingdomId: string,
-  layers: TitleLayers
-): number[] {
+export function resolveKingdomProvinces(kingdomId: string, layers: TitleLayers): number[] {
   const entity = layers.kingdom?.[kingdomId];
   if (entity) {
-    return unionEntityProvinces(entity, (childId) =>
-      resolveDuchyProvinces(childId, layers)
-    );
+    return unionEntityProvinces(entity, (childId) => resolveDuchyProvinces(childId, layers));
   }
 
   return resolveCountyProvinces(kingdomId, layers);
 }
 
-export function resolveTitleProvinces(
-  entityId: string,
-  mapType: MapMode,
-  layers: TitleLayers
-): number[] {
+export function resolveTitleProvinces(entityId: string, mapType: MapMode, layers: TitleLayers): number[] {
   switch (mapType) {
     case "county":
       return dedupe(resolveCountyProvinces(entityId, layers));
     case "duchy": {
       const entity = layers.duchy?.[entityId];
       if (!entity) return [];
-      return dedupe(
-        unionEntityProvinces(entity, (childId) =>
-          resolveCountyProvinces(childId, layers)
-        )
-      );
+      return dedupe(unionEntityProvinces(entity, (childId) => resolveCountyProvinces(childId, layers)));
     }
     case "kingdom": {
       const entity = layers.kingdom?.[entityId];
       if (!entity) return [];
-      return dedupe(
-        unionEntityProvinces(entity, (childId) =>
-          resolveDuchyProvinces(childId, layers)
-        )
-      );
+      return dedupe(unionEntityProvinces(entity, (childId) => resolveDuchyProvinces(childId, layers)));
     }
     case "empire": {
       const entity = layers.empire?.[entityId];
       if (!entity) return [];
-      return dedupe(
-        unionEntityProvinces(entity, (childId) =>
-          resolveKingdomProvinces(childId, layers)
-        )
-      );
+      return dedupe(unionEntityProvinces(entity, (childId) => resolveKingdomProvinces(childId, layers)));
     }
     case "trade":
       return [...(layers.trade?.[entityId]?.provinces ?? [])];

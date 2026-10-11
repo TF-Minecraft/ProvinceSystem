@@ -17,10 +17,7 @@ export class SkinsApiError extends Error {
 }
 
 /** fetch with a clearer error when the API is unreachable. */
-async function apiFetch(
-  input: string,
-  init?: RequestInit
-): Promise<Response> {
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init);
   } catch {
@@ -53,10 +50,7 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
   const data = await parseJson(res);
 
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Redeem failed (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Redeem failed (${res.status})`), res.status);
   }
   return readRedeemResult(res, data);
 }
@@ -180,13 +174,9 @@ export async function inspectCode(code: string): Promise<InspectCodeResult> {
   }
 
   const entRaw =
-    body.entitlements && typeof body.entitlements === "object"
-      ? (body.entitlements as Record<string, unknown>)
-      : {};
+    body.entitlements && typeof body.entitlements === "object" ? (body.entitlements as Record<string, unknown>) : {};
   const skinKindsRaw = entRaw.skin_kinds;
-  const skinKinds: string[] = Array.isArray(skinKindsRaw)
-    ? skinKindsRaw.map((k) => String(k))
-    : [];
+  const skinKinds: string[] = Array.isArray(skinKindsRaw) ? skinKindsRaw.map((k) => String(k)) : [];
 
   const permsRaw =
     body.staff_token_perms && typeof body.staff_token_perms === "object"
@@ -208,20 +198,13 @@ export async function inspectCode(code: string): Promise<InspectCodeResult> {
     site_staff_access: body.site_staff_access === true,
     staff_token_perms: {
       "tfmcweb.token.create": permsRaw["tfmcweb.token.create"] === true,
-      "tfmcweb.token.create.staff":
-        permsRaw["tfmcweb.token.create.staff"] === true,
+      "tfmcweb.token.create.staff": permsRaw["tfmcweb.token.create.staff"] === true,
     },
     entitlements: {
       meta_synced: entRaw.meta_synced === true,
-      max_3d_pair_bytes: Math.max(
-        0,
-        Math.floor(Number(entRaw.max_3d_pair_bytes) || 0)
-      ),
+      max_3d_pair_bytes: Math.max(0, Math.floor(Number(entRaw.max_3d_pair_bytes) || 0)),
       skin_kinds: skinKinds,
-      name_colour_stops: Math.max(
-        0,
-        Math.floor(Number(entRaw.name_colour_stops) || 0)
-      ),
+      name_colour_stops: Math.max(0, Math.floor(Number(entRaw.name_colour_stops) || 0)),
       allow_armor_3d_helmet: entRaw.allow_armor_3d_helmet === true,
     },
   };
@@ -248,10 +231,7 @@ export async function getPlayerMeta(sessionToken: string): Promise<PlayerMeta> {
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Player meta failed (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Player meta failed (${res.status})`), res.status);
   }
   const body = (data || {}) as Record<string, unknown>;
   const stops = Number(body.name_colour_stops);
@@ -278,25 +258,19 @@ export async function getPlayerMeta(sessionToken: string): Promise<PlayerMeta> {
   }
   const flags: Record<string, boolean> = {};
   if (body.permission_flags && typeof body.permission_flags === "object") {
-    for (const [k, v] of Object.entries(
-      body.permission_flags as Record<string, unknown>
-    )) {
+    for (const [k, v] of Object.entries(body.permission_flags as Record<string, unknown>)) {
       if (!k.trim()) continue;
       flags[k] = v === true;
     }
   }
   return {
-    name_colour_stops:
-      Number.isFinite(stops) && stops >= 0 ? Math.floor(stops) : 0,
+    name_colour_stops: Number.isFinite(stops) && stops >= 0 ? Math.floor(stops) : 0,
     allow_drink_texture: body.allow_drink_texture === true,
     allow_drink_message: body.allow_drink_message === true,
     max_alive_characters: maxAlive,
-    wardrobe_skin_slots:
-      Number.isFinite(wardrobe) && wardrobe >= 1 ? Math.floor(wardrobe) : 1,
-    max_3d_pair_bytes:
-      Number.isFinite(pair) && pair >= 0 ? Math.floor(pair) : 0,
-    skin_token_cooldown_days:
-      Number.isFinite(cooldown) && cooldown >= -1 ? Math.floor(cooldown) : -1,
+    wardrobe_skin_slots: Number.isFinite(wardrobe) && wardrobe >= 1 ? Math.floor(wardrobe) : 1,
+    max_3d_pair_bytes: Number.isFinite(pair) && pair >= 0 ? Math.floor(pair) : 0,
+    skin_token_cooldown_days: Number.isFinite(cooldown) && cooldown >= -1 ? Math.floor(cooldown) : -1,
     skin_kinds: kinds,
     allow_armor_3d_helmet: body.allow_armor_3d_helmet === true,
     permission_flags: flags,
@@ -366,25 +340,17 @@ export async function checkSubmissionConflict(input: {
   if (input.display_name.trim()) {
     params.set("display_name", input.display_name.trim());
   }
-  const res = await apiFetch(
-    `${getApiBase()}/skins/submissions/check?${params.toString()}`,
-    {
-      headers: { Authorization: `Bearer ${input.sessionToken}` },
-    }
-  );
+  const res = await apiFetch(`${getApiBase()}/skins/submissions/check?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${input.sessionToken}` },
+  });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Conflict check failed (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Conflict check failed (${res.status})`), res.status);
   }
   return data as SubmissionCheckResult;
 }
 
-export async function createSubmission(
-  input: CreateSubmissionInput
-): Promise<SubmissionPublic> {
+export async function createSubmission(input: CreateSubmissionInput): Promise<SubmissionPublic> {
   const form = new FormData();
   form.append("kind", input.kind);
   form.append("display_name", input.display_name);
@@ -433,10 +399,7 @@ export async function createSubmission(
 
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Upload failed (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Upload failed (${res.status})`), res.status);
   }
   return data as SubmissionPublic;
 }
@@ -445,70 +408,45 @@ export async function getCatalog(): Promise<SkinsCatalog> {
   const res = await apiFetch(`${getApiBase()}/skins/catalog`);
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Catalog failed (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Catalog failed (${res.status})`), res.status);
   }
   const body = (data || {}) as Partial<SkinsCatalog>;
   return {
     categories: Array.isArray(body.categories) ? body.categories : [],
     scrolls: Array.isArray(body.scrolls) ? body.scrolls : [],
-    entitlements: body.entitlements
-      ? parseEntitlements(body.entitlements)
-      : EMPTY_ENTITLEMENTS,
-    updated_at:
-      typeof body.updated_at === "string" ? body.updated_at : null,
+    entitlements: body.entitlements ? parseEntitlements(body.entitlements) : EMPTY_ENTITLEMENTS,
+    updated_at: typeof body.updated_at === "string" ? body.updated_at : null,
   };
 }
 
-export async function getReviewSheet(
-  id: string,
-  sessionToken: string
-): Promise<string> {
-  const res = await apiFetch(
-    `${getApiBase()}/skins/submissions/${id}/review-sheet`,
-    {
-      headers: { Authorization: `Bearer ${sessionToken}` },
-    }
-  );
+export async function getReviewSheet(id: string, sessionToken: string): Promise<string> {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions/${id}/review-sheet`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   if (!res.ok) {
     const data = await parseJson(res);
-    throw new SkinsApiError(
-      detailMessage(data, `Could not load review sheet (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Could not load review sheet (${res.status})`), res.status);
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
 
 /** Object URL of the owner's wardrobe picture, or null when there is none yet. */
-export async function getSkinThumbnail(
-  id: string,
-  sessionToken: string
-): Promise<string | null> {
-  const res = await apiFetch(
-    `${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/thumbnail`,
-    { headers: { Authorization: `Bearer ${sessionToken}` } }
-  );
+export async function getSkinThumbnail(id: string, sessionToken: string): Promise<string | null> {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/thumbnail`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   if (!res.ok) return null;
   return URL.createObjectURL(await res.blob());
 }
 
-export async function getSubmission(
-  id: string,
-  sessionToken: string
-): Promise<SubmissionPublic> {
+export async function getSubmission(id: string, sessionToken: string): Promise<SubmissionPublic> {
   const res = await apiFetch(`${getApiBase()}/skins/submissions/${id}`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
   });
   const data = await parseJson(res);
   if (!res.ok) {
-    throw new SkinsApiError(
-      detailMessage(data, `Could not load submission (${res.status})`),
-      res.status
-    );
+    throw new SkinsApiError(detailMessage(data, `Could not load submission (${res.status})`), res.status);
   }
   return data as SubmissionPublic;
 }

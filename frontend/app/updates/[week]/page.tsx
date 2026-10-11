@@ -7,11 +7,7 @@ import { isWeekKey, weekLabel } from "@/lib/patchnotes/notes";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ week: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ week: string }> }): Promise<Metadata> {
   const { week } = await params;
   if (!isWeekKey(week)) {
     return { title: "Updates · TFMC" };

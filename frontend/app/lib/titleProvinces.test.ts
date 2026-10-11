@@ -2,12 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import {
-  resolveDuchyProvinces,
-  resolveTitleProvinces,
-  type TitleEntity,
-  type TitleLayers,
-} from "./titleProvinces";
+import { resolveDuchyProvinces, resolveTitleProvinces, type TitleEntity, type TitleLayers } from "./titleProvinces";
 
 const fixtureLayers: TitleLayers = {
   county: {
@@ -34,64 +29,39 @@ const fixtureLayers: TitleLayers = {
 
 describe("resolveTitleProvinces", () => {
   it("returns county provinces directly", () => {
-    expect(resolveTitleProvinces("COUNTY_1", "county", fixtureLayers)).toEqual([
-      1, 2, 3,
-    ]);
+    expect(resolveTitleProvinces("COUNTY_1", "county", fixtureLayers)).toEqual([1, 2, 3]);
   });
 
   it("rolls up duchy through counties", () => {
-    expect(resolveTitleProvinces("DUCHY_1", "duchy", fixtureLayers)).toEqual([
-      1, 2, 3, 4, 5,
-    ]);
+    expect(resolveTitleProvinces("DUCHY_1", "duchy", fixtureLayers)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("rolls up kingdom through duchy", () => {
-    expect(resolveTitleProvinces("KINGDOM_1", "kingdom", fixtureLayers)).toEqual(
-      [1, 2, 3, 4, 5]
-    );
+    expect(resolveTitleProvinces("KINGDOM_1", "kingdom", fixtureLayers)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("rolls up empire through kingdom with no duplicates", () => {
-    expect(resolveTitleProvinces("EMPIRE_1", "empire", fixtureLayers)).toEqual([
-      1, 2, 3, 4, 5,
-    ]);
+    expect(resolveTitleProvinces("EMPIRE_1", "empire", fixtureLayers)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("falls through kingdom child to county when not in duchy layer", () => {
-    expect(
-      resolveTitleProvinces("DIRECT_COUNTY", "kingdom", fixtureLayers)
-    ).toEqual([100, 101]);
+    expect(resolveTitleProvinces("DIRECT_COUNTY", "kingdom", fixtureLayers)).toEqual([100, 101]);
   });
 
   it("unions direct provinces and nested titles on incomplete holders", () => {
-    expect(resolveDuchyProvinces("INCOMPLETE", fixtureLayers)).toEqual([
-      99, 200,
-    ]);
+    expect(resolveDuchyProvinces("INCOMPLETE", fixtureLayers)).toEqual([99, 200]);
   });
 
   it("returns trade guild provinces", () => {
-    expect(resolveTitleProvinces("guild_a", "trade", fixtureLayers)).toEqual([
-      10, 20,
-    ]);
+    expect(resolveTitleProvinces("guild_a", "trade", fixtureLayers)).toEqual([10, 20]);
   });
 });
 
 describe("KINGDOM_1 spot-check (main defines)", () => {
-  const definesDir = join(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "backend",
-    "src",
-    "defines",
-    "main"
-  );
+  const definesDir = join(__dirname, "..", "..", "..", "backend", "src", "defines", "main");
 
   function loadJson<T>(file: string): T {
-    return JSON.parse(
-      readFileSync(join(definesDir, file), "utf-8")
-    ) as T;
+    return JSON.parse(readFileSync(join(definesDir, file), "utf-8")) as T;
   }
 
   it("matches union of COUNTY_1 through COUNTY_15 provinces", () => {
@@ -120,8 +90,6 @@ describe("KINGDOM_1 spot-check (main defines)", () => {
     ].flatMap((id) => county[id]?.provinces ?? []);
 
     const result = resolveTitleProvinces("KINGDOM_1", "kingdom", layers);
-    expect(result.sort((a, b) => a - b)).toEqual(
-      [...new Set(expected)].sort((a, b) => a - b)
-    );
+    expect(result.sort((a, b) => a - b)).toEqual([...new Set(expected)].sort((a, b) => a - b));
   });
 });

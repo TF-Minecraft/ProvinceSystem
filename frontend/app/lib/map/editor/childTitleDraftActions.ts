@@ -9,7 +9,7 @@ export type ToggleChildInParentOptions = {
 export function toggleChildInParent(
   entry: EditorTitleEntry,
   childId: string,
-  options?: ToggleChildInParentOptions
+  options?: ToggleChildInParentOptions,
 ): EditorTitleEntry {
   const titles = [...(entry.titles ?? [])];
   const index = titles.indexOf(childId);
@@ -29,10 +29,7 @@ export function toggleChildInParent(
   return { ...entry, titles, rgb };
 }
 
-export function removeTitleFromDraft(
-  draft: TitleDraft,
-  titleId: string
-): TitleDraft {
+export function removeTitleFromDraft(draft: TitleDraft, titleId: string): TitleDraft {
   const next = { ...draft };
   delete next[titleId];
   return next;

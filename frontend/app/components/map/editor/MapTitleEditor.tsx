@@ -9,10 +9,7 @@ import { useEditorProvinceIndex } from "@/app/hooks/useEditorProvinceIndex";
 import { useEditorExport } from "@/app/hooks/useEditorExport";
 import { useEditorDraft } from "@/app/hooks/useEditorDraft";
 import { useTitleTierEditor } from "@/app/hooks/useTitleTierEditor";
-import {
-  canSelectProvince,
-  buildProvinceToCountyId,
-} from "@/app/lib/map/editor/countyAssignment";
+import { canSelectProvince, buildProvinceToCountyId } from "@/app/lib/map/editor/countyAssignment";
 import { isChildTierEditor } from "@/app/lib/map/editor/editorTierConfig";
 import type { EditorTier } from "@/lib/map/api";
 
@@ -34,11 +31,7 @@ type MapTitleEditorProps = {
   sessionToken: string;
 };
 
-export default function MapTitleEditor({
-  mapId,
-  initialTier,
-  sessionToken,
-}: MapTitleEditorProps) {
+export default function MapTitleEditor({ mapId, initialTier, sessionToken }: MapTitleEditorProps) {
   const editor = useEditorDraft({
     mapId,
     initialTier,
@@ -129,9 +122,7 @@ export default function MapTitleEditor({
     if (!childTierMode) return;
 
     const childPickLoading =
-      titleTierEditor.childLayerLoading ||
-      titleTierEditor.childPickLoading ||
-      titleTierEditor.titleLayersLoading;
+      titleTierEditor.childLayerLoading || titleTierEditor.childPickLoading || titleTierEditor.titleLayersLoading;
 
     if (childPickLoading) {
       loadProgress.markActive("childPick");
@@ -172,13 +163,10 @@ export default function MapTitleEditor({
         usedRgbs,
       });
     },
-    [countyMode, editor, index]
+    [countyMode, editor, index],
   );
 
-  const showLoadOverlay =
-    !loadProgress.ready &&
-    !editor.error &&
-    !(needsProvinceIndex && provinceIndexError);
+  const showLoadOverlay = !loadProgress.ready && !editor.error && !(needsProvinceIndex && provinceIndexError);
 
   return (
     <div className="relative min-h-[calc(100dvh-var(--tfmc-header-h))] overflow-x-hidden text-[var(--tfmc-cream)]">
@@ -188,15 +176,11 @@ export default function MapTitleEditor({
       />
       <div className="relative z-10 mx-auto flex min-w-0 max-w-[90rem] flex-col gap-4 px-4 py-6 sm:px-6 md:py-8">
         <header>
-          <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Staff tools
-          </p>
+          <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">Staff tools</p>
           <h1 className="font-[family-name:var(--font-fraunces)] text-3xl font-medium tracking-tight text-[var(--tfmc-cream)] sm:text-4xl">
             Map editor
           </h1>
-          <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
-            Editing: {mapDisplayName(mapId)}
-          </p>
+          <p className="mt-1 text-sm text-[var(--tfmc-stone)]">Editing: {mapDisplayName(mapId)}</p>
         </header>
 
         <div className="flex flex-wrap gap-2">
@@ -218,9 +202,7 @@ export default function MapTitleEditor({
             );
           })}
           {editor.anyTierDirty ? (
-            <span className="self-center text-xs text-[var(--tfmc-mist)]">
-              Unsaved changes
-            </span>
+            <span className="self-center text-xs text-[var(--tfmc-mist)]">Unsaved changes</span>
           ) : null}
         </div>
 
@@ -252,13 +234,8 @@ export default function MapTitleEditor({
 
         <div className="relative flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start">
           {showLoadOverlay ? (
-            <div
-              className="absolute inset-0 z-20 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_55%,transparent)] p-6"
-            >
-              <EditorLoadProgress
-                percent={loadProgress.percent}
-                label={loadProgress.label}
-              />
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_55%,transparent)] p-6">
+              <EditorLoadProgress percent={loadProgress.percent} label={loadProgress.label} />
             </div>
           ) : null}
 

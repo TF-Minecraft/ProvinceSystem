@@ -6,10 +6,7 @@ function capitalizeId(raw: string | null | undefined): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function catalogName(
-  rows: CatalogIdRow[] | undefined,
-  id: string | null | undefined
-): string {
+function catalogName(rows: CatalogIdRow[] | undefined, id: string | null | undefined): string {
   const want = String(id || "").trim();
   if (!want || !rows?.length) return "";
   const row = rows.find((r) => r.id === want);
@@ -20,7 +17,7 @@ function catalogName(
 /** Prefer synced display name, then catalog name by id, then capitalized id. */
 export function displayRace(
   item: Pick<CharacterListItem, "race" | "race_name">,
-  catalog?: Pick<CreationCatalog, "races"> | null
+  catalog?: Pick<CreationCatalog, "races"> | null,
 ): string {
   const synced = String(item.race_name || "").trim();
   if (synced) return synced;
@@ -40,7 +37,7 @@ export function traitSelectionGroupLabel(key: string): string {
 /** Prefer synced display name, then catalog name by id, then capitalized id. */
 export function displayClass(
   item: Pick<CharacterListItem, "class" | "class_name">,
-  catalog?: Pick<CreationCatalog, "classes"> | null
+  catalog?: Pick<CreationCatalog, "classes"> | null,
 ): string {
   const synced = String(item.class_name || "").trim();
   if (synced) return synced;

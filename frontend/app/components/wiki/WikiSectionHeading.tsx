@@ -26,12 +26,12 @@ export default function WikiSectionHeading({ children, id, intro }: WikiSectionH
         className={cx(
           "mt-8 scroll-mt-[calc(var(--tfmc-header-h)+1rem)]",
           wikiDisplayFont,
-          "text-xl text-[var(--tfmc-cream)]"
+          "text-xl text-[var(--tfmc-cream)]",
         )}
       >
         {children}
       </h2>
-      {intro ? <p className={cx("mt-1", wikiBodyText)}>{intro}</p>: null}
+      {intro ? <p className={cx("mt-1", wikiBodyText)}>{intro}</p> : null}
     </>
   );
 }

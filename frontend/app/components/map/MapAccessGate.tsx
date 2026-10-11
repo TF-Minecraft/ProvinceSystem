@@ -9,16 +9,9 @@ type MapAccessGateProps = {
   mapDisplayName?: string;
 };
 
-export default function MapAccessGate({
-  reason,
-  mapDisplayName = "this map",
-}: MapAccessGateProps) {
+export default function MapAccessGate({ reason, mapDisplayName = "this map" }: MapAccessGateProps) {
   const title =
-    reason === "login"
-      ? "Sign in to view this map"
-      : reason === "permission"
-        ? "Staff only"
-        : "Unable to load map";
+    reason === "login" ? "Sign in to view this map" : reason === "permission" ? "Staff only" : "Unable to load map";
 
   const body =
     reason === "login"
@@ -33,9 +26,7 @@ export default function MapAccessGate({
         <h1 className="font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)]">
           {title}
         </h1>
-        <p className="mt-4 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-          {body}
-        </p>
+        <p className="mt-4 text-sm leading-relaxed text-[var(--tfmc-stone)]">{body}</p>
         {(reason === "login" || reason === "permission") && (
           <Link
             href="/profile"

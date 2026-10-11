@@ -37,7 +37,7 @@ describe("exportChronicleGif memory ceiling", () => {
         loop: true,
         centroids: null,
         stampDay: false,
-      })
+      }),
     ).rejects.toThrow(/fewer days or a smaller size/i);
   });
 
@@ -61,7 +61,7 @@ describe("exportChronicleGif memory ceiling", () => {
         loop: true,
         centroids: null,
         stampDay: false,
-      })
+      }),
     ).rejects.not.toThrow(/fewer days or a smaller size/i);
   });
 });

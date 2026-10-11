@@ -23,7 +23,7 @@ export function pickTitleIdAt(
   imageData: ImageData,
   x: number,
   y: number,
-  rgbToTitleId: Record<string, string>
+  rgbToTitleId: Record<string, string>,
 ): string | null {
   const { width, height, data } = imageData;
   if (x < 0 || y < 0 || x >= width || y >= height) {
@@ -34,10 +34,7 @@ export function pickTitleIdAt(
   return rgbToTitleId[rgb] ?? null;
 }
 
-export function buildTitlePickIndex(
-  draft: TitleDraft,
-  imageData: ImageData
-): TitlePickIndex {
+export function buildTitlePickIndex(draft: TitleDraft, imageData: ImageData): TitlePickIndex {
   return {
     width: imageData.width,
     height: imageData.height,

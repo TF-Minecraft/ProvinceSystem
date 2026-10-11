@@ -3,25 +3,25 @@ import CraftingGrid from "../../components/wiki/CraftingGrid";
 import { StationLink, WikiPage } from "@/app/components/wiki";
 import { allRecipes, catalogNames, dropOnlyMaterials, materialUnpackingRecipeKeys, slugify } from "../data";
 
-const stationOrder = [
-  "Ingot Station",
-  "Alchemy Station",
-  "Magic Station",
-  "Engineer Station",
-  "Medicine Station",
-];
+const stationOrder = ["Ingot Station", "Alchemy Station", "Magic Station", "Engineer Station", "Medicine Station"];
 
 export default function MaterialsPage() {
   // Every registered recipe whose output is a catalogued material, hand-written
   // or generated from the server config, grouped by the station that makes it.
   const byStation = stationOrder.map((station) => ({
     station,
-    recipes: allRecipes.filter((r) => r.station === station && catalogNames.has(r.output.name) && !materialUnpackingRecipeKeys.has(r.key)),
+    recipes: allRecipes.filter(
+      (r) => r.station === station && catalogNames.has(r.output.name) && !materialUnpackingRecipeKeys.has(r.key),
+    ),
   }));
 
   return (
-    <WikiPage lastModified="2026-10-11" title="Materials" width="lg" intro="Every custom material: ingots, alchemy components, magical cores and more.">
-
+    <WikiPage
+      lastModified="2026-10-11"
+      title="Materials"
+      width="lg"
+      intro="Every custom material: ingots, alchemy components, magical cores and more."
+    >
       {byStation.map(({ station, recipes }) =>
         recipes.length ? (
           <section key={station} className="mt-10">
@@ -34,7 +34,7 @@ export default function MaterialsPage() {
               ))}
             </div>
           </section>
-        ): null
+        ) : null,
       )}
 
       <section className="mt-10">
@@ -56,12 +56,10 @@ export default function MaterialsPage() {
                   alt={m.name}
                   className="h-8 w-8 shrink-0 [image-rendering:pixelated] transition-transform duration-150 group-hover:scale-105"
                 />
-              ): (
+              ) : (
                 <div className="h-8 w-8 shrink-0 border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]" />
               )}
-              <span className="text-xs text-[var(--tfmc-stone)] group-hover:text-[var(--tfmc-cream)]">
-                {m.name}
-              </span>
+              <span className="text-xs text-[var(--tfmc-stone)] group-hover:text-[var(--tfmc-cream)]">{m.name}</span>
             </Link>
           ))}
         </div>

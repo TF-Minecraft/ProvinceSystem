@@ -50,10 +50,7 @@ type Gesture = "dismiss" | "resize" | "native";
  * non-passive to stop iOS scrolling or rubber-banding the content, and
  * pointer events cannot do that.
  */
-export function useBottomSheetDrag(
-  sheetRef: RefObject<HTMLElement | null>,
-  options: BottomSheetDragOptions
-): void {
+export function useBottomSheetDrag(sheetRef: RefObject<HTMLElement | null>, options: BottomSheetDragOptions): void {
   // Read during the gesture, so a re-render mid-drag does not reset it.
   const optionsRef = useRef(options);
   useEffect(() => {
@@ -172,8 +169,7 @@ export function useBottomSheetDrag(
       const last = samples[samples.length - 1];
       // A finger that came to rest before lifting is not a flick.
       const rested = event.timeStamp - last.t > VELOCITY_WINDOW_MS;
-      const velocity =
-        !rested && last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
+      const velocity = !rested && last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
       const { expanded, onExpandedChange } = optionsRef.current;
       settle();
 

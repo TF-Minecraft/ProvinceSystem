@@ -71,15 +71,9 @@ export default function FancyCheckbox({
         </svg>
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-[var(--tfmc-cream)]">
-          {label}
-        </span>
+        <span className="block text-sm font-medium text-[var(--tfmc-cream)]">{label}</span>
         {detail ? (
-          <span
-            className={`mt-0.5 block text-xs ${
-              locked ? "text-[#e8a0a0]" : "text-[var(--tfmc-mist)]"
-            }`}
-          >
+          <span className={`mt-0.5 block text-xs ${locked ? "text-[#e8a0a0]" : "text-[var(--tfmc-mist)]"}`}>
             {detail}
           </span>
         ) : null}

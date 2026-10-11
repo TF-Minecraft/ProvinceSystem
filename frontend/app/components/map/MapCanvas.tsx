@@ -1,31 +1,11 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { MutableRefObject } from "react";
-import type {
-  CursorTooltip,
-  HoverOverlay,
-  MapId,
-  MapMode,
-  MapObject,
-  OverlayBBox,
-  WarExport,
-} from "./types";
+import type { CursorTooltip, HoverOverlay, MapId, MapMode, MapObject, OverlayBBox, WarExport } from "./types";
 import { mapFallbackSize } from "./types";
 import { REGION_TILE_MODES } from "./mapModes";
 import type { MapMarker } from "../../lib/mapMarkers";
 import { isMarkerMapMode } from "../../lib/mapMarkers";
-import {
-  HOVER_OVERLAY_EXPAND,
-  overlayPathFromHoverUrl,
-  overlayStyle,
-} from "./overlayStyle";
+import { HOVER_OVERLAY_EXPAND, overlayPathFromHoverUrl, overlayStyle } from "./overlayStyle";
 import LabelLayer from "./LabelLayer";
 import MapMarkerLayer from "./MapMarkerLayer";
 import PaintLayer from "./PaintLayer";
@@ -36,28 +16,16 @@ import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { provinceHoverBlocksRegionPick } from "../../hooks/regionPick";
 import TileLayer from "./TileLayer";
-import {
-  tileUrl,
-  useTileManifest,
-} from "../../hooks/useTileManifest";
+import { tileUrl, useTileManifest } from "../../hooks/useTileManifest";
 import { overlayLod, tilePixelRatio } from "../../lib/map/tilePyramid";
-import {
-  mapFiltersSupportedHere,
-  unzoomedLabelsSupported,
-} from "../../lib/map/mapFilters";
-import {
-  useMapViewport,
-  type MapFocusInset,
-} from "../../hooks/useMapViewport";
+import { mapFiltersSupportedHere, unzoomedLabelsSupported } from "../../lib/map/mapFilters";
+import { useMapViewport, type MapFocusInset } from "../../hooks/useMapViewport";
 import type { FitMode, MapRect } from "../../lib/mapViewportMath";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
 import { mapApiPathFromUrl, mapApiUrl } from "@/lib/map/api";
-import {
-  PROVINCE_RASTER_MODES,
-  showsLiveProvinceRaster,
-} from "@/app/lib/map/chronicleDayModes";
+import { PROVINCE_RASTER_MODES, showsLiveProvinceRaster } from "@/app/lib/map/chronicleDayModes";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
@@ -82,10 +50,7 @@ export type MapViewportControls = {
   focusMapRect: (rect: MapRect, inset?: MapFocusInset) => void;
 };
 
-function mapInteractionCursor(
-  isPanning: boolean,
-  isHoveringClickable: boolean
-): string {
+function mapInteractionCursor(isPanning: boolean, isHoveringClickable: boolean): string {
   if (isPanning) return "cursor-grabbing";
   if (isHoveringClickable) return "cursor-pointer";
   return "cursor-grab";
@@ -98,7 +63,6 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
   return "cursor-crosshair";
 }
 
-
 /**
  * The highlight drawn over a region: its own shape, a little brighter, with a
  * light rim `rimPx` screen pixels wide. The overlay sits inside the scaled
@@ -108,11 +72,7 @@ function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
  * viewport writes it into `--map-rim-scale` on each `.map-selected-region`
  * (see `setLiveRimScale`) and the rim keeps its width through a zoom.
  */
-function regionHighlightStyle(
-  displayScale: number,
-  rimPx: number,
-  rimAlpha: number
-): React.CSSProperties {
+function regionHighlightStyle(displayScale: number, rimPx: number, rimAlpha: number): React.CSSProperties {
   // Safari would draw the highlighted region not at all (see mapFilters).
   // Unfiltered, it still stands out: drawn again over its own colour, and,
   // when selected, over the faded rest of the world.
@@ -187,16 +147,14 @@ function shapeOfUrl(url: string): string {
  * screen stays up until the new one has loaded. `mark` records a copy's
  * load, or its failure, which leaves nothing drawn.
  */
-function useShapeLoaded(
-  url: string | null
-): [boolean, (url: string, loaded: boolean) => void] {
+function useShapeLoaded(url: string | null): [boolean, (url: string, loaded: boolean) => void] {
   const shape = url ? shapeOfUrl(url) : null;
   const [state, setState] = useState({ shape, loaded: false });
   if (state.shape !== shape) setState({ shape, loaded: false });
   const mark = useCallback((copy: string, loaded: boolean) => {
     const copyShape = shapeOfUrl(copy);
     setState((current) =>
-      current.shape === copyShape && current.loaded !== loaded ? { shape: copyShape, loaded } : current
+      current.shape === copyShape && current.loaded !== loaded ? { shape: copyShape, loaded } : current,
     );
   }, []);
   return [shape !== null && state.shape === shape && state.loaded, mark];
@@ -223,7 +181,7 @@ function useHeldAfterClear<T>(value: T | null, ms: number): T | null {
     if (held === null) return;
     const timer = setTimeout(
       () => setState((current) => (current.held === held ? { ...current, held: null } : current)),
-      ms
+      ms,
     );
     return () => clearTimeout(timer);
   }, [held, ms]);
@@ -274,17 +232,12 @@ function pixelatedClass(displayScale: number): string {
   return displayScale >= 1 ? "[image-rendering:pixelated]" : "";
 }
 
-function applyNaturalMapSize(
-  img: HTMLImageElement,
-  setMapSize: Dispatch<SetStateAction<{ w: number; h: number }>>
-) {
+function applyNaturalMapSize(img: HTMLImageElement, setMapSize: Dispatch<SetStateAction<{ w: number; h: number }>>) {
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   if (w <= 0 || h <= 0) return;
 
-  setMapSize((current) =>
-    current.w === w && current.h === h ? current : { w, h }
-  );
+  setMapSize((current) => (current.w === w && current.h === h ? current : { w, h }));
 }
 
 function HoverOverlayImage({
@@ -319,10 +272,8 @@ function HoverOverlayImage({
   ownShape?: boolean;
 }) {
   const hoverPath = mapApiPathFromUrl(overlay.url);
-  const basePath =
-    ownShape && hoverPath.endsWith("_hover") ? hoverPath.slice(0, -"_hover".length) : hoverPath;
-  const path =
-    lod > 0 && basePath.includes("/regions/") ? `${basePath}?lod=${lod}` : basePath;
+  const basePath = ownShape && hoverPath.endsWith("_hover") ? hoverPath.slice(0, -"_hover".length) : hoverPath;
+  const path = lod > 0 && basePath.includes("/regions/") ? `${basePath}?lod=${lod}` : basePath;
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
   // Another reduction of the same shape (a zoom) swaps the source on the same
@@ -337,8 +288,7 @@ function HoverOverlayImage({
   const positioned = overlayStyle(overlay.overlay, mapW, mapH, {
     expand: ready ? HOVER_OVERLAY_EXPAND : 0,
   });
-  const show =
-    Boolean(url) && positioned.visibility !== "hidden" && mapW > 0 && mapH > 0;
+  const show = Boolean(url) && positioned.visibility !== "hidden" && mapW > 0 && mapH > 0;
   const imageOpacity = show ? (ready ? opacity : opacity * 0.35) : 0;
 
   if (!url) return null;
@@ -496,9 +446,7 @@ export default function MapCanvas({
   const baseTileState = useTileManifest(mapId, "base", tilesAllowed);
   const baseTiles = baseTileState.manifest;
   const rasterLayer =
-    PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day)
-      ? `mapdata-${mapType}`
-      : null;
+    PROVINCE_RASTER_MODES.has(mapType) && showsLiveProvinceRaster(mapType, day) ? `mapdata-${mapType}` : null;
   const rasterTileState = useTileManifest(mapId, rasterLayer, tilesAllowed);
   const rasterTiles = rasterTileState.manifest;
 
@@ -508,10 +456,7 @@ export default function MapCanvas({
    * region (85 for counties). They stay up when a realm is opened: only that
    * realm's own layers are drawn separately, over them.
    */
-  const regionLayer =
-    regionOverlay === undefined && REGION_TILE_MODES.has(mapType)
-      ? `regions-${mapType}`
-      : null;
+  const regionLayer = regionOverlay === undefined && REGION_TILE_MODES.has(mapType) ? `regions-${mapType}` : null;
   const regionTiles = useTileManifest(mapId, regionLayer, tilesAllowed);
   const useRegionTiles = regionTiles.manifest !== null;
   // Until the first answer, draw neither: guessing "no tiles" would start
@@ -524,14 +469,9 @@ export default function MapCanvas({
   // Names wait for the colour under them, so a mode switch does not show
   // floating text over bare terrain for the moment the shapes take to land.
   const [regionTilesReadyKey, setRegionTilesReadyKey] = useState<string | null>(null);
-  const regionTilesKey = regionTiles.manifest
-    ? `${mapType}:${regionTiles.manifest.version}`
-    : null;
+  const regionTilesKey = regionTiles.manifest ? `${mapType}:${regionTiles.manifest.version}` : null;
   const labelsShown =
-    !regionLayer ||
-    (useRegionTiles
-      ? regionTilesReadyKey === regionTilesKey
-      : regionTiles.status !== "loading");
+    !regionLayer || (useRegionTiles ? regionTilesReadyKey === regionTilesKey : regionTiles.status !== "loading");
 
   // The settled view the tile layers fetch for. A new object only when the
   // committed transform changes, so mid-gesture the tile layers do not
@@ -544,13 +484,7 @@ export default function MapCanvas({
       viewportW: viewport.viewportSize.w,
       viewportH: viewport.viewportSize.h,
     }),
-    [
-      viewport.displayScale,
-      viewport.translateX,
-      viewport.translateY,
-      viewport.viewportSize.w,
-      viewport.viewportSize.h,
-    ]
+    [viewport.displayScale, viewport.translateX, viewport.translateY, viewport.viewportSize.w, viewport.viewportSize.h],
   );
 
   // Decided after mount: the server has no user agent, and the first render
@@ -577,12 +511,7 @@ export default function MapCanvas({
         ? `${focus.shapePath}?lod=${lod}`
         : focus.shapePath
       : "";
-  const { url: focusShapeUrl } = useMapAssetUrl(
-    mapId,
-    focusShapePath,
-    sessionToken,
-    Boolean(focusShapePath)
-  );
+  const { url: focusShapeUrl } = useMapAssetUrl(mapId, focusShapePath, sessionToken, Boolean(focusShapePath));
   const focusShapeLoaded = useImageLoaded(focusShapeUrl);
   // An opened realm draws its own layers instead; the colours fade once they
   // have all loaded, so the realm never shows faded in between.
@@ -599,12 +528,11 @@ export default function MapCanvas({
         if (ids.has(id)) return current;
         return { key: focusObjectsKey, ids: new Set(ids).add(id) };
       }),
-    [focusObjectsKey]
+    [focusObjectsKey],
   );
   const focusReady =
     focusObjects.length > 0
-      ? focusLoaded.key === focusObjectsKey &&
-        focusObjects.every((obj) => focusLoaded.ids.has(obj.id))
+      ? focusLoaded.key === focusObjectsKey && focusObjects.every((obj) => focusLoaded.ids.has(obj.id))
       : focusShapeLoaded;
   // What stays lit while the colours fade back in after a close.
   const shownSelectedOverlay = useHeldAfterClear(selectedOverlay, FOCUS_FADE_MS);
@@ -654,7 +582,7 @@ export default function MapCanvas({
     setMapSize((current) =>
       current.w === baseTiles.width && current.h === baseTiles.height
         ? current
-        : { w: baseTiles.width, h: baseTiles.height }
+        : { w: baseTiles.width, h: baseTiles.height },
     );
   }, [baseTiles]);
 
@@ -685,9 +613,7 @@ export default function MapCanvas({
     syncNaturalMapSize(e.currentTarget);
   };
 
-  const hoveredPath = hoveredOverlay
-    ? overlayPathFromHoverUrl(hoveredOverlay.url)
-    : null;
+  const hoveredPath = hoveredOverlay ? overlayPathFromHoverUrl(hoveredOverlay.url) : null;
 
   const interactionCursor =
     paintEnabled && !viewport.isPanning
@@ -722,11 +648,7 @@ export default function MapCanvas({
 
   return (
     <div
-      className={
-        fill
-          ? "relative h-full w-full overflow-hidden"
-          : `relative max-w-full overflow-hidden ${panelClass}`
-      }
+      className={fill ? "relative h-full w-full overflow-hidden" : `relative max-w-full overflow-hidden ${panelClass}`}
     >
       {cursorTooltip?.text && !viewport.isPanning && (
         <div
@@ -779,9 +701,7 @@ export default function MapCanvas({
             path={`/${mapId}/map`}
             sessionToken={sessionToken}
             alt="Map"
-            className={`pointer-events-none block h-full w-full ${pixelatedClass(
-              viewport.displayScale
-            )}`}
+            className={`pointer-events-none block h-full w-full ${pixelatedClass(viewport.displayScale)}`}
             imgRef={(node) => {
               if (node?.complete) {
                 syncNaturalMapSize(node);
@@ -795,9 +715,7 @@ export default function MapCanvas({
             <TileLayer
               key={`${mapType}:${rasterTiles.version}`}
               manifest={rasterTiles}
-              tileUrl={(level, x, y) =>
-                tileUrl(mapId, `mapdata-${mapType}`, rasterTiles, level, x, y)
-              }
+              tileUrl={(level, x, y) => tileUrl(mapId, `mapdata-${mapType}`, rasterTiles, level, x, y)}
               view={tileView}
               className={pixelatedClass(viewport.displayScale)}
               style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
@@ -816,7 +734,7 @@ export default function MapCanvas({
               style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
             />
           ) : (
-            provinceOverlay ?? null
+            (provinceOverlay ?? null)
           ))}
         {regionOverlay === undefined && useRegionTiles && regionTiles.manifest ? (
           <TileLayer
@@ -824,9 +742,7 @@ export default function MapCanvas({
             // the last mode says nothing about this one.
             key={regionTilesKey ?? undefined}
             manifest={regionTiles.manifest}
-            tileUrl={(level, x, y) =>
-              tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)
-            }
+            tileUrl={(level, x, y) => tileUrl(mapId, `regions-${mapType}`, regionTiles.manifest!, level, x, y)}
             view={tileView}
             className="transition-opacity duration-200 ease-out"
             style={{
@@ -835,46 +751,43 @@ export default function MapCanvas({
             onReady={() => setRegionTilesReadyKey(regionTilesKey)}
             onTileError={regionTiles.refresh}
           />
-        ) : regionOverlay === undefined && holdRegionOverlays ? null : regionOverlay === undefined
-          ? mapObjects
-              .filter((obj) => obj.visible)
-              .map((obj) => (
-                <MapAuthImage
-                  // Keyed by mode too: the map stays mounted across mode
-                  // changes, and a region id shared by two modes must not
-                  // inherit the other mode's image (or its failed-load
-                  // `display: none`).
-                  key={`${mapType}:${obj.id}`}
-                  mapId={mapId}
-                  path={`/${mapId}/regions/${mapType}/${obj.path}${
-                    lod > 0 ? `?lod=${lod}` : ""
-                  }`}
-                  sessionToken={sessionToken}
-                  crossOrigin="anonymous"
-                  alt={`Overlay ${obj.id}`}
-                  // A zoom that changes the reduction swaps the source on the
-                  // same element, so the old copy stays up until the new one
-                  // has loaded rather than the overlay blinking out.
-                  replaceInPlace
-                  className={OVERLAY_TRANSITION_CLASS}
-                  style={{
-                    ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
-                      expand:
-                        hoveredPath && obj.path === hoveredPath
-                          ? HOVER_OVERLAY_EXPAND
-                          : 0,
-                    }),
-                    opacity: DRILL_STACK_OVERLAY_OPACITY,
-                  }}
-                  onLoad={(e) => {
-                    e.currentTarget.style.display = "";
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              ))
-          : regionOverlay}
+        ) : regionOverlay === undefined && holdRegionOverlays ? null : regionOverlay === undefined ? (
+          mapObjects
+            .filter((obj) => obj.visible)
+            .map((obj) => (
+              <MapAuthImage
+                // Keyed by mode too: the map stays mounted across mode
+                // changes, and a region id shared by two modes must not
+                // inherit the other mode's image (or its failed-load
+                // `display: none`).
+                key={`${mapType}:${obj.id}`}
+                mapId={mapId}
+                path={`/${mapId}/regions/${mapType}/${obj.path}${lod > 0 ? `?lod=${lod}` : ""}`}
+                sessionToken={sessionToken}
+                crossOrigin="anonymous"
+                alt={`Overlay ${obj.id}`}
+                // A zoom that changes the reduction swaps the source on the
+                // same element, so the old copy stays up until the new one
+                // has loaded rather than the overlay blinking out.
+                replaceInPlace
+                className={OVERLAY_TRANSITION_CLASS}
+                style={{
+                  ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                    expand: hoveredPath && obj.path === hoveredPath ? HOVER_OVERLAY_EXPAND : 0,
+                  }),
+                  opacity: DRILL_STACK_OVERLAY_OPACITY,
+                }}
+                onLoad={(e) => {
+                  e.currentTarget.style.display = "";
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ))
+        ) : (
+          regionOverlay
+        )}
         {shownFocusObjects.length > 0 && (
           // One group, so the rim follows the realm's outer edge rather than
           // every subject's, and the opacity applies once over the lot.
@@ -956,12 +869,7 @@ export default function MapCanvas({
           />
         )}
         {isMarkerMapMode(mapType) && wars.length > 0 && (
-          <WarCampaignLineLayer
-            wars={wars}
-            centroids={centroids}
-            mapW={mapSize.w}
-            mapH={mapSize.h}
-          />
+          <WarCampaignLineLayer wars={wars} centroids={centroids} mapW={mapSize.w} mapH={mapSize.h} />
         )}
         <MapMarkerLayer
           markers={markers}

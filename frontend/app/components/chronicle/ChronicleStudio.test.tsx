@@ -36,7 +36,10 @@ describe("ChronicleStudio", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     // Never resolves: this test is about the shell mounting, not about what
     // the day/index fetches eventually return.
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    );
     // jsdom implements neither of these; `useMapViewport` observes the stage
     // element on mount and the studio paints into a canvas.
     vi.stubGlobal(
@@ -45,13 +48,11 @@ describe("ChronicleStudio", () => {
         observe() {}
         unobserve() {}
         disconnect() {}
-      }
+      },
     );
 
     render(<ChronicleStudio mapId="main" />);
-    await waitFor(() =>
-      expect(screen.getByRole("navigation", { name: "Timelapse steps" })).toBeDefined()
-    );
+    await waitFor(() => expect(screen.getByRole("navigation", { name: "Timelapse steps" })).toBeDefined());
     expect(screen.getByRole("switch", { name: "Nation fill" })).toBeDefined();
   });
 });

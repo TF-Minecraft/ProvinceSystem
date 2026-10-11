@@ -91,7 +91,10 @@ export default function IngredientPickerModal({
             <p className="p-3 text-sm text-[var(--tfmc-mist)]">No matches.</p>
           ) : (
             grouped.map(([cat, items]) => (
-              <div key={cat} className="border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] last:border-b-0">
+              <div
+                key={cat}
+                className="border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] last:border-b-0"
+              >
                 <div className="sticky top-0 bg-[color-mix(in_srgb,var(--tfmc-forest)_90%,black)] px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-mist)]">
                   {categories[cat] || cat}
                 </div>
@@ -110,9 +113,7 @@ export default function IngredientPickerModal({
                           }`}
                         >
                           <span>{item.label || item.id}</span>
-                          {selected ? (
-                            <span className="text-xs text-[var(--tfmc-accent)]">Selected</span>
-                          ) : null}
+                          {selected ? <span className="text-xs text-[var(--tfmc-accent)]">Selected</span> : null}
                         </button>
                       </li>
                     );

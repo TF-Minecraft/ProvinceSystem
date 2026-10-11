@@ -72,9 +72,7 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
   if (recheck) {
     return (
       <>
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Please confirm your Discord membership again before linking.
-        </p>
+        <p className="text-sm text-[var(--tfmc-mist)]">Please confirm your Discord membership again before linking.</p>
         <a href={discordSignInUrl("/profile?tab=accounts")} className={`${buttonClass} mt-4`}>
           Confirm with Discord
         </a>
@@ -118,7 +116,8 @@ export default function MinecraftLinkForm({ discordName, onLinked }: Props) {
   return (
     <form onSubmit={onCheck} className="flex flex-col gap-4">
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Run <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> in game, click the code in chat to copy it, then paste it here.
+        Run <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> in game, click the code in chat to copy it,
+        then paste it here.
       </p>
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">Link code</span>

@@ -245,13 +245,7 @@
       "dependency": {
         "type": "trait",
         "mode": "one-or-more",
-        "depends_on": [
-          "callous",
-          "spiteful",
-          "greedy",
-          "deceitful",
-          "cynical"
-        ]
+        "depends_on": ["callous", "spiteful", "greedy", "deceitful", "cynical"]
       },
       "messages": [
         "title(§aEvil RP)",
@@ -275,13 +269,7 @@
       "dependency": {
         "type": "trait",
         "mode": "one-or-more",
-        "depends_on": [
-          "callous",
-          "spiteful",
-          "greedy",
-          "deceitful",
-          "cynical"
-        ]
+        "depends_on": ["callous", "spiteful", "greedy", "deceitful", "cynical"]
       },
       "messages": [
         "title(§aEvil RP)",
@@ -309,13 +297,7 @@
       "dependency": {
         "type": "trait",
         "mode": "one-or-more",
-        "depends_on": [
-          "callous",
-          "spiteful",
-          "greedy",
-          "deceitful",
-          "cynical"
-        ]
+        "depends_on": ["callous", "spiteful", "greedy", "deceitful", "cynical"]
       }
     },
     {
@@ -427,20 +409,8 @@
   "attribute_point_buy": {
     "pool": 12,
     "max_rank": 4,
-    "cost_for_rank": [
-      1,
-      2,
-      4,
-      8
-    ],
-    "attributes": [
-      "strength",
-      "dexterity",
-      "constitution",
-      "intelligence",
-      "wisdom",
-      "charisma"
-    ],
+    "cost_for_rank": [1, 2, 4, 8],
+    "attributes": ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"],
     "abbreviations": {
       "strength": "str",
       "dexterity": "dex",
@@ -456,43 +426,30 @@
       "id": "human",
       "name": "Human",
       "age_max": 100,
-      "description": [
-        "Adaptable and numerous across the provinces.",
-        "No inherent magical gift, but fewer limits."
-      ],
+      "description": ["Adaptable and numerous across the provinces.", "No inherent magical gift, but fewer limits."],
       "attribute_modifiers": [
         { "type": "charisma", "amount": 1 },
         { "type": "intelligence", "amount": 1 }
       ],
-      "experience_modifiers": [
-        { "profession": "farming", "alias": "Farming", "amount": 5 }
-      ]
+      "experience_modifiers": [{ "profession": "farming", "alias": "Farming", "amount": 5 }]
     },
     {
       "id": "elf",
       "name": "Elf",
       "age_max": 400,
-      "description": [
-        "Long-lived and closely tied to old woods and stars.",
-        "Often skilled with bow or subtle magic."
-      ],
+      "description": ["Long-lived and closely tied to old woods and stars.", "Often skilled with bow or subtle magic."],
       "attribute_modifiers": [
         { "type": "dexterity", "amount": 2 },
         { "type": "wisdom", "amount": 1 },
         { "type": "constitution", "amount": -1 }
       ],
-      "experience_modifiers": [
-        { "profession": "archery", "alias": "Archery", "amount": 10 }
-      ]
+      "experience_modifiers": [{ "profession": "archery", "alias": "Archery", "amount": 10 }]
     },
     {
       "id": "dwarf",
       "name": "Dwarf",
       "age_max": 250,
-      "description": [
-        "Sturdy folk of stone halls and deep craft.",
-        "Strong constitution and stubborn wills."
-      ],
+      "description": ["Sturdy folk of stone halls and deep craft.", "Strong constitution and stubborn wills."],
       "attribute_modifiers": [
         { "type": "constitution", "amount": 2 },
         { "type": "strength", "amount": 1 },
@@ -509,37 +466,25 @@
       "id": "warrior",
       "name": "Warrior",
       "description": ["Front-line combatant. Strong melee and armor focus."],
-      "attribute_description": [
-        "Melee damage scales with Strength.",
-        "Heavy armor proficiency."
-      ]
+      "attribute_description": ["Melee damage scales with Strength.", "Heavy armor proficiency."]
     },
     {
       "id": "mage",
       "name": "Mage",
       "description": ["Arcane caster. Fragile up close, powerful at range."],
-      "attribute_description": [
-        "Spell power scales with Intelligence.",
-        "Low physical defense."
-      ]
+      "attribute_description": ["Spell power scales with Intelligence.", "Low physical defense."]
     },
     {
       "id": "ranger",
       "name": "Ranger",
       "description": ["Scout and hunter. Bow, tracking, and wilderness craft."],
-      "attribute_description": [
-        "Ranged damage scales with Dexterity.",
-        "Bonus to tracking and foraging."
-      ]
+      "attribute_description": ["Ranged damage scales with Dexterity.", "Bonus to tracking and foraging."]
     },
     {
       "id": "rogue",
       "name": "Rogue",
       "description": ["Stealth and precision. Soft targets and locked doors."],
-      "attribute_description": [
-        "Critical hits scale with Dexterity.",
-        "Stealth and lockpicking focus."
-      ]
+      "attribute_description": ["Critical hits scale with Dexterity.", "Stealth and lockpicking focus."]
     }
   ],
   "traits": [
@@ -738,12 +683,8 @@
       "key": "personality",
       "cost": 1,
       "description": ["Remembers slights. Pays them back."],
-      "attribute_modifiers": [
-        { "type": "strength", "amount": 1 }
-      ],
-      "experience_modifiers": [
-        { "profession": "combat", "alias": "Combat", "amount": 5 }
-      ],
+      "attribute_modifiers": [{ "type": "strength", "amount": 1 }],
+      "experience_modifiers": [{ "profession": "combat", "alias": "Combat", "amount": 5 }],
       "dependency": {
         "type": "trait",
         "mode": "one-or-more",
@@ -950,10 +891,7 @@
       "base_set": "knives",
       "preview": {
         "display_name": "Iron Hunting Knife",
-        "lore": [
-          "A sturdy blade for trail work.",
-          "Custom skins and lore come later."
-        ],
+        "lore": ["A sturdy blade for trail work.", "Custom skins and lore come later."],
         "material": "IRON_SWORD",
         "custom_model_data": 1001
       }

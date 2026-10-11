@@ -9,9 +9,7 @@ export type CountyNameEntry = TitleEntity & { name?: unknown };
  * that child, which is its own entry, so walking titles would attribute it to
  * the parent as well. Last writer wins if two counties claim the same id.
  */
-export function buildProvinceCountyNames(
-  counties: Record<string, CountyNameEntry>
-): Map<number, string> {
+export function buildProvinceCountyNames(counties: Record<string, CountyNameEntry>): Map<number, string> {
   const map = new Map<number, string>();
   if (!counties || typeof counties !== "object" || Array.isArray(counties)) {
     return map;
@@ -22,10 +20,7 @@ export function buildProvinceCountyNames(
     const provinces = entry.provinces;
     if (!Array.isArray(provinces)) continue;
 
-    const name =
-      typeof entry.name === "string" && entry.name.length > 0
-        ? entry.name
-        : countyId;
+    const name = typeof entry.name === "string" && entry.name.length > 0 ? entry.name : countyId;
 
     for (const pid of provinces) {
       if (typeof pid !== "number" || !Number.isInteger(pid)) continue;

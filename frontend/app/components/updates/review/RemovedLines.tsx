@@ -26,12 +26,7 @@ export default function RemovedLines({ bullets, disabled, errors, onRestore }: R
               text-[var(--tfmc-stone)]"
           >
             <span className="min-w-0 flex-1 whitespace-pre-wrap">{bullet.body}</span>
-            <button
-              className={reviewButtonClass}
-              type="button"
-              disabled={disabled}
-              onClick={() => onRestore(bullet)}
-            >
+            <button className={reviewButtonClass} type="button" disabled={disabled} onClick={() => onRestore(bullet)}>
               Restore
             </button>
             {errors[bullet.id] && (

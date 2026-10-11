@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 import type { MapId, MapMode } from "../components/map/types";
 import type { TitleEntity, TitleLayers } from "../lib/titleProvinces";
 import { isChronicleDayFileMissing } from "../lib/map/chronicleData";
-import {
-  fetchMapModeRegionData,
-  mapModeDataSource,
-} from "../lib/map/dataSource";
+import { fetchMapModeRegionData, mapModeDataSource } from "../lib/map/dataSource";
 
 const tierCache = new Map<string, Record<string, TitleEntity>>();
 
@@ -33,17 +30,11 @@ function cacheKey(mapId: MapId, tier: string, day: string | null): string {
  * day file — never `live`, even if someone later classifies that tier static.
  * Throwing is a missing nested layer, not today's titles under a past date.
  */
-export function assertDayScopedTitleExtra(
-  mapId: MapId,
-  tier: string,
-  day: string | null
-): void {
+export function assertDayScopedTitleExtra(mapId: MapId, tier: string, day: string | null): void {
   if (day === null) return;
   const source = mapModeDataSource(mapId, tier as MapMode, day);
   if (source.kind !== "day") {
-    throw new Error(
-      `useTitleLayerData refuses to fetch live "${tier}" under chronicle day ${day}`
-    );
+    throw new Error(`useTitleLayerData refuses to fetch live "${tier}" under chronicle day ${day}`);
   }
 }
 
@@ -51,7 +42,7 @@ async function fetchTier(
   mapId: MapId,
   tier: MapMode,
   sessionToken?: string | null,
-  day: string | null = null
+  day: string | null = null,
 ): Promise<Record<string, TitleEntity>> {
   const key = cacheKey(mapId, tier, day);
   const cached = tierCache.get(key);
@@ -83,10 +74,7 @@ const ACTIVE_TIER: Partial<Record<MapMode, keyof TitleLayers>> = {
   trade: "trade",
 };
 
-function layersWithActive(
-  activeTier: keyof TitleLayers,
-  regionData: Record<string, TitleEntity>
-): TitleLayers {
+function layersWithActive(activeTier: keyof TitleLayers, regionData: Record<string, TitleEntity>): TitleLayers {
   const next: TitleLayers = { county: {} };
   if (activeTier === "duchy") next.duchy = regionData;
   else if (activeTier === "kingdom") next.kingdom = regionData;
@@ -100,7 +88,7 @@ export function useTitleLayerData(
   regionData: Record<string, TitleEntity> | null,
   sessionToken?: string | null,
   /** A chronicle day, or `null` for the live map. See `cacheKey`. */
-  day: string | null = null
+  day: string | null = null,
 ): { layers: TitleLayers | null; loading: boolean } {
   const [layers, setLayers] = useState<TitleLayers | null>(null);
   const [loading, setLoading] = useState(false);
@@ -133,8 +121,8 @@ export function useTitleLayerData(
             return {} as Record<string, TitleEntity>;
           }
           throw err;
-        })
-      )
+        }),
+      ),
     )
       .then((fetched) => {
         if (cancelled) return;

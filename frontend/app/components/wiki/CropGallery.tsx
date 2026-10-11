@@ -37,7 +37,15 @@ export default function CropGallery({ crops }: { crops: CropGalleryItem[] }) {
         ))}
       </ul>
       <div className="flex min-h-64 flex-col items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] p-5 text-center">
-        {selected.plantModel ? <div className="w-full" aria-label={`3D preview of a mature ${selected.name} plant`}><StationModelViewer key={selected.plantModel.modelUrl} modelUrl={selected.plantModel.modelUrl} textureUrls={selected.plantModel.textureUrls} /></div> : null}
+        {selected.plantModel ? (
+          <div className="w-full" aria-label={`3D preview of a mature ${selected.name} plant`}>
+            <StationModelViewer
+              key={selected.plantModel.modelUrl}
+              modelUrl={selected.plantModel.modelUrl}
+              textureUrls={selected.plantModel.textureUrls}
+            />
+          </div>
+        ) : null}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={selected.image}
@@ -45,7 +53,9 @@ export default function CropGallery({ crops }: { crops: CropGalleryItem[] }) {
           alt={selected.name}
           className="mt-3 h-20 w-20 [image-rendering:pixelated]"
         />
-        <h3 className="mt-4 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{selected.name}</h3>
+        <h3 className="mt-4 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+          {selected.name}
+        </h3>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 text-sm">
           <dt className="text-[var(--tfmc-stone)]">Profession</dt>
           <dd className="text-[var(--tfmc-mist)]">{selected.profession}</dd>

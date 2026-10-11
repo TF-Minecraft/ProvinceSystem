@@ -1,9 +1,5 @@
 import type { TitleLayers } from "@/app/lib/titleProvinces";
-import {
-  resolveCountyProvinces,
-  resolveDuchyProvinces,
-  resolveKingdomProvinces,
-} from "@/app/lib/titleProvinces";
+import { resolveCountyProvinces, resolveDuchyProvinces, resolveKingdomProvinces } from "@/app/lib/titleProvinces";
 import type { EditorTier } from "@/lib/map/api";
 
 export type ChildTierEditorConfig = {
@@ -24,9 +20,7 @@ export type ChildTierEditorConfig = {
   sidebarEmptyState: string;
 };
 
-export const CHILD_TIER_EDITOR_CONFIG: Partial<
-  Record<EditorTier, ChildTierEditorConfig>
-> = {
+export const CHILD_TIER_EDITOR_CONFIG: Partial<Record<EditorTier, ChildTierEditorConfig>> = {
   duchy: {
     childTier: "county",
     pickMapdataPath: "county",

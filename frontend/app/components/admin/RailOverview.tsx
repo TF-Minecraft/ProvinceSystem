@@ -82,10 +82,10 @@ export default function RailOverview() {
             [
               ...track.broken.map((s) => ({ ...s, kind: "Broken" as const })),
               ...track.damaged.map((s) => ({ ...s, kind: "Damaged" as const })),
-            ].map((s) => ({ ...s, track: track.id, line: track.line }))
+            ].map((s) => ({ ...s, track: track.id, line: track.line })),
           )
         : [],
-    [data]
+    [data],
   );
 
   if (load.kind === "forbidden") {
@@ -160,8 +160,8 @@ export default function RailOverview() {
             ))}
           </div>
           <p className={mutedClass}>
-            {data.updated_at ? `Updated ${formatMoment(data.updated_at)}. ` : ""}Stops are where a track passes closest to a
-            settlement.
+            {data.updated_at ? `Updated ${formatMoment(data.updated_at)}. ` : ""}Stops are where a track passes closest
+            to a settlement.
           </p>
           {data.unreadable_files ? (
             <p className="text-sm text-[#e8c48a]">Some track couldn’t be loaded. Reload in a moment.</p>
@@ -223,7 +223,10 @@ export default function RailOverview() {
                 onMouseLeave={() => setHighlight(null)}
               >
                 <button type="button" className={`${rowClass} font-semibold`} onClick={() => focusLine(line.id)}>
-                  <span className="h-1.5 w-6 shrink-0 rounded-full" style={{ background: view === "tube" ? tubeColour(line) : lineColour(line) }} />
+                  <span
+                    className="h-1.5 w-6 shrink-0 rounded-full"
+                    style={{ background: view === "tube" ? tubeColour(line) : lineColour(line) }}
+                  />
                   <span className="truncate">{line.name}</span>
                   <span className="ml-auto shrink-0 text-xs font-normal text-[var(--tfmc-mist)]">
                     {blocks(line.length)}

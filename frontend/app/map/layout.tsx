@@ -13,15 +13,9 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function MapLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MapLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="min-h-[calc(100dvh-var(--tfmc-header-h))] w-full overflow-auto in-[.map-fullscreen]:overflow-hidden in-[.map-fullscreen]:overscroll-none"
-    >
+    <div className="min-h-[calc(100dvh-var(--tfmc-header-h))] w-full overflow-auto in-[.map-fullscreen]:overflow-hidden in-[.map-fullscreen]:overscroll-none">
       {children}
     </div>
   );

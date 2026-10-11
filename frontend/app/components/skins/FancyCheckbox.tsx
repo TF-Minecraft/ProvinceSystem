@@ -15,9 +15,7 @@ export default function FancyCheckbox({
   "aria-label": ariaLabel,
 }: Props) {
   return (
-    <span
-      className={`relative mt-0.5 inline-flex h-4 w-4 shrink-0 ${className}`}
-    >
+    <span className={`relative mt-0.5 inline-flex h-4 w-4 shrink-0 ${className}`}>
       <input
         type="checkbox"
         checked={checked}

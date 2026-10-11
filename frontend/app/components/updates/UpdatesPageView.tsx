@@ -36,13 +36,7 @@ export default function UpdatesPageView({
   );
 }
 
-export function WeekPageView({
-  notes,
-  unavailable = false,
-}: {
-  notes: WeekNotes | null;
-  unavailable?: boolean;
-}) {
+export function WeekPageView({ notes, unavailable = false }: { notes: WeekNotes | null; unavailable?: boolean }) {
   return (
     <main className="mx-auto min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl px-6 py-16">
       <Link href="/updates" className={weekButtonClass}>
@@ -52,7 +46,9 @@ export function WeekPageView({
         <p className="mt-10 text-[var(--tfmc-stone)]">Patch notes are unavailable right now.</p>
       ) : notes ? (
         <>
-          <h1 className="mt-8 font-[family-name:var(--font-fraunces)] text-4xl text-[var(--tfmc-cream)]">{notes.label}</h1>
+          <h1 className="mt-8 font-[family-name:var(--font-fraunces)] text-4xl text-[var(--tfmc-cream)]">
+            {notes.label}
+          </h1>
           <WeekSections bullets={notes.bullets} />
         </>
       ) : null}

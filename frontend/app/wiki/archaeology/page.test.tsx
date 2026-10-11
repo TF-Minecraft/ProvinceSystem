@@ -36,7 +36,13 @@ describe("Archaeology gameplay guide", () => {
   });
 
   it("does not retain unsupported numeric rules from the previous dossier", () => {
-    for (const staleClaim of ["256 blocks", "four distinct samples", "18 places", "8 successful cuts", "Brush min(shape size, 6)"]) {
+    for (const staleClaim of [
+      "256 blocks",
+      "four distinct samples",
+      "18 places",
+      "8 successful cuts",
+      "Brush min(shape size, 6)",
+    ]) {
       expect(html).not.toContain(staleClaim);
     }
   });

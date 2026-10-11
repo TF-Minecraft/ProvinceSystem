@@ -8,8 +8,7 @@ import {
 } from "./chronicleInfestation";
 import { MAX_PAINTABLE_PROVINCE_ID } from "./chroniclePaint";
 
-const packed = (r: number, g: number, b: number, a: number) =>
-  ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
+const packed = (r: number, g: number, b: number, a: number) => ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
 
 describe("chronicleInfestationRgba", () => {
   it("matches the backend palette exactly", () => {
@@ -20,9 +19,7 @@ describe("chronicleInfestationRgba", () => {
   });
 
   it("normalises case and whitespace like the backend does", () => {
-    expect(chronicleInfestationRgba("  SEVERE ")).toEqual(
-      CHRONICLE_INFESTATION_SEVERITY_RGBA.severe
-    );
+    expect(chronicleInfestationRgba("  SEVERE ")).toEqual(CHRONICLE_INFESTATION_SEVERITY_RGBA.severe);
   });
 
   it("refuses anything the palette does not name", () => {
@@ -40,9 +37,7 @@ describe("chronicleInfestationRgba", () => {
 describe("chronicleInfestationRows", () => {
   it("accepts both shapes the backend loader accepts", () => {
     expect(chronicleInfestationRows([{ id: 1 }])).toEqual([{ id: 1 }]);
-    expect(chronicleInfestationRows({ provinces: [{ id: 2 }] })).toEqual([
-      { id: 2 },
-    ]);
+    expect(chronicleInfestationRows({ provinces: [{ id: 2 }] })).toEqual([{ id: 2 }]);
   });
 
   it("yields nothing for a payload it cannot read", () => {
@@ -89,9 +84,7 @@ describe("buildInfestationColorLut", () => {
   });
 
   it("refuses to be sized by a crafted province id", () => {
-    const lut = buildInfestationColorLut([
-      { id: MAX_PAINTABLE_PROVINCE_ID + 1, severity: "mild" },
-    ]);
+    const lut = buildInfestationColorLut([{ id: MAX_PAINTABLE_PROVINCE_ID + 1, severity: "mild" }]);
     expect(lut.length).toBe(0);
   });
 
@@ -105,8 +98,6 @@ describe("buildInfestationColorLut", () => {
 
   it("returns an empty LUT when nothing is usable", () => {
     expect(buildInfestationColorLut(null).length).toBe(0);
-    expect(buildInfestationColorLut([{ id: 1, severity: "none" }]).length).toBe(
-      0
-    );
+    expect(buildInfestationColorLut([{ id: 1, severity: "none" }]).length).toBe(0);
   });
 });

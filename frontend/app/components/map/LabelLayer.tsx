@@ -1,10 +1,5 @@
 import { memo } from "react";
-import {
-  LABEL_INK,
-  LABEL_FONT_WEIGHT,
-  shouldShowLabelAtScreenSize,
-  type NationLabelSpec,
-} from "../../lib/mapLabels";
+import { LABEL_INK, LABEL_FONT_WEIGHT, shouldShowLabelAtScreenSize, type NationLabelSpec } from "../../lib/mapLabels";
 import { HOVER_OVERLAY_EXPAND } from "./overlayStyle";
 
 const LABEL_HOVER_SCALE = 1 + HOVER_OVERLAY_EXPAND;
@@ -54,9 +49,7 @@ function LabelLayer({
       {labels.map((label) => {
         const pathId = `map-label-${label.nationId}-${label.componentIndex}`;
         const hovered = hoveredNationId === label.nationId;
-        const visible =
-          alwaysVisible ||
-          shouldShowLabelAtScreenSize(label.fontSize, displayScale);
+        const visible = alwaysVisible || shouldShowLabelAtScreenSize(label.fontSize, displayScale);
         const hoverTransform = hovered
           ? `translate(${label.cx} ${label.cy}) scale(${LABEL_HOVER_SCALE}) translate(${-label.cx} ${-label.cy})`
           : undefined;
@@ -72,9 +65,7 @@ function LabelLayer({
               transition: `${LABEL_VISIBILITY_TRANSITION}, ${LABEL_HOVER_TRANSITION}`,
             }}
           >
-            <g
-              transform={`translate(${label.pathOffsetX} ${label.pathOffsetY})`}
-            >
+            <g transform={`translate(${label.pathOffsetX} ${label.pathOffsetY})`}>
               <path id={pathId} d={label.pathD} fill="none" />
               <text
                 fontSize={label.fontSize}
@@ -89,11 +80,7 @@ function LabelLayer({
                   textRendering: "geometricPrecision",
                 }}
               >
-                <textPath
-                  href={`#${pathId}`}
-                  startOffset="50%"
-                  textAnchor="middle"
-                >
+                <textPath href={`#${pathId}`} startOffset="50%" textAnchor="middle">
                   {label.text}
                 </textPath>
               </text>

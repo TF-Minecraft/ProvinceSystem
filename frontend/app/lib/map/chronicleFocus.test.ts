@@ -53,9 +53,7 @@ describe("chronicleFocusOptions", () => {
 
   it("skips entries a malformed day file left as non-objects", () => {
     const junk = { good: { name: "Good" }, bad: "not a realm" };
-    expect(
-      chronicleFocusOptions(junk as unknown as RegionRecord)
-    ).toEqual([{ id: "good", name: "Good" }]);
+    expect(chronicleFocusOptions(junk as unknown as RegionRecord)).toEqual([{ id: "good", name: "Good" }]);
   });
 });
 
@@ -81,12 +79,8 @@ describe("chronicleFocusProvinceIds", () => {
       order: { rgb: "1,1,1", provinces: [1], occupied_held: [8] },
       spore: { rgb: "2,2,2", provinces: [3], overlord: "order", occupied_held: [9] },
     };
-    expect(Array.from(chronicleFocusProvinceIds(sworn, "order")!).sort()).toEqual([
-      1, 3, 8,
-    ]);
-    expect(Array.from(chronicleFocusProvinceIds(sworn, "spore")!).sort()).toEqual([
-      3, 9,
-    ]);
+    expect(Array.from(chronicleFocusProvinceIds(sworn, "order")!).sort()).toEqual([1, 3, 8]);
+    expect(Array.from(chronicleFocusProvinceIds(sworn, "spore")!).sort()).toEqual([3, 9]);
   });
 
   it("is empty — not null — for a realm this day has never heard of", () => {
@@ -112,9 +106,7 @@ describe("chronicleFocusProvinceIds", () => {
       b: { provinces: [1, -2, 0, 3.5, "6", null, 8] },
     } as unknown as RegionRecord;
     expect(chronicleFocusProvinceIds(junk, "a")!.size).toBe(0);
-    expect(Array.from(chronicleFocusProvinceIds(junk, "b")!).sort()).toEqual([
-      1, 8,
-    ]);
+    expect(Array.from(chronicleFocusProvinceIds(junk, "b")!).sort()).toEqual([1, 8]);
   });
 });
 

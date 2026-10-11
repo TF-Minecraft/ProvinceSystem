@@ -10,12 +10,7 @@ type Quad = {
   indices: number[];
 };
 
-function pushQuad(
-  out: Quad,
-  corners: [number, number, number][],
-  uvCorners: [number, number][],
-  flip = false
-): void {
+function pushQuad(out: Quad, corners: [number, number, number][], uvCorners: [number, number][], flip = false): void {
   const base = out.positions.length / 3;
   for (let i = 0; i < 4; i++) {
     out.positions.push(...corners[i]!);
@@ -35,7 +30,7 @@ function pushQuad(
 export function buildExtrudedItemGroup(
   imageData: ImageData,
   texture: THREE.Texture,
-  options?: { center?: boolean }
+  options?: { center?: boolean },
 ): THREE.Group {
   const center = options?.center !== false;
   const tw = imageData.width;
@@ -96,7 +91,7 @@ export function buildExtrudedItemGroup(
           [u1, vBot],
           [u1, vTop],
           [u0, vTop],
-        ]
+        ],
       );
       // Back (−Z)
       pushQuad(
@@ -112,7 +107,7 @@ export function buildExtrudedItemGroup(
           [u0, vBot],
           [u0, vTop],
           [u1, vTop],
-        ]
+        ],
       );
 
       // Edges where neighbor is transparent
@@ -125,7 +120,7 @@ export function buildExtrudedItemGroup(
             [x0, y1, z1],
             [x0, y1, z0],
           ],
-          edgeUv
+          edgeUv,
         );
       }
       if (!opaque(px + 1, py)) {
@@ -137,7 +132,7 @@ export function buildExtrudedItemGroup(
             [x1, y1, z0],
             [x1, y1, z1],
           ],
-          edgeUv
+          edgeUv,
         );
       }
       if (!opaque(px, py + 1)) {
@@ -150,7 +145,7 @@ export function buildExtrudedItemGroup(
             [x1, y0, z0],
             [x0, y0, z0],
           ],
-          edgeUv
+          edgeUv,
         );
       }
       if (!opaque(px, py - 1)) {
@@ -162,7 +157,7 @@ export function buildExtrudedItemGroup(
             [x1, y1, z1],
             [x0, y1, z1],
           ],
-          edgeUv
+          edgeUv,
         );
       }
     }
@@ -182,10 +177,7 @@ export function buildExtrudedItemGroup(
   texture.needsUpdate = true;
 
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(quads.positions, 3)
-  );
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(quads.positions, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(quads.uvs, 2));
   geo.setIndex(quads.indices);
   geo.computeVertexNormals();
@@ -223,9 +215,7 @@ export function buildExtrudedItemGroup(
 }
 
 /** Load PNG File → ImageData + THREE.Texture for extrusion. */
-export async function loadImageDataFromFile(
-  file: File
-): Promise<{ imageData: ImageData; texture: THREE.Texture }> {
+export async function loadImageDataFromFile(file: File): Promise<{ imageData: ImageData; texture: THREE.Texture }> {
   const url = URL.createObjectURL(file);
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {

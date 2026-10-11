@@ -14,7 +14,7 @@ export function applyDrillStack(
   layers: DrillLayer[],
   regionData: RegionRecord,
   resetDrillVisibility: (regionData: RegionRecord) => void,
-  drillDownRegion: (regionId: string, regionData: RegionRecord) => void
+  drillDownRegion: (regionId: string, regionData: RegionRecord) => void,
 ) {
   resetDrillVisibility(regionData);
   for (const layer of layers) {
@@ -22,10 +22,7 @@ export function applyDrillStack(
   }
 }
 
-export function getAncestryChain(
-  regionId: string,
-  data: RegionRecord
-): string[] {
+export function getAncestryChain(regionId: string, data: RegionRecord): string[] {
   const chain: string[] = [];
   let currentId: string | null = regionId;
   while (currentId && data[currentId]) {
@@ -47,9 +44,7 @@ export function getDrilledRealmIds(mapObjects: MapObject[]): Set<string> {
     if (obj.nested) continue;
     if (obj.visible) continue;
 
-    const nested = mapObjects.find(
-      (entry) => entry.nested && entry.baseId === obj.baseId
-    );
+    const nested = mapObjects.find((entry) => entry.nested && entry.baseId === obj.baseId);
     if (nested?.visible) {
       ids.add(obj.id);
     }
@@ -58,11 +53,7 @@ export function getDrilledRealmIds(mapObjects: MapObject[]): Set<string> {
   return ids;
 }
 
-function resolveNextDrillTarget(
-  regionId: string,
-  regionData: RegionRecord,
-  drilledIds: Set<string>
-): string | null {
+function resolveNextDrillTarget(regionId: string, regionData: RegionRecord, drilledIds: Set<string>): string | null {
   let currentId: string | null = regionId;
 
   while (currentId) {
@@ -86,27 +77,20 @@ function resolveNextDrillTarget(
 export function getNextDrillTarget(
   regionId: string,
   regionData: RegionRecord,
-  drillStack: DrillLayer[]
+  drillStack: DrillLayer[],
 ): string | null {
   const drilledIds = new Set(drillStack.map((layer) => layer.regionId));
   return resolveNextDrillTarget(regionId, regionData, drilledIds);
 }
 
-export function hasLandSubjects(
-  regionId: string,
-  regionData: RegionRecord
-): boolean {
+export function hasLandSubjects(regionId: string, regionData: RegionRecord): boolean {
   const subjects = regionData[regionId]?.subjects;
   if (!subjects?.length) return false;
 
   return subjects.some((subjectId) => (regionData[subjectId]?.size ?? 0) > 0);
 }
 
-export function canDrillIntoRegion(
-  regionId: string,
-  regionData: RegionRecord,
-  mapObjects: MapObject[]
-): boolean {
+export function canDrillIntoRegion(regionId: string, regionData: RegionRecord, mapObjects: MapObject[]): boolean {
   const drilledIds = getDrilledRealmIds(mapObjects);
   const targetId = resolveNextDrillTarget(regionId, regionData, drilledIds);
   if (!targetId || !hasLandSubjects(targetId, regionData)) {

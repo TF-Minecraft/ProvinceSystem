@@ -95,11 +95,7 @@ describe("canRestoreBackup", () => {
   });
 
   it("allows an already-restored row whose bytes are still present", () => {
-    expect(
-      canRestoreBackup(
-        backupRow({ restored: true, restored_at: 1_700_000_500, backup_exists: true })
-      )
-    ).toBe(true);
+    expect(canRestoreBackup(backupRow({ restored: true, restored_at: 1_700_000_500, backup_exists: true }))).toBe(true);
   });
 });
 
@@ -137,12 +133,8 @@ describe("canSubmitChronicleArchive", () => {
   });
 
   it("never submits dest main or dest dev", () => {
-    expect(canSubmitChronicleArchive({ ...ready, destId: "main", confirm: "main" })).toBe(
-      false
-    );
-    expect(canSubmitChronicleArchive({ ...ready, destId: "dev", confirm: "dev" })).toBe(
-      false
-    );
+    expect(canSubmitChronicleArchive({ ...ready, destId: "main", confirm: "main" })).toBe(false);
+    expect(canSubmitChronicleArchive({ ...ready, destId: "dev", confirm: "dev" })).toBe(false);
   });
 
   it("requires extra confirm for unknown and for an existing dest", () => {
@@ -152,7 +144,7 @@ describe("canSubmitChronicleArchive", () => {
         destId: "unknown",
         confirm: "unknown",
         allowUnknown: false,
-      })
+      }),
     ).toBe(false);
     expect(
       canSubmitChronicleArchive({
@@ -160,14 +152,10 @@ describe("canSubmitChronicleArchive", () => {
         destId: "unknown",
         confirm: "unknown",
         allowUnknown: true,
-      })
+      }),
     ).toBe(true);
-    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: false })).toBe(
-      false
-    );
-    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: true })).toBe(
-      true
-    );
+    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: false })).toBe(false);
+    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: true })).toBe(true);
   });
 });
 
@@ -198,9 +186,7 @@ describe("isNothingToWipe", () => {
 
   it("separates the empty-map 200 from a real wipe", () => {
     expect(isNothingToWipe(base)).toBe(true);
-    expect(
-      isNothingToWipe({ ...base, performed: true, wipe_id: 3, day_count: 3 })
-    ).toBe(false);
+    expect(isNothingToWipe({ ...base, performed: true, wipe_id: 3, day_count: 3 })).toBe(false);
   });
 });
 
@@ -232,7 +218,7 @@ describe("describeRestoreState", () => {
   it("names who restored it and when", () => {
     const text = describeRestoreState(
       backupRow({ restored: true, restored_at: 1_700_000_500, restored_by: "uuid-2" }),
-      "en-GB"
+      "en-GB",
     );
     expect(text).toContain("uuid-2");
     expect(text).toContain("2023");
@@ -269,12 +255,8 @@ describe("chronicleStaffFailure", () => {
 
   it("lets a code win over an ambiguous status", () => {
     // 404 is both "unknown map" and "nothing to restore"; the code decides.
-    expect(chronicleStaffFailure(404, "", "nothing_to_restore").title).toBe(
-      "Nothing to restore"
-    );
-    expect(chronicleStaffFailure(404, "no map", undefined, "load").title).toBe(
-      "Map not found"
-    );
+    expect(chronicleStaffFailure(404, "", "nothing_to_restore").title).toBe("Nothing to restore");
+    expect(chronicleStaffFailure(404, "no map", undefined, "load").title).toBe("Map not found");
   });
 
   it("names the permission node on 403", () => {
@@ -294,9 +276,7 @@ describe("chronicleStaffFailure", () => {
   });
 
   it("distinguishes a 404 backup id from a 404 map", () => {
-    expect(chronicleStaffFailure(404, "Backup not found", null, "restore").title).toBe(
-      "Backup not found"
-    );
+    expect(chronicleStaffFailure(404, "Backup not found", null, "restore").title).toBe("Backup not found");
   });
 
   it("reports a transport failure without implying a change happened", () => {
@@ -340,9 +320,7 @@ describe("canSubmitChronicleRestore", () => {
   it("refuses a row whose backup file is gone even with a perfect confirmation", () => {
     // The gap: `runRestore` gated on the token, busy flag and confirmation
     // only, so the destructive POST was one disabled-button bypass away.
-    expect(
-      canSubmitChronicleRestore(backupRow({ backup_exists: false }), "main", "main")
-    ).toBe(false);
+    expect(canSubmitChronicleRestore(backupRow({ backup_exists: false }), "main", "main")).toBe(false);
   });
 
   it("refuses a restorable row when the confirmation does not match exactly", () => {
@@ -355,9 +333,7 @@ describe("canSubmitChronicleRestore", () => {
   });
 
   it("still allows an already-restored row whose file is present", () => {
-    expect(
-      canSubmitChronicleRestore(backupRow({ restored: true }), "main", "main")
-    ).toBe(true);
+    expect(canSubmitChronicleRestore(backupRow({ restored: true }), "main", "main")).toBe(true);
   });
 });
 
@@ -367,12 +343,8 @@ describe("backupFileName", () => {
   });
 
   it("keeps a server-absolute path from reaching the page", () => {
-    expect(backupFileName("/srv/provinces/data/main/chronicle.bak.170")).toBe(
-      "chronicle.bak.170"
-    );
-    expect(backupFileName("C:\\data\\main\\chronicle.bak.170")).toBe(
-      "chronicle.bak.170"
-    );
+    expect(backupFileName("/srv/provinces/data/main/chronicle.bak.170")).toBe("chronicle.bak.170");
+    expect(backupFileName("C:\\data\\main\\chronicle.bak.170")).toBe("chronicle.bak.170");
   });
 
   it("says nothing rather than `null` when there is no backup file", () => {

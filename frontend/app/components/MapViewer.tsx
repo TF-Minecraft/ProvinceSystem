@@ -10,14 +10,9 @@ import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useMapMarkers } from "../hooks/useMapMarkers";
 import { isMarkerMapMode } from "../lib/mapMarkers";
-import {
-  installationToMapMarker,
-} from "../lib/installationMarkers";
+import { installationToMapMarker } from "../lib/installationMarkers";
 import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
-import {
-  settlementToMapMarker,
-  visibleSettlementKind,
-} from "../lib/settlementMarkers";
+import { settlementToMapMarker, visibleSettlementKind } from "../lib/settlementMarkers";
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
 import {
@@ -34,9 +29,7 @@ import {
   hasLandSubjects,
   type DrillLayer,
 } from "./map/drillUtils";
-import MapAccessGate, {
-  type MapAccessGateReason,
-} from "./map/MapAccessGate";
+import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
 import { provinceHoverBlocksRegionPick } from "../hooks/regionPick";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
@@ -50,28 +43,13 @@ import MapDrillBreadcrumb from "./map/shell/MapDrillBreadcrumb";
 import { RealmPanelContent } from "./map/shell/RealmPanel";
 import { PlacePanelContent } from "./map/shell/PlacePanel";
 import { GuildPanelContent } from "./map/shell/GuildPanel";
-import {
-  allGuilds,
-  findGuild,
-  guildKeyForId,
-  guildSeat,
-} from "@/app/lib/map/guildProfile";
+import { allGuilds, findGuild, guildKeyForId, guildSeat } from "@/app/lib/map/guildProfile";
 import { buildPlaceProfile, placeMarkerIdForSearchKey } from "@/app/lib/map/placeProfile";
 import { BrushIcon, FortIcon, HistoryIcon } from "./map/shell/MapIcons";
-import type {
-  CursorTooltip,
-  HoverOverlay,
-  MapId,
-  MapMode,
-  RegionRecord,
-} from "./map/types";
+import type { CursorTooltip, HoverOverlay, MapId, MapMode, RegionRecord } from "./map/types";
 import { mapFallbackSize, mapDisplayName } from "./map/types";
 import { buildMapSearchIndex, type MapSearchEntry } from "@/app/lib/map/mapSearch";
-import {
-  pickSurfaceFromImage,
-  pickSurfaceFromImageData,
-  type PickSurface,
-} from "@/app/lib/map/pickSurface";
+import { pickSurfaceFromImage, pickSurfaceFromImageData, type PickSurface } from "@/app/lib/map/pickSurface";
 import type { MapFocusInset } from "../hooks/useMapViewport";
 import type { MapRect } from "../lib/mapViewportMath";
 import { isTypingTarget } from "../lib/mapGestures";
@@ -100,11 +78,7 @@ import { directOwnership } from "@/app/lib/map/chronicleOwnership";
 import ChronicleProvincePaintLayer from "./chronicle/ChronicleProvincePaintLayer";
 import { useChronicleProvincePaint } from "../hooks/useChronicleProvincePaint";
 import { usesChronicleProvincePaint } from "@/app/lib/map/chronicleDayModes";
-import {
-  buildNationColorLut,
-  paintChronicleFrameToImageData,
-  type ProvinceIdGrid,
-} from "@/app/lib/map/chroniclePaint";
+import { buildNationColorLut, paintChronicleFrameToImageData, type ProvinceIdGrid } from "@/app/lib/map/chroniclePaint";
 import { mapControlClass } from "./map/ui";
 
 const actionLinkClass = `${mapControlClass} h-9 px-2.5 text-xs no-underline`;
@@ -116,11 +90,7 @@ const actionLinkClass = `${mapControlClass} h-9 px-2.5 text-xs no-underline`;
  */
 function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
   return (
-    <Link
-      href={chronicleStudioHref(mapId)}
-      className={actionLinkClass}
-      title="Review the map's history"
-    >
+    <Link href={chronicleStudioHref(mapId)} className={actionLinkClass} title="Review the map's history">
       <HistoryIcon size={15} className="text-[var(--tfmc-stone)]" />
       {/* The icon alone on a phone, where the top row is the search box's. */}
       <span className="max-md:sr-only">History</span>
@@ -205,24 +175,16 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const { maps } = useAccessibleMaps();
   const { canEdit, loading: canEditLoading } = useCanEditMap(mapId, sessionToken);
   const authToken = mapRequiresAuth(mapId, maps) ? sessionToken : null;
-  const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(
-    null
-  );
+  const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(null);
   const accessKey = JSON.stringify([mapId, authToken]);
-  const [checkedAccessKey, setCheckedAccessKey] = useState<string | null>(
-    () => mapId === "main" ? accessKey : null
-  );
+  const [checkedAccessKey, setCheckedAccessKey] = useState<string | null>(() => (mapId === "main" ? accessKey : null));
   const accessChecked = checkedAccessKey === accessKey;
 
   const [mapType, setMapType] = useState<MapMode>("nation");
   const fitMode = useResponsiveFitMode();
   const [installationsVisible, setInstallationsVisible] = useState(true);
-  const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
-    null
-  );
-  const [hoveredFortZoc, setHoveredFortZoc] = useState<HoverOverlay | null>(
-    null
-  );
+  const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(null);
+  const [hoveredFortZoc, setHoveredFortZoc] = useState<HoverOverlay | null>(null);
   /** The region under the pointer. Cleared as soon as the pointer leaves it. */
   const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
   /**
@@ -236,19 +198,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   /** A guild's card, `factionId/guildId`; exclusive with the two above. */
   const [selectedGuildKey, setSelectedGuildKey] = useState<string | null>(null);
   /** One card at a time: whatever opens clears the rest. */
-  const select = useCallback(
-    (next: { region?: string; place?: string; guild?: string } = {}) => {
-      setSelectedId(next.region ?? null);
-      setSelectedPlaceId(next.place ?? null);
-      setSelectedGuildKey(next.guild ?? null);
-    },
-    []
-  );
+  const select = useCallback((next: { region?: string; place?: string; guild?: string } = {}) => {
+    setSelectedId(next.region ?? null);
+    setSelectedPlaceId(next.place ?? null);
+    setSelectedGuildKey(next.guild ?? null);
+  }, []);
   const [drillStack, setDrillStack] = useState<DrillLayer[]>([]);
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
-  const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(
-    null
-  );
+  const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(null);
   const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
 
   const pickSurfaceRef = useRef<PickSurface | null>(null);
@@ -304,21 +261,9 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     return () => query.removeEventListener("change", apply);
   }, [setPaintEnabled]);
 
-  const {
-    mapObjects,
-    loadData,
-    resetDrillVisibility,
-    resetMapObjects,
-    getHoverRegion,
-    drillDownRegion,
-  } = useMapEngine();
-  const {
-    regionData,
-    loading,
-    accessError,
-    notCapturedForDay,
-    dayFileMissing,
-  } = useMapModeData({
+  const { mapObjects, loadData, resetDrillVisibility, resetMapObjects, getHoverRegion, drillDownRegion } =
+    useMapEngine();
+  const { regionData, loading, accessError, notCapturedForDay, dayFileMissing } = useMapModeData({
     mapId,
     mapType,
     loadData,
@@ -348,11 +293,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     };
   }, [needsGuildRealmData, guildRealmData, mapId, authToken]);
   const guildData: RegionRecord | null =
-    mapType === "nation"
-      ? regionData
-      : guildRealmData?.mapId === mapId
-        ? guildRealmData.data
-        : null;
+    mapType === "nation" ? regionData : guildRealmData?.mapId === mapId ? guildRealmData.data : null;
 
   /**
    * `prosperity` and `infestation` under a stored day. These are drawn on the
@@ -366,26 +307,10 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     day,
     sessionToken: authToken,
   });
-  const { layers: titleLayers } = useTitleLayerData(
-    mapId,
-    mapType,
-    regionData,
-    authToken,
-    day
-  );
-  const {
-    neighbors,
-    labelNeighbors,
-    centroids,
-    labelGrid,
-  } = useMapGeometry(mapId, authToken);
+  const { layers: titleLayers } = useTitleLayerData(mapId, mapType, regionData, authToken, day);
+  const { neighbors, labelNeighbors, centroids, labelGrid } = useMapGeometry(mapId, authToken);
   const markersEnabled = accessChecked && gateReason === null;
-  const {
-    settlements,
-    installations,
-    forts,
-    wars,
-  } = useMapMarkers(mapId, authToken, markersEnabled, day);
+  const { settlements, installations, forts, wars } = useMapMarkers(mapId, authToken, markersEnabled, day);
 
   const mapMarkers = useMemo(() => {
     if (!isMarkerMapMode(mapType)) return [];
@@ -395,22 +320,17 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     const guildSeatProvinces = new Set(
       allGuilds(regionData)
         .map((guild) => guild.homeProvince)
-        .filter((province): province is number => province !== null)
+        .filter((province): province is number => province !== null),
     );
     return [
       ...settlements.map((settlement) => {
-        const kind = visibleSettlementKind(
-          settlement.kind,
-          settlement.faction_id,
-          mapObjects
-        );
+        const kind = visibleSettlementKind(settlement.kind, settlement.faction_id, mapObjects);
         // Capitals retain larger markers than villages regardless of population.
         const markerSize =
           kind === "faction_capital"
             ? "large"
             : kind === "guild_capital" ||
-                (typeof settlement.province_id === "number" &&
-                  guildSeatProvinces.has(settlement.province_id))
+                (typeof settlement.province_id === "number" && guildSeatProvinces.has(settlement.province_id))
               ? "medium"
               : "small";
         return {
@@ -419,20 +339,10 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           weight: settlement.population ?? 0,
         } as const;
       }),
-      ...(installationsVisible
-        ? installations.map((installation) => installationToMapMarker(installation))
-        : []),
+      ...(installationsVisible ? installations.map((installation) => installationToMapMarker(installation)) : []),
       ...battleMarkers,
     ];
-  }, [
-    settlements,
-    installations,
-    wars,
-    installationsVisible,
-    mapType,
-    mapObjects,
-    regionData,
-  ]);
+  }, [settlements, installations, wars, installationsVisible, mapType, mapObjects, regionData]);
 
   /**
    * What the current mode's names are laid out from, and the content key a
@@ -442,10 +352,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     if (!LABEL_MAP_MODES.has(mapType)) return null;
     if (!regionData || !neighbors || !centroids) return null;
     const needsTitleLayers =
-      mapType === "duchy" ||
-      mapType === "kingdom" ||
-      mapType === "empire" ||
-      mapType === "trade";
+      mapType === "duchy" || mapType === "kingdom" || mapType === "empire" || mapType === "trade";
     if (needsTitleLayers && !titleLayers) {
       return null;
     }
@@ -465,16 +372,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         labelNeighbors: labelNeighbors ?? neighbors,
       });
     return { key, start };
-  }, [
-    mapId,
-    mapType,
-    regionData,
-    titleLayers,
-    neighbors,
-    labelNeighbors,
-    centroids,
-    labelGrid,
-  ]);
+  }, [mapId, mapType, regionData, titleLayers, neighbors, labelNeighbors, centroids, labelGrid]);
 
   // A layout not yet cached is worked out in slices of a few milliseconds,
   // with the browser free between them: done in one go, a first visit to the
@@ -516,7 +414,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
   const regionLabels = useMemo(
     () => filterRegionLabelsForMapObjects(labelGeometry, mapType, mapObjects),
-    [labelGeometry, mapType, mapObjects]
+    [labelGeometry, mapType, mapObjects],
   );
 
   useEffect(() => {
@@ -552,10 +450,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   } | null>(null);
   // A map or account switch can finish its metadata before the new grid.
   // Never paint the new ownership onto pixels retained from the old view.
-  const chronicleGrid =
-    day !== null && chronicleGridState?.key === accessKey
-      ? chronicleGridState.grid
-      : null;
+  const chronicleGrid = day !== null && chronicleGridState?.key === accessKey ? chronicleGridState.grid : null;
 
   useEffect(() => {
     if (day === null) {
@@ -606,8 +501,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       });
     return () => controller.abort();
   }, [needsProvinceGrid, liveProvinceGrid, mapId, authToken]);
-  const hoverProvinceGrid =
-    chronicleGrid ?? (liveProvinceGrid?.mapId === mapId ? liveProvinceGrid.grid : null);
+  const hoverProvinceGrid = chronicleGrid ?? (liveProvinceGrid?.mapId === mapId ? liveProvinceGrid.grid : null);
 
   // Terrain does not depend on geometry or region metadata. Let its manifest
   // start as soon as access is established; names arrive with their geometry.
@@ -717,16 +611,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       cancelled = true;
       revokeMapBlobUrl(blobUrl);
     };
-  }, [
-    mapId,
-    mapType,
-    accessChecked,
-    gateReason,
-    authToken,
-    mapCanvasMounted,
-    day,
-    pickKey,
-  ]);
+  }, [mapId, mapType, accessChecked, gateReason, authToken, mapCanvasMounted, day, pickKey]);
 
   /**
    * Chronicle mode's pick map.
@@ -758,22 +643,10 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       height,
       colorSpace: "srgb",
     } as ImageData;
-    paintChronicleFrameToImageData(
-      imageData,
-      chronicleGrid,
-      buildNationColorLut(directOwnership(regionData))
-    );
+    paintChronicleFrameToImageData(imageData, chronicleGrid, buildNationColorLut(directOwnership(regionData)));
     pickSurfaceRef.current = pickSurfaceFromImageData(imageData);
     setPickReadyFor(pickKey);
-  }, [
-    day,
-    accessChecked,
-    gateReason,
-    mapCanvasMounted,
-    chronicleGrid,
-    regionData,
-    pickKey,
-  ]);
+  }, [day, accessChecked, gateReason, mapCanvasMounted, chronicleGrid, regionData, pickKey]);
 
   const {
     onMouseMove,
@@ -784,8 +657,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   } = useMapHover({
     mapId,
     mapType,
-    loading:
-      loading || (!provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
+    loading: loading || (!provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
     regionData,
     pickSurfaceRef,
     viewportCoordsRef,
@@ -848,23 +720,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     if (!regionData || index < 0 || index >= drillStack.length) return;
 
     const nextStack = drillStack.slice(0, index + 1);
-    applyDrillStack(
-      nextStack,
-      regionData,
-      resetDrillVisibility,
-      drillDownRegion
-    );
+    applyDrillStack(nextStack, regionData, resetDrillVisibility, drillDownRegion);
     setDrillStack(nextStack);
   }
 
   const handleDrill = (regionId: string) => {
     if (!regionData) return;
 
-    const nextTargetId = getNextDrillTarget(
-      regionId,
-      regionData,
-      drillStack
-    );
+    const nextTargetId = getNextDrillTarget(regionId, regionData, drillStack);
     if (!nextTargetId) return;
 
     const region = regionData[nextTargetId];
@@ -872,9 +735,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
     const ancestry = getAncestryChain(regionId, regionData);
     const stackNames = drillStackNames(drillStack);
-    const isInsideStack = ancestry.some((id) =>
-      stackNames.includes(regionData[id]?.name ?? "")
-    );
+    const isInsideStack = ancestry.some((id) => stackNames.includes(regionData[id]?.name ?? ""));
 
     if (!isInsideStack) {
       setDrillStack([]);
@@ -890,11 +751,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       name: region.name || nextTargetId,
       rgb: region.rgb ?? "128,128,128",
     };
-    setDrillStack((prev) =>
-      prev.some((entry) => entry.regionId === layer.regionId)
-        ? prev
-        : [...prev, layer]
-    );
+    setDrillStack((prev) => (prev.some((entry) => entry.regionId === layer.regionId) ? prev : [...prev, layer]));
   };
 
   const handleMapClick = (event: React.MouseEvent<Element>) => {
@@ -959,7 +816,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
       setDrillStack(stack);
     },
-    [regionData, resetDrillVisibility, drillDownRegion]
+    [regionData, resetDrillVisibility, drillDownRegion],
   );
 
   /**
@@ -984,7 +841,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       applyDrillStack(stack, regionData, resetDrillVisibility, drillDownRegion);
       setDrillStack(stack);
     },
-    [regionData, drillStack, resetDrillVisibility, drillDownRegion]
+    [regionData, drillStack, resetDrillVisibility, drillDownRegion],
   );
 
   /** Close the details and put the map back as it was. */
@@ -1003,14 +860,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       const box = regionData?.[regionId]?.overlay;
       if (box) focusRect(box);
     },
-    [regionData, focusRect]
+    [regionData, focusRect],
   );
 
   const focusPoint = useCallback(
     (mapX: number, mapY: number) => {
       focusRect({ x: mapX - 80, y: mapY - 80, w: 160, h: 160 });
     },
-    [focusRect]
+    [focusRect],
   );
 
   /** A panel link or search result: show it, select it, frame it. */
@@ -1026,7 +883,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       }
       if (options.focus ?? true) focusRegion(regionId);
     },
-    [regionData, focusOnRegion, focusRegion, mapType, guildData, select]
+    [regionData, focusOnRegion, focusRegion, mapType, guildData, select],
   );
 
   /**
@@ -1046,7 +903,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     },
     // handleMapTypeChange is redefined each render but only reads current state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mapType, selectRegion]
+    [mapType, selectRegion],
   );
   useEffect(() => {
     if (!pendingRealmId || mapType !== "nation" || !regionData?.[pendingRealmId]) return;
@@ -1065,7 +922,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         settlements,
         installations,
       }),
-    [regionData, mapType, settlements, installations]
+    [regionData, mapType, settlements, installations],
   );
 
   const handleSearchSelect = useCallback(
@@ -1087,7 +944,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         focusPoint(entry.mapX, entry.mapY);
       }
     },
-    [selectRegion, focusPoint, select, guildData, settlements]
+    [selectRegion, focusPoint, select, guildData, settlements],
   );
 
   /**
@@ -1103,18 +960,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
    */
   const litRegionId =
     selectedId ??
-    (mapType === "trade" && selectedGuildKey
-      ? selectedGuildKey.slice(selectedGuildKey.indexOf("/") + 1)
-      : null);
+    (mapType === "trade" && selectedGuildKey ? selectedGuildKey.slice(selectedGuildKey.indexOf("/") + 1) : null);
   const selectedOverlay = useMemo<HoverOverlay | null>(() => {
     if (chronicle || !litRegionId || !regionData?.[litRegionId]) return null;
     // An opened realm is lit by the focus itself; its own crop would cover
     // the subjects it was opened to show.
     if (litRegionId === focusRealmId) return null;
     const target = getHoverRegion(mapType, mapId, litRegionId, regionData);
-    return target.imagePath
-      ? { url: target.imagePath, overlay: target.overlay }
-      : null;
+    return target.imagePath ? { url: target.imagePath, overlay: target.overlay } : null;
     // mapObjects: the visible ancestor changes when layers open and close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chronicle, litRegionId, regionData, getHoverRegion, mapType, mapId, mapObjects, focusRealmId]);
@@ -1126,14 +979,10 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const mapFocus = useMemo<MapFocus | null>(() => {
     if (chronicle || !regionData) return null;
     if (focusRealmId) {
-      const shape = mapObjects.find(
-        (obj) => !obj.nested && (obj.baseId ?? obj.id) === focusRealmId
-      );
+      const shape = mapObjects.find((obj) => !obj.nested && (obj.baseId ?? obj.id) === focusRealmId);
       if (!shape) return null;
       const objects = mapObjects.filter(
-        (obj) =>
-          obj.visible &&
-          getAncestryChain(obj.baseId ?? obj.id, regionData).includes(focusRealmId)
+        (obj) => obj.visible && getAncestryChain(obj.baseId ?? obj.id, regionData).includes(focusRealmId),
       );
       return {
         shapePath: `/${mapId}/regions/${mapType}/${shape.path}`,
@@ -1164,8 +1013,8 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   }, [selectedId, selectedPlaceId, selectedGuildKey, clearSelection]);
 
   const selectedMarker = useMemo(
-    () => (selectedPlaceId ? mapMarkers.find((m) => m.id === selectedPlaceId) ?? null : null),
-    [selectedPlaceId, mapMarkers]
+    () => (selectedPlaceId ? (mapMarkers.find((m) => m.id === selectedPlaceId) ?? null) : null),
+    [selectedPlaceId, mapMarkers],
   );
   // A pin that is no longer drawn (another mode, a stored day without it)
   // closes its card.
@@ -1173,16 +1022,13 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     if (selectedPlaceId && mapMarkers.length > 0 && !selectedMarker) setSelectedPlaceId(null);
   }, [selectedPlaceId, selectedMarker, mapMarkers.length]);
   const selectedPlace = useMemo(
-    () =>
-      selectedMarker
-        ? buildPlaceProfile(selectedMarker, settlements, installations, regionData)
-        : null,
-    [selectedMarker, settlements, installations, regionData]
+    () => (selectedMarker ? buildPlaceProfile(selectedMarker, settlements, installations, regionData) : null),
+    [selectedMarker, settlements, installations, regionData],
   );
 
   const selectedGuild = useMemo(
     () => (selectedGuildKey ? findGuild(guildData, selectedGuildKey) : null),
-    [selectedGuildKey, guildData]
+    [selectedGuildKey, guildData],
   );
   useEffect(() => {
     if (selectedGuildKey && guildData && !selectedGuild) setSelectedGuildKey(null);
@@ -1197,9 +1043,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   if (!accessChecked) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-          Loading map…
-        </p>
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading map…</p>
       </div>
     );
   }
@@ -1207,9 +1051,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   if (gateReason || accessError || provincePaint.accessError) {
     return (
       <MapAccessGate
-        reason={
-          gateReason ?? accessError ?? provincePaint.accessError ?? "unknown"
-        }
+        reason={gateReason ?? accessError ?? provincePaint.accessError ?? "unknown"}
         mapDisplayName={displayName}
       />
     );
@@ -1233,11 +1075,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
           This view wasn&rsquo;t recorded on this day.
         </p>
-        <button
-          type="button"
-          onClick={() => handleMapTypeChange("nation")}
-          className={actionLinkClass}
-        >
+        <button type="button" onClick={() => handleMapTypeChange("nation")} className={actionLinkClass}>
           Back to Realms
         </button>
       </div>
@@ -1264,14 +1102,8 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           Not available for {dayLabel}
         </p>
-        <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          Try another view or a nearby day.
-        </p>
-        <button
-          type="button"
-          onClick={() => handleMapTypeChange("nation")}
-          className={actionLinkClass}
-        >
+        <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">Try another view or a nearby day.</p>
+        <button type="button" onClick={() => handleMapTypeChange("nation")} className={actionLinkClass}>
           Back to Realms
         </button>
       </div>
@@ -1282,16 +1114,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const markerLayers = day === null && isMarkerMapMode(mapType);
   const layerToggles: MapLayerToggle[] = [];
   if (markerLayers) {
-    layerToggles.push(
-      {
-        id: "installations",
-        label: "Installations",
-        hint: "Forts, ports, airfields and stations",
-        icon: FortIcon,
-        checked: installationsVisible,
-        onChange: setInstallationsVisible,
-      }
-    );
+    layerToggles.push({
+      id: "installations",
+      label: "Installations",
+      hint: "Forts, ports, airfields and stations",
+      icon: FortIcon,
+      checked: installationsVisible,
+      onChange: setInstallationsVisible,
+    });
   }
   if (!chronicle) {
     layerToggles.push({
@@ -1306,16 +1136,16 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     });
   }
 
-  const plaqueActions = chronicle ? (dayActions ?? null) : (
+  const plaqueActions = chronicle ? (
+    (dayActions ?? null)
+  ) : (
     <>
       {archived ? (
         <Link href="/map" className={actionLinkClass}>
           Live map
         </Link>
       ) : null}
-      {!archived || showReviewHistory(mapId, maps) ? (
-        <ReviewHistoryLink mapId={mapId} />
-      ) : null}
+      {!archived || showReviewHistory(mapId, maps) ? <ReviewHistoryLink mapId={mapId} /> : null}
       {/* The editor writes to the *live* map. Reaching it from a stored day
           would invite editing today's titles while looking at last year's —
           hence the whole block being hidden in chronicle mode. */}
@@ -1353,9 +1183,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       guild={selectedGuild}
       regionData={guildData}
       seat={guildSeat(selectedGuild, settlements)}
-      tradeProvinces={
-        mapType === "trade" ? regionData?.[selectedGuild.id]?.size ?? null : null
-      }
+      tradeProvinces={mapType === "trade" ? (regionData?.[selectedGuild.id]?.size ?? null) : null}
       onSelectRegion={openRealm}
       onSelectPlace={(markerId) => select({ place: markerId })}
       onFocusPoint={focusPoint}
@@ -1374,28 +1202,24 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       onSelectGuild={(key) => select({ guild: key })}
     />
   ) : selectedId && regionData && selectedRegion ? (
-      <RealmPanelContent
-        mapId={mapId}
-        mapType={mapType}
-        regionId={selectedId}
-        regionData={regionData}
-        sessionToken={authToken}
-        settlements={settlements}
-        onSelectRegion={(id) => selectRegion(id)}
-        onFocusPoint={focusPoint}
-        onSelectPlace={(markerId) => {
-          select({ place: markerId });
-        }}
-        onFocusRegion={
-          selectedRegion.overlay ? () => focusRegion(selectedId) : undefined
-        }
-        onShowSubjects={
-          canShowSubjects ? () => openSubjects(selectedId) : undefined
-        }
-        onClose={clearSelection}
-        onSelectGuild={(key) => select({ guild: key })}
-      />
-    ) : null;
+    <RealmPanelContent
+      mapId={mapId}
+      mapType={mapType}
+      regionId={selectedId}
+      regionData={regionData}
+      sessionToken={authToken}
+      settlements={settlements}
+      onSelectRegion={(id) => selectRegion(id)}
+      onFocusPoint={focusPoint}
+      onSelectPlace={(markerId) => {
+        select({ place: markerId });
+      }}
+      onFocusRegion={selectedRegion.overlay ? () => focusRegion(selectedId) : undefined}
+      onShowSubjects={canShowSubjects ? () => openSubjects(selectedId) : undefined}
+      onClose={clearSelection}
+      onSelectGuild={(key) => select({ guild: key })}
+    />
+  ) : null;
 
   return (
     <MapShell
@@ -1406,11 +1230,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
           mapDisplayName={displayName}
           actions={plaqueActions}
           search={
-            <MapSearch
-              entries={searchEntries}
-              placeholder={`Search ${displayName}`}
-              onSelect={handleSearchSelect}
-            />
+            <MapSearch entries={searchEntries} placeholder={`Search ${displayName}`} onSelect={handleSearchSelect} />
           }
         />
       }
@@ -1426,11 +1246,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       }
       details={details}
       detailsKey={
-        selectedGuildKey
-          ? `guild:${selectedGuildKey}`
-          : selectedPlaceId
-            ? `place:${selectedPlaceId}`
-            : selectedId
+        selectedGuildKey ? `guild:${selectedGuildKey}` : selectedPlaceId ? `place:${selectedPlaceId}` : selectedId
       }
       onDetailsClose={clearSelection}
       status={loading ? `Loading ${mapModeLabel(mapType).toLowerCase()}…` : null}
@@ -1478,10 +1294,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         paint={chronicle ? undefined : paint}
         provinceOverlay={
           usesChronicleProvincePaint(mapType, day) ? (
-            <ChronicleProvincePaintLayer
-              grid={chronicleGrid}
-              lut={provincePaint.lut}
-            />
+            <ChronicleProvincePaintLayer grid={chronicleGrid} lut={provincePaint.lut} />
           ) : undefined
         }
         regionOverlay={

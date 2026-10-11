@@ -3,22 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import MapAccessGate, {
-  type MapAccessGateReason,
-} from "@/app/components/map/MapAccessGate";
+import MapAccessGate, { type MapAccessGateReason } from "@/app/components/map/MapAccessGate";
 import EditorDisabledGate from "@/app/components/map/editor/EditorDisabledGate";
 import EditorEntryGate from "@/app/components/map/editor/EditorEntryGate";
 import MapTitleEditor from "@/app/components/map/editor/MapTitleEditor";
 import { useCharacterSessionToken } from "@/app/hooks/useCharacterSessionToken";
-import {
-  MapAccessError,
-  fetchEditorProvinces,
-  staffMapAccessReason,
-} from "@/lib/map/api";
-import {
-  parseEditorTierParam,
-  parseRequiredEditorMapIdParam,
-} from "@/lib/map/editorParams";
+import { MapAccessError, fetchEditorProvinces, staffMapAccessReason } from "@/lib/map/api";
+import { parseEditorTierParam, parseRequiredEditorMapIdParam } from "@/lib/map/editorParams";
 import { isMapEditorEnabled } from "@/lib/map/editorAccess";
 
 export default function MapEditorPageClient() {
@@ -90,22 +81,12 @@ export default function MapEditorPageClient() {
   }
 
   if (gateReason) {
-    return (
-      <MapAccessGate reason={gateReason} mapDisplayName="the map editor" />
-    );
+    return <MapAccessGate reason={gateReason} mapDisplayName="the map editor" />;
   }
 
   if (!sessionToken) {
-    return (
-      <MapAccessGate reason="login" mapDisplayName="the map editor" />
-    );
+    return <MapAccessGate reason="login" mapDisplayName="the map editor" />;
   }
 
-  return (
-    <MapTitleEditor
-      mapId={mapId}
-      initialTier={initialTier}
-      sessionToken={sessionToken}
-    />
-  );
+  return <MapTitleEditor mapId={mapId} initialTier={initialTier} sessionToken={sessionToken} />;
 }

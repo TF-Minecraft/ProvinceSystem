@@ -23,7 +23,7 @@ export function useRegionHover({
     mapType: string,
     mapId: string,
     regionId: string,
-    regionData: RegionRecord
+    regionData: RegionRecord,
   ) => {
     regionId: string | null;
     imagePath: string | null;
@@ -41,7 +41,7 @@ export function useRegionHover({
   }, []);
 
   const clearHover = (
-    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
+    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void,
   ) => {
     lastHoverKeyRef.current = null;
     setHoveredOverlay(null);
@@ -57,20 +57,11 @@ export function useRegionHover({
     screenY: number,
     setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void,
     /** Hover this region rather than what the pick canvas has at (x, y). */
-    regionIdOverride?: string
+    regionIdOverride?: string,
   ): boolean => {
     const picked = regionIdOverride
       ? resolveRegionById(regionIdOverride, getHoverRegion, mapType, mapId, regionData)
-      : resolveRegionAtPickPixel(
-          surface,
-          x,
-          y,
-          rgbToId,
-          getHoverRegion,
-          mapType,
-          mapId,
-          regionData
-        );
+      : resolveRegionAtPickPixel(surface, x, y, rgbToId, getHoverRegion, mapType, mapId, regionData);
 
     if (!picked) {
       clearHover(setCursorTooltip);
@@ -81,22 +72,12 @@ export function useRegionHover({
 
     setSelectedRegionId(regionId);
 
-    const info = buildRegionInfo(
-      regionId,
-      regionData![regionId],
-      mapType,
-      regionData!
-    );
+    const info = buildRegionInfo(regionId, regionData![regionId], mapType, regionData!);
 
-    const tooltipText =
-      mapType === "nation"
-        ? info.title
-        : `${info.title} · ${info.tier}`;
+    const tooltipText = mapType === "nation" ? info.title : `${info.title} · ${info.tier}`;
 
     const hintLines = [
-      canDrillIntoRegion(regionId, regionData!, mapObjects)
-        ? "Click for details and subjects"
-        : "Click for details",
+      canDrillIntoRegion(regionId, regionData!, mapObjects) ? "Click for details and subjects" : "Click for details",
     ];
 
     setCursorTooltip({

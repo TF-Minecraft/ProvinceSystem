@@ -46,10 +46,7 @@ export type ChildTierPaintDiff = {
   prevSelectedMembers: readonly string[] | undefined;
 };
 
-export function extractCountyPaintSnapshot(
-  draft: TitleDraft,
-  selectedId: string | null
-): CountyPaintSnapshot {
+export function extractCountyPaintSnapshot(draft: TitleDraft, selectedId: string | null): CountyPaintSnapshot {
   const colors: Record<string, string> = {};
   const provincesByCounty: Record<string, readonly number[]> = {};
 
@@ -71,16 +68,13 @@ export function extractCountyPaintSnapshot(
 
 export function diffCountyPaintSnapshot(
   prev: CountyPaintSnapshot | null,
-  next: CountyPaintSnapshot
+  next: CountyPaintSnapshot,
 ): CountyPaintDiff | null {
   if (!prev) return null;
 
   const changedProvinceIds = new Set<number>();
   const changedCountyIds = new Set<string>();
-  const allCountyIds = new Set([
-    ...Object.keys(prev.provincesByCounty),
-    ...Object.keys(next.provincesByCounty),
-  ]);
+  const allCountyIds = new Set([...Object.keys(prev.provincesByCounty), ...Object.keys(next.provincesByCounty)]);
 
   for (const countyId of allCountyIds) {
     const prevProvinces = prev.provincesByCounty[countyId] ?? [];
@@ -118,7 +112,7 @@ export function isCountyPaintDiffEmpty(diff: CountyPaintDiff): boolean {
 export function extractChildTierPaintSnapshot(
   draft: TitleDraft,
   childDraft: Record<string, EditorTitleEntry>,
-  selectedId: string | null
+  selectedId: string | null,
 ): ChildTierPaintSnapshot {
   const childColors: Record<string, string> = {};
   const parentMembers: Record<string, readonly string[]> = {};
@@ -144,27 +138,21 @@ export function extractChildTierPaintSnapshot(
 
 export function diffChildTierPaintSnapshot(
   prev: ChildTierPaintSnapshot | null,
-  next: ChildTierPaintSnapshot
+  next: ChildTierPaintSnapshot,
 ): ChildTierPaintDiff | null {
   if (!prev) return null;
 
   const changedChildIds = new Set<string>();
   const changedParentIds = new Set<string>();
 
-  const allChildIds = new Set([
-    ...Object.keys(prev.childColors),
-    ...Object.keys(next.childColors),
-  ]);
+  const allChildIds = new Set([...Object.keys(prev.childColors), ...Object.keys(next.childColors)]);
   for (const childId of allChildIds) {
     if (prev.childColors[childId] !== next.childColors[childId]) {
       changedChildIds.add(childId);
     }
   }
 
-  const allParentIds = new Set([
-    ...Object.keys(prev.parentMembers),
-    ...Object.keys(next.parentMembers),
-  ]);
+  const allParentIds = new Set([...Object.keys(prev.parentMembers), ...Object.keys(next.parentMembers)]);
   for (const parentId of allParentIds) {
     const prevMembers = prev.parentMembers[parentId] ?? [];
     const nextMembers = next.parentMembers[parentId] ?? [];
@@ -187,9 +175,5 @@ export function diffChildTierPaintSnapshot(
 }
 
 export function isChildTierPaintDiffEmpty(diff: ChildTierPaintDiff): boolean {
-  return (
-    diff.changedChildIds.length === 0 &&
-    diff.changedParentIds.length === 0 &&
-    !diff.activeLayerChanged
-  );
+  return diff.changedChildIds.length === 0 && diff.changedParentIds.length === 0 && !diff.activeLayerChanged;
 }

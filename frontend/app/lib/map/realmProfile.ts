@@ -66,15 +66,16 @@ function finiteNumber(value: unknown): number | null {
 }
 
 function stringList(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((entry): entry is string => typeof entry === "string")
-    : [];
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
 /** `"powerful_faction"` → `"Powerful"`. */
 export function realmRankLabel(rank: unknown): string | null {
   if (typeof rank !== "string" || !rank.trim()) return null;
-  const word = rank.trim().replace(/_faction$/i, "").replace(/_/g, " ");
+  const word = rank
+    .trim()
+    .replace(/_faction$/i, "")
+    .replace(/_/g, " ");
   return word ? word[0].toUpperCase() + word.slice(1).toLowerCase() : null;
 }
 
@@ -161,17 +162,12 @@ export function buildRealmProfile(id: string, raw: RawRealm): RealmProfile {
  */
 export function realmCapitalSettlement(
   profile: Pick<RealmProfile, "id" | "capitalProvince">,
-  settlements: SettlementMarker[]
+  settlements: SettlementMarker[],
 ): SettlementMarker | null {
   if (profile.capitalProvince === null) return null;
-  const inCapital = settlements.filter(
-    (settlement) => settlement.province_id === profile.capitalProvince
-  );
+  const inCapital = settlements.filter((settlement) => settlement.province_id === profile.capitalProvince);
   return (
-    inCapital.find(
-      (settlement) =>
-        settlement.kind === "faction_capital" && settlement.faction_id === profile.id
-    ) ??
+    inCapital.find((settlement) => settlement.kind === "faction_capital" && settlement.faction_id === profile.id) ??
     inCapital[0] ??
     null
   );

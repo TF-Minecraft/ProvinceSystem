@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Callout,
   CommandTable,
@@ -27,14 +28,13 @@ export default function MagicPage() {
       width="lg"
       intro={
         <>
-          Magic is the mage path. You build a staff, wand or blade out of parts at a <StationLink name="Magic Station" />,
-          slot <strong>spell runes</strong> into it, and then <strong>attune</strong> it to one of ten
-          elements by feeding it magical energy you gathered from a shrine. Your character also
-          carries a personal <strong>Resonance</strong> score in every element, and a weapon will
+          Magic is the mage path. You build a staff, wand or blade out of parts at a{" "}
+          <StationLink name="Magic Station" />, slot <strong>spell runes</strong> into it, and then{" "}
+          <strong>attune</strong> it to one of ten elements by feeding it magical energy you gathered from a shrine.
+          Your character also carries a personal <strong>Resonance</strong> score in every element, and a weapon will
           simply refuse to fire if your Resonance is too low for what it holds.
         </>
       }
-
     >
       <WikiSectionHeading id="vocabulary" intro="Five words you need before anything else makes sense.">
         The words
@@ -66,41 +66,44 @@ export default function MagicPage() {
       />
 
       <Callout variant="note" title="It is per character, not per account">
-        Resonance and Equilibrium are stored against your active RP character. A second character
-        starts from zero. <code className="text-[var(--tfmc-accent)]">/resonance</code> refuses to
-        open at all without an active character.
+        Resonance and Equilibrium are stored against your active RP character. A second character starts from zero.{" "}
+        <code className="text-[var(--tfmc-accent)]">/resonance</code> refuses to open at all without an active
+        character.
       </Callout>
 
-      <WikiSectionHeading id="loop">
-        The loop
-      </WikiSectionHeading>
+      <WikiSectionHeading id="loop">The loop</WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
-          <strong>Be a Mage.</strong> Only Mages can use Mage Staffs, Mage Wands, Mage Blades and
-          Mage Armor. Its own description warns that mages are expensive to gear.
+          <strong>Be a Mage.</strong> Only Mages can use Mage Staffs, Mage Wands, Mage Blades and Mage Armor. Its own
+          description warns that mages are expensive to gear.
         </li>
         <li>
-          <strong>Open <code className="text-[var(--tfmc-accent)]">/resonance</code></strong> and
-          pick a cast mode: Surge (&quot;Power now. Corruption later.&quot;) or Flow (&quot;Slow
-          start. Stronger at depth.&quot;). Flow is the default.
+          <strong>
+            Open <code className="text-[var(--tfmc-accent)]">/resonance</code>
+          </strong>{" "}
+          and pick a cast mode: Surge (&quot;Power now. Corruption later.&quot;) or Flow (&quot;Slow start. Stronger at
+          depth.&quot;). Flow is the default.
         </li>
         <li>
-          <strong>Craft and place a <StationLink name="Magic Station" /></strong>, then interact with it to open the
-          assembly menu and build a weapon out of parts.
+          <strong>
+            Craft and place a <StationLink name="Magic Station" />
+          </strong>
+          , then interact with it to open the assembly menu and build a weapon out of parts.
         </li>
         <li>
-          <strong>Slot runes</strong> into the weapon&apos;s sockets. This is where spells come
-          from; a weapon with no runes casts nothing.
+          <strong>Slot runes</strong> into the weapon&apos;s sockets. This is where spells come from; a weapon with no
+          runes casts nothing.
         </li>
         <li>
-          <strong>Build a shrine</strong> and put an artifact on a <WikiItemLink name="Pedestal">pedestal</WikiItemLink> in it to soak up aura.
+          <strong>Build a shrine</strong> and put an artifact on a <WikiItemLink name="Pedestal">pedestal</WikiItemLink>{" "}
+          in it to soak up aura.
         </li>
         <li>
           <strong>Imprint and fill a charge</strong> on that same <WikiItemLink name="Pedestal">pedestal</WikiItemLink>.
         </li>
         <li>
-          <strong>Spend the charge on the weapon at the station</strong>, which starts the orb
-          minigame that decides how much of the charge actually sticks.
+          <strong>Spend the charge on the weapon at the station</strong>, which starts the orb minigame that decides how
+          much of the charge actually sticks.
         </li>
         <li>
           <strong>Hold the weapon and use the rune&apos;s casting key</strong> to cast. The default is right-click.
@@ -113,7 +116,10 @@ export default function MagicPage() {
       <div className="mt-4">
         <CraftingGrid recipe={magicStationRecipe} />
       </div>
-      <WikiSectionHeading id="rune-station" intro="A second vanilla 3x3 craft: the Magic Station pattern without the Amethyst Shard. Anyone can make one.">
+      <WikiSectionHeading
+        id="rune-station"
+        intro="A second vanilla 3x3 craft: the Magic Station pattern without the Amethyst Shard. Anyone can make one."
+      >
         The <StationLink name="Rune Station" />
       </WikiSectionHeading>
       <div className="mt-4">
@@ -124,7 +130,12 @@ export default function MagicPage() {
         armor runestones and Enchanted Charges. Every recipe takes 10 seconds and needs nothing but dust.
       </p>
       <DataTable
-        columns={[{ header: "Tier" }, { header: "Runestone", align: "right" }, { header: "Armor Runestone", align: "right" }, { header: "Enchanted Charge", align: "right" }]}
+        columns={[
+          { header: "Tier" },
+          { header: "Runestone", align: "right" },
+          { header: "Armor Runestone", align: "right" },
+          { header: "Enchanted Charge", align: "right" },
+        ]}
         rows={["Minor", "Lesser", "Greater", "Ascendant"].map((tier, i) => [
           tier,
           `${runestoneRecipes[i].ingredients[0].qty}x Enchanted Dust`,
@@ -133,10 +144,15 @@ export default function MagicPage() {
         ])}
       />
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {[...runestoneRecipes, ...armorRunestoneRecipes].map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+        {[...runestoneRecipes, ...armorRunestoneRecipes].map((recipe) => (
+          <CraftingGrid key={recipe.key} recipe={recipe} />
+        ))}
       </div>
 
-      <WikiSectionHeading id="rune-fit" intro="A socket takes a rune of its own tier or any tier below it. It never takes a bigger one.">
+      <WikiSectionHeading
+        id="rune-fit"
+        intro="A socket takes a rune of its own tier or any tier below it. It never takes a bigger one."
+      >
         Which rune fits which gear
       </WikiSectionHeading>
       <DataTable
@@ -152,16 +168,32 @@ export default function MagicPage() {
       <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
           <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armour
-          can take an Ascendant Armor Rune, but only if that piece came out Masterwork. A Tempered iron piece has a Minor
-          socket, so a Minor Armor Rune is the most it will ever hold.
+          can take an Ascendant Armor Rune, but only if that piece came out Masterwork. A Tempered iron piece has a
+          Minor socket, so a Minor Armor Rune is the most it will ever hold.
         </li>
-        <li>Armor runes go on Mage armour only. Every other armour piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
-        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armour.</li>
-        <li>A smaller rune in a bigger socket works, but it uses that socket up. If a piece has several sockets, the rune goes into the smallest one that can hold it.</li>
-        <li>Check the socket line in the item&apos;s lore before you spend the dust. It names the biggest size the piece accepts.</li>
+        <li>
+          Armor runes go on Mage armour only. Every other armour piece has a Gemstone socket instead, and an armor rune
+          will not fit it.
+        </li>
+        <li>
+          Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune
+          never fits armour.
+        </li>
+        <li>
+          A smaller rune in a bigger socket works, but it uses that socket up. If a piece has several sockets, the rune
+          goes into the smallest one that can hold it.
+        </li>
+        <li>
+          Check the socket line in the item&apos;s lore before you spend the dust. It names the biggest size the piece
+          accepts.
+        </li>
       </ul>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Quality is decided while smithing, see <a href="/wiki/advanced-crafting#quality" className="text-[var(--tfmc-accent)] underline underline-offset-2">Advanced Crafting</a>.
+        Quality is decided while smithing, see{" "}
+        <Link href="/wiki/advanced-crafting#quality" className="text-[var(--tfmc-accent)] underline underline-offset-2">
+          Advanced Crafting
+        </Link>
+        .
       </p>
 
       <WikiSectionHeading id="archetypes" intro="Three weapon shapes, each wanting a different set of parts.">
@@ -188,15 +220,17 @@ export default function MagicPage() {
         Enchanted Charges
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Charges are crafted at the <StationLink name="Rune Station" /> from Enchanted Dust: 4, 8, 12 and 16 dust for tiers I to IV.
+        Charges are crafted at the <StationLink name="Rune Station" /> from Enchanted Dust: 4, 8, 12 and 16 dust for
+        tiers I to IV.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {enchantedChargeRecipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+        {enchantedChargeRecipes.map((recipe) => (
+          <CraftingGrid key={recipe.key} recipe={recipe} />
+        ))}
       </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        A weak shrine cannot fill a high-tier charge. The band printed on a
-        charge (&quot;Cerrith II&quot;) is just a readout of how much aura it holds: under 10 shows
-        a dash, 10 is I, 40 is II, 75 is III, 110 is IV.
+        A weak shrine cannot fill a high-tier charge. The band printed on a charge (&quot;Cerrith II&quot;) is just a
+        readout of how much aura it holds: under 10 shows a dash, 10 is I, 40 is II, 75 is III, 110 is IV.
       </p>
       <WikiSectionHeading
         id="orbs"
@@ -205,16 +239,15 @@ export default function MagicPage() {
         The orb minigame
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Orbs circle you. <strong>Pale blue orbs are good</strong>: hit enough of them before the
-        window closes and the weapon settles, holding a percentage of the charge.{" "}
-        <strong>Rust-orange orbs tear the weapon</strong>: each one you hit adds{" "}
-        <strong>+5 persistent Rift</strong>, capped at 100. Missing a good orb costs 8% of the run.
+        Orbs circle you. <strong>Pale blue orbs are good</strong>: hit enough of them before the window closes and the
+        weapon settles, holding a percentage of the charge. <strong>Rust-orange orbs tear the weapon</strong>: each one
+        you hit adds <strong>+5 persistent Rift</strong>, capped at 100. Missing a good orb costs 8% of the run.
         Disconnecting mid-run ends it with whatever you had.
       </p>
       <Callout title="A charge can exceed your Resonance">
-        Right-click the prepared weapon on its station with the charge to start. If the charge
-        demands more Resonance than you have, a warning lists each shortfall and
-        asks you to right-click again to commit anyway. That second click spends the charge.
+        Right-click the prepared weapon on its station with the charge to start. If the charge demands more Resonance
+        than you have, a warning lists each shortfall and asks you to right-click again to commit anyway. That second
+        click spends the charge.
       </Callout>
       <StatGrid
         className="mt-4"
@@ -225,12 +258,15 @@ export default function MagicPage() {
         ]}
       />
       <Callout variant="warning" title="Rift persists until reduced by a later recharge">
-        Rift is the percentage chance a cast simply fails. A failed cast still spends the mana and
-        still starts the cooldown. You can only ever grind it back down 10 points at a time, and
-        only on a <em>later</em> successful charge.
+        Rift is the percentage chance a cast simply fails. A failed cast still spends the mana and still starts the
+        cooldown. You can only ever grind it back down 10 points at a time, and only on a <em>later</em> successful
+        charge.
       </Callout>
 
-      <WikiSectionHeading id="casting" intro="Hold the weapon and use the rune's casting key. The default is right-click.">
+      <WikiSectionHeading
+        id="casting"
+        intro="Hold the weapon and use the rune's casting key. The default is right-click."
+      >
         Casting
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
@@ -238,15 +274,11 @@ export default function MagicPage() {
         <code className="text-[var(--tfmc-accent)]">/magic rune keybind</code>.
       </p>
       <DataTable
-        columns={[
-          { header: "What you see", nowrap: true },
-          { header: "Why" },
-          { header: "What it costs you" },
-        ]}
+        columns={[{ header: "What you see", nowrap: true }, { header: "Why" }, { header: "What it costs you" }]}
         rows={[
           [
             "*Whiff*",
-            "Your Rift rolled against you (or the rarer \"Too many staffs\" message).",
+            'Your Rift rolled against you (or the rarer "Too many staffs" message).',
             "Mana and the cooldown, both already spent.",
           ],
           [
@@ -262,10 +294,10 @@ export default function MagicPage() {
         ]}
       />
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-        A refusal explains itself in chat, for example <em>&quot;This spell needs Cerrith 40. You carry
-        25.&quot;</em>, but only once every 30 seconds per weapon and element, so do not
-        expect a message on every click. To fix a <em>Damaged</em> weapon, right-click an{" "}
-        <strong>empty</strong> <StationLink name="Magic Station" />: it works the loose runes free and hands them back.
+        A refusal explains itself in chat, for example <em>&quot;This spell needs Cerrith 40. You carry 25.&quot;</em>,
+        but only once every 30 seconds per weapon and element, so do not expect a message on every click. To fix a{" "}
+        <em>Damaged</em> weapon, right-click an <strong>empty</strong> <StationLink name="Magic Station" />: it works
+        the loose runes free and hands them back.
       </p>
 
       <WikiSectionHeading
@@ -284,28 +316,25 @@ export default function MagicPage() {
         ]}
       />
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-        Mental Points (also called Focus) are a shared pool spent by both Magic meditation and
-        Research experiments. Wisdom adds +0.5 per hour per point and Intelligence +0.25. A full
-        pool of 150 takes fifteen real hours to refill and buys 150 orb hits. That is{" "}
-        <strong>600 potential Resonance</strong> before element caps, shared-artifact division and session limits.
+        Mental Points (also called Focus) are a shared pool spent by both Magic meditation and Research experiments.
+        Wisdom adds +0.5 per hour per point and Intelligence +0.25. A full pool of 150 takes fifteen real hours to
+        refill and buys 150 orb hits. That is <strong>600 potential Resonance</strong> before element caps,
+        shared-artifact division and session limits.
       </p>
       <Callout variant="warning" title="Resonance bleeds, and artifacts get tired of you">
-        Resonance decays at -0.02 per real hour, so a mage who stops meditating slowly slides back.
-        Worse, an artifact you meditate on gets <strong>muffled</strong>: it gives less and less
-        over 24 hours of use, and takes a full 7 days to recover. If several people are attuned to
-        one artifact, the yield is <em>divided</em> between them.
+        Resonance decays at -0.02 per real hour, so a mage who stops meditating slowly slides back. Worse, an artifact
+        you meditate on gets <strong>muffled</strong>: it gives less and less over 24 hours of use, and takes a full 7
+        days to recover. If several people are attuned to one artifact, the yield is <em>divided</em> between them.
         <br />
-        <strong>Storing an artifact in a chest raises its muffle, silently.</strong> Safe places are
-        your own inventory, a <WikiItemLink name="Pedestal">pedestal</WikiItemLink>, an <WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, or an item frame.
+        <strong>Storing an artifact in a chest raises its muffle, silently.</strong> Safe places are your own inventory,
+        a <WikiItemLink name="Pedestal">pedestal</WikiItemLink>, an{" "}
+        <WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, or an item frame.
       </Callout>
 
       <WikiSectionHeading id="commands" intro="View your Resonance profile and change a rune's casting key.">
         Commands
       </WikiSectionHeading>
-      <CommandTable
-        commands={magicCommands.commands}
-        showNotes={false}
-      />
+      <CommandTable commands={magicCommands.commands} showNotes={false} />
 
       <SeeAlso
         hrefs={[

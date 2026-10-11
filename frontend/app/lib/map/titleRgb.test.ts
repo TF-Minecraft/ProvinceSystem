@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  hexToRgbString,
-  parseRgbString,
-  rgbStringToHex,
-  tweakRgbNear,
-} from "./titleRgb";
+import { hexToRgbString, parseRgbString, rgbStringToHex, tweakRgbNear } from "./titleRgb";
 
 describe("titleRgb", () => {
   it("rgbStringToHex converts map rgb to hex", () => {

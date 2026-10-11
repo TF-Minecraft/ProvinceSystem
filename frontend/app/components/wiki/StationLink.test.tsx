@@ -23,8 +23,6 @@ describe("StationLink", () => {
   it("links the Animal Station mention in the real server-features guide", () => {
     const html = renderToStaticMarkup(<ServerFeaturesPage />);
     expect(html).toContain('href="/wiki/stations/animal-station"');
-    expect(html.replace(/<[^>]+>/g, "")).toContain(
-      "Right click an Animal Station to craft an Animal Whistle.",
-    );
+    expect(html.replace(/<[^>]+>/g, "")).toContain("Right click an Animal Station to craft an Animal Whistle.");
   });
 });

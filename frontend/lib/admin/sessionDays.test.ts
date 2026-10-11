@@ -20,10 +20,16 @@ function session(
   start: number,
   end_kind: PlayerSession["end_kind"],
   end: number | null,
-  duration_seconds: number | null
+  duration_seconds: number | null,
 ): PlayerSession {
-  return { id, start: point(start), end: end === null ? null : point(end), end_kind, duration_seconds,
-           last_observed: point(end ?? start) };
+  return {
+    id,
+    start: point(start),
+    end: end === null ? null : point(end),
+    end_kind,
+    duration_seconds,
+    last_observed: point(end ?? start),
+  };
 }
 
 const NOW = london(10, 7, 14);
@@ -74,34 +80,52 @@ describe("groupByDay", () => {
 describe("sessionRow", () => {
   it("shows a logout as a plain span", () => {
     expect(sessionRow(session("a", london(10, 4, 18, 20), "logout", london(10, 4, 19, 27), 4020))).toEqual({
-      start: "18:20", end: "19:27", duration: "1 h 7 min", note: null,
+      start: "18:20",
+      end: "19:27",
+      duration: "1 h 7 min",
+      note: null,
     });
   });
 
   it("names the end day past midnight, and the year past new year", () => {
-    expect(sessionRow(session("a", london(10, 6, 23, 10), "logout", london(10, 7, 0, 40), 5400)).end).toBe("Wed 7 Oct 00:40");
-    expect(sessionRow(session("a", london(12, 31, 23, 30), "logout", london(1, 1, 0, 10, 2027), 2400)).end)
-      .toBe("Fri 1 Jan 2027 00:10");
+    expect(sessionRow(session("a", london(10, 6, 23, 10), "logout", london(10, 7, 0, 40), 5400)).end).toBe(
+      "Wed 7 Oct 00:40",
+    );
+    expect(sessionRow(session("a", london(12, 31, 23, 30), "logout", london(1, 1, 0, 10, 2027), 2400)).end).toBe(
+      "Fri 1 Jan 2027 00:10",
+    );
   });
 
   it("hedges an open session", () => {
     expect(sessionRow(session("a", london(10, 7, 13, 32), "open", null, 2520))).toEqual({
-      start: "13:32", end: "now", duration: "42 min so far", note: "Probably online",
+      start: "13:32",
+      end: "now",
+      duration: "42 min so far",
+      note: "Probably online",
     });
   });
 
   it("gives a missing logout as a lower bound from the last sighting", () => {
     expect(sessionRow(session("a", london(10, 6, 23, 10), "last_observed", london(10, 7, 0, 40), 5400))).toEqual({
-      start: "23:10", end: "?", duration: "at least 1 h 30 min", note: "No logout recorded · last seen Wed 7 Oct 00:40",
+      start: "23:10",
+      end: "?",
+      duration: "at least 1 h 30 min",
+      note: "No logout recorded · last seen Wed 7 Oct 00:40",
     });
   });
 
   it("claims no length when nothing was seen after the login", () => {
     expect(sessionRow(session("a", london(9, 20, 13, 2), "last_observed", null, null))).toEqual({
-      start: "13:02", end: "?", duration: null, note: "No logout recorded",
+      start: "13:02",
+      end: "?",
+      duration: null,
+      note: "No logout recorded",
     });
     expect(sessionRow(session("a", london(10, 7, 13, 2), "unknown", null, null))).toEqual({
-      start: "13:02", end: "?", duration: null, note: "End unknown",
+      start: "13:02",
+      end: "?",
+      duration: null,
+      note: "End unknown",
     });
   });
 });

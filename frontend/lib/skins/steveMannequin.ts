@@ -56,7 +56,7 @@ function setSkinUVs(
   height: number,
   depth: number,
   textureWidth = 64,
-  textureHeight = 64
+  textureHeight = 64,
 ): void {
   const toFaceVertices = (x1: number, y1: number, x2: number, y2: number) => [
     new THREE.Vector2(x1 / textureWidth, 1.0 - y2 / textureHeight),
@@ -66,31 +66,11 @@ function setSkinUVs(
   ];
 
   const top = toFaceVertices(u + depth, v, u + width + depth, v + depth);
-  const bottom = toFaceVertices(
-    u + width + depth,
-    v,
-    u + width * 2 + depth,
-    v + depth
-  );
+  const bottom = toFaceVertices(u + width + depth, v, u + width * 2 + depth, v + depth);
   const left = toFaceVertices(u, v + depth, u + depth, v + depth + height);
-  const front = toFaceVertices(
-    u + depth,
-    v + depth,
-    u + width + depth,
-    v + depth + height
-  );
-  const right = toFaceVertices(
-    u + width + depth,
-    v + depth,
-    u + width + depth * 2,
-    v + height + depth
-  );
-  const back = toFaceVertices(
-    u + width + depth * 2,
-    v + depth,
-    u + width * 2 + depth * 2,
-    v + height + depth
-  );
+  const front = toFaceVertices(u + depth, v + depth, u + width + depth, v + depth + height);
+  const right = toFaceVertices(u + width + depth, v + depth, u + width + depth * 2, v + height + depth);
+  const back = toFaceVertices(u + width + depth * 2, v + depth, u + width * 2 + depth * 2, v + height + depth);
 
   const uvRight = [right[3], right[2], right[0], right[1]];
   const uvLeft = [left[3], left[2], left[0], left[1]];
@@ -118,7 +98,7 @@ function makeBox(
   height: number,
   depth: number,
   material: THREE.Material,
-  skinLayer: 1 | 2 = 1
+  skinLayer: 1 | 2 = 1,
 ): THREE.Mesh {
   const geo = new THREE.BoxGeometry(size[0], size[1], size[2]);
   setSkinUVs(geo, u, v, width, height, depth);
@@ -128,10 +108,7 @@ function makeBox(
 }
 
 /** Show/hide Minecraft skin outer layer (hat, jacket, sleeves, pants). */
-export function setSteveOuterLayerVisible(
-  root: THREE.Object3D,
-  visible: boolean
-): void {
+export function setSteveOuterLayerVisible(root: THREE.Object3D, visible: boolean): void {
   root.traverse((obj) => {
     if (obj.userData.skinLayer === 2) {
       obj.visible = visible;
@@ -142,10 +119,7 @@ export function setSteveOuterLayerVisible(
 export type ArmorPiece = "helmet" | "chest" | "arm" | "boot" | "legging";
 
 /** Show/hide flat armor helmet meshes (hide when a 3D helmet is attached). */
-export function setArmorHelmetVisible(
-  root: THREE.Object3D,
-  visible: boolean
-): void {
+export function setArmorHelmetVisible(root: THREE.Object3D, visible: boolean): void {
   root.traverse((obj) => {
     if (obj.userData.armorPiece === "helmet") {
       obj.visible = visible;
@@ -182,7 +156,7 @@ function makeArmorBox(
   depth: number,
   material: THREE.Material,
   piece: ArmorPiece,
-  armorLayer: 1 | 2
+  armorLayer: 1 | 2,
 ): THREE.Mesh {
   const geo = new THREE.BoxGeometry(size[0], size[1], size[2]);
   setSkinUVs(geo, u, v, width, height, depth, 64, 32);
@@ -210,10 +184,7 @@ function armorMaterial(texture: THREE.Texture): THREE.MeshBasicMaterial {
 
 function limbPivot(bone: THREE.Group): THREE.Object3D {
   const pivot = bone.children.find(
-    (c) =>
-      c instanceof THREE.Group &&
-      typeof c.name === "string" &&
-      !c.name.startsWith("itemSocket")
+    (c) => c instanceof THREE.Group && typeof c.name === "string" && !c.name.startsWith("itemSocket"),
   );
   return pivot ?? bone;
 }
@@ -227,7 +198,7 @@ function limbPivot(bone: THREE.Group): THREE.Object3D {
 export function attachSteveArmorOverlay(
   root: SteveMannequin,
   layer1: THREE.Texture | null,
-  layer2: THREE.Texture | null
+  layer2: THREE.Texture | null,
 ): void {
   clearSteveArmorOverlay(root);
   const { head, body, leftArm, rightArm, leftLeg, rightLeg } = root.bones;
@@ -249,15 +220,9 @@ export function attachSteveArmorOverlay(
     matBias.polygonOffsetFactor = 1;
     matBias.polygonOffsetUnits = 1;
 
-    body.add(
-      makeArmorBox(innerBody, 16, 16, 8, 12, 4, mat, "legging", 2)
-    );
-    limbPivot(rightLeg).add(
-      makeArmorBox(innerLeg, 0, 16, 4, 12, 4, matBias, "legging", 2)
-    );
-    limbPivot(leftLeg).add(
-      makeArmorBox(innerLeg, 0, 16, 4, 12, 4, matBias, "legging", 2)
-    );
+    body.add(makeArmorBox(innerBody, 16, 16, 8, 12, 4, mat, "legging", 2));
+    limbPivot(rightLeg).add(makeArmorBox(innerLeg, 0, 16, 4, 12, 4, matBias, "legging", 2));
+    limbPivot(leftLeg).add(makeArmorBox(innerLeg, 0, 16, 4, 12, 4, matBias, "legging", 2));
   }
 
   if (layer1) {
@@ -273,22 +238,13 @@ export function attachSteveArmorOverlay(
 
     body.add(makeArmorBox(outerBody, 16, 16, 8, 12, 4, mat, "chest", 1));
 
-    limbPivot(rightArm).add(
-      makeArmorBox(outerArm, 40, 16, armBase, 12, 4, matBias, "arm", 1)
-    );
-    limbPivot(leftArm).add(
-      makeArmorBox(outerArm, 40, 16, armBase, 12, 4, matBias, "arm", 1)
-    );
+    limbPivot(rightArm).add(makeArmorBox(outerArm, 40, 16, armBase, 12, 4, matBias, "arm", 1));
+    limbPivot(leftArm).add(makeArmorBox(outerArm, 40, 16, armBase, 12, 4, matBias, "arm", 1));
 
-    limbPivot(rightLeg).add(
-      makeArmorBox(outerLeg, 0, 16, 4, 12, 4, matBias, "boot", 1)
-    );
-    limbPivot(leftLeg).add(
-      makeArmorBox(outerLeg, 0, 16, 4, 12, 4, matBias, "boot", 1)
-    );
+    limbPivot(rightLeg).add(makeArmorBox(outerLeg, 0, 16, 4, 12, 4, matBias, "boot", 1));
+    limbPivot(leftLeg).add(makeArmorBox(outerLeg, 0, 16, 4, 12, 4, matBias, "boot", 1));
   }
 }
-
 
 function fallbackMaterial(): THREE.MeshBasicMaterial {
   return new THREE.MeshBasicMaterial({
@@ -301,13 +257,7 @@ function computeSkinScale(width: number): number {
   return width / 64;
 }
 
-function hasTransparency(
-  ctx: CanvasRenderingContext2D,
-  x0: number,
-  y0: number,
-  w: number,
-  h: number
-): boolean {
+function hasTransparency(ctx: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number): boolean {
   const imgData = ctx.getImageData(x0, y0, w, h);
   for (let i = 3; i < imgData.data.length; i += 4) {
     if (imgData.data[i] !== 0xff) return true;
@@ -315,13 +265,7 @@ function hasTransparency(
   return false;
 }
 
-function isAreaBlack(
-  ctx: CanvasRenderingContext2D,
-  x0: number,
-  y0: number,
-  w: number,
-  h: number
-): boolean {
+function isAreaBlack(ctx: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number): boolean {
   const imgData = ctx.getImageData(x0, y0, w, h);
   for (let i = 0; i < imgData.data.length; i += 4) {
     if (
@@ -336,13 +280,7 @@ function isAreaBlack(
   return true;
 }
 
-function isAreaWhite(
-  ctx: CanvasRenderingContext2D,
-  x0: number,
-  y0: number,
-  w: number,
-  h: number
-): boolean {
+function isAreaWhite(ctx: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number): boolean {
   const imgData = ctx.getImageData(x0, y0, w, h);
   for (let i = 0; i < imgData.data.length; i += 4) {
     if (
@@ -361,9 +299,7 @@ function isAreaWhite(
  * Auto-detect slim vs classic arms (same rules as skinview-utils inferModelType).
  * Checks the 2px strips that classic arms use but slim leaves unused.
  */
-export function inferArmModel(
-  source: CanvasImageSource & { width: number; height: number }
-): ArmModel {
+export function inferArmModel(source: CanvasImageSource & { width: number; height: number }): ArmModel {
   const width = source.width;
   const height = source.height;
   if (!width || !height || width < 64 || height < 32) return "default";
@@ -388,14 +324,8 @@ export function inferArmModel(
     checkTransparency(54, 20, 2, 12) ||
     checkTransparency(42, 48, 2, 4) ||
     checkTransparency(46, 52, 2, 12) ||
-    (checkBlack(50, 16, 2, 4) &&
-      checkBlack(54, 20, 2, 12) &&
-      checkBlack(42, 48, 2, 4) &&
-      checkBlack(46, 52, 2, 12)) ||
-    (checkWhite(50, 16, 2, 4) &&
-      checkWhite(54, 20, 2, 12) &&
-      checkWhite(42, 48, 2, 4) &&
-      checkWhite(46, 52, 2, 12));
+    (checkBlack(50, 16, 2, 4) && checkBlack(54, 20, 2, 12) && checkBlack(42, 48, 2, 4) && checkBlack(46, 52, 2, 12)) ||
+    (checkWhite(50, 16, 2, 4) && checkWhite(54, 20, 2, 12) && checkWhite(42, 48, 2, 4) && checkWhite(46, 52, 2, 12));
 
   return isSlim ? "slim" : "default";
 }
@@ -410,9 +340,7 @@ export function inferArmModelFromTexture(texture: THREE.Texture | null): ArmMode
       img instanceof HTMLCanvasElement ||
       (typeof ImageBitmap !== "undefined" && img instanceof ImageBitmap))
   ) {
-    return inferArmModel(
-      img as CanvasImageSource & { width: number; height: number }
-    );
+    return inferArmModel(img as CanvasImageSource & { width: number; height: number });
   }
   return "default";
 }
@@ -422,10 +350,7 @@ export function inferArmModelFromTexture(texture: THREE.Texture | null): ArmMode
  * Units: 1 = 1 pixel = 1/16 block. Feet at y=0.
  * Pass armModel explicitly, or omit to auto-detect from the texture.
  */
-export function createSteveMannequin(
-  texture: THREE.Texture | null,
-  armModel?: ArmModel
-): SteveMannequin {
+export function createSteveMannequin(texture: THREE.Texture | null, armModel?: ArmModel): SteveMannequin {
   const model = armModel ?? inferArmModelFromTexture(texture);
   const slim = model === "slim";
   const armW = slim ? 3 : 4;
@@ -506,10 +431,7 @@ export function createSteveMannequin(
   const body = new THREE.Group();
   body.name = "body";
   body.position.y = -6;
-  body.add(
-    makeBox([8, 12, 4], 16, 16, 8, 12, 4, layer1),
-    makeBox([8.5, 12.5, 4.5], 16, 32, 8, 12, 4, layer2, 2)
-  );
+  body.add(makeBox([8, 12, 4], 16, 16, 8, 12, 4, layer1), makeBox([8.5, 12.5, 4.5], 16, 32, 8, 12, 4, layer2, 2));
   skin.add(body);
 
   const rightArm = new THREE.Group();
@@ -521,17 +443,12 @@ export function createSteveMannequin(
   rightArmPivot.position.set(-armPivotX, armPivotY, 0);
   rightArmPivot.add(
     makeBox([armW, 12, 4], 40, 16, armW, 12, 4, layer1Biased),
-    makeBox([armOuter, 12.5, 4.5], 40, 32, armW, 12, 4, layer2Biased, 2)
+    makeBox([armOuter, 12.5, 4.5], 40, 32, armW, 12, 4, layer2Biased, 2),
   );
   rightArm.add(rightArmPivot);
 
   // Slot frame (right arm): tip + Rx(-90)/Rz(180) + local. JSON display on held child.
-  const handSocketRot = new THREE.Euler(
-    THREE.MathUtils.degToRad(-90),
-    0,
-    THREE.MathUtils.degToRad(180),
-    "XYZ"
-  );
+  const handSocketRot = new THREE.Euler(THREE.MathUtils.degToRad(-90), 0, THREE.MathUtils.degToRad(180), "XYZ");
   const itemSocketRight = new THREE.Group();
   itemSocketRight.name = "itemSocketRight";
   itemSocketRight.position.set(...HAND_SOCKET.tip);
@@ -550,7 +467,7 @@ export function createSteveMannequin(
   leftArmPivot.position.set(armPivotX, armPivotY, 0);
   leftArmPivot.add(
     makeBox([armW, 12, 4], 32, 48, armW, 12, 4, layer1Biased),
-    makeBox([armOuter, 12.5, 4.5], 48, 48, armW, 12, 4, layer2Biased, 2)
+    makeBox([armOuter, 12.5, 4.5], 48, 48, armW, 12, 4, layer2Biased, 2),
   );
   leftArm.add(leftArmPivot);
 
@@ -572,7 +489,7 @@ export function createSteveMannequin(
   rightLegPivot.position.y = -6;
   rightLegPivot.add(
     makeBox([4, 12, 4], 0, 16, 4, 12, 4, layer1Biased),
-    makeBox([4.5, 12.5, 4.5], 0, 32, 4, 12, 4, layer2Biased, 2)
+    makeBox([4.5, 12.5, 4.5], 0, 32, 4, 12, 4, layer2Biased, 2),
   );
   rightLeg.add(rightLegPivot);
   skin.add(rightLeg);
@@ -584,7 +501,7 @@ export function createSteveMannequin(
   leftLegPivot.position.y = -6;
   leftLegPivot.add(
     makeBox([4, 12, 4], 16, 48, 4, 12, 4, layer1Biased),
-    makeBox([4.5, 12.5, 4.5], 0, 48, 4, 12, 4, layer2Biased, 2)
+    makeBox([4.5, 12.5, 4.5], 0, 48, 4, 12, 4, layer2Biased, 2),
   );
   leftLeg.add(leftLegPivot);
   skin.add(leftLeg);
@@ -626,7 +543,7 @@ export type SteveArmPose =
 export function applySteveArmPose(
   root: SteveMannequin,
   pose: SteveArmPose,
-  options?: { chargeProgress?: number }
+  options?: { chargeProgress?: number },
 ): void {
   const { leftArm, rightArm } = root.bones;
   const holdX = THREE.MathUtils.degToRad(-22.5);
@@ -660,9 +577,7 @@ export function applySteveArmPose(
     const holdZ = 0.35;
     // Keyframes: pull_0 / pull_1 / pull_2 (g = 0 / 0.5 / 1)
     const pullPitch =
-      g <= 0.5
-        ? THREE.MathUtils.lerp(-0.55, -0.9, g * 2)
-        : THREE.MathUtils.lerp(-0.9, -0.95, (g - 0.5) * 2);
+      g <= 0.5 ? THREE.MathUtils.lerp(-0.55, -0.9, g * 2) : THREE.MathUtils.lerp(-0.9, -0.95, (g - 0.5) * 2);
     const pullZ =
       g <= 0.5
         ? THREE.MathUtils.lerp(-0.4, -0.65, g * 2) // pull_1 = former pull_2
@@ -675,13 +590,8 @@ export function applySteveArmPose(
     const holdPitch = -0.7;
     const holdZ = -0.35;
     const pullPitch =
-      g <= 0.5
-        ? THREE.MathUtils.lerp(-0.55, -0.9, g * 2)
-        : THREE.MathUtils.lerp(-0.9, -0.95, (g - 0.5) * 2);
-    const pullZ =
-      g <= 0.5
-        ? THREE.MathUtils.lerp(0.4, 0.65, g * 2)
-        : THREE.MathUtils.lerp(0.65, 1.05, (g - 0.5) * 2);
+      g <= 0.5 ? THREE.MathUtils.lerp(-0.55, -0.9, g * 2) : THREE.MathUtils.lerp(-0.9, -0.95, (g - 0.5) * 2);
+    const pullZ = g <= 0.5 ? THREE.MathUtils.lerp(0.4, 0.65, g * 2) : THREE.MathUtils.lerp(0.65, 1.05, (g - 0.5) * 2);
     leftArm.rotation.set(holdPitch, 0, holdZ);
     rightArm.rotation.set(pullPitch, 0, pullZ);
     return;
@@ -711,16 +621,14 @@ export function applySteveArmPose(
   leftArm.rotation.set(0, 0, 0);
 }
 
-export function loadSteveTexture(
-  url = "/skins/skin.png"
-): Promise<THREE.Texture | null> {
+export function loadSteveTexture(url = "/skins/skin.png"): Promise<THREE.Texture | null> {
   return new Promise((resolve) => {
     const loader = new THREE.TextureLoader();
     loader.load(
       url,
       (tex) => resolve(tex),
       undefined,
-      () => resolve(null)
+      () => resolve(null),
     );
   });
 }

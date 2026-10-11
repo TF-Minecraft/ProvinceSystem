@@ -34,39 +34,24 @@ function daysBetweenUtc(a: Date, b: Date): number {
 }
 
 function addDaysUtc(d: Date, days: number): Date {
-  const out = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  );
+  const out = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   out.setUTCDate(out.getUTCDate() + days);
   return out;
 }
 
-export function resolveCalendarConfig(
-  raw?: FantasyCalendarConfig | null
-): { yearOffset: number; eraSuffix: string } {
+export function resolveCalendarConfig(raw?: FantasyCalendarConfig | null): { yearOffset: number; eraSuffix: string } {
   const yearOffset = Number(raw?.year_offset);
   return {
     yearOffset: Number.isFinite(yearOffset) ? yearOffset : DEFAULT_YEAR_OFFSET,
     eraSuffix:
-      raw?.era_suffix != null && String(raw.era_suffix).trim()
-        ? String(raw.era_suffix).trim()
-        : DEFAULT_ERA_SUFFIX,
+      raw?.era_suffix != null && String(raw.era_suffix).trim() ? String(raw.era_suffix).trim() : DEFAULT_ERA_SUFFIX,
   };
 }
 
 /** IRL today mapped into fantasy year space (same as FantasyCalendar.getCurrentDate). */
-export function currentFantasyDate(
-  cfg?: FantasyCalendarConfig | null,
-  now: Date = new Date()
-): Date {
+export function currentFantasyDate(cfg?: FantasyCalendarConfig | null, now: Date = new Date()): Date {
   const { yearOffset } = resolveCalendarConfig(cfg);
-  return new Date(
-    Date.UTC(
-      now.getFullYear() - yearOffset,
-      now.getMonth(),
-      now.getDate()
-    )
-  );
+  return new Date(Date.UTC(now.getFullYear() - yearOffset, now.getMonth(), now.getDate()));
 }
 
 export function fromIsoFantasy(iso: string | null | undefined): Date | null {
@@ -88,11 +73,7 @@ export function fromIsoFantasy(iso: string | null | undefined): Date | null {
     return null;
   }
   const d = new Date(Date.UTC(year, month - 1, day));
-  if (
-    d.getUTCFullYear() !== year ||
-    d.getUTCMonth() !== month - 1 ||
-    d.getUTCDate() !== day
-  ) {
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) {
     return null;
   }
   return d;
@@ -106,43 +87,26 @@ export function birthdayFromAge(
   ageYears: number,
   salt: string,
   cfg?: FantasyCalendarConfig | null,
-  nowFantasy?: Date
+  nowFantasy?: Date,
 ): string | null {
   if (!Number.isFinite(ageYears) || ageYears < 0) return null;
   const age = Math.trunc(ageYears);
   const now = nowFantasy ?? currentFantasyDate(cfg);
   const earliest = addDaysUtc(
-    new Date(
-      Date.UTC(
-        now.getUTCFullYear() - (age + 1),
-        now.getUTCMonth(),
-        now.getUTCDate()
-      )
-    ),
-    1
+    new Date(Date.UTC(now.getUTCFullYear() - (age + 1), now.getUTCMonth(), now.getUTCDate())),
+    1,
   );
-  const latest = new Date(
-    Date.UTC(
-      now.getUTCFullYear() - age,
-      now.getUTCMonth(),
-      now.getUTCDate()
-    )
-  );
+  const latest = new Date(Date.UTC(now.getUTCFullYear() - age, now.getUTCMonth(), now.getUTCDate()));
   const daySpan = daysBetweenUtc(earliest, latest);
   if (daySpan < 0) {
     return toIsoFantasy(latest);
   }
-  const offset =
-    daySpan === 0 ? 0 : hashSaltU32(`${salt}:${age}`) % (daySpan + 1);
+  const offset = daySpan === 0 ? 0 : hashSaltU32(`${salt}:${age}`) % (daySpan + 1);
   return toIsoFantasy(addDaysUtc(earliest, offset));
 }
 
 /** Full years between birthday and now (AgeCalculator.computeAgeYears). */
-export function ageFromBirthday(
-  iso: string,
-  cfg?: FantasyCalendarConfig | null,
-  nowFantasy?: Date
-): number | null {
+export function ageFromBirthday(iso: string, cfg?: FantasyCalendarConfig | null, nowFantasy?: Date): number | null {
   const birthday = fromIsoFantasy(iso);
   if (!birthday) return null;
   const now = nowFantasy ?? currentFantasyDate(cfg);
@@ -161,14 +125,12 @@ export function toIsoFantasy(d: Date): string {
 
 export function formatFantasyBirthday(
   iso: string | null | undefined,
-  cfg?: FantasyCalendarConfig | null
+  cfg?: FantasyCalendarConfig | null,
 ): string | null {
   const d = fromIsoFantasy(iso);
   if (!d) return null;
   const { eraSuffix } = resolveCalendarConfig(cfg);
-  const yearLabel = eraSuffix
-    ? `${d.getUTCFullYear()} ${eraSuffix}`
-    : String(d.getUTCFullYear());
+  const yearLabel = eraSuffix ? `${d.getUTCFullYear()} ${eraSuffix}` : String(d.getUTCFullYear());
   return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}/${yearLabel}`;
 }
 
@@ -176,10 +138,7 @@ export function formatFantasyBirthday(
  * Parse fantasy display dates such as 30.10.351, 30/10/351, or 30/10/351 AE.
  * Also accepts ISO YYYY-MM-DD.
  */
-export function parseBirthdayInput(
-  input: string,
-  cfg?: FantasyCalendarConfig | null
-): string | null {
+export function parseBirthdayInput(input: string, cfg?: FantasyCalendarConfig | null): string | null {
   if (!input || !String(input).trim()) return null;
   let raw = String(input).trim().replace(/,/g, ".");
   const { eraSuffix } = resolveCalendarConfig(cfg);
@@ -196,11 +155,7 @@ export function parseBirthdayInput(
   const day = Number(parts[0]);
   const month = Number(parts[1]);
   const year = Number(parts[2]);
-  if (
-    !Number.isFinite(day) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(year)
-  ) {
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
     return null;
   }
   const iso = `${year}-${pad2(month)}-${pad2(day)}`;
@@ -212,7 +167,7 @@ export function resolvedBirthdayIso(
   ageRaw: string,
   salt: string,
   birthdayOverride: string | null | undefined,
-  cfg?: FantasyCalendarConfig | null
+  cfg?: FantasyCalendarConfig | null,
 ): string | null {
   if (birthdayOverride && fromIsoFantasy(birthdayOverride)) {
     return birthdayOverride;
@@ -227,7 +182,7 @@ export function fictionalBirthdayLabel(
   ageRaw: string,
   salt: string,
   cfg?: FantasyCalendarConfig | null,
-  birthdayOverride?: string | null
+  birthdayOverride?: string | null,
 ): string | null {
   const iso = resolvedBirthdayIso(ageRaw, salt, birthdayOverride, cfg);
   return formatFantasyBirthday(iso, cfg);

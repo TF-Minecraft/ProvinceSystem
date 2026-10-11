@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  CharactersApiError,
-  fetchMaskedTemplateBlob,
-} from "../../../lib/characters/api";
+import { CharactersApiError, fetchMaskedTemplateBlob } from "../../../lib/characters/api";
 import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
-import {
-  assertWardrobeSkinPng,
-  WARDROBE_INVALID_PNG_MESSAGE,
-} from "../../../lib/characters/wardrobeSkin";
+import { assertWardrobeSkinPng, WARDROBE_INVALID_PNG_MESSAGE } from "../../../lib/characters/wardrobeSkin";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
 import { inferArmModel } from "../../../lib/skins/steveMannequin";
 import FancyCheckbox from "../skins/FancyCheckbox";
@@ -99,14 +93,7 @@ export default function WardrobeSlotModal({
     setDisplayName(initialDisplayName);
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(t);
-  }, [
-    open,
-    defaultEquipOnSave,
-    defaultCreateMasked,
-    defaultArmModel,
-    slotId,
-    initialDisplayName,
-  ]);
+  }, [open, defaultEquipOnSave, defaultCreateMasked, defaultArmModel, slotId, initialDisplayName]);
 
   useEffect(() => {
     if (!file) {
@@ -175,19 +162,14 @@ export default function WardrobeSlotModal({
 
   if (!open) return null;
 
-  const showMaskedToggle =
-    canCreateMasked && createMasked && Boolean(file);
+  const showMaskedToggle = canCreateMasked && createMasked && Boolean(file);
   const previewSource =
     showMaskedToggle && previewMode === "masked" && maskedPreviewUrl
       ? maskedPreviewUrl
       : previewUrl || existingTextureSrc;
   const trimmedName = displayName.trim();
-  const nameChanged =
-    trimmedName !== String(initialDisplayName || "").trim();
-  const canSave =
-    !localErr &&
-    !saving &&
-    (Boolean(file) || (filled && (nameChanged || armModel !== defaultArmModel)));
+  const nameChanged = trimmedName !== String(initialDisplayName || "").trim();
+  const canSave = !localErr && !saving && (Boolean(file) || (filled && (nameChanged || armModel !== defaultArmModel)));
 
   async function onPick(f: File | null) {
     setLocalErr(null);
@@ -197,9 +179,7 @@ export default function WardrobeSlotModal({
     try {
       await assertWardrobeSkinPng(f);
     } catch (err) {
-      setLocalErr(
-        err instanceof Error ? err.message : WARDROBE_INVALID_PNG_MESSAGE
-      );
+      setLocalErr(err instanceof Error ? err.message : WARDROBE_INVALID_PNG_MESSAGE);
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -232,17 +212,12 @@ export default function WardrobeSlotModal({
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[var(--tfmc-forest)] p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2
-          id={titleId}
-          className="font-[family-name:var(--font-display)] text-xl text-[var(--tfmc-cream)]"
-        >
+        <h2 id={titleId} className="font-[family-name:var(--font-display)] text-xl text-[var(--tfmc-cream)]">
           {slotLabel}
         </h2>
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">64×64 PNG skin.</p>
         {slotId === "masked" ? (
-          <p className="mt-2 text-sm text-[var(--tfmc-stone)]">
-            Tip: match your Base skin&apos;s head.
-          </p>
+          <p className="mt-2 text-sm text-[var(--tfmc-stone)]">Tip: match your Base skin&apos;s head.</p>
         ) : null}
 
         <div className="mt-4 flex justify-center">
@@ -268,13 +243,7 @@ export default function WardrobeSlotModal({
         </div>
         {showMaskedToggle ? (
           <div className="mt-3 flex items-center justify-center gap-3 text-sm">
-            <span
-              className={
-                previewMode === "base"
-                  ? "text-[var(--tfmc-cream)]"
-                  : "text-[var(--tfmc-stone)]"
-              }
-            >
+            <span className={previewMode === "base" ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}>
               Base
             </span>
             <button
@@ -284,9 +253,7 @@ export default function WardrobeSlotModal({
               aria-checked={previewMode === "masked"}
               aria-label="Preview masked version"
               disabled={maskedPreviewBusy || !maskedPreviewUrl}
-              onClick={() =>
-                setPreviewMode((m) => (m === "base" ? "masked" : "base"))
-              }
+              onClick={() => setPreviewMode((m) => (m === "base" ? "masked" : "base"))}
               className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
                 previewMode === "masked"
                   ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)]"
@@ -300,26 +267,14 @@ export default function WardrobeSlotModal({
                 }`}
               />
             </button>
-            <span
-              className={
-                previewMode === "masked"
-                  ? "text-[var(--tfmc-cream)]"
-                  : "text-[var(--tfmc-stone)]"
-              }
-            >
+            <span className={previewMode === "masked" ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}>
               Masked
             </span>
           </div>
         ) : null}
         {previewSource ? (
           <div className="mt-3 flex items-center justify-center gap-3 text-sm">
-            <span
-              className={
-                armModel === "default"
-                  ? "text-[var(--tfmc-cream)]"
-                  : "text-[var(--tfmc-stone)]"
-              }
-            >
+            <span className={armModel === "default" ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}>
               Wide
             </span>
             <button
@@ -329,9 +284,7 @@ export default function WardrobeSlotModal({
               aria-checked={armModel === "slim"}
               aria-label="Slim arms"
               disabled={saving}
-              onClick={() =>
-                setArmModel((m) => (m === "slim" ? "default" : "slim"))
-              }
+              onClick={() => setArmModel((m) => (m === "slim" ? "default" : "slim"))}
               className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
                 armModel === "slim"
                   ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)]"
@@ -345,21 +298,12 @@ export default function WardrobeSlotModal({
                 }`}
               />
             </button>
-            <span
-              className={
-                armModel === "slim"
-                  ? "text-[var(--tfmc-cream)]"
-                  : "text-[var(--tfmc-stone)]"
-              }
-            >
-              Slim
-            </span>
+            <span className={armModel === "slim" ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}>Slim</span>
           </div>
         ) : null}
 
         <label className="mt-4 flex flex-col gap-1.5 text-sm text-[var(--tfmc-cream)]">
-          Name{" "}
-          <span className="font-normal text-[var(--tfmc-stone)]">(optional)</span>
+          Name <span className="font-normal text-[var(--tfmc-stone)]">(optional)</span>
           <input
             type="text"
             maxLength={NAME_MAX}
@@ -389,11 +333,7 @@ export default function WardrobeSlotModal({
 
         {canEquip ? (
           <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm text-[var(--tfmc-cream)]">
-            <FancyCheckbox
-              checked={equipOnSave}
-              disabled={saving || !file}
-              onChange={setEquipOnSave}
-            />
+            <FancyCheckbox checked={equipOnSave} disabled={saving || !file} onChange={setEquipOnSave} />
             <span>Equip on save</span>
           </label>
         ) : null}
@@ -449,10 +389,7 @@ export default function WardrobeSlotModal({
             disabled={!canSave}
             onClick={() => {
               if (!canSave) return;
-              const name =
-                trimmedName.length === 0
-                  ? null
-                  : trimmedName.slice(0, NAME_MAX);
+              const name = trimmedName.length === 0 ? null : trimmedName.slice(0, NAME_MAX);
               onSave({
                 file,
                 equip: Boolean(file) && canEquip && equipOnSave,

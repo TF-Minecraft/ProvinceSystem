@@ -25,17 +25,10 @@ type EditorDraftSlice = {
   countyTierDirty: boolean;
   duchyTierDirty: boolean;
   kingdomTierDirty: boolean;
-  toggleChildMember: (
-    parentId: string,
-    childId: string,
-    options?: ToggleChildInParentOptions
-  ) => void;
+  toggleChildMember: (parentId: string, childId: string, options?: ToggleChildInParentOptions) => void;
 };
 
-function prerequisiteChildDirty(
-  childTier: EditorTier,
-  editor: EditorDraftSlice
-): boolean {
+function prerequisiteChildDirty(childTier: EditorTier, editor: EditorDraftSlice): boolean {
   if (childTier === "county") return editor.countyTierDirty;
   if (childTier === "duchy") return editor.duchyTierDirty;
   if (childTier === "kingdom") return editor.kingdomTierDirty;
@@ -71,38 +64,24 @@ export function useTitleTierEditor({
     loading: childLayerLoading,
     error: childLayerError,
     isEmpty: childLayerEmpty,
-  } = useEditorChildLayer(
-    mapId,
-    sessionToken,
-    config?.childTier ?? null,
-    enabled
-  );
+  } = useEditorChildLayer(mapId, sessionToken, config?.childTier ?? null, enabled);
 
   const {
     childPick,
     loading: childPickLoading,
     error: childPickError,
-  } = useEditorChildPick(
-    mapId,
-    sessionToken,
-    childDraft,
-    config?.pickMapdataPath ?? "",
-    enabled && !childLayerLoading
-  );
+  } = useEditorChildPick(mapId, sessionToken, childDraft, config?.pickMapdataPath ?? "", enabled && !childLayerLoading);
 
   const { titleLayers, loading: titleLayersLoading } = useEditorTitleLayers(
     mapId,
     sessionToken,
     config?.layersNeeded ?? [],
-    enabled
+    enabled,
   );
 
   const prerequisiteBanner = useMemo(() => {
     if (!config) return null;
-    const childDirty = prerequisiteChildDirty(
-      config.prerequisiteChildTier,
-      editor
-    );
+    const childDirty = prerequisiteChildDirty(config.prerequisiteChildTier, editor);
     if (childLayerEmpty || childDirty) {
       return config.prerequisiteMessage;
     }
@@ -132,7 +111,7 @@ export function useTitleTierEditor({
         usedRgbs,
       });
     },
-    [config, editor, childDraft]
+    [config, editor, childDraft],
   );
 
   return {

@@ -8,9 +8,7 @@ import {
   warBattleMarkersFromWars,
 } from "./warBattleMarkers";
 
-const sampleSlot = (
-  overrides: Partial<WarScheduleSlot> = {}
-): WarScheduleSlot => ({
+const sampleSlot = (overrides: Partial<WarScheduleSlot> = {}): WarScheduleSlot => ({
   schedule_index: 0,
   leg: "invasion" as const,
   province_id: 20,
@@ -33,9 +31,7 @@ describe("formatBattleSlotStatus", () => {
 
 describe("formatBattleMarkerTitle", () => {
   it("builds title with kind, province, and status", () => {
-    expect(formatBattleMarkerTitle(sampleSlot())).toBe(
-      "Siege - Greenfort - Next battle"
-    );
+    expect(formatBattleMarkerTitle(sampleSlot())).toBe("Siege - Greenfort - Next battle");
   });
 
   it("strips Minecraft hex from province names", () => {
@@ -43,8 +39,8 @@ describe("formatBattleMarkerTitle", () => {
       formatBattleMarkerTitle(
         sampleSlot({
           province_name: "§x§f§f§0§0§0§0Greenfort",
-        })
-      )
+        }),
+      ),
     ).toBe("Siege - Greenfort - Next battle");
   });
 
@@ -54,8 +50,8 @@ describe("formatBattleMarkerTitle", () => {
         sampleSlot({
           province_name: undefined,
           province_id: 42,
-        })
-      )
+        }),
+      ),
     ).toBe("Siege - Province 42 - Next battle");
   });
 
@@ -64,8 +60,8 @@ describe("formatBattleMarkerTitle", () => {
       formatBattleMarkerTitle(
         sampleSlot({
           display_name: "Siege of Greenfort",
-        })
-      )
+        }),
+      ),
     ).toBe("Siege of Greenfort - Next battle");
   });
 });
@@ -87,10 +83,7 @@ describe("slotToMapMarker", () => {
   });
 
   it("uses base scale 1 for non-next slots", () => {
-    const marker = slotToMapMarker(
-      "war-1",
-      sampleSlot({ status: "upcoming" })
-    );
+    const marker = slotToMapMarker("war-1", sampleSlot({ status: "upcoming" }));
     expect(marker.baseScale).toBe(1);
     expect(marker.highlightRing).toBeUndefined();
   });
@@ -141,9 +134,7 @@ describe("warBattleMarkersFromWars", () => {
     const wars: WarExport[] = [
       {
         id: "1",
-        campaign_battle_schedule: [
-          sampleSlot({ map_x: undefined, map_y: undefined }),
-        ],
+        campaign_battle_schedule: [sampleSlot({ map_x: undefined, map_y: undefined })],
       },
     ];
 

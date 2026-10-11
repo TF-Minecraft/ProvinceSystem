@@ -1,13 +1,9 @@
 import Link from "next/link";
 
 import { mapDisplayName, type MapId } from "../map/types";
-import {
-  chronicleStudioHref,
-  liveMapHref,
-} from "../../lib/map/chronicleDayRoute";
+import { chronicleStudioHref, liveMapHref } from "../../lib/map/chronicleDayRoute";
 
-const linkClass =
-  "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
+const linkClass = "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
 
 /**
  * What a `[day]` route renders when the URL segment is not an exact
@@ -24,12 +20,8 @@ export default function InvalidChronicleDay({ mapId }: { mapId: MapId }) {
       <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
         {mapDisplayName(mapId)} timelapse
       </p>
-      <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-        Not a valid date
-      </p>
-      <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-        Pick a day from the timelapse instead.
-      </p>
+      <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">Not a valid date</p>
+      <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">Pick a day from the timelapse instead.</p>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
         <Link href={chronicleStudioHref(mapId)} className={linkClass}>
           &larr; Back to the timelapse

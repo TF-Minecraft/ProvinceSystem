@@ -1,9 +1,6 @@
 import { parseRgbString } from "@/app/lib/map/titleRgb";
 
-import {
-  createRgbaU32View,
-  packRgbaForU32View,
-} from "./editor/paintTitleLayers";
+import { createRgbaU32View, packRgbaForU32View } from "./editor/paintTitleLayers";
 
 /**
  * Quarter-scale province id grid as `deserializeProvinceIdGrid` hands it back.
@@ -23,10 +20,7 @@ export type ProvinceIdGrid = {
  * keeps it disjoint from `provinces`, so the fill pass below ignores it and
  * `chronicleOccupation` is what reads it.
  */
-export type NationOwnership = Record<
-  string,
-  { rgb?: string; provinces?: number[]; occupied_held?: number[] }
->;
+export type NationOwnership = Record<string, { rgb?: string; provinces?: number[]; occupied_held?: number[] }>;
 
 /**
  * Province id -> colour, packed as 0xRRGGBBAA. That order is deliberately
@@ -38,7 +32,7 @@ export type NationOwnership = Record<
 export type NationColorLut = Uint32Array;
 
 function packCanonicalRgba(r: number, g: number, b: number): number {
-  return (((r << 24) | (g << 16) | (b << 8) | 255) >>> 0);
+  return ((r << 24) | (g << 16) | (b << 8) | 255) >>> 0;
 }
 
 /**
@@ -60,17 +54,11 @@ export const MAX_PAINTABLE_PROVINCE_ID = 0xffff;
  * is not supposed to contain overlaps, and picking a side beats scanning for a
  * conflict that costs a frame to detect and cannot be resolved anyway.
  */
-export function buildNationColorLut(
-  ownership: NationOwnership
-): NationColorLut {
+export function buildNationColorLut(ownership: NationOwnership): NationColorLut {
   let maxProvinceId = 0;
   for (const nation of Object.values(ownership)) {
     for (const id of nation?.provinces ?? []) {
-      if (
-        Number.isInteger(id) &&
-        id > maxProvinceId &&
-        id <= MAX_PAINTABLE_PROVINCE_ID
-      ) {
+      if (Number.isInteger(id) && id > maxProvinceId && id <= MAX_PAINTABLE_PROVINCE_ID) {
         maxProvinceId = id;
       }
     }
@@ -112,17 +100,15 @@ export function paintChronicleFrame(
   grid: ProvinceIdGrid,
   lut: NationColorLut,
   output: Uint8ClampedArray,
-  options: PaintChronicleFrameOptions = {}
+  options: PaintChronicleFrameOptions = {},
 ): void {
   const pixelCount = grid.width * grid.height;
   if (grid.ids.length !== pixelCount) {
-    throw new Error(
-      `province id grid has ${grid.ids.length} ids for ${grid.width}x${grid.height}`
-    );
+    throw new Error(`province id grid has ${grid.ids.length} ids for ${grid.width}x${grid.height}`);
   }
   if (output.length !== pixelCount * 4) {
     throw new Error(
-      `frame buffer holds ${output.length} bytes, expected ${pixelCount * 4} for ${grid.width}x${grid.height}`
+      `frame buffer holds ${output.length} bytes, expected ${pixelCount * 4} for ${grid.width}x${grid.height}`,
     );
   }
 
@@ -141,7 +127,7 @@ export function paintChronicleFrame(
         (packed >>> 24) & 0xff,
         (packed >>> 16) & 0xff,
         (packed >>> 8) & 0xff,
-        packed & 0xff
+        packed & 0xff,
       );
     }
     for (let i = 0; i < pixelCount; i++) {
@@ -166,7 +152,7 @@ export function paintChronicleOwnership(
   grid: ProvinceIdGrid,
   ownership: NationOwnership,
   output: Uint8ClampedArray,
-  options: PaintChronicleFrameOptions = {}
+  options: PaintChronicleFrameOptions = {},
 ): void {
   paintChronicleFrame(grid, buildNationColorLut(ownership), output, options);
 }
@@ -179,12 +165,10 @@ export function paintChronicleFrameToImageData(
   imageData: ImageData,
   grid: ProvinceIdGrid,
   lut: NationColorLut,
-  options: PaintChronicleFrameOptions = {}
+  options: PaintChronicleFrameOptions = {},
 ): void {
   if (imageData.width !== grid.width || imageData.height !== grid.height) {
-    throw new Error(
-      `frame canvas is ${imageData.width}x${imageData.height}, grid is ${grid.width}x${grid.height}`
-    );
+    throw new Error(`frame canvas is ${imageData.width}x${imageData.height}, grid is ${grid.width}x${grid.height}`);
   }
   paintChronicleFrame(grid, lut, imageData.data, options);
 }

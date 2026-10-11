@@ -14,10 +14,7 @@ import {
   CHRONICLE_WATERMARK_CORNERS,
   type ChronicleWatermarkCorner,
 } from "../../lib/map/chronicleGifFrame";
-import {
-  CHRONICLE_FOCUS_NONE,
-  type ChronicleFocusOption,
-} from "../../lib/map/chronicleFocus";
+import { CHRONICLE_FOCUS_NONE, type ChronicleFocusOption } from "../../lib/map/chronicleFocus";
 import {
   layerTileButtonClass,
   layerTileFrameClass,
@@ -78,21 +75,14 @@ const pressedButtonClass = `${quietButtonBaseClass} border border-transparent bg
 export const selectClass =
   "h-10 w-full rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_5%,var(--tfmc-forest-deep))] px-2.5 text-sm text-[var(--tfmc-cream)] focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)] disabled:cursor-not-allowed disabled:opacity-50";
 
-const sectionRuleClass =
-  "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
+const sectionRuleClass = "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
 
 export function SectionHeading({ title }: { title: string }) {
   return <h3 className="text-base font-semibold text-[var(--tfmc-cream)]">{title}</h3>;
 }
 
 /** Something the reader should know before going on: a warning or an aside. */
-export function ChronicleNotice({
-  children,
-  tone = "warn",
-}: {
-  children: ReactNode;
-  tone?: "warn" | "quiet";
-}) {
+export function ChronicleNotice({ children, tone = "warn" }: { children: ReactNode; tone?: "warn" | "quiet" }) {
   return (
     <p
       className={`rounded-lg px-3 py-2 text-xs leading-snug ${
@@ -148,13 +138,7 @@ function Segmented<T extends string | number>({
 /* The plaque. */
 
 /** The studio's name plate, top left: back to the live map, and whose history this is. */
-export function ChroniclePlaque({
-  displayName,
-  liveHref,
-}: {
-  displayName: string;
-  liveHref: string;
-}) {
+export function ChroniclePlaque({ displayName, liveHref }: { displayName: string; liveHref: string }) {
   return (
     <div className={`relative ${mapFrameClass} flex items-center gap-2.5 p-2 md:gap-3 md:p-3`}>
       <Link
@@ -283,9 +267,7 @@ const TOGGLE_GROUPS: { title: string; keys: ChronicleToggleKey[] }[] = [
   },
 ];
 
-const TOGGLE_DETAILS = new Map(
-  CHRONICLE_TOGGLE_ORDER.map((toggle) => [toggle.key, toggle])
-);
+const TOGGLE_DETAILS = new Map(CHRONICLE_TOGGLE_ORDER.map((toggle) => [toggle.key, toggle]));
 
 export function ChronicleTogglePanel({
   toggles,
@@ -351,9 +333,7 @@ export function ChronicleTogglePanel({
                     onClick={() => onToggle(key)}
                     className={layerTileButtonClass}
                   >
-                    <span
-                      className={`${layerTileFrameClass} ${layerTileRingClass(on)} ${layerTileIconClass(on)}`}
-                    >
+                    <span className={`${layerTileFrameClass} ${layerTileRingClass(on)} ${layerTileIconClass(on)}`}>
                       <Glyph size={28} />
                     </span>
                     <span lang="en" className={layerTileLabelClass(on)}>
@@ -402,12 +382,7 @@ export function ChronicleTogglePanel({
           <p className="mt-1.5 text-xs leading-snug text-[var(--tfmc-stone)]">
             Queue several looks to play one after another.
           </p>
-          <button
-            type="button"
-            className={`${quietButtonClass} mt-3`}
-            onClick={onAddClip}
-            disabled={!canAddClip}
-          >
+          <button type="button" className={`${quietButtonClass} mt-3`} onClick={onAddClip} disabled={!canAddClip}>
             Add this look
           </button>
           {clips && clips.length > 0 ? (
@@ -417,12 +392,8 @@ export function ChronicleTogglePanel({
                   key={clip.id}
                   className="flex items-center gap-2 rounded-lg bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)] px-2.5 py-1.5"
                 >
-                  <span className="w-4 shrink-0 text-xs tabular-nums text-[var(--tfmc-mist)]">
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--tfmc-cream)]">
-                    {clip.label}
-                  </span>
+                  <span className="w-4 shrink-0 text-xs tabular-nums text-[var(--tfmc-mist)]">{index + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--tfmc-cream)]">{clip.label}</span>
                   <button
                     type="button"
                     className="text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] disabled:opacity-35"
@@ -517,8 +488,7 @@ export function ChronicleRangePanel({
     })),
     { value: "all", label: "All", start: days[0] },
   ];
-  const activePreset =
-    end === last ? (presets.find((preset) => preset.start === start)?.value ?? null) : null;
+  const activePreset = end === last ? (presets.find((preset) => preset.start === start)?.value ?? null) : null;
 
   const dayOption = (day: string) => (
     <option key={day} value={day}>
@@ -558,11 +528,7 @@ export function ChronicleRangePanel({
           </label>
           <label className="text-xs text-[var(--tfmc-mist)]">
             To
-            <select
-              className={`${selectClass} mt-1`}
-              value={end ?? ""}
-              onChange={(e) => onEndChange(e.target.value)}
-            >
+            <select className={`${selectClass} mt-1`} value={end ?? ""} onChange={(e) => onEndChange(e.target.value)}>
               {days.map(dayOption)}
             </select>
           </label>
@@ -600,9 +566,7 @@ export function ChronicleRangePanel({
           <dl className="grid grid-cols-2 gap-2 text-center">
             <div>
               <dt className="text-xs text-[var(--tfmc-mist)]">Frames</dt>
-              <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">
-                {frameCount}
-              </dd>
+              <dd className="mt-0.5 text-lg font-semibold text-[var(--tfmc-cream)]">{frameCount}</dd>
             </div>
             <div>
               <dt className="text-xs text-[var(--tfmc-mist)]">Build time</dt>
@@ -613,9 +577,7 @@ export function ChronicleRangePanel({
           </dl>
         )}
         {looks > 1 && !selection.error ? (
-          <p className="mt-2 text-center text-xs text-[var(--tfmc-stone)]">
-            {looks} looks, one after another.
-          </p>
+          <p className="mt-2 text-center text-xs text-[var(--tfmc-stone)]">{looks} looks, one after another.</p>
         ) : null}
       </section>
 
@@ -649,9 +611,7 @@ export function ChronicleBuildPanel({
     <div className="space-y-3" aria-live="polite">
       <SectionHeading title="Building frames" />
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-          {pct}%
-        </p>
+        <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{pct}%</p>
         <p className="text-sm text-[var(--tfmc-stone)]">
           {completed} of {total} {progress?.look ? "frames" : "days"}
         </p>
@@ -795,9 +755,7 @@ export function ChroniclePlayer({
         value={activeIndex}
         onChange={(e) => onScrub(Number(e.target.value))}
         aria-label="Day"
-        aria-valuetext={
-          day ? `${look ? `${look}, ` : ""}${formatChronicleDay(day)}` : undefined
-        }
+        aria-valuetext={day ? `${look ? `${look}, ` : ""}${formatChronicleDay(day)}` : undefined}
       />
       <button
         type="button"
@@ -888,9 +846,7 @@ function ExportSwitch({
       <span
         aria-hidden
         className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--tfmc-accent)] ${
-          checked
-            ? "bg-[var(--tfmc-accent)]"
-            : "bg-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]"
+          checked ? "bg-[var(--tfmc-accent)]" : "bg-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]"
         }`}
       >
         <span
@@ -955,9 +911,7 @@ function WatermarkCornerPicker({
       </div>
       <div className="min-w-0 text-sm">
         <p className="text-[var(--tfmc-cream)]">Watermark</p>
-        <p className="text-xs text-[var(--tfmc-stone)]">
-          {label}
-        </p>
+        <p className="text-xs text-[var(--tfmc-stone)]">{label}</p>
       </div>
     </div>
   );
@@ -1066,18 +1020,9 @@ export function ChroniclePlaybackPanel({
             disabled={exporting}
           />
         </div>
-        <WatermarkCornerPicker
-          value={gifCorner}
-          onChange={onGifCornerChange}
-          disabled={exporting}
-        />
+        <WatermarkCornerPicker value={gifCorner} onChange={onGifCornerChange} disabled={exporting} />
         <div className="mt-2">
-          <ExportSwitch
-            label="Logo"
-            checked={gifLogo}
-            disabled={exporting}
-            onChange={onGifLogoChange}
-          />
+          <ExportSwitch label="Logo" checked={gifLogo} disabled={exporting} onChange={onGifLogoChange} />
           <ExportSwitch
             label="Discord link"
             checked={gifDiscordLink}

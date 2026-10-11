@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  hexToRgbString,
-  rgbStringToHex,
-  tweakRgbNear,
-} from "../../../lib/map/titleRgb";
+import { hexToRgbString, rgbStringToHex, tweakRgbNear } from "../../../lib/map/titleRgb";
 
 const inputClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60";
@@ -65,17 +61,11 @@ export default function TitleRgbPicker({
   }
 
   return (
-    <fieldset
-      className={`flex flex-col gap-3 border-0 p-0 ${className}`}
-      disabled={disabled}
-      aria-disabled={disabled}
-    >
+    <fieldset className={`flex flex-col gap-3 border-0 p-0 ${className}`} disabled={disabled} aria-disabled={disabled}>
       <legend className="sr-only">Title colour</legend>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Title colour
-        </span>
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">Title colour</span>
         <div className="flex flex-wrap items-center gap-3">
           <span
             className="inline-block h-10 w-10 shrink-0 rounded-sm border border-black/40"

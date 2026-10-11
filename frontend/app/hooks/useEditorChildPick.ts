@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
-import {
-  buildTitlePickIndex,
-  type TitlePickIndex,
-} from "@/app/lib/map/editor/buildTitlePickIndex";
+import { buildTitlePickIndex, type TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
 import { fetchMapBlobUrl, revokeMapBlobUrl } from "@/lib/map/api";
 
 export function useEditorChildPick(
@@ -15,7 +12,7 @@ export function useEditorChildPick(
   sessionToken: string | null,
   childDraft: TitleDraft,
   pickMapdataPath: string,
-  enabled = true
+  enabled = true,
 ): {
   childPick: TitlePickIndex | null;
   loading: boolean;
@@ -42,10 +39,7 @@ export function useEditorChildPick(
       setImageData(null);
 
       try {
-        blobUrl = await fetchMapBlobUrl(
-          `/${mapId}/mapdata/${pickMapdataPath}`,
-          sessionToken
-        );
+        blobUrl = await fetchMapBlobUrl(`/${mapId}/mapdata/${pickMapdataPath}`, sessionToken);
 
         if (cancelled) {
           revokeMapBlobUrl(blobUrl);
@@ -58,8 +52,7 @@ export function useEditorChildPick(
 
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve();
-          img.onerror = () =>
-            reject(new Error(`Failed to load ${pickMapdataPath} pick map`));
+          img.onerror = () => reject(new Error(`Failed to load ${pickMapdataPath} pick map`));
         });
 
         if (cancelled) return;
@@ -82,11 +75,7 @@ export function useEditorChildPick(
         if (!cancelled) {
           setImageData(null);
           setLoading(false);
-          setError(
-            err instanceof Error
-              ? err.message
-              : `Failed to load ${pickMapdataPath} pick map`
-          );
+          setError(err instanceof Error ? err.message : `Failed to load ${pickMapdataPath} pick map`);
         }
       }
     };

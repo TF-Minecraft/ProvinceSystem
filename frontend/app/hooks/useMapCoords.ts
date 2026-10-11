@@ -25,7 +25,7 @@ export function mapPixelToPickCanvas(
   mapX: number,
   mapY: number,
   mapSize: Size | null | undefined,
-  canvas: { width: number; height: number }
+  canvas: { width: number; height: number },
 ): { x: number; y: number } | null {
   const cw = canvas.width;
   const ch = canvas.height;
@@ -39,26 +39,15 @@ export function mapPixelToPickCanvas(
   return { x, y };
 }
 
-function getCanvasMapCoords(
-  event: React.MouseEvent,
-  canvas: HTMLCanvasElement,
-  mapId: MapId
-): MapCoords | null {
+function getCanvasMapCoords(event: React.MouseEvent, canvas: HTMLCanvasElement, mapId: MapId): MapCoords | null {
   const rect = canvas.getBoundingClientRect();
   const mapSize =
-    canvas.width > 0 && canvas.height > 0
-      ? Math.max(canvas.width, canvas.height)
-      : mapFallbackSize(mapId);
+    canvas.width > 0 && canvas.height > 0 ? Math.max(canvas.width, canvas.height) : mapFallbackSize(mapId);
 
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
 
-  if (
-    mouseX < 0 ||
-    mouseY < 0 ||
-    mouseX >= rect.width ||
-    mouseY >= rect.height
-  ) {
+  if (mouseX < 0 || mouseY < 0 || mouseX >= rect.width || mouseY >= rect.height) {
     return null;
   }
 
@@ -79,39 +68,28 @@ function getCanvasMapCoords(
 export function screenPointToMap(
   clientX: number,
   clientY: number,
-  viewport: MapPickViewport
+  viewport: MapPickViewport,
 ): { x: number; y: number } | null {
-  const { viewportElement, displayScale, translateX, translateY, mapSize } =
-    viewport;
+  const { viewportElement, displayScale, translateX, translateY, mapSize } = viewport;
 
   if (!viewportElement || displayScale <= 0) {
     return null;
   }
 
   const viewportRect = viewportElement.getBoundingClientRect();
-  const point = screenToMap(
-    clientX - viewportRect.left,
-    clientY - viewportRect.top,
-    displayScale,
-    { x: translateX, y: translateY }
-  );
+  const point = screenToMap(clientX - viewportRect.left, clientY - viewportRect.top, displayScale, {
+    x: translateX,
+    y: translateY,
+  });
 
-  if (
-    point.x < 0 ||
-    point.y < 0 ||
-    point.x >= mapSize.w ||
-    point.y >= mapSize.h
-  ) {
+  if (point.x < 0 || point.y < 0 || point.x >= mapSize.w || point.y >= mapSize.h) {
     return null;
   }
 
   return point;
 }
 
-function getViewportMapCoords(
-  event: React.MouseEvent,
-  viewport: MapPickViewport
-): MapCoords | null {
+function getViewportMapCoords(event: React.MouseEvent, viewport: MapPickViewport): MapCoords | null {
   const point = screenPointToMap(event.clientX, event.clientY, viewport);
   if (!point) return null;
 
@@ -131,7 +109,7 @@ export function getMapCoords(
   event: React.MouseEvent,
   canvas: HTMLCanvasElement | null,
   mapId: MapId,
-  viewport?: MapPickViewport | null
+  viewport?: MapPickViewport | null,
 ): MapCoords | null {
   if (viewport?.viewportElement && viewport.displayScale > 0) {
     return getViewportMapCoords(event, viewport);

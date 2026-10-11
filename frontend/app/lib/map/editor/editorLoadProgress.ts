@@ -1,9 +1,4 @@
-export type EditorLoadStageId =
-  | "titles"
-  | "provinceCatalog"
-  | "provinceGrid"
-  | "mapImage"
-  | "childPick";
+export type EditorLoadStageId = "titles" | "provinceCatalog" | "provinceGrid" | "mapImage" | "childPick";
 
 export const EDITOR_LOAD_STAGE_WEIGHTS: Record<EditorLoadStageId, number> = {
   titles: 15,
@@ -26,9 +21,7 @@ export type EditorLoadProgressOptions = {
   childTierMode: boolean;
 };
 
-export function getEnabledStages(
-  options: EditorLoadProgressOptions
-): EditorLoadStageId[] {
+export function getEnabledStages(options: EditorLoadProgressOptions): EditorLoadStageId[] {
   const stages: EditorLoadStageId[] = ["titles"];
 
   if (options.needsProvinceIndex) {
@@ -47,12 +40,9 @@ export function getEnabledStages(
 export function computeEditorLoadProgress(
   enabledStages: readonly EditorLoadStageId[],
   completed: ReadonlySet<EditorLoadStageId>,
-  activeStage: EditorLoadStageId | null
+  activeStage: EditorLoadStageId | null,
 ): { percent: number; label: string; ready: boolean } {
-  const totalWeight = enabledStages.reduce(
-    (sum, stageId) => sum + EDITOR_LOAD_STAGE_WEIGHTS[stageId],
-    0
-  );
+  const totalWeight = enabledStages.reduce((sum, stageId) => sum + EDITOR_LOAD_STAGE_WEIGHTS[stageId], 0);
 
   if (totalWeight <= 0) {
     return { percent: 100, label: "", ready: true };
@@ -63,9 +53,7 @@ export function computeEditorLoadProgress(
   }, 0);
 
   const ready = enabledStages.every((stageId) => completed.has(stageId));
-  const percent = ready
-    ? 100
-    : Math.min(99, Math.round((completedWeight / totalWeight) * 100));
+  const percent = ready ? 100 : Math.min(99, Math.round((completedWeight / totalWeight) * 100));
 
   let label = "Loading...";
   if (activeStage && !completed.has(activeStage)) {

@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildProvinceToCountyId } from "./countyAssignment";
-import {
-  buildProvinceIndexFromGrid,
-  deserializeProvinceIdGrid,
-} from "./buildProvinceIndex";
+import { buildProvinceIndexFromGrid, deserializeProvinceIdGrid } from "./buildProvinceIndex";
 
 describe("deserializeProvinceIdGrid", () => {
   it("unpacks width height and row-major ids", () => {
@@ -31,9 +28,7 @@ describe("buildProvinceIndexFromGrid", () => {
       { id: 1, rgb: "58,132,60" },
       { id: 2, rgb: "40,123,42" },
     ];
-    const index = buildProvinceIndexFromGrid(
-      provinces, 2, 2, new Uint16Array([1, 2, 0, 1])
-    );
+    const index = buildProvinceIndexFromGrid(provinces, 2, 2, new Uint16Array([1, 2, 0, 1]));
 
     expect(index.width).toBe(2);
     expect(index.height).toBe(2);

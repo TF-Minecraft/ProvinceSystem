@@ -33,18 +33,13 @@ proseTargets.set("weapon stations", "/wiki/stations/weapon-station");
 const prosePattern = new RegExp(
   `(?<![\\p{L}\\p{N}])(${[...proseTargets.keys()]
     .sort((a, b) => b.length - a.length)
-    .map(name => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("|")})(?![\\p{L}\\p{N}])`,
   "giu",
 );
 
 /** Link an exact custom item/material mention when it has one unambiguous wiki page. */
-export default function WikiItemLink({
-  name,
-  sourceId,
-  children = name,
-  className,
-}: WikiItemLinkProps) {
+export default function WikiItemLink({ name, sourceId, children = name, className }: WikiItemLinkProps) {
   const href = resolveWikiItemHref(name, sourceId);
   if (!href) return <>{children}</>;
 

@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type {
-  FortMarker,
-  InstallationMarker,
-  MapId,
-  SettlementMarker,
-  WarExport,
-} from "../components/map/types";
+import type { FortMarker, InstallationMarker, MapId, SettlementMarker, WarExport } from "../components/map/types";
 import { filterPlacedInstallations } from "../lib/installationMarkers";
 import { filterPlacedSettlements } from "../lib/settlementMarkers";
 import { fetchMapMarkersForDay } from "@/app/lib/map/dataSource";
@@ -30,17 +24,13 @@ export const MAX_MAP_MARKERS_PER_KIND = 5000;
  * Truncates and warns exactly once per load when the cap bites, so a map that
  * silently lost markers is never possible.
  */
-function capMarkers<T>(
-  items: T[],
-  kind: string,
-  warned: { fired: boolean }
-): T[] {
+function capMarkers<T>(items: T[], kind: string, warned: { fired: boolean }): T[] {
   if (items.length <= MAX_MAP_MARKERS_PER_KIND) return items;
   if (!warned.fired) {
     warned.fired = true;
     console.warn(
       `[useMapMarkers] ${kind}: ${items.length} markers exceeds the ` +
-        `${MAX_MAP_MARKERS_PER_KIND} cap; the map is showing a truncated set.`
+        `${MAX_MAP_MARKERS_PER_KIND} cap; the map is showing a truncated set.`,
     );
   }
   return items.slice(0, MAX_MAP_MARKERS_PER_KIND);
@@ -64,7 +54,7 @@ export function useMapMarkers(
    * every day has a markers variant. Taken as a parameter, not read from
    * context, so the data flow is visible at the call site.
    */
-  day: string | null = null
+  day: string | null = null,
 ): MapMarkersState {
   const [state, setState] = useState<MapMarkersState>({
     settlements: [],
@@ -103,29 +93,17 @@ export function useMapMarkers(
           // no error boundary under `app/`, so a non-array reaching
           // `filterPlacedSettlements` blanks the whole page, not one layer.
           settlements: capMarkers(
-            filterPlacedSettlements(
-              Array.isArray(data.settlements) ? data.settlements : []
-            ),
+            filterPlacedSettlements(Array.isArray(data.settlements) ? data.settlements : []),
             "settlements",
-            warned
+            warned,
           ),
           installations: capMarkers(
-            filterPlacedInstallations(
-              Array.isArray(data.installations) ? data.installations : []
-            ),
+            filterPlacedInstallations(Array.isArray(data.installations) ? data.installations : []),
             "installations",
-            warned
+            warned,
           ),
-          forts: capMarkers(
-            Array.isArray(data.forts) ? data.forts : [],
-            "forts",
-            warned
-          ),
-          wars: capMarkers(
-            Array.isArray(data.wars) ? data.wars : [],
-            "wars",
-            warned
-          ),
+          forts: capMarkers(Array.isArray(data.forts) ? data.forts : [], "forts", warned),
+          wars: capMarkers(Array.isArray(data.wars) ? data.wars : [], "wars", warned),
           loading: false,
           error: null,
         });
@@ -144,8 +122,7 @@ export function useMapMarkers(
           });
           return;
         }
-        const message =
-          err instanceof Error ? err.message : "Failed to load map markers";
+        const message = err instanceof Error ? err.message : "Failed to load map markers";
         console.error("[useMapMarkers]", message, err);
         setState({
           settlements: [],

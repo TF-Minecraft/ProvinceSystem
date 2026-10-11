@@ -60,18 +60,59 @@ const NETWORK: RailNetwork = {
       line: 0,
       length: 5313,
       loop: false,
-      points: [[0, 0], [100, 0]],
-      broken: [{ from: 3274.4, to: 3296.5, points: [[4526, 2336], [4515, 2316]] }],
+      points: [
+        [0, 0],
+        [100, 0],
+      ],
+      broken: [
+        {
+          from: 3274.4,
+          to: 3296.5,
+          points: [
+            [4526, 2336],
+            [4515, 2316],
+          ],
+        },
+      ],
       damaged: [],
     },
-    { id: "lone", line: 1, length: 25, loop: false, points: [[5, 5], [30, 5]], broken: [], damaged: [] },
+    {
+      id: "lone",
+      line: 1,
+      length: 25,
+      loop: false,
+      points: [
+        [5, 5],
+        [30, 5],
+      ],
+      broken: [],
+      damaged: [],
+    },
   ],
   junctions: [],
   stops: [
-    { name: "Thalenthyr", kind: "faction_capital", faction_id: "f", settlement: [0, 40], track: "main", line: 0,
-      along: 0, at: [0, 0], distance: 40 },
-    { name: "Oyfthyr", kind: "settlement", faction_id: "g", settlement: [50, 99], track: "main", line: 0,
-      along: 50, at: [50, 0], distance: 99 },
+    {
+      name: "Thalenthyr",
+      kind: "faction_capital",
+      faction_id: "f",
+      settlement: [0, 40],
+      track: "main",
+      line: 0,
+      along: 0,
+      at: [0, 0],
+      distance: 40,
+    },
+    {
+      name: "Oyfthyr",
+      kind: "settlement",
+      faction_id: "g",
+      settlement: [50, 99],
+      track: "main",
+      line: 0,
+      along: 50,
+      at: [50, 0],
+      distance: 99,
+    },
   ],
 };
 
@@ -121,7 +162,13 @@ it("says when nothing needs repair", async () => {
 });
 
 it("explains a site that cannot read the tracks", async () => {
-  vi.mocked(getRailNetwork).mockResolvedValue({ ...NETWORK, status: "not_configured", lines: [], tracks: [], stops: [] });
+  vi.mocked(getRailNetwork).mockResolvedValue({
+    ...NETWORK,
+    status: "not_configured",
+    lines: [],
+    tracks: [],
+    stops: [],
+  });
   render(<RailOverview />);
   expect(await screen.findByText("Rail data isn’t available on this site.")).toBeTruthy();
   expect(screen.queryByTestId("map")).toBeNull();

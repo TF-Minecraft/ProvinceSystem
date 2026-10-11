@@ -81,9 +81,7 @@ describe("command index derivation", () => {
     for (const section of wikiSections) {
       if (!section.commands) continue;
       expect(allCommands, section.nav.href).toContain(section.commands);
-      expect(section.commands.href, "command set href must match its nav href").toBe(
-        section.nav.href
-      );
+      expect(section.commands.href, "command set href must match its nav href").toBe(section.nav.href);
     }
   });
 

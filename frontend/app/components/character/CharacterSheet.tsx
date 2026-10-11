@@ -7,11 +7,7 @@ import type {
   CreationCatalog,
   ExperienceModifierDto,
 } from "../../../lib/characters/api";
-import {
-  displayClass,
-  displayRace,
-  traitSelectionGroupLabel,
-} from "../../../lib/characters/displayNames";
+import { displayClass, displayRace, traitSelectionGroupLabel } from "../../../lib/characters/displayNames";
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
 
@@ -47,13 +43,14 @@ function formatTraitSuffix(t: CharacterSheetTrait): string {
   return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 }
 
-function groupTraits(
-  traits: CharacterSheetTrait[]
-): { key: string; label: string; items: CharacterSheetTrait[] }[] {
+function groupTraits(traits: CharacterSheetTrait[]): { key: string; label: string; items: CharacterSheetTrait[] }[] {
   const order: string[] = [];
   const map = new Map<string, CharacterSheetTrait[]>();
   for (const t of traits) {
-    const key = String(t.key || "other").trim().toLowerCase() || "other";
+    const key =
+      String(t.key || "other")
+        .trim()
+        .toLowerCase() || "other";
     if (!map.has(key)) {
       map.set(key, []);
       order.push(key);
@@ -72,29 +69,16 @@ function formatXpAmount(amount: number): string {
   return `${amount}%`;
 }
 
-function SheetSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        {title}
-      </h2>
+      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
 }
 
-export default function CharacterSheet({
-  character,
-  catalog,
-  onCancelPending,
-  cancelling = false,
-}: Props) {
+export default function CharacterSheet({ character, catalog, onCancelPending, cancelling = false }: Props) {
   const status = String(character.status || "").toUpperCase();
   const isAlive = status === "ALIVE";
   const isPending = status === "PENDING";
@@ -104,9 +88,7 @@ export default function CharacterSheet({
   const klass = displayClass(character, catalog);
   const age = String(character.age || "").trim();
   const birthdayIso = String(character.birthday || "").trim();
-  const birthday =
-    formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) ||
-    birthdayIso;
+  const birthday = formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) || birthdayIso;
   const gender = String(character.gender || "").trim();
   const description = String(character.description || "").trim();
   const background = String(character.background || "").trim();
@@ -128,14 +110,9 @@ export default function CharacterSheet({
           .sort(([a], [b]) => a.localeCompare(b))
       : [];
 
-  const xpMods: ExperienceModifierDto[] = Array.isArray(
-    character.experience_modifiers
-  )
+  const xpMods: ExperienceModifierDto[] = Array.isArray(character.experience_modifiers)
     ? character.experience_modifiers.filter(
-        (m) =>
-          m &&
-          String(m.profession || m.alias || "").trim() &&
-          Number.isFinite(Number(m.amount))
+        (m) => m && String(m.profession || m.alias || "").trim() && Number.isFinite(Number(m.amount)),
       )
     : [];
 
@@ -144,9 +121,7 @@ export default function CharacterSheet({
     : [];
   const traitGroups = traits.length ? groupTraits(traits) : [];
 
-  const clues = Array.isArray(character.clues)
-    ? character.clues.map((c) => String(c).trim()).filter(Boolean)
-    : [];
+  const clues = Array.isArray(character.clues) ? character.clues.map((c) => String(c).trim()).filter(Boolean) : [];
 
   return (
     <>
@@ -155,30 +130,22 @@ export default function CharacterSheet({
       </h1>
       {/* Alive needs no label; pending has PendingServerBanner. */}
       {status && !canEditGear ? (
-        <p className="mt-2 text-xs font-medium text-[var(--tfmc-stone)]">
-          {capitalizeKey(status.toLowerCase())}
-        </p>
+        <p className="mt-2 text-xs font-medium text-[var(--tfmc-stone)]">{capitalizeKey(status.toLowerCase())}</p>
       ) : null}
 
       {identityBits.length > 0 ? (
-        <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-          {identityBits.join(" · ")}
-        </p>
+        <p className="mt-4 text-sm text-[var(--tfmc-mist)]">{identityBits.join(" · ")}</p>
       ) : null}
 
       {description ? (
         <SheetSection title="Description">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">
-            {description}
-          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">{description}</p>
         </SheetSection>
       ) : null}
 
       {background ? (
         <SheetSection title="Background">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">
-            {background}
-          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">{background}</p>
         </SheetSection>
       ) : null}
 
@@ -186,13 +153,8 @@ export default function CharacterSheet({
         <SheetSection title="Attributes">
           <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
             {attrEntries.map(([key, amount]) => (
-              <li
-                key={key}
-                className="flex items-baseline justify-between gap-4 py-2 text-sm"
-              >
-                <span className="text-[var(--tfmc-cream)]">
-                  {displayAttrName(key)}
-                </span>
+              <li key={key} className="flex items-baseline justify-between gap-4 py-2 text-sm">
+                <span className="text-[var(--tfmc-cream)]">{displayAttrName(key)}</span>
                 <span className="text-[var(--tfmc-stone)]">{amount}</span>
               </li>
             ))}
@@ -204,9 +166,7 @@ export default function CharacterSheet({
         <SheetSection title="Profession EXP">
           <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
             {xpMods.map((m) => {
-              const label =
-                String(m.alias || "").trim() ||
-                capitalizeKey(String(m.profession || ""));
+              const label = String(m.alias || "").trim() || capitalizeKey(String(m.profession || ""));
               const amount = Number(m.amount);
               return (
                 <li
@@ -214,9 +174,7 @@ export default function CharacterSheet({
                   className="flex items-baseline justify-between gap-4 py-2 text-sm"
                 >
                   <span className="text-[var(--tfmc-cream)]">{label}</span>
-                  <span className="text-[var(--tfmc-stone)]">
-                    {formatXpAmount(amount)}
-                  </span>
+                  <span className="text-[var(--tfmc-stone)]">{formatXpAmount(amount)}</span>
                 </li>
               );
             })}
@@ -229,22 +187,15 @@ export default function CharacterSheet({
           <div className="flex flex-col gap-6">
             {traitGroups.map((group) => (
               <div key={group.key}>
-                <p className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-                  {group.label}
-                </p>
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">{group.label}</p>
                 <ul className="mt-2 space-y-1">
                   {group.items.map((t) => {
                     const suffix = formatTraitSuffix(t);
                     return (
-                    <li
-                      key={t.id || t.name}
-                      className="text-sm text-[var(--tfmc-mist)]"
-                    >
-                      {String(t.name || t.id).trim()}
-                      {suffix ? (
-                        <span className="text-[var(--tfmc-stone)]">{suffix}</span>
-                      ) : null}
-                    </li>
+                      <li key={t.id || t.name} className="text-sm text-[var(--tfmc-mist)]">
+                        {String(t.name || t.id).trim()}
+                        {suffix ? <span className="text-[var(--tfmc-stone)]">{suffix}</span> : null}
+                      </li>
                     );
                   })}
                 </ul>
@@ -285,7 +236,7 @@ export default function CharacterSheet({
               onClick={() => {
                 if (
                   !window.confirm(
-                    "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone."
+                    "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone.",
                   )
                 ) {
                   return;

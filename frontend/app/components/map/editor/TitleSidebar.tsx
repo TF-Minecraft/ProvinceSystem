@@ -71,35 +71,25 @@ export default function TitleSidebar({
 
   function handleDelete() {
     if (!selectedId || !selected) return;
-    const label = isCountyTier
-      ? "county"
-      : childTierConfig?.deleteConfirmLabel ?? "title";
-    const confirmed = window.confirm(
-      `Delete ${label} "${selected.name}"?`
-    );
+    const label = isCountyTier ? "county" : (childTierConfig?.deleteConfirmLabel ?? "title");
+    const confirmed = window.confirm(`Delete ${label} "${selected.name}"?`);
     if (!confirmed) return;
     onRemove(selectedId);
   }
 
   const emptyStateText = isCountyTier
     ? "Select a county or create new."
-    : childTierConfig?.sidebarEmptyState ?? "Select a title or create a new one.";
+    : (childTierConfig?.sidebarEmptyState ?? "Select a title or create a new one.");
 
-  const newButtonLabel = isCountyTier
-    ? "New county"
-    : childTierConfig?.newButtonLabel ?? "New title";
+  const newButtonLabel = isCountyTier ? "New county" : (childTierConfig?.newButtonLabel ?? "New title");
 
   const memberCountText =
-    selected && childTierConfig
-      ? childTierConfig.memberCountLabel(selected.titles?.length ?? 0)
-      : null;
+    selected && childTierConfig ? childTierConfig.memberCountLabel(selected.titles?.length ?? 0) : null;
 
   return (
     <aside className="flex h-full min-h-[28rem] w-full flex-col gap-4 rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] p-4 shadow-lg">
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Search titles
-        </label>
+        <label className="text-sm font-medium text-[var(--tfmc-stone)]">Search titles</label>
         <input
           type="search"
           value={search}
@@ -113,12 +103,7 @@ export default function TitleSidebar({
         <button type="button" className={buttonClass} onClick={handleNew}>
           {newButtonLabel}
         </button>
-        <button
-          type="button"
-          className={buttonClass}
-          onClick={handleDelete}
-          disabled={!selectedId}
-        >
+        <button type="button" className={buttonClass} onClick={handleDelete} disabled={!selectedId}>
           Delete
         </button>
       </div>
@@ -140,9 +125,7 @@ export default function TitleSidebar({
         aria-label="Titles"
       >
         {filteredIds.length === 0 ? (
-          <li className="px-2 py-3 text-sm text-[var(--tfmc-mist)]">
-            No titles match.
-          </li>
+          <li className="px-2 py-3 text-sm text-[var(--tfmc-mist)]">No titles match.</li>
         ) : (
           filteredIds.map((id) => {
             const entry = draft[id]!;
@@ -177,10 +160,7 @@ export default function TitleSidebar({
       {selected && selectedId ? (
         <div className="flex flex-col gap-4 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pt-4">
           <div className="flex flex-col gap-2">
-            <label
-              className="text-sm font-medium text-[var(--tfmc-stone)]"
-              htmlFor="title-name-input"
-            >
+            <label className="text-sm font-medium text-[var(--tfmc-stone)]" htmlFor="title-name-input">
               Name
             </label>
             <input
@@ -198,17 +178,13 @@ export default function TitleSidebar({
             onError={setColourError}
           />
           {isCountyTier ? (
-            <p className="text-sm text-[var(--tfmc-mist)]">
-              {(selected.provinces?.length ?? 0)} provinces
-            </p>
+            <p className="text-sm text-[var(--tfmc-mist)]">{selected.provinces?.length ?? 0} provinces</p>
           ) : null}
-          {memberCountText ? (
-            <p className="text-sm text-[var(--tfmc-mist)]">
-              {memberCountText}
-            </p>
-          ) : null}
+          {memberCountText ? <p className="text-sm text-[var(--tfmc-mist)]">{memberCountText}</p> : null}
           {colourError ? (
-            <p className="text-sm text-[#e8a0a0]" role="status">{colourError}</p>
+            <p className="text-sm text-[#e8a0a0]" role="status">
+              {colourError}
+            </p>
           ) : null}
         </div>
       ) : (

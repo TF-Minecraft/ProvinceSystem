@@ -20,11 +20,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { encodeGifSteps } from "../../lib/map/gif/encodeGif";
 import { CHRONICLE_MEMORY_CEILING_BYTES } from "../../lib/map/chronicleBuild";
 import { EMPTY_CHRONICLE_LAYERS } from "./chronicleLayers";
-import {
-  exportChronicleGif,
-  isChronicleGifCancelled,
-  type ChronicleGifProgress,
-} from "./chronicleGifExport";
+import { exportChronicleGif, isChronicleGifCancelled, type ChronicleGifProgress } from "./chronicleGifExport";
 
 const SIZE = 8;
 
@@ -45,7 +41,7 @@ function makeFakeCtx(edge: number): CanvasRenderingContext2D {
         store[prop as string] = value;
         return true;
       },
-    }
+    },
   ) as unknown as CanvasRenderingContext2D;
 }
 
@@ -70,9 +66,7 @@ function install(edge = SIZE): { count: number } {
       return Promise.resolve();
     },
   });
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
-    makeFakeCtx(edge)
-  );
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => makeFakeCtx(edge));
   return counter;
 }
 
@@ -203,13 +197,11 @@ describe("exportChronicleGif chunked encode", () => {
     const yields = install();
     const size = 4096;
     const frameCount = 20; // ~1.3 GB, far past the 256 MB ceiling.
-    expect(size * size * 4 * frameCount).toBeGreaterThan(
-      CHRONICLE_MEMORY_CEILING_BYTES
-    );
+    expect(size * size * 4 * frameCount).toBeGreaterThan(CHRONICLE_MEMORY_CEILING_BYTES);
 
-    await expect(
-      exportChronicleGif({ ...baseOptions(frameCount), size })
-    ).rejects.toThrow(/fewer days or a smaller size/i);
+    await expect(exportChronicleGif({ ...baseOptions(frameCount), size })).rejects.toThrow(
+      /fewer days or a smaller size/i,
+    );
     // Nothing was rendered, so nothing yielded.
     expect(yields.count).toBe(0);
   });

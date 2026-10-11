@@ -11,7 +11,9 @@ const options = [
 
 it("renders the exact hex colour in the selected name and menu, and retains formatting", () => {
   const onSelect = vi.fn();
-  const { container } = render(<LedgerFactionSelect options={options} selectedKey={options[0].name} onSelect={onSelect} label="Wealth nation" />);
+  const { container } = render(
+    <LedgerFactionSelect options={options} selectedKey={options[0].name} onSelect={onSelect} label="Wealth nation" />,
+  );
   expect(screen.getByText("Prospero").style.color).toBe("rgb(163, 161, 132)");
   fireEvent.click(screen.getByRole("combobox"));
   expect(screen.getAllByText("Prospero").every((el) => el.style.color === "rgb(163, 161, 132)")).toBe(true);
@@ -24,7 +26,9 @@ it("renders the exact hex colour in the selected name and menu, and retains form
 
 it("supports keyboard selection, typeahead and dismissing without a selection", () => {
   const onSelect = vi.fn();
-  render(<LedgerFactionSelect options={options} selectedKey={options[0].name} onSelect={onSelect} label="Wealth nation" />);
+  render(
+    <LedgerFactionSelect options={options} selectedKey={options[0].name} onSelect={onSelect} label="Wealth nation" />,
+  );
   const trigger = screen.getByRole("combobox");
   fireEvent.keyDown(trigger, { key: "ArrowDown" });
   fireEvent.keyDown(trigger, { key: "Enter" });

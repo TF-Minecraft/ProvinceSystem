@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  removeCountyFromDraft,
-  toggleProvinceInCounty,
-} from "./countyDraftActions";
+import { removeCountyFromDraft, toggleProvinceInCounty } from "./countyDraftActions";
 
 describe("countyDraftActions", () => {
   it("toggleProvinceInCounty adds province", () => {

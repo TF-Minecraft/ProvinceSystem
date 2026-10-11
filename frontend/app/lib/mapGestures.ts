@@ -35,11 +35,7 @@ export function pinchSample(a: ViewportPoint, b: ViewportPoint): PinchSample {
  * the fingers have spread since. A degenerate start (fingers on the same
  * pixel) keeps the start scale rather than dividing by zero.
  */
-export function pinchUserScale(
-  startUserScale: number,
-  start: PinchSample,
-  current: PinchSample
-): number {
+export function pinchUserScale(startUserScale: number, start: PinchSample, current: PinchSample): number {
   if (start.distance <= 0) return startUserScale;
   return startUserScale * (current.distance / start.distance);
 }
@@ -55,18 +51,10 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   }
   const element = target as HTMLElement;
   const tag = element.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    element.isContentEditable === true
-  );
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || element.isContentEditable === true;
 }
 
-export type KeyboardMapAction =
-  | { kind: "pan"; dx: number; dy: number }
-  | { kind: "zoom"; factor: number }
-  | null;
+export type KeyboardMapAction = { kind: "pan"; dx: number; dy: number } | { kind: "zoom"; factor: number } | null;
 
 /** Arrow keys pan, +/- zoom; anything else is not the map's business. */
 export function keyboardMapAction(key: string): KeyboardMapAction {

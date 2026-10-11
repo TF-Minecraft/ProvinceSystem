@@ -89,10 +89,7 @@ export type EditorTitleDraft = Record<
   }
 >;
 
-function mergeHeaders(
-  sessionToken?: string | null,
-  extra?: HeadersInit
-): HeadersInit | undefined {
+function mergeHeaders(sessionToken?: string | null, extra?: HeadersInit): HeadersInit | undefined {
   const auth = authHeaders(sessionToken);
   if (!auth && !extra) return undefined;
   return { ...extra, ...auth };
@@ -107,10 +104,7 @@ function isMapAssetPath(path: string): boolean {
   ].some((pattern) => pattern.test(pathname));
 }
 
-export async function fetchMapApi(
-  path: string,
-  options: FetchMapApiOptions = {}
-): Promise<Response> {
+export async function fetchMapApi(path: string, options: FetchMapApiOptions = {}): Promise<Response> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const headers = mergeHeaders(options.sessionToken, options.headers);
   try {
@@ -138,17 +132,10 @@ export async function fetchMapApi(
  * this goes by name rather than by `instanceof`.
  */
 export function isAbortError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { name?: unknown }).name === "AbortError"
-  );
+  return typeof error === "object" && error !== null && (error as { name?: unknown }).name === "AbortError";
 }
 
-export async function fetchMapJson<T>(
-  path: string,
-  options: FetchMapApiOptions = {}
-): Promise<T> {
+export async function fetchMapJson<T>(path: string, options: FetchMapApiOptions = {}): Promise<T> {
   const res = await fetchMapApi(path, options);
   if (res.ok) {
     return (await res.json()) as T;
@@ -165,10 +152,7 @@ export async function fetchMapJson<T>(
   throw new MapAccessError(detail, res.status, detail);
 }
 
-export async function fetchMapBlobUrl(
-  path: string,
-  sessionToken: string
-): Promise<string> {
+export async function fetchMapBlobUrl(path: string, sessionToken: string): Promise<string> {
   const res = await fetchMapApi(path, {
     sessionToken,
     // `fetch` defaults to `Accept: */*`, which the API reads as "cannot display
@@ -212,45 +196,32 @@ export function mapApiPathFromUrl(urlOrPath: string): string {
   return urlOrPath;
 }
 
-export function mapRequiresAuth(
-  mapId: MapId,
-  maps?: AccessibleMapEntry[] | null
-): boolean {
+export function mapRequiresAuth(mapId: MapId, maps?: AccessibleMapEntry[] | null): boolean {
   const entry = maps?.find((item) => item.id === mapId);
   if (entry) return !entry.public;
   return mapId !== "main";
 }
 
-export async function fetchAccessibleMaps(
-  sessionToken?: string | null
-): Promise<AccessibleMapsResponse> {
+export async function fetchAccessibleMaps(sessionToken?: string | null): Promise<AccessibleMapsResponse> {
   return fetchMapJson<AccessibleMapsResponse>("/maps/accessible", {
     sessionToken,
   });
 }
 
-export async function fetchMapMarkers(
-  mapId: MapId,
-  sessionToken?: string | null
-): Promise<MapMarkersResponse> {
+export async function fetchMapMarkers(mapId: MapId, sessionToken?: string | null): Promise<MapMarkersResponse> {
   return fetchMapJson<MapMarkersResponse>(`/${mapId}/data/markers`, {
     sessionToken,
   });
 }
 
-export function staffMapAccessReason(
-  error: MapAccessError
-): "login" | "permission" | "unknown" {
+export function staffMapAccessReason(error: MapAccessError): "login" | "permission" | "unknown" {
   if (error.status !== 403) return "unknown";
   if (error.detail === STAFF_MAP_ACCESS_DETAIL) return "login";
   if (error.detail === STAFF_MAP_PERMISSION_DETAIL) return "permission";
   return "unknown";
 }
 
-export async function fetchEditorProvinces(
-  mapId: MapId,
-  sessionToken: string
-): Promise<EditorProvincesResponse> {
+export async function fetchEditorProvinces(mapId: MapId, sessionToken: string): Promise<EditorProvincesResponse> {
   return fetchMapJson<EditorProvincesResponse>(`/${mapId}/editor/provinces`, {
     sessionToken,
   });
@@ -260,21 +231,14 @@ export function editorProvinceIndexPath(mapId: MapId): string {
   return `/${mapId}/editor/province-index`;
 }
 
-export async function fetchEditorProvinceIndex(
-  mapId: MapId,
-  sessionToken: string
-): Promise<ArrayBuffer> {
+export async function fetchEditorProvinceIndex(mapId: MapId, sessionToken: string): Promise<ArrayBuffer> {
   const res = await fetchMapApi(editorProvinceIndexPath(mapId), {
     sessionToken,
   });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     const detail = detailMessage(data, res.statusText);
-    throw new MapAccessError(
-      `Editor province index failed: ${detail}`,
-      res.status,
-      detail
-    );
+    throw new MapAccessError(`Editor province index failed: ${detail}`, res.status, detail);
   }
   return await res.arrayBuffer();
 }

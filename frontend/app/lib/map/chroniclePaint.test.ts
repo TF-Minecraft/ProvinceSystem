@@ -22,11 +22,7 @@ const ownership: NationOwnership = {
   NOLAND: { rgb: "1,2,3", provinces: [] },
 } as NationOwnership;
 
-function expectPixel(
-  buffer: Uint8ClampedArray,
-  index: number,
-  rgba: [number, number, number, number]
-): void {
+function expectPixel(buffer: Uint8ClampedArray, index: number, rgba: [number, number, number, number]): void {
   expect(Array.from(buffer.slice(index * 4, index * 4 + 4))).toEqual(rgba);
 }
 
@@ -114,18 +110,16 @@ describe("paintChronicleFrame", () => {
   it("rejects a frame buffer that does not match the grid dimensions", () => {
     const lut = buildNationColorLut(ownership);
 
-    expect(() =>
-      paintChronicleFrame(grid, lut, new Uint8ClampedArray(4 * 4))
-    ).toThrow(/frame buffer holds 16 bytes, expected 32/);
+    expect(() => paintChronicleFrame(grid, lut, new Uint8ClampedArray(4 * 4))).toThrow(
+      /frame buffer holds 16 bytes, expected 32/,
+    );
   });
 
   it("rejects a grid whose id count disagrees with its dimensions", () => {
     const lut = buildNationColorLut(ownership);
     const broken = makeGrid([1, 2, 3], 4, 2);
 
-    expect(() =>
-      paintChronicleFrame(broken, lut, new Uint8ClampedArray(32))
-    ).toThrow(/3 ids for 4x2/);
+    expect(() => paintChronicleFrame(broken, lut, new Uint8ClampedArray(32))).toThrow(/3 ids for 4x2/);
   });
 });
 
@@ -139,9 +133,7 @@ describe("paintChronicleFrameToImageData", () => {
       data: new Uint8ClampedArray(16),
     } as ImageData;
 
-    expect(() => paintChronicleFrameToImageData(imageData, grid, lut)).toThrow(
-      /frame canvas is 2x2, grid is 4x1/
-    );
+    expect(() => paintChronicleFrameToImageData(imageData, grid, lut)).toThrow(/frame canvas is 2x2, grid is 4x1/);
   });
 
   it("fills the image data buffer when the sizes agree", () => {

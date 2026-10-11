@@ -1,8 +1,4 @@
-import {
-  paintChronicleFrameToImageData,
-  type NationColorLut,
-  type ProvinceIdGrid,
-} from "../../lib/map/chroniclePaint";
+import { paintChronicleFrameToImageData, type NationColorLut, type ProvinceIdGrid } from "../../lib/map/chroniclePaint";
 
 /**
  * The canvas half of the build pass. Everything here is allocated once for a
@@ -13,9 +9,7 @@ import {
  */
 
 export type AnyCanvas = OffscreenCanvas | HTMLCanvasElement;
-export type AnyCanvasContext =
-  | OffscreenCanvasRenderingContext2D
-  | CanvasRenderingContext2D;
+export type AnyCanvasContext = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
 
 export type ChronicleRenderTarget = {
   grid: ProvinceIdGrid;
@@ -49,7 +43,7 @@ function context2d(canvas: AnyCanvas): AnyCanvasContext {
 export function createChronicleRenderTarget(
   grid: ProvinceIdGrid,
   renderWidth: number,
-  renderHeight: number
+  renderHeight: number,
 ): ChronicleRenderTarget {
   const scratch = createChronicleCanvas(grid.width, grid.height);
   const scratchCtx = context2d(scratch);
@@ -79,7 +73,7 @@ export function createChronicleRenderTarget(
  */
 export async function renderChronicleFrame(
   target: ChronicleRenderTarget,
-  lut: NationColorLut
+  lut: NationColorLut,
 ): Promise<{ bitmap: ImageBitmap; paintMs: number }> {
   const startedAt = performance.now();
   paintChronicleFrameToImageData(target.imageData, target.grid, lut);
@@ -87,13 +81,7 @@ export async function renderChronicleFrame(
   const paintMs = performance.now() - startedAt;
 
   target.outputCtx.clearRect(0, 0, target.renderWidth, target.renderHeight);
-  target.outputCtx.drawImage(
-    target.scratch as CanvasImageSource,
-    0,
-    0,
-    target.renderWidth,
-    target.renderHeight
-  );
+  target.outputCtx.drawImage(target.scratch as CanvasImageSource, 0, 0, target.renderWidth, target.renderHeight);
 
   // `transferToImageBitmap` empties the output canvas, which is exactly what
   // the next frame wants anyway since it redraws the full rectangle.
@@ -110,10 +98,7 @@ export function clearChronicleCanvas(canvas: HTMLCanvasElement): void {
 }
 
 /** Playback draw: one `drawImage` of an already-painted day. */
-export function drawChronicleBitmap(
-  canvas: HTMLCanvasElement,
-  bitmap: ImageBitmap | null
-): void {
+export function drawChronicleBitmap(canvas: HTMLCanvasElement, bitmap: ImageBitmap | null): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   if (!bitmap) {

@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { expiryLabel, getLpChange, parseMcText, stripMcText, waitForChange, type LpChange } from "./luckperms";
 
 vi.mock("./api", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./api")>(),
+  ...(await importOriginal<typeof import("./api")>()),
   adminRequest: vi.fn(),
 }));
 

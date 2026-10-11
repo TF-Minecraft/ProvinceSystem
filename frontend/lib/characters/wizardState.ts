@@ -6,17 +6,9 @@ import type {
   CreationCatalog,
   ExperienceModifierDto,
 } from "./api";
-import {
-  birthdayFromAge,
-  resolvedBirthdayIso,
-} from "./fantasyCalendar";
+import { birthdayFromAge, resolvedBirthdayIso } from "./fantasyCalendar";
 import { emptyRanks, isExactSpend } from "./pointBuy";
-import {
-  isValidDisplayName,
-  isValidProse,
-  optionalDisplayNameError,
-  proseError,
-} from "../textValidation";
+import { isValidDisplayName, isValidProse, optionalDisplayNameError, proseError } from "../textValidation";
 
 export type WizardDraft = {
   client_request_id: string;
@@ -43,14 +35,7 @@ export type StageCopy = {
   bodyLines: string[];
 };
 
-const INTERACTIVE_TYPES = new Set([
-  "setter",
-  "selection",
-  "attributes",
-  "clue",
-  "summary",
-  "wardrobe",
-]);
+const INTERACTIVE_TYPES = new Set(["setter", "selection", "attributes", "clue", "summary", "wardrobe"]);
 
 export function newDraft(catalog: CreationCatalog): WizardDraft {
   const attrs = catalog.attribute_point_buy?.attributes ?? [];
@@ -96,7 +81,7 @@ function asHours(raw: unknown): number | null {
 /** Match Stage.passesAccountAgeGate (max is exclusive). */
 export function passesAccountAgeGate(
   stage: CatalogStage,
-  opts?: Pick<PlayableStageOpts, "evilUnlocked" | "accountAgeSeconds">
+  opts?: Pick<PlayableStageOpts, "evilUnlocked" | "accountAgeSeconds">,
 ): boolean {
   const min = asHours(stage.require_account_age_hours_min);
   const max = asHours(stage.require_account_age_hours_max);
@@ -115,10 +100,7 @@ export function passesAccountAgeGate(
 }
 
 /** Trait dependency parity with RPCharacters Dependency.check (trait modes). */
-export function passesTraitDependency(
-  stage: CatalogStage,
-  selectedTraitIds: string[] | undefined
-): boolean {
+export function passesTraitDependency(stage: CatalogStage, selectedTraitIds: string[] | undefined): boolean {
   const dep = stage.dependency;
   if (!dep || typeof dep !== "object") return true;
   const type = String(dep.type || "").toLowerCase();
@@ -128,9 +110,7 @@ export function passesTraitDependency(
     ? dep.depends_on.map((id) => String(id || "").trim()).filter(Boolean)
     : [];
   if (!dependsOn.length) return true;
-  const selected = new Set(
-    (selectedTraitIds || []).map((id) => String(id || "").trim()).filter(Boolean)
-  );
+  const selected = new Set((selectedTraitIds || []).map((id) => String(id || "").trim()).filter(Boolean));
   if (mode === "all") {
     return dependsOn.every((id) => selected.has(id));
   }
@@ -140,10 +120,7 @@ export function passesTraitDependency(
   return true;
 }
 
-export function playableStages(
-  catalog: CreationCatalog,
-  opts?: PlayableStageOpts
-): CatalogStage[] {
+export function playableStages(catalog: CreationCatalog, opts?: PlayableStageOpts): CatalogStage[] {
   const stages = [...(catalog.stages || [])];
   stages.sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
   return stages.filter((s) => {
@@ -167,10 +144,7 @@ export function interactiveStageCount(stages: CatalogStage[]): number {
 }
 
 /** Interactive step index (1-based) for progress, or null for info cards. */
-export function interactiveProgress(
-  stages: CatalogStage[],
-  index: number
-): { current: number; total: number } | null {
+export function interactiveProgress(stages: CatalogStage[], index: number): { current: number; total: number } | null {
   const stage = stages[index];
   if (!stage || !isInteractiveStage(stage)) return null;
   const total = interactiveStageCount(stages);
@@ -222,10 +196,7 @@ export function webifyPrompt(text: string): string {
   s = s.replace(/\bType the name next\.?/gi, "Enter your character name.");
   s = s.replace(/\bType your character name\b/gi, "Enter your character name");
   s = s.replace(/\bType your character age\b/gi, "Enter your character age");
-  s = s.replace(
-    /\bType your character description\b/gi,
-    "Write your character description"
-  );
+  s = s.replace(/\bType your character description\b/gi, "Write your character description");
   s = s.replace(/\bType clue\b/gi, "Enter clue");
   s = s.replace(/\s{2,}/g, " ").trim();
   s = s.replace(/\s+([.!?])/g, "$1");
@@ -233,9 +204,7 @@ export function webifyPrompt(text: string): string {
 }
 
 export function parseStageCopy(stage: CatalogStage): StageCopy {
-  const webMessages = Array.isArray(stage.web_messages)
-    ? stage.web_messages
-    : null;
+  const webMessages = Array.isArray(stage.web_messages) ? stage.web_messages : null;
   const messages =
     webMessages && webMessages.length > 0
       ? webMessages
@@ -289,39 +258,36 @@ export function stageDisplayTitle(stage: CatalogStage): string {
   return stage.id;
 }
 
-export function traitsForKey(
-  catalog: CreationCatalog,
-  key: string
-): CatalogTrait[] {
+export function traitsForKey(catalog: CreationCatalog, key: string): CatalogTrait[] {
   const k = key.trim().toLowerCase();
   return (catalog.traits || []).filter(
-    (t) => String(t.key || "").trim().toLowerCase() === k
+    (t) =>
+      String(t.key || "")
+        .trim()
+        .toLowerCase() === k,
   );
 }
 
-export function traitsForStage(
-  catalog: CreationCatalog,
-  stage: CatalogStage
-): CatalogTrait[] {
+export function traitsForStage(catalog: CreationCatalog, stage: CatalogStage): CatalogTrait[] {
   const key = String(stage.key || "").trim();
   if (!key) return [];
   let list = traitsForKey(catalog, key);
-  if (String(stage.filter || "").trim().toLowerCase() === "permanent-only") {
+  if (
+    String(stage.filter || "")
+      .trim()
+      .toLowerCase() === "permanent-only"
+  ) {
     list = list.filter((t) => !t.has_duration);
   }
   return list;
 }
 
 /** Normalize catalog description fields to display lines. */
-export function optionDescriptionLines(row: {
-  description?: string | string[] | unknown;
-}): string[] {
+export function optionDescriptionLines(row: { description?: string | string[] | unknown }): string[] {
   const raw = row.description;
   if (raw == null) return [];
   if (Array.isArray(raw)) {
-    return raw
-      .map((line) => String(line || "").trim())
-      .filter(Boolean);
+    return raw.map((line) => String(line || "").trim()).filter(Boolean);
   }
   const s = String(raw).trim();
   return s ? [s] : [];
@@ -333,9 +299,7 @@ export function optionAttributeDescriptionLines(row: {
   const raw = row.attribute_description;
   if (raw == null) return [];
   if (Array.isArray(raw)) {
-    return raw
-      .map((line) => String(line || "").trim())
-      .filter(Boolean);
+    return raw.map((line) => String(line || "").trim()).filter(Boolean);
   }
   const s = String(raw).trim();
   return s ? [s] : [];
@@ -345,19 +309,15 @@ function asModifierList<T>(raw: unknown): T[] {
   return Array.isArray(raw) ? (raw as T[]) : [];
 }
 
-function rowAttributeMods(row: {
-  attribute_modifiers?: AttributeModifierDto[] | unknown;
-}): AttributeModifierDto[] {
+function rowAttributeMods(row: { attribute_modifiers?: AttributeModifierDto[] | unknown }): AttributeModifierDto[] {
   return asModifierList<AttributeModifierDto>(row.attribute_modifiers).filter(
-    (m) => m && String(m.type || "").trim() && Number(m.amount) !== 0
+    (m) => m && String(m.type || "").trim() && Number(m.amount) !== 0,
   );
 }
 
-function rowExperienceMods(row: {
-  experience_modifiers?: ExperienceModifierDto[] | unknown;
-}): ExperienceModifierDto[] {
+function rowExperienceMods(row: { experience_modifiers?: ExperienceModifierDto[] | unknown }): ExperienceModifierDto[] {
   return asModifierList<ExperienceModifierDto>(row.experience_modifiers).filter(
-    (m) => m && String(m.profession || "").trim() && Number(m.amount) !== 0
+    (m) => m && String(m.profession || "").trim() && Number(m.amount) !== 0,
   );
 }
 
@@ -374,33 +334,21 @@ function capitalizeLabel(raw: string): string {
 
 function findCatalogRow(
   catalog: CreationCatalog,
-  id: string
-):
-  | { attribute_modifiers?: unknown; experience_modifiers?: unknown; name?: string }
-  | undefined {
+  id: string,
+): { attribute_modifiers?: unknown; experience_modifiers?: unknown; name?: string } | undefined {
   const needle = id.trim().toLowerCase();
   if (!needle) return undefined;
-  const race = (catalog.races || []).find(
-    (r) => String(r.id || "").toLowerCase() === needle
-  );
+  const race = (catalog.races || []).find((r) => String(r.id || "").toLowerCase() === needle);
   if (race) return race;
-  return (catalog.traits || []).find(
-    (t) => String(t.id || "").toLowerCase() === needle
-  );
+  return (catalog.traits || []).find((t) => String(t.id || "").toLowerCase() === needle);
 }
 
 /** Sum race + selected traits attr/XP mods (MC tempData merge idea). */
-export function draftModifierTotals(
-  draft: WizardDraft,
-  catalog: CreationCatalog
-): DraftModifierTotals {
+export function draftModifierTotals(draft: WizardDraft, catalog: CreationCatalog): DraftModifierTotals {
   const attributes: Record<string, number> = {};
   const experience: Record<string, { alias: string; amount: number }> = {};
 
-  const ids = [
-    draft.race_id,
-    ...draft.traitIds,
-  ].filter(Boolean);
+  const ids = [draft.race_id, ...draft.traitIds].filter(Boolean);
 
   for (const id of ids) {
     const row = findCatalogRow(catalog, id);
@@ -411,8 +359,7 @@ export function draftModifierTotals(
     }
     for (const m of rowExperienceMods(row)) {
       const profession = String(m.profession).trim().toLowerCase();
-      const alias =
-        String(m.alias || "").trim() || capitalizeLabel(profession);
+      const alias = String(m.alias || "").trim() || capitalizeLabel(profession);
       const prev = experience[profession];
       experience[profession] = {
         alias: prev?.alias || alias,
@@ -441,7 +388,7 @@ export function optionModifierPreview(
     attribute_modifiers?: AttributeModifierDto[] | unknown;
     experience_modifiers?: ExperienceModifierDto[] | unknown;
   },
-  catalog?: CreationCatalog
+  catalog?: CreationCatalog,
 ): ModifierPreviewLine[] {
   const attrMods = rowAttributeMods(optionMods);
   const xpMods = rowExperienceMods(optionMods);
@@ -450,7 +397,9 @@ export function optionModifierPreview(
   const lines: ModifierPreviewLine[] = [];
   const attrKeys = new Set<string>();
   for (const a of catalog?.attribute_point_buy?.attributes || []) {
-    const k = String(a || "").trim().toLowerCase();
+    const k = String(a || "")
+      .trim()
+      .toLowerCase();
     if (k) attrKeys.add(k);
   }
   for (const k of Object.keys(totals.attributes)) attrKeys.add(k);
@@ -462,16 +411,16 @@ export function optionModifierPreview(
     deltaAttr[type] = (deltaAttr[type] || 0) + Number(m.amount);
   }
 
-  const orderedAttrs =
-    (catalog?.attribute_point_buy?.attributes || [])
-      .map((a) => String(a || "").trim().toLowerCase())
-      .filter(Boolean);
+  const orderedAttrs = (catalog?.attribute_point_buy?.attributes || [])
+    .map((a) =>
+      String(a || "")
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
   const attrOrder =
     orderedAttrs.length > 0
-      ? [
-          ...orderedAttrs,
-          ...[...attrKeys].filter((k) => !orderedAttrs.includes(k)).sort(),
-        ]
+      ? [...orderedAttrs, ...[...attrKeys].filter((k) => !orderedAttrs.includes(k)).sort()]
       : [...attrKeys].sort();
 
   for (const type of attrOrder) {
@@ -487,8 +436,7 @@ export function optionModifierPreview(
   const deltaXp: Record<string, { alias: string; amount: number }> = {};
   for (const m of xpMods) {
     const profession = String(m.profession).trim().toLowerCase();
-    const alias =
-      String(m.alias || "").trim() || capitalizeLabel(profession);
+    const alias = String(m.alias || "").trim() || capitalizeLabel(profession);
     const prev = deltaXp[profession];
     deltaXp[profession] = {
       alias: prev?.alias || alias,
@@ -496,17 +444,12 @@ export function optionModifierPreview(
     };
   }
 
-  const xpKeys = new Set([
-    ...Object.keys(totals.experience),
-    ...Object.keys(deltaXp),
-  ]);
+  const xpKeys = new Set([...Object.keys(totals.experience), ...Object.keys(deltaXp)]);
   for (const profession of [...xpKeys].sort()) {
     const current = totals.experience[profession];
     const delta = deltaXp[profession];
     lines.push({
-      label: capitalizeLabel(
-        current?.alias || delta?.alias || profession
-      ),
+      label: capitalizeLabel(current?.alias || delta?.alias || profession),
       current: Math.max(0, current?.amount || 0),
       delta: delta?.amount || 0,
       kind: "experience",
@@ -518,32 +461,31 @@ export function optionModifierPreview(
 
 export function resolveTraitDependencyNames(
   trait: CatalogTrait,
-  catalog: CreationCatalog
+  catalog: CreationCatalog,
 ): { mode: string; names: string[] } | null {
   const dep = trait.dependency;
   if (!dep || typeof dep !== "object") return null;
   const ids = Array.isArray(dep.depends_on) ? dep.depends_on : [];
   if (!ids.length) return null;
-  const mode = String(dep.mode || "").trim().toLowerCase();
-  const names = ids.map((raw) => {
-    const id = String(raw || "").trim();
-    if (!id) return "";
-    const row =
-      findCatalogRow(catalog, id) ||
-      (catalog.traits || []).find(
-        (t) => String(t.id || "").toLowerCase() === id.toLowerCase()
-      );
-    const name = row && "name" in row ? String(row.name || "").trim() : "";
-    return name || capitalizeLabel(id);
-  }).filter(Boolean);
+  const mode = String(dep.mode || "")
+    .trim()
+    .toLowerCase();
+  const names = ids
+    .map((raw) => {
+      const id = String(raw || "").trim();
+      if (!id) return "";
+      const row =
+        findCatalogRow(catalog, id) ||
+        (catalog.traits || []).find((t) => String(t.id || "").toLowerCase() === id.toLowerCase());
+      const name = row && "name" in row ? String(row.name || "").trim() : "";
+      return name || capitalizeLabel(id);
+    })
+    .filter(Boolean);
   if (!names.length) return null;
   return { mode, names };
 }
 
-export function resolveMutuallyExclusiveNames(
-  trait: CatalogTrait,
-  catalog: CreationCatalog
-): string[] {
+export function resolveMutuallyExclusiveNames(trait: CatalogTrait, catalog: CreationCatalog): string[] {
   const raw = trait.mutually_exclusive;
   if (!Array.isArray(raw) || !raw.length) return [];
   return raw
@@ -561,51 +503,58 @@ function exclusiveIdList(trait: CatalogTrait): string[] {
   const raw = trait.mutually_exclusive;
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((id) => String(id || "").trim().toLowerCase())
+    .map((id) =>
+      String(id || "")
+        .trim()
+        .toLowerCase(),
+    )
     .filter(Boolean);
 }
 
 /** Bidirectional exclusivity (A lists B or B lists A). */
-export function traitsAreExclusive(
-  a: CatalogTrait,
-  b: CatalogTrait
-): boolean {
-  const aId = String(a.id || "").trim().toLowerCase();
-  const bId = String(b.id || "").trim().toLowerCase();
+export function traitsAreExclusive(a: CatalogTrait, b: CatalogTrait): boolean {
+  const aId = String(a.id || "")
+    .trim()
+    .toLowerCase();
+  const bId = String(b.id || "")
+    .trim()
+    .toLowerCase();
   if (!aId || !bId || aId === bId) return false;
-  return (
-    exclusiveIdList(a).includes(bId) || exclusiveIdList(b).includes(aId)
-  );
+  return exclusiveIdList(a).includes(bId) || exclusiveIdList(b).includes(aId);
 }
 
 /**
  * True when selecting `trait` would conflict with any id in `selectedIds`
  * (typically other selected traits; exclude `trait.id` yourself).
  */
-export function traitExclusiveBlocked(
-  trait: CatalogTrait,
-  selectedIds: string[],
-  catalog: CreationCatalog
-): boolean {
+export function traitExclusiveBlocked(trait: CatalogTrait, selectedIds: string[], catalog: CreationCatalog): boolean {
   const byId = new Map(
     (catalog.traits || []).map((t) => [
-      String(t.id || "").trim().toLowerCase(),
+      String(t.id || "")
+        .trim()
+        .toLowerCase(),
       t,
-    ])
+    ]),
   );
   for (const raw of selectedIds) {
-    const id = String(raw || "").trim().toLowerCase();
-    if (!id || id === String(trait.id || "").trim().toLowerCase()) continue;
+    const id = String(raw || "")
+      .trim()
+      .toLowerCase();
+    if (
+      !id ||
+      id ===
+        String(trait.id || "")
+          .trim()
+          .toLowerCase()
+    )
+      continue;
     const other = byId.get(id);
     if (other && traitsAreExclusive(trait, other)) return true;
   }
   return false;
 }
 
-export function traitPlaytimeBlocked(
-  trait: CatalogTrait,
-  accountAgeSeconds: number
-): boolean {
+export function traitPlaytimeBlocked(trait: CatalogTrait, accountAgeSeconds: number): boolean {
   const hours = Number(trait.required_account_playtime_hours);
   if (!Number.isFinite(hours) || hours <= 0) return false;
   const age = Math.max(0, Number(accountAgeSeconds) || 0);
@@ -625,11 +574,7 @@ export function traitCost(trait: CatalogTrait): number {
 }
 
 /** Net points spent for selected traits in a key (negative costs refund). */
-export function traitPointsSpent(
-  draft: WizardDraft,
-  catalog: CreationCatalog,
-  key: string
-): number {
+export function traitPointsSpent(draft: WizardDraft, catalog: CreationCatalog, key: string): number {
   const selected = new Set(selectedTraitsForKey(draft, catalog, key));
   let spent = 0;
   for (const t of traitsForKey(catalog, key)) {
@@ -643,35 +588,34 @@ export function traitPointsRemaining(
   draft: WizardDraft,
   catalog: CreationCatalog,
   key: string,
-  budget: number
+  budget: number,
 ): number {
   return budget - traitPointsSpent(draft, catalog, key);
 }
 
-export function selectedTraitsForKey(
-  draft: WizardDraft,
-  catalog: CreationCatalog,
-  key: string
-): string[] {
+export function selectedTraitsForKey(draft: WizardDraft, catalog: CreationCatalog, key: string): string[] {
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   return draft.traitIds.filter((id) => allowed.has(id));
 }
 
 /** Drop permanent injuries superseded by a selected prosthetic. */
-export function stripInjuriesReplacedByProsthetics(
-  traitIds: string[],
-  catalog: CreationCatalog
-): string[] {
+export function stripInjuriesReplacedByProsthetics(traitIds: string[], catalog: CreationCatalog): string[] {
   const injuriesToRemove = new Set<string>();
   for (const id of traitIds) {
     const trait = (catalog.traits || []).find(
-      (t) =>
-        String(t.id || "").toLowerCase() === String(id || "").toLowerCase()
+      (t) => String(t.id || "").toLowerCase() === String(id || "").toLowerCase(),
     );
-    if (!trait || String(trait.key || "").trim().toLowerCase() !== "prosthetic") {
+    if (
+      !trait ||
+      String(trait.key || "")
+        .trim()
+        .toLowerCase() !== "prosthetic"
+    ) {
       continue;
     }
-    const replaces = String(trait.replaces_injury || "").trim().toLowerCase();
+    const replaces = String(trait.replaces_injury || "")
+      .trim()
+      .toLowerCase();
     if (replaces) {
       injuriesToRemove.add(replaces);
     }
@@ -679,35 +623,32 @@ export function stripInjuriesReplacedByProsthetics(
   if (injuriesToRemove.size === 0) {
     return traitIds;
   }
-  return traitIds.filter(
-    (id) => !injuriesToRemove.has(String(id || "").toLowerCase())
-  );
+  return traitIds.filter((id) => !injuriesToRemove.has(String(id || "").toLowerCase()));
 }
 
 export function setTraitsForKey(
   draft: WizardDraft,
   catalog: CreationCatalog,
   key: string,
-  selected: string[]
+  selected: string[],
 ): WizardDraft {
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
-  const traitIds = stripInjuriesReplacedByProsthetics(
-    [...kept, ...selected],
-    catalog
-  );
+  const traitIds = stripInjuriesReplacedByProsthetics([...kept, ...selected], catalog);
   return { ...draft, traitIds };
 }
 
-export function draftHasEvilTrait(
-  draft: WizardDraft,
-  catalog: CreationCatalog
-): boolean {
+export function draftHasEvilTrait(draft: WizardDraft, catalog: CreationCatalog): boolean {
   for (const id of draft.traitIds) {
     const trait = (catalog.traits || []).find(
-      (t) => String(t.id || "").toLowerCase() === String(id || "").toLowerCase()
+      (t) => String(t.id || "").toLowerCase() === String(id || "").toLowerCase(),
     );
-    if (trait && String(trait.key || "").trim().toLowerCase() === "evil") {
+    if (
+      trait &&
+      String(trait.key || "")
+        .trim()
+        .toLowerCase() === "evil"
+    ) {
       return true;
     }
   }
@@ -715,10 +656,7 @@ export function draftHasEvilTrait(
 }
 
 /** Match RPCharacter.getCluesNeeded (default vs evil, capped by max). */
-export function cluesRequired(
-  draft: WizardDraft,
-  catalog: CreationCatalog
-): number {
+export function cluesRequired(draft: WizardDraft, catalog: CreationCatalog): number {
   const cfg = catalog.validation?.clues || {};
   let needed = Number(cfg.default_required ?? 0);
   if (!Number.isFinite(needed) || needed < 0) needed = 0;
@@ -755,10 +693,7 @@ export function clueLengthBounds(catalog: CreationCatalog): {
 }
 
 /** Human-readable reason Next is blocked on the clue stage, or null if ok. */
-export function clueContinueBlockReason(
-  draft: WizardDraft,
-  catalog: CreationCatalog
-): string | null {
+export function clueContinueBlockReason(draft: WizardDraft, catalog: CreationCatalog): string | null {
   const required = cluesRequired(draft, catalog);
   const { minLen, maxLen, maxClues } = clueLengthBounds(catalog);
   const clues = filledClues(draft);
@@ -786,11 +721,7 @@ export function clueContinueBlockReason(
   return null;
 }
 
-export function stageCanContinue(
-  stage: CatalogStage,
-  draft: WizardDraft,
-  catalog: CreationCatalog
-): boolean {
+export function stageCanContinue(stage: CatalogStage, draft: WizardDraft, catalog: CreationCatalog): boolean {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
 
@@ -873,7 +804,7 @@ export function stageCanContinue(
 
 export function toCreateBody(
   draft: WizardDraft,
-  opts?: { nameColourStops?: number; catalog?: CreationCatalog }
+  opts?: { nameColourStops?: number; catalog?: CreationCatalog },
 ): CreateCharacterBody {
   const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
   const gender = draft.gender.trim() || "unspecified";
@@ -894,12 +825,8 @@ export function toCreateBody(
     clues,
   };
   const birthday =
-    resolvedBirthdayIso(
-      String(age),
-      draft.client_request_id || "default",
-      draft.birthday,
-      undefined
-    ) || birthdayFromAge(age, draft.client_request_id || "default");
+    resolvedBirthdayIso(String(age), draft.client_request_id || "default", draft.birthday, undefined) ||
+    birthdayFromAge(age, draft.client_request_id || "default");
   if (birthday) {
     body.birthday = birthday;
   }

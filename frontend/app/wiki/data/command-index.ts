@@ -12,7 +12,6 @@ export const commandIndexSection: WikiSection = {
     href: "/wiki/commands",
     label: "Command Index",
     category: "reference",
-    blurb:
-      "Every command a player can type, A–Z, with the page that documents it.",
+    blurb: "Every command a player can type, A–Z, with the page that documents it.",
   },
 };

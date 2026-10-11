@@ -9,7 +9,13 @@ afterEach(cleanup);
 
 describe("material vehicle links", () => {
   it("links all catalogue vehicle outputs to their canonical slug", () => {
-    render(<>{vehicleRecipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}</>);
+    render(
+      <>
+        {vehicleRecipes.map((recipe) => (
+          <CraftingGrid key={recipe.key} recipe={recipe} />
+        ))}
+      </>,
+    );
 
     expect(vehicleRecipes).toHaveLength(21);
     for (const recipe of vehicleRecipes) {
@@ -28,15 +34,22 @@ describe("material vehicle links", () => {
       { name: "Engineering Table", url: "/wiki/models/vehicles/ammunition_station.json" },
       { name: "Dockyard", url: "/wiki/models/vehicles/dockyard.json" },
     ];
-    render(<>{stationModels.map(({ name, url }) => (
-      <CraftingGrid key={name} recipe={{
-        key: name,
-        title: name,
-        station: "Crafting Table",
-        ingredients: [],
-        output: { name, qty: 1, model: { url } },
-      }} />
-    ))}</>);
+    render(
+      <>
+        {stationModels.map(({ name, url }) => (
+          <CraftingGrid
+            key={name}
+            recipe={{
+              key: name,
+              title: name,
+              station: "Crafting Table",
+              ingredients: [],
+              output: { name, qty: 1, model: { url } },
+            }}
+          />
+        ))}
+      </>,
+    );
 
     expect(screen.getAllByTestId("station-model")).toHaveLength(2);
     expect(screen.queryByRole("link", { name: /vehicle catalogue/ })).toBeNull();

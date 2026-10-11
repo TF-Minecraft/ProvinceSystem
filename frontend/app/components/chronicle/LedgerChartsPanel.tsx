@@ -63,8 +63,7 @@ const BAND_COLORS = [
  * below doesn't see a "changed" dependency on every render from a fresh `[]`. */
 const EMPTY_OPTIONS: LedgerFactionOption[] = [];
 
-const headingClass =
-  "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
+const headingClass = "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
 
 function SectionHeading({ title }: { title: string }) {
   return <p className={headingClass}>{title}</p>;
@@ -111,15 +110,9 @@ function makeXScale(dayCount: number) {
  * `marginTop`/`innerHeight` default to the main chart's own dimensions, but
  * take an override so a secondary strip (its own axis, its own domain) can
  * reuse the same scaling logic at a different vertical extent. */
-function makeYScale(
-  min: number,
-  max: number,
-  marginTop: number = MARGIN.top,
-  innerHeight: number = INNER_HEIGHT
-) {
+function makeYScale(min: number, max: number, marginTop: number = MARGIN.top, innerHeight: number = INNER_HEIGHT) {
   const span = max - min || 1;
-  return (value: number): number =>
-    marginTop + innerHeight - ((value - min) / span) * innerHeight;
+  return (value: number): number => marginTop + innerHeight - ((value - min) / span) * innerHeight;
 }
 
 /** Widest finite value across any number of `number | null` arrays, or 0. */
@@ -159,13 +152,7 @@ function cursorIndex(days: string[], day: string | null): number | null {
   return index === -1 ? null : index;
 }
 
-function AxisLabels({
-  ticks,
-  yScale,
-}: {
-  ticks: number[];
-  yScale: (v: number) => number;
-}) {
+function AxisLabels({ ticks, yScale }: { ticks: number[]; yScale: (v: number) => number }) {
   return (
     <>
       {ticks.map((tick) => (
@@ -249,14 +236,7 @@ function StackedBands({
         }
         const d = buildAreaPath(tops, baselines, xScale, yScale);
         if (!d) return null;
-        return (
-          <path
-            key={key}
-            d={d}
-            fill={BAND_COLORS[keyIndex % BAND_COLORS.length]}
-            stroke="none"
-          />
-        );
+        return <path key={key} d={d} fill={BAND_COLORS[keyIndex % BAND_COLORS.length]} stroke="none" />;
       })}
     </>
   );
@@ -270,8 +250,7 @@ function StackedBands({
 const GLOBALS_STRIP_HEIGHT = 56;
 const GLOBALS_STRIP_MARGIN_TOP = 6;
 const GLOBALS_STRIP_MARGIN_BOTTOM = 14;
-const GLOBALS_STRIP_INNER_HEIGHT =
-  GLOBALS_STRIP_HEIGHT - GLOBALS_STRIP_MARGIN_TOP - GLOBALS_STRIP_MARGIN_BOTTOM;
+const GLOBALS_STRIP_INNER_HEIGHT = GLOBALS_STRIP_HEIGHT - GLOBALS_STRIP_MARGIN_TOP - GLOBALS_STRIP_MARGIN_BOTTOM;
 
 /** Every card's own nation-selection state, threaded from the hook down
  * through the panel to each chart — independent per card, so picking a
@@ -290,15 +269,16 @@ type CardSelectProps = {
 /** The body shown in place of a chart when this card's selection has no data
  * yet — the union fetch is loading, failed, or (a selection whose range
  * genuinely has no rows) simply came back without this key. */
-function CardStatusMessage({ seriesLoading, seriesError }: Omit<CardSelectProps, "options" | "selectedKey" | "onSelect">) {
+function CardStatusMessage({
+  seriesLoading,
+  seriesError,
+}: Omit<CardSelectProps, "options" | "selectedKey" | "onSelect">) {
   if (seriesError) {
     return <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{seriesError}</p>;
   }
   return (
     <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-      {seriesLoading
-        ? "Loading the ledger…"
-        : "The selected nation has no ledger history in this range."}
+      {seriesLoading ? "Loading the ledger…" : "The selected nation has no ledger history in this range."}
     </p>
   );
 }
@@ -343,7 +323,7 @@ function wealthGeometry(series: LedgerSeries, faction: MergedLedgerFaction): Wea
     0,
     globalsTicks[globalsTicks.length - 1] ?? globalsMax,
     GLOBALS_STRIP_MARGIN_TOP,
-    GLOBALS_STRIP_INNER_HEIGHT
+    GLOBALS_STRIP_INNER_HEIGHT,
   );
   const pouchPath = buildLinePath(pouch, xScale, globalsYScale);
   const bankPath = buildLinePath(bank, xScale, globalsYScale);
@@ -365,10 +345,7 @@ const WealthChart = memo(function WealthChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  const geometry = useMemo(
-    () => (series && faction ? wealthGeometry(series, faction) : null),
-    [series, faction]
-  );
+  const geometry = useMemo(() => (series && faction ? wealthGeometry(series, faction) : null), [series, faction]);
 
   if (!series || !faction || !geometry) {
     return (
@@ -379,17 +356,7 @@ const WealthChart = memo(function WealthChart({
     );
   }
 
-  const {
-    stacked,
-    wealth,
-    ticks,
-    xScale,
-    yScale,
-    globalsTicks,
-    globalsYScale,
-    pouchPath,
-    bankPath,
-  } = geometry;
+  const { stacked, wealth, ticks, xScale, yScale, globalsTicks, globalsYScale, pouchPath, bankPath } = geometry;
   const dayCount = series.days.length;
   const cursor = cursorIndex(series.days, cursorDay);
   const readout = ledgerCursorReadout(cursorDay, cursor, wealth);
@@ -405,39 +372,19 @@ const WealthChart = memo(function WealthChart({
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--tfmc-stone)]">
         {stacked.keys.map((key, i) => (
           <span key={key} className="inline-flex items-center gap-1">
-            <span
-              className="h-2 w-2 rounded-sm"
-              style={{ background: BAND_COLORS[i % BAND_COLORS.length] }}
-            />
+            <span className="h-2 w-2 rounded-sm" style={{ background: BAND_COLORS[i % BAND_COLORS.length] }} />
             {formatBreakdownBandLabel(key)}
           </span>
         ))}
       </div>
-      <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-        Server-wide money supply (separate scale):
-      </p>
-      <svg
-        viewBox={`0 0 ${CHART_WIDTH} ${GLOBALS_STRIP_HEIGHT}`}
-        className="mt-1 w-full"
-      >
+      <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">Server-wide money supply (separate scale):</p>
+      <svg viewBox={`0 0 ${CHART_WIDTH} ${GLOBALS_STRIP_HEIGHT}`} className="mt-1 w-full">
         <AxisLabels ticks={globalsTicks} yScale={globalsYScale} />
         {pouchPath ? (
-          <path
-            d={pouchPath}
-            fill="none"
-            stroke="var(--tfmc-mist)"
-            strokeWidth={1.5}
-            strokeDasharray="4 2"
-          />
+          <path d={pouchPath} fill="none" stroke="var(--tfmc-mist)" strokeWidth={1.5} strokeDasharray="4 2" />
         ) : null}
         {bankPath ? (
-          <path
-            d={bankPath}
-            fill="none"
-            stroke="var(--tfmc-cream)"
-            strokeWidth={1.5}
-            strokeDasharray="1 2"
-          />
+          <path d={bankPath} fill="none" stroke="var(--tfmc-cream)" strokeWidth={1.5} strokeDasharray="1 2" />
         ) : null}
         <Cursor
           index={cursor}
@@ -457,11 +404,7 @@ const WealthChart = memo(function WealthChart({
         </span>
       </p>
       {readout ? (
-        <p
-          className={`mt-1 text-xs ${
-            readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"
-          }`}
-        >
+        <p className={`mt-1 text-xs ${readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`}>
           {readout.hasData && cursor != null ? (
             <>
               {readout.day}: {formatMoney(wealth[cursor] ?? null)} faction wealth
@@ -562,10 +505,7 @@ const PrestigeChart = memo(function PrestigeChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  const geometry = useMemo(
-    () => (series && faction ? prestigeGeometry(series, faction) : null),
-    [series, faction]
-  );
+  const geometry = useMemo(() => (series && faction ? prestigeGeometry(series, faction) : null), [series, faction]);
 
   if (!series || !faction || !geometry) {
     return (
@@ -591,8 +531,7 @@ const PrestigeChart = memo(function PrestigeChart({
   } = geometry;
   const cursor = cursorIndex(series.days, cursorDay);
   const readout = ledgerCursorReadout(cursorDay, cursor, wealth);
-  const share =
-    cursor != null ? wealthShare(wealth[cursor] ?? null, wealthPool[cursor] ?? null) : null;
+  const share = cursor != null ? wealthShare(wealth[cursor] ?? null, wealthPool[cursor] ?? null) : null;
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
@@ -601,13 +540,7 @@ const PrestigeChart = memo(function PrestigeChart({
         <AxisLabels ticks={ticks} yScale={yScale} />
         <StackedBands stacked={stacked} dayCount={dayCount} xScale={xScale} yScale={yScale} />
         {rankUpPath ? (
-          <path
-            d={rankUpPath}
-            fill="none"
-            stroke="var(--tfmc-moss)"
-            strokeWidth={1.25}
-            strokeDasharray="3 2"
-          />
+          <path d={rankUpPath} fill="none" stroke="var(--tfmc-moss)" strokeWidth={1.25} strokeDasharray="3 2" />
         ) : null}
         {rankDownPath ? (
           <path
@@ -618,9 +551,7 @@ const PrestigeChart = memo(function PrestigeChart({
             strokeDasharray="3 2"
           />
         ) : null}
-        {linePath ? (
-          <path d={linePath} fill="none" stroke="var(--tfmc-accent)" strokeWidth={2} />
-        ) : null}
+        {linePath ? <path d={linePath} fill="none" stroke="var(--tfmc-accent)" strokeWidth={2} /> : null}
         {rankChanges.map((i) => (
           <line
             key={i}
@@ -650,16 +581,11 @@ const PrestigeChart = memo(function PrestigeChart({
         </span>
       </p>
       {readout ? (
-        <p
-          className={`mt-1 text-xs ${
-            readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"
-          }`}
-        >
+        <p className={`mt-1 text-xs ${readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`}>
           {readout.hasData && cursor != null ? (
             <>
               {readout.day}: <strong>{faction.rank[cursor] ?? "unranked"}</strong>. Wealth is{" "}
-              {share == null ? "—" : `${(share * 100).toFixed(1)}%`} of all faction
-              wealth.
+              {share == null ? "—" : `${(share * 100).toFixed(1)}%`} of all faction wealth.
             </>
           ) : (
             <>{readout.day}: no data</>
@@ -740,10 +666,7 @@ const IncomeChart = memo(function IncomeChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  const geometry = useMemo(
-    () => (series && faction ? incomeGeometry(series, faction) : null),
-    [series, faction]
-  );
+  const geometry = useMemo(() => (series && faction ? incomeGeometry(series, faction) : null), [series, faction]);
 
   if (!series || !faction || !geometry) {
     return (
@@ -754,18 +677,8 @@ const IncomeChart = memo(function IncomeChart({
     );
   }
 
-  const {
-    netIncome,
-    observedDelta,
-    ticks,
-    xScale,
-    yScale,
-    zeroY,
-    netPath,
-    inflationPath,
-    guildPath,
-    barMax,
-  } = geometry;
+  const { netIncome, observedDelta, ticks, xScale, yScale, zeroY, netPath, inflationPath, guildPath, barMax } =
+    geometry;
   const cursor = cursorIndex(series.days, cursorDay);
   const readout = ledgerCursorReadout(cursorDay, cursor, faction.series.wealth ?? []);
 
@@ -783,41 +696,22 @@ const IncomeChart = memo(function IncomeChart({
           stroke="var(--tfmc-stone)"
           strokeWidth={1}
         />
-        {netPath ? (
-          <path d={netPath} fill="none" stroke="var(--tfmc-cream)" strokeWidth={2} />
-        ) : null}
+        {netPath ? <path d={netPath} fill="none" stroke="var(--tfmc-cream)" strokeWidth={2} /> : null}
         {inflationPath ? (
-          <path
-            d={inflationPath}
-            fill="none"
-            stroke="var(--tfmc-accent)"
-            strokeWidth={1.5}
-            strokeDasharray="8 3 2 3"
-          />
+          <path d={inflationPath} fill="none" stroke="var(--tfmc-accent)" strokeWidth={1.5} strokeDasharray="8 3 2 3" />
         ) : null}
         {guildPath ? (
-          <path
-            d={guildPath}
-            fill="none"
-            stroke="var(--tfmc-stone)"
-            strokeWidth={1.5}
-            strokeDasharray="1 4"
-          />
+          <path d={guildPath} fill="none" stroke="var(--tfmc-stone)" strokeWidth={1.5} strokeDasharray="1 4" />
         ) : null}
         <Cursor index={cursor} xScale={xScale} />
       </svg>
       <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
         <span className="text-[var(--tfmc-cream)]">—</span> net income,{" "}
-        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation adjustment
-        (this faction), <span className="text-[var(--tfmc-stone)]">· · ·</span>{" "}
-        guild income (server-wide)
+        <span className="text-[var(--tfmc-accent)]">— · —</span> inflation adjustment (this faction),{" "}
+        <span className="text-[var(--tfmc-stone)]">· · ·</span> guild income (server-wide)
       </p>
       {readout ? (
-        <p
-          className={`mt-1 text-xs ${
-            readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"
-          }`}
-        >
+        <p className={`mt-1 text-xs ${readout.hasData ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`}>
           {readout.hasData && cursor != null ? (
             <>
               {readout.day}: net income {formatSignedMoney(netIncome[cursor] ?? null)} denar
@@ -828,9 +722,7 @@ const IncomeChart = memo(function IncomeChart({
         </p>
       ) : null}
       <div className="mt-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-2">
-        <p className="text-xs text-[var(--tfmc-stone)]">
-          Daily wealth change
-        </p>
+        <p className="text-xs text-[var(--tfmc-stone)]">Daily wealth change</p>
         <svg viewBox={`0 0 ${CHART_WIDTH} 36`} className="mt-1 w-full">
           {(() => {
             const half = 18;
@@ -846,11 +738,7 @@ const IncomeChart = memo(function IncomeChart({
                   y={y}
                   width={2}
                   height={Math.max(h, 0.5)}
-                  fill={
-                    value >= 0
-                      ? "var(--tfmc-accent)"
-                      : "color-mix(in srgb, var(--tfmc-cream) 40%, transparent)"
-                  }
+                  fill={value >= 0 ? "var(--tfmc-accent)" : "color-mix(in srgb, var(--tfmc-cream) 40%, transparent)"}
                 />
               );
             });
@@ -865,8 +753,7 @@ const IncomeChart = memo(function IncomeChart({
           />
         </svg>
         <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-          Actual change in wealth; lines above show daily forecasts. Gaps mean
-          missing records.
+          Actual change in wealth; lines above show daily forecasts. Gaps mean missing records.
         </p>
       </div>
     </div>
@@ -897,15 +784,15 @@ export default function LedgerChartsPanel({
 
   const wealthFaction = useMemo(
     () => factionForKey(readySeries, readyOptions, readySelections?.wealth ?? null),
-    [readySeries, readyOptions, readySelections?.wealth]
+    [readySeries, readyOptions, readySelections?.wealth],
   );
   const prestigeFaction = useMemo(
     () => factionForKey(readySeries, readyOptions, readySelections?.prestige ?? null),
-    [readySeries, readyOptions, readySelections?.prestige]
+    [readySeries, readyOptions, readySelections?.prestige],
   );
   const incomeFaction = useMemo(
     () => factionForKey(readySeries, readyOptions, readySelections?.income ?? null),
-    [readySeries, readyOptions, readySelections?.income]
+    [readySeries, readyOptions, readySelections?.income],
   );
 
   // A fresh arrow per render for these defeated the `React.memo` wrappers
@@ -915,18 +802,9 @@ export default function LedgerChartsPanel({
   // itself is already stable (`useLedgerSeries`'s own `useCallback`), so
   // these stay stable across cursor-only re-renders too.
   const readyOnSelect = ready?.onSelect;
-  const handleWealthSelect = useCallback(
-    (key: string) => readyOnSelect?.("wealth", key),
-    [readyOnSelect]
-  );
-  const handlePrestigeSelect = useCallback(
-    (key: string) => readyOnSelect?.("prestige", key),
-    [readyOnSelect]
-  );
-  const handleIncomeSelect = useCallback(
-    (key: string) => readyOnSelect?.("income", key),
-    [readyOnSelect]
-  );
+  const handleWealthSelect = useCallback((key: string) => readyOnSelect?.("wealth", key), [readyOnSelect]);
+  const handlePrestigeSelect = useCallback((key: string) => readyOnSelect?.("prestige", key), [readyOnSelect]);
+  const handleIncomeSelect = useCallback((key: string) => readyOnSelect?.("income", key), [readyOnSelect]);
 
   if (result.status === "idle") return null;
 
@@ -934,9 +812,7 @@ export default function LedgerChartsPanel({
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <SectionHeading title="Ledger" />
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-          Loading the ledger…
-        </p>
+        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">Loading the ledger…</p>
       </div>
     );
   }
@@ -945,9 +821,7 @@ export default function LedgerChartsPanel({
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <SectionHeading title="Ledger" />
-        <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-          No economy data yet.
-        </p>
+        <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">No economy data yet.</p>
       </div>
     );
   }
@@ -967,9 +841,7 @@ export default function LedgerChartsPanel({
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <SectionHeading title="Ledger" />
-        <p className="mt-2 text-xs text-[var(--tfmc-accent)]">
-          {result.message}
-        </p>
+        <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{result.message}</p>
       </div>
     );
   }

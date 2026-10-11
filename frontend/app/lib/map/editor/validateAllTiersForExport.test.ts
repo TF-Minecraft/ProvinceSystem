@@ -4,10 +4,7 @@ import type { TitleDraft } from "@/app/hooks/useEditorDraft";
 
 import { validateAllTiersForExport } from "./validateAllTiersForExport";
 
-function emptyDrafts(): Record<
-  "county" | "duchy" | "kingdom" | "empire",
-  TitleDraft
-> {
+function emptyDrafts(): Record<"county" | "duchy" | "kingdom" | "empire", TitleDraft> {
   return {
     county: {
       COUNTY_1: {
@@ -84,11 +81,7 @@ describe("validateAllTiersForExport", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(
-      result.errors.some(
-        (e) =>
-          e.startsWith("Duchy:") &&
-          e.includes("references unknown county 'MISSING_COUNTY'")
-      )
+      result.errors.some((e) => e.startsWith("Duchy:") && e.includes("references unknown county 'MISSING_COUNTY'")),
     ).toBe(true);
   });
 });

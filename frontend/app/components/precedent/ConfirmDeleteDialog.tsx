@@ -15,14 +15,7 @@ type Props = {
 
 /** Deletion is permanent and has no undo, so it gets the same two-step
  *  confirmation the Discord /case-delete command requires. */
-export default function ConfirmDeleteDialog({
-  open,
-  summary,
-  deleting,
-  error,
-  onCancel,
-  onConfirm,
-}: Props) {
+export default function ConfirmDeleteDialog({ open, summary, deleting, error, onCancel, onConfirm }: Props) {
   const titleId = useId();
   if (!open) return null;
 
@@ -41,28 +34,22 @@ export default function ConfirmDeleteDialog({
         className="w-full max-w-sm rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[var(--tfmc-forest-deep)] p-5 shadow-lg sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2
-          id={titleId}
-          className={headingClass}
-        >
+        <h2 id={titleId} className={headingClass}>
           Delete this case?
         </h2>
-        <p className={`mt-2 ${mutedClass}`}>
-          This is permanent. It will no longer inform precedent searches.
-        </p>
+        <p className={`mt-2 ${mutedClass}`}>This is permanent. It will no longer inform precedent searches.</p>
         <p className="mt-3 border-l-2 border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] pl-3 text-sm text-[var(--tfmc-cream)]">
           {summary}
         </p>
 
-        {error ? <p className={`mt-3 ${errorClass}`} role="alert">{error}</p> : null}
+        {error ? (
+          <p className={`mt-3 ${errorClass}`} role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={onCancel}
-            className={quietButtonClass}
-          >
+          <button type="button" disabled={deleting} onClick={onCancel} className={quietButtonClass}>
             Cancel
           </button>
           <button

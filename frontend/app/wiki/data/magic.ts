@@ -61,13 +61,22 @@ export const runeStationRecipe: Recipe = {
 };
 
 /** Everything the Rune Station crafts, from `MMOItems/crafting-stations/rune-station.yml`. Each takes 10 s. */
-export const runestoneRecipes: Recipe[] = ["minor-runestone", "lesser-runestone", "greater-runestone", "ascendant-runestone"]
-  .map(key => stationRecipe(`gen-rune-station-${key}`));
+export const runestoneRecipes: Recipe[] = [
+  "minor-runestone",
+  "lesser-runestone",
+  "greater-runestone",
+  "ascendant-runestone",
+].map((key) => stationRecipe(`gen-rune-station-${key}`));
 // `lesser-armor-` is the recipe key as written in the server config.
-export const armorRunestoneRecipes: Recipe[] = ["minor-armor-runestone", "lesser-armor-", "greater-armor-runestone", "ascendant-armor-runestone"]
-  .map(key => stationRecipe(`gen-rune-station-${key}`));
-export const enchantedChargeRecipes: Recipe[] = ["minor", "lesser", "greater", "ascendant"]
-  .map(key => stationRecipe(`gen-rune-station-enchanted-charge-${key}`));
+export const armorRunestoneRecipes: Recipe[] = [
+  "minor-armor-runestone",
+  "lesser-armor-",
+  "greater-armor-runestone",
+  "ascendant-armor-runestone",
+].map((key) => stationRecipe(`gen-rune-station-${key}`));
+export const enchantedChargeRecipes: Recipe[] = ["minor", "lesser", "greater", "ascendant"].map((key) =>
+  stationRecipe(`gen-rune-station-enchanted-charge-${key}`),
+);
 
 export const magicRecipes: Recipe[] = [magicStationRecipe, runeStationRecipe];
 
@@ -86,8 +95,7 @@ export const magicCommands: WikiCommandSet = {
       aliases: ["/res"],
       description:
         "Opens your Resonance profile: a bar per element, your Equilibrium (Corruption vs Tranquility), your Mental Points, and the Surge / Flow cast-mode toggle.",
-      notes:
-        "Requires an active character.",
+      notes: "Requires an active character.",
     },
   ],
 };

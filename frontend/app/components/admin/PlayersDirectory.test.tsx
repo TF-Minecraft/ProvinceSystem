@@ -14,7 +14,7 @@ import {
 } from "../../../lib/admin/api";
 
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../../../lib/admin/api")>(),
+  ...(await importOriginal<typeof import("../../../lib/admin/api")>()),
   getPlayers: vi.fn(),
 }));
 
@@ -22,19 +22,45 @@ const NOW = 2_000_000_000;
 
 function player(uuid: string, name: string | null, extra: Partial<PlayerSummary> = {}): PlayerSummary {
   return {
-    uuid, minecraft_name: name, aliases: [], discord_user_id: null, discord_username: null, discord_nickname: null,
-    site_role: null, characters: [], last_seen: null, online: false, ...extra,
+    uuid,
+    minecraft_name: name,
+    aliases: [],
+    discord_user_id: null,
+    discord_username: null,
+    discord_nickname: null,
+    site_role: null,
+    characters: [],
+    last_seen: null,
+    online: false,
+    ...extra,
   };
 }
 
 const ENZO = player("0615a817-8cb4-4aef-95f7-f6c9bf7611b8", "MrEnzo99", {
-  aliases: ["OldEnzo"], discord_user_id: "422545450919526411", discord_username: "hazelstone", discord_nickname: "Enzo",
-  characters: ["Hazel Stonebrook"], last_seen: NOW - 7200, site_role: "mod",
+  aliases: ["OldEnzo"],
+  discord_user_id: "422545450919526411",
+  discord_username: "hazelstone",
+  discord_nickname: "Enzo",
+  characters: ["Hazel Stonebrook"],
+  last_seen: NOW - 7200,
+  site_role: "mod",
 });
 
-const PAGE = { sort: "name", order: "asc", total: 0, omitted: 0, page: 1, page_size: 50, coreprotect: { status: "available", server_label: "Vardera" } } as const;
+const PAGE = {
+  sort: "name",
+  order: "asc",
+  total: 0,
+  omitted: 0,
+  page: 1,
+  page_size: 50,
+  coreprotect: { status: "available", server_label: "Vardera" },
+} as const;
 
-function directory(view: Exclude<PlayerView, "character">, rows: PlayerSummary[], extra: Partial<PlayerDirectory> = {}): PlayerDirectory {
+function directory(
+  view: Exclude<PlayerView, "character">,
+  rows: PlayerSummary[],
+  extra: Partial<PlayerDirectory> = {},
+): PlayerDirectory {
   return { ...PAGE, total: rows.length, view, rows, ...extra } as PlayerDirectory;
 }
 
@@ -44,11 +70,13 @@ function characters(rows: CharacterRow[], extra: Partial<PlayerDirectory> = {}):
 
 /** Answers each request with the given view's page. */
 function serve(pages: Partial<Record<PlayerView, PlayerDirectory>>) {
-  vi.mocked(getPlayers).mockImplementation(async ({ view }) => pages[view ?? "minecraft"] ?? directory("minecraft", []));
+  vi.mocked(getPlayers).mockImplementation(
+    async ({ view }) => pages[view ?? "minecraft"] ?? directory("minecraft", []),
+  );
 }
 
 function renderDirectory(initial: PlayerView | PlayerListing = "minecraft", initialQuery = "") {
-  const listing = typeof initial === "string" ? { view: initial, sort: "name", order: "asc" } as const : initial;
+  const listing = typeof initial === "string" ? ({ view: initial, sort: "name", order: "asc" } as const) : initial;
   return render(<PlayersDirectory initialQuery={initialQuery} initialListing={listing} initialPage={1} />);
 }
 
@@ -73,13 +101,17 @@ afterEach(() => {
 
 it("lists everyone under Minecraft by default", async () => {
   serve({
-    minecraft: directory("minecraft", [
-      ENZO,
-      // Linked before handles were stored: only the server nickname is known.
-      player("44444444-4444-4444-4444-444444444444", "Justin", { discord_user_id: "5", discord_nickname: "Justin" }),
-      player("33333333-3333-3333-3333-333333333333", "Quiet", { online: true, last_seen: NOW }),
-      player("22222222-2222-2222-2222-222222222222", null),
-    ], { total: 243 }),
+    minecraft: directory(
+      "minecraft",
+      [
+        ENZO,
+        // Linked before handles were stored: only the server nickname is known.
+        player("44444444-4444-4444-4444-444444444444", "Justin", { discord_user_id: "5", discord_nickname: "Justin" }),
+        player("33333333-3333-3333-3333-333333333333", "Quiet", { online: true, last_seen: NOW }),
+        player("22222222-2222-2222-2222-222222222222", null),
+      ],
+      { total: 243 },
+    ),
   });
   renderDirectory();
 
@@ -93,7 +125,11 @@ it("lists everyone under Minecraft by default", async () => {
   expect(within(row).getAllByText("Hazel Stonebrook").length).toBe(2);
   expect(within(screen.getByRole("link", { name: "Justin" }).closest("tr")!).queryByText("Not linked")).toBeNull();
   expect(within(screen.getByRole("link", { name: "Quiet" }).closest("tr")!).getByText("Seen just now")).toBeTruthy();
-  expect(within(screen.getByRole("link", { name: "22222222-2222-2222-2222-222222222222" }).closest("tr")!).getByText("Never")).toBeTruthy();
+  expect(
+    within(screen.getByRole("link", { name: "22222222-2222-2222-2222-222222222222" }).closest("tr")!).getByText(
+      "Never",
+    ),
+  ).toBeTruthy();
   expect(screen.getByText("243 players")).toBeTruthy();
   expect(screen.queryByRole("tab", { name: "Activity" })).toBeNull();
   expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Minecraft", "Discord", "Character"]);
@@ -165,10 +201,19 @@ it("leads the Minecraft table with the name and earlier names", async () => {
 
 it("gives each character a row of its own, led by the character's name", async () => {
   serve({
-    character: characters([
-      { character: { character_id: "c1", name: "Aldric", status: "alive", race: "human", class: "MUSKETEER" }, player: ENZO },
-      { character: { character_id: "c2", name: "Aldric", status: "dead", race: null, class: null }, player: player("22222222-2222-2222-2222-222222222222", "Other") },
-    ], { omitted: 3 }),
+    character: characters(
+      [
+        {
+          character: { character_id: "c1", name: "Aldric", status: "alive", race: "human", class: "MUSKETEER" },
+          player: ENZO,
+        },
+        {
+          character: { character_id: "c2", name: "Aldric", status: "dead", race: null, class: null },
+          player: player("22222222-2222-2222-2222-222222222222", "Other"),
+        },
+      ],
+      { omitted: 3 },
+    ),
   });
   renderDirectory("character");
 
@@ -188,8 +233,11 @@ it("keeps the search across views and never shows one view's rows in another's t
   let answerCharacters: (page: PlayerDirectory) => void = () => {};
   vi.mocked(getPlayers).mockImplementation(({ view }) =>
     view === "character"
-      ? new Promise((resolve) => { answerCharacters = resolve; })
-      : Promise.resolve(directory("minecraft", [ENZO])));
+      ? new Promise((resolve) => {
+          answerCharacters = resolve;
+        })
+      : Promise.resolve(directory("minecraft", [ENZO])),
+  );
   renderDirectory();
   await screen.findByRole("link", { name: "MrEnzo99" });
 
@@ -201,9 +249,16 @@ it("keeps the search across views and never shows one view's rows in another's t
   expect(screen.queryByRole("link", { name: "MrEnzo99" })).toBeNull();
   expect(screen.getByText("Loading…")).toBeTruthy();
 
-  await act(async () => answerCharacters(characters([
-    { character: { character_id: "c1", name: "Hazel Stonebrook", status: "alive", race: null, class: null }, player: ENZO },
-  ])));
+  await act(async () =>
+    answerCharacters(
+      characters([
+        {
+          character: { character_id: "c1", name: "Hazel Stonebrook", status: "alive", race: null, class: null },
+          player: ENZO,
+        },
+      ]),
+    ),
+  );
   expect(screen.getByRole("link", { name: "Hazel Stonebrook" })).toBeTruthy();
 });
 
@@ -231,7 +286,11 @@ it("moves between tabs with the arrow keys and opens one with Enter", async () =
 
 it("pages through results", async () => {
   vi.mocked(getPlayers).mockImplementation(async ({ page }) =>
-    directory("discord", [player(`0000000${page}-0000-0000-0000-000000000000`, `P${page}`)], { total: 120, page: page ?? 1 }));
+    directory("discord", [player(`0000000${page}-0000-0000-0000-000000000000`, `P${page}`)], {
+      total: 120,
+      page: page ?? 1,
+    }),
+  );
   renderDirectory("discord");
   await screen.findByText("Page 1 of 3");
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
@@ -257,7 +316,9 @@ it("says when CoreProtect cannot be read, and that last seen is unknown", async 
     }),
   });
   renderDirectory();
-  expect(await screen.findByText(/Activity history is busy.*Only linked players and characters are listed/)).toBeTruthy();
+  expect(
+    await screen.findByText(/Activity history is busy.*Only linked players and characters are listed/),
+  ).toBeTruthy();
   expect(within(screen.getByRole("link", { name: "Linked" }).closest("tr")!).getByText("Unknown")).toBeTruthy();
 });
 

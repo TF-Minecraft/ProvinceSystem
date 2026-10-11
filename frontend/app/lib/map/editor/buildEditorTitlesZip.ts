@@ -13,19 +13,14 @@ export const EDITOR_TIER_FILES: Record<EditorTier, string> = {
   empire: "empire.json",
 };
 
-export function editorTitlesZipFilename(
-  mapId: MapId,
-  date = new Date()
-): string {
+export function editorTitlesZipFilename(mapId: MapId, date = new Date()): string {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${mapId}-titles-${yyyy}-${mm}-${dd}.zip`;
 }
 
-export function buildEditorTitlesZip(
-  drafts: Record<EditorTier, TitleDraft>
-): Uint8Array {
+export function buildEditorTitlesZip(drafts: Record<EditorTier, TitleDraft>): Uint8Array {
   const files: Record<string, Uint8Array> = {};
 
   for (const tier of EDITOR_TITLE_TIERS) {

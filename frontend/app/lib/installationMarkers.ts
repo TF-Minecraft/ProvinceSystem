@@ -2,24 +2,19 @@ import type { InstallationMarker } from "../components/map/types";
 import { cleanRegionName } from "./mapLabels";
 import type { MapMarker } from "./mapMarkers";
 
-export function filterPlacedInstallations(
-  installations: InstallationMarker[]
-): InstallationMarker[] {
+export function filterPlacedInstallations(installations: InstallationMarker[]): InstallationMarker[] {
   return installations.filter(
     (installation) =>
       typeof installation.map_x === "number" &&
       Number.isFinite(installation.map_x) &&
       typeof installation.map_y === "number" &&
-      Number.isFinite(installation.map_y)
+      Number.isFinite(installation.map_y),
   );
 }
 
-export function installationToMapMarker(
-  installation: InstallationMarker
-): MapMarker {
+export function installationToMapMarker(installation: InstallationMarker): MapMarker {
   const displayName = cleanRegionName(installation.name);
-  const kindLabel =
-    installation.kind.charAt(0).toUpperCase() + installation.kind.slice(1);
+  const kindLabel = installation.kind.charAt(0).toUpperCase() + installation.kind.slice(1);
 
   return {
     id: `installation:${installation.id}`,

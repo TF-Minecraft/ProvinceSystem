@@ -6,7 +6,10 @@ import WikiNavigation from "./WikiNavigation";
 
 let pathname = "/wiki";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
-afterEach(() => { cleanup(); pathname = "/wiki"; });
+afterEach(() => {
+  cleanup();
+  pathname = "/wiki";
+});
 
 const content = <a href="#crafting">Crafting</a>;
 

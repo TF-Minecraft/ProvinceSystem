@@ -11,10 +11,7 @@ type CanEditMapState = {
   loading: boolean;
 };
 
-export function useCanEditMap(
-  mapId: MapId,
-  sessionToken: string | null
-): CanEditMapState {
+export function useCanEditMap(mapId: MapId, sessionToken: string | null): CanEditMapState {
   const [state, setState] = useState<CanEditMapState>(() => {
     if (!isMapEditorEnabled()) {
       return { canEdit: false, loading: false };

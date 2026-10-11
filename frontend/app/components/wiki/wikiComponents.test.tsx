@@ -36,22 +36,28 @@ describe("WikiPage", () => {
 
   it("uses a valid page-specific ISO date and falls back for invalid calendar dates", () => {
     const { rerender } = render(
-      <WikiPage title="Commands" lastModified="2026-09-01">Content</WikiPage>
+      <WikiPage title="Commands" lastModified="2026-09-01">
+        Content
+      </WikiPage>,
     );
     expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe("2026-09-01");
 
-    rerender(<WikiPage title="Commands" lastModified="2026-02-30">Content</WikiPage>);
-    expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(
-      WIKI_LAST_MODIFIED
+    rerender(
+      <WikiPage title="Commands" lastModified="2026-02-30">
+        Content
+      </WikiPage>,
     );
+    expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(WIKI_LAST_MODIFIED);
 
     for (const invalidDate of ["2026-13-01", "2026-09-99"]) {
       expect(() =>
-        rerender(<WikiPage title="Commands" lastModified={invalidDate}>Content</WikiPage>)
+        rerender(
+          <WikiPage title="Commands" lastModified={invalidDate}>
+            Content
+          </WikiPage>,
+        ),
       ).not.toThrow();
-      expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(
-        WIKI_LAST_MODIFIED
-      );
+      expect(screen.getByText(/Updated/).querySelector("time")?.dateTime).toBe(WIKI_LAST_MODIFIED);
     }
   });
 });
@@ -77,7 +83,7 @@ describe("DataTable", () => {
             </a>,
           ],
         ]}
-      />
+      />,
     );
 
     const table = screen.getByRole("table");
@@ -89,9 +95,7 @@ describe("DataTable", () => {
   });
 
   it("uses semantic column headers", () => {
-    render(
-      <DataTable columns={[{ header: "Item" }, { header: "Chance" }]} rows={[["Coke", "3%"]]} />
-    );
+    render(<DataTable columns={[{ header: "Item" }, { header: "Chance" }]} rows={[["Coke", "3%"]]} />);
 
     const headers = screen.getAllByRole("columnheader");
     expect(headers.map((h) => h.textContent)).toEqual(["Item", "Chance"]);
@@ -119,7 +123,7 @@ describe("CommandTable", () => {
             permission: "instruments.admin",
           },
         ]}
-      />
+      />,
     );
 
     const rows = screen.getAllByRole("row").slice(1); // drop the header row
@@ -140,7 +144,7 @@ describe("CommandTable", () => {
             notes: "3s cooldown.",
           },
         ]}
-      />
+      />,
     );
 
     expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual([
@@ -155,14 +159,16 @@ describe("CommandTable", () => {
   it("can hide notes while keeping aliases and descriptions", () => {
     render(
       <CommandTable
-        commands={[{
-          command: "/magic",
-          aliases: ["/m"],
-          description: "Opens magic.",
-          notes: "Hidden detail.",
-        }]}
+        commands={[
+          {
+            command: "/magic",
+            aliases: ["/m"],
+            description: "Opens magic.",
+            notes: "Hidden detail.",
+          },
+        ]}
         showNotes={false}
-      />
+      />,
     );
 
     expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual([
@@ -184,10 +190,7 @@ describe("SeeAlso", () => {
 
     const nav = screen.getByRole("navigation", { name: "See also" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((a) => a.getAttribute("href"))).toEqual([
-      overviewNavItem.href,
-      target.href,
-    ]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([overviewNavItem.href, target.href]);
     expect(within(nav).getByText(overviewNavItem.label)).toBeTruthy();
     expect(within(nav).getByText(target.label)).toBeTruthy();
     // A real list inside the landmark, not a pile of divs.
@@ -197,9 +200,7 @@ describe("SeeAlso", () => {
   it("throws on an unresolvable href instead of rendering an empty or guessed label", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      expect(() => render(<SeeAlso hrefs={["/wiki/does-not-exist"]} />)).toThrow(
-        /not a registered wiki page/
-      );
+      expect(() => render(<SeeAlso hrefs={["/wiki/does-not-exist"]} />)).toThrow(/not a registered wiki page/);
     } finally {
       consoleError.mockRestore();
     }

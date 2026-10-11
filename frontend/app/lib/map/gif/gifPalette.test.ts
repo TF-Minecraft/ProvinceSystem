@@ -12,7 +12,7 @@ import {
 function frameOf(
   width: number,
   height: number,
-  paint: (x: number, y: number) => [number, number, number, number]
+  paint: (x: number, y: number) => [number, number, number, number],
 ): Uint8ClampedArray {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y++) {
@@ -37,21 +37,13 @@ function paletteColors(palette: GifPalette): string[] {
   return colors;
 }
 
-function nearestColor(
-  palette: GifPalette,
-  r: number,
-  g: number,
-  b: number
-): [number, number, number] {
+function nearestColor(palette: GifPalette, r: number, g: number, b: number): [number, number, number] {
   const index = new NearestColorCache(palette).lookup(r, g, b);
   const o = index * 3;
   return [palette.table[o]!, palette.table[o + 1]!, palette.table[o + 2]!];
 }
 
-function distance(
-  a: readonly [number, number, number],
-  b: readonly [number, number, number]
-): number {
+function distance(a: readonly [number, number, number], b: readonly [number, number, number]): number {
   return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 }
 
@@ -89,9 +81,7 @@ describe("buildGifPalette", () => {
     const palette = buildGifPalette([frame], 6);
 
     expect(palette.colorCount).toBe(3);
-    expect(paletteColors(palette).sort()).toEqual(
-      colors.map((c) => c.join(",")).sort()
-    );
+    expect(paletteColors(palette).sort()).toEqual(colors.map((c) => c.join(",")).sort());
     // Table size is a power of two even though only three entries are used.
     expect(palette.table.length).toBe(4 * 3);
   });
@@ -100,9 +90,7 @@ describe("buildGifPalette", () => {
     const a = frameOf(4, 4, () => [10, 20, 30, 255]);
     const b = frameOf(4, 4, () => [200, 100, 50, 255]);
     const palette = buildGifPalette([a, b], 4);
-    expect(paletteColors(palette).sort()).toEqual(
-      ["10,20,30", "200,100,50"].sort()
-    );
+    expect(paletteColors(palette).sort()).toEqual(["10,20,30", "200,100,50"].sort());
   });
 
   it("folds sub-threshold alpha into black", () => {
@@ -170,11 +158,7 @@ describe("NearestColorCache", () => {
       let bestDistance = Infinity;
       for (let c = 0; c < palette.colorCount; c++) {
         const o = c * 3;
-        const d = distance([r, g, b], [
-          palette.table[o]!,
-          palette.table[o + 1]!,
-          palette.table[o + 2]!,
-        ]);
+        const d = distance([r, g, b], [palette.table[o]!, palette.table[o + 1]!, palette.table[o + 2]!]);
         if (d < bestDistance) {
           bestDistance = d;
           best = c;
@@ -187,16 +171,12 @@ describe("NearestColorCache", () => {
   });
 
   it("resolves transparent pixels to the entry nearest black", () => {
-    const frame = frameOf(4, 4, (x) =>
-      x === 0 ? [2, 2, 2, 255] : [250, 250, 250, 255]
-    );
+    const frame = frameOf(4, 4, (x) => (x === 0 ? [2, 2, 2, 255] : [250, 250, 250, 255]));
     const palette = buildGifPalette([frame], 4);
     const cache = new NearestColorCache(palette);
     expect(cache.transparentIndex).toBe(cache.lookup(0, 0, 0));
 
-    const withHole = frameOf(4, 4, (x) =>
-      x === 1 ? [250, 0, 0, 10] : [250, 250, 250, 255]
-    );
+    const withHole = frameOf(4, 4, (x) => (x === 1 ? [250, 0, 0, 10] : [250, 250, 250, 255]));
     const out = new Uint8Array(16);
     mapFrameToPaletteIndices(withHole, cache, out);
     expect(out[1]).toBe(cache.transparentIndex);

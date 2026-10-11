@@ -28,18 +28,8 @@ export default function AttributeSheet({ ranks, apb, onChange }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-[var(--tfmc-stone)]">
-        Spend exactly{" "}
-        <span className="text-[var(--tfmc-cream)]">{apb.pool}</span> points.
-        Remaining:{" "}
-        <span
-          className={
-            remaining === 0
-              ? "text-[var(--tfmc-accent)]"
-              : "text-[var(--tfmc-cream)]"
-          }
-        >
-          {remaining}
-        </span>
+        Spend exactly <span className="text-[var(--tfmc-cream)]">{apb.pool}</span> points. Remaining:{" "}
+        <span className={remaining === 0 ? "text-[var(--tfmc-accent)]" : "text-[var(--tfmc-cream)]"}>{remaining}</span>
       </p>
       <ul className="flex flex-col gap-3">
         {apb.attributes.map((attr) => {
@@ -51,14 +41,10 @@ export default function AttributeSheet({ ranks, apb, onChange }: Props) {
               className="flex items-center justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pb-3"
             >
               <div>
-                <p className="font-medium text-[var(--tfmc-cream)]">
-                  {displayAttrName(attr)}
-                </p>
+                <p className="font-medium text-[var(--tfmc-cream)]">{displayAttrName(attr)}</p>
                 <p className="text-xs text-[var(--tfmc-mist)]">
                   Rank +{rank}
-                  {nextCost != null && rank < apb.max_rank
-                    ? ` · next costs ${nextCost}`
-                    : " · max"}
+                  {nextCost != null && rank < apb.max_rank ? ` · next costs ${nextCost}` : " · max"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

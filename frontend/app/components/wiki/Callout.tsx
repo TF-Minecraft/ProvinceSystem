@@ -63,11 +63,7 @@ export default function Callout({ variant = "note", title, children, className }
   const label = title ?? style.label;
 
   return (
-    <div
-      role="note"
-      data-variant={variant}
-      className={cx("mt-4", style.box, className)}
-    >
+    <div role="note" data-variant={variant} className={cx("mt-4", style.box, className)}>
       <p className={cx(wikiDisplayFont, style.labelClass)}>{label}</p>
       <div className={cx("mt-1", wikiBodyText)}>{children}</div>
     </div>

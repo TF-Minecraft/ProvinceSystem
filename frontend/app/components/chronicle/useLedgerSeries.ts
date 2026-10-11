@@ -82,7 +82,7 @@ export type UseLedgerSeriesArgs = {
 export function factionForKey(
   series: LedgerSeries | null,
   options: LedgerFactionOption[],
-  name: string | null
+  name: string | null,
 ): MergedLedgerFaction | null {
   if (!series || !name) return null;
   const option = options.find((entry) => entry.name === name);
@@ -187,10 +187,7 @@ export function useLedgerSeries({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, firstDay, lastDay, focusNationId]);
 
-  const options = useMemo(
-    () => (base.status === "ready" ? buildLedgerFactionOptions(base.factions) : []),
-    [base]
-  );
+  const options = useMemo(() => (base.status === "ready" ? buildLedgerFactionOptions(base.factions) : []), [base]);
 
   // A card's selection is a name, which can back more than one `faction_key`
   // (the merged deleted-and-refounded case) — the union fetch still needs
@@ -228,7 +225,7 @@ export function useLedgerSeries({
           mapId,
           { start: firstDay, end: lastDay, factions: unionKeys, fields: "full" },
           sessionToken,
-          controller.signal
+          controller.signal,
         );
         if (cancelled) return;
         setSeries(result);

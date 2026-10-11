@@ -9,7 +9,7 @@ export type ToggleProvinceOptions = {
 export function toggleProvinceInCounty(
   entry: EditorTitleEntry,
   provinceId: number,
-  options?: ToggleProvinceOptions
+  options?: ToggleProvinceOptions,
 ): EditorTitleEntry {
   const provinces = [...(entry.provinces ?? [])];
   const index = provinces.indexOf(provinceId);
@@ -29,10 +29,7 @@ export function toggleProvinceInCounty(
   return { ...entry, provinces, rgb };
 }
 
-export function removeCountyFromDraft(
-  draft: TitleDraft,
-  countyId: string
-): TitleDraft {
+export function removeCountyFromDraft(draft: TitleDraft, countyId: string): TitleDraft {
   const next = { ...draft };
   delete next[countyId];
   return next;

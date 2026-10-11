@@ -10,23 +10,24 @@ afterEach(() => {
 describe("loadPublishedNotes", () => {
   it("loads every approved week in one request and drops review rows", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          weeks: [
-            {
-              week: "2026-W39",
-              bullets: [
-                { id: "1", section: "new", body: "Visible", status: "approved" },
-                { id: "2", section: "fixed", body: "Still pending", status: "pending" },
-                { id: "3", section: "adjusted", body: "Rejected", deny_reason: "spoilers" },
-              ],
-            },
-          ],
-          has_more: true,
-        }),
-        { status: 200 },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            weeks: [
+              {
+                week: "2026-W39",
+                bullets: [
+                  { id: "1", section: "new", body: "Visible", status: "approved" },
+                  { id: "2", section: "fixed", body: "Still pending", status: "pending" },
+                  { id: "3", section: "adjusted", body: "Rejected", deny_reason: "spoilers" },
+                ],
+              },
+            ],
+            has_more: true,
+          }),
+          { status: 200 },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -51,7 +52,10 @@ describe("loadPublishedNotes", () => {
 
   it("reports the page unavailable when the API fails", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 502 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("nope", { status: 502 })),
+    );
     const notes = await loadPublishedNotes();
     expect(notes).toEqual({ ok: false });
   });
@@ -60,17 +64,18 @@ describe("loadPublishedNotes", () => {
 describe("loadPublishedWeek", () => {
   it("loads one approved week and drops review rows", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          week: "2026-W39",
-          bullets: [
-            { id: "1", section: "new", body: "Visible", status: "approved" },
-            { id: "2", section: "fixed", body: "Still pending", status: "pending" },
-          ],
-        }),
-        { status: 200 },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            week: "2026-W39",
+            bullets: [
+              { id: "1", section: "new", body: "Visible", status: "approved" },
+              { id: "2", section: "fixed", body: "Still pending", status: "pending" },
+            ],
+          }),
+          { status: 200 },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -87,14 +92,20 @@ describe("loadPublishedWeek", () => {
 
   it("treats an unknown week as missing", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 400 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("nope", { status: 400 })),
+    );
     expect(await loadPublishedWeek("2026-W39")).toEqual({ ok: false, missing: true });
     expect(await loadPublishedWeek("nope")).toEqual({ ok: false, missing: true });
   });
 
   it("reports the page unavailable when the API fails", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 502 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("nope", { status: 502 })),
+    );
     expect(await loadPublishedWeek("2026-W39")).toEqual({ ok: false, missing: false });
   });
 });
@@ -102,8 +113,8 @@ describe("loadPublishedWeek", () => {
 describe("loadPublishedWeekIndex", () => {
   it("lists published weeks without their lines", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    const fetchMock = vi.fn(async () =>
-      new Response(JSON.stringify({ weeks: ["2026-W39", "2026-W38"] }), { status: 200 }),
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ weeks: ["2026-W39", "2026-W38"] }), { status: 200 }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -124,7 +135,10 @@ describe("loadPublishedWeekIndex", () => {
 
   it("reports the page unavailable when the API fails", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 502 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("nope", { status: 502 })),
+    );
     expect(await loadPublishedWeekIndex()).toEqual({ ok: false });
   });
 });

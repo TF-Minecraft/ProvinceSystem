@@ -36,6 +36,8 @@ describe("Patreon linked result copy", () => {
 
   it("uses fixed fallback copy for object property names", () => {
     expect(getPatreonLinkedResult("constructor", null).title).toBe("Link result unavailable");
-    expect(getPatreonLinkedResult("ok", "__proto__").message).toBe("Your Patreon is linked and your supporter perks are ready.");
+    expect(getPatreonLinkedResult("ok", "__proto__").message).toBe(
+      "Your Patreon is linked and your supporter perks are ready.",
+    );
   });
 });

@@ -2,11 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import {
-  paintChronicleFrameToImageData,
-  type NationColorLut,
-  type ProvinceIdGrid,
-} from "@/app/lib/map/chroniclePaint";
+import { paintChronicleFrameToImageData, type NationColorLut, type ProvinceIdGrid } from "@/app/lib/map/chroniclePaint";
 
 /**
  * The chronicle's replacement for `/{map}/mapdata/{mode}` — the server-rendered
@@ -57,11 +53,5 @@ export default function ChronicleProvincePaintLayer({
     ctx.putImageData(imageData, 0, 0);
   }, [grid, lut]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      aria-hidden
-    />
-  );
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden />;
 }

@@ -10,14 +10,7 @@ import PrecedentCaseModal from "@/app/components/precedent/PrecedentCaseModal";
 import PrecedentSearchPanel from "@/app/components/precedent/PrecedentSearchPanel";
 import PrecedentTable from "@/app/components/precedent/PrecedentTable";
 import { adminErrorMessage } from "@/lib/admin/api";
-import {
-  createCase,
-  deleteCase,
-  listCases,
-  updateCase,
-  type CaseInput,
-  type PrecedentCase,
-} from "@/lib/precedent/api";
+import { createCase, deleteCase, listCases, updateCase, type CaseInput, type PrecedentCase } from "@/lib/precedent/api";
 import { filterCases } from "@/lib/precedent/filter";
 import { collectKnownPlayers } from "@/lib/precedent/playerSuggest";
 
@@ -104,7 +97,9 @@ export default function AdminPrecedentPage() {
       <AdminColumn>
         {gate === "checking" ? (
           loadError ? (
-            <p className={`mt-6 ${errorClass}`} role="alert">{loadError}</p>
+            <p className={`mt-6 ${errorClass}`} role="alert">
+              {loadError}
+            </p>
           ) : (
             <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
           )
@@ -125,7 +120,9 @@ export default function AdminPrecedentPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className={headingClass}>
               Cases
-              {total ? <span className="ml-2 font-sans text-sm text-[var(--tfmc-stone)]">{total.toLocaleString()}</span> : null}
+              {total ? (
+                <span className="ml-2 font-sans text-sm text-[var(--tfmc-stone)]">{total.toLocaleString()}</span>
+              ) : null}
             </h2>
             <button
               type="button"

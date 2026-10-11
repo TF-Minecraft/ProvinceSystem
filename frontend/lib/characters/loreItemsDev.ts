@@ -8,8 +8,7 @@ export const UI_DEV_LORE_CHARACTER_ID = "ui-dev-char-1";
 let uiDevCached: LoreItemRow | null = null;
 
 function buildFixtureItem(): LoreItemRow {
-  const kit = (creationCatalogDev as { editable_kit?: unknown[] })
-    .editable_kit?.[0] as
+  const kit = (creationCatalogDev as { editable_kit?: unknown[] }).editable_kit?.[0] as
     | {
         kit_key?: string;
         path?: string;
@@ -26,9 +25,7 @@ function buildFixtureItem(): LoreItemRow {
 
   const basePreview = {
     display_name: kit?.preview?.display_name || "Iron Hunting Knife",
-    lore: Array.isArray(kit?.preview?.lore)
-      ? kit!.preview!.lore!.map(String)
-      : ["A sturdy blade for trail work."],
+    lore: Array.isArray(kit?.preview?.lore) ? kit!.preview!.lore!.map(String) : ["A sturdy blade for trail work."],
     material: kit?.preview?.material || "IRON_SWORD",
     ...(typeof kit?.preview?.custom_model_data === "number"
       ? { custom_model_data: kit.preview.custom_model_data }
@@ -75,9 +72,7 @@ function buildFixtureItem(): LoreItemRow {
   };
 }
 
-export function uiDevLoreItemsResponse(
-  characterId: string = UI_DEV_LORE_CHARACTER_ID
-): LoreItemsResponse {
+export function uiDevLoreItemsResponse(characterId: string = UI_DEV_LORE_CHARACTER_ID): LoreItemsResponse {
   if (!uiDevCached) {
     uiDevCached = buildFixtureItem();
   }
@@ -97,25 +92,17 @@ export function uiDevApplyCustomise(
     use3d?: boolean;
     nameColours?: string[];
     nameStyles?: string[];
-  }
+  },
 ): LoreItemRow & { ok: boolean } {
   const base = prev.base_preview;
   const name = input.displayName.trim() || base.display_name;
   const customLore = input.lore.map((l) => l.trim()).filter(Boolean);
-  const hasTexture = Boolean(
-    input.textureFile || (input.unsignedFile && input.signedFile)
-  );
+  const hasTexture = Boolean(input.textureFile || (input.unsignedFile && input.signedFile));
   const prevDenied =
     String(prev.draft.state || "").toLowerCase() === "denied" ||
     String(prev.draft.submission_status || "").toLowerCase() === "denied";
-  if (
-    prevDenied &&
-    !hasTexture &&
-    !(input.existingSkinId && String(input.existingSkinId).trim())
-  ) {
-    throw new Error(
-      "Skin was denied. Choose a different skin (upload or pick) and submit again."
-    );
+  if (prevDenied && !hasTexture && !(input.existingSkinId && String(input.existingSkinId).trim())) {
+    throw new Error("Skin was denied. Choose a different skin (upload or pick) and submit again.");
   }
 
   let existing = prev.draft.existing_skin_id;

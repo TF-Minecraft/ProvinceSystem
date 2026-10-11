@@ -66,7 +66,10 @@ export function GroupChip({
   const className = muted ? `${chipClass} opacity-60` : chipClass;
   if (!href) return <span className={className}>{body}</span>;
   return (
-    <Link href={`/admin/ranks/groups/${encodeURIComponent(name)}`} className={`${className} hover:border-[var(--tfmc-accent)]`}>
+    <Link
+      href={`/admin/ranks/groups/${encodeURIComponent(name)}`}
+      className={`${className} hover:border-[var(--tfmc-accent)]`}
+    >
       {body}
     </Link>
   );
@@ -104,7 +107,9 @@ export function ChangeHistory({ changes, showTarget = false }: { changes: LpChan
                       {label}
                     </Link>
                   ) : (
-                    <span className="font-semibold">{change.target_type} {label}</span>
+                    <span className="font-semibold">
+                      {change.target_type} {label}
+                    </span>
                   )}
                   {": "}
                 </>
@@ -118,8 +123,8 @@ export function ChangeHistory({ changes, showTarget = false }: { changes: LpChan
               </span>
               {" · "}
               {change.actor_name ? `@${change.actor_name}` : "someone"}
-              {change.actor_role ? ` (${roleLabel(change.actor_role)})` : ""} · {formatAgo(seconds(change.created_at)).toLowerCase()} · “
-              {change.reason}”
+              {change.actor_role ? ` (${roleLabel(change.actor_role)})` : ""} ·{" "}
+              {formatAgo(seconds(change.created_at)).toLowerCase()} · “{change.reason}”
             </p>
           </li>
         );

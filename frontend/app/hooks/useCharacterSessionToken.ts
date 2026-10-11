@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 
 import { getSession, isSessionValid } from "@/lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "@/lib/characters/uiDev";
+import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "@/lib/characters/uiDev";
 
 export function useCharacterSessionToken(): string | null {
-  const [sessionToken, setSessionToken] = useState<string | null>(
-    () => (isCharacterUiDev() ? UI_DEV_SESSION_TOKEN : null)
+  const [sessionToken, setSessionToken] = useState<string | null>(() =>
+    isCharacterUiDev() ? UI_DEV_SESSION_TOKEN : null,
   );
 
   useEffect(() => {
@@ -21,9 +18,7 @@ export function useCharacterSessionToken(): string | null {
 
     const syncSession = () => {
       const session = getSession();
-      setSessionToken(
-        isSessionValid(session) ? session?.session_token ?? null : null
-      );
+      setSessionToken(isSessionValid(session) ? (session?.session_token ?? null) : null);
     };
 
     syncSession();

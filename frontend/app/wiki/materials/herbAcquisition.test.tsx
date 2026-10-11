@@ -5,8 +5,18 @@ import { getMaterialBySlug } from "../data";
 import MaterialDetailPage from "./[slug]/page";
 
 const expectedNames = [
-  "Dying Leaf", "Birch Seed", "Autumn Leaf", "Spot Leaf", "Fire Leaf", "Long Leaf",
-  "Dwindle Leaf", "Burrow Root", "Thorn Root", "Clover", "Pumpkin Spore", "Kelpberry",
+  "Dying Leaf",
+  "Birch Seed",
+  "Autumn Leaf",
+  "Spot Leaf",
+  "Fire Leaf",
+  "Long Leaf",
+  "Dwindle Leaf",
+  "Burrow Root",
+  "Thorn Root",
+  "Clover",
+  "Pumpkin Spore",
+  "Kelpberry",
 ];
 
 describe("Alchemist Collector herb acquisition", () => {
@@ -29,17 +39,23 @@ describe("Alchemist Collector herb acquisition", () => {
 
   it("leaves out retired herbs that nothing drops on the main server", () => {
     for (const slug of [
-      "nightshade", "grapeberries", "arcane-leaf", "fiery-fruit", "barkshroom",
-      "caveshroom", "flatshroom", "death-fruit", "blazed-root", "serpent-root",
+      "nightshade",
+      "grapeberries",
+      "arcane-leaf",
+      "fiery-fruit",
+      "barkshroom",
+      "caveshroom",
+      "flatshroom",
+      "death-fruit",
+      "blazed-root",
+      "serpent-root",
     ]) {
       expect(getMaterialBySlug(slug)).toBeUndefined();
     }
   });
 
   it("renders a generic Dying Leaf source without hidden acquisition details", async () => {
-    const html = renderToStaticMarkup(
-      await MaterialDetailPage({ params: Promise.resolve({ slug: "dying-leaf" }) }),
-    );
+    const html = renderToStaticMarkup(await MaterialDetailPage({ params: Promise.resolve({ slug: "dying-leaf" }) }));
 
     const text = html.replace(/<[^>]+>/g, "");
     expect(text).toContain("Harvest with an Alchemist Collector");

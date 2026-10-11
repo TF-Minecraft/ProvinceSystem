@@ -19,42 +19,21 @@ export const LAYER_SIZE: Size = { w: 64, h: 32 };
 export const ITEM_SIZE: Size = { w: 16, h: 16 };
 export const LARGE_SIZE: Size = { w: 32, h: 32 };
 
-export const ARMOR_ICON_FIELDS = [
-  "helmet",
-  "chestplate",
-  "leggings",
-  "boots",
-] as const;
+export const ARMOR_ICON_FIELDS = ["helmet", "chestplate", "leggings", "boots"] as const;
 
 export const ARMOR_LAYER_FIELDS = ["layer_1", "layer_2"] as const;
 
-export const ARMOR_FIELDS = [
-  ...ARMOR_ICON_FIELDS,
-  ...ARMOR_LAYER_FIELDS,
-] as const;
+export const ARMOR_FIELDS = [...ARMOR_ICON_FIELDS, ...ARMOR_LAYER_FIELDS] as const;
 
 /** Armor body fields always required (helmet handled separately). */
-export const ARMOR_BODY_FIELDS = [
-  "chestplate",
-  "leggings",
-  "boots",
-  ...ARMOR_LAYER_FIELDS,
-] as const;
+export const ARMOR_BODY_FIELDS = ["chestplate", "leggings", "boots", ...ARMOR_LAYER_FIELDS] as const;
 
 export const BOW_PULL_FIELDS = ["pull_0", "pull_1", "pull_2"] as const;
 export const BOW_FRAME_FIELDS = ["texture", ...BOW_PULL_FIELDS] as const;
-export const CROSSBOW_FRAME_FIELDS = [
-  ...BOW_FRAME_FIELDS,
-  "charged",
-] as const;
+export const CROSSBOW_FRAME_FIELDS = [...BOW_FRAME_FIELDS, "charged"] as const;
 
 export const MODEL_3D_FIELDS = ["texture", "model"] as const;
-export const GUN_FIELDS = [
-  "texture",
-  "carry_model",
-  "reload_model",
-  "aim_model",
-] as const;
+export const GUN_FIELDS = ["texture", "carry_model", "reload_model", "aim_model"] as const;
 export const BOOK_FIELDS = ["unsigned", "signed"] as const;
 
 export function isLargeTextureKind(kind: SkinKind): boolean {
@@ -66,12 +45,7 @@ export function isBowFrameKind(kind: SkinKind): boolean {
 }
 
 export function isModel3dKind(kind: SkinKind): boolean {
-  return (
-    kind === "item_3d" ||
-    kind === "shield" ||
-    kind === "helmet_3d" ||
-    kind === "mask"
-  );
+  return kind === "item_3d" || kind === "shield" || kind === "helmet_3d" || kind === "mask";
 }
 
 export function isGunKind(kind: SkinKind): boolean {
@@ -104,10 +78,7 @@ export function fileFieldsForKind(kind: SkinKind): readonly string[] {
   return ["texture"];
 }
 
-export function expectedSizeForField(
-  kind: SkinKind,
-  field: string
-): Size | null {
+export function expectedSizeForField(kind: SkinKind, field: string): Size | null {
   if (kind === "armor_set") {
     if (field === "helmet_texture") {
       return null; // any PNG size for 3D helmet texture
@@ -130,11 +101,7 @@ export function expectedSizeForField(
     return null;
   }
   if (isBowFrameKind(kind)) {
-    if (
-      field === "texture" ||
-      field.startsWith("pull_") ||
-      field === "charged"
-    ) {
+    if (field === "texture" || field.startsWith("pull_") || field === "charged") {
       return isLargeTextureKind(kind) ? LARGE_SIZE : ITEM_SIZE;
     }
     return null;
@@ -164,49 +131,30 @@ export function readPngSize(file: File): Promise<Size> {
         }
       }
       const view = new DataView(buf);
-      const type = String.fromCharCode(
-        bytes[12],
-        bytes[13],
-        bytes[14],
-        bytes[15]
-      );
+      const type = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
       if (type !== "IHDR") {
         reject(new Error(`${file.name}: missing IHDR`));
         return;
       }
       resolve({ w: view.getUint32(16), h: view.getUint32(20) });
     };
-    reader.onerror = () =>
-      reject(new Error(`${file.name}: could not read file`));
+    reader.onerror = () => reject(new Error(`${file.name}: could not read file`));
     reader.readAsArrayBuffer(file.slice(0, 24));
   });
 }
 
-export async function assertFileSize(
-  file: File,
-  expected: Size,
-  label: string
-): Promise<void> {
+export async function assertFileSize(file: File, expected: Size, label: string): Promise<void> {
   const size = await readPngSize(file);
   if (size.w !== expected.w || size.h !== expected.h) {
-    throw new Error(
-      `${label} must be ${expected.w}×${expected.h}, got ${size.w}×${size.h}`
-    );
+    throw new Error(`${label} must be ${expected.w}×${expected.h}, got ${size.w}×${size.h}`);
   }
 }
 
-function assertPairBytes(
-  texture: File | undefined,
-  model: File | undefined,
-  maxBytes: number,
-  label: string
-): void {
+function assertPairBytes(texture: File | undefined, model: File | undefined, maxBytes: number, label: string): void {
   const total = (texture?.size ?? 0) + (model?.size ?? 0);
   const cap = Math.max(0, Math.floor(maxBytes));
   if (total > cap) {
-    throw new Error(
-      `${label}: texture + model is ${total} bytes (limit ${cap} bytes)`
-    );
+    throw new Error(`${label}: texture + model is ${total} bytes (limit ${cap} bytes)`);
   }
 }
 
@@ -217,12 +165,10 @@ export function assert3dPairBudgets(
   kind: SkinKind,
   files: Record<string, File>,
   maxBytes: number,
-  helmet3dTiers?: string[]
+  helmet3dTiers?: string[],
 ): void {
   const needsBudget =
-    isModel3dKind(kind) ||
-    isGunKind(kind) ||
-    (kind === "armor_set" && Boolean(helmet3dTiers?.length));
+    isModel3dKind(kind) || isGunKind(kind) || (kind === "armor_set" && Boolean(helmet3dTiers?.length));
   if (!needsBudget) {
     return;
   }
@@ -248,12 +194,7 @@ export function assert3dPairBudgets(
     for (const tier of helmet3dTiers) {
       const t = (tier || "").trim();
       if (!t) continue;
-      assertPairBytes(
-        files[`${t}_helmet_texture`],
-        files[`${t}_helmet_model`],
-        cap,
-        `armor_set/${t}_helmet`
-      );
+      assertPairBytes(files[`${t}_helmet_texture`], files[`${t}_helmet_model`], cap, `armor_set/${t}_helmet`);
     }
   }
 }

@@ -34,9 +34,7 @@ describe("public wiki route discovery", () => {
   });
 
   it("derives the public navigation from every discovered page", () => {
-    expect(navItems.map(({ href }) => href).sort()).toEqual(
-      discoveredPages.map(({ href }) => href)
-    );
+    expect(navItems.map(({ href }) => href).sort()).toEqual(discoveredPages.map(({ href }) => href));
   });
 });
 
@@ -48,22 +46,31 @@ describe("public wiki page entry points", () => {
     expect(html, `${href} rendered no heading`).toMatch(/<h1\b/);
     expect(html.match(/Updated <time/g), `${href} must show one revision date`).toHaveLength(1);
     expect(html, `${href} must expose a valid machine-readable revision date`).toMatch(
-      /<time dateTime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]{2,3} \d{4}<\/time>/
+      /<time dateTime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]{2,3} \d{4}<\/time>/,
     );
 
     const publicRoutes = new Set([overviewNavItem.href, ...discoveredPages.map((page) => page.href)]);
     const links = [...html.matchAll(/href="(\/wiki(?:\/[^":#]*):)/g)].map((match) => match[1]);
     for (const target of links) {
       const normalized = target.replace(/\/$/, "");
-      const isPublicAsset = ["/wiki/models/", "/wiki/textures/", "/wiki/sounds/"]
-        .some((prefix) => normalized.startsWith(prefix));
-      const isKnownDetailRoute = ["/wiki/materials/", "/wiki/musical-instruments/", "/wiki/stations/", "/wiki/vehicles/"]
-        .some((prefix) => normalized.startsWith(prefix));
-      expect(publicRoutes.has(normalized) || isKnownDetailRoute || isPublicAsset, `${href} links to missing route ${target}`).toBe(true);
+      const isPublicAsset = ["/wiki/models/", "/wiki/textures/", "/wiki/sounds/"].some((prefix) =>
+        normalized.startsWith(prefix),
+      );
+      const isKnownDetailRoute = [
+        "/wiki/materials/",
+        "/wiki/musical-instruments/",
+        "/wiki/stations/",
+        "/wiki/vehicles/",
+      ].some((prefix) => normalized.startsWith(prefix));
+      expect(
+        publicRoutes.has(normalized) || isKnownDetailRoute || isPublicAsset,
+        `${href} links to missing route ${target}`,
+      ).toBe(true);
     }
 
-    const assets = [...html.matchAll(/(?:src|href)="(\/wiki\/(?:models|textures|sounds)\/[^":#]+)"/g)]
-      .map((match) => match[1]);
+    const assets = [...html.matchAll(/(?:src|href)="(\/wiki\/(?:models|textures|sounds)\/[^":#]+)"/g)].map(
+      (match) => match[1],
+    );
     for (const asset of assets) {
       expect(existsSync(join(process.cwd(), "public", asset)), `${href} references missing asset ${asset}`).toBe(true);
     }
@@ -79,8 +86,9 @@ describe("public wiki page entry points", () => {
     const wikiRoot = join(process.cwd(), "app", "wiki");
     const pageFiles = [
       join(wikiRoot, "page.tsx"),
-      ...Object.keys(import.meta.glob("./**/page.tsx", { eager: false }))
-        .map((modulePath) => join(wikiRoot, modulePath.slice(2))),
+      ...Object.keys(import.meta.glob("./**/page.tsx", { eager: false })).map((modulePath) =>
+        join(wikiRoot, modulePath.slice(2)),
+      ),
     ];
 
     expect(pageFiles.length).toBeGreaterThan(1);
@@ -101,11 +109,12 @@ describe("public wiki page entry points", () => {
 
     for (const { href } of discoveredPages) {
       const source = readFileSync(join(process.cwd(), "app", href.slice(1), "page.tsx"), "utf8");
-      const directImports = [...source.matchAll(/from\s+["']@\/app\/components\/wiki\/([^"']+)["']/g)]
-        .map((match) => match[1]);
+      const directImports = [...source.matchAll(/from\s+["']@\/app\/components\/wiki\/([^"']+)["']/g)].map(
+        (match) => match[1],
+      );
       expect(
         directImports.filter((component) => !deliberateDirectImports.has(component)),
-        `${href} bypasses the shared wiki component barrel`
+        `${href} bypasses the shared wiki component barrel`,
       ).toEqual([]);
     }
 

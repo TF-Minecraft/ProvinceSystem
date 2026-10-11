@@ -101,9 +101,7 @@ export default function SkinsPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-16">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Skins
-      </h1>
+      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">Skins</h1>
 
       {session && isSessionValid(session) ? (
         <div className="mt-4">
@@ -118,9 +116,7 @@ export default function SkinsPage() {
             <>
               <p className="text-sm text-[var(--tfmc-stone)]">
                 Session expires {formatExpiresIn(session.expires_at)}
-                {session.staff ? (
-                  <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
-                ) : null}
+                {session.staff ? <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span> : null}
               </p>
               <button
                 type="button"
@@ -147,9 +143,7 @@ export default function SkinsPage() {
         </div>
       ) : (
         <>
-          <p className="mt-3 text-[var(--tfmc-mist)]">
-            Enter the code from in-game to start a skin submission.
-          </p>
+          <p className="mt-3 text-[var(--tfmc-mist)]">Enter the code from in-game to start a skin submission.</p>
           <CodeRedeemForm
             redeem={redeemCode}
             toSession={skinsSessionFrom}
@@ -173,15 +167,11 @@ export default function SkinsPage() {
             className="w-full max-w-sm rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[var(--tfmc-forest)] p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2
-              id={newCodeTitleId}
-              className="font-[family-name:var(--font-display)] text-lg text-[var(--tfmc-cream)]"
-            >
+            <h2 id={newCodeTitleId} className="font-[family-name:var(--font-display)] text-lg text-[var(--tfmc-cream)]">
               Use a new code?
             </h2>
             <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-              You&apos;ll need a new code from in-game. Anything not submitted
-              will be lost.
+              You&apos;ll need a new code from in-game. Anything not submitted will be lost.
             </p>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button

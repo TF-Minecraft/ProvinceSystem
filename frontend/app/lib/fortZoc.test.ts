@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { FortMarker } from "../components/map/types";
 import type { MapMarker } from "./mapMarkers";
-import {
-  installationIdFromMarkerId,
-  lookupFortZocOverlay,
-} from "./fortZoc";
+import { installationIdFromMarkerId, lookupFortZocOverlay } from "./fortZoc";
 
 const fortMarker: MapMarker = {
   id: "installation:lanhold",
@@ -56,14 +53,8 @@ describe("lookupFortZocOverlay", () => {
   });
 
   it("returns null when fort row is missing overlay or zoc_url", () => {
-    expect(
-      lookupFortZocOverlay(fortMarker, [{ id: "lanhold", zoc_url: "/main/zoc/lanhold.png" }])
-    ).toBeNull();
-    expect(
-      lookupFortZocOverlay(fortMarker, [
-        { id: "lanhold", overlay: { x: 1, y: 2, w: 3, h: 4 } },
-      ])
-    ).toBeNull();
+    expect(lookupFortZocOverlay(fortMarker, [{ id: "lanhold", zoc_url: "/main/zoc/lanhold.png" }])).toBeNull();
+    expect(lookupFortZocOverlay(fortMarker, [{ id: "lanhold", overlay: { x: 1, y: 2, w: 3, h: 4 } }])).toBeNull();
   });
 
   it("returns null when marker id is not an installation marker", () => {

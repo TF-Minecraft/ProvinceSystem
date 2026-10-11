@@ -4,17 +4,10 @@ import { Suspense } from "react";
 import { MapEngineProvider } from "../../../../core/MapEngineContext";
 import ChronicleDayViewer from "../../../../components/chronicle/ChronicleDayViewer";
 import { ChronicleDayProvider } from "../../../../lib/map/chronicleDayContext";
-import {
-  isValidChronicleDay,
-  parseMapRouteSegment,
-} from "../../../../lib/map/chronicleDayRoute";
+import { isValidChronicleDay, parseMapRouteSegment } from "../../../../lib/map/chronicleDayRoute";
 import InvalidChronicleDay from "../../../../components/chronicle/InvalidChronicleDay";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ map: string; day: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ map: string; day: string }> }) {
   const { map, day } = await params;
   const mapId = parseMapRouteSegment(map);
   if (!mapId) notFound();

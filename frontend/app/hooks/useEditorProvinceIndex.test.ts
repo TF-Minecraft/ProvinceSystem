@@ -63,8 +63,7 @@ function respondWith(body: Buffer, ok = true): void {
   vi.mocked(fetchMapApi).mockResolvedValue({
     ok,
     status: ok ? 200 : 404,
-    arrayBuffer: async () =>
-      body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
   } as unknown as Response);
 }
 
@@ -78,14 +77,14 @@ describe("editor province runs feature flag", () => {
     expect(isEditorProvinceRunsEnabled()).toBe(false);
   });
 
-  it("stays OFF for anything other than exactly \"1\"", () => {
+  it('stays OFF for anything other than exactly "1"', () => {
     for (const value of ["0", "true", "yes", "on", " 1", "1 "]) {
       vi.stubEnv("NEXT_PUBLIC_EDITOR_PROVINCE_RUNS", value);
       expect(isEditorProvinceRunsEnabled()).toBe(false);
     }
   });
 
-  it("turns ON only for \"1\"", () => {
+  it('turns ON only for "1"', () => {
     vi.stubEnv("NEXT_PUBLIC_EDITOR_PROVINCE_RUNS", "1");
     expect(isEditorProvinceRunsEnabled()).toBe(true);
   });
@@ -115,58 +114,44 @@ describe("loadProvinceIndexFromRuns", () => {
 
   it("returns null when the route is missing (artifact absent)", async () => {
     respondWith(Buffer.alloc(0), false);
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null when the fetch itself rejects", async () => {
     vi.mocked(fetchMapApi).mockRejectedValue(new Error("network down"));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null when the body is not gzip", async () => {
     respondWith(Buffer.from("not gzip at all"));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null when the magic is wrong", async () => {
     const payload = validRunsPayload();
     payload.writeUInt8(0x58, 0);
     respondWith(gzipSync(payload));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null when the version is unsupported", async () => {
     const payload = validRunsPayload();
     payload.writeUInt32LE(2, 4);
     respondWith(gzipSync(payload));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null for a stale artifact whose runs no longer cover the grid", async () => {
     const payload = validRunsPayload();
     payload.writeInt32LE(8, 8); // width 4 -> 8, runs no longer cover w*h
     respondWith(gzipSync(payload));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("returns null for a truncated artifact", async () => {
     const payload = validRunsPayload();
     respondWith(gzipSync(payload.subarray(0, payload.length - 8)));
-    await expect(
-      loadProvinceIndexFromRuns("main", "token", CATALOG)
-    ).resolves.toBeNull();
+    await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.toBeNull();
   });
 
   it("never throws for any corruption of the payload", async () => {
@@ -176,9 +161,7 @@ describe("loadProvinceIndexFromRuns", () => {
       corrupted[byte] = (corrupted[byte]! + 137) & 0xff;
       respondWith(gzipSync(corrupted));
       // Must resolve to either a usable index or null - never reject.
-      await expect(
-        loadProvinceIndexFromRuns("main", "token", CATALOG)
-      ).resolves.not.toThrow();
+      await expect(loadProvinceIndexFromRuns("main", "token", CATALOG)).resolves.not.toThrow();
     }
   });
 });

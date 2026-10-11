@@ -186,11 +186,7 @@ export function ledgerSeriesPath(mapId: MapId, params: LedgerSeriesParams = {}):
   return `/${mapId}/ledger/series${query ? `?${query}` : ""}`;
 }
 
-export function ledgerFactionPath(
-  mapId: MapId,
-  key: string,
-  params: LedgerFactionParams = {}
-): string {
+export function ledgerFactionPath(mapId: MapId, key: string, params: LedgerFactionParams = {}): string {
   const search = new URLSearchParams();
   appendRangeParams(search, params.start, params.end);
   const query = search.toString();
@@ -204,7 +200,7 @@ export function ledgerDayPath(mapId: MapId, day: string): string {
 export async function fetchLedgerIndex(
   mapId: MapId,
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<LedgerIndex> {
   return fetchMapJson<LedgerIndex>(ledgerIndexPath(mapId), { sessionToken, signal });
 }
@@ -213,7 +209,7 @@ export async function fetchLedgerSeries(
   mapId: MapId,
   params: LedgerSeriesParams = {},
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<LedgerSeries> {
   return fetchMapJson<LedgerSeries>(ledgerSeriesPath(mapId, params), { sessionToken, signal });
 }
@@ -223,7 +219,7 @@ export async function fetchLedgerFaction(
   key: string,
   params: LedgerFactionParams = {},
   sessionToken?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<LedgerFactionDetail> {
   return fetchMapJson<LedgerFactionDetail>(ledgerFactionPath(mapId, key, params), {
     sessionToken,

@@ -50,17 +50,47 @@ const network: RailNetwork = {
       line: 0,
       length: 400,
       loop: false,
-      points: [[1000, 1000], [1400, 1000]],
-      broken: [{ from: 100, to: 110, points: [[1100, 1000], [1110, 1000]] }],
+      points: [
+        [1000, 1000],
+        [1400, 1000],
+      ],
+      broken: [
+        {
+          from: 100,
+          to: 110,
+          points: [
+            [1100, 1000],
+            [1110, 1000],
+          ],
+        },
+      ],
       damaged: [],
     },
   ],
   junctions: [],
   stops: [
-    { name: "West", kind: "faction_capital", faction_id: "a", settlement: [1000, 1005], track: "main", line: 0,
-      along: 0, at: [1000, 1000], distance: 5 },
-    { name: "East", kind: "settlement", faction_id: "b", settlement: [1400, 1200], track: "main", line: 0,
-      along: 400, at: [1400, 1000], distance: 200 },
+    {
+      name: "West",
+      kind: "faction_capital",
+      faction_id: "a",
+      settlement: [1000, 1005],
+      track: "main",
+      line: 0,
+      along: 0,
+      at: [1000, 1000],
+      distance: 5,
+    },
+    {
+      name: "East",
+      kind: "settlement",
+      faction_id: "b",
+      settlement: [1400, 1200],
+      track: "main",
+      line: 0,
+      along: 400,
+      at: [1400, 1000],
+      distance: 200,
+    },
   ],
 };
 
@@ -72,14 +102,12 @@ it("draws the network, names its stops and frames it once", () => {
   expect(container.querySelectorAll("rect[transform^='rotate(45']")).toHaveLength(1);
   expect(container.querySelector("title")?.textContent).toBe("West – East: 400 blocks");
   expect([...container.querySelectorAll("title")].some((t) => t.textContent?.startsWith("Broken: 10 blocks"))).toBe(
-    true
+    true,
   );
   expect(view.focused).toEqual([{ x: 1000, y: 940, w: 400, h: 120 }]);
   rerender(<RailMap mapId="main" network={network} highlight={0} />);
   expect(view.focused).toHaveLength(1);
-  rerender(
-    <RailMap mapId="main" network={network} focus={{ key: "stop:East", bounds: { x: 1, y: 2, w: 3, h: 4 } }} />
-  );
+  rerender(<RailMap mapId="main" network={network} focus={{ key: "stop:East", bounds: { x: 1, y: 2, w: 3, h: 4 } }} />);
   expect(view.focused).toEqual([
     { x: 1000, y: 940, w: 400, h: 120 },
     { x: 1, y: 2, w: 3, h: 4 },
@@ -91,8 +119,6 @@ it("frames a picked stop over the preview when the tiles fail to load", () => {
   const { rerender } = render(<RailMap mapId="main" network={network} />);
   // The whole network waits for the map's real size; the preview keeps the overview.
   expect(view.focused).toEqual([]);
-  rerender(
-    <RailMap mapId="main" network={network} focus={{ key: "stop:East", bounds: { x: 1, y: 2, w: 3, h: 4 } }} />
-  );
+  rerender(<RailMap mapId="main" network={network} focus={{ key: "stop:East", bounds: { x: 1, y: 2, w: 3, h: 4 } }} />);
   expect(view.focused).toEqual([{ x: 1, y: 2, w: 3, h: 4 }]);
 });

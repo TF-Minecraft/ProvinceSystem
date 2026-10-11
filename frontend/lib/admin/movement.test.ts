@@ -85,7 +85,6 @@ describe("positionAt", () => {
     const loggedOut = stretches([p(0, 1, 1, ACTION_LOGIN), p(60, 2, 2, ACTION_LOGOUT)], WORLDS, 60);
     expect(positionAt(loggedOut, 90, 150)).toBeNull();
   });
-
 });
 
 describe("inspect", () => {
@@ -116,7 +115,11 @@ describe("clipStretches", () => {
   it("cuts the row before the window to the window's edge", () => {
     const all = stretches([p(900, 0, 0), p(1010, 110, 0), p(1070, 170, 0)], WORLDS, 60);
     const clipped = clipStretches(all, 1000, 1100);
-    expect(clipped[0].samples.map((s) => [s.time, s.x])).toEqual([[1000, 100], [1010, 110], [1070, 170]]);
+    expect(clipped[0].samples.map((s) => [s.time, s.x])).toEqual([
+      [1000, 100],
+      [1010, 110],
+      [1070, 170],
+    ]);
     expect(timeByWorld(clipped).get("TFMC_Map")).toBe(70);
     // The unclipped stretches still say where they were as the window opened.
     expect(positionAt(all, 1000)?.x).toBe(100);
@@ -125,7 +128,10 @@ describe("clipStretches", () => {
   it("keeps a row exactly on the window's edge as it is", () => {
     const all = stretches([p(900, 0, 0), p(1000, 100, 0), p(1060, 160, 0)], WORLDS, 60);
     const clipped = clipStretches(all, 1000, 1100);
-    expect(clipped[0].samples.map((s) => [s.time, s.estimated ?? false])).toEqual([[1000, false], [1060, false]]);
+    expect(clipped[0].samples.map((s) => [s.time, s.estimated ?? false])).toEqual([
+      [1000, false],
+      [1060, false],
+    ]);
   });
 
   it("drops stretches wholly outside the window", () => {
@@ -185,9 +191,9 @@ describe("times", () => {
 
   it("puts timeline ticks on round local times", () => {
     const noon = Date.UTC(2026, 9, 6, 11, 0) / 1000;
-    expect(timelineTicks(noon + 60, noon + 3600 + 60).map((t) => new Date(t * 1000).getMinutes())).toEqual(
-      [10, 20, 30, 40, 50, 0]
-    );
+    expect(timelineTicks(noon + 60, noon + 3600 + 60).map((t) => new Date(t * 1000).getMinutes())).toEqual([
+      10, 20, 30, 40, 50, 0,
+    ]);
   });
 });
 
@@ -227,7 +233,7 @@ describe("session labels", () => {
     expect(sessionEndLabel(session("logout", at(14, 15), at(14, 15)))).toBe("Logged out 14:15");
     expect(sessionEndLabel(session("open", null, at(14, 14)))).toBe("Probably online · last seen 14:14");
     expect(sessionEndLabel(session("last_observed", at(14, 15), at(14, 15)))).toBe(
-      "Last seen 14:15 · no logout recorded"
+      "Last seen 14:15 · no logout recorded",
     );
     expect(sessionEndLabel(session("unknown", null, at(13, 2)))).toBe("End unknown");
     expect(sessionSpanLabel(session("logout", at(14, 15), at(14, 15)))).toBe("13:02 → 14:15");
@@ -254,19 +260,25 @@ describe("latestPositions", () => {
         {
           uuid: "c",
           minecraft_name: "carol",
-          points: [[T - 100, 0, 1, 64, 1, ACTION_PING], [T - 40, 1, 2, 70, 3, ACTION_PING]],
+          points: [
+            [T - 100, 0, 1, 64, 1, ACTION_PING],
+            [T - 40, 1, 2, 70, 3, ACTION_PING],
+          ],
         },
         {
           uuid: "b",
           minecraft_name: "Bob",
-          points: [[T - 90, 0, 5, 64, 5, ACTION_PING], [T - 30, 0, 5, 64, 5, ACTION_LOGOUT]],
+          points: [
+            [T - 90, 0, 5, 64, 5, ACTION_PING],
+            [T - 30, 0, 5, 64, 5, ACTION_LOGOUT],
+          ],
         },
         { uuid: "a", minecraft_name: "Alice", points: [[T - 10, 0, 9, 64, 9, ACTION_LOGIN]] },
         { uuid: "d", minecraft_name: "Dave", points: [[T - 200, 0, 0, 64, 0, ACTION_PING]] },
         { uuid: "e", minecraft_name: "Eve", points: [] },
       ]),
       T,
-      150
+      150,
     );
     expect(found.map((p) => p.name)).toEqual(["Alice", "carol"]);
     expect(found[1]).toMatchObject({ world: "TFMC_Map_nether", x: 2, y: 70, z: 3, time: T - 40 });

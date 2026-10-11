@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseEditorTierParam,
-  parseRequiredEditorMapIdParam,
-} from "@/lib/map/editorParams";
+import { parseEditorTierParam, parseRequiredEditorMapIdParam } from "@/lib/map/editorParams";
 
 describe("editorParams", () => {
   describe("parseRequiredEditorMapIdParam", () => {

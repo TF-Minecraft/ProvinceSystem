@@ -187,11 +187,7 @@ function decodeFramePixels(gif: ParsedGif, index: number): number[][] {
   const pixels: number[][] = [];
   for (const paletteIndex of indices) {
     const o = paletteIndex * 3;
-    pixels.push([
-      gif.globalTable[o]!,
-      gif.globalTable[o + 1]!,
-      gif.globalTable[o + 2]!,
-    ]);
+    pixels.push([gif.globalTable[o]!, gif.globalTable[o + 1]!, gif.globalTable[o + 2]!]);
   }
   return pixels;
 }
@@ -200,7 +196,7 @@ function solidFrame(
   width: number,
   height: number,
   rgb: readonly [number, number, number],
-  delayMs = 100
+  delayMs = 100,
 ): GifSourceFrame {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let i = 0; i < width * height; i++) {
@@ -236,20 +232,14 @@ describe("delayToCentiseconds", () => {
           solidFrame(2, 2, [30, 30, 30], 1000),
           solidFrame(2, 2, [40, 40, 40], 10 * 60 * 1000),
         ],
-      })
+      }),
     );
-    expect(gif.frames.map((frame) => frame.delayCentiseconds)).toEqual([
-      2, 3, 100, 60_000,
-    ]);
+    expect(gif.frames.map((frame) => frame.delayCentiseconds)).toEqual([2, 3, 100, 60_000]);
   });
 });
 
 describe("encodeGif structure", () => {
-  const frames = [
-    solidFrame(8, 5, [200, 30, 30]),
-    solidFrame(8, 5, [30, 200, 30]),
-    solidFrame(8, 5, [30, 30, 200]),
-  ];
+  const frames = [solidFrame(8, 5, [200, 30, 30]), solidFrame(8, 5, [30, 200, 30]), solidFrame(8, 5, [30, 30, 200])];
 
   it("writes a GIF89a header, the requested size and a trailer", () => {
     const bytes = encodeGif({ width: 8, height: 5, frames });
@@ -282,12 +272,8 @@ describe("encodeGif structure", () => {
 
   it("writes the NETSCAPE loop block once, and only when looping", () => {
     expect(parseGif(encodeGif({ width: 8, height: 5, frames })).netscapeBlocks).toBe(1);
-    expect(
-      parseGif(encodeGif({ width: 8, height: 5, frames, loop: true })).netscapeBlocks
-    ).toBe(1);
-    expect(
-      parseGif(encodeGif({ width: 8, height: 5, frames, loop: false })).netscapeBlocks
-    ).toBe(0);
+    expect(parseGif(encodeGif({ width: 8, height: 5, frames, loop: true })).netscapeBlocks).toBe(1);
+    expect(parseGif(encodeGif({ width: 8, height: 5, frames, loop: false })).netscapeBlocks).toBe(0);
   });
 
   it("reports progress once per frame", () => {
@@ -338,7 +324,7 @@ describe("encodeGif pixels", () => {
         width: 4,
         height: 4,
         frames: [{ data, delayMs: 100 }, solidFrame(4, 4, [12, 34, 56])],
-      })
+      }),
     );
     const pixels = decodeFramePixels(gif, 0);
     for (let y = 0; y < 4; y++) {
@@ -348,9 +334,7 @@ describe("encodeGif pixels", () => {
     }
 
     // The second frame shares the same global table.
-    expect(decodeFramePixels(gif, 1).every((p) => p.join(",") === "12,34,56")).toBe(
-      true
-    );
+    expect(decodeFramePixels(gif, 1).every((p) => p.join(",") === "12,34,56")).toBe(true);
   });
 
   it("maps a photographic frame to its nearest palette colour", () => {
@@ -367,9 +351,7 @@ describe("encodeGif pixels", () => {
       }
     }
 
-    const gif = parseGif(
-      encodeGif({ width, height, frames: [{ data, delayMs: 60 }] })
-    );
+    const gif = parseGif(encodeGif({ width, height, frames: [{ data, delayMs: 60 }] }));
     const pixels = decodeFramePixels(gif, 0);
 
     for (let p = 0; p < width * height; p++) {
@@ -385,10 +367,7 @@ describe("encodeGif pixels", () => {
         if (d < bestDistance) bestDistance = d;
       }
       const got = pixels[p]!;
-      const gotDistance =
-        (source[0]! - got[0]!) ** 2 +
-        (source[1]! - got[1]!) ** 2 +
-        (source[2]! - got[2]!) ** 2;
+      const gotDistance = (source[0]! - got[0]!) ** 2 + (source[1]! - got[1]!) ** 2 + (source[2]! - got[2]!) ** 2;
       expect(gotDistance).toBe(bestDistance);
     }
   });
@@ -406,9 +385,7 @@ describe("encodeGif pixels", () => {
         data[o + 3] = 255;
       }
     }
-    const gif = parseGif(
-      encodeGif({ width, height, frames: [{ data, delayMs: 40 }] })
-    );
+    const gif = parseGif(encodeGif({ width, height, frames: [{ data, delayMs: 40 }] }));
     expect(gif.globalTableSize).toBe(256);
     expect(decodeFramePixels(gif, 0)).toHaveLength(width * height);
   });
@@ -418,30 +395,22 @@ describe("encodeGif validation", () => {
   const frame = solidFrame(4, 4, [1, 2, 3]);
 
   it("rejects non-integer or non-positive dimensions", () => {
-    expect(() => encodeGif({ width: 0, height: 4, frames: [frame] })).toThrow(
-      /width must be a positive integer/
+    expect(() => encodeGif({ width: 0, height: 4, frames: [frame] })).toThrow(/width must be a positive integer/);
+    expect(() => encodeGif({ width: 4.5, height: 4, frames: [frame] })).toThrow(/width must be a positive integer/);
+    expect(() => encodeGif({ width: 4, height: -4, frames: [frame] })).toThrow(/height must be a positive integer/);
+    expect(() => encodeGif({ width: 4, height: Number.NaN, frames: [frame] })).toThrow(
+      /height must be a positive integer/,
     );
-    expect(() => encodeGif({ width: 4.5, height: 4, frames: [frame] })).toThrow(
-      /width must be a positive integer/
-    );
-    expect(() => encodeGif({ width: 4, height: -4, frames: [frame] })).toThrow(
-      /height must be a positive integer/
-    );
-    expect(() =>
-      encodeGif({ width: 4, height: Number.NaN, frames: [frame] })
-    ).toThrow(/height must be a positive integer/);
   });
 
   it("rejects an empty frame list", () => {
-    expect(() => encodeGif({ width: 4, height: 4, frames: [] })).toThrow(
-      /at least one frame/
-    );
+    expect(() => encodeGif({ width: 4, height: 4, frames: [] })).toThrow(/at least one frame/);
   });
 
   it("rejects a frame whose buffer does not match the dimensions", () => {
     const short = { data: new Uint8ClampedArray(4 * 4 * 4 - 4), delayMs: 100 };
-    expect(() =>
-      encodeGif({ width: 4, height: 4, frames: [frame, short] })
-    ).toThrow(/frame 1 holds 60 bytes, expected 64/);
+    expect(() => encodeGif({ width: 4, height: 4, frames: [frame, short] })).toThrow(
+      /frame 1 holds 60 bytes, expected 64/,
+    );
   });
 });

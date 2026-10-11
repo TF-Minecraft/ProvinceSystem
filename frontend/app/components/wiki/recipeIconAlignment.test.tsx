@@ -7,10 +7,12 @@ import { materialRecipes } from "../../wiki/data/materials";
 
 describe("visible recipe sprite alignment", () => {
   it("corrects the measured Steel Magical Core padding without changing its size", () => {
-    expect(recipeIconTransform("/wiki/textures/magic_crafting/basic_magical_core.png")).toBe("translate(-3.125%, 3.125%)");
+    expect(recipeIconTransform("/wiki/textures/magic_crafting/basic_magical_core.png")).toBe(
+      "translate(-3.125%, 3.125%)",
+    );
     const [x, y] = iconTranslation([16, 16, 3, 2, 14, 13]);
-    expect((3 + 14) / 2 + x * 16 / 100).toBe(8);
-    expect((2 + 13) / 2 + y * 16 / 100).toBe(8);
+    expect((3 + 14) / 2 + (x * 16) / 100).toBe(8);
+    expect((2 + 13) / 2 + (y * 16) / 100).toBe(8);
   });
 
   it("preserves already centred sprites and handles non-square canvases at contain scale", () => {
@@ -20,7 +22,13 @@ describe("visible recipe sprite alignment", () => {
   });
 
   it("keeps hover scale on a separate wrapper so it cannot override the centering correction", () => {
-    const html = renderToStaticMarkup(RecipeItemIcon({ src: "/wiki/textures/magic_crafting/basic_magical_core.png", alt: "Steel Magical Core", enlarge: true }));
+    const html = renderToStaticMarkup(
+      RecipeItemIcon({
+        src: "/wiki/textures/magic_crafting/basic_magical_core.png",
+        alt: "Steel Magical Core",
+        enlarge: true,
+      }),
+    );
     expect(html).toContain("group-hover:scale-125");
     expect(html).toContain("object-contain");
     expect(html).toContain("transform:translate(-3.125%, 3.125%)");

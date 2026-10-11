@@ -48,7 +48,7 @@ function Viewport() {
       "data-testid": "content",
       "data-zoom": viewport.zoom,
       style: { transform: viewport.transformStyle },
-    })
+    }),
   );
 }
 
@@ -62,7 +62,14 @@ describe("useMapViewport", () => {
   it("keeps a wheel zoom on whole device pixels, where it settles", () => {
     vi.useFakeTimers();
     vi.stubGlobal("devicePixelRatio", 1.25);
-    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      },
+    );
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 777,
       height: 555,

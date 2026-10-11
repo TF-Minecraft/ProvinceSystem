@@ -15,22 +15,14 @@ type Props = {
   onDelete: (row: PrecedentCase) => void;
 };
 
-export default function PrecedentTable({
-  cases,
-  total,
-  loading,
-  onEdit,
-  onDelete,
-}: Props) {
+export default function PrecedentTable({ cases, total, loading, onEdit, onDelete }: Props) {
   if (loading) {
     return <p className={`mt-3 ${mutedClass}`}>Loading cases…</p>;
   }
 
   if (cases.length === 0) {
     return (
-      <p className={`mt-3 ${mutedClass}`}>
-        {total === 0 ? "No cases logged yet." : "No cases match that filter."}
-      </p>
+      <p className={`mt-3 ${mutedClass}`}>{total === 0 ? "No cases logged yet." : "No cases match that filter."}</p>
     );
   }
 
@@ -60,12 +52,12 @@ export default function PrecedentTable({
               </div>
             </div>
             <CaseTags row={row} />
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs">
-            <span className={loggedByClass}>{row.logged_by}</span>
-            <span className={dateClass}>{formatCreatedAt(row.created_at)}</span>
-            <span className={idClass}>{row.id}</span>
-          </p>
-        </li>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs">
+              <span className={loggedByClass}>{row.logged_by}</span>
+              <span className={dateClass}>{formatCreatedAt(row.created_at)}</span>
+              <span className={idClass}>{row.id}</span>
+            </p>
+          </li>
         ))}
       </ul>
     </>

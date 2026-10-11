@@ -3,8 +3,18 @@ import { describe, expect, it } from "vitest";
 import { normalizeSearchText, searchWikiIndex, type WikiSearchEntry } from "./wikiSearch";
 
 const index: WikiSearchEntry[] = [
-  { href: "/wiki/crafting#recipe", pageTitle: "Advanced Crafting", sectionTitle: "Forge recipe", text: "Combine coke, steel and iron in the forge." },
-  { href: "/wiki/items#steel", pageTitle: "Materials", sectionTitle: "Steel Ingot", text: "Used for tools and vehicles." },
+  {
+    href: "/wiki/crafting#recipe",
+    pageTitle: "Advanced Crafting",
+    sectionTitle: "Forge recipe",
+    text: "Combine coke, steel and iron in the forge.",
+  },
+  {
+    href: "/wiki/items#steel",
+    pageTitle: "Materials",
+    sectionTitle: "Steel Ingot",
+    text: "Used for tools and vehicles.",
+  },
   { href: "/wiki/commands#pets", pageTitle: "Pets", sectionTitle: "Commands", text: "/pets opens your pet menu." },
 ];
 

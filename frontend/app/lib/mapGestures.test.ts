@@ -50,9 +50,7 @@ describe("isTypingTarget", () => {
   it("recognises text fields", () => {
     expect(isTypingTarget({ tagName: "INPUT" } as HTMLElement)).toBe(true);
     expect(isTypingTarget({ tagName: "TEXTAREA" } as HTMLElement)).toBe(true);
-    expect(
-      isTypingTarget({ tagName: "DIV", isContentEditable: true } as HTMLElement)
-    ).toBe(true);
+    expect(isTypingTarget({ tagName: "DIV", isContentEditable: true } as HTMLElement)).toBe(true);
   });
 
   it("leaves the map and buttons alone", () => {

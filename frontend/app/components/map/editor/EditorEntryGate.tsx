@@ -8,8 +8,7 @@ export default function EditorEntryGate() {
           Open the editor from the map page
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-[var(--tfmc-stone)]">
-          Use <strong className="text-[var(--tfmc-cream)]">Edit titles</strong> on
-          the map you want to change.
+          Use <strong className="text-[var(--tfmc-cream)]">Edit titles</strong> on the map you want to change.
         </p>
         <Link
           href="/map"

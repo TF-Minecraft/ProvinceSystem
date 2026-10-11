@@ -95,10 +95,7 @@ function readStored(): StoredSession | null {
     if (typeof parsed.allow_armor_3d_helmet === "boolean") {
       out.allow_armor_3d_helmet = parsed.allow_armor_3d_helmet;
     }
-    const lastId =
-      typeof parsed.last_submission_id === "string"
-        ? parsed.last_submission_id.trim()
-        : "";
+    const lastId = typeof parsed.last_submission_id === "string" ? parsed.last_submission_id.trim() : "";
     if (lastId) {
       out.last_submission_id = lastId;
     }
@@ -113,10 +110,7 @@ function writeStored(stored: StoredSession): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 }
 
-function copyEntitlements(
-  from: SkinsSession,
-  to: SkinsSession | StoredSession
-): void {
+function copyEntitlements(from: SkinsSession, to: SkinsSession | StoredSession): void {
   if (from.realm_id !== undefined) {
     to.realm_id = from.realm_id;
   }
@@ -179,19 +173,13 @@ export function skinsSessionFrom(result: RedeemResult): SkinsSession {
     ...(result.staff ? { staff: true as const } : {}),
     ...(result.scope ? { scope: result.scope } : {}),
     ...(result.realm_id ? { realm_id: result.realm_id } : {}),
-    ...(result.name_colour_stops !== undefined
-      ? { name_colour_stops: result.name_colour_stops }
-      : {}),
-    ...(result.max_3d_pair_bytes !== undefined
-      ? { max_3d_pair_bytes: result.max_3d_pair_bytes }
-      : {}),
+    ...(result.name_colour_stops !== undefined ? { name_colour_stops: result.name_colour_stops } : {}),
+    ...(result.max_3d_pair_bytes !== undefined ? { max_3d_pair_bytes: result.max_3d_pair_bytes } : {}),
     ...(result.skin_token_cooldown_days !== undefined
       ? { skin_token_cooldown_days: result.skin_token_cooldown_days }
       : {}),
     ...(result.skin_kinds !== undefined ? { skin_kinds: result.skin_kinds } : {}),
-    ...(result.allow_armor_3d_helmet !== undefined
-      ? { allow_armor_3d_helmet: result.allow_armor_3d_helmet }
-      : {}),
+    ...(result.allow_armor_3d_helmet !== undefined ? { allow_armor_3d_helmet: result.allow_armor_3d_helmet } : {}),
   };
 }
 

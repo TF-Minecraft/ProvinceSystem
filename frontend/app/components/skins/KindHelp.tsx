@@ -134,17 +134,14 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   book: {
     title: "Book",
-    summary:
-      "Two 16×16 covers: unsigned for the writable book, signed after the player signs it.",
+    summary: "Two 16×16 covers: unsigned for the writable book, signed after the player signs it.",
     steps: [
       "Choose Books as the item type.",
       "Upload unsigned (writable / closed look) as a 16×16 PNG.",
       "Upload signed (after the book is signed) as a 16×16 PNG.",
       "Set the item name / colours, then submit.",
     ],
-    notes: [
-      "Unsigned is what players see before signing; signed replaces it when they finish the book.",
-    ],
+    notes: ["Unsigned is what players see before signing; signed replaces it when they finish the book."],
   },
 };
 
@@ -186,19 +183,13 @@ export function KindHelpPanel({ kind, open, id }: PanelProps) {
     <div
       id={id}
       className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
+        open ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"
       }`}
     >
       <div className="min-h-0 overflow-hidden">
         <div className="mt-1 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_75%,var(--tfmc-forest-deep))] px-3.5 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]">
-          <p className="m-0 text-sm font-medium text-[var(--tfmc-cream)]">
-            {guide.title}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[var(--tfmc-mist)]">
-            {guide.summary}
-          </p>
+          <p className="m-0 text-sm font-medium text-[var(--tfmc-cream)]">{guide.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--tfmc-mist)]">{guide.summary}</p>
           <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--tfmc-cream)]">
             {guide.steps.map((step) => (
               <li key={step}>{step}</li>
@@ -208,10 +199,7 @@ export function KindHelpPanel({ kind, open, id }: PanelProps) {
             <ul className="mt-3 space-y-1 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3 text-xs leading-relaxed text-[var(--tfmc-mist)]">
               {guide.notes.map((note) => (
                 <li key={note} className="flex gap-2">
-                  <span
-                    aria-hidden
-                    className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--tfmc-accent)]"
-                  />
+                  <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--tfmc-accent)]" />
                   <span>{note}</span>
                 </li>
               ))}

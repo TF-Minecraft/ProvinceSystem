@@ -23,9 +23,7 @@ async function gunzipProvinceIndexGrid(buffer: ArrayBuffer): Promise<ArrayBuffer
   if (typeof DecompressionStream === "undefined") {
     throw new Error("gzip decompression not supported");
   }
-  const stream = new Blob([buffer])
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
+  const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream("gzip"));
   return await new Response(stream).arrayBuffer();
 }
 
@@ -52,7 +50,7 @@ export function editorProvinceRunsPath(mapId: MapId): string {
 export async function loadProvinceIndexFromRuns(
   mapId: MapId,
   sessionToken: string,
-  provinces: EditorProvinceRow[]
+  provinces: EditorProvinceRow[],
 ): Promise<ProvinceIndex | null> {
   try {
     const res = await fetchMapApi(editorProvinceRunsPath(mapId), {
@@ -67,7 +65,7 @@ export async function loadProvinceIndexFromRuns(
       decoded.height,
       decoded.runLengths,
       decoded.runIds,
-      decoded.bbox
+      decoded.bbox,
     );
     return buildProvinceIndexFromRuns(provinces, runIndex);
   } catch {
@@ -94,7 +92,7 @@ export function useEditorProvinceIndex(
   mapId: MapId,
   sessionToken: string | null,
   enabled = true,
-  callbacks?: EditorProvinceIndexCallbacks
+  callbacks?: EditorProvinceIndexCallbacks,
 ): {
   index: ProvinceIndex | null;
   loading: boolean;
@@ -127,9 +125,7 @@ export function useEditorProvinceIndex(
         const provincesPromise = fetchEditorProvinces(mapId, sessionToken);
         // Only prefetch the 82 MB grid when the flat path is the one we will
         // actually use; the runs path must not pay for it.
-        const gridPromise = runsEnabled
-          ? null
-          : fetchEditorProvinceIndex(mapId, sessionToken);
+        const gridPromise = runsEnabled ? null : fetchEditorProvinceIndex(mapId, sessionToken);
 
         const { provinces } = await provincesPromise;
         if (cancelled) return;
@@ -138,18 +134,13 @@ export function useEditorProvinceIndex(
         let built: ProvinceIndex | null = null;
 
         if (runsEnabled) {
-          built = await loadProvinceIndexFromRuns(
-            mapId,
-            sessionToken,
-            provinces
-          );
+          built = await loadProvinceIndexFromRuns(mapId, sessionToken, provinces);
           if (cancelled) return;
         }
 
         if (!built) {
           // Use the flat grid when runs are disabled, absent, stale or undecodable.
-          const gridBytes = await (gridPromise ??
-            fetchEditorProvinceIndex(mapId, sessionToken));
+          const gridBytes = await (gridPromise ?? fetchEditorProvinceIndex(mapId, sessionToken));
           if (cancelled) return;
 
           const payload = await gunzipProvinceIndexGrid(gridBytes);

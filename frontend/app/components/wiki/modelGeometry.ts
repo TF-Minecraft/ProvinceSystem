@@ -54,10 +54,13 @@ export type WikiBlockModel = {
 /** Only texture coordinates/material slots can vary; geometry stays canonical. */
 export type ModelSkinUvs = { faces: Record<string, ModelElement["faces"]> };
 export function applySkinUvs(model: WikiBlockModel, skin: ModelSkinUvs): WikiBlockModel {
-  return { ...model, elements: model.elements.map((element) => ({
-    ...element,
-    faces: (element.sourceUuid && skin.faces[element.sourceUuid]) || element.faces,
-  })) };
+  return {
+    ...model,
+    elements: model.elements.map((element) => ({
+      ...element,
+      faces: (element.sourceUuid && skin.faces[element.sourceUuid]) || element.faces,
+    })),
+  };
 }
 
 /**
@@ -183,9 +186,15 @@ function rotationMatrix(rotation: ModelElementRotation | undefined): number[] | 
     const sz = Math.sin(rz);
     if (rotation.order === "ZYX") {
       return [
-        cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz,
-        cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz,
-        -sy, sx * cy, cx * cy,
+        cy * cz,
+        sx * sy * cz - cx * sz,
+        cx * sy * cz + sx * sz,
+        cy * sz,
+        sx * sy * sz + cx * cz,
+        cx * sy * sz - sx * cz,
+        -sy,
+        sx * cy,
+        cx * cy,
       ];
     }
     // THREE.Euler default order "XYZ": R = Rx * Ry * Rz applied as m = Rx·Ry·Rz.
@@ -213,11 +222,7 @@ function rotationMatrix(rotation: ModelElementRotation | undefined): number[] | 
 
 function applyMatrix(m: number[] | null, x: number, y: number, z: number): [number, number, number] {
   if (!m) return [x, y, z];
-  return [
-    m[0] * x + m[1] * y + m[2] * z,
-    m[3] * x + m[4] * y + m[5] * z,
-    m[6] * x + m[7] * y + m[8] * z,
-  ];
+  return [m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z];
 }
 
 /** Flat vertex buffers for one material, ready to hand to a `BufferGeometry`. */
@@ -304,7 +309,7 @@ export function referencedTextureKeys(model: WikiBlockModel): string[] {
     for (const dir of FACE_DIRS) {
       const key = el.faces?.[dir]?.texture;
       if (!key) continue;
-      const bare = key.startsWith("#") ? key.slice(1): key;
+      const bare = key.startsWith("#") ? key.slice(1) : key;
       if (!seen.includes(bare)) seen.push(bare);
     }
   }
