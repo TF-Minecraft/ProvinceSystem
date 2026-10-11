@@ -234,6 +234,22 @@ class ActiveFaceTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((0, 8))[3], 0)
         self.assertEqual(figure.getpixel((1, 8)), ARM)
 
+    def test_worn_skin_name_reads_without_enforcing(self) -> None:
+        self.put_slot("base", skin((1, 1, 1, 255)))
+        extra = self.put_slot("extra_1", skin((2, 2, 2, 255)))
+        with self._db_mod.connect() as conn:
+            conn.execute("UPDATE character_wardrobe_slots SET display_name = 'Ranger' WHERE slot = 'extra_1'")
+            conn.commit()
+
+        # extra_1 is locked: base is worn, and the locked skin is kept.
+        self.assertEqual(self.wardrobe.worn_skin_name(PLAYER, CHAR_ID), "Base")
+        self.assertTrue((self.root / extra).is_file())
+        with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=2):
+            self.assertEqual(self.wardrobe.worn_skin_name(PLAYER, CHAR_ID), "Ranger")
+
+    def test_no_skin_no_name(self) -> None:
+        self.assertIsNone(self.wardrobe.worn_skin_name(PLAYER, CHAR_ID))
+
     def test_no_skin_no_face(self) -> None:
         self.assertIsNone(self.wardrobe.active_figure_png(PLAYER, CHAR_ID))
         self.assertIsNone(self.wardrobe.active_face_png(PLAYER, CHAR_ID))
@@ -243,6 +259,8 @@ class ActiveFaceTest(unittest.TestCase):
             self.wardrobe.active_face_png("someone-else", CHAR_ID)
         with self.assertRaises(self.wardrobe.WardrobeError):
             self.wardrobe.active_figure_png("someone-else", CHAR_ID)
+        with self.assertRaises(self.wardrobe.WardrobeError):
+            self.wardrobe.worn_skin_name("someone-else", CHAR_ID)
 
 
 if __name__ == "__main__":

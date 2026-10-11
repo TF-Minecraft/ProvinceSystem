@@ -1457,6 +1457,14 @@ def skin_figure_png(skin_png: bytes, model: str | None = None) -> bytes | None:
     return buf.getvalue()
 
 
+def _worn_slot(active: str | None, slots: dict[str, dict[str, Any]], swappable: int) -> str:
+    """The saved slot while it's unlocked and filled, else base, as _normalize_active picks it."""
+    active = (active or "").strip().lower()
+    if active in SWAPPABLE_SLOTS and _slot_unlocked(active, swappable) and _slot_filled(slots, active):
+        return active
+    return "base"
+
+
 def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None] | None:
     """The PNG and saved model of the slot a roster character wears. Read-only:
     picks the slot like _normalize_active but never enforces limits or saves it."""
@@ -1465,18 +1473,24 @@ def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None
     cid = str(roster["character_id"])
     slots = _load_slots(uuid, cid)
     swappable = swappable_slot_count(uuid, realm_id=roster.get("realm_id"))
-    active = (roster.get("wardrobe_active_slot") or "").strip().lower()
-    if not (
-        active in SWAPPABLE_SLOTS
-        and _slot_unlocked(active, swappable)
-        and _slot_filled(slots, active)
-    ):
-        active = "base"
+    active = _worn_slot(roster.get("wardrobe_active_slot"), slots, swappable)
     slot = slots.get(active) or {}
     path = _png_abspath(slot.get("png_relpath"))
     if path is None:
         return None
     return path.read_bytes(), slot.get("model")
+
+
+def worn_skin_name(player_uuid: str, character_id: str) -> str | None:
+    """The name of the skin a roster or pending character wears, for Profile. Read-only like
+    _active_slot: get_wardrobe would delete skins in slots the player's rank no longer unlocks."""
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    uuid = access["player_uuid"]
+    cid = access["character_id"]
+    slots = _load_pending_slots(cid) if access["kind"] == "pending" else _load_slots(uuid, cid)
+    swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
+    worn = _worn_slot(access.get("wardrobe_active_slot"), slots, swappable)
+    return _effective_display_name(worn, slots.get(worn)) if _slot_filled(slots, worn) else None
 
 
 def active_face_png(player_uuid: str, character_id: str) -> bytes | None:

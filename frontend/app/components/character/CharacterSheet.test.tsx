@@ -47,6 +47,7 @@ const VAELTHIR = {
   ],
   clues: ["Saw a red banner at dusk."],
   kit_status: "ineligible",
+  worn_skin: "Ranger's cloak",
 } as CharacterListItem;
 
 it("leads with who the character is and where to dress and equip them", () => {
@@ -54,7 +55,11 @@ it("leads with who the character is and where to dress and equip them", () => {
   expect(screen.getByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
   expect(screen.getByText("Elf · Archer")).toBeTruthy();
   expect(screen.getByText("112")).toBeTruthy();
-  expect(screen.getByRole("link", { name: "Wardrobe" }).getAttribute("href")).toBe("/character/c1/wardrobe");
+  const wardrobe = screen.getByRole("link", { name: "Wardrobe" });
+  expect(wardrobe.getAttribute("href")).toBe("/character/c1/wardrobe");
+  expect(document.getElementById(wardrobe.getAttribute("aria-describedby")!)!.textContent).toBe(
+    "Wearing Ranger's cloak",
+  );
   const kits = screen.getByRole("link", { name: "Kits" });
   expect(kits.getAttribute("href")).toBe("/character/c1/kits");
   // Legacy "ineligible" reads like the Kits page.
@@ -92,7 +97,7 @@ it("signs profession EXP and sets timed traits apart", () => {
 });
 
 it("says plainly what a new character doesn't have yet, and hides an empty story", () => {
-  render(<CharacterSheet character={{ id: "c2", name: "Mira", status: "pending" }} />);
+  render(<CharacterSheet character={{ id: "c2", name: "Mira", status: "pending", worn_skin: null }} />);
   expect(screen.getByText("No profession EXP modifiers.")).toBeTruthy();
   expect(screen.getByText("No traits recorded.")).toBeTruthy();
   expect(screen.getByText("No clues discovered yet.")).toBeTruthy();
@@ -100,6 +105,13 @@ it("says plainly what a new character doesn't have yet, and hides an empty story
   expect(screen.queryByRole("heading", { name: "Attributes" })).toBeNull();
   // A pending character has no wardrobe to read yet.
   expect(characterFigure).not.toHaveBeenCalled();
+  const wardrobe = screen.getByRole("link", { name: "Wardrobe" });
+  expect(document.getElementById(wardrobe.getAttribute("aria-describedby")!)!.textContent).toBe("No skin yet");
+  // Its kits can all be claimed once it reaches the server.
+  const kits = screen.getByRole("link", { name: "Kits" });
+  expect(document.getElementById(kits.getAttribute("aria-describedby")!)!.textContent).toBe(
+    "Starter kit: Not yet claimed",
+  );
   expect(screen.getByRole("status").textContent).toContain("Being added to the server.");
 });
 
