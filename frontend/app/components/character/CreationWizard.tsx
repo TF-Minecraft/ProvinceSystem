@@ -9,6 +9,7 @@ import SelectableOption from "./SelectableOption";
 import {
   CharactersApiError,
   createCharacter,
+  releaseCreate,
   uploadPendingCreateWardrobe,
   wardrobeSlotLabel,
   type CatalogStage,
@@ -664,26 +665,12 @@ export default function CreationWizard({
         setUiDevDone(true);
         return;
       }
-      let createId = pendingCreateId;
-      if (!createId) {
-        const created = await createCharacter(sessionToken, toCreateBody(draft, { nameColourStops, catalog }));
-        createId = String(created.id || "").trim();
-        if (!createId) {
-          throw new Error("Something went wrong. Please try again.");
-        }
-        setPendingCreateId(createId);
-      }
-
-      const slots = Object.entries(wardrobeDraft).filter(([, file]) => file instanceof File) as [string, File][];
       const order = ["base", "extra_1", "extra_2", "masked"] as const;
-      slots.sort(
-        (a, b) => order.indexOf(a[0] as (typeof order)[number]) - order.indexOf(b[0] as (typeof order)[number]),
-      );
+      const slots = (Object.entries(wardrobeDraft).filter(([, file]) => file instanceof File) as [string, File][])
+        // Server composes masked from base when create_masked is set
+        .filter(([slot]) => !(slot === "masked" && wardrobeAutoMasked))
+        .sort((a, b) => order.indexOf(a[0] as (typeof order)[number]) - order.indexOf(b[0] as (typeof order)[number]));
       for (const [slot, file] of slots) {
-        if (slot === "masked" && wardrobeAutoMasked) {
-          // Server composes masked from base when create_masked is set
-          continue;
-        }
         try {
           await assertWardrobeSkinPng(file);
         } catch (err) {
@@ -691,11 +678,22 @@ export default function CreationWizard({
           throw new Error(`${wardrobeSlotLabel(slot)}: ${detail}`);
         }
       }
-      for (const [slot, file] of slots) {
-        if (slot === "masked" && wardrobeAutoMasked) {
-          // Server composes masked from base when create_masked is set
-          continue;
+
+      let createId = pendingCreateId;
+      if (!createId) {
+        // Held so the server waits for the skins below before it applies the character.
+        const created = await createCharacter(sessionToken, {
+          ...toCreateBody(draft, { nameColourStops, catalog }),
+          hold: slots.length > 0,
+        });
+        createId = String(created.id || "").trim();
+        if (!createId) {
+          throw new Error("Something went wrong. Please try again.");
         }
+        setPendingCreateId(createId);
+      }
+
+      for (const [slot, file] of slots) {
         setUploadStatus(`Uploading ${wardrobeSlotLabel(slot)} skin…`);
         await uploadPendingCreateWardrobe(
           sessionToken,
@@ -708,6 +706,9 @@ export default function CreationWizard({
             model: armModelToWardrobeModel(wardrobeDraftModels[slot as keyof WardrobeDraftModels] ?? "default"),
           },
         );
+      }
+      if (slots.length > 0) {
+        await releaseCreate(sessionToken, createId);
       }
       setError(null);
       router.replace("/profile");

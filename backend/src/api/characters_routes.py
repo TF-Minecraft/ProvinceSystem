@@ -25,6 +25,7 @@ from src.characters.creates import (
     list_for_player,
     list_pending,
     mark_applied_results,
+    release_create,
 )
 from src.characters.lore_items import (
     LoreItemError,
@@ -867,6 +868,19 @@ def delete_pending_create_wardrobe(
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
+
+
+@characters_router.post("/creates/{create_id}/release")
+def release_create_route(
+    create_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """Hand a held create to RPCharacters once its wardrobe uploads are done."""
+    session = _profile_session_from_auth(authorization)
+    try:
+        return release_create(session["player_uuid"], create_id)
+    except CreateError as e:
+        raise _create_http(e) from e
 
 
 @characters_router.delete("/creates/{create_id}")

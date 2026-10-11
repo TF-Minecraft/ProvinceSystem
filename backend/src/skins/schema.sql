@@ -570,7 +570,8 @@ CREATE TABLE IF NOT EXISTS character_creates (
     created_at TEXT NOT NULL,
     applied_at TEXT,
     realm_id TEXT NOT NULL DEFAULT 'main',
-    wardrobe_active_slot TEXT
+    wardrobe_active_slot TEXT,
+    held_until TEXT
 );
 
 CREATE TABLE IF NOT EXISTS character_roster (

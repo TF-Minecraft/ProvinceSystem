@@ -349,6 +349,8 @@ export type CreateCharacterBody = {
   clues: string[];
   /** Persona name colours (separate from name string). */
   name_colours?: string[];
+  /** Keep RPCharacters from applying it until {@link releaseCreate} (wardrobe uploads first). */
+  hold?: boolean;
 };
 
 export type CreateCharacterResult = {
@@ -858,6 +860,18 @@ export async function fetchMaskedTemplateBlob(sessionToken: string): Promise<Blo
     throw new CharactersApiError(detailMessage(data, `Masked template failed (${res.status})`), res.status);
   }
   return res.blob();
+}
+
+/** Let RPCharacters apply a held create now that its wardrobe skins are uploaded. */
+export async function releaseCreate(sessionToken: string, createId: string): Promise<void> {
+  const cid = encodeURIComponent(createId.trim());
+  const res = await apiFetch(`${getApiBase()}/characters/creates/${cid}/release`, {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+  });
+  if (!res.ok) {
+    throw new CharactersApiError(detailMessage(await parseJson(res), `Create failed (${res.status})`), res.status);
+  }
 }
 
 export async function deletePendingCreate(

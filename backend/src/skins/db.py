@@ -112,6 +112,9 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         submissions = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)")}
         if "tier_sets" not in submissions:
             conn.execute("ALTER TABLE submissions ADD COLUMN tier_sets TEXT")
+        creates = {row["name"] for row in conn.execute("PRAGMA table_info(character_creates)")}
+        if "held_until" not in creates:
+            conn.execute("ALTER TABLE character_creates ADD COLUMN held_until TEXT")
         rpc_meta = {row["name"] for row in conn.execute("PRAGMA table_info(rpc_player_meta)")}
         if "donator_tier" in rpc_meta:
             conn.execute("ALTER TABLE rpc_player_meta DROP COLUMN donator_tier")
