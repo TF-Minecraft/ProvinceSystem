@@ -14,19 +14,7 @@ import {
   getSession as getDrinksSession,
   isSessionValid as isDrinksSessionValid,
 } from "../../../lib/drinks/session";
-import {
-  getSession as getProfileSession,
-  isSessionValid as isProfileSessionValid,
-} from "../../../lib/profile/session";
-
-function resolveOwnerToken(): string | null {
-  const drink = getDrinksSession();
-  if (isDrinksSessionValid(drink)) return drink!.session_token;
-  const profile = getProfileSession();
-  if (isProfileSessionValid(profile)) return profile!.session_token;
-  if (drink) clearDrinksSession();
-  return null;
-}
+import { resolveOwnerToken } from "../../../lib/profile/session";
 
 export default function DrinkStatusPage() {
   const params = useParams();
@@ -39,7 +27,11 @@ export default function DrinkStatusPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const token = resolveOwnerToken();
+    const token = resolveOwnerToken({
+      getSession: getDrinksSession,
+      isSessionValid: isDrinksSessionValid,
+      clearSession: clearDrinksSession,
+    });
     if (!token) {
       setError("Session missing or expired. Log in on Profile or redeem a drink code.");
       setRow(null);

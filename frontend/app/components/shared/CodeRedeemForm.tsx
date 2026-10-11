@@ -1,11 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { redeemCode, SkinsApiError } from "../../../lib/skins/api";
-import { setSession, skinsSessionFrom, type SkinsSession } from "../../../lib/skins/session";
 
-type Props = {
-  onRedeemed: (session: SkinsSession) => void;
+type Props<Result, Session> = {
+  redeem: (code: string) => Promise<Result>;
+  toSession: (result: Result) => Session;
+  saveSession: (session: Session) => void;
+  onRedeemed: (session: Session) => void;
+  /** Field label; the compact form uses it as the input's aria-label. */
+  label: string;
   /** One line under Profile's "Use a code", rather than the full page form. */
   compact?: boolean;
 };
@@ -15,7 +18,15 @@ const inputClass =
 const buttonClass =
   "inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50";
 
-export default function RedeemForm({ onRedeemed, compact = false }: Props) {
+/** Redeems an in-game skin or drink code and stores the session it opens. */
+export default function CodeRedeemForm<Result, Session>({
+  redeem,
+  toSession,
+  saveSession,
+  onRedeemed,
+  label,
+  compact = false,
+}: Props<Result, Session>) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,18 +42,11 @@ export default function RedeemForm({ onRedeemed, compact = false }: Props) {
 
     setLoading(true);
     try {
-      const result = await redeemCode(trimmed);
-      const session = skinsSessionFrom(result);
-      setSession(session);
+      const session = toSession(await redeem(trimmed));
+      saveSession(session);
       onRedeemed(session);
     } catch (err) {
-      const message =
-        err instanceof SkinsApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Redeem failed";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Redeem failed");
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,7 @@ export default function RedeemForm({ onRedeemed, compact = false }: Props) {
           <input
             type="text"
             name="code"
-            aria-label="Skin code"
+            aria-label={label}
             autoComplete="off"
             spellCheck={false}
             value={code}
@@ -81,7 +85,7 @@ export default function RedeemForm({ onRedeemed, compact = false }: Props) {
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-4">
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Upload code
+          {label}
         </span>
         <input
           type="text"

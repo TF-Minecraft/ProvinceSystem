@@ -6,12 +6,11 @@ import type {
   ProfileSkinSubmission,
 } from "../../../lib/profile/api";
 import type { StartAllowance } from "../../../lib/profile/start";
-import { startSkinFromProfile } from "../../../lib/skins/api";
+import { redeemCode, startSkinFromProfile } from "../../../lib/skins/api";
 import { setSession as setSkinsSession, skinsSessionFrom } from "../../../lib/skins/session";
-import { startDrinkFromProfile } from "../../../lib/drinks/api";
+import { redeemDrink, startDrinkFromProfile } from "../../../lib/drinks/api";
 import { drinksSessionFrom, setSession as setDrinksSession } from "../../../lib/drinks/session";
-import DrinkRedeemForm from "../drinks/RedeemForm";
-import SkinRedeemForm from "../skins/RedeemForm";
+import CodeRedeemForm from "../shared/CodeRedeemForm";
 import { kindLabel } from "../skins/KindPicker";
 import Wardrobe from "./Wardrobe";
 import { DrinkPicture, SkinPicture } from "./WardrobePictures";
@@ -33,7 +32,16 @@ export function SkinWardrobe({ rows, allowance, sessionToken }: Props<ProfileSki
         setSkinsSession({ ...skinsSessionFrom(result), from_profile: true });
         router.push("/skins");
       }}
-      codeForm={<SkinRedeemForm compact onRedeemed={() => router.push("/skins")} />}
+      codeForm={
+        <CodeRedeemForm
+          compact
+          redeem={redeemCode}
+          toSession={skinsSessionFrom}
+          saveSession={setSkinsSession}
+          onRedeemed={() => router.push("/skins")}
+          label="Skin code"
+        />
+      }
       items={rows.map((row) => ({
         id: row.id,
         href: `/skins/${encodeURIComponent(row.id)}`,
@@ -58,7 +66,16 @@ export function DrinkWardrobe({ rows, allowance, sessionToken }: Props<ProfileDr
         setDrinksSession({ ...drinksSessionFrom(result), from_profile: true });
         router.push("/drinks");
       }}
-      codeForm={<DrinkRedeemForm compact onRedeemed={() => router.push("/drinks")} />}
+      codeForm={
+        <CodeRedeemForm
+          compact
+          redeem={redeemDrink}
+          toSession={drinksSessionFrom}
+          saveSession={setDrinksSession}
+          onRedeemed={() => router.push("/drinks")}
+          label="Drink code"
+        />
+      }
       items={rows.map((row) => ({
         id: row.id,
         href: `/drinks/${encodeURIComponent(row.id)}`,

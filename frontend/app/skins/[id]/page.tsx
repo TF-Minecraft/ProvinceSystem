@@ -14,19 +14,7 @@ import {
   getSession as getSkinsSession,
   isSessionValid as isSkinsSessionValid,
 } from "../../../lib/skins/session";
-import {
-  getSession as getProfileSession,
-  isSessionValid as isProfileSessionValid,
-} from "../../../lib/profile/session";
-
-function resolveOwnerToken(): string | null {
-  const skin = getSkinsSession();
-  if (isSkinsSessionValid(skin)) return skin!.session_token;
-  const profile = getProfileSession();
-  if (isProfileSessionValid(profile)) return profile!.session_token;
-  if (skin) clearSkinsSession();
-  return null;
-}
+import { resolveOwnerToken } from "../../../lib/profile/session";
 
 export default function SubmissionStatusPage() {
   const params = useParams();
@@ -40,7 +28,11 @@ export default function SubmissionStatusPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const token = resolveOwnerToken();
+    const token = resolveOwnerToken({
+      getSession: getSkinsSession,
+      isSessionValid: isSkinsSessionValid,
+      clearSession: clearSkinsSession,
+    });
     if (!token) {
       setError("Session missing or expired. Log in on Profile or redeem a skin code.");
       setRow(null);

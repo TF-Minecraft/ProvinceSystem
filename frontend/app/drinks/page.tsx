@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import RedeemForm from "../components/drinks/RedeemForm";
+import CodeRedeemForm from "../components/shared/CodeRedeemForm";
 import BrewForm from "../components/drinks/BrewForm";
+import { redeemDrink } from "../../lib/drinks/api";
 import {
   clearSession,
+  drinksSessionFrom,
   getLastSubmissionId,
   getSession,
   isSessionValid,
+  setSession,
   type DrinksSession,
 } from "../../lib/drinks/session";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
@@ -99,7 +102,13 @@ export default function DrinksPage() {
             <code className="text-[var(--tfmc-accent)]">/token create drink</code>,
             then design your drink for staff review.
           </p>
-          <RedeemForm onRedeemed={onRedeemed} />
+          <CodeRedeemForm
+            redeem={redeemDrink}
+            toSession={drinksSessionFrom}
+            saveSession={setSession}
+            onRedeemed={onRedeemed}
+            label="Drink code"
+          />
         </>
       )}
     </main>
