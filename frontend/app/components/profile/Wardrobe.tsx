@@ -163,6 +163,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm, on
       >
         <PlusMark />
         New {noun}
+        <TileNote />
       </button>
     );
   } else if (refused) {
@@ -170,11 +171,11 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm, on
       <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
         <PlusMark />
         New {noun}
-        <span className="text-xs text-[var(--tfmc-mist)]">
+        <TileNote>
           {refused.reason === "cooldown" && refused.next_at
             ? `In ${timeUntil(refused.next_at)}`
             : refusalText(noun, refused.reason!, refused.next_at)}
-        </span>
+        </TileNote>
       </div>
     );
   } else {
@@ -187,6 +188,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm, on
       >
         <PlusMark />
         {starting ? "Opening…" : `New ${noun}`}
+        <TileNote />
       </button>
     );
   }
@@ -223,6 +225,15 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm, on
         ))}
       </ul>
     </div>
+  );
+}
+
+/** The line under a New tile's label, kept when empty so every tab's tile lines up. */
+function TileNote({ children }: { children?: ReactNode }) {
+  return (
+    <span className="text-xs text-[var(--tfmc-mist)]" aria-hidden={children ? undefined : true}>
+      {children ?? "\u00a0"}
+    </span>
   );
 }
 
