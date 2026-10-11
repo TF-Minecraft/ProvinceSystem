@@ -390,6 +390,17 @@ export default function ProfilePanel({
 
   if (holding) return <ProfilePlaceholder shape={shape} tab={initialTab} />;
 
+  const codeForm = (
+    <>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Run <code className="text-[var(--tfmc-accent)]">/token create profile</code>,{" "}
+        <code className="text-[var(--tfmc-accent)]">skin</code> or{" "}
+        <code className="text-[var(--tfmc-accent)]">drink</code> in game, then enter the code.
+      </p>
+      <ProfileRedeemForm onRedeemed={onRedeemed} />
+    </>
+  );
+
   if (!account && !session && !codeTabs.length) {
     // Without Discord sign-in the code is the only way in, so it shows open.
     const codeOpen = showCode || load.kind !== "signed_out";
@@ -429,12 +440,7 @@ export default function ProfilePanel({
           </>
         ) : null}
         <div id={codeId} hidden={!codeOpen} className="mt-8 max-w-md">
-          <p className="text-sm text-[var(--tfmc-mist)]">
-            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code>,{" "}
-            <code className="text-[var(--tfmc-accent)]">skin</code> or{" "}
-            <code className="text-[var(--tfmc-accent)]">drink</code> in game, then enter the code.
-          </p>
-          <ProfileRedeemForm onRedeemed={onRedeemed} />
+          {codeForm}
         </div>
       </>
     );
@@ -509,6 +515,29 @@ export default function ProfilePanel({
             {loggingOut ? "Logging out…" : "Log out"}
           </button>
         </p>
+      ) : null}
+
+      {/* Signed in without a Minecraft link: a code still opens Profile or a wardrobe. */}
+      {!contentTabs && !codeTabs.length ? (
+        <>
+          <p className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-mist)]">
+            <span>
+              Have a <code className="text-[var(--tfmc-accent)]">/token create</code> code?
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCode((open) => !open)}
+              aria-expanded={showCode}
+              aria-controls={codeId}
+              className={quietButtonClass}
+            >
+              Enter code
+            </button>
+          </p>
+          <div id={codeId} hidden={!showCode} className="mt-4 max-w-md">
+            {codeForm}
+          </div>
+        </>
       ) : null}
 
       {actionError || notice ? (

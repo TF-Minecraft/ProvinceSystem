@@ -908,3 +908,21 @@ it("opens the code form for old skin and drink links", async () => {
   expect(form.hidden).toBe(false);
   expect(form.textContent).toContain("/token create profile, skin or drink");
 });
+
+it("lets a Discord account without a Minecraft link open a wardrobe with a code", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account());
+  vi.mocked(signInWithCode).mockImplementation(async () => {
+    setSkinsSession(SKIN_CODE);
+    return { tab: "skins", profile: null };
+  });
+  vi.mocked(getCodeWardrobe).mockResolvedValue({ items: [SKIN], can_start: READY });
+  render(<ProfilePanel tab="skins" />);
+  const toggle = await screen.findByRole("button", { name: "Enter code" });
+  // Old /skins links land here with the form open.
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  fireEvent.change(screen.getByLabelText("Log in with code"), { target: { value: "SKIN-CODE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Enter" }));
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Skins", "Linked accounts"]);
+  expect(screen.queryByRole("button", { name: "Enter code" })).toBeNull();
+});
