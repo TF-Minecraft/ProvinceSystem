@@ -10,7 +10,7 @@ export default function StationsPage() {
 
   return (
     <WikiPage
-      lastModified="2026-09-27"
+      lastModified="2026-10-11"
       title="Crafting Stations"
       intro="Every crafting station and the block that opens it."
       width="lg"

@@ -20,7 +20,7 @@ export default function MaterialsPage() {
   }));
 
   return (
-    <WikiPage lastModified="2026-09-27" title="Materials" width="lg" intro="Every custom material: ingots, alchemy components, magical cores and more.">
+    <WikiPage lastModified="2026-10-11" title="Materials" width="lg" intro="Every custom material: ingots, alchemy components, magical cores and more.">
 
       {byStation.map(({ station, recipes }) =>
         recipes.length ? (

@@ -344,7 +344,8 @@ export function collectReferencedIds(stationsDir) {
   for (const file of readdirSync(stationsDir).filter((f) => f.endsWith(".yml")).sort()) {
     const text = readFileSync(path.join(stationsDir, file), "utf8");
     for (const match of text.matchAll(/itemsadder\{([^}]*)\}/g)) {
-      const id = match[1].match(/(?:^|[,;])\s*id=([^,;]+)/)?.[1]?.trim();
+      // `id="tfmc:pet_house"` is quoted in some configs.
+      const id = match[1].match(/(?:^|[,;])\s*id=([^,;]+)/)?.[1]?.trim().replace(/^(["'])(.*)\1$/, "$2");
       if (!id) continue;
       const bare = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
       counts.set(bare, (counts.get(bare) ?? 0) + 1);

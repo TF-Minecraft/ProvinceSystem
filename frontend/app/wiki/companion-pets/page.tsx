@@ -26,7 +26,7 @@ function MedicineStation() {
 export default function CompanionPetsPage() {
   return (
     <WikiPage
-      lastModified="2026-10-10"
+      lastModified="2026-10-11"
       title="Companion Pets"
       intro="A companion is a little personality to share your adventures with. Give it a name, look after it, play together and teach it tricks. The more time you spend together, the stronger your bond becomes."
     >

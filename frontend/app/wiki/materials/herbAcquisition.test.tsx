@@ -27,12 +27,12 @@ describe("Alchemist Collector herb acquisition", () => {
     }
   });
 
-  it("gives every other herb the same generic collector source", () => {
+  it("leaves out retired herbs that nothing drops on the main server", () => {
     for (const slug of [
       "nightshade", "grapeberries", "arcane-leaf", "fiery-fruit", "barkshroom",
       "caveshroom", "flatshroom", "death-fruit", "blazed-root", "serpent-root",
     ]) {
-      expect(getMaterialBySlug(slug)?.acquisition).toEqual(collectorHerbMaterials[0].acquisition);
+      expect(getMaterialBySlug(slug)).toBeUndefined();
     }
   });
 

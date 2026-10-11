@@ -5,6 +5,7 @@ import housePreview from "../../../public/wiki/models/companion-pets/pet-house-p
 // Pet types, egg names and crafting requirements checked against TFMCDev01
 // CompanionPets, MMOItems Animal Station and LuckPerms on 2026-10-10.
 // plugins/CompanionPets/config.yml and plugins/MMOItems/item/pets.yml.
+// Egg and supply names re-checked against TFMCMain01 MMOItems on 2026-10-11.
 // TF Dev uses shared care supplies for all pet types. The user-specified roster
 // and previews come from Downloads/nuevos modelos, including Husky/Maine Coon.
 // Eggs, food, grooming supplies, treats and toys come from the Animal Station;
@@ -24,7 +25,7 @@ export const companionPetItems = {
   fishSnack: { name: "Fish Snack", texture: itemTexture("fish_snack") },
   biscuit: { name: "Biscuit Treat", texture: itemTexture("biscuit_treat") },
   ball: { name: "Pet Ball", texture: itemTexture("pet_ball") },
-  bone: { name: "Chew Bone", texture: itemTexture("pet_chew_bone") },
+  bone: { name: "Bone Plush", texture: itemTexture("pet_chew_bone") },
   rope: { name: "Tug Rope", texture: itemTexture("pet_tug_rope") },
   mouse: { name: "Mouse Plush", texture: itemTexture("pet_mouse_plush") },
   teddy: { name: "Teddy Bear Plush", texture: itemTexture("pet_teddy_plush") },
@@ -49,9 +50,9 @@ const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: strin
   golden: { name: "Golden Retriever", egg: "Golden Companion Egg", unlock: "Pet Master" },
   husky: { name: "Husky", egg: "Husky Companion Egg", unlock: "Noble" },
   mainecoon: { name: "Maine Coon", egg: "Maine Coon Companion Egg", unlock: "Noble" },
-  catblack: { name: "Black cat", egg: "Catblack Companion Egg", unlock: "Pet Master" },
-  catfunny: { name: "Funny cat", egg: "Catfunny Companion Egg", unlock: "Pet Master" },
-  catorange: { name: "Orange cat", egg: "Catorange Companion Egg", unlock: "Pet Master" },
+  catblack: { name: "Black cat", egg: "Black Cat Companion Egg", unlock: "Pet Master" },
+  catfunny: { name: "Funny cat", egg: "Funny Cat Companion Egg", unlock: "Pet Master" },
+  catorange: { name: "Orange cat", egg: "Orange Cat Companion Egg", unlock: "Pet Master" },
   fox: { name: "Fox", egg: "Fox Companion Egg", unlock: "Pet Master" },
   frog: { name: "Frog", egg: "Frog Companion Egg", unlock: "Pet Master" },
   bernesse: { name: "Bernese Mountain Dog", egg: "Bernese Mountain Dog Companion Egg", unlock: "Ascended" },
