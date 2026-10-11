@@ -10,9 +10,7 @@ const destinations: Destination[] = [
   { href: "/map", label: "Map", blurb: "Nations, settlements and wars across the world.", icon: "map", featured: true },
   { href: "/wiki", label: "Guide", blurb: "Crafting, recipes and mechanics for Season 5.", icon: "guide" },
   { href: "/updates", label: "Updates", blurb: "What changed on the server each week.", icon: "updates" },
-  { href: "/profile", label: "Profile", blurb: "Your characters, wardrobe and linked accounts.", icon: "profile" },
-  { href: "/skins", label: "Skins", blurb: "Design a custom skin with a skin code.", icon: "skins" },
-  { href: "/drinks", label: "Drinks", blurb: "Design a custom drink with a drink code.", icon: "drinks" },
+  { href: "/profile", label: "Profile", blurb: "Your characters, skins, drinks and linked accounts.", icon: "profile" },
 ];
 
 const icons = {
@@ -20,8 +18,6 @@ const icons = {
   guide: "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5 M8 7h8",
   updates: "M4 5h12v14H6.5A2.5 2.5 0 0 1 4 16.5V5Z M16 9h4v7.5a2.5 2.5 0 0 1-5 0 M7.5 9h5 M7.5 12.5h5 M7.5 16h3",
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4.5 21a7.5 7.5 0 0 1 15 0",
-  skins: "M19 3.5 20.5 5 11 14.5 9.5 13 19 3.5Z M9.5 13C7 13 5 14.5 5 17c0 1.5-.8 2.7-2 3.5h5.5c3 0 4.5-2 4.5-4.5",
-  drinks: "M9.5 3h5 M10.5 3v5L6.3 15.4A3.7 3.7 0 0 0 9.5 21h5a3.7 3.7 0 0 0 3.2-5.6L13.5 8V3 M7.5 14.5h9",
 } as const;
 
 function Icon({ name }: { name: keyof typeof icons }) {
@@ -72,7 +68,7 @@ export default function HubPage() {
           <JoinServer />
         </div>
 
-        <nav aria-label="Site" className="animate-hub-fade-delay mt-10 grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <nav aria-label="Site" className="animate-hub-fade-delay mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
           {destinations.map((item) => (
             <Link
               key={item.href}

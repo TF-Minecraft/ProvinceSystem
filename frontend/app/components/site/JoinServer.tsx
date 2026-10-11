@@ -12,14 +12,11 @@ function joinAddress(address: string): string {
   return address.replace(/:25565$/, "");
 }
 
-function statusLabel(server: GameServer | null, failed: boolean): { text: string; dot: string } {
-  if (failed || server?.online === false) return { text: "Offline", dot: "bg-[#c97a6a]" };
-  if (!server) return { text: "Checking…", dot: "bg-[var(--tfmc-mist)] opacity-60" };
+function statusLabel(server: GameServer | null, failed: boolean): string {
+  if (failed || server?.online === false) return "Offline";
+  if (!server) return "Checking…";
   const count = server.players_online ?? 0;
-  return {
-    text: `${count} ${count === 1 ? "player" : "players"} online`,
-    dot: "bg-[#7fd18b] shadow-[0_0_8px_#7fd18b]",
-  };
+  return `${count} ${count === 1 ? "player" : "players"} online`;
 }
 
 /** Server address with a copy button and the live player count. */
@@ -74,8 +71,7 @@ export default function JoinServer() {
         </button>
       </div>
       <p className="flex items-center gap-2 text-sm text-[var(--tfmc-mist)]" aria-live="polite">
-        <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${status.dot}`} />
-        <span>{status.text}</span>
+        <span>{status}</span>
         {server ? <span aria-hidden>·</span> : null}
         {server ? <span>Java {server.game_version}</span> : null}
       </p>
