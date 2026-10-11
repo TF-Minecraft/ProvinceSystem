@@ -12,6 +12,21 @@ export async function getDiagnosticStatus(): Promise<DiagnosticStatus> {
   return (await res.json()) as DiagnosticStatus;
 }
 
+export type GameServer = {
+  address: string;
+  online: boolean;
+  players_online: number | null;
+  players_max: number | null;
+  game_version: string;
+};
+
+/** The server ping alone, for the home page. */
+export async function getGameServer(): Promise<GameServer> {
+  const res = await fetch(apiUrl("diagnostic/server"), { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as GameServer;
+}
+
 const SEND_ERRORS: Record<string, string> = {
   too_many_requests: "You’ve sent a few already. Wait ten minutes and try again.",
   bad_minecraft_name: "That isn’t a Minecraft name.",
