@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { CreationCatalog } from "./api";
-import { newDraft, setTraitsForKey, stripInjuriesReplacedByProsthetics, toCreateBody } from "./wizardState";
+import type { CatalogStage, CreationCatalog } from "./api";
+import {
+  interactiveProgress,
+  newDraft,
+  setTraitsForKey,
+  stripInjuriesReplacedByProsthetics,
+  toCreateBody,
+} from "./wizardState";
 
 function catalog(): CreationCatalog {
   return {
@@ -76,5 +82,26 @@ describe("toCreateBody", () => {
     draft.class_id = "warrior";
     const body = toCreateBody(draft, { catalog: cat });
     expect(body.traits).toEqual(["wooden_claw_arm", "blind"]);
+  });
+});
+
+describe("interactiveProgress", () => {
+  const stages = ["info", "setter", "info", "selection", "summary"].map(
+    (type, i) => ({ id: `s${i}`, type }) as CatalogStage,
+  );
+
+  it("counts an info card as the step it introduces", () => {
+    expect(stages.map((_, i) => interactiveProgress(stages, i))).toEqual([
+      { current: 1, total: 3 },
+      { current: 1, total: 3 },
+      { current: 2, total: 3 },
+      { current: 2, total: 3 },
+      { current: 3, total: 3 },
+    ]);
+  });
+
+  it("stays on the last step for a trailing info card", () => {
+    const trailing = [...stages, { id: "end", type: "info" } as CatalogStage];
+    expect(interactiveProgress(trailing, 5)).toEqual({ current: 3, total: 3 });
   });
 });

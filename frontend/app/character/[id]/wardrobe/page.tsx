@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getCreationCatalog, type CreationCatalog, type SlotLimits } from "../../../../lib/characters/api";
-import { logoutProfile } from "../../../../lib/profile/uploads";
-import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
+import { getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
@@ -52,7 +51,6 @@ export default function CharacterWardrobePage() {
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [slotLimits, setSlotLimits] = useState<SlotLimits | undefined>();
   const [uiDevUnlocked, setUiDevUnlocked] = useState(1);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const loadCatalog = useCallback(
     async (token: string) => {
@@ -87,18 +85,6 @@ export default function CharacterWardrobePage() {
     void loadCatalog(s.session_token).finally(() => setReady(true));
   }, [characterId, loadCatalog, router, uiDev]);
 
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) await logoutProfile(session.session_token);
-    } catch {
-      /* still clear local */
-    }
-    clearSession();
-    router.replace("/profile");
-  }
-
   if (!ready) {
     return <p className="text-sm text-[var(--tfmc-mist)]">Loading wardrobe…</p>;
   }
@@ -129,14 +115,6 @@ export default function CharacterWardrobePage() {
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          disabled={loggingOut}
-          onClick={() => void onLogout()}
-          className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       <WardrobeEditor

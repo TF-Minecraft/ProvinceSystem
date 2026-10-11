@@ -10,7 +10,6 @@ import {
   listCharacters,
   type CreationCatalog,
 } from "../../../lib/characters/api";
-import { logoutProfile } from "../../../lib/profile/uploads";
 import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
 import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../lib/characters/session";
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/uiDev";
@@ -27,7 +26,6 @@ export default function CharacterCreatePage() {
   const [nameColourStops, setNameColourStops] = useState(0);
   const [wardrobeSkinSlots, setWardrobeSkinSlots] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     if (uiDev) {
@@ -119,23 +117,6 @@ export default function CharacterCreatePage() {
     })();
   }, [router, uiDev]);
 
-  async function onLogout() {
-    if (uiDev) {
-      router.replace("/profile");
-      return;
-    }
-    if (!session) return;
-    setLoggingOut(true);
-    try {
-      await logoutProfile(session.session_token);
-    } catch {
-      // clear locally anyway
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
-
   if (!ready) {
     return (
       <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col justify-center px-6 py-16">
@@ -149,7 +130,7 @@ export default function CharacterCreatePage() {
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-3">
           <h1 className="animate-char-rise font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-            Create
+            New character
           </h1>
           {uiDev ? (
             <span className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_50%,transparent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--tfmc-accent)]">
@@ -157,8 +138,11 @@ export default function CharacterCreatePage() {
             </span>
           ) : null}
         </div>
-        <Link href="/profile" className="text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
-          Back to list
+        <Link
+          href="/profile"
+          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+        >
+          Cancel
         </Link>
       </div>
 
@@ -170,8 +154,6 @@ export default function CharacterCreatePage() {
         <CreationWizard
           catalog={catalog}
           sessionToken={session.session_token}
-          onLogout={() => void onLogout()}
-          loggingOut={loggingOut}
           uiDev={uiDev}
           skipRealAge={skipRealAge}
           evilUnlocked={evilUnlocked}

@@ -10,8 +10,7 @@ import {
   type CharacterKitItem,
   type LoreItemDraft,
 } from "../../../../../lib/characters/api";
-import { logoutProfile } from "../../../../../lib/profile/uploads";
-import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid } from "../../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../../lib/characters/kitsDev";
 
@@ -84,10 +83,8 @@ export default function CharacterKitDetailPage() {
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<CharacterSession | null>(null);
   const [kit, setKit] = useState<CharacterKit | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const load = useCallback(
     async (token: string) => {
@@ -114,7 +111,6 @@ export default function CharacterKitDetailPage() {
     }
     if (uiDev) {
       const s = uiDevSession();
-      setSession(s);
       void load(s.session_token).finally(() => setReady(true));
       return;
     }
@@ -124,22 +120,8 @@ export default function CharacterKitDetailPage() {
       router.replace("/profile");
       return;
     }
-    setSession(s);
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, kitId, load, router, uiDev]);
-
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) await logoutProfile(session.session_token);
-    } catch {
-      /* clear */
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
 
   if (!ready) {
     return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
@@ -154,14 +136,6 @@ export default function CharacterKitDetailPage() {
         >
           All kits
         </Link>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       {error ? (
