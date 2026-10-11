@@ -10,7 +10,7 @@ import {
   type CharacterKitItem,
   type LoreItemDraft,
 } from "../../../../../lib/characters/api";
-import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid } from "../../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../../lib/characters/kitsDev";
 
@@ -83,7 +83,6 @@ export default function CharacterKitDetailPage() {
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<CharacterSession | null>(null);
   const [kit, setKit] = useState<CharacterKit | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +111,6 @@ export default function CharacterKitDetailPage() {
     }
     if (uiDev) {
       const s = uiDevSession();
-      setSession(s);
       void load(s.session_token).finally(() => setReady(true));
       return;
     }
@@ -122,7 +120,6 @@ export default function CharacterKitDetailPage() {
       router.replace("/profile");
       return;
     }
-    setSession(s);
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, kitId, load, router, uiDev]);
 

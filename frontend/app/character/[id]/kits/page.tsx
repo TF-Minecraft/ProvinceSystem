@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CharactersApiError, listCharacterKits, type CharacterKit } from "../../../../lib/characters/api";
-import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
+import { clearSession, getSession, isSessionValid } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
 
@@ -31,7 +31,6 @@ export default function CharacterKitsPage() {
   const uiDev = isCharacterUiDev();
 
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<CharacterSession | null>(null);
   const [kits, setKits] = useState<CharacterKit[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +62,6 @@ export default function CharacterKitsPage() {
     }
     if (uiDev) {
       const s = uiDevSession();
-      setSession(s);
       void load(s.session_token).finally(() => setReady(true));
       return;
     }
@@ -73,7 +71,6 @@ export default function CharacterKitsPage() {
       router.replace("/profile");
       return;
     }
-    setSession(s);
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, load, router, uiDev]);
 

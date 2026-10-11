@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { getCreationCatalog, type CreationCatalog, type SlotLimits } from "../../../../lib/characters/api";
-import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
+import { getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
