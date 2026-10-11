@@ -173,9 +173,10 @@
     color: var(--tfmc-cream);
   }
 
-  /* Staff pages keep the scrollbar's room even when nothing scrolls, so the
-     frame does not shift sideways as a list loads or a tab changes length. */
-  html:has(.staff-panel) {
+  /* Pages keep the scrollbar's room even when nothing scrolls, so the layout
+     does not shift sideways as a page grows past the screen. The full-screen
+     map never scrolls, so it gets the whole width. */
+  html:not(.map-fullscreen) {
     scrollbar-gutter: stable;
   }
 
