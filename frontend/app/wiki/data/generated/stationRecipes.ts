@@ -1329,6 +1329,38 @@ export const generatedStationRecipes: Recipe[] = [
     },
   },
   {
+    key: "gen-animal-station-companion-cavalier_king_charles_spaniel-egg",
+    title: "Cavalier King Charles Spaniel Companion Egg",
+    station: "Animal Station",
+    time: 5,
+    requirement: "Pet Master",
+    category: "Pet Supplies",
+    ingredients: [{ name: "Bone", qty: 16, sourceId: "vanilla:bone", texture: "/wiki/textures/vanilla/bone.png" }],
+    output: {
+      name: "Cavalier King Charles Spaniel Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_CAVALIER_KING_CHARLES_SPANIEL_EGG",
+      texture: "/wiki/textures/vanilla/wolf_spawn_egg.png",
+    },
+  },
+  {
+    key: "gen-animal-station-companion-sphynx-egg",
+    title: "Sphynx Cat Companion Egg",
+    station: "Animal Station",
+    time: 5,
+    requirement: "Ascended",
+    category: "Pet Supplies",
+    ingredients: [
+      { name: "Salmon", qty: 16, sourceId: "vanilla:salmon", texture: "/wiki/textures/vanilla/salmon.png" },
+    ],
+    output: {
+      name: "Sphynx Cat Companion Egg",
+      qty: 1,
+      sourceId: "mmoitem:PETS:PET_SPHYNX_EGG",
+      texture: "/wiki/textures/vanilla/cat_spawn_egg.png",
+    },
+  },
+  {
     key: "gen-animal-station-companion-bordercolliegray-egg",
     title: "Gray Border Collie Companion Egg",
     station: "Animal Station",

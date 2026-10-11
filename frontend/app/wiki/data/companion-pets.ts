@@ -33,7 +33,7 @@ export const companionPetItems = {
 };
 
 // Configured eggs retain their vanilla material appearance: no pack overrides.
-// All eighteen modeled companions are registered in TF Dev.
+// All twenty modeled companions are registered in TF Dev and TF Main.
 const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
   beagle: "wolf",
   chihuahua: "wolf",
@@ -53,6 +53,8 @@ const eggMaterials: Record<keyof typeof modelCatalogue, string> = {
   cattabby: "cat",
   lagottoromagnolo: "wolf",
   yorkshire: "wolf",
+  cavalier_king_charles_spaniel: "wolf",
+  sphynx: "cat",
 };
 
 type PetUnlock = "Pet Master" | "Noble" | "Gilded" | "Ascended" | "Legacy";
@@ -75,6 +77,12 @@ const petDetails: Record<keyof typeof modelCatalogue, { name: string; egg: strin
   cattabby: { name: "Tabby cat", egg: "Tabby Cat Companion Egg", unlock: "Gilded" },
   lagottoromagnolo: { name: "Lagotto Romagnolo", egg: "Lagotto Romagnolo Companion Egg", unlock: "Gilded" },
   yorkshire: { name: "Yorkshire Terrier", egg: "Yorkshire Terrier Companion Egg", unlock: "Ascended" },
+  cavalier_king_charles_spaniel: {
+    name: "Cavalier King Charles Spaniel",
+    egg: "Cavalier King Charles Spaniel Companion Egg",
+    unlock: "Pet Master",
+  },
+  sphynx: { name: "Sphynx Cat", egg: "Sphynx Cat Companion Egg", unlock: "Ascended" },
 };
 
 export const companionPetTypes = Object.entries(petDetails).map(([id, details]) => ({

@@ -47,7 +47,7 @@ export default function CompanionPetsPage() {
         you spend time together.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        Craft companion eggs at the <AnimalStation />. Most require the Pet Master perk in the Forager profession; nine
+        Craft companion eggs at the <AnimalStation />. Some require the Pet Master perk in the Forager profession; ten
         companions require a donator rank instead. Their recipes appear in the station once you meet the requirement
         below. Right-click with an egg and follow the naming prompts in chat to welcome your new pet. Once it is beside
         you, sneak-right-click it with an empty hand to open its care sheet. This is where you can see how it feels, its
@@ -64,7 +64,7 @@ export default function CompanionPetsPage() {
       />
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Donator ranks inherit the egg recipes from lower ranks: Noble, Gilded, Ascended, then Legacy. Donator eggs
-        require the rank in place of Pet Master.
+        require the rank in place of Pet Master. The same requirement applies when hatching the egg.
       </p>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Ordinary wolves and cats are also supported as companions. They hatch from Wolf Spawn Eggs and Cat Spawn Eggs,
