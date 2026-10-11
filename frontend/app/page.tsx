@@ -42,7 +42,7 @@ function Icon({ name }: { name: keyof typeof icons }) {
 }
 
 const cardClass =
-  "group flex items-start gap-4 rounded-md border p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
+  "group flex items-start gap-4 rounded-md border p-3.5 text-left sm:p-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
 
 const cardTone = {
   featured:

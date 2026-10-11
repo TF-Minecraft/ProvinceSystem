@@ -60,7 +60,7 @@ export default function JoinServer() {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-stretch overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_70%,transparent)] shadow-[0_8px_30px_rgb(0_0_0/0.25)] backdrop-blur-sm">
-        <span className="flex items-center px-4 font-mono text-base tracking-wide text-[var(--tfmc-cream)] select-all sm:px-5 sm:text-lg">
+        <span className="flex items-center px-4 text-base font-semibold tracking-wide text-[var(--tfmc-cream)] select-all sm:px-5 sm:text-lg">
           {address}
         </span>
         <button
