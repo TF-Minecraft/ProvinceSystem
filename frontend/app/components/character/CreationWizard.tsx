@@ -731,7 +731,7 @@ export default function CreationWizard({
               style={{ width: `${(progress.current / progress.total) * 100}%` }}
             />
           </div>
-          <p className="shrink-0 text-xs tabular-nums text-[var(--tfmc-stone)]">
+          <p className="shrink-0 text-xs tabular-nums text-[var(--tfmc-stone)]" aria-live="polite">
             {progress.current} of {progress.total}
           </p>
         </div>
