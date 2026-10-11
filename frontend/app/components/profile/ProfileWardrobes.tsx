@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ProfileApiError, type ProfileDrinkSubmission, type ProfileSkinSubmission } from "../../../lib/profile/api";
 import { getCodeWardrobe, type CodeWardrobe as CodeWardrobeData } from "../../../lib/profile/codes";
-import { NEW_DRINK_PATH, NEW_SKIN_PATH, drinkPath, skinPath } from "../../../lib/profile/paths";
+import { drinkPath, skinPath } from "../../../lib/profile/paths";
 import type { StartAllowance } from "../../../lib/profile/start";
 import { redeemCode, startSkinFromProfile } from "../../../lib/skins/api";
 import {
@@ -29,29 +28,37 @@ type Props<Row> = {
   sessionToken: string;
   /** An in-game code's own session: New opens the editor with it rather than starting another. */
   codeSession?: boolean;
+  /** Opens the editor ("new") or one item inside the tab. */
+  onOpen: (id: string) => void;
 };
 
 const PENDING_POLL_MS = 10_000;
 
-export function SkinWardrobe({ rows, allowance, sessionToken, codeSession = false }: Props<ProfileSkinSubmission>) {
-  const router = useRouter();
+export function SkinWardrobe({
+  rows,
+  allowance,
+  sessionToken,
+  codeSession = false,
+  onOpen,
+}: Props<ProfileSkinSubmission>) {
   return (
     <Wardrobe
       noun="skin"
       allowance={allowance}
+      onOpen={onOpen}
       onStart={async () => {
         if (!codeSession) {
           const result = await startSkinFromProfile(sessionToken);
           setSkinsSession({ ...skinsSessionFrom(result), from_profile: true });
         }
-        router.push(NEW_SKIN_PATH);
+        onOpen("new");
       }}
       codeForm={
         <CodeRedeemForm
           redeem={redeemCode}
           toSession={skinsSessionFrom}
           saveSession={setSkinsSession}
-          onRedeemed={() => router.push(NEW_SKIN_PATH)}
+          onRedeemed={() => onOpen("new")}
           label="Skin code"
         />
       }
@@ -68,25 +75,31 @@ export function SkinWardrobe({ rows, allowance, sessionToken, codeSession = fals
   );
 }
 
-export function DrinkWardrobe({ rows, allowance, sessionToken, codeSession = false }: Props<ProfileDrinkSubmission>) {
-  const router = useRouter();
+export function DrinkWardrobe({
+  rows,
+  allowance,
+  sessionToken,
+  codeSession = false,
+  onOpen,
+}: Props<ProfileDrinkSubmission>) {
   return (
     <Wardrobe
       noun="drink"
       allowance={allowance}
+      onOpen={onOpen}
       onStart={async () => {
         if (!codeSession) {
           const result = await startDrinkFromProfile(sessionToken);
           setDrinksSession({ ...drinksSessionFrom(result), from_profile: true });
         }
-        router.push(NEW_DRINK_PATH);
+        onOpen("new");
       }}
       codeForm={
         <CodeRedeemForm
           redeem={redeemDrink}
           toSession={drinksSessionFrom}
           saveSession={setDrinksSession}
-          onRedeemed={() => router.push(NEW_DRINK_PATH)}
+          onRedeemed={() => onOpen("new")}
           label="Drink code"
         />
       }
@@ -111,10 +124,12 @@ export function CodeWardrobe({
   noun,
   sessionToken,
   onEnded,
+  onOpen,
 }: {
   noun: "skin" | "drink";
   sessionToken: string;
   onEnded: () => void;
+  onOpen: (id: string) => void;
 }) {
   const [data, setData] = useState<CodeWardrobeData<ProfileSkinSubmission | ProfileDrinkSubmission> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +168,7 @@ export function CodeWardrobe({
       allowance={data.can_start}
       sessionToken={sessionToken}
       codeSession
+      onOpen={onOpen}
     />
   ) : (
     <DrinkWardrobe
@@ -160,6 +176,7 @@ export function CodeWardrobe({
       allowance={data.can_start}
       sessionToken={sessionToken}
       codeSession
+      onOpen={onOpen}
     />
   );
 }

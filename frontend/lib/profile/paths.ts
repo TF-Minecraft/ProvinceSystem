@@ -1,11 +1,26 @@
-/** Profile's skin and drink pages. The old /skins and /drinks addresses redirect here (next.config.ts). */
-export const NEW_SKIN_PATH = "/profile/skins/new";
-export const NEW_DRINK_PATH = "/profile/drinks/new";
+import type { ProfileTab } from "./tabs";
+
+/**
+ * Profile's addresses. A skin or drink opens inside its tab: `?tab=skins&skin=new` is the editor and
+ * `&skin=<id>` one skin.
+ */
+const ITEM_PARAMS: Partial<Record<ProfileTab, "skin" | "drink">> = { skins: "skin", drinks: "drink" };
+
+/** The query parameter naming the skin or drink open in a tab, if that tab has one. */
+export function itemParam(tab: ProfileTab | null): "skin" | "drink" | null {
+  return (tab && ITEM_PARAMS[tab]) || null;
+}
+
+export function profileHref(tab: ProfileTab | null, item: string | null = null): string {
+  const param = itemParam(tab);
+  if (param && item) return `/profile?tab=${tab}&${param}=${encodeURIComponent(item)}`;
+  return !tab || tab === "characters" ? "/profile" : `/profile?tab=${tab}`;
+}
 
 export function skinPath(id: string): string {
-  return `/profile/skins/${encodeURIComponent(id)}`;
+  return profileHref("skins", id);
 }
 
 export function drinkPath(id: string): string {
-  return `/profile/drinks/${encodeURIComponent(id)}`;
+  return profileHref("drinks", id);
 }

@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createSubmission, checkSubmissionConflict, getCatalog, SkinsApiError } from "../../../lib/skins/api";
 import type { SkinsCatalog } from "../../../lib/skins/catalog";
 import { filterStaffCategories } from "../../../lib/skins/catalog";
 import { DEV_CATALOG_ENTITLEMENTS, DEV_SESSION_SKIN_KINDS } from "../../../lib/skins/entitlementsDev";
 import { setLastSubmissionId } from "../../../lib/skins/session";
-import { skinPath } from "../../../lib/profile/paths";
 import {
   ARMOR_TYPES,
   armorTier,
@@ -79,6 +77,8 @@ type Props = {
   allowArmor3dHelmet?: boolean;
   /** Override locked colour picker message (e.g. meta not synced yet). */
   colourLockedMessage?: string;
+  /** Shows the new skin once it's in. */
+  onSubmitted: (id: string) => void;
 };
 
 type TierEntry = {
@@ -155,8 +155,8 @@ export default function UploadForm({
   skinKinds,
   allowArmor3dHelmet = false,
   colourLockedMessage,
+  onSubmitted,
 }: Props) {
-  const router = useRouter();
   const resolvedKinds = skinKinds != null ? skinKinds : staff ? null : DEV_SESSION_SKIN_KINDS;
   const initialKind = (
     resolvedKinds == null
@@ -521,7 +521,7 @@ export default function UploadForm({
         files: uploadFiles,
       });
       setLastSubmissionId(result.id);
-      router.push(skinPath(result.id));
+      onSubmitted(result.id);
     } catch (err) {
       const message = err instanceof SkinsApiError ? err.message : err instanceof Error ? err.message : "Upload failed";
       setError(message);

@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type MouseEvent, type ReactNode } from "react";
 import { StartRefusedError, timeUntil, type StartAllowance, type StartRefusal } from "../../../lib/profile/start";
 
 export type WardrobeItem = {
@@ -25,6 +24,8 @@ type Props = {
   onStart: () => Promise<void>;
   /** The compact form for a /token create code. */
   codeForm: ReactNode;
+  /** Opens one of the items inside the tab. */
+  onOpen: (id: string) => void;
 };
 
 const quietButtonClass =
@@ -95,12 +96,19 @@ export function HangerGlyph() {
   );
 }
 
-function Card({ item }: { item: WardrobeItem }) {
+function Card({ item, onOpen }: { item: WardrobeItem; onOpen: (id: string) => void }) {
   const denied = ["denied", "rejected", "revoked"].includes(item.status.toLowerCase());
+  // A plain click opens it in the tab; a new-tab click follows the address.
+  function open(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    onOpen(item.id);
+  }
   return (
     <li>
-      <Link
+      <a
         href={item.href}
+        onClick={open}
         className="block overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
       >
         <div className="relative grid aspect-square place-items-center bg-[radial-gradient(circle_at_50%_45%,var(--tfmc-moss),color-mix(in_srgb,var(--tfmc-forest-deep)_90%,var(--tfmc-forest))_70%)]">
@@ -114,12 +122,12 @@ function Card({ item }: { item: WardrobeItem }) {
           <p className="text-xs text-[var(--tfmc-mist)]">{item.detail}</p>
           {item.denyReason ? <p className="mt-1 text-xs text-[#e8a0a0]">{item.denyReason}</p> : null}
         </div>
-      </Link>
+      </a>
     </li>
   );
 }
 
-export default function Wardrobe({ noun, items, allowance, onStart, codeForm }: Props) {
+export default function Wardrobe({ noun, items, allowance, onStart, codeForm, onOpen }: Props) {
   const codeId = useId();
   const [showCode, setShowCode] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -211,7 +219,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm }: 
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         <li>{newTile}</li>
         {items.map((item) => (
-          <Card key={item.id} item={item} />
+          <Card key={item.id} item={item} onOpen={onOpen} />
         ))}
       </ul>
     </div>

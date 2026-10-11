@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   createSubmission,
   getCatalog,
@@ -20,7 +19,6 @@ import {
   effectLabel,
 } from "../../../lib/drinks/constants";
 import { setLastSubmissionId, setSession, type DrinksSession } from "../../../lib/drinks/session";
-import { drinkPath } from "../../../lib/profile/paths";
 import NameColourPicker from "../shared/NameColourPicker";
 import LoreLinesEditor from "../shared/LoreLinesEditor";
 import ModelPreview from "../skins/ModelPreview";
@@ -34,6 +32,8 @@ type EffectRow = { type: string; level: number; duration: number };
 
 type Props = {
   session: DrinksSession;
+  /** Shows the new drink once it's in. */
+  onSubmitted: (id: string) => void;
 };
 
 const fieldClass =
@@ -42,8 +42,7 @@ const fieldClass =
 const btnGhost = "text-xs text-[var(--tfmc-accent)] hover:underline disabled:opacity-50";
 const btnDanger = "text-xs text-[#e8a0a0] hover:underline";
 
-export default function BrewForm({ session }: Props) {
-  const router = useRouter();
+export default function BrewForm({ session, onSubmitted }: Props) {
   const [allowTexture, setAllowTexture] = useState(session.allow_drink_texture === true);
   const [allowDrinkMessage, setAllowDrinkMessage] = useState(session.allow_drink_message === true);
   const [colourStops, setColourStops] = useState(Math.max(0, Math.floor(session.name_colour_stops ?? 0)));
@@ -266,7 +265,7 @@ export default function BrewForm({ session }: Props) {
         existingTextureId: appearance === "reuse" ? existingTextureId.trim() : null,
       });
       setLastSubmissionId(created.id);
-      router.push(drinkPath(created.id));
+      onSubmitted(created.id);
     } catch (err) {
       setError(err instanceof DrinksApiError ? err.message : err instanceof Error ? err.message : "Submit failed");
     } finally {

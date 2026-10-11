@@ -1,10 +1,8 @@
 import { cookies } from "next/headers";
 import ProfilePanel from "../components/profile/ProfilePanel";
 import { ACCOUNT_SHAPE_COOKIE, decodeAccountShape } from "../../lib/account/shape";
-import { profileTab } from "../../lib/profile/tabs";
 
 type SearchParams = {
-  tab?: string | string[];
   signin?: string | string[];
   minecraft?: string | string[];
 };
@@ -23,12 +21,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,color-mix(in_srgb,var(--tfmc-moss)_35%,transparent),transparent_65%)] opacity-80"
       />
-      <ProfilePanel
-        tab={profileTab(singleValue(params.tab))}
-        signin={singleValue(params.signin)}
-        minecraft={singleValue(params.minecraft)}
-        shape={shape}
-      />
+      <ProfilePanel signin={singleValue(params.signin)} minecraft={singleValue(params.minecraft)} shape={shape} />
     </main>
   );
 }
