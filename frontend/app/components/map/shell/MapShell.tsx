@@ -94,7 +94,7 @@ export default function MapShell({
   return (
     // pan-x pan-y: panels still scroll, but a pinch on them cannot zoom the
     // page (the map handles its own pinch).
-    <div className="relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)] [touch-action:pan-x_pan-y]">
+    <div className="map-shell relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)] [touch-action:pan-x_pan-y]">
       <div className="absolute inset-0">{children}</div>
 
       {/* Left column: plaque on top, details under it on desktop; on mobile
