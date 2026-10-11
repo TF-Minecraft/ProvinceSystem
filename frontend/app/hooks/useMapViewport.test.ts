@@ -4,6 +4,7 @@
 
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { readViewportSize, useMapViewport } from "./useMapViewport";
@@ -58,29 +59,60 @@ function devicePixels(transform: string, ratio: number): number[] {
   return match ? [Number(match[1]) * ratio, Number(match[2]) * ratio] : [];
 }
 
+function stubViewportSize(width: number, height: number) {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    },
+  );
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    width,
+    height,
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: height,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
 describe("useMapViewport", () => {
+  it("paints its first frame centred", async () => {
+    stubViewportSize(1920, 1024);
+    // Outside `act`, so passive effects wait for the scheduler as in a browser.
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", false);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    // A mutation observer's callback runs once the commit's task ends, where
+    // the browser would paint and before the scheduler runs passive effects.
+    const firstFrame = await new Promise<string>((resolve) => {
+      const observer = new MutationObserver(() => {
+        const content = container.querySelector<HTMLElement>("[data-testid=content]");
+        if (!content) return;
+        observer.disconnect();
+        resolve(content.style.transform);
+      });
+      observer.observe(container, { childList: true, subtree: true });
+      root.render(createElement(Viewport));
+    });
+
+    root.unmount();
+    container.remove();
+    // Cover fit: full width, the overflowing height split above and below.
+    expect(devicePixels(firstFrame, 1)).toEqual([0, -448]);
+  });
+
   it("keeps a wheel zoom on whole device pixels, where it settles", () => {
     vi.useFakeTimers();
     vi.stubGlobal("devicePixelRatio", 1.25);
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        disconnect() {}
-        unobserve() {}
-      },
-    );
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-      width: 777,
-      height: 555,
-      left: 0,
-      top: 0,
-      right: 777,
-      bottom: 555,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    });
+    stubViewportSize(777, 555);
     const { getByTestId } = render(createElement(Viewport));
     const content = getByTestId("content");
 

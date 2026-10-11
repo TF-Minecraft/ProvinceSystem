@@ -448,7 +448,9 @@ export function useMapViewport({
     return () => observer.disconnect();
   }, [enabled]);
 
-  useEffect(() => {
+  // Before paint: as a passive effect the first frame drew the map at (0,0),
+  // pinned to the top left, and the next one jumped it to the centre.
+  useLayoutEffect(() => {
     if (!enabled || viewportSize.w <= 0 || viewportSize.h <= 0) return;
     setTransform((current) => {
       // Only the untouched initial transform gets centered — once the user
