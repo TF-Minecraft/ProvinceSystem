@@ -10,7 +10,8 @@ import {
 } from "../../../lib/admin/api";
 import { formatDuration } from "../../../lib/admin/time";
 import { formatDay, sessionEndLabel, sessionSpanLabel, worldLabel } from "../../../lib/admin/movement";
-import { chipClass, chipOff, mutedClass } from "./MovementControls";
+import { chipClass, chipOff } from "./MovementControls";
+import { mutedClass } from "./ui";
 
 type State = {
   sessions: PlayerSession[];

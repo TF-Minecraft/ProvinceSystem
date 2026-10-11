@@ -40,11 +40,11 @@ import {
   chipOff,
   chipOn,
   inputClass,
-  mutedClass,
   useLiveMapId,
   useMinuteClock,
   type Range,
 } from "./MovementControls";
+import { mutedClass } from "./ui";
 
 type Load =
   | { kind: "loading"; previous: Movement | null }

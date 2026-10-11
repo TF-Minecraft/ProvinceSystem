@@ -40,11 +40,11 @@ import {
   chipClass,
   chipOff,
   chipOn,
-  mutedClass,
   useLiveMapId,
   useMinuteClock,
   type Range,
 } from "./MovementControls";
+import { mutedClass } from "./ui";
 import { usePlayer } from "./PlayerFrame";
 import SessionList from "./SessionList";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";

@@ -4,6 +4,7 @@ import { FormEvent, type ReactNode, useState } from "react";
 
 import { adminErrorMessage } from "@/lib/admin/api";
 import { inspectCode, type InspectCodeResult } from "@/lib/skins/api";
+import { formatLocal } from "@/lib/skins/formatTime";
 import { badgeClass, buttonClass, chipClass, errorClass, headingClass, inputClass, mutedClass, panelClass, rowClass } from "./ui";
 
 type Found = Extract<InspectCodeResult, { valid: true }>;
@@ -21,12 +22,6 @@ const STATUS_LABEL: Record<string, string> = {
   expired: "Expired",
   revoked: "Revoked",
 };
-
-function when(iso: string): string {
-  const parsed = Date.parse(iso);
-  if (Number.isNaN(parsed)) return iso || "—";
-  return new Date(parsed).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
 
 function yesNo(value: boolean): ReactNode {
   return value ? "Yes" : <span className="text-[var(--tfmc-stone)]">No</span>;
@@ -75,8 +70,8 @@ function CodeDetails({ code, result }: { code: string; result: Found }) {
             ["Kind", result.scope || "—"],
             ["Realm", result.realm_id || "—"],
             ["Player", <span key="p" className="font-mono text-xs">{result.player_uuid_masked || "—"}</span>],
-            ["Made", when(result.created_at)],
-            ["Expires", when(result.expires_at)],
+            ["Made", formatLocal(result.created_at) || "—"],
+            ["Expires", formatLocal(result.expires_at) || "—"],
           ]}
         />
         <Facts

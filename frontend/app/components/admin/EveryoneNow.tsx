@@ -19,7 +19,8 @@ import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import AdminColumn from "./AdminColumn";
 import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MovementTrail } from "./MovementMap";
-import { EVERYONE_STRIP_HEIGHT, chipClass, chipOff, inputClass, mutedClass, useLiveMapId } from "./MovementControls";
+import { EVERYONE_STRIP_HEIGHT, chipClass, chipOff, inputClass, useLiveMapId } from "./MovementControls";
+import { mutedClass } from "./ui";
 
 /** How often the view asks again. Each player's row is at most a ping interval old when it is read. */
 export const NOW_REFRESH_MS = 20_000;

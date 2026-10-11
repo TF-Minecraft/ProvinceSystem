@@ -20,16 +20,8 @@ import { usePlayer } from "./PlayerFrame";
 import { profileTab } from "./PlayerTabs";
 import AccountActions from "./AccountActions";
 import PlayerActivity from "./PlayerActivity";
-import {
-  Retry,
-  dayHeadingClass,
-  dividerClass,
-  headingClass,
-  moreClass,
-  mutedClass,
-  panelClass,
-  type Failure,
-} from "./profileParts";
+import { Retry, dayHeadingClass, moreClass, type Failure } from "./profileParts";
+import { headingClass, mutedClass, panelClass, rowClass } from "./ui";
 
 export default function PlayerProfile() {
   // Only ever rendered inside the player's frame.
@@ -214,7 +206,7 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
           {days.map((day) => (
             <div key={day.key}>
               <h4 className={dayHeadingClass}>{day.label}</h4>
-              <ul aria-label={day.label} className={`mt-1 text-sm ${dividerClass}`}>
+              <ul aria-label={day.label} className={`mt-1 text-sm ${rowClass}`}>
                 {day.sessions.map((session) => (
                   <li key={session.id}>
                     <SessionItem session={session} day={day.label} uuid={uuid} movement={movement} />

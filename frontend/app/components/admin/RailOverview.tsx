@@ -19,7 +19,8 @@ import AdminColumn from "./AdminColumn";
 import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import RailMap, { pointFocus, type RailFocus } from "./RailMap";
 import RailTubeMap, { tubeColour } from "./RailTubeMap";
-import { chipClass, chipOff, chipOn, mutedClass, useLiveMapId } from "./MovementControls";
+import { chipClass, chipOff, chipOn, useLiveMapId } from "./MovementControls";
+import { mutedClass } from "./ui";
 
 type Load =
   | { kind: "loading" }

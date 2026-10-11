@@ -263,8 +263,14 @@ export function shortContextLabel(contexts: Record<string, string[]>): string {
     .join(", ");
 }
 
-export function nodeLabel(node: LpNode): string {
-  return node.key;
+/** Identifies a node in lists and pending changes: same key, value, contexts and expiry. */
+export function nodeKey(node: LpNode): string {
+  return `${node.key}|${node.value}|${contextLabel(node.contexts)}|${node.expiry}`;
+}
+
+/** The node without its display fields, as the change endpoints take it. */
+export function plainNode(node: LpShownNode): LpNode {
+  return { key: node.key, value: node.value, contexts: node.contexts, expiry: node.expiry };
 }
 
 /** "Expires in 3 d" for temporary nodes, "" for permanent ones. */

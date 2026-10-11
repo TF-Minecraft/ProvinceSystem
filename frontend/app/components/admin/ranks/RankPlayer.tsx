@@ -10,6 +10,8 @@ import {
   expiryLabel,
   getLpPlayer,
   lpRequestMessage,
+  nodeKey,
+  plainNode,
   STATUS_LABELS,
   type LpNode,
   type LpOp,
@@ -221,7 +223,7 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
                         {describeScope(node)}.
                       </>
                     ),
-                    ops: [{ op: "remove_node", node: plain(node) }],
+                    ops: [{ op: "remove_node", node: plainNode(node) }],
                     warning: data.groups.find((g) => g.name === node.group)?.patreon ? PATREON_NOTE : undefined,
                     label: "Remove",
                   })
@@ -263,14 +265,6 @@ export default function RankPlayer({ uuid }: { uuid: string }) {
       </section>
     </>
   );
-}
-
-function nodeKey(node: LpNode): string {
-  return `${node.key}|${node.value}|${contextLabel(node.contexts)}|${node.expiry}`;
-}
-
-function plain(node: LpShownNode): LpNode {
-  return { key: node.key, value: node.value, contexts: node.contexts, expiry: node.expiry };
 }
 
 function describeScope(node: LpNode): string {
@@ -463,7 +457,7 @@ function PermissionsPanel({
                       {describeScope(node)}.
                     </>
                   ),
-                  ops: [{ op: "remove_node", node: plain(node) }],
+                  ops: [{ op: "remove_node", node: plainNode(node) }],
                   label: "Unset",
                 })
               }
