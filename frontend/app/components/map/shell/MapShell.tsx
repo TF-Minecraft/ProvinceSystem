@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
@@ -84,8 +84,9 @@ export default function MapShell({
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
   // scrolled or rubber-banded it, sliding them under the header. Scrolling
-  // inside the panels is unaffected.
-  useEffect(() => {
+  // inside the panels is unaffected. Set before paint, as it also drops the
+  // scrollbar's gutter: after it, the map opened 8px narrow for one frame.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.classList.add("map-fullscreen");
     return () => root.classList.remove("map-fullscreen");
