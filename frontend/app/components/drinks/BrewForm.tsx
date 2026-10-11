@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   createSubmission,
   getCatalog,
-  getPlayerMeta,
   getTextures,
   DrinksApiError,
   type DrinkCatalog,
   type DrinkIngredient,
   type DrinkTexture,
 } from "../../../lib/drinks/api";
+import { getPlayerMeta } from "../../../lib/skins/api";
 import {
   COMMON_EFFECTS,
   EXPECTED_PNG_SIZE,

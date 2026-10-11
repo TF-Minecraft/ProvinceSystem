@@ -231,6 +231,7 @@ export async function inspectCode(code: string): Promise<InspectCodeResult> {
 export type PlayerMeta = {
   name_colour_stops: number;
   allow_drink_texture: boolean;
+  allow_drink_message: boolean;
   max_alive_characters: number | null;
   wardrobe_skin_slots: number;
   max_3d_pair_bytes: number;
@@ -288,6 +289,7 @@ export async function getPlayerMeta(sessionToken: string): Promise<PlayerMeta> {
     name_colour_stops:
       Number.isFinite(stops) && stops >= 0 ? Math.floor(stops) : 0,
     allow_drink_texture: body.allow_drink_texture === true,
+    allow_drink_message: body.allow_drink_message === true,
     max_alive_characters: maxAlive,
     wardrobe_skin_slots:
       Number.isFinite(wardrobe) && wardrobe >= 1 ? Math.floor(wardrobe) : 1,
