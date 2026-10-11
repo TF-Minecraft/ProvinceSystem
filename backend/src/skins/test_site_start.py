@@ -38,7 +38,9 @@ def _entitlements(days: int, synced: bool = True) -> dict:
     }
 
 
-class SiteStartTest(unittest.TestCase):
+class _CodesDb(unittest.TestCase):
+    """A fresh skins database, with the start rules mocked."""
+
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
@@ -106,6 +108,8 @@ class SiteStartTest(unittest.TestCase):
             )
             conn.commit()
 
+
+class SiteStartTest(_CodesDb):
     def test_first_start_records_a_site_code_and_opens_a_skin_session(self) -> None:
         out = self.codes.start_site_session(PLAYER, "main", "skin")
         self.assertEqual(out["scope"], "skin")
@@ -217,7 +221,7 @@ class SiteStartTest(unittest.TestCase):
             self.codes.start_site_session(PLAYER, "main", "profile")
 
 
-class SignInCodeTest(SiteStartTest):
+class SignInCodeTest(_CodesDb):
     """Profile sign-in takes profile, skin and drink codes, each by its own rules."""
 
     def mint(self, scope: str, plaintext: str) -> int:
