@@ -748,6 +748,8 @@ export default function MapCanvas({
             style={{
               opacity: focusReady ? FOCUS_MUTED_OPACITY : DRILL_STACK_OVERLAY_OPACITY,
             }}
+            // Region borders must align with the unstretched hover shapes.
+            seeThrough
             onReady={() => setRegionTilesReadyKey(regionTilesKey)}
             onTileError={regionTiles.refresh}
           />
