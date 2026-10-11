@@ -205,41 +205,56 @@
   }
 }
 
-/* Themed scrollbars. The standard properties are for Firefox only: Chrome
-   ignores every ::-webkit-scrollbar rule below once they are set, and falls
-   back to its plain native bar with arrow buttons. Unlayered, so they hold
-   over utilities; a strip that hides its bar uses `[scrollbar-width:none]!`. */
-@supports not selector(::-webkit-scrollbar) {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--tfmc-mist) 45%, transparent)
-      color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+/* Themed scrollbars, for mouse and trackpad only. The standard properties are
+   for Firefox: Chrome ignores every ::-webkit-scrollbar rule below once they
+   are set, and falls back to its plain native bar with arrow buttons.
+   Unlayered, so they hold over utilities; a strip that hides its bar uses
+   `[scrollbar-width:none]!`. */
+@media (hover: hover) and (pointer: fine) {
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--tfmc-mist) 45%, transparent)
+        color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+    }
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--tfmc-mist) 40%, var(--tfmc-moss));
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--tfmc-accent) 55%, var(--tfmc-mist));
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* Touch screens: no page scrollbar. Inner scrollers keep the browser's own
+   fading bar. */
+@media (pointer: coarse) {
+  html {
+    scrollbar-width: none;
+  }
 
-*::-webkit-scrollbar-track {
-  background: color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--tfmc-mist) 40%, var(--tfmc-moss));
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--tfmc-accent) 55%, var(--tfmc-mist));
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-corner {
-  background: transparent;
+  html::-webkit-scrollbar {
+    display: none;
+  }
 }
