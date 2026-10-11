@@ -23,6 +23,7 @@ it("clicks an attached anchor, removes it and revokes the URL a minute later", (
   let clicked: HTMLAnchorElement | null = null;
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
     expect(this.isConnected).toBe(true);
+    // oxlint-disable-next-line typescript/no-this-alias -- captures the clicked anchor
     clicked = this;
   });
 

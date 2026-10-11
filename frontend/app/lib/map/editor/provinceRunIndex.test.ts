@@ -22,7 +22,6 @@ import {
   provinceAt,
   provinceAtPixel,
   provinceIdsInRunIndex,
-  provinceMapFromRuns,
   provincePixelCount,
   type ProvinceRunIndex,
 } from "./buildProvinceIndex";

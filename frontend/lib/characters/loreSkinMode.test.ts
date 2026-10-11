@@ -36,7 +36,7 @@ function item(
   return {
     ...base,
     ...overrides,
-    draft: { ...base.draft, ...(overrides.draft ?? {}) },
+    draft: { ...base.draft, ...overrides.draft },
     pickable_skins: overrides.pickable_skins ?? base.pickable_skins,
   };
 }

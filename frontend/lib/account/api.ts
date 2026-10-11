@@ -71,7 +71,7 @@ async function accountRequest<T>(path: string, init?: RequestInit, opts?: { allo
     headers: {
       Accept: "application/json",
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(init?.headers || {}),
+      ...init?.headers,
     },
   });
   const data = await parseJson(res);

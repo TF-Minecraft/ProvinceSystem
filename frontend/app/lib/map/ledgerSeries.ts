@@ -195,7 +195,7 @@ export function stackBreakdown(
   const baselines: Array<Array<number | null>> = [];
   const tops: Array<Array<number | null>> = [];
   for (let day = 0; day < dayCount; day++) {
-    const dayIsGap = keys.length === 0 || keys.every((key) => values[key]?.[day] == null);
+    const dayIsGap = keys.every((key) => values[key]?.[day] == null);
     if (dayIsGap) {
       baselines.push(keys.map(() => null));
       tops.push(keys.map(() => null));

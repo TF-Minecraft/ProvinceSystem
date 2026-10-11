@@ -264,8 +264,8 @@ describe("sub-rect restriction", () => {
     const rect = componentSubRect(grid, [2])!;
     const mask = buildComponentMask(grid, [2], rect);
     const dist = distanceTransform(mask, grid, rect);
-    expect(dist[0 * grid.gridWidth + 3]).toBe(0);
-    expect(dist[3 * grid.gridWidth + 0]).toBe(0);
+    expect(dist[3]).toBe(0);
+    expect(dist[3 * grid.gridWidth]).toBe(0);
   });
 
   it("does NOT seed clearance-0 on sub-rect borders interior to the grid", () => {

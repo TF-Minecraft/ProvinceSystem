@@ -6,6 +6,9 @@ import { convert } from "./convert-vehicle-bbmodels.mjs";
 
 it("exports a pet to its own asset folders and omits attachment locators", () => {
   const root = mkdtempSync(join(tmpdir(), "wiki-pet-preview-"));
+  if (dirname(resolve(root)) !== resolve(tmpdir()) || !root.includes("wiki-pet-preview-")) {
+    throw new Error("Refusing to remove a directory outside this test's temporary folder.");
+  }
   try {
     const texture = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7s0AAAAASUVORK5CYII=";
     writeFileSync(
@@ -39,9 +42,6 @@ it("exports a pet to its own asset folders and omits attachment locators", () =>
     expect(model.textures).toEqual({ 2: "companion-pets/pet/2.png" });
     expect(readFileSync(join(texturesDir, "pet", "2.png"))).toEqual(Buffer.from(texture, "base64"));
   } finally {
-    if (dirname(resolve(root)) !== resolve(tmpdir()) || !root.includes("wiki-pet-preview-")) {
-      throw new Error("Refusing to remove a directory outside this test's temporary folder.");
-    }
     rmSync(root, { recursive: true, force: true });
   }
 });

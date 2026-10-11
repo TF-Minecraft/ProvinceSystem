@@ -117,7 +117,7 @@ describe("review requests", () => {
 
   it("sends patch, feedback and sort request bodies", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
-    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => {
       if (String(_url).endsWith("/feedback") || String(_url).endsWith("/sort"))
         return new Response(JSON.stringify({ job }), { status: 202 });
       return new Response(JSON.stringify({ ...bullet, section: "fixed" }), { status: 200 });

@@ -604,7 +604,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         canEquip={!isDraft && modalSlot !== "masked"}
         defaultEquipOnSave={!isDraft && modalSlot !== "masked" && (!activeSlot || activeSlot === modalSlot)}
         canCreateMasked={modalSlot === "base"}
-        defaultCreateMasked={modalSlot === "base" && !Boolean(slotsById.get("masked")?.filled)}
+        defaultCreateMasked={modalSlot === "base" && !slotsById.get("masked")?.filled}
         defaultArmModel={
           isDraft && modalSlot
             ? (props.draftModels[modalSlot as keyof WardrobeDraftModels] ?? "default")

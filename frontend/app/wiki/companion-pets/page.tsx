@@ -95,10 +95,14 @@ export default function CompanionPetsPage() {
             </>,
             "Right-click your pet to give it food.",
           ],
-          ["Clean and groom it", <PetItem id="brush" />, "Right-click to groom your pet. You keep the brush."],
+          [
+            "Clean and groom it",
+            <PetItem key="item" id="brush" />,
+            "Right-click to groom your pet. You keep the brush.",
+          ],
           [
             "Treat a sick pet",
-            <PetItem id="medicine" />,
+            <PetItem key="item" id="medicine" />,
             <>
               A Physician crafts it at the <MedicineStation />. Right-click a sick or weakened pet to give it medicine.
             </>,
@@ -122,7 +126,7 @@ export default function CompanionPetsPage() {
           ],
           [
             "Make a shelter",
-            <PetItem id="house" />,
+            <PetItem key="item" id="house" />,
             <>
               Craft it at the <AnimalStation />, place it on the ground and right-click to open your shelter.
             </>,

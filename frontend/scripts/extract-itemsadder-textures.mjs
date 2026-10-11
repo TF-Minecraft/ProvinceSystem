@@ -415,7 +415,7 @@ function readModel(packRoot, ref, seen = new Set()) {
   const parent = typeof own.parent === "string" ? readModel(packRoot, own.parent, seen) : null;
   return {
     file,
-    textures: { ...(parent?.textures ?? {}), ...(isMap(own.textures) ? own.textures : {}) },
+    textures: { ...parent?.textures, ...(isMap(own.textures) ? own.textures : {}) },
   };
 }
 

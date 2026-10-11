@@ -10,6 +10,7 @@ const DISPLAY_ALLOWED_EXTRA = new Set([" ", ".", "-", "_", "'"]);
 /** Minecraft / legacy colour tokens. */
 const COLOUR_CODE_RE = /(?:§.|[&][0-9A-Fa-fk-orK-OR]|#[0-9A-Fa-f]{6})/;
 
+// oxlint-disable-next-line no-control-regex -- strips control characters on purpose
 const CONTROL_RE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/;
 
 function normalizeUserText(value: string, collapseWs: boolean): string {

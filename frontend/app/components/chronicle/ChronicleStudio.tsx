@@ -672,15 +672,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const wantTrade = needsTradeFile(toggles);
   const wantProvinceData = needsProvinceData(toggles);
   const paintsFill = paintsChronicleFill(toggles);
-  const dayWants = useMemo(
-    () => ({
-      nation: wantNation,
-      markers: wantMarkers,
-      trade: wantTrade,
-      provinceData: wantProvinceData,
-    }),
-    [wantNation, wantMarkers, wantTrade, wantProvinceData],
-  );
   // `|| wantNation` only so the nation file's arrival keeps pulling the grid
   // with it exactly as it always has. Nation names do not need the grid, but
   // making this the moment that stops being true is a change for its own sake.

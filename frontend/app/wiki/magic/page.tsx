@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Callout,
   CommandTable,
@@ -189,9 +190,9 @@ export default function MagicPage() {
       </ul>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Quality is decided while smithing, see{" "}
-        <a href="/wiki/advanced-crafting#quality" className="text-[var(--tfmc-accent)] underline underline-offset-2">
+        <Link href="/wiki/advanced-crafting#quality" className="text-[var(--tfmc-accent)] underline underline-offset-2">
           Advanced Crafting
-        </a>
+        </Link>
         .
       </p>
 

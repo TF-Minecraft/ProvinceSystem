@@ -26,7 +26,6 @@ import {
   inferArmModelFromTexture,
   loadSteveTexture,
   setSteveOuterLayerVisible,
-  type ArmModel,
   type SteveArmPose,
   type SteveMannequin,
 } from "../../../lib/skins/steveMannequin";
@@ -165,7 +164,7 @@ function stripPreviewFromScene(scene: THREE.Scene, content: ContentRefs): void {
   const toDispose = new Set<THREE.Object3D>();
   if (content.floatingRoot) toDispose.add(content.floatingRoot);
   if (content.steveRoot) toDispose.add(content.steveRoot);
-  for (const child of [...scene.children]) {
+  for (const child of scene.children) {
     if (isPreviewSceneRoot(child)) toDispose.add(child);
   }
   for (const obj of toDispose) {
@@ -398,7 +397,6 @@ export default function ModelPreview({
   const [frame, setFrame] = useState<FlatFrameId>("texture");
   const [shieldMode, setShieldMode] = useState<"idle" | "blocking">("idle");
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
-  const [armModel, setArmModel] = useState<ArmModel>("default");
   const [showOuterLayer, setShowOuterLayer] = useState(true);
   const [contentVersion, setContentVersion] = useState(0);
   showOuterLayerRef.current = showOuterLayer;
@@ -553,7 +551,6 @@ export default function ModelPreview({
           content.steveTexture = steveTex;
         }
         const detected = inferArmModelFromTexture(content.steveTexture);
-        setArmModel(detected);
         const steveRoot = createSteveMannequin(content.steveTexture, detected);
         if (isStale()) {
           disposeObject3D(steveRoot);
