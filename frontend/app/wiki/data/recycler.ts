@@ -36,7 +36,6 @@ export const recyclerCommands: WikiCommandSet = {
   system: "Recycler",
   href: "/wiki/recycler",
   commands: [],
-  excludedStaffCommands: ["/recycler reload"],
 };
 
 export const recyclerSection: WikiSection = {

@@ -58,17 +58,6 @@ export const armourShopCommands: WikiCommandSet = {
       description: "Opens the skin shop: pick Armour skins or Item skins, then a category, then a skin to apply.",
     },
   ],
-  excludedStaffCommands: [
-    "/armourshop reload",
-    "/armourshop token create …",
-    "/armourshop token delete <code>",
-    "/armourshop listtokens",
-    "/armourshop pack pull",
-    "/armourshop pack sync",
-    "/armourshop catalog sync",
-    "/armourshop submission delete <id>",
-    "/armourshop skin delete <id>",
-  ],
 };
 
 export const armourShopSection: WikiSection = {

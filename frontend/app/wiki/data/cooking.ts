@@ -9,7 +9,6 @@ export const cookingCommands: WikiCommandSet = {
   system: "Cooking",
   href: "/wiki/cooking",
   commands: [],
-  excludedStaffCommands: ["/cooking builditem <string>", "/cooking preview <target> ..."],
 };
 
 export const cookingSection: WikiSection = {

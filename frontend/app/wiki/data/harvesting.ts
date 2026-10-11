@@ -5,7 +5,6 @@ export const harvestingCommands: WikiCommandSet = {
   system: "FarmingUpgrade",
   href: "/wiki/harvesting",
   commands: [],
-  excludedStaffCommands: ["/farmingupgrade"],
 };
 
 export const harvestingSection: WikiSection = {

@@ -7,7 +7,6 @@ export type { CommandAccess, CommandRow } from "@/app/wiki/data";
 
 export interface CommandTableProps {
   commands: CommandRow[];
-  excludedStaffCommands?: string[];
   showAliases?: boolean;
   showNotes?: boolean;
   caption?: ReactNode;

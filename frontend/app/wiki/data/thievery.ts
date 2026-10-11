@@ -59,14 +59,6 @@ export const thieveryCommandSet: WikiCommandSet = {
   system: "Thievery",
   href: "/wiki/thievery",
   commands: thieveryCommands,
-  excludedStaffCommands: [
-    "/thievery reload",
-    "/thievery resetcooldowns <player|all>",
-    "/thievery setrisk <player|all> <0.0-1.0>",
-    "/thievery itemvalue",
-    "/thievery keychain",
-    "/thievery feedback",
-  ],
 };
 
 export const thieverySection: WikiSection = {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
-import { WikiItemText, WikiPage } from "@/app/components/wiki";
+import { WikiItemText, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { getMaterialBySlug, materialCatalog } from "../../data";
 
 export function generateStaticParams() {
@@ -35,9 +35,7 @@ export default async function MaterialDetailPage({
       intro={material.lore ? <em><WikiItemText text={material.lore} excludeHref={`/wiki/materials/${material.slug}`} /></em> : undefined}
     >
 
-      <h2 id="acquisition" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        How to acquire
-      </h2>
+      <WikiSectionHeading id="acquisition">How to acquire</WikiSectionHeading>
       {material.acquisition?.length ? (
         <div className="mt-4 space-y-4">
           {material.acquisition.map((source) => (
@@ -59,20 +57,15 @@ export default async function MaterialDetailPage({
       ) : null}
 
       {material.unpackingRecipes.length ? (
-        <section className="mt-8">
-          <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Block unpacking</h2>
-          <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-            Recover material from a storage block you already own.
-          </p>
+        <section>
+          <WikiSectionHeading intro="Recover material from a storage block you already own.">Block unpacking</WikiSectionHeading>
           <div className="mt-4 space-y-4">
             {material.unpackingRecipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
           </div>
         </section>
       ) : null}
 
-      <h2 id="used-in" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        What can be crafted from it
-      </h2>
+      <WikiSectionHeading id="used-in">What can be crafted from it</WikiSectionHeading>
       {material.usedIn.length ? (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {material.usedIn.map((r) => (

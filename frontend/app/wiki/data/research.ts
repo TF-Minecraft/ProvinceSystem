@@ -260,5 +260,5 @@ export const aspects = {
     ]
   ]
 };
-export const researchCommands: WikiCommandSet = { system: "Research", href: "/wiki/research", commands: [], excludedStaffCommands: ["/research reload"] };
+export const researchCommands: WikiCommandSet = { system: "Research", href: "/wiki/research", commands: [] };
 export const researchSection: WikiSection = { nav: { href: "/wiki/research", label: "Research", category: "magic", blurb: "Deduce hidden aspects at a lectern; paper recipes and project requirements." }, commands: researchCommands };

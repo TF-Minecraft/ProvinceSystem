@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
 import InstrumentKeyboard from "../../../components/wiki/InstrumentKeyboard";
-import { WikiPage } from "@/app/components/wiki";
+import { WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { getInstrumentBySlug, getInstrumentRecipe, instruments } from "../../data";
 
 export function generateStaticParams() {
@@ -44,16 +44,12 @@ export default async function InstrumentDetailPage({
       }
     >
 
-      <h2 id="keyboard" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        Try it
-      </h2>
+      <WikiSectionHeading id="keyboard">Try it</WikiSectionHeading>
       <div className="mt-4">
         <InstrumentKeyboard instrument={instrument} />
       </div>
 
-      <h2 id="crafting" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        How to craft
-      </h2>
+      <WikiSectionHeading id="crafting">How to craft</WikiSectionHeading>
       {recipe ? (
         <div className="mt-4 max-w-sm">
           <CraftingGrid recipe={recipe} />

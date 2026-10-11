@@ -190,7 +190,6 @@ export default function CharactersPage() {
       <CommandTable
         commands={charactersCommands.commands}
         showAliases={false}
-        excludedStaffCommands={charactersCommands.excludedStaffCommands}
       />
 
       <SeeAlso hrefs={["/wiki/classes", "/wiki/server-features", "/wiki/bird-mail"]} />

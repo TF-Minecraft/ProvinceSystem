@@ -119,17 +119,6 @@ export const factionsCommands: WikiCommandSet = {
     { command: "/mercenaries list", description: "Lists mercenary companies in chat, best reputation first." },
     { command: "/mercenaries hire <company>", description: "Checks whether you may sign a company here.", notes: "Faction leader in practice." },
   ],
-  excludedStaffCommands: [
-    "/faction dummify", "/faction dummyLeader", "/faction forcedelete", "/faction forcejoin",
-    "/faction forceleader", "/faction forcewithdraw", "/faction forceconstruct", "/faction forceregiment",
-    "/faction addprestigemodifier", "/faction addwealthmodifier", "/faction refresh", "/faction delbank",
-    "/faction startelection", "/faction endelection", "/faction getglobalwealth", "/faction queueallnations",
-    "/faction fullregen", "/faction reloadtitles", "/faction reloadconfigs", "/faction destroytitle",
-    "/faction granttitle", "/faction usurp", "/faction transfersubject", "/faction setrelation",
-    "/faction settreaty", "/faction setpower", "/faction setlaw", "/faction setstance", "/faction provincecap",
-    "/battle create|edit|delete|addside|addpoint|setlives|setspawn|setjail|...",
-    "/war admin (entire tree)", "/movement admin (entire tree)", "/company admin give|take",
-  ],
 };
 
 export const factionsSection: WikiSection = {

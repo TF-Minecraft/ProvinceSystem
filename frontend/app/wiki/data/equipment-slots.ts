@@ -7,7 +7,6 @@ export const equipmentSlotsCommands: WikiCommandSet = {
   system: "MMOInventory",
   href: "/wiki/equipment-slots",
   commands: [],
-  excludedStaffCommands: ["/mmoinventory (/rpginventory, /mmoinv, /rpginv): admin reload and inspect"],
 };
 
 export const equipmentSlotsSection: WikiSection = {

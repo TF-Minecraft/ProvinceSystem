@@ -29,5 +29,5 @@ export const furnitureRecipes = [
   {pieces:"Pedestal, Artifact Display",station:"Block Station",cost:"2 Cobblestone each",time:"5 s"},
   {pieces:"Lure",station:"Block Station",cost:"2 Oak Planks",time:"2 s"},
 ];
-export const furnitureCommands: WikiCommandSet = {system:"InteractibleFurniture",href:"/wiki/furniture",commands:[],excludedStaffCommands:["/if reload","/if nested attach|detach","/if debug <on|off>"]};
+export const furnitureCommands: WikiCommandSet = {system:"InteractibleFurniture",href:"/wiki/furniture",commands:[]};
 export const furnitureSection: WikiSection = {nav:{href:"/wiki/furniture",label:"Interactive Furniture",category:"professions",blurb:"Place, carry and fill cooking and display furniture."},commands:furnitureCommands};

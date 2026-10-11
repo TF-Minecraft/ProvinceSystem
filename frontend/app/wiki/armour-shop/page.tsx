@@ -81,7 +81,7 @@ export default function ArmourShopPage() {
       />
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable commands={armourShopCommands.commands} excludedStaffCommands={armourShopCommands.excludedStaffCommands} />
+      <CommandTable commands={armourShopCommands.commands} />
 
       <SeeAlso hrefs={["/wiki/advanced-crafting", "/wiki/economy", "/wiki/commands"]} />
     </WikiPage>

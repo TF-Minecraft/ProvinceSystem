@@ -30,7 +30,6 @@ export const detectorCommands: WikiCommandSet = {
   system: "Arcane Trace Detector",
   href: "/wiki/arcane-trace-detector",
   commands: [],
-  excludedStaffCommands: ["/geiger <locate|move|limits|resetlimits|droplist|reload>"],
 };
 
 export const detectorSection: WikiSection = {

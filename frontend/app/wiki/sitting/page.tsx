@@ -71,10 +71,7 @@ export default function SittingPage() {
       </p>
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable
-        commands={sittingCommands.commands}
-        excludedStaffCommands={sittingCommands.excludedStaffCommands}
-      />
+      <CommandTable commands={sittingCommands.commands} />
 
       <SeeAlso hrefs={["/wiki/characters", "/wiki/server-features"]} />
     </WikiPage>

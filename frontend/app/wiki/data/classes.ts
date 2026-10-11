@@ -220,7 +220,6 @@ export const classesCommands: WikiCommandSet = {
       notes: "Upgrading a skill costs 1 skill point; reallocating all spent points costs 1 skill reallocation point.",
     },
   ],
-  excludedStaffCommands: ["/mmocore (/rpg): full admin tree"],
 };
 
 export const classesSection: WikiSection = {
