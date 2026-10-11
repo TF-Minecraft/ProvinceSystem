@@ -62,6 +62,21 @@ def test_server_ping_is_cached(app):
     assert diagnostic_routes.ping.call_count == 1
 
 
+def test_server_route_skips_the_pack_and_the_ip(app, monkeypatch):
+    current = mock.Mock()
+    monkeypatch.setattr(diagnostic_routes.pack_mirror, "current", current)
+    res = client(app).get("/diagnostic/server")
+    assert res.headers["cache-control"] == "no-store"
+    assert res.json() == {
+        "address": "play.example:25565",
+        "online": True,
+        "players_online": 3,
+        "players_max": 100,
+        "game_version": diagnostic_routes.GAME_VERSION,
+    }
+    current.assert_not_called()
+
+
 def test_pack_download_is_cacheable_by_hash(app, pack_source):
     c = client(app)
     url = c.get("/diagnostic/status").json()["pack"]["url"]

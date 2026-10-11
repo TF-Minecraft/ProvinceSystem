@@ -103,6 +103,20 @@ def status(request: Request, response: Response):
     }
 
 
+@diagnostic_router.get("/server")
+def server(response: Response):
+    """Just the server ping, for the home page; it skips the pack check that /status runs."""
+    response.headers["Cache-Control"] = "no-store"
+    status = _server_status()
+    return {
+        "address": status.address,
+        "online": status.online,
+        "players_online": status.players_online,
+        "players_max": status.players_max,
+        "game_version": GAME_VERSION,
+    }
+
+
 @diagnostic_router.get("/speed")
 def speed(request: Request):
     global _speed_data
