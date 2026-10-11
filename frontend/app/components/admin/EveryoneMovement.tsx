@@ -310,6 +310,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
               highlight={highlight}
               pin={pin}
               fitKey={load.kind === "ready" && load.key === viewKey ? viewKey : null}
+              wholeMap
               onInspect={setMoment}
               className={mapFrameClass}
             />

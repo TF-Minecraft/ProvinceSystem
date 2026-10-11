@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import MovementMap, { type MovementTrail } from "./MovementMap";
 
-const view = vi.hoisted(() => ({ scale: 1, focus: vi.fn() }));
+const view = vi.hoisted(() => ({ scale: 1, focus: vi.fn(), reset: vi.fn() }));
 
 vi.mock("../map/MapViewport", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -22,7 +22,7 @@ vi.mock("../../hooks/useMapViewport", () => ({
     translateY: 0,
     viewportSize: { w: 800, h: 600 },
     focusMapRect: view.focus,
-    resetViewport: () => {},
+    resetViewport: view.reset,
     zoomBy: () => {},
     consumeDragClick: () => false,
   }),
@@ -40,7 +40,7 @@ const trails: MovementTrail[] = Array.from({ length: 20 }, (_, i) => ({
   ],
 }));
 
-const map = (fitKey = "now") => (
+const map = (fitKey = "now", wholeMap = false) => (
   <MovementMap
     mapId="main"
     mapWorld="TFMC_Map"
@@ -50,6 +50,7 @@ const map = (fitKey = "now") => (
     cursor={100}
     hold={150}
     fitKey={fitKey}
+    wholeMap={wholeMap}
     latest
   />
 );
@@ -88,4 +89,16 @@ it("jumps to the first framing and animates later ones", () => {
   rerender(map("second"));
   expect(view.focus).toHaveBeenCalledTimes(2);
   expect(view.focus.mock.calls[1][3]).toEqual({ animated: true });
+});
+
+it("shows the whole map once and keeps the camera when who is shown changes", () => {
+  view.focus.mockClear();
+  view.reset.mockClear();
+  const { rerender } = render(map("first", true));
+  expect(view.focus).not.toHaveBeenCalled();
+  expect(view.reset).toHaveBeenCalledTimes(1);
+  expect(view.reset.mock.calls[0][0]).toEqual({ animated: false });
+  rerender(map("second", true));
+  expect(view.focus).not.toHaveBeenCalled();
+  expect(view.reset).toHaveBeenCalledTimes(1);
 });

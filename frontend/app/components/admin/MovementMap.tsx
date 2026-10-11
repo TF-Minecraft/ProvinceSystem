@@ -70,6 +70,11 @@ type Props = {
    * not when the same view refreshes. Pass null until its data has loaded.
    */
   fitKey: string | null;
+  /**
+   * Open on the whole map (or the pin) rather than the trails, and keep the
+   * camera when the view changes, so who is shown never moves it.
+   */
+  wholeMap?: boolean;
   /** A recorded dot was clicked: inspect that moment. */
   onInspect?: (time: number) => void;
   /**
@@ -228,6 +233,7 @@ export default function MovementMap({
   endpoints = false,
   pin = null,
   fitKey,
+  wholeMap = false,
   onInspect,
   latest = false,
   className,
@@ -289,7 +295,7 @@ export default function MovementMap({
     return { x: x - padW / 2, y: y - padH / 2, w: w + padW, h: h + padH };
   }, [shown, mapWorld]);
 
-  const fitTrail = () => (bounds ? focusMapRect(bounds, FOCUS_INSET) : resetViewport({ animated: true }));
+  const fitTrail = () => (bounds && !wholeMap ? focusMapRect(bounds, FOCUS_INSET) : resetViewport({ animated: true }));
   const focusPoint = (x: number, z: number, animated = true) =>
     focusMapRect({ x: x - MIN_FRAME / 2, y: z - MIN_FRAME / 2, w: MIN_FRAME, h: MIN_FRAME }, FOCUS_INSET, undefined, {
       animated,
@@ -301,12 +307,16 @@ export default function MovementMap({
   const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
     if (!ready || fitKey === null || fittedRef.current === fitKey) return;
+    if (wholeMap && fittedRef.current !== null) {
+      fittedRef.current = fitKey;
+      return;
+    }
     // The first framing jumps there. Animated, it zoomed in several times over
     // from the whole map, and the sharp tiles that loaded mid-zoom stayed
     // blurry until the next zoom.
     const animated = fittedRef.current !== null;
     fittedRef.current = fitKey;
-    if (bounds) focusMapRect(bounds, FOCUS_INSET, undefined, { animated });
+    if (bounds && !wholeMap) focusMapRect(bounds, FOCUS_INSET, undefined, { animated });
     else if (pin) focusPoint(pin.x, pin.z, animated);
     else resetViewport({ animated });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -387,7 +397,7 @@ export default function MovementMap({
   const controls = [
     { label: "+", title: "Zoom in", run: () => zoomBy(1.6) },
     { label: "−", title: "Zoom out", run: () => zoomBy(1 / 1.6) },
-    { label: "⤢", title: latest ? "Fit everyone" : "Fit the trail", run: fitTrail },
+    { label: "⤢", title: wholeMap ? "Show the whole map" : "Fit the trail", run: fitTrail },
     ...(single && single.world === mapWorld
       ? [{ label: "◎", title: "Go to the inspected position", run: () => focusPoint(single.x, single.z) }]
       : []),
