@@ -531,9 +531,12 @@ def replace_roster(
         )
 
     with connect() as conn:
+        # Upsert so website-owned columns (wardrobe_active_slot) survive a push.
+        placeholders = ", ".join("?" for _ in seen)
         conn.execute(
-            "DELETE FROM character_roster WHERE player_uuid = ? AND realm_id = ?",
-            (uuid, realm),
+            "DELETE FROM character_roster WHERE player_uuid = ? AND realm_id = ?"
+            + (f" AND character_id NOT IN ({placeholders})" if seen else ""),
+            (uuid, realm, *seen),
         )
         conn.executemany(
             """
@@ -542,6 +545,16 @@ def replace_roster(
                 created_at, kit_status, kit_statuses_json, sheet_json, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(player_uuid, realm_id, character_id) DO UPDATE SET
+                name = excluded.name,
+                status = excluded.status,
+                race = excluded.race,
+                class = excluded.class,
+                created_at = excluded.created_at,
+                kit_status = excluded.kit_status,
+                kit_statuses_json = excluded.kit_statuses_json,
+                sheet_json = excluded.sheet_json,
+                updated_at = excluded.updated_at
             """,
             normalized,
         )
