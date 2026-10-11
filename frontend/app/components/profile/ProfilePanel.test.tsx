@@ -567,10 +567,19 @@ it("reloads characters when the page comes back into view", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe());
   render(<ProfilePanel />);
-  await screen.findByRole("tab", { name: "Characters" });
+  expect(await screen.findByText("Alive characters 0/5")).toBeTruthy();
   const before = vi.mocked(getProfileDashboard).mock.calls.length;
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
   fireEvent(document, new Event("visibilitychange"));
-  await vi.waitFor(() => expect(vi.mocked(getProfileDashboard).mock.calls.length).toBe(before + 1));
+  expect(getProfileDashboard).toHaveBeenCalledTimes(before);
+  vi.mocked(getProfileDashboard).mockResolvedValue(
+    wardrobe({ characters: [{ id: "c1", status: "ALIVE", name: "Brin" }] as unknown as ProfileDashboard["characters"], max_alive_characters: 6 })
+  );
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+  fireEvent(document, new Event("visibilitychange"));
+  expect(await screen.findByText("Alive characters 1/6")).toBeTruthy();
+  expect(screen.getByText("Brin")).toBeTruthy();
+  vi.restoreAllMocks();
 });
 
 it("opens on the tab in the address and keeps the address in step with the tabs", async () => {
