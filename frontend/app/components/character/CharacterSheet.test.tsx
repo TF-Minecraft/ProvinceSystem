@@ -16,6 +16,7 @@ afterEach(() => {
 });
 
 const CATALOG = {
+  stages: [{ id: "attributes", type: "attributes", key: "attributes", points: 12, max_rank: 4 }],
   attribute_point_buy: {
     pool: 12,
     max_rank: 4,
@@ -63,7 +64,7 @@ it("leads with who the character is and where to dress and equip them", () => {
   expect(characterFigure).toHaveBeenCalledWith("t", "c1");
 });
 
-it("lists attributes in the catalogue's order with their rank out of the maximum", () => {
+it("lists attributes in the catalogue's order out of their highest possible value", () => {
   render(<CharacterSheet character={VAELTHIR} catalog={CATALOG} />);
   const tiles = within(screen.getByRole("heading", { name: "Attributes" }).parentElement!).getAllByRole("listitem");
   expect(tiles.map((t) => t.textContent)).toEqual([
@@ -74,6 +75,11 @@ it("lists attributes in the catalogue's order with their rank out of the maximum
     "Wisdom3 of 4",
     "Charisma0 of 4",
   ]);
+  // Five segments split the ceiling of 4, so strength 1 fills one and a quarter.
+  const fills = (i: number) =>
+    [...tiles[i].querySelectorAll<HTMLElement>("[aria-hidden] > span > span")].map((s) => s.style.width);
+  expect(fills(0)).toEqual(["100%", "25%", "0%", "0%", "0%"]);
+  expect(fills(1)).toEqual(["100%", "100%", "100%", "100%", "100%"]);
 });
 
 it("signs profession EXP and sets timed traits apart", () => {

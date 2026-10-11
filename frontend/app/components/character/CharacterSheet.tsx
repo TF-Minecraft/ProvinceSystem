@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, type ReactNode, type Ref } from "react";
+import { useId, useMemo, useState, type ReactNode, type Ref } from "react";
 import type {
   CharacterListItem,
   CharacterSheetTrait,
   CreationCatalog,
   ExperienceModifierDto,
 } from "../../../lib/characters/api";
+import { attributeCeilings } from "../../../lib/characters/attributeCeiling";
 import { displayClass, displayRace, traitSelectionGroupLabel } from "../../../lib/characters/displayNames";
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
@@ -25,6 +26,9 @@ type Props = {
   onCancelPending?: () => void | Promise<void>;
   cancelling?: boolean;
 };
+
+/** Each attribute bar splits its ceiling into this many segments. */
+const ATTRIBUTE_SEGMENTS = 5;
 
 const ATTRIBUTE_ORDER = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
 
@@ -178,7 +182,7 @@ export default function CharacterSheet({
   const kit = starterKitLabel(character.kit_status);
 
   const attrs = attributeRows(character.attributes, catalog);
-  const maxRank = catalog?.attribute_point_buy?.max_rank ?? 0;
+  const ceilings = useMemo(() => attributeCeilings(catalog), [catalog]);
   const xpMods: ExperienceModifierDto[] = Array.isArray(character.experience_modifiers)
     ? character.experience_modifiers.filter(
         (m) => m && text(m.profession || m.alias) && Number.isFinite(Number(m.amount)),
@@ -288,27 +292,37 @@ export default function CharacterSheet({
           <section>
             <h3 className={sectionHeadingClass}>Attributes</h3>
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {attrs.map(({ key, value }) => (
-                <li key={key} className={`${panelClass} flex h-[72px] flex-col justify-between px-3 py-2.5`}>
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[13px] text-[var(--tfmc-mist)]">{displayAttrName(key)}</span>
-                    <span className="font-[family-name:var(--font-fraunces)] text-[22px] leading-none tabular-nums text-[var(--tfmc-cream)]">
-                      {value}
-                      {maxRank > 0 ? <span className="sr-only"> of {maxRank}</span> : null}
+              {attrs.map(({ key, value }) => {
+                const ceiling = ceilings?.[key] ?? 0;
+                return (
+                  <li key={key} className={`${panelClass} flex h-[72px] flex-col justify-between px-3 py-2.5`}>
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-[13px] text-[var(--tfmc-mist)]">{displayAttrName(key)}</span>
+                      <span className="font-[family-name:var(--font-fraunces)] text-[22px] leading-none tabular-nums text-[var(--tfmc-cream)]">
+                        {value}
+                        {ceiling > 0 ? <span className="sr-only"> of {ceiling}</span> : null}
+                      </span>
                     </span>
-                  </span>
-                  {maxRank > 0 ? (
-                    <span aria-hidden className="flex gap-1">
-                      {Array.from({ length: maxRank }, (_, i) => (
-                        <span
-                          key={i}
-                          className={`h-[5px] flex-1 rounded-full ${i < value ? "bg-[var(--tfmc-accent)]" : "bg-[color-mix(in_srgb,var(--tfmc-cream)_13%,transparent)]"}`}
-                        />
-                      ))}
-                    </span>
-                  ) : null}
-                </li>
-              ))}
+                    {ceiling > 0 ? (
+                      <span aria-hidden className="flex gap-1">
+                        {Array.from({ length: ATTRIBUTE_SEGMENTS }, (_, i) => (
+                          <span
+                            key={i}
+                            className="h-[5px] flex-1 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_13%,transparent)]"
+                          >
+                            <span
+                              className="block h-full bg-[var(--tfmc-accent)]"
+                              style={{
+                                width: `${Math.min(1, Math.max(0, (value * ATTRIBUTE_SEGMENTS - i * ceiling) / ceiling)) * 100}%`,
+                              }}
+                            />
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}
