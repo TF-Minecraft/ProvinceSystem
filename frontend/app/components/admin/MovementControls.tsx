@@ -500,13 +500,9 @@ export function Timeline({
       >
         {hatchEnd !== null ? (
           <div
-            className="absolute inset-y-0 left-0 rounded-l-sm"
+            className="absolute inset-y-0 left-0 rounded-l-sm bg-[repeating-linear-gradient(135deg,rgba(232,228,217,0.16)_0_4px,transparent_4px_9px)]"
             title={unknownLabel}
-            style={{
-              width: pct(hatchEnd),
-              background:
-                "repeating-linear-gradient(135deg, rgba(232,228,217,0.16) 0 4px, transparent 4px 9px)",
-            }}
+            style={{ width: pct(hatchEnd) }}
           />
         ) : null}
         {minor.map((t) => (
@@ -563,8 +559,7 @@ export function Timeline({
         {hatchEnd !== null ? (
           <span className="flex items-center gap-1.5">
             <span
-              className="inline-block h-2 w-4 rounded-sm"
-              style={{ background: "repeating-linear-gradient(135deg, rgba(232,228,217,0.4) 0 2px, transparent 2px 4px)" }}
+              className="inline-block h-2 w-4 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(232,228,217,0.4)_0_2px,transparent_2px_4px)]"
             />
             {unknownLabel}
           </span>

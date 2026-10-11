@@ -51,8 +51,7 @@ function Slot({ name, qty, texture, model, sourceId, isOutput = false }: { name?
       ): null}
       {name && qty && qty > 1 ? (
         <span
-          className="absolute bottom-0 right-0.5 text-[10px] font-semibold text-[var(--tfmc-cream)]"
-          style={{ textShadow: "1px 1px 0 #000" }}
+          className="absolute bottom-0 right-0.5 text-[10px] font-semibold text-[var(--tfmc-cream)] [text-shadow:1px_1px_0_#000]"
         >
           {qty}
         </span>

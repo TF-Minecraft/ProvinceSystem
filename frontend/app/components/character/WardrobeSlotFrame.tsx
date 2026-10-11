@@ -54,7 +54,7 @@ export default function WardrobeSlotFrame({
   return (
     <div
       className={`flex w-[7.5rem] flex-col gap-2 sm:w-36 ${
-        buzz ? "char-option-shake" : ""
+        buzz ? "animate-char-option-shake" : ""
       }`}
     >
       <button

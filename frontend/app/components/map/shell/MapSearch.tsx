@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { searchMap, type MapSearchEntry } from "@/app/lib/map/mapSearch";
 
 import { CloseIcon, PinIcon, SearchIcon } from "./MapIcons";
+import { mapFrameClass } from "../ui";
 
 type MapSearchProps = {
   entries: MapSearchEntry[];
@@ -125,7 +126,7 @@ export default function MapSearch({ entries, placeholder, onSelect }: MapSearchP
         <ul
           id={listId}
           role="listbox"
-          className="map-frame absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto p-1"
+          className={`${mapFrameClass} absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto p-1`}
         >
           {results.length === 0 ? (
             <li className="px-3 py-2 text-sm text-[var(--tfmc-stone)]">

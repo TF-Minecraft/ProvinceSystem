@@ -97,7 +97,7 @@ export default function DevLandingPage({
       <HubAtmosphere />
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
-        <h1 className="hub-rise">
+        <h1 className="animate-hub-rise">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-512.webp"
@@ -107,10 +107,10 @@ export default function DevLandingPage({
             className="block h-40 w-40 sm:h-52 sm:w-52"
           />
         </h1>
-        <p className="hub-rise-delay mt-4 text-lg text-[var(--tfmc-mist)] sm:text-xl">
+        <p className="animate-hub-rise-delay mt-4 text-lg text-[var(--tfmc-mist)] sm:text-xl">
           We are in development
         </p>
-        <p className="hub-fade-delay mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)] sm:text-3xl">
+        <p className="animate-hub-fade-delay mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)] sm:text-3xl">
           Season 5 Coming Soon
         </p>
 
@@ -118,12 +118,12 @@ export default function DevLandingPage({
           href={SITE_DISCORD_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="hub-fade-delay mt-8 inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
+          className="animate-hub-fade-delay mt-8 inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
         >
           Join our Discord
         </a>
 
-        <div className="hub-fade-delay mt-10 w-full border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-8">
+        <div className="animate-hub-fade-delay mt-10 w-full border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-8">
           <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]">
             Staff access
           </p>

@@ -29,6 +29,7 @@ import {
 } from "./layerTiles";
 import { LayersIcon, MAP_MODE_ICONS } from "./MapIcons";
 import SheetCloseButton from "./SheetCloseButton";
+import { mapFrameClass, mapRoundControlClass } from "../ui";
 
 export type MapLayerToggle = {
   id: string;
@@ -172,7 +173,7 @@ export default function MapLayersMenu(props: MapLayersMenuProps) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className="map-control h-10 w-10 rounded-full shadow-[0_4px_14px_rgb(0_0_0/0.35)]"
+        className={`${mapRoundControlClass} h-10 w-10 shadow-[0_4px_14px_rgb(0_0_0/0.35)]`}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Layers"
@@ -255,7 +256,7 @@ function DesktopLayers({
           <div
             role="group"
             aria-label="Map type and details"
-            className="map-frame flex flex-wrap items-start gap-y-1 px-1 py-1.5"
+            className={`relative ${mapFrameClass} flex flex-wrap items-start gap-y-1 px-1 py-1.5`}
           >
             {mapModeOptions().map((option) => {
               const active = option.value === mapType;
@@ -370,7 +371,7 @@ function LayersPanel({
       ref={sheetRef}
       role="dialog"
       aria-label="Map layers"
-      className="map-frame map-layers-enter pointer-events-auto fixed inset-x-0 bottom-0 z-40 max-md:bg-[var(--tfmc-forest-deep)] max-h-[78dvh] overflow-y-auto overscroll-none rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-full md:left-0 md:mb-3 md:max-h-[calc(100dvh-var(--tfmc-header-h)-8.5rem)] md:w-[24rem] md:rounded-[10px] md:pb-2"
+      className={`${mapFrameClass} pointer-events-auto motion-safe:animate-map-sheet-in motion-safe:md:animate-map-popover-in fixed inset-x-0 bottom-0 z-40 max-md:bg-[var(--tfmc-forest-deep)] max-h-[78dvh] overflow-y-auto overscroll-none rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-full md:left-0 md:mb-3 md:max-h-[calc(100dvh-var(--tfmc-header-h)-8.5rem)] md:w-[24rem] md:rounded-[10px] md:pb-2`}
     >
       {/* Pinned, so the close button stays in reach however far the sheet
           scrolls, as on the details sheet. The upward shadow seals the

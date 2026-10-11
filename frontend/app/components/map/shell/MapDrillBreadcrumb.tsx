@@ -4,6 +4,7 @@ import { cleanRegionName } from "@/app/lib/mapLabels";
 
 import type { DrillLayer } from "../drillUtils";
 import { ChevronIcon, CloseIcon } from "./MapIcons";
+import { mapFrameClass, mapControlClass } from "../ui";
 
 type MapDrillBreadcrumbProps = {
   rootLabel: string;
@@ -28,7 +29,7 @@ export default function MapDrillBreadcrumb({
   return (
     <nav
       aria-label="Open subject layers"
-      className="map-frame pointer-events-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto py-1 pl-2 pr-1 text-sm [scrollbar-width:none]"
+      className={`relative ${mapFrameClass} pointer-events-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto py-1 pl-2 pr-1 text-sm [scrollbar-width:none]`}
     >
       <button
         type="button"
@@ -67,7 +68,7 @@ export default function MapDrillBreadcrumb({
         onClick={onReset}
         aria-label="Close all subject layers"
         title="Back to the whole map"
-        className="map-control ml-1 h-7 w-7 shrink-0"
+        className={`${mapControlClass} ml-1 h-7 w-7 shrink-0`}
       >
         <CloseIcon size={14} />
       </button>

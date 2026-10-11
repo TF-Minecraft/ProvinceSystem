@@ -191,7 +191,7 @@ function onDevicePixel(value: number): number {
 
 /**
  * Tell the tile layers how far the content is scaled past its resting zoom
- * (see `.map-tile` in globals.css), or, with null, that it is not.
+ * (see `OPAQUE_TILE_CLASS` in TileLayer), or, with null, that it is not.
  */
 function markScaling(content: HTMLElement, scale: number | null): void {
   if (scale === null) {

@@ -3,6 +3,7 @@
 import { MAP_ZOOM_STEP } from "@/app/lib/mapGestures";
 
 import { FitIcon, MinusIcon, PlusIcon } from "./MapIcons";
+import { mapFrameClass, mapControlFaceClass } from "../ui";
 
 type MapZoomControlsProps = {
   onZoom: (factor: number) => void;
@@ -11,9 +12,9 @@ type MapZoomControlsProps = {
 
 /** Google Maps' zoom stack: in, out, and back to the whole map. */
 export default function MapZoomControls({ onZoom, onReset }: MapZoomControlsProps) {
-  const buttonClass = "map-control h-10 w-10 rounded-none border-0 shadow-none";
+  const buttonClass = `${mapControlFaceClass} h-10 w-10 shadow-none`;
   return (
-    <div className="map-frame flex flex-col overflow-hidden p-0" role="group" aria-label="Zoom">
+    <div className={`relative ${mapFrameClass} flex flex-col overflow-hidden p-0`} role="group" aria-label="Zoom">
       <button
         type="button"
         className={`${buttonClass} rounded-t-[9px]`}

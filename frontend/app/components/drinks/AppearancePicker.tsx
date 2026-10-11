@@ -86,7 +86,7 @@ export default function AppearancePicker({
               aria-disabled={opt.locked || undefined}
               onClick={() => onPick(opt)}
               className={`group relative overflow-hidden rounded-sm border px-3.5 py-3 text-left transition duration-200 ease-out cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] ${
-                buzzing ? "char-option-shake" : ""
+                buzzing ? "animate-char-option-shake" : ""
               } ${
                 buzzing
                   ? "border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_55%,var(--tfmc-forest))]"

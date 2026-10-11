@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import SheetCloseButton from "./SheetCloseButton";
+import { mapFrameHeaderClass } from "../ui";
 
 type PanelHeaderProps = {
   /** Banner, colour swatch or marker, left of the title. */
@@ -103,7 +104,7 @@ export default function PanelHeader({
         </div>
       </div>
       <header
-        className={`map-frame-header -mx-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-1 md:pt-4 ${
+        className={`${mapFrameHeaderClass} -mx-4 mb-4 flex gap-4 rounded-t-[9px] px-4 pb-4 pt-1 md:pt-4 ${
           centred ? "items-center" : ""
         }`}
       >

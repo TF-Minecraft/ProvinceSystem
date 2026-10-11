@@ -52,7 +52,7 @@ function Row({
   );
   if (linkable && item.id) {
     return (
-      <li className="char-row border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] last:border-b-0">
+      <li className="animate-char-row border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] last:border-b-0">
         <Link
           href={`/character/${encodeURIComponent(item.id)}`}
           className="flex flex-col gap-1 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
@@ -63,7 +63,7 @@ function Row({
     );
   }
   return (
-    <li className="char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+    <li className="animate-char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
       {body}
     </li>
   );
@@ -147,7 +147,7 @@ export default function CharacterList({
     "Not available for your rank yet.";
 
   return (
-    <div className="char-rise mt-6">
+    <div className="animate-char-rise mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
           Alive characters {aliveCount}/{maxSlots}

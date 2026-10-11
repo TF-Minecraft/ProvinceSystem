@@ -51,6 +51,7 @@ import {
   type ChronicleToggleKey,
   type ChronicleToggles,
 } from "./chronicleLayers";
+import { mapFrameClass, mapRoundControlClass } from "../map/ui";
 
 /**
  * The timelapse studio's panels, in the live map's look. They own no state:
@@ -61,7 +62,7 @@ import {
  */
 
 /** A card over the map, as the live map's panels are. */
-export const chroniclePanelClass = "map-frame";
+export const chroniclePanelClass = `relative ${mapFrameClass}`;
 
 export const primaryButtonClass =
   "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--tfmc-accent)] px-4 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)] disabled:cursor-not-allowed disabled:bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] disabled:text-[var(--tfmc-stone)] disabled:hover:brightness-100";
@@ -155,12 +156,12 @@ export function ChroniclePlaque({
   liveHref: string;
 }) {
   return (
-    <div className="map-frame flex items-center gap-2.5 p-2 md:gap-3 md:p-3">
+    <div className={`relative ${mapFrameClass} flex items-center gap-2.5 p-2 md:gap-3 md:p-3`}>
       <Link
         href={liveHref}
         aria-label="Back to the live map"
         title="Back to the live map"
-        className="map-control h-10 w-10 shrink-0 rounded-full p-0"
+        className={`${mapRoundControlClass} h-10 w-10 shrink-0 p-0`}
       >
         <BackIcon size={18} />
       </Link>
@@ -691,6 +692,16 @@ function nextSpeed(speed: number): number {
 const transportButtonClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--tfmc-stone)] transition hover:enabled:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] hover:enabled:text-[var(--tfmc-cream)] focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)] disabled:opacity-35";
 
+/** The scrubber: a thin track filled to the play head (`--progress`), and a round thumb, larger under a finger. */
+const scrubberClass = [
+  "h-7 cursor-pointer appearance-none bg-transparent [--chronicle-thumb:16px] pointer-coarse:[--chronicle-thumb:22px]",
+  "focus-visible:rounded-[999px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)]",
+  "[&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-[999px] [&::-webkit-slider-runnable-track]:bg-[linear-gradient(to_right,var(--tfmc-accent)_var(--progress,0%),color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)_var(--progress,0%))]",
+  "[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-[999px] [&::-moz-range-track]:bg-[linear-gradient(to_right,var(--tfmc-accent)_var(--progress,0%),color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)_var(--progress,0%))]",
+  "[&::-webkit-slider-thumb]:mt-[calc((4px_-_var(--chronicle-thumb))_/_2)] [&::-webkit-slider-thumb]:size-[var(--chronicle-thumb)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-[50%] [&::-webkit-slider-thumb]:bg-[var(--tfmc-cream)] [&::-webkit-slider-thumb]:shadow-[0_1px_5px_rgb(0_0_0/0.5)]",
+  "[&::-moz-range-thumb]:size-[var(--chronicle-thumb)] [&::-moz-range-thumb]:rounded-[50%] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--tfmc-cream)] [&::-moz-range-thumb]:shadow-[0_1px_5px_rgb(0_0_0/0.5)]",
+].join(" ");
+
 export type ChroniclePlayerProps = {
   days: string[];
   activeIndex: number;
@@ -776,7 +787,7 @@ export function ChroniclePlayer({
       </button>
       <input
         type="range"
-        className="chronicle-scrubber min-w-0 flex-1"
+        className={`${scrubberClass} min-w-0 flex-1`}
         style={{ "--progress": `${progress}%` } as CSSProperties}
         min={0}
         max={max}
@@ -839,7 +850,7 @@ export function ChroniclePlayer({
     );
   }
   return (
-    <div className="map-frame flex items-center gap-3 py-2 pl-2 pr-3">
+    <div className={`relative ${mapFrameClass} flex items-center gap-3 py-2 pl-2 pr-3`}>
       {play}
       <div className="w-32 shrink-0">{dateBlock}</div>
       {scrubber}

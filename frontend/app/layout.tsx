@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${fraunces.variable} ${sourceSans.variable} min-h-dvh antialiased`}
+        className={`${fraunces.variable} ${sourceSans.variable} min-h-dvh bg-[var(--background)] font-[family-name:var(--font-source-sans),system-ui,sans-serif] text-[var(--foreground)] antialiased`}
       >
         <SiteDevGate>{children}</SiteDevGate>
       </body>

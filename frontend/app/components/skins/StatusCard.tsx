@@ -120,8 +120,7 @@ export default function StatusCard({ row, sessionToken }: Props) {
           <img
             src={sheetUrl}
             alt={`Review sheet for ${row.display_name}`}
-            className="max-w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]"
-            style={{ imageRendering: "pixelated" }}
+            className="max-w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] [image-rendering:pixelated]"
           />
         ) : null}
       </div>

@@ -176,7 +176,7 @@ export default function CharacterCreatePage() {
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-8 sm:py-12">
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-3">
-          <h1 className="char-rise font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
+          <h1 className="animate-char-rise font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
             Create
           </h1>
           {uiDev ? (

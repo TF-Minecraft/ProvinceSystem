@@ -730,7 +730,7 @@ export default function MapCanvas({
     >
       {cursorTooltip?.text && !viewport.isPanning && (
         <div
-          className="map-tooltip pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1.5rem))] px-3 py-1.5"
+          className="pointer-events-none fixed rounded-[6px] border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_96%,transparent)] shadow-[0_4px_14px_rgb(0_0_0/0.4)] z-50 max-w-[min(20rem,calc(100vw-1.5rem))] px-3 py-1.5"
           style={tooltipPosition(cursorTooltip.x, cursorTooltip.y)}
         >
           <p className="whitespace-pre-line font-[family-name:var(--font-fraunces)] text-sm text-[var(--tfmc-cream)]">
