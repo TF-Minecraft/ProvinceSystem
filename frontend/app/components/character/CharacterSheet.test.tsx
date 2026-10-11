@@ -140,3 +140,39 @@ it("opens a long background on an excerpt and shows it whole on request", () => 
   expect(more.textContent).toBe("Show less");
   expect(more.getAttribute("aria-expanded")).toBe("true");
 });
+
+it("shows the creation choices behind the background as origins and trait tags", () => {
+  const catalog = {
+    ...CATALOG,
+    stages: [{ key: "gift" }, { key: "personality" }, { key: "evil" }],
+    races: [{ id: "elf", name: "Elf" }],
+    traits: [
+      {
+        id: "beyond",
+        name: "Outsider",
+        key: "homeland",
+        description: ["Hails from far away,", "past the Great Main."],
+      },
+      {
+        id: "dex",
+        name: "Gift of Dexterity",
+        key: "gift",
+        description: ["Gifted with Dexterity."],
+      },
+    ],
+  } as unknown as CreationCatalog;
+  const background = "Gifted with Dexterity.\nHails from far away,\npast the Great Main.";
+  render(<CharacterSheet character={{ ...VAELTHIR, background }} catalog={catalog} />);
+  const homeland = screen.getByText("Homeland").parentElement!;
+  expect(within(homeland).getByText("Outsider")).toBeTruthy();
+  expect(within(homeland).getByText("Hails from far away, past the Great Main.")).toBeTruthy();
+  const tag = screen.getByText("Gift of Dexterity");
+  expect(tag.getAttribute("title")).toBe("Gifted with Dexterity.");
+  expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
+    "Gift",
+    "Personality",
+    "Evil",
+    "Temporary",
+    "Appearance",
+  ]);
+});

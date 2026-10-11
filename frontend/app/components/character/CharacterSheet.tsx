@@ -9,6 +9,7 @@ import type {
   ExperienceModifierDto,
 } from "../../../lib/characters/api";
 import { attributeCeilings } from "../../../lib/characters/attributeCeiling";
+import { backgroundTraits, ORIGIN_KEYS } from "../../../lib/characters/background";
 import { displayClass, displayRace, traitSelectionGroupLabel } from "../../../lib/characters/displayNames";
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
@@ -63,13 +64,20 @@ function timedNote(t: CharacterSheetTrait): string {
   return parts.join(", ");
 }
 
-function groupTraits(traits: CharacterSheetTrait[]): { key: string; label: string; names: string[] }[] {
-  const groups = new Map<string, string[]>();
-  for (const t of traits) {
-    const key = text(t.key).toLowerCase() || "other";
-    groups.set(key, [...(groups.get(key) ?? []), text(t.name || t.id)]);
+type TraitTag = { key: string; name: string; description?: string };
+
+/** Traits grouped by key, in the order creation asks for them. */
+function groupTraits(tags: TraitTag[], catalog?: CreationCatalog | null) {
+  const groups = new Map<string, TraitTag[]>();
+  for (const t of tags) {
+    const key = t.key || "other";
+    groups.set(key, [...(groups.get(key) ?? []), t]);
   }
-  return [...groups].map(([key, names]) => ({ key, label: traitSelectionGroupLabel(key), names }));
+  const order = (catalog?.stages ?? []).map((s) => text(s.key).toLowerCase()).filter(Boolean);
+  const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length);
+  return [...groups]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([key, tags]) => ({ key, label: traitSelectionGroupLabel(key), tags }));
 }
 
 /** The catalogue's attributes in its order, then any others the character has. */
@@ -223,9 +231,21 @@ export default function CharacterSheet({
     : [];
   const traits = Array.isArray(character.traits) ? character.traits.filter((t) => t && text(t.name || t.id)) : [];
   const timed = traits.filter((t) => timedNote(t));
-  const groups = groupTraits(traits.filter((t) => !timedNote(t)));
+  // The background arrives as the lore of the creation choices behind it.
+  const chosen = backgroundTraits(text(character.background), catalog, character.race || character.race_name);
+  const origins = chosen.traits
+    .filter((t) => ORIGIN_KEYS.includes(t.key))
+    .sort((a, b) => ORIGIN_KEYS.indexOf(a.key) - ORIGIN_KEYS.indexOf(b.key));
+  const groups = groupTraits(
+    [
+      ...chosen.traits.filter((t) => !ORIGIN_KEYS.includes(t.key)),
+      ...traits
+        .filter((t) => !timedNote(t))
+        .map((t) => ({ key: text(t.key).toLowerCase(), name: text(t.name || t.id) })),
+    ],
+    catalog,
+  );
   const appearance = text(character.description);
-  const background = text(character.background);
   const clues = Array.isArray(character.clues) ? character.clues.map(text).filter(Boolean) : [];
 
   const details = (
@@ -383,12 +403,13 @@ export default function CharacterSheet({
                   <div key={g.key}>
                     <h4 className={`${labelClass} mb-2`}>{g.label}</h4>
                     <ul className="flex flex-wrap gap-1.5">
-                      {g.names.map((n) => (
+                      {g.tags.map((t) => (
                         <li
-                          key={n}
+                          key={t.name}
+                          title={t.description}
                           className="rounded-[2px] bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] px-2 py-0.5 text-sm text-[var(--tfmc-cream)]"
                         >
-                          {n}
+                          {t.name}
                         </li>
                       ))}
                     </ul>
@@ -418,7 +439,7 @@ export default function CharacterSheet({
         )}
       </Section>
 
-      {appearance || background ? (
+      {appearance || origins.length || chosen.rest ? (
         <Section title="Story">
           {appearance ? (
             <>
@@ -426,10 +447,25 @@ export default function CharacterSheet({
               <Prose text={appearance} />
             </>
           ) : null}
-          {background ? (
+          {origins.length ? (
+            <dl className={`grid gap-2 sm:grid-cols-2 ${appearance ? "mt-5" : ""}`}>
+              {origins.map((o) => (
+                <div key={o.id} className={`${panelClass} px-3.5 py-3`}>
+                  <dt className={labelClass}>{traitSelectionGroupLabel(o.key)}</dt>
+                  <dd className="mt-1">
+                    <span className="block font-[family-name:var(--font-fraunces)] text-lg leading-snug text-[var(--tfmc-cream)]">
+                      {o.name}
+                    </span>
+                    <span className="mt-1 block text-sm leading-normal text-[var(--tfmc-mist)]">{o.description}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {chosen.rest ? (
             <>
-              <h4 className={`${labelClass} mb-1.5 ${appearance ? "mt-5" : ""}`}>Background</h4>
-              <Background text={background} />
+              <h4 className={`${labelClass} mb-1.5 ${appearance || origins.length ? "mt-5" : ""}`}>Background</h4>
+              <Background text={chosen.rest} />
             </>
           ) : null}
         </Section>
