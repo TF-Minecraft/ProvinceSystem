@@ -49,6 +49,7 @@ from src.characters.roster import RosterError, replace_roster
 from src.characters.wardrobe import (
     WardrobeError,
     ack_wardrobe_slots,
+    active_face_png,
     clear_pending_create_wardrobe,
     clear_slot,
     get_wardrobe,
@@ -608,6 +609,24 @@ def patch_character_wardrobe_active(
         return set_active_slot(session["player_uuid"], character_id, body.slot)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
+
+
+@characters_router.get("/{character_id}/face")
+def get_character_face(
+    character_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """The face of the skin the character wears, for Profile's list. Never changes the wardrobe."""
+    from fastapi.responses import Response
+
+    session = _profile_session_from_auth(authorization)
+    try:
+        png = active_face_png(session["player_uuid"], character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+    if png is None:
+        raise HTTPException(status_code=404, detail="no_face")
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @characters_router.get("/{character_id}/wardrobe/{slot}/texture")

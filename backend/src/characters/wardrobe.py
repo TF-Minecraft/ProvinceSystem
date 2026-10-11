@@ -1395,6 +1395,45 @@ def _set_active_slot(
     )
 
 
+def skin_face_png(skin_png: bytes) -> bytes | None:
+    """The 8x8 face (head and hat layer) of a skin; None for a blank face."""
+    try:
+        skin = Image.open(io.BytesIO(skin_png)).convert("RGBA")
+    except Exception:
+        return None
+    if skin.width != 64 or skin.height not in (32, 64):
+        return None
+    face = skin.crop((8, 8, 16, 16))
+    # A blank face (such as the masked template) is no portrait.
+    if face.getchannel("A").getbbox() is None:
+        return None
+    face.alpha_composite(skin.crop((40, 8, 48, 16)))
+    buf = io.BytesIO()
+    face.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
+    """The face of the skin a roster character wears. Read-only: picks the slot
+    like _normalize_active but never enforces limits or saves the choice."""
+    roster = _require_owned_character(player_uuid, character_id)
+    uuid = str(roster["player_uuid"])
+    cid = str(roster["character_id"])
+    slots = _load_slots(uuid, cid)
+    swappable = swappable_slot_count(uuid, realm_id=roster.get("realm_id"))
+    active = (roster.get("wardrobe_active_slot") or "").strip().lower()
+    if not (
+        active in SWAPPABLE_SLOTS
+        and _slot_unlocked(active, swappable)
+        and _slot_filled(slots, active)
+    ):
+        active = "base"
+    path = _png_abspath((slots.get(active) or {}).get("png_relpath"))
+    if path is None:
+        return None
+    return skin_face_png(path.read_bytes())
+
+
 def resolve_slot_texture_path(
     player_uuid: str, character_id: str, slot: str
 ) -> Path:

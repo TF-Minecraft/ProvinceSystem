@@ -689,6 +689,8 @@ export default function ProfilePanel({
                 catalog={catalog}
                 onRefresh={() => token && void loadDashboard(token)}
                 refreshing={loadingDashboard}
+                sessionToken={token}
+                playerUuid={minecraft?.player_uuid}
               />
             ) : shown === "skins" ? (
               <SkinWardrobe
