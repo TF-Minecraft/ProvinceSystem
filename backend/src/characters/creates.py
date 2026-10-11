@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 import uuid as uuid_lib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from src.characters.creation_catalog import (
@@ -39,8 +39,17 @@ class CreateError(ValueError):
         self.status_code = status_code
 
 
+# Long enough to sign and upload every wardrobe skin; a hold the browser never
+# releases (closed tab, lost connection) lapses on its own.
+HOLD_FOR_UPLOADS = timedelta(minutes=10)
+
+
+def _iso(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _iso(datetime.now(timezone.utc))
 
 
 def _as_dict(raw: Any, field: str) -> dict[str, Any]:
@@ -517,17 +526,18 @@ def create_character(
             set_real_age(uuid, bool(body.get("eighteen")))
 
         create_id = str(uuid_lib.uuid4())
-        now = _iso_now()
+        moment = datetime.now(timezone.utc)
+        held_until = _iso(moment + HOLD_FOR_UPLOADS) if body.get("hold") is True else None
         payload = json.dumps(normalized, separators=(",", ":"))
         conn.execute(
             """
             INSERT INTO character_creates (
                 id, player_uuid, client_request_id, payload, status,
-                character_id, error, created_at, applied_at, realm_id
+                character_id, error, created_at, applied_at, realm_id, held_until
             )
-            VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL, ?)
+            VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL, ?, ?)
             """,
-            (create_id, uuid, client_request_id, payload, now, realm),
+            (create_id, uuid, client_request_id, payload, _iso(moment), realm, held_until),
         )
         conn.commit()
         row = conn.execute(
@@ -547,9 +557,10 @@ def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
             """
             SELECT * FROM character_creates
             WHERE status = 'pending' AND realm_id = ?
+              AND (held_until IS NULL OR held_until <= ?)
             ORDER BY created_at ASC
             """,
-            (realm,),
+            (realm, _iso_now()),
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
 
@@ -781,6 +792,24 @@ def mark_applied_results(results: list) -> dict[str, Any]:
         flush_pending_wardrobe(player_uuid, create_id, character_id)
 
     return {"ok": True, "applied": applied, "rejected": rejected}
+
+
+def release_create(player_uuid: str, create_id: str) -> dict[str, Any]:
+    """Let RPCharacters apply a held create now that its skins are uploaded."""
+    from src.skins.db import connect
+
+    with connect() as conn:
+        released = conn.execute(
+            """
+            UPDATE character_creates SET held_until = NULL
+            WHERE id = ? AND player_uuid = ? AND status = 'pending'
+            """,
+            ((create_id or "").strip(), (player_uuid or "").strip()),
+        ).rowcount
+        conn.commit()
+    if not released:
+        raise CreateError("Create not found", status_code=404)
+    return {"ok": True, "id": create_id}
 
 
 def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
