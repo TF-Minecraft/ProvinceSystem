@@ -1,5 +1,3 @@
-import type { PrecedentCase } from "./api";
-
 /**
  * No similarity-score helpers live here on purpose.
  *
@@ -9,25 +7,6 @@ import type { PrecedentCase } from "./api";
  * about which precedent ought to govern. `distance` and `max_distance` are
  * still returned by the API for tuning and debugging.
  */
-
-/**
- * Client-side substring filter over already-loaded rows. Deliberately not a
- * server round-trip: browsing must never touch the embedding/Claude pipeline.
- */
-export function caseMatchesFilter(row: PrecedentCase, filter: string): boolean {
-  const needle = filter.trim().toLowerCase();
-  if (!needle) return true;
-  const haystack = [row.summary, row.rule, row.ruling, row.punishment, row.logged_by, ...(row.players || [])]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(needle);
-}
-
-export function filterCases(rows: PrecedentCase[], filter: string): PrecedentCase[] {
-  const needle = filter.trim();
-  if (!needle) return rows;
-  return rows.filter((row) => caseMatchesFilter(row, needle));
-}
 
 /**
  * Strip Markdown emphasis from the synthesis.

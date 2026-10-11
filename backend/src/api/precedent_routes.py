@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 
 import psycopg2
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field, field_validator
 
 from src.api.staff_access import require_staff_account, staff_name
@@ -16,10 +16,10 @@ from src.precedent.db import (
     AuditActor,
     PrecedentDBError,
     PrecedentNotConfiguredError,
-    count_cases,
     delete_case,
     get_case,
     insert_case,
+    known_players,
     list_cases,
     migrate,
     ping_db,
@@ -227,20 +227,36 @@ def staff_list_cases(
     request: Request,
     limit: int = 500,
     offset: int = 0,
+    q: str = Query(default="", max_length=200),
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
 ):
-    """Browse the corpus. Plain SELECT — no Voyage embed, no Claude call."""
+    """Browse the corpus, optionally narrowed by `q` across every case. Plain SELECT — no Voyage embed, no Claude call."""
     _require_staff_or_account(request, x_staff_key)
     limit = max(1, min(int(limit), 1000))
     offset = max(0, int(offset))
     try:
         migrate()
-        cases = list_cases(limit=limit, offset=offset)
-        total = count_cases()
+        cases, total = list_cases(limit=limit, offset=offset, query=q)
     except PrecedentDBError as e:
         logger.exception("staff_list_cases failed")
         raise _unavailable(e) from e
     return {"cases": [_serialize_match(c) for c in cases], "total": total}
+
+
+@precedent_router.get("/staff/players")
+def staff_known_players(
+    request: Request,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    """Names already in the corpus, for the case form's player autocomplete."""
+    _require_staff_or_account(request, x_staff_key)
+    try:
+        migrate()
+        players = known_players()
+    except PrecedentDBError as e:
+        logger.exception("staff_known_players failed")
+        raise _unavailable(e) from e
+    return {"players": players}
 
 
 @precedent_router.put("/staff/case/{case_id}")

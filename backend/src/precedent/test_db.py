@@ -148,38 +148,78 @@ class SearchSimilarTest(unittest.TestCase):
 
 
 class ListCasesTest(unittest.TestCase):
+    def _list(self, mock_connect, **kwargs):
+        cursor = mock.MagicMock()
+        cursor.fetchall.return_value = [{"id": "1", "summary": "s"}]
+        cursor.fetchone.return_value = {"total": 7}
+        conn = _make_conn(cursor)
+        mock_connect.return_value = conn
+        result = db.list_cases(**kwargs)
+        return result, cursor, conn
+
     @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_list_cases_orders_newest_first_without_embedding(
         self, mock_connect, mock_register
     ) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchall.return_value = [{"id": "1", "summary": "s"}]
-        conn = _make_conn(cursor)
-        mock_connect.return_value = conn
+        (rows, total), cursor, conn = self._list(mock_connect, limit=50, offset=10)
 
-        results = db.list_cases(limit=50, offset=10)
-
-        sql, params = cursor.execute.call_args.args
-        self.assertIn("ORDER BY created_at DESC", sql)
+        (page_sql, page_params), (count_sql, count_params) = [c.args for c in cursor.execute.call_args_list]
+        self.assertIn("ORDER BY created_at DESC", page_sql)
         # Browsing must stay a plain SELECT: no vector maths, no relevance cutoff.
-        self.assertNotIn("<=>", sql)
-        self.assertNotIn("embedding", sql)
-        self.assertEqual((50, 10), params)
-        self.assertEqual(results, [{"id": "1", "summary": "s"}])
+        for sql in (page_sql, count_sql):
+            self.assertNotIn("<=>", sql)
+            self.assertNotIn("embedding", sql)
+            self.assertIn("WHERE TRUE", sql)
+        self.assertEqual((50, 10), page_params)
+        self.assertEqual([], count_params)
+        self.assertEqual(rows, [{"id": "1", "summary": "s"}])
+        self.assertEqual(total, 7)
+        # One connection serves the page and its count.
+        mock_connect.assert_called_once()
         conn.close.assert_called_once()
 
     @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
-    def test_count_cases(self, mock_connect, mock_register) -> None:
+    def test_list_cases_needs_every_word_somewhere(self, mock_connect, mock_register) -> None:
+        _, cursor, _ = self._list(mock_connect, limit=25, offset=0, query="  xray  Wren ")
+
+        (page_sql, page_params), (count_sql, count_params) = [c.args for c in cursor.execute.call_args_list]
+        for sql in (page_sql, count_sql):
+            self.assertEqual(2, sql.count("ILIKE %s"))
+            self.assertIn("array_to_string(players", sql)
+            self.assertIn("logged_by", sql)
+        self.assertEqual(("%xray%", "%Wren%", 25, 0), page_params)
+        self.assertEqual(["%xray%", "%Wren%"], count_params)
+
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("precedent.db.register_vector")
+    @mock.patch("precedent.db.psycopg2.connect")
+    def test_list_cases_matches_pattern_characters_literally(self, mock_connect, mock_register) -> None:
+        _, cursor, _ = self._list(mock_connect, query="100% a_b c\\d")
+
+        _, page_params = cursor.execute.call_args_list[0].args
+        self.assertEqual(("%100\\%%", "%a\\_b%", "%c\\\\d%"), page_params[:3])
+
+
+class KnownPlayersTest(unittest.TestCase):
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("precedent.db.register_vector")
+    @mock.patch("precedent.db.psycopg2.connect")
+    def test_known_players_once_each_in_newest_spelling(self, mock_connect, mock_register) -> None:
         cursor = mock.MagicMock()
-        cursor.fetchone.return_value = (7,)
+        cursor.fetchall.return_value = [("Gvinno",), ("WrenPlays",)]
         conn = _make_conn(cursor)
         mock_connect.return_value = conn
 
-        self.assertEqual(7, db.count_cases())
+        self.assertEqual(["Gvinno", "WrenPlays"], db.known_players())
+
+        sql = cursor.execute.call_args.args[0]
+        self.assertIn("DISTINCT ON (lower(name))", sql)
+        self.assertIn("created_at DESC", sql)
+        self.assertIn("name <> ''", sql)
         conn.close.assert_called_once()
 
 

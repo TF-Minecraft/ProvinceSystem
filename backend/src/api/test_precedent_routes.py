@@ -69,32 +69,34 @@ class PrecedentRoutesTest(unittest.TestCase):
 
     # --- list cases ---
 
-    @mock.patch("src.api.precedent_routes.count_cases", return_value=42)
     @mock.patch(
         "src.api.precedent_routes.list_cases",
-        return_value=[
-            {
-                "id": "1",
-                "logged_by": "x",
-                "players": [],
-                "summary": "s",
-                "rule": "",
-                "ruling": "",
-                "punishment": "",
-                "created_at": None,
-            }
-        ],
+        return_value=(
+            [
+                {
+                    "id": "1",
+                    "logged_by": "x",
+                    "players": [],
+                    "summary": "s",
+                    "rule": "",
+                    "ruling": "",
+                    "punishment": "",
+                    "created_at": None,
+                }
+            ],
+            42,
+        ),
     )
-    def test_list_cases_returns_envelope_with_total(self, mock_list, mock_count) -> None:
+    def test_list_cases_returns_envelope_with_total(self, mock_list) -> None:
         res = self.client.get("/precedent/staff/cases", headers=_HEADERS)
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertEqual(body["total"], 42)
         self.assertEqual(body["cases"][0]["id"], "1")
+        self.assertEqual(mock_list.call_args.kwargs.get("query"), "")
 
-    @mock.patch("src.api.precedent_routes.count_cases", return_value=0)
-    @mock.patch("src.api.precedent_routes.list_cases", return_value=[])
-    def test_list_cases_clamps_limit(self, mock_list, mock_count) -> None:
+    @mock.patch("src.api.precedent_routes.list_cases", return_value=([], 0))
+    def test_list_cases_clamps_limit(self, mock_list) -> None:
         res = self.client.get(
             "/precedent/staff/cases?limit=99999&offset=-5", headers=_HEADERS
         )
@@ -102,6 +104,34 @@ class PrecedentRoutesTest(unittest.TestCase):
         _, kwargs = mock_list.call_args
         self.assertEqual(kwargs.get("limit"), 1000)
         self.assertEqual(kwargs.get("offset"), 0)
+
+    @mock.patch("src.api.precedent_routes.list_cases", return_value=([], 0))
+    def test_list_cases_passes_the_search(self, mock_list) -> None:
+        res = self.client.get(
+            "/precedent/staff/cases?limit=25&offset=50&q=xray%20wren", headers=_HEADERS
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            mock_list.call_args.kwargs, {"limit": 25, "offset": 50, "query": "xray wren"}
+        )
+
+    @mock.patch("src.api.precedent_routes.list_cases")
+    def test_list_cases_rejects_a_long_search(self, mock_list) -> None:
+        res = self.client.get(f"/precedent/staff/cases?q={'a' * 201}", headers=_HEADERS)
+        self.assertEqual(res.status_code, 422)
+        mock_list.assert_not_called()
+
+    # --- known players ---
+
+    @mock.patch("src.api.precedent_routes.known_players", return_value=["Gvinno", "WrenPlays"])
+    def test_known_players(self, mock_players) -> None:
+        res = self.client.get("/precedent/staff/players", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {"players": ["Gvinno", "WrenPlays"]})
+
+    def test_known_players_rejects_a_bad_key(self) -> None:
+        res = self.client.get("/precedent/staff/players", headers={"X-Staff-Key": "wrong-key"})
+        self.assertEqual(res.status_code, 401)
 
     # --- update case ---
 

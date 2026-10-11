@@ -53,15 +53,15 @@ def test_moderators_have_both_tools():
 
 
 def test_precedent_needs_a_staff_account(app, database):
-    assert client(app).get("/precedent/staff/cases").status_code == 401
     _, player = account(database, "player")
-    assert client(app, player).get("/precedent/staff/cases").json() == {"detail": "forbidden"}
+    for path in ("/precedent/staff/cases", "/precedent/staff/players"):
+        assert client(app).get(path).status_code == 401
+        assert client(app, player).get(path).json() == {"detail": "forbidden"}
 
 
 def test_moderator_lists_cases(app, database):
     _, token = account(database, "mod", role="mod")
-    with mock.patch.object(precedent_routes, "list_cases", return_value=[]), \
-            mock.patch.object(precedent_routes, "count_cases", return_value=0):
+    with mock.patch.object(precedent_routes, "list_cases", return_value=([], 0)):
         res = client(app, token).get("/precedent/staff/cases")
     assert res.status_code == 200 and res.json() == {"cases": [], "total": 0}
 
@@ -95,8 +95,7 @@ def test_unlinked_staff_are_named_by_discord(database):
 
 
 def test_bot_key_still_reaches_precedent(app):
-    with mock.patch.object(precedent_routes, "list_cases", return_value=[]), \
-            mock.patch.object(precedent_routes, "count_cases", return_value=0):
+    with mock.patch.object(precedent_routes, "list_cases", return_value=([], 0)):
         res = client(app).get("/precedent/staff/cases", headers={"X-Staff-Key": "bot-key"})
     assert res.status_code == 200
 
