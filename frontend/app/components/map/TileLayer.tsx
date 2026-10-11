@@ -45,6 +45,20 @@ export const OPAQUE_TILE_CLASS =
  */
 const BACKDROP_UNDERLAP_PX = 8;
 
+/**
+ * Tile URLs this page has loaded and decoded, across every layer and mount.
+ * Opening the map again mounts a new layer: faded in again, its cached sharp
+ * tiles left the stretched backdrop showing for a moment, borders thick and
+ * soft, each time the reader came back to it. A tile seen before is drawn at
+ * once instead.
+ */
+const seenTileUrls = new Set<string>();
+
+/** Test hook: forget every tile seen so far. */
+export function forgetSeenTiles() {
+  seenTileUrls.clear();
+}
+
 type TileLayerProps = {
   manifest: TileManifest;
   /** URL of one tile. */
@@ -110,6 +124,12 @@ function TileLayer({
   const loadedRef = useRef(new Set<string>());
   /** Loaded tiles whose fade-in has finished. */
   const shownRef = useRef(new Set<string>());
+  /**
+   * Whether each tile's element fades in, decided when it is first drawn: a
+   * tile seen before does not. Kept for the element's life, or its first load
+   * (which marks it seen) would drop the transition the fade runs on.
+   */
+  const fadesRef = useRef(new Map<string, boolean>());
   /** Each loaded tile's pending fade timer, by key. */
   const fadeTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
@@ -177,8 +197,8 @@ function TileLayer({
   // had painted, square by square. So a tile whose element is gone forgets.
   useLayoutEffect(() => {
     const rendered = new Set([...backdropTiles, ...holdTiles, ...currentTiles].map((tile) => loadedKey(tile)));
-    for (const set of [loadedRef.current, shownRef.current]) {
-      for (const key of set) {
+    for (const set of [loadedRef.current, shownRef.current, fadesRef.current]) {
+      for (const key of set.keys()) {
         if (!rendered.has(key)) set.delete(key);
       }
     }
@@ -191,10 +211,16 @@ function TileLayer({
     }
   });
 
-  const markLoaded = (key: string) => {
+  const markLoaded = (key: string, url: string) => {
     if (loadedRef.current.has(key)) return;
     loadedRef.current.add(key);
     setLoadedVersion((value) => value + 1);
+    seenTileUrls.add(url);
+    // Drawn at once (see `renderTile`), so on screen as soon as it has loaded.
+    if (fadesRef.current.get(key) === false) {
+      shownRef.current.add(key);
+      return;
+    }
     const timer = setTimeout(() => {
       fadeTimersRef.current.delete(key);
       // Its element left the page meanwhile (see the pruning above).
@@ -207,15 +233,15 @@ function TileLayer({
 
   // A tile counts as loaded once it is decoded too, so the paint that shows
   // it (and stands down what is under it) never has to decode it first.
-  const handleLoad = (image: HTMLImageElement, key: string) => {
+  const handleLoad = (image: HTMLImageElement, key: string, url: string) => {
     if (typeof image.decode !== "function") {
-      markLoaded(key);
+      markLoaded(key, url);
       return;
     }
     // Only for the element still on the page: a newer one for the same tile
     // answers for itself.
     const settle = () => {
-      if (image.isConnected) markLoaded(key);
+      if (image.isConnected) markLoaded(key, url);
     };
     image.decode().then(settle, settle);
   };
@@ -250,15 +276,19 @@ function TileLayer({
   // Keep each tile's `<img>` mounted while it is wanted: on iOS a new element
   // paints nothing until decoding completes.
   const renderTile = (tile: PlacedTile, fadeIn: boolean, hidden = false) => {
-    const loaded = loadedRef.current.has(loadedKey(tile));
+    const key = loadedKey(tile);
+    const loaded = loadedRef.current.has(key);
+    const src = tileUrl(tile.level, tile.x, tile.y);
+    if (!fadesRef.current.has(key)) fadesRef.current.set(key, !seenTileUrls.has(src));
+    const fades = fadeIn && fadesRef.current.get(key)!;
     const left = snap(tile.left);
     const top = snap(tile.top);
     const width = snap(tile.left + tile.width) - left;
     const height = snap(tile.top + tile.height) - top;
     return (
       <img
-        key={loadedKey(tile)}
-        src={tileUrl(tile.level, tile.x, tile.y)}
+        key={key}
+        src={src}
         alt=""
         aria-hidden
         draggable={false}
@@ -268,7 +298,7 @@ function TileLayer({
         // once did that, and the map blanked for a frame after a zoom. A
         // sync decode is at full size and serves every zoom; tiles are small.
         decoding="sync"
-        onLoad={(event) => handleLoad(event.currentTarget, loadedKey(tile))}
+        onLoad={(event) => handleLoad(event.currentTarget, key, src)}
         onError={reportTileError}
         className={`absolute left-0 top-0 max-w-none select-none ${seeThrough ? "" : OPAQUE_TILE_CLASS}`}
         style={{
@@ -281,9 +311,9 @@ function TileLayer({
           } as CSSProperties),
           width,
           height,
-          opacity: !fadeIn || loaded ? 1 : 0,
+          opacity: !fades || loaded ? 1 : 0,
           visibility: hidden ? "hidden" : undefined,
-          transition: fadeIn ? `opacity ${FADE_MS}ms ease-out` : undefined,
+          transition: fades ? `opacity ${FADE_MS}ms ease-out` : undefined,
         }}
       />
     );
