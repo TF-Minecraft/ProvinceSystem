@@ -247,7 +247,7 @@ class CreateValidationWireTests(unittest.TestCase):
         ):
             with self.assertRaises(CreateError) as ctx:
                 _validate_and_normalize("player-uuid", body)
-            self.assertIn("point budget", str(ctx.exception).lower())
+            self.assertIn("cost more than 1 points", str(ctx.exception).lower())
 
     def test_strips_injury_replaced_by_prosthetic(self) -> None:
         from src.characters.creates import _validate_and_normalize

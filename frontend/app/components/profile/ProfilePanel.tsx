@@ -532,7 +532,10 @@ export default function ProfilePanel({
 
   const minecraft = account?.minecraft ?? null;
   const subline = account ? sublineParts(account, overview) : [];
-  const aliveCount = (dashboard?.characters || []).filter((c) => String(c.status).toUpperCase() === "ALIVE").length;
+  // Pending creates hold a slot until the server applies or rejects them.
+  const aliveCount = (dashboard?.characters || []).filter((c) =>
+    ["ALIVE", "PENDING"].includes(String(c.status).toUpperCase()),
+  ).length;
   const codeOpened = session ? session.source !== "discord" : codeTabs.length > 0;
 
   return (

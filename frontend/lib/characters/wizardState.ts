@@ -8,7 +8,7 @@ import type {
 } from "./api";
 import { birthdayFromAge, resolvedBirthdayIso } from "./fantasyCalendar";
 import { emptyRanks, isExactSpend } from "./pointBuy";
-import { isValidDisplayName, isValidProse, optionalDisplayNameError, proseError } from "../textValidation";
+import { characterNameError, isValidProse, optionalDisplayNameError, proseError } from "../textValidation";
 
 export type WizardDraft = {
   client_request_id: string;
@@ -70,6 +70,8 @@ export type PlayableStageOpts = {
   evilUnlocked?: boolean;
   accountAgeSeconds?: number;
   selectedTraitIds?: string[];
+  /** Race-gated stages open only for these races. */
+  raceId?: string;
 };
 
 function asHours(raw: unknown): number | null {
@@ -99,25 +101,54 @@ export function passesAccountAgeGate(
   return true;
 }
 
-/** Trait dependency parity with RPCharacters Dependency.check (trait modes). */
-export function passesTraitDependency(stage: CatalogStage, selectedTraitIds: string[] | undefined): boolean {
-  const dep = stage.dependency;
+type CatalogDependency = CatalogStage["dependency"];
+
+function lowerIds(ids: readonly unknown[] | undefined): string[] {
+  return (ids || [])
+    .map((id) =>
+      String(id || "")
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
+}
+
+/**
+ * RPCharacters Dependency.check: "all" or "one-or-more" of the picked trait ids, or the race.
+ * `ignoreId` leaves a trait out, so a trait cannot satisfy its own requirement.
+ */
+export function dependencyMet(
+  dep: CatalogDependency,
+  selectedTraitIds: string[] | undefined,
+  raceId?: string,
+  ignoreId?: string,
+): boolean {
   if (!dep || typeof dep !== "object") return true;
+  const wanted = lowerIds(dep.depends_on);
   const type = String(dep.type || "").toLowerCase();
-  if (type !== "trait") return true;
+  if (type === "race")
+    return wanted.includes(
+      String(raceId || "")
+        .trim()
+        .toLowerCase(),
+    );
+  if (type !== "trait") return false;
+  const ignored = String(ignoreId || "")
+    .trim()
+    .toLowerCase();
+  const have = new Set(lowerIds(selectedTraitIds).filter((id) => id !== ignored));
   const mode = String(dep.mode || "").toLowerCase();
-  const dependsOn = Array.isArray(dep.depends_on)
-    ? dep.depends_on.map((id) => String(id || "").trim()).filter(Boolean)
-    : [];
-  if (!dependsOn.length) return true;
-  const selected = new Set((selectedTraitIds || []).map((id) => String(id || "").trim()).filter(Boolean));
-  if (mode === "all") {
-    return dependsOn.every((id) => selected.has(id));
-  }
-  if (mode === "one-or-more") {
-    return dependsOn.some((id) => selected.has(id));
-  }
-  return true;
+  if (mode === "all") return wanted.every((id) => have.has(id));
+  if (mode === "one-or-more") return wanted.some((id) => have.has(id));
+  return false;
+}
+
+export function passesTraitDependency(
+  stage: CatalogStage,
+  selectedTraitIds: string[] | undefined,
+  raceId?: string,
+): boolean {
+  return dependencyMet(stage.dependency, selectedTraitIds, raceId);
 }
 
 export function playableStages(catalog: CreationCatalog, opts?: PlayableStageOpts): CatalogStage[] {
@@ -129,7 +160,7 @@ export function playableStages(catalog: CreationCatalog, opts?: PlayableStageOpt
     const platform = String(s.platform || "both").toLowerCase();
     if (platform === "game") return false;
     if (opts?.skipRealAge && isRealAgeStage(s)) return false;
-    if (!passesTraitDependency(s, opts?.selectedTraitIds)) return false;
+    if (!passesTraitDependency(s, opts?.selectedTraitIds, opts?.raceId)) return false;
     if (!passesAccountAgeGate(s, opts)) return false;
     return true;
   });
@@ -569,6 +600,55 @@ export function traitPlaytimeReason(trait: CatalogTrait): string | null {
   return `Requires ${label} account age`;
 }
 
+/** True when `trait`'s own requirement is not met by the other picks or the race. */
+export function traitDependencyBlocked(trait: CatalogTrait, selectedIds: string[], raceId: string): boolean {
+  return !dependencyMet(trait.dependency, selectedIds, raceId, trait.id);
+}
+
+export function traitDependencyReason(trait: CatalogTrait, catalog: CreationCatalog): string | null {
+  const dep = resolveTraitDependencyNames(trait, catalog);
+  if (!dep) return null;
+  return `Needs ${dep.names.join(dep.mode === "all" ? " and " : " or ")}`;
+}
+
+/**
+ * Drop picks the game would not allow: traits whose stage no longer opens (for example
+ * evil archetypes once the personality that unlocks them is removed) and traits whose
+ * own requirement is no longer met. Repeats until nothing else drops.
+ */
+export function pruneUnavailableTraits(
+  draft: WizardDraft,
+  catalog: CreationCatalog,
+  opts?: Pick<PlayableStageOpts, "evilUnlocked" | "accountAgeSeconds">,
+): WizardDraft {
+  const traitStage = (s: CatalogStage) =>
+    String(s.type || "").toLowerCase() === "selection" && String(s.target || "").toLowerCase() === "trait";
+  const stageKeys = new Set(lowerIds((catalog.stages || []).filter(traitStage).map((s) => s.key)));
+  const byId = new Map((catalog.traits || []).map((t) => [String(t.id || "").toLowerCase(), t]));
+  let ids = draft.traitIds;
+  for (;;) {
+    const open = new Set(
+      lowerIds(
+        playableStages(catalog, { ...opts, selectedTraitIds: ids, raceId: draft.race_id })
+          .filter(traitStage)
+          .map((s) => s.key),
+      ),
+    );
+    const kept = ids.filter((id) => {
+      const trait = byId.get(String(id || "").toLowerCase());
+      if (!trait) return true;
+      const key = String(trait.key || "")
+        .trim()
+        .toLowerCase();
+      if (stageKeys.has(key) && !open.has(key)) return false;
+      return dependencyMet(trait.dependency, ids, draft.race_id, trait.id);
+    });
+    if (kept.length === ids.length) break;
+    ids = kept;
+  }
+  return ids === draft.traitIds ? draft : { ...draft, traitIds: ids };
+}
+
 export function traitCost(trait: CatalogTrait): number {
   const n = Number(trait.cost);
   return Number.isFinite(n) ? n : 0;
@@ -704,6 +784,12 @@ export function clueContinueBlockReason(draft: WizardDraft, catalog: CreationCat
   if (clues.length > maxClues) {
     return `At most ${maxClues} clues allowed`;
   }
+  const seen = new Set<string>();
+  for (const clue of clues) {
+    const k = clue.toLowerCase();
+    if (seen.has(k)) return `Clue "${clue}" is repeated`;
+    seen.add(k);
+  }
   for (let i = 0; i < clues.length; i++) {
     const n = clues[i]!.length;
     if (n < minLen) {
@@ -722,6 +808,13 @@ export function clueContinueBlockReason(draft: WizardDraft, catalog: CreationCat
   return null;
 }
 
+/** The picked race's oldest age; 200 before a race is picked or when it has none. */
+export function raceAgeMax(draft: WizardDraft, catalog: CreationCatalog): number {
+  const race = (catalog.races || []).find((r) => r.id === draft.race_id);
+  const max = Number(race?.age_max);
+  return Number.isFinite(max) && max > 0 ? max : 200;
+}
+
 export function stageCanContinue(stage: CatalogStage, draft: WizardDraft, catalog: CreationCatalog): boolean {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
@@ -735,16 +828,12 @@ export function stageCanContinue(stage: CatalogStage, draft: WizardDraft, catalo
     if (target === "name") {
       const min = catalog.validation?.name?.min_length ?? 1;
       const max = catalog.validation?.name?.max_length ?? 32;
-      return isValidDisplayName(draft.name, {
-        minLen: min,
-        maxLen: max,
-        field: "name",
-      });
+      return characterNameError(draft.name, { minLen: min, maxLen: max }) === null;
     }
     if (target === "age") {
       const age = Number(draft.age);
       const min = catalog.validation?.age?.minimum ?? 1;
-      return Number.isFinite(age) && age >= min;
+      return Number.isFinite(age) && age >= min && age <= raceAgeMax(draft, catalog);
     }
     if (target === "description") {
       const min = catalog.validation?.description?.min_length ?? 1;

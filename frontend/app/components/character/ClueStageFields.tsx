@@ -19,7 +19,12 @@ export default function ClueStageFields({ clues, required, minLen, maxLen, maxCl
   const titleId = useId();
   const trimmed = draft.trim();
   const n = trimmed.length;
-  const charsetErr = n > 0 ? proseError(trimmed, { minLen, maxLen, field: "clue" }) : null;
+  const repeated = n > 0 && clues.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+  const charsetErr = repeated
+    ? "You already have this clue"
+    : n > 0
+      ? proseError(trimmed, { minLen, maxLen, field: "clue" })
+      : null;
   const lengthOk = n >= minLen && n <= maxLen;
   const canAdd = lengthOk && charsetErr === null && clues.length < maxClues;
   const atMax = clues.length >= maxClues;

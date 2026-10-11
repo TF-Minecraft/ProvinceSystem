@@ -91,6 +91,24 @@ export function displayNameError(
   return null;
 }
 
+export const CHARACTER_NAME_HINT = "letters, spaces, apostrophes, hyphens and full stops";
+
+/** RPCharacters CreationRules: a letter, then letters, marks, spaces and ' - . */
+const CHARACTER_NAME_RE = /^\p{L}[\p{L}\p{M} .'-]*$/u;
+
+/** Display-name rules plus the character-name charset RPCharacters enforces. */
+export function characterNameError(
+  value: string | null | undefined,
+  opts: { minLen: number; maxLen: number },
+): string | null {
+  const err = displayNameError(value, { ...opts, field: "name" });
+  if (err) return err;
+  if (!CHARACTER_NAME_RE.test(normalizeUserText(String(value ?? ""), true))) {
+    return `Name may only contain ${CHARACTER_NAME_HINT}`;
+  }
+  return null;
+}
+
 export function isValidDisplayName(
   value: string | null | undefined,
   opts: { minLen: number; maxLen: number; field?: string },

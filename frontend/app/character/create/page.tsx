@@ -87,8 +87,13 @@ export default function CharacterCreatePage() {
           getCreationCatalog(existing!.session_token),
           listCharacters(existing!.session_token),
         ]);
+        const used = list.characters.filter((c) =>
+          ["ALIVE", "PENDING"].includes(String(c.status).toUpperCase()),
+        ).length;
         if (!cat.updated_at || !(cat.stages || []).length) {
           setError("Character creation is unavailable right now.");
+        } else if (typeof list.max_alive_characters === "number" && used >= list.max_alive_characters) {
+          setError("All your character slots are in use, including characters still being created.");
         } else {
           setCatalog(cat);
         }
