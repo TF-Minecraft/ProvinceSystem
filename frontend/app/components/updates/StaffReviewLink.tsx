@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 
-import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
-
-export default function StaffReviewLink() {
-  const { state } = useSiteStaffAccess();
-  if (state !== "staff") return null;
+export default function StaffReviewLink({ staff }: { staff: boolean }) {
+  if (!staff) return null;
 
   return (
     <p className="mt-4 text-sm">

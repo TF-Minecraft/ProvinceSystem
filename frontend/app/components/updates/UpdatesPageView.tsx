@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import StaffTestPreview from "@/app/components/updates/StaffTestPreview";
-import StaffReviewLink from "@/app/components/updates/StaffReviewLink";
+import UpdatesStaffTools from "@/app/components/updates/UpdatesStaffTools";
 import { WeekSections } from "@/app/components/updates/WeekArchiveList";
 import type { WeekNotes } from "@/lib/patchnotes/notes";
 
@@ -18,8 +17,7 @@ export default function UpdatesPageView({
   return (
     <main className="mx-auto min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl px-6 py-16">
       <h1 className="font-[family-name:var(--font-fraunces)] text-4xl text-[var(--tfmc-cream)]">Updates</h1>
-      <StaffTestPreview />
-      <StaffReviewLink />
+      <UpdatesStaffTools />
 
       {unavailable ? (
         <p className="mt-10 text-[var(--tfmc-stone)]">Patch notes are unavailable right now.</p>
