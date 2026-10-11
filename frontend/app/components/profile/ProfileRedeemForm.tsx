@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { CharactersApiError, redeemProfile } from "../../../lib/characters/api";
-import { setSession, type ProfileSession } from "../../../lib/profile/session";
+import { signInWithCode, type SignIn } from "../../../lib/profile/codes";
 
 type Props = {
-  onRedeemed: (session: ProfileSession) => void;
+  onRedeemed: (signIn: SignIn) => void;
 };
+
+/** Profile's code sign-in: a profile, skin or drink code from /token create. */
 
 export default function ProfileRedeemForm({ onRedeemed }: Props) {
   const [code, setCode] = useState("");
@@ -24,25 +25,9 @@ export default function ProfileRedeemForm({ onRedeemed }: Props) {
 
     setLoading(true);
     try {
-      const result = await redeemProfile(trimmed);
-      const session: ProfileSession = {
-        session_token: result.session_token,
-        player_uuid: result.player_uuid,
-        expires_at: result.expires_at,
-        scope: result.scope || "profile",
-        ...(result.realm_id ? { realm_id: result.realm_id } : {}),
-        remember_me: false,
-      };
-      setSession(session);
-      onRedeemed(session);
+      onRedeemed(await signInWithCode(trimmed));
     } catch (err) {
-      const message =
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Couldn’t log in. Check the code and try again.";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Couldn’t log in. Check the code and try again.");
     } finally {
       setLoading(false);
     }

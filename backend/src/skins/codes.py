@@ -645,6 +645,42 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
     }
 
 
+def redeem_sign_in_code(plaintext: str, remember_me: bool = False) -> dict:
+    """Profile sign-in: a profile code opens Profile; a skin or drink code opens that wardrobe.
+
+    Each code is redeemed by its own rules, so the payload is the one its scope's
+    redeem returns, scope included.
+    """
+    code = (plaintext or "").strip()
+    if not code:
+        raise CodeError("code is required")
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT scope FROM codes WHERE code_hash = ?",
+            (hash_secret(code),),
+        ).fetchone()
+    scope = str(row["scope"]).strip().lower() if row is not None else ""
+    if scope == "drink":
+        return redeem_drink_code(code)
+    if scope in REDEEMABLE_SKIN_SCOPES:
+        return redeem_code(code)
+    if scope != "profile":
+        raise CodeError("Invalid code")
+    return redeem_profile_code(code, remember_me=remember_me)
+
+
+def code_session_open(session: dict) -> bool:
+    """True while a skin or drink code session can still submit: its code is unused and not revoked."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT revoked FROM codes WHERE id = ?",
+            (session["code_id"],),
+        ).fetchone()
+        if row is None or row["revoked"]:
+            return False
+        return not _code_is_consumed(conn, session["code_id"], session["scope"])
+
+
 def site_profile_realm() -> str:
     """The realm this site's Profile shows when opened through a linked Discord account."""
     try:

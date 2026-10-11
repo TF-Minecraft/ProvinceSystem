@@ -217,6 +217,74 @@ class SiteStartTest(unittest.TestCase):
             self.codes.start_site_session(PLAYER, "main", "profile")
 
 
+class SignInCodeTest(SiteStartTest):
+    """Profile sign-in takes profile, skin and drink codes, each by its own rules."""
+
+    def mint(self, scope: str, plaintext: str) -> int:
+        now = datetime.now(timezone.utc)
+        with self.db.connect() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
+                                   created_at, expires_at, revoked)
+                VALUES (?, ?, ?, ?, 'main', ?, ?, 0)
+                """,
+                (self.codes.hash_secret(plaintext), plaintext, PLAYER, scope,
+                 _iso(now), _iso(now + timedelta(hours=48))),
+            )
+            conn.commit()
+            return int(cur.lastrowid)
+
+    def test_each_scope_redeems_by_its_own_rules(self) -> None:
+        for scope, plaintext in (("profile", "PROF-0001"), ("skin", "SKIN-0001"),
+                                 ("skin_staff", "STAF-0001"), ("drink", "DRNK-0001")):
+            with self.subTest(scope=scope):
+                self.mint(scope, plaintext)
+                out = self.codes.redeem_sign_in_code(f" {plaintext} ")
+                self.assertEqual(out["scope"], scope)
+                session = self.codes.get_session(out["session_token"])
+                assert session is not None
+                self.assertEqual(session["scope"], scope)
+        self.assertIn("skin_kinds", self.codes.redeem_sign_in_code("SKIN-0001"))
+        self.assertIn("allow_drink_texture", self.codes.redeem_sign_in_code("DRNK-0001"))
+
+    def test_a_profile_code_still_redeems_once(self) -> None:
+        self.mint("profile", "PROF-0002")
+        self.codes.redeem_sign_in_code("PROF-0002", remember_me=True)
+        with self.assertRaises(self.codes.CodeError):
+            self.codes.redeem_sign_in_code("PROF-0002")
+
+    def test_unknown_codes_are_refused(self) -> None:
+        for plaintext in ("", "NOPE-0000"):
+            with self.subTest(code=plaintext), self.assertRaises(self.codes.CodeError):
+                self.codes.redeem_sign_in_code(plaintext)
+
+    def test_redeeming_neither_mints_nor_moves_the_cooldown(self) -> None:
+        self.mint("skin", "SKIN-0003")
+        before = self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"]
+        self.codes.redeem_sign_in_code("SKIN-0003")
+        self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], before)
+        with self.db.connect() as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM codes").fetchone()[0], 1)
+
+    def test_a_code_session_closes_once_its_code_is_used_or_revoked(self) -> None:
+        code_id = self.mint("skin", "SKIN-0004")
+        session = self.codes.get_session(self.codes.redeem_sign_in_code("SKIN-0004")["session_token"])
+        assert session is not None
+        self.assertTrue(self.codes.code_session_open(session))
+        self.consume(code_id)
+        self.assertFalse(self.codes.code_session_open(session))
+
+        drink_id = self.mint("drink", "DRNK-0004")
+        drink = self.codes.get_session(self.codes.redeem_sign_in_code("DRNK-0004")["session_token"])
+        assert drink is not None
+        self.assertTrue(self.codes.code_session_open(drink))
+        with self.db.connect() as conn:
+            conn.execute("UPDATE codes SET revoked = 1 WHERE id = ?", (drink_id,))
+            conn.commit()
+        self.assertFalse(self.codes.code_session_open(drink))
+
+
 class SkinThumbnailTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()

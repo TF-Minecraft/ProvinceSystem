@@ -45,5 +45,55 @@ class StartRoutesTest(unittest.TestCase):
         )
 
 
+class CodeWardrobeTest(unittest.TestCase):
+    def wardrobe(self, scope: str, open_: bool = True) -> dict:
+        session = {**SESSION, "scope": scope, "code_id": 7}
+        with mock.patch.object(profile_routes, "get_session", return_value=session), \
+                mock.patch.object(profile_routes, "code_session_open", return_value=open_), \
+                mock.patch.object(profile_routes, "list_submissions_for_player", return_value=["s"]) as skins, \
+                mock.patch.object(profile_routes, "list_drink_submissions_for_player", return_value=["d"]) as drinks:
+            out = profile_routes.get_code_wardrobe("Bearer x")
+        if out["kind"] == "skin":
+            skins.assert_called_once_with("p-1", "dev")
+            drinks.assert_not_called()
+        else:
+            drinks.assert_called_once_with("p-1", "dev")
+            skins.assert_not_called()
+        return out
+
+    def test_a_code_shows_only_its_own_wardrobe(self) -> None:
+        self.assertEqual(self.wardrobe("skin")["items"], ["s"])
+        self.assertEqual(self.wardrobe("skin_staff")["kind"], "skin")
+        self.assertEqual(self.wardrobe("drink")["items"], ["d"])
+
+    def test_a_used_code_cannot_start_another(self) -> None:
+        self.assertEqual(
+            self.wardrobe("skin", open_=False)["can_start"],
+            {"can_start": False, "reason": "used", "next_at": None},
+        )
+        self.assertTrue(self.wardrobe("drink")["can_start"]["can_start"])
+
+    def test_profile_sessions_and_strangers_are_refused(self) -> None:
+        with mock.patch.object(profile_routes, "get_session", return_value=SESSION):
+            with self.assertRaises(HTTPException) as caught:
+                profile_routes.get_code_wardrobe("Bearer x")
+        self.assertEqual(caught.exception.status_code, 403)
+        with mock.patch.object(profile_routes, "get_session", return_value=None):
+            with self.assertRaises(HTTPException) as caught:
+                profile_routes.get_code_wardrobe("Bearer x")
+        self.assertEqual(caught.exception.status_code, 401)
+
+
+class SignInRedeemTest(unittest.TestCase):
+    def test_bad_codes_are_a_400(self) -> None:
+        with mock.patch.object(
+            profile_routes, "redeem_sign_in_code", side_effect=profile_routes.CodeError("Invalid code")
+        ):
+            with self.assertRaises(HTTPException) as caught:
+                profile_routes.post_redeem(profile_routes.SignInCodeBody(code="x"))
+        self.assertEqual(caught.exception.status_code, 400)
+        self.assertEqual(caught.exception.detail, "Invalid code")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -20,6 +20,7 @@ import {
   effectLabel,
 } from "../../../lib/drinks/constants";
 import { setLastSubmissionId, setSession, type DrinksSession } from "../../../lib/drinks/session";
+import { drinkPath } from "../../../lib/profile/paths";
 import NameColourPicker from "../shared/NameColourPicker";
 import LoreLinesEditor from "../shared/LoreLinesEditor";
 import ModelPreview from "../skins/ModelPreview";
@@ -265,7 +266,7 @@ export default function BrewForm({ session }: Props) {
         existingTextureId: appearance === "reuse" ? existingTextureId.trim() : null,
       });
       setLastSubmissionId(created.id);
-      router.push(`/drinks/${created.id}`);
+      router.push(drinkPath(created.id));
     } catch (err) {
       setError(err instanceof DrinksApiError ? err.message : err instanceof Error ? err.message : "Submit failed");
     } finally {

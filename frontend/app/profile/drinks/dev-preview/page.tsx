@@ -2,8 +2,8 @@
 
 import { notFound } from "next/navigation";
 import { useState } from "react";
-import ModelPreview from "../../components/skins/ModelPreview";
-import { isCharacterUiDev } from "../../../lib/characters/uiDev";
+import ModelPreview from "../../../components/skins/ModelPreview";
+import { isCharacterUiDev } from "../../../../lib/characters/uiDev";
 
 export default function DrinksDevPreviewPage() {
   const [error, setError] = useState<string | null>(null);

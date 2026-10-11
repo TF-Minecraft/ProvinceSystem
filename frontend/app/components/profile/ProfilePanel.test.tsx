@@ -20,7 +20,8 @@ import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
 import { getCreationCatalog, logoutCharacter, type CreationCatalog } from "../../../lib/characters/api";
 import { getSkinThumbnail, startSkinFromProfile } from "../../../lib/skins/api";
-import { getSession as getSkinsSession } from "../../../lib/skins/session";
+import { getSession as getSkinsSession, setSession as setSkinsSession } from "../../../lib/skins/session";
+import { getCodeWardrobe, signInWithCode } from "../../../lib/profile/codes";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -48,6 +49,11 @@ vi.mock("../../../lib/skins/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/skins/api")>()),
   getSkinThumbnail: vi.fn(),
   startSkinFromProfile: vi.fn(),
+}));
+vi.mock("../../../lib/profile/codes", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../lib/profile/codes")>()),
+  getCodeWardrobe: vi.fn(),
+  signInWithCode: vi.fn(),
 }));
 vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/characters/api")>()),
@@ -749,12 +755,12 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
   });
   render(<ProfilePanel tab="skins" />);
   const card = await screen.findByRole("link", { name: /Emberfang/ });
-  expect(card.getAttribute("href")).toBe("/skins/sub-1");
+  expect(card.getAttribute("href")).toBe("/profile/skins/sub-1");
   expect(card.textContent).toContain("Live");
   expect(card.textContent).toContain("Handheld");
   expect(screen.getByText("Use a code").getAttribute("aria-expanded")).toBe("false");
   fireEvent.click(screen.getByRole("button", { name: "New skin" }));
-  await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/skins"));
+  await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/profile/skins/new"));
   expect(startSkinFromProfile).toHaveBeenCalledWith("linked-token");
   expect(getSkinsSession()).toMatchObject({ session_token: "skin-token", from_profile: true });
 });
@@ -827,4 +833,78 @@ it("leaves the card usable outside a view", async () => {
   expect((within(card).getByRole("button", { name: "Sign out" }) as HTMLButtonElement).matches(":disabled")).toBe(
     false,
   );
+});
+
+const SKIN_CODE = {
+  session_token: "skin-code",
+  player_uuid: UUID,
+  expires_at: "2099-01-01T00:00:00Z",
+  scope: "skin",
+};
+
+it("opens just the Skins wardrobe for a skin code, with the editor one click away", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  vi.mocked(signInWithCode).mockImplementation(async () => {
+    setSkinsSession(SKIN_CODE);
+    return { tab: "skins", profile: null };
+  });
+  vi.mocked(getCodeWardrobe).mockResolvedValue({ items: [SKIN], can_start: READY });
+  render(<ProfilePanel />);
+  fireEvent.click(await screen.findByRole("button", { name: "Use a code" }));
+  fireEvent.change(screen.getByLabelText("Log in with code"), { target: { value: "SKIN-CODE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Enter" }));
+  const card = await screen.findByRole("link", { name: /Emberfang/ });
+  expect(card.getAttribute("href")).toBe("/profile/skins/sub-1");
+  expect(getCodeWardrobe).toHaveBeenCalledWith("skin-code");
+  expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Skins", "Linked accounts"]);
+  expect(window.location.search).toBe("?tab=skins");
+  expect(screen.getByText("Opened with an in-game code.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "New skin" }));
+  expect(push).toHaveBeenCalledWith("/profile/skins/new");
+  expect(startSkinFromProfile).not.toHaveBeenCalled();
+  expect(getProfileDashboard).not.toHaveBeenCalled();
+});
+
+it("says when a code has made its skin, and Log out ends the code", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  setSkinsSession(SKIN_CODE);
+  vi.mocked(getCodeWardrobe).mockResolvedValue({
+    items: [SKIN],
+    can_start: { can_start: false, reason: "used", next_at: null },
+  });
+  render(<ProfilePanel tab="characters" />);
+  expect(await screen.findByText("Code used")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "New skin" })).toBeNull();
+  expect(screen.getByRole("tab", { name: "Skins" }).getAttribute("aria-selected")).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+  expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
+  expect(logoutCharacter).toHaveBeenCalledWith("skin-code");
+  expect(getSkinsSession()).toBeNull();
+});
+
+it("leaves skin sessions Profile started out of the code view", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  setSkinsSession({ ...SKIN_CODE, from_profile: true });
+  render(<ProfilePanel />);
+  expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
+  expect(getCodeWardrobe).not.toHaveBeenCalled();
+});
+
+it("falls back to sign-in when a code's session has run out", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  setSkinsSession(SKIN_CODE);
+  vi.mocked(getCodeWardrobe).mockRejectedValue(new ProfileApiError("expired", 401));
+  render(<ProfilePanel tab="skins" />);
+  expect(await screen.findByRole("link", { name: "Sign in with Discord" })).toBeTruthy();
+  expect(getSkinsSession()).toBeNull();
+});
+
+it("opens the code form for old skin and drink links", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  render(<ProfilePanel tab="drinks" />);
+  const toggle = await screen.findByRole("button", { name: "Use a code" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  const form = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+  expect(form.hidden).toBe(false);
+  expect(form.textContent).toContain("/token create profile, skin or drink");
 });

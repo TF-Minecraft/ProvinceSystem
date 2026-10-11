@@ -70,6 +70,8 @@ function refusalText(noun: Noun, reason: StartRefusal, nextAt: string | null): s
       return "Join the server once first";
     case "discord":
       return "Link Discord in game first";
+    case "used":
+      return "Code used";
   }
 }
 

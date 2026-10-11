@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import CharacterList from "../character/CharacterList";
 import ProfileCustomItemsList from "./ProfileCustomItemsList";
 import ProfileRedeemForm from "./ProfileRedeemForm";
-import { DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
+import { CodeWardrobe, DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
 import LinkedAccounts, {
   ACCOUNTS_PATH,
   cardClass,
@@ -38,9 +38,10 @@ import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/
 import { UI_DEV_LORE_CHARACTER_ID } from "../../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
+import { NO_CODE_SESSIONS, readCodeSessions, type CodeSessions, type SignIn } from "../../../lib/profile/codes";
 import { clearSession, getSession, isSessionValid, type ProfileSession } from "../../../lib/profile/session";
 import type { ProfileTab } from "../../../lib/profile/tabs";
-import { logoutProfile } from "../../../lib/profile/uploads";
+import { endCodeUploads, logoutProfile } from "../../../lib/profile/uploads";
 
 const CONTENT_TABS: readonly [ProfileTab, string][] = [
   ["characters", "Characters"],
@@ -160,7 +161,8 @@ function Subline({ parts }: { parts: ReactNode[] }) {
 
 /**
  * Profile: the player's characters, skins, drinks and custom items, and the accounts linked to them.
- * A Discord sign-in with a linked Minecraft account opens it; an in-game code opens it without Discord.
+ * A Discord sign-in with a linked Minecraft account opens it; an in-game profile code opens it without
+ * Discord. A skin or drink code opens just that wardrobe.
  */
 export default function ProfilePanel({
   tab: initialTab = null,
@@ -195,7 +197,10 @@ export default function ProfilePanel({
   const [tab, setTab] = useState<ProfileTab | null>(initialTab);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [showCode, setShowCode] = useState(false);
+  // Skin and drink codes' sessions, which open just their wardrobes when there's no Profile session.
+  const [codes, setCodes] = useState<CodeSessions>(NO_CODE_SESSIONS);
+  // The old /skins and /drinks addresses land on those tabs, from in-game messages about codes.
+  const [showCode, setShowCode] = useState(initialTab === "skins" || initialTab === "drinks");
   const codeId = useId();
   const panelId = useId();
   const notice = signInMessage(signin) || minecraftLinkMessage(minecraftStatus);
@@ -212,6 +217,11 @@ export default function ProfilePanel({
   useEffect(() => {
     if (!uiDev) void refresh();
   }, [refresh, uiDev]);
+
+  useEffect(() => {
+    if (!uiDev) setCodes(readCodeSessions());
+  }, [uiDev]);
+  const dropCodes = useCallback(() => setCodes(readCodeSessions()), []);
 
   const playerUuid = load.kind === "ready" ? (load.account.minecraft?.player_uuid ?? null) : null;
 
@@ -332,7 +342,10 @@ export default function ProfilePanel({
   const account = load.kind === "ready" ? load.account : null;
   // Profile's own tabs show while a linked account's session is still on its way.
   const contentTabs = Boolean(session) || (playerUuid !== null && !sessionChecked);
-  const tabs = contentTabs ? [...CONTENT_TABS, ACCOUNTS_TAB] : [ACCOUNTS_TAB];
+  const codeTabs = contentTabs
+    ? []
+    : CONTENT_TABS.filter(([id]) => (id === "skins" && codes.skins) || (id === "drinks" && codes.drinks));
+  const tabs = contentTabs ? [...CONTENT_TABS, ACCOUNTS_TAB] : [...codeTabs, ACCOUNTS_TAB];
   const shown: ProfileTab = tabs.some(([id]) => id === tab) ? tab! : tabs[0][0];
 
   const cardRef = useRef<HTMLUListElement>(null);
@@ -350,13 +363,14 @@ export default function ProfilePanel({
     window.history.replaceState(null, "", id === "characters" ? "/profile" : `/profile?tab=${id}`);
   }
 
-  function onRedeemed(next: ProfileSession) {
-    setSessionState(next);
+  function onRedeemed(signIn: SignIn) {
+    if (signIn.profile) setSessionState(signIn.profile);
+    else setCodes(readCodeSessions());
+    if (signIn.tab) chooseTab(signIn.tab);
   }
 
-  /** Ends a code session. Discord sessions end with Sign out under Linked accounts. */
+  /** Ends code sessions: a profile code's, and any skin or drink code's. Discord sessions end with Sign out. */
   async function onLogout() {
-    if (!session) return;
     if (uiDev) {
       setSessionState(null);
       setDashboard(null);
@@ -364,18 +378,19 @@ export default function ProfilePanel({
     }
     setLoggingOut(true);
     try {
-      await logoutProfile(session.session_token);
+      await Promise.all([session ? logoutProfile(session.session_token) : null, endCodeUploads()]);
     } catch {
       // still clear locally
     }
-    clearSession();
+    if (session) clearSession();
     setSessionState(null);
+    setCodes(NO_CODE_SESSIONS);
     setLoggingOut(false);
   }
 
   if (holding) return <ProfilePlaceholder shape={shape} tab={initialTab} />;
 
-  if (!account && !session) {
+  if (!account && !session && !codeTabs.length) {
     // Without Discord sign-in the code is the only way in, so it shows open.
     const codeOpen = showCode || load.kind !== "signed_out";
     return (
@@ -415,7 +430,9 @@ export default function ProfilePanel({
         ) : null}
         <div id={codeId} hidden={!codeOpen} className="mt-8 max-w-md">
           <p className="text-sm text-[var(--tfmc-mist)]">
-            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code> in game, then enter the code.
+            Run <code className="text-[var(--tfmc-accent)]">/token create profile</code>,{" "}
+            <code className="text-[var(--tfmc-accent)]">skin</code> or{" "}
+            <code className="text-[var(--tfmc-accent)]">drink</code> in game, then enter the code.
           </p>
           <ProfileRedeemForm onRedeemed={onRedeemed} />
         </div>
@@ -426,7 +443,7 @@ export default function ProfilePanel({
   const minecraft = account?.minecraft ?? null;
   const subline = account ? sublineParts(account, overview) : [];
   const aliveCount = (dashboard?.characters || []).filter((c) => String(c.status).toUpperCase() === "ALIVE").length;
-  const codeSession = session && session.source !== "discord" ? session : null;
+  const codeOpened = session ? session.source !== "discord" : codeTabs.length > 0;
 
   return (
     <>
@@ -485,7 +502,7 @@ export default function ProfilePanel({
         </div>
       )}
 
-      {codeSession ? (
+      {codeOpened ? (
         <p className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--tfmc-mist)]">
           <span>Opened with an in-game code.</span>
           <button type="button" onClick={() => void onLogout()} disabled={loggingOut} className={quietButtonClass}>
@@ -560,6 +577,22 @@ export default function ProfilePanel({
               ) : null}
             </>
           )
+        ) : !contentTabs ? (
+          shown === "skins" && codes.skins ? (
+            <CodeWardrobe
+              key={codes.skins.session_token}
+              noun="skin"
+              sessionToken={codes.skins.session_token}
+              onEnded={dropCodes}
+            />
+          ) : codes.drinks ? (
+            <CodeWardrobe
+              key={codes.drinks.session_token}
+              noun="drink"
+              sessionToken={codes.drinks.session_token}
+              onEnded={dropCodes}
+            />
+          ) : null
         ) : (
           <>
             {loadError ? <p className="mb-4 text-sm text-[#e8a0a0]">{loadError}</p> : null}

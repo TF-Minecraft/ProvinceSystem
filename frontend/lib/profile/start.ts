@@ -1,6 +1,7 @@
 /** Starting a skin or drink from Profile, in place of a /token create code. */
 
-export type StartRefusal = "discord" | "join_server" | "rank" | "cooldown";
+/** "used": a skin or drink code has already made its skin or drink. */
+export type StartRefusal = "discord" | "join_server" | "rank" | "cooldown" | "used";
 
 export type StartAllowance = {
   can_start: boolean;
@@ -11,9 +12,9 @@ export type StartAllowance = {
 
 export type StartAllowances = { skin: StartAllowance; drink: StartAllowance };
 
-const REASONS: readonly StartRefusal[] = ["discord", "join_server", "rank", "cooldown"];
+const REASONS: readonly StartRefusal[] = ["discord", "join_server", "rank", "cooldown", "used"];
 
-function readAllowance(raw: unknown): StartAllowance | null {
+export function readAllowance(raw: unknown): StartAllowance | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
   const reason = REASONS.find((r) => r === value.reason) ?? null;
