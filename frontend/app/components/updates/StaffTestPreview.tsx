@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 import { WeekSections } from "@/app/components/updates/WeekArchiveList";
-import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 import { getSession, isSessionValid } from "@/lib/characters/session";
 import { readStaffPreview, type StaffPreview } from "@/lib/patchnotes/preview";
 
@@ -11,12 +10,11 @@ function apiBase(): string {
   return (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
 }
 
-export default function StaffTestPreview() {
-  const { state } = useSiteStaffAccess();
+export default function StaffTestPreview({ staff }: { staff: boolean }) {
   const [preview, setPreview] = useState<StaffPreview | null>(null);
 
   useEffect(() => {
-    if (state !== "staff") {
+    if (!staff) {
       setPreview(null);
       return;
     }
@@ -45,7 +43,7 @@ export default function StaffTestPreview() {
     return () => {
       cancelled = true;
     };
-  }, [state]);
+  }, [staff]);
 
   useEffect(() => {
     if (!preview) return;
