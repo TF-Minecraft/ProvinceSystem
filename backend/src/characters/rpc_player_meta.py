@@ -138,7 +138,6 @@ def _empty_entitlements(*, realm_id: str = "main") -> dict[str, Any]:
         "allow_armor_3d_helmet": False,
         "permission_flags": {},
         "meta_synced": False,
-        "donator_tier": 0,
         "realm_id": realm_id,
     }
 
@@ -159,7 +158,7 @@ def get_rpc_player_meta(
             SELECT player_uuid, realm_id, name_colour_stops, allow_drink_texture,
                    allow_drink_message, max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
                    skin_token_cooldown_days, skin_kinds_json,
-                   allow_armor_3d_helmet, permission_flags_json, donator_tier, updated_at
+                   allow_armor_3d_helmet, permission_flags_json, updated_at
             FROM rpc_player_meta
             WHERE LOWER(player_uuid) = ? AND realm_id = ?
             """,
@@ -248,12 +247,6 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         flags = _normalize_permission_flags(row["permission_flags_json"])
     except (RpcPlayerMetaError, KeyError, TypeError):
         flags = {}
-    donator_tier = 0
-    try:
-        if row["donator_tier"] is not None:
-            donator_tier = max(0, int(row["donator_tier"]))
-    except (TypeError, ValueError, KeyError):
-        donator_tier = 0
     realm = "main"
     try:
         raw_realm = row["realm_id"]
@@ -274,7 +267,6 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         "skin_kinds": kinds,
         "allow_armor_3d_helmet": allow_helmet,
         "permission_flags": flags,
-        "donator_tier": donator_tier,
         "updated_at": str(row["updated_at"] or ""),
         "meta_synced": True,
     }
@@ -319,9 +311,6 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
         raw.get("allow_armor_3d_helmet", False), "allow_armor_3d_helmet"
     )
     flags = _normalize_permission_flags(raw.get("permission_flags"))
-    donator_tier = 0
-    if raw.get("donator_tier") is not None:
-        donator_tier = _nonneg_int(raw.get("donator_tier"), "donator_tier")
     kinds_json = json.dumps(kinds, separators=(",", ":"))
     flags_json = json.dumps(flags, separators=(",", ":"), sort_keys=True)
     updated_at = _iso_now()
@@ -333,9 +322,9 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 player_uuid, realm_id, name_colour_stops, allow_drink_texture,
                 allow_drink_message, max_alive_characters, wardrobe_skin_slots,
                 max_3d_pair_bytes, skin_token_cooldown_days, skin_kinds_json,
-                allow_armor_3d_helmet, permission_flags_json, donator_tier, updated_at
+                allow_armor_3d_helmet, permission_flags_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(player_uuid, realm_id) DO UPDATE SET
                 name_colour_stops = excluded.name_colour_stops,
                 allow_drink_texture = excluded.allow_drink_texture,
@@ -347,7 +336,6 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 skin_kinds_json = excluded.skin_kinds_json,
                 allow_armor_3d_helmet = excluded.allow_armor_3d_helmet,
                 permission_flags_json = excluded.permission_flags_json,
-                donator_tier = excluded.donator_tier,
                 updated_at = excluded.updated_at
             """,
             (
@@ -363,7 +351,6 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 kinds_json,
                 1 if allow_helmet else 0,
                 flags_json,
-                donator_tier,
                 updated_at,
             ),
         )
@@ -383,7 +370,6 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
         "skin_kinds": kinds,
         "allow_armor_3d_helmet": allow_helmet,
         "permission_flags": flags,
-        "donator_tier": donator_tier,
         "updated_at": updated_at,
         "meta_synced": True,
     }
@@ -421,7 +407,6 @@ def resolve_web_entitlements(
                 "allow_armor_3d_helmet": bool(row["allow_armor_3d_helmet"]),
                 "permission_flags": dict(row["permission_flags"]),
                 "meta_synced": True,
-                "donator_tier": int(row.get("donator_tier") or 0),
                 "realm_id": realm,
             }
         else:
@@ -440,6 +425,4 @@ def resolve_web_entitlements(
         )
 
     out["realm_id"] = realm
-    if "donator_tier" not in out:
-        out["donator_tier"] = 0
     return out

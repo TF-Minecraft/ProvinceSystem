@@ -114,7 +114,7 @@ class RealmCodesTest(unittest.TestCase):
         with mock.patch.object(
             creates_mod,
             "require_synced_creation_catalog",
-            return_value={"web_creator_access": {"by_realm": {}}},
+            return_value={},
         ), mock.patch.object(
             creates_mod,
             "_validate_and_normalize",

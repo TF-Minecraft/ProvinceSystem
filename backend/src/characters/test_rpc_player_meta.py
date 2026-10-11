@@ -92,39 +92,6 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertTrue(row["allow_drink_message"])
         self.assertTrue(row["meta_synced"])
 
-    def test_donator_tier_round_trip(self) -> None:
-        from characters.rpc_player_meta import (
-            get_rpc_player_meta,
-            resolve_web_entitlements,
-            upsert_rpc_player_meta,
-        )
-
-        out = upsert_rpc_player_meta(
-            {
-                "player_uuid": "tier-player",
-                "donator_tier": 2,
-                "name_colour_stops": 0,
-            }
-        )
-        self.assertEqual(2, out["donator_tier"])
-
-        row = get_rpc_player_meta("tier-player")
-        assert row is not None
-        self.assertEqual(2, row["donator_tier"])
-
-        ent = resolve_web_entitlements("tier-player")
-        self.assertEqual(2, ent["donator_tier"])
-
-    def test_rpc_player_meta_body_passes_donator_tier(self) -> None:
-        from characters.rpc_player_meta import get_rpc_player_meta, upsert_rpc_player_meta
-        from src.api.characters_routes import RpcPlayerMetaBody
-
-        body = RpcPlayerMetaBody(player_uuid="route-tier-1", donator_tier=1)
-        upsert_rpc_player_meta(body.model_dump())
-        row = get_rpc_player_meta("route-tier-1")
-        assert row is not None
-        self.assertEqual(1, row["donator_tier"])
-
     def test_realm_scoped_get_upsert(self) -> None:
         from characters.rpc_player_meta import (
             get_rpc_player_meta,

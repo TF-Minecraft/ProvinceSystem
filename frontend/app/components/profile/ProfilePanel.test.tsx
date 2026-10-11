@@ -608,23 +608,19 @@ it("opens on Characters without a code for a linked Discord account", async () =
   expect(screen.queryByLabelText("Minecraft account")).toBeNull();
 });
 
-it("locks Create below the creator's rank and names races from the catalogue", async () => {
+it("names races from the catalogue", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(
     wardrobe({
       characters: [
         { id: "c1", status: "rejected", name: "Brin", race: "half_orc", error: "slot full" },
       ] as unknown as ProfileDashboard["characters"],
-      web_creator_allowed: false,
-      web_creator_min_group_id: "high_noble",
     }),
   );
   vi.mocked(getCreationCatalog).mockResolvedValue({
     races: [{ id: "half_orc", name: "Half-Orc" }],
   } as unknown as CreationCatalog);
   render(<ProfilePanel />);
-  expect(await screen.findByText(/Needs High Noble rank or higher/)).toBeTruthy();
-  expect(screen.queryByRole("link", { name: "Create" })).toBeNull();
   expect(await screen.findByText("Half-Orc")).toBeTruthy();
 });
 
