@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CharactersApiError, listCharacterKits, type CharacterKit } from "../../../../lib/characters/api";
-import { logoutProfile } from "../../../../lib/profile/uploads";
 import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
@@ -35,7 +34,6 @@ export default function CharacterKitsPage() {
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [kits, setKits] = useState<CharacterKit[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const load = useCallback(
     async (token: string) => {
@@ -79,19 +77,6 @@ export default function CharacterKitsPage() {
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, load, router, uiDev]);
 
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) await logoutProfile(session.session_token);
-    } catch {
-      /* clear anyway */
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
-
   if (!ready) {
     return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
@@ -105,14 +90,6 @@ export default function CharacterKitsPage() {
         >
           Back
         </Link>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Kits</h1>

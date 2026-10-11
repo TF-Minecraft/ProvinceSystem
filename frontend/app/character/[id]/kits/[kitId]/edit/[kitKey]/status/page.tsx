@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import CustomiseStatusCard from "../../../../../../../components/character/CustomiseStatusCard";
 import { CharactersApiError, listLoreItems, type LoreItemRow } from "../../../../../../../../lib/characters/api";
-import { logoutProfile } from "../../../../../../../../lib/profile/uploads";
 import { UI_DEV_LORE_CHARACTER_ID, uiDevLoreItemsResponse } from "../../../../../../../../lib/characters/loreItemsDev";
 import {
   clearSession,
@@ -42,7 +41,6 @@ export default function CharacterKitCustomiseStatusPage() {
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [item, setItem] = useState<LoreItemRow | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
@@ -105,19 +103,6 @@ export default function CharacterKitCustomiseStatusPage() {
     }
   }
 
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) await logoutProfile(session.session_token);
-    } catch {
-      /* clear */
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
-
   if (!ready) {
     return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
   }
@@ -135,14 +120,6 @@ export default function CharacterKitCustomiseStatusPage() {
         >
           Back to kit
         </Link>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Item status</h1>

@@ -143,16 +143,17 @@ export function interactiveStageCount(stages: CatalogStage[]): number {
   return stages.filter(isInteractiveStage).length;
 }
 
-/** Interactive step index (1-based) for progress, or null for info cards. */
+/** Interactive step (1-based) for progress; an info card counts as the step it introduces. */
 export function interactiveProgress(stages: CatalogStage[], index: number): { current: number; total: number } | null {
-  const stage = stages[index];
-  if (!stage || !isInteractiveStage(stage)) return null;
+  if (!stages[index]) return null;
   const total = interactiveStageCount(stages);
+  if (!total) return null;
   let current = 0;
   for (let i = 0; i <= index; i++) {
     if (isInteractiveStage(stages[i]!)) current += 1;
   }
-  return { current, total };
+  if (!isInteractiveStage(stages[index]!)) current += 1;
+  return { current: Math.min(current, total), total };
 }
 
 function stripColors(raw: string): string {

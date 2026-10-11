@@ -62,8 +62,6 @@ import NameColourPicker from "../shared/NameColourPicker";
 type Props = {
   catalog: CreationCatalog;
   sessionToken: string;
-  onLogout: () => void;
-  loggingOut?: boolean;
   uiDev?: boolean;
   /** Skip age_stage + creation_age_set_stage when player already attested. */
   skipRealAge?: boolean;
@@ -552,8 +550,6 @@ function PeekCard({ stage, position }: { stage: CatalogStage; position: "prev" |
 export default function CreationWizard({
   catalog,
   sessionToken,
-  onLogout,
-  loggingOut = false,
   uiDev = false,
   skipRealAge = false,
   evilUnlocked = false,
@@ -720,19 +716,26 @@ export default function CreationWizard({
 
   return (
     <div className="mt-4 flex flex-1 flex-col">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="text-xs tabular-nums text-[var(--tfmc-stone)]">
-          {progress ? `Step ${progress.current} / ${progress.total}` : "Info"}
-        </p>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
-      </div>
+      {progress ? (
+        <div className="mb-2 flex items-center gap-3">
+          <div
+            className="h-1 flex-1 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]"
+            role="progressbar"
+            aria-label="Progress"
+            aria-valuemin={1}
+            aria-valuemax={progress.total}
+            aria-valuenow={progress.current}
+          >
+            <div
+              className="h-full rounded-full bg-[var(--tfmc-accent)] transition-[width] duration-300"
+              style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            />
+          </div>
+          <p className="shrink-0 text-xs tabular-nums text-[var(--tfmc-stone)]">
+            {progress.current} of {progress.total}
+          </p>
+        </div>
+      ) : null}
 
       <div className="relative flex min-h-[min(62vh,520px)] flex-1 flex-col gap-[0.35rem] [mask-image:linear-gradient(to_bottom,transparent_0%,#000_12%,#000_88%,transparent_100%)]">
         {prevStage ? <PeekCard stage={prevStage} position="prev" /> : <div className="h-11 shrink-0" aria-hidden />}

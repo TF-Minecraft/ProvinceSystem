@@ -11,7 +11,6 @@ import {
   listLoreItems,
   type LoreItemRow,
 } from "../../../../../../../lib/characters/api";
-import { logoutProfile } from "../../../../../../../lib/profile/uploads";
 import {
   UI_DEV_LORE_CHARACTER_ID,
   uiDevApplyCustomise,
@@ -46,7 +45,6 @@ export default function CharacterKitEditPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const statusHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}/status`;
   const backHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
@@ -97,19 +95,6 @@ export default function CharacterKitEditPage() {
     setSession(s);
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, kitKey, load, router, uiDev]);
-
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) await logoutProfile(session.session_token);
-    } catch {
-      /* clear */
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
 
   async function onSubmit(input: {
     displayName: string;
@@ -175,14 +160,6 @@ export default function CharacterKitEditPage() {
         >
           Back to kit
         </Link>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut || submitting || deleting}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">Edit item</h1>

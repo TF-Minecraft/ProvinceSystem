@@ -12,7 +12,6 @@ import {
   type CharacterListItem,
   type CreationCatalog,
 } from "../../../lib/characters/api";
-import { logoutProfile } from "../../../lib/profile/uploads";
 import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../lib/characters/uiDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
@@ -29,7 +28,6 @@ export default function CharacterDetailPage() {
   const [character, setCharacter] = useState<CharacterListItem | null>(null);
   const [catalog, setCatalog] = useState<CreationCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(
@@ -78,21 +76,6 @@ export default function CharacterDetailPage() {
       .finally(() => setReady(true));
   }, [characterId, load, router, uiDev]);
 
-  async function onLogout() {
-    if (!session || loggingOut) return;
-    setLoggingOut(true);
-    try {
-      if (!uiDev) {
-        await logoutProfile(session.session_token);
-      }
-    } catch {
-      /* still clear local */
-    } finally {
-      clearSession();
-      router.replace("/profile");
-    }
-  }
-
   async function onCancelPending() {
     if (!session || cancelling || uiDev) return;
     setCancelling(true);
@@ -121,14 +104,6 @@ export default function CharacterDetailPage() {
         >
           Back to characters
         </Link>
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-        >
-          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
-        </button>
       </div>
 
       {error ? (
