@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import CharacterList from "../character/CharacterList";
 import ProfileCustomItemsList from "./ProfileCustomItemsList";
 import ProfileRedeemForm from "./ProfileRedeemForm";
 import { CodeWardrobe, DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
+import { DrinkItem, SkinItem } from "./ProfileItems";
 import LinkedAccounts, {
   ACCOUNTS_PATH,
   cardClass,
@@ -40,7 +41,8 @@ import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { NO_CODE_SESSIONS, readCodeSessions, type CodeSessions, type SignIn } from "../../../lib/profile/codes";
 import { clearSession, getSession, isSessionValid, type ProfileSession } from "../../../lib/profile/session";
-import type { ProfileTab } from "../../../lib/profile/tabs";
+import { itemParam, profileHref } from "../../../lib/profile/paths";
+import { profileTab, type ProfileTab } from "../../../lib/profile/tabs";
 import { endCodeUploads, logoutProfile } from "../../../lib/profile/uploads";
 
 const CONTENT_TABS: readonly [ProfileTab, string][] = [
@@ -166,11 +168,14 @@ function Subline({ parts }: { parts: ReactNode[] }) {
  */
 export default function ProfilePanel({
   tab: initialTab = null,
+  item: initialItem = null,
   signin = null,
   minecraft: minecraftStatus = null,
   shape = DEFAULT_ACCOUNT_SHAPE,
 }: {
   tab?: ProfileTab | null;
+  /** The skin or drink open in the tab: "new" for the editor, else a submission id. */
+  item?: string | null;
   signin?: string | null;
   minecraft?: string | null;
   /** What the page drew last time, for the loading outline. */
@@ -195,6 +200,9 @@ export default function ProfilePanel({
   const [overviewFor, setOverviewFor] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [tab, setTab] = useState<ProfileTab | null>(initialTab);
+  const [item, setItem] = useState<string | null>(initialItem);
+  // Set once this page has pushed an item's address, so ← goes back to the wardrobe entry.
+  const openedHere = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   // Skin and drink codes' sessions, which open just their wardrobes when there's no Profile session.
@@ -347,6 +355,8 @@ export default function ProfilePanel({
     : CONTENT_TABS.filter(([id]) => (id === "skins" && codes.skins) || (id === "drinks" && codes.drinks));
   const tabs = contentTabs ? [...CONTENT_TABS, ACCOUNTS_TAB] : [...codeTabs, ACCOUNTS_TAB];
   const shown: ProfileTab = tabs.some(([id]) => id === tab) ? tab! : tabs[0][0];
+  // A skin or drink opens only in the tab its address named.
+  const openItem = shown === tab && itemParam(shown) ? item : null;
 
   const cardRef = useRef<HTMLUListElement>(null);
   const drawn = holding ? null : drawnShape(load, overview, contentTabs);
@@ -357,16 +367,61 @@ export default function ProfilePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawn && encodeAccountShape(drawn), shown]);
 
+  // Back and forward move between the wardrobe and what it opened.
+  useEffect(() => {
+    function fromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const next = profileTab(params.get("tab"));
+      const param = itemParam(next);
+      setTab(next);
+      setItem(param ? params.get(param) : null);
+    }
+    window.addEventListener("popstate", fromUrl);
+    return () => window.removeEventListener("popstate", fromUrl);
+  }, []);
+
+  const go = useCallback((next: ProfileTab, nextItem: string | null, push: boolean) => {
+    setTab(next);
+    setItem(nextItem);
+    const url = profileHref(next, nextItem);
+    if (push) window.history.pushState(null, "", url);
+    else window.history.replaceState(null, "", url);
+  }, []);
+
   function chooseTab(id: ProfileTab) {
-    setTab(id);
-    // Back from an upload page lands on the same tab.
-    window.history.replaceState(null, "", id === "characters" ? "/profile" : `/profile?tab=${id}`);
+    go(id, null, false);
   }
+
+  const tokenRef = useRef(token);
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+  const itemNav = useCallback(
+    (next: ProfileTab) => ({
+      onOpen: (id: string) => {
+        openedHere.current = true;
+        go(next, id, true);
+      },
+      onBack: () => {
+        if (openedHere.current) window.history.back();
+        else go(next, null, false);
+      },
+      // After a submit: the new item replaces the editor's entry, and the wardrobe catches up.
+      onShow: (id: string) => {
+        go(next, id, false);
+        if (tokenRef.current) void loadDashboard(tokenRef.current, { quiet: true });
+      },
+    }),
+    [go, loadDashboard],
+  );
+  const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
+  const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
 
   function onRedeemed(signIn: SignIn) {
     if (signIn.profile) setSessionState(signIn.profile);
     else setCodes(readCodeSessions());
-    if (signIn.tab) chooseTab(signIn.tab);
+    // The same tab keeps the skin or drink the address asked for.
+    if (signIn.tab && signIn.tab !== tab) chooseTab(signIn.tab);
   }
 
   /** Ends code sessions: a profile code's, and any skin or drink code's. Discord sessions end with Sign out. */
@@ -426,7 +481,7 @@ export default function ProfilePanel({
               </p>
             ) : null}
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <DiscordSignInLink href={discordSignInUrl(tab ? `/profile?tab=${tab}` : "/profile")} />
+              <DiscordSignInLink href={discordSignInUrl(profileHref(tab, item))} />
               <button
                 type="button"
                 onClick={() => setShowCode((open) => !open)}
@@ -606,6 +661,12 @@ export default function ProfilePanel({
               ) : null}
             </>
           )
+        ) : openItem ? (
+          shown === "skins" ? (
+            <SkinItem id={openItem} {...skinNav} />
+          ) : (
+            <DrinkItem id={openItem} {...drinkNav} />
+          )
         ) : !contentTabs ? (
           shown === "skins" && codes.skins ? (
             <CodeWardrobe
@@ -613,6 +674,7 @@ export default function ProfilePanel({
               noun="skin"
               sessionToken={codes.skins.session_token}
               onEnded={dropCodes}
+              onOpen={skinNav.onOpen}
             />
           ) : codes.drinks ? (
             <CodeWardrobe
@@ -620,6 +682,7 @@ export default function ProfilePanel({
               noun="drink"
               sessionToken={codes.drinks.session_token}
               onEnded={dropCodes}
+              onOpen={drinkNav.onOpen}
             />
           ) : null
         ) : (
@@ -639,9 +702,19 @@ export default function ProfilePanel({
                 refreshing={loadingDashboard}
               />
             ) : shown === "skins" ? (
-              <SkinWardrobe rows={dashboard.skins} allowance={dashboard.can_start?.skin} sessionToken={token!} />
+              <SkinWardrobe
+                rows={dashboard.skins}
+                allowance={dashboard.can_start?.skin}
+                sessionToken={token!}
+                onOpen={skinNav.onOpen}
+              />
             ) : shown === "drinks" ? (
-              <DrinkWardrobe rows={dashboard.drinks} allowance={dashboard.can_start?.drink} sessionToken={token!} />
+              <DrinkWardrobe
+                rows={dashboard.drinks}
+                allowance={dashboard.can_start?.drink}
+                sessionToken={token!}
+                onOpen={drinkNav.onOpen}
+              />
             ) : (
               <ProfileCustomItemsList items={dashboard.custom_items} />
             )}

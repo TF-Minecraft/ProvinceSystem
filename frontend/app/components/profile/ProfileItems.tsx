@@ -1,0 +1,273 @@
+"use client";
+
+import { useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import UploadForm from "../skins/UploadForm";
+import SkinStatusCard from "../skins/StatusCard";
+import BrewForm from "../drinks/BrewForm";
+import DrinkStatusCard from "../drinks/StatusCard";
+import { getPlayerMeta, getSubmission as getSkin, type SubmissionPublic } from "../../../lib/skins/api";
+import * as skins from "../../../lib/skins/session";
+import { getSubmission as getDrink, type DrinkSubmissionPublic } from "../../../lib/drinks/api";
+import * as drinks from "../../../lib/drinks/session";
+import { profileHref } from "../../../lib/profile/paths";
+import { resolveOwnerToken, type WardrobeSessionStore } from "../../../lib/profile/session";
+
+type Props = {
+  /** "new" for the editor, else a submission id. */
+  id: string;
+  /** Back to the wardrobe. */
+  onBack: () => void;
+  /** Swaps this view for one skin or drink, in place (after a submit). */
+  onShow: (id: string) => void;
+};
+
+const quietClass = "text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline";
+
+/** A skin or drink inside its Profile tab: back to the wardrobe, a title, then the editor or the item. */
+function ItemFrame({
+  tab,
+  title,
+  onBack,
+  children,
+}: {
+  tab: "skins" | "drinks";
+  title: string;
+  onBack: () => void;
+  children: ReactNode;
+}) {
+  function back(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    onBack();
+  }
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <a href={profileHref(tab)} onClick={back} className={quietClass}>
+          ← {tab === "skins" ? "Skins" : "Drinks"}
+        </a>
+        <h2 className="min-w-0 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Loading() {
+  return <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
+}
+
+/** The skin editor, for a session Profile started or an in-game code opened. */
+function NewSkin({ onBack, onShow }: Omit<Props, "id">) {
+  const [session, setSessionState] = useState<skins.SkinsSession | null>(null);
+  const [metaSynced, setMetaSynced] = useState(true);
+
+  useEffect(() => {
+    const existing = skins.getSession();
+    if (!skins.isSessionValid(existing)) {
+      if (existing) skins.clearSession();
+      onBack();
+      return;
+    }
+    // Back to a submitted skin's editor: its code is spent, so show the skin instead.
+    const lastId = skins.getLastSubmissionId();
+    if (lastId) {
+      onShow(lastId);
+      return;
+    }
+    setSessionState(existing);
+  }, [onBack, onShow]);
+
+  const token = session?.session_token;
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    getPlayerMeta(token)
+      .then((meta) => {
+        if (cancelled) return;
+        const current = skins.getSession();
+        if (!current || current.session_token !== token) return;
+        const next: skins.SkinsSession = {
+          ...current,
+          name_colour_stops: meta.name_colour_stops,
+          max_3d_pair_bytes: meta.max_3d_pair_bytes,
+          skin_token_cooldown_days: meta.skin_token_cooldown_days,
+          skin_kinds: meta.skin_kinds,
+          allow_armor_3d_helmet: meta.allow_armor_3d_helmet,
+        };
+        skins.setSession(next);
+        setSessionState(next);
+        setMetaSynced(meta.meta_synced !== false);
+      })
+      .catch(() => {
+        // Keep the redeem-time snapshot.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  return (
+    <ItemFrame tab="skins" title="New skin" onBack={onBack}>
+      {session ? (
+        <UploadForm
+          sessionToken={session.session_token}
+          staff={session.staff === true}
+          nameColourStops={session.name_colour_stops}
+          max3dPairBytes={session.max_3d_pair_bytes}
+          skinKinds={session.skin_kinds ?? null}
+          allowArmor3dHelmet={session.allow_armor_3d_helmet === true}
+          colourLockedMessage={
+            !metaSynced && (session.name_colour_stops ?? 0) <= 0
+              ? "Join the server once to unlock your rank perks."
+              : undefined
+          }
+          onSubmitted={onShow}
+        />
+      ) : (
+        <Loading />
+      )}
+    </ItemFrame>
+  );
+}
+
+/** The drink editor, for a session Profile started or an in-game code opened. */
+function NewDrink({ onBack, onShow }: Omit<Props, "id">) {
+  const [session, setSessionState] = useState<drinks.DrinksSession | null>(null);
+
+  useEffect(() => {
+    const existing = drinks.getSession();
+    if (!drinks.isSessionValid(existing)) {
+      if (existing) drinks.clearSession();
+      onBack();
+      return;
+    }
+    // Back to a submitted drink's editor: its code is spent, so show the drink instead.
+    const lastId = drinks.getLastSubmissionId();
+    if (lastId) {
+      onShow(lastId);
+      return;
+    }
+    setSessionState(existing);
+  }, [onBack, onShow]);
+
+  return (
+    <ItemFrame tab="drinks" title="New drink" onBack={onBack}>
+      {session ? <BrewForm session={session} onSubmitted={onShow} /> : <Loading />}
+    </ItemFrame>
+  );
+}
+
+/** One skin or drink and where it is in review, loaded with Profile's session or a code's. */
+function useOwnedItem<Row, S extends { session_token: string }>(
+  id: string,
+  store: WardrobeSessionStore<S>,
+  get: (id: string, token: string) => Promise<Row>,
+  onBack: () => void,
+) {
+  const [row, setRow] = useState<Row | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const owner = resolveOwnerToken(store);
+    if (!owner) {
+      onBack();
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setRow(await get(id, owner));
+      setToken(owner);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load");
+      setRow(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [get, id, onBack, store]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { row, token, error, loading, load };
+}
+
+function ItemBody({
+  loading,
+  error,
+  card,
+  onRefresh,
+}: {
+  loading: boolean;
+  error: string | null;
+  card: ReactNode;
+  onRefresh: () => void;
+}) {
+  if (loading) return <Loading />;
+  if (error) {
+    return (
+      <p className="mt-6 text-sm text-[#e8a0a0]" role="alert">
+        {error}
+      </p>
+    );
+  }
+  if (!card) return null;
+  return (
+    <>
+      {card}
+      <button type="button" onClick={onRefresh} className={`${quietClass} mt-8`}>
+        Refresh status
+      </button>
+    </>
+  );
+}
+
+function SkinView({ id, onBack }: Omit<Props, "onShow">) {
+  const { row, token, error, loading, load } = useOwnedItem<SubmissionPublic, skins.SkinsSession>(
+    id,
+    skins,
+    getSkin,
+    onBack,
+  );
+  return (
+    <ItemFrame tab="skins" title={row?.display_name || "Skin"} onBack={onBack}>
+      <ItemBody
+        loading={loading}
+        error={error}
+        card={row && token ? <SkinStatusCard row={row} sessionToken={token} /> : null}
+        onRefresh={() => void load()}
+      />
+    </ItemFrame>
+  );
+}
+
+function DrinkView({ id, onBack }: Omit<Props, "onShow">) {
+  const { row, error, loading, load } = useOwnedItem<DrinkSubmissionPublic, drinks.DrinksSession>(
+    id,
+    drinks,
+    getDrink,
+    onBack,
+  );
+  return (
+    <ItemFrame tab="drinks" title={row?.display_name || "Drink"} onBack={onBack}>
+      <ItemBody
+        loading={loading}
+        error={error}
+        card={row ? <DrinkStatusCard row={row} /> : null}
+        onRefresh={() => void load()}
+      />
+    </ItemFrame>
+  );
+}
+
+export function SkinItem({ id, onBack, onShow }: Props) {
+  return id === "new" ? <NewSkin onBack={onBack} onShow={onShow} /> : <SkinView key={id} id={id} onBack={onBack} />;
+}
+
+export function DrinkItem({ id, onBack, onShow }: Props) {
+  return id === "new" ? <NewDrink onBack={onBack} onShow={onShow} /> : <DrinkView key={id} id={id} onBack={onBack} />;
+}

@@ -106,7 +106,7 @@ export function isSessionValid(session: ProfileSession | null = getSession()): b
   return exp > Date.now();
 }
 
-type WardrobeSessionStore<S extends { session_token: string }> = {
+export type WardrobeSessionStore<S extends { session_token: string }> = {
   getSession: () => S | null;
   isSessionValid: (session: S | null) => boolean;
   clearSession: () => void;

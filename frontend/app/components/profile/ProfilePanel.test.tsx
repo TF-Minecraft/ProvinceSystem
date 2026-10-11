@@ -19,13 +19,12 @@ import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../
 import { getSession, setSession } from "../../../lib/profile/session";
 import { StartRefusedError } from "../../../lib/profile/start";
 import { getCreationCatalog, logoutCharacter, type CreationCatalog } from "../../../lib/characters/api";
-import { getSkinThumbnail, startSkinFromProfile } from "../../../lib/skins/api";
+import { getReviewSheet, getSkinThumbnail, getSubmission, startSkinFromProfile } from "../../../lib/skins/api";
 import { getSession as getSkinsSession, setSession as setSkinsSession } from "../../../lib/skins/session";
 import { getCodeWardrobe, signInWithCode } from "../../../lib/profile/codes";
 
-const push = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
 vi.mock("../../../lib/account/api", async (importOriginal) => ({
@@ -48,7 +47,18 @@ vi.mock("../../../lib/profile/api", async (importOriginal) => ({
 vi.mock("../../../lib/skins/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/skins/api")>()),
   getSkinThumbnail: vi.fn(),
+  getSubmission: vi.fn(),
+  getReviewSheet: vi.fn(),
+  getPlayerMeta: vi.fn(() => new Promise(() => undefined)),
   startSkinFromProfile: vi.fn(),
+}));
+// The editor is tested on its own; here it only has to open in the tab and hand back a submission.
+vi.mock("../skins/UploadForm", () => ({
+  default: ({ onSubmitted }: { onSubmitted: (id: string) => void }) => (
+    <button type="button" onClick={() => onSubmitted("sub-2")}>
+      Submit skin
+    </button>
+  ),
 }));
 vi.mock("../../../lib/profile/codes", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/profile/codes")>()),
@@ -753,16 +763,90 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
     scope: "skin",
     skin_kinds: ["handheld"],
   });
+  window.history.replaceState(null, "", "/profile?tab=skins");
   render(<ProfilePanel tab="skins" />);
   const card = await screen.findByRole("link", { name: /Emberfang/ });
-  expect(card.getAttribute("href")).toBe("/profile/skins/sub-1");
+  expect(card.getAttribute("href")).toBe("/profile?tab=skins&skin=sub-1");
   expect(card.textContent).toContain("Live");
   expect(card.textContent).toContain("Handheld");
   expect(screen.getByText("Use a code").getAttribute("aria-expanded")).toBe("false");
   fireEvent.click(screen.getByRole("button", { name: "New skin" }));
-  await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/profile/skins/new"));
+  // The editor opens in the tab, under the same header and tabs.
+  expect(await screen.findByRole("heading", { level: 2, name: "New skin" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins&skin=new");
+  expect(screen.getByRole("tab", { name: "Skins" }).getAttribute("aria-selected")).toBe("true");
   expect(startSkinFromProfile).toHaveBeenCalledWith("linked-token");
   expect(getSkinsSession()).toMatchObject({ session_token: "skin-token", from_profile: true });
+  fireEvent.click(screen.getByRole("link", { name: "← Skins" }));
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins");
+});
+
+it("opens a skin in its tab, and Back returns to the wardrobe", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
+  vi.mocked(getSubmission).mockResolvedValue({
+    ...SKIN,
+    grip_preset: null,
+    base_set: null,
+    deny_reason: null,
+    reviewed_at: null,
+    applied_at: null,
+  });
+  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  window.history.replaceState(null, "", "/profile?tab=skins");
+  render(<ProfilePanel tab="skins" />);
+  fireEvent.click(await screen.findByRole("link", { name: /Emberfang/ }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Emberfang" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins&skin=sub-1");
+  expect(getSubmission).toHaveBeenCalledWith("sub-1", "linked-token");
+  window.history.back();
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins");
+  expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+});
+
+it("opens a skin's address in the tab, and a submit shows the new skin in the editor's place", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
+  vi.mocked(getSubmission).mockResolvedValue({
+    ...SKIN,
+    id: "sub-2",
+    display_name: "Frostbite",
+    grip_preset: null,
+    base_set: null,
+    deny_reason: null,
+    reviewed_at: null,
+    applied_at: null,
+  });
+  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  setSkinsSession({ ...SKIN_CODE, from_profile: true });
+  window.history.replaceState(null, "", "/profile?tab=skins&skin=new");
+  render(<ProfilePanel tab="skins" item="new" />);
+  fireEvent.click(await screen.findByRole("button", { name: "Submit skin" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Frostbite" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins&skin=sub-2");
+  // The wardrobe reloads for the new skin, and ← (no earlier entry here) replaces this one with it.
+  await vi.waitFor(() => expect(getProfileDashboard).toHaveBeenCalledTimes(2));
+  fireEvent.click(screen.getByRole("link", { name: "← Skins" }));
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins");
+});
+
+it("sends the editor's address back to the wardrobe without a session for it", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ skins: [SKIN] }));
+  window.history.replaceState(null, "", "/profile?tab=skins&skin=new");
+  render(<ProfilePanel tab="skins" item="new" />);
+  expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins");
+});
+
+it("keeps a skin's address through Discord sign-in", async () => {
+  vi.mocked(getAccount).mockResolvedValue(null);
+  render(<ProfilePanel tab="skins" item="sub-1" />);
+  const link = await screen.findByRole("link", { name: "Sign in with Discord" });
+  expect(new URL(link.getAttribute("href")!).searchParams.get("return_to")).toBe("/profile?tab=skins&skin=sub-1");
 });
 
 it("shows when the next skin is ready and keeps codes behind Use a code", async () => {
@@ -789,7 +873,7 @@ it("explains a refused start", async () => {
   render(<ProfilePanel tab="skins" />);
   fireEvent.click(await screen.findByRole("button", { name: "New skin" }));
   expect((await screen.findByRole("alert")).textContent).toBe("Your rank can’t make skins");
-  expect(push).not.toHaveBeenCalled();
+  expect(screen.queryByRole("heading", { level: 2, name: "New skin" })).toBeNull();
 });
 
 it("shows a viewed player's accounts with every action disabled", async () => {
@@ -854,13 +938,14 @@ it("opens just the Skins wardrobe for a skin code, with the editor one click awa
   fireEvent.change(screen.getByLabelText("Log in with code"), { target: { value: "SKIN-CODE" } });
   fireEvent.click(screen.getByRole("button", { name: "Enter" }));
   const card = await screen.findByRole("link", { name: /Emberfang/ });
-  expect(card.getAttribute("href")).toBe("/profile/skins/sub-1");
+  expect(card.getAttribute("href")).toBe("/profile?tab=skins&skin=sub-1");
   expect(getCodeWardrobe).toHaveBeenCalledWith("skin-code");
   expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Skins", "Linked accounts"]);
   expect(window.location.search).toBe("?tab=skins");
   expect(screen.getByText("Opened with an in-game code.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "New skin" }));
-  expect(push).toHaveBeenCalledWith("/profile/skins/new");
+  expect(await screen.findByRole("button", { name: "Submit skin" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=skins&skin=new");
   expect(startSkinFromProfile).not.toHaveBeenCalled();
   expect(getProfileDashboard).not.toHaveBeenCalled();
 });
