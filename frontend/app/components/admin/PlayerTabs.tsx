@@ -24,28 +24,29 @@ function href(uuid: string, tab: PlayerTab): string {
 /** A player's sections, shared by the profile and the movement page. Movement only for those who may see it. */
 export default function PlayerTabs({ uuid, current, movement }: { uuid: string; current: PlayerTab; movement: boolean }) {
   return (
-    <nav
-      aria-label="Player"
-      className="scroll-strip mt-5 flex gap-1 overflow-x-auto border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]"
-    >
-      {TABS.filter((t) => movement || t.tab !== "movement").map(({ tab, label }) => {
-        const active = tab === current;
-        return (
-          <Link
-            key={tab}
-            href={href(uuid, tab)}
-            scroll={false}
-            aria-current={active ? "page" : undefined}
-            className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)] ${
-              active
-                ? "border-[var(--tfmc-accent)] font-semibold text-[var(--tfmc-cream)]"
-                : "border-transparent text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
-            }`}
-          >
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
+    // The strip sits 1px low so the current tab's underline covers the row's border. The tabs must stay
+    // inside the scroll box: any overhang lets phones drag it up and down.
+    <div className="mt-5 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
+      <nav aria-label="Player" className="scroll-strip -mb-px flex gap-1 overflow-x-auto overflow-y-hidden">
+        {TABS.filter((t) => movement || t.tab !== "movement").map(({ tab, label }) => {
+          const active = tab === current;
+          return (
+            <Link
+              key={tab}
+              href={href(uuid, tab)}
+              scroll={false}
+              aria-current={active ? "page" : undefined}
+              className={`shrink-0 border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--tfmc-accent)] ${
+                active
+                  ? "border-[var(--tfmc-accent)] font-semibold text-[var(--tfmc-cream)]"
+                  : "border-transparent text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
+              }`}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
