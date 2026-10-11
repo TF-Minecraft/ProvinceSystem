@@ -6,7 +6,9 @@ type Option = { ids: string[]; excludes: string[]; mods: Map<string, number> };
 const MAX_STAGE_OPTIONS = 20_000;
 
 function lower(s: unknown): string {
-  return String(s ?? "").trim().toLowerCase();
+  return String(s ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function modMap(...lists: (AttributeModifierDto[] | undefined)[]): Map<string, number> {
@@ -53,7 +55,8 @@ function traitStageOptions(stage: CatalogStage, traits: CatalogTrait[]): Option[
       const t = items[i];
       const id = lower(t.id);
       const clash = pick.some(
-        (p) => (p.mutually_exclusive ?? []).some((x) => lower(x) === id) ||
+        (p) =>
+          (p.mutually_exclusive ?? []).some((x) => lower(x) === id) ||
           (t.mutually_exclusive ?? []).some((x) => lower(x) === lower(p.id)),
       );
       if (clash) continue;
@@ -118,7 +121,8 @@ export function attributeCeilings(catalog: CreationCatalog | null | undefined): 
     const value = (o: Option) => o.mods.get(attr) ?? 0;
     const sorted = stages.map((s) => [...s].sort((a, b) => value(b) - value(a)));
     const suffix = new Array<number>(sorted.length + 1).fill(0);
-    for (let i = sorted.length - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + (sorted[i].length ? value(sorted[i][0]) : 0);
+    for (let i = sorted.length - 1; i >= 0; i--)
+      suffix[i] = suffix[i + 1] + (sorted[i].length ? value(sorted[i][0]) : 0);
     let best = -Infinity;
     const chosen: string[] = [];
     const blocked: string[] = [];

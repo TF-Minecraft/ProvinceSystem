@@ -20,7 +20,15 @@ function catalog(overrides: Partial<CreationCatalog> = {}): CreationCatalog {
       { id: "physical", type: "selection", target: "trait", key: "physical", min_select: 1, max_select: 3, points: 1 },
       { id: "attributes", type: "attributes", key: "attributes", points: 12, max_rank: 4 },
       { id: "personality", type: "selection", target: "trait", key: "personality", min_select: 1, max_select: 2 },
-      { id: "injury", type: "selection", target: "trait", key: "injury", filter: "permanent-only", min_select: 0, max_select: 99 },
+      {
+        id: "injury",
+        type: "selection",
+        target: "trait",
+        key: "injury",
+        filter: "permanent-only",
+        min_select: 0,
+        max_select: 99,
+      },
     ],
     attribute_point_buy: {
       pool: 12,

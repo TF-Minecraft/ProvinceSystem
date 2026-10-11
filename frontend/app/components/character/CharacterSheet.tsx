@@ -312,7 +312,9 @@ export default function CharacterSheet({
                           >
                             <span
                               className="block h-full bg-[var(--tfmc-accent)]"
-                              style={{ width: `${Math.min(1, Math.max(0, (value * ATTRIBUTE_SEGMENTS - i * ceiling) / ceiling)) * 100}%` }}
+                              style={{
+                                width: `${Math.min(1, Math.max(0, (value * ATTRIBUTE_SEGMENTS - i * ceiling) / ceiling)) * 100}%`,
+                              }}
                             />
                           </span>
                         ))}
