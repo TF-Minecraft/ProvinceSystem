@@ -71,7 +71,7 @@ export async function startSkinFromProfile(profileToken: string): Promise<Redeem
   return readRedeemResult(res, data);
 }
 
-function readRedeemResult(res: Response, data: unknown): RedeemResult {
+export function readRedeemResult(res: Response, data: unknown): RedeemResult {
   const body = data as Partial<RedeemResult> & Record<string, unknown>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
     throw new SkinsApiError("Invalid redeem response from API", res.status);

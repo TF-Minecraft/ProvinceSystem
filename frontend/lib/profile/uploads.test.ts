@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { logoutCharacter } from "../characters/api";
 import { getSession as getDrinksSession, setSession as setDrinksSession } from "../drinks/session";
 import { getSession as getSkinsSession, setSession as setSkinsSession } from "../skins/session";
-import { endProfileUploads, logoutProfile } from "./uploads";
+import { endCodeUploads, endProfileUploads, logoutProfile } from "./uploads";
 
 vi.mock("../characters/api", () => ({ logoutCharacter: vi.fn().mockResolvedValue(undefined) }));
 afterEach(() => {
@@ -44,4 +44,13 @@ it("ends Profile uploads with the Profile session on any log out", async () => {
       .mock.calls.map(([t]) => t)
       .sort(),
   ).toEqual(["profile-token", "skin"]);
+});
+
+it("ends code sessions on a code Profile's Log out, leaving Profile's own", async () => {
+  setSkinsSession({ ...BASE, session_token: "code-skin" });
+  setDrinksSession({ ...BASE, session_token: "drink", from_profile: true });
+  await endCodeUploads();
+  expect(getSkinsSession()).toBeNull();
+  expect(getDrinksSession()?.session_token).toBe("drink");
+  expect(vi.mocked(logoutCharacter).mock.calls.map(([t]) => t)).toEqual(["code-skin"]);
 });

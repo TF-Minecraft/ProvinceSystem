@@ -7,6 +7,7 @@ import type { SkinsCatalog } from "../../../lib/skins/catalog";
 import { filterStaffCategories } from "../../../lib/skins/catalog";
 import { DEV_CATALOG_ENTITLEMENTS, DEV_SESSION_SKIN_KINDS } from "../../../lib/skins/entitlementsDev";
 import { setLastSubmissionId } from "../../../lib/skins/session";
+import { skinPath } from "../../../lib/profile/paths";
 import {
   ARMOR_TYPES,
   armorTier,
@@ -520,7 +521,7 @@ export default function UploadForm({
         files: uploadFiles,
       });
       setLastSubmissionId(result.id);
-      router.push(`/skins/${result.id}`);
+      router.push(skinPath(result.id));
     } catch (err) {
       const message = err instanceof SkinsApiError ? err.message : err instanceof Error ? err.message : "Upload failed";
       setError(message);

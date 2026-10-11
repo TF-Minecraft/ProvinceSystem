@@ -18,6 +18,8 @@ RESERVED = frozenset(
         "undefined",
         "admin",
         "tfmc",
+        # Profile's editor is /profile/skins/new, so no skin can be called that.
+        "new",
     }
 )
 

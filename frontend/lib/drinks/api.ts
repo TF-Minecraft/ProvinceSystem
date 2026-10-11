@@ -130,7 +130,7 @@ export async function startDrinkFromProfile(profileToken: string): Promise<Drink
   return readDrinkRedeemResult(res, data);
 }
 
-function readDrinkRedeemResult(res: Response, data: unknown): DrinkRedeemResult {
+export function readDrinkRedeemResult(res: Response, data: unknown): DrinkRedeemResult {
   const body = data as Partial<DrinkRedeemResult>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
     throw new DrinksApiError("Invalid redeem response from API", res.status);
