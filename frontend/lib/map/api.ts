@@ -79,12 +79,6 @@ export type EditorProvincesResponse = {
   provinces: EditorProvinceRow[];
 };
 
-export type EditorRegenResponse = {
-  ok: true;
-  regen_type: string;
-  message: string;
-};
-
 export type EditorTitleDraft = Record<
   string,
   {
@@ -283,18 +277,4 @@ export async function fetchEditorProvinceIndex(
     );
   }
   return await res.arrayBuffer();
-}
-
-export async function postEditorRegen(
-  mapId: MapId,
-  regenType: string,
-  sessionToken: string
-): Promise<EditorRegenResponse> {
-  return fetchMapJson<EditorRegenResponse>(
-    `/${mapId}/editor/regen/${encodeURIComponent(regenType)}`,
-    {
-      method: "POST",
-      sessionToken,
-    }
-  );
 }
