@@ -446,12 +446,6 @@ export async function createCharacter(
   return data as CreateCharacterResult;
 }
 
-export function maxAliveSlots(slotLimits: SlotLimits | undefined): number {
-  const hard = Number(slotLimits?.hard_cap ?? 10) || 10;
-  const soft = Number(slotLimits?.defaults?.max_alive_characters ?? 3) || 3;
-  return Math.min(soft, hard);
-}
-
 export type LoreItemPreview = {
   display_name: string;
   lore: string[];

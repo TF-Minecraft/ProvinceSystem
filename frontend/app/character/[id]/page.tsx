@@ -19,21 +19,9 @@ import {
   isSessionValid,
   type CharacterSession,
 } from "../../../lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "../../../lib/characters/uiDev";
+import { isCharacterUiDev, uiDevSession } from "../../../lib/characters/uiDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
 import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
-
-function uiDevSession(): CharacterSession {
-  return {
-    session_token: UI_DEV_SESSION_TOKEN,
-    player_uuid: "00000000-0000-4000-8000-ui0000000001",
-    expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "profile",
-  };
-}
 
 export default function CharacterDetailPage() {
   const router = useRouter();

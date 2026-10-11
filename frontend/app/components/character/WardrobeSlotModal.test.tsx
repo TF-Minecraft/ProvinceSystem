@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { useEffect } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
@@ -14,15 +13,7 @@ vi.mock("../../../lib/skins/steveMannequin", () => ({
   inferArmModel: vi.fn(),
 }));
 vi.mock("./SkinMannequinPreview", () => ({
-  default: function Preview({ source, armModel, onModelDetected }: {
-    source: string | null;
-    armModel: ArmModel;
-    onModelDetected?: (model: ArmModel) => void;
-  }) {
-    // The real preview reloads and reports detection when the arm model changes.
-    useEffect(() => {
-      if (source) onModelDetected?.(inferArmModel(new Image()));
-    }, [source, armModel]);
+  default: function Preview({ armModel }: { armModel: ArmModel }) {
     return <div data-testid="preview" data-arm-model={armModel} />;
   },
 }));

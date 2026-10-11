@@ -27,16 +27,8 @@ import {
 import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
+  uiDevSession,
 } from "../../../../../../../lib/characters/uiDev";
-
-function uiDevSession(): CharacterSession {
-  return {
-    session_token: UI_DEV_SESSION_TOKEN,
-    player_uuid: "00000000-0000-4000-8000-ui0000000001",
-    expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "profile",
-  };
-}
 
 export default function CharacterKitEditPage() {
   const router = useRouter();

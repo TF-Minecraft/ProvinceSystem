@@ -15,21 +15,9 @@ import {
   isSessionValid,
   type CharacterSession,
 } from "../../../../lib/characters/session";
-import {
-  isCharacterUiDev,
-  UI_DEV_SESSION_TOKEN,
-} from "../../../../lib/characters/uiDev";
+import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
-
-function uiDevSession(): CharacterSession {
-  return {
-    session_token: UI_DEV_SESSION_TOKEN,
-    player_uuid: "00000000-0000-4000-8000-ui0000000001",
-    expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "profile",
-  };
-}
 
 /** UI-dev: unlocked swappable count from URL (always 3 frames shown). */
 function parseUiDevUnlocked(): number {
