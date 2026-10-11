@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   MARKER_HOVER_SCALE,
+  MARKER_LABEL_FONT_LARGE,
   MARKER_LABEL_MIN_SCREEN_PX,
+  isMarkerMapMode,
+  markerDimensions,
   markerHitBounds,
   filterVisibleMapMarkers,
   markerIconScale,
@@ -34,6 +37,9 @@ describe("mapMarkers", () => {
     expect(resolveMarkerImageSrc("settlement", "large")).toBe(
       "/settlement_large.png"
     );
+    expect(resolveMarkerImageSrc(undefined, undefined)).toBe(
+      "/settlement_small.png"
+    );
   });
 
   it("resolveMarkerImageSrc picks installation assets", () => {
@@ -47,6 +53,19 @@ describe("mapMarkers", () => {
 
   it("resolveMarkerImageSrc picks battle asset", () => {
     expect(resolveMarkerImageSrc("battle", "small")).toBe("/battle.png");
+  });
+
+  it("markerDimensions returns tier sizes", () => {
+    expect(markerDimensions("large").fontSize).toBe(MARKER_LABEL_FONT_LARGE);
+    expect(markerDimensions("large").size).toBe(90);
+    expect(markerDimensions("small").size).toBe(100);
+  });
+
+  it("isMarkerMapMode is only true for nation", () => {
+    expect(isMarkerMapMode("nation")).toBe(true);
+    expect(isMarkerMapMode("county")).toBe(false);
+    expect(isMarkerMapMode("trade")).toBe(false);
+    expect(isMarkerMapMode("terrain")).toBe(false);
   });
 
   it("draws a large settlement icon at 90px", () => {
