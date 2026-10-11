@@ -107,3 +107,24 @@ export function isSessionValid(
   if (Number.isNaN(exp)) return false;
   return exp > Date.now();
 }
+
+type WardrobeSessionStore<S extends { session_token: string }> = {
+  getSession: () => S | null;
+  isSessionValid: (session: S | null) => boolean;
+  clearSession: () => void;
+};
+
+/**
+ * Token for a skin or drink owner page: the wardrobe's own session, else
+ * Profile's. Clears an expired wardrobe session when neither is valid.
+ */
+export function resolveOwnerToken<S extends { session_token: string }>(
+  wardrobe: WardrobeSessionStore<S>
+): string | null {
+  const own = wardrobe.getSession();
+  if (wardrobe.isSessionValid(own)) return own!.session_token;
+  const profile = getSession();
+  if (isSessionValid(profile)) return profile!.session_token;
+  if (own) wardrobe.clearSession();
+  return null;
+}

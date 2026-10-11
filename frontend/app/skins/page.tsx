@@ -2,15 +2,16 @@
 
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import RedeemForm from "../components/skins/RedeemForm";
+import CodeRedeemForm from "../components/shared/CodeRedeemForm";
 import UploadForm from "../components/skins/UploadForm";
-import { getPlayerMeta } from "../../lib/skins/api";
+import { getPlayerMeta, redeemCode } from "../../lib/skins/api";
 import {
   clearSession,
   getLastSubmissionId,
   getSession,
   isSessionValid,
   setSession,
+  skinsSessionFrom,
   type SkinsSession,
 } from "../../lib/skins/session";
 import { formatExpiresIn } from "../../lib/skins/formatTime";
@@ -149,7 +150,13 @@ export default function SkinsPage() {
           <p className="mt-3 text-[var(--tfmc-mist)]">
             Enter the code from in-game to start a skin submission.
           </p>
-          <RedeemForm onRedeemed={onRedeemed} />
+          <CodeRedeemForm
+            redeem={redeemCode}
+            toSession={skinsSessionFrom}
+            saveSession={setSession}
+            onRedeemed={onRedeemed}
+            label="Upload code"
+          />
         </>
       )}
 
