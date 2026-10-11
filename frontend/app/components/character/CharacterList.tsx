@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { minecraftHeadUrl } from "../../../lib/account/api";
 import type { CharacterListItem, CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
+import { characterFace } from "../../../lib/characters/face";
 
 type Props = {
   characters: CharacterListItem[];
@@ -11,7 +14,14 @@ type Props = {
   catalog?: CreationCatalog | null;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** Reads each character's wardrobe for its face. */
+  sessionToken?: string | null;
+  /** The player's own head stands in for a character without a skin. */
+  playerUuid?: string | null;
 };
+
+/** Undefined while loading, null when the character has no skin of its own. */
+type Faces = Record<string, string | null | undefined>;
 
 const cardClass =
   "flex h-full min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
@@ -34,19 +44,51 @@ function statusOf(item: CharacterListItem): string {
   return String(item.status || "").toUpperCase();
 }
 
-/** The character's initial on the wardrobe cards' backdrop. */
-function Crest({ name, faded }: { name: string; faded?: boolean }) {
+const portraitClass =
+  "h-14 w-14 shrink-0 rounded-[3px] shadow-[0_0_0_1px_color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)]";
+
+/** The face of the skin the character wears, else the player's own head. */
+function Portrait({
+  face,
+  playerUuid,
+  faded,
+}: {
+  face: string | null | undefined;
+  playerUuid?: string | null;
+  faded?: boolean;
+}) {
+  const [headFailed, setHeadFailed] = useState(false);
+  const src =
+    face ??
+    (face === null && playerUuid && !headFailed ? `${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}` : null);
+  if (!src) {
+    return <span aria-hidden className={`${portraitClass} bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`} />;
+  }
   return (
-    <span
-      aria-hidden
-      className={`grid h-14 w-14 shrink-0 place-items-center rounded-sm bg-[radial-gradient(circle_at_50%_45%,var(--tfmc-moss),color-mix(in_srgb,var(--tfmc-forest-deep)_90%,var(--tfmc-forest))_75%)] font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)] ${faded ? "opacity-50 grayscale" : ""}`}
-    >
-      {name.trim().charAt(0).toUpperCase() || "?"}
-    </span>
+    /* A data URL or our own API; next/image adds nothing for an 8×8 face. */
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      alt=""
+      width={56}
+      height={56}
+      onError={() => setHeadFailed(true)}
+      className={`${portraitClass} [image-rendering:pixelated] ${faded ? "opacity-50 grayscale" : ""}`}
+    />
   );
 }
 
-function Card({ item, catalog }: { item: CharacterListItem; catalog?: CreationCatalog | null }) {
+function Card({
+  item,
+  catalog,
+  face,
+  playerUuid,
+}: {
+  item: CharacterListItem;
+  catalog?: CreationCatalog | null;
+  face: string | null | undefined;
+  playerUuid?: string | null;
+}) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
   const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
@@ -56,7 +98,7 @@ function Card({ item, catalog }: { item: CharacterListItem; catalog?: CreationCa
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
   const body = (
     <>
-      <Crest name={name} faded={faded} />
+      <Portrait face={face} playerUuid={playerUuid} faded={faded} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{name}</p>
@@ -89,6 +131,35 @@ function Card({ item, catalog }: { item: CharacterListItem; catalog?: CreationCa
   );
 }
 
+/** Characters with a roster row have a wardrobe; pending and rejected ones don't yet. */
+const HAS_WARDROBE = new Set(["ALIVE", "DEAD", "MISSING"]);
+
+function useFaces(sessionToken: string | null, characters: CharacterListItem[]): Faces {
+  const [faces, setFaces] = useState<Faces>({});
+  const ids = characters
+    .filter((c) => c.id && HAS_WARDROBE.has(statusOf(c)))
+    .map((c) => c.id)
+    .join("\n");
+  useEffect(() => {
+    if (!sessionToken || !ids) return;
+    let live = true;
+    for (const id of ids.split("\n")) {
+      characterFace(sessionToken, id)
+        .catch(() => null)
+        .then((face) => {
+          if (live) setFaces((old) => ({ ...old, [id]: face }));
+        });
+    }
+    return () => {
+      live = false;
+    };
+  }, [sessionToken, ids]);
+  // Characters with no wardrobe go straight to the player's head.
+  const all: Faces = {};
+  for (const c of characters) all[c.id] = HAS_WARDROBE.has(statusOf(c)) && sessionToken ? faces[c.id] : null;
+  return all;
+}
+
 function SlotPips({ used, total }: { used: number; total: number }) {
   if (total < 1 || total > 12) return null;
   return (
@@ -110,7 +181,10 @@ export default function CharacterList({
   catalog = null,
   onRefresh,
   refreshing = false,
+  sessionToken = null,
+  playerUuid = null,
 }: Props) {
+  const faces = useFaces(sessionToken, characters);
   const order = ["ALIVE", "PENDING", "REJECTED"];
   const current = characters
     .filter((c) => order.includes(statusOf(c)))
@@ -142,7 +216,7 @@ export default function CharacterList({
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {current.map((c) => (
-          <Card key={c.id} item={c} catalog={catalog} />
+          <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} />
         ))}
         <li>
           {atLimit ? (
@@ -176,7 +250,7 @@ export default function CharacterList({
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {dead.map((c) => (
-              <Card key={c.id} item={c} catalog={catalog} />
+              <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} />
             ))}
           </ul>
         </section>
