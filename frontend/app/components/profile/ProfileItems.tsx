@@ -25,15 +25,17 @@ type Props = {
 
 const quietClass = "text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline";
 
-/** A skin or drink inside its Profile tab: back to the wardrobe, a title, then the editor or the item. */
-function ItemFrame({
+const BACK_LABELS = { characters: "Characters", skins: "Skins", drinks: "Drinks" } as const;
+
+/** An item inside its Profile tab: back to the tab's list, a title, then the editor or the item. */
+export function ItemFrame({
   tab,
   title,
   onBack,
   children,
 }: {
-  tab: "skins" | "drinks";
-  title: string;
+  tab: keyof typeof BACK_LABELS;
+  title: ReactNode;
   onBack: () => void;
   children: ReactNode;
 }) {
@@ -46,7 +48,7 @@ function ItemFrame({
     <div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <a href={profileHref(tab)} onClick={back} className={quietClass}>
-          ← {tab === "skins" ? "Skins" : "Drinks"}
+          ← {BACK_LABELS[tab]}
         </a>
         <h2 className="min-w-0 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{title}</h2>
       </div>
@@ -55,7 +57,7 @@ function ItemFrame({
   );
 }
 
-function Loading() {
+export function Loading() {
   return <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
 }
 

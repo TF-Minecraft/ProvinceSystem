@@ -7,6 +7,7 @@ import { CharactersApiError, listCharacterKits, type CharacterKit } from "../../
 import { clearSession, getSession, isSessionValid } from "../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../lib/characters/uiDev";
 import { uiDevCharacterKits } from "../../../../lib/characters/kitsDev";
+import { characterPath } from "../../../../lib/profile/paths";
 
 function kitStatusLabel(kit: CharacterKit): string {
   if (!kit.claimable) return "Claimed";
@@ -82,7 +83,7 @@ export default function CharacterKitsPage() {
     <div className="animate-char-rise">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={`/character/${encodeURIComponent(characterId)}`}
+          href={characterPath(characterId)}
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
         >
           Back
