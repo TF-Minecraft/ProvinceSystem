@@ -100,7 +100,7 @@ def repo_releases(repo: str, data: Any) -> list[Release]:
         published = release.get("published_at")
         tag = str(release.get("tag_name") or "")
         jar = next((a for a in release.get("assets") or []
-                    if str(a.get("name", "")).lower().endswith(".jar")
+                    if isinstance(a, dict) and str(a.get("name", "")).lower().endswith(".jar")
                     and str(a.get("digest") or "").startswith("sha256:")), None)
         if not published or not tag or jar is None:
             continue
@@ -149,7 +149,7 @@ class _ReleaseCache:
                     self._checked_at = _now()
                     self._failed = False
                     self._next = now + (RELEASES_TTL if _token() else RELEASES_TTL_WITHOUT_TOKEN)
-                except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError):
+                except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError, AttributeError):
                     self._failed = True
                     self._next = now + RETRY_TTL
             return self._releases, self._checked_at, self._failed

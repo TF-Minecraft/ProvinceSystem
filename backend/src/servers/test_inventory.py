@@ -50,6 +50,9 @@ def test_releases_skip_drafts_prereleases_and_releases_without_a_jar():
     found = inventory.repo_releases("Core", data)
     assert [(r.version, r.sha256, r.prefix) for r in found] == [("2.0.0", "e4", "core"), ("1.0.0", "a1", "core")]
     assert inventory.repo_releases("Core", {"message": "Not Found"}) == []
+    odd = release("v3.0.0", "2026-10-05T00:00:00Z", "core-3.0.0.jar", "f5")
+    odd["assets"].insert(0, "not an asset")
+    assert [r.version for r in inventory.repo_releases("Core", [odd])] == ["3.0.0"]
 
 
 def test_startup_comes_from_the_newest_log_that_has_one(tmp_path):
