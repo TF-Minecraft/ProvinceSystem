@@ -1,6 +1,7 @@
 "use client";
 
 import { CHRONICLE_MEMORY_CEILING_BYTES } from "../../lib/map/chronicleBuild";
+import { downloadBlob } from "@/app/lib/downloadBlob";
 import { encodeGifSteps, type GifSourceFrame } from "@/app/lib/map/gif/encodeGif";
 import {
   CHRONICLE_BORDER_INK_RGBA,
@@ -831,25 +832,7 @@ export async function exportChronicleGif(
   return { bytes, baseMapOmitted: baseUsable && !baseReady };
 }
 
-/**
- * Hands the finished bytes to the browser as a download. Kept here beside the
- * encoder call so the studio never has to think about object URLs — and so the
- * revoke cannot be forgotten, which leaks the whole GIF for the tab's lifetime.
- */
+/** Hands the finished bytes to the browser as a GIF download. */
 export function downloadGif(bytes: Uint8Array, filename: string): void {
-  const blob = new Blob([bytes as unknown as BlobPart], { type: "image/gif" });
-  const url = URL.createObjectURL(blob);
-  try {
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.rel = "noopener";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  } finally {
-    // Deferred: revoking synchronously races the navigation the click started
-    // and lands as a silently cancelled download in Chromium.
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  }
+  downloadBlob(new Blob([bytes as unknown as BlobPart], { type: "image/gif" }), filename);
 }

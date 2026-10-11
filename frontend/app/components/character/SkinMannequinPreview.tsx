@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import * as THREE from "three";
+import { downloadBlob } from "../../lib/downloadBlob";
 import { disposeObject3D, loadTextureFromFile } from "../../../lib/skins/javaModel";
 import {
   applySteveArmPose,
@@ -37,18 +38,7 @@ async function downloadSkinSource(
     if (!res.ok) throw new Error("Could not download skin");
     blob = await res.blob();
   }
-  const url = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename.endsWith(".png") ? filename : `${filename}.png`;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  downloadBlob(blob, filename.endsWith(".png") ? filename : `${filename}.png`);
 }
 
 /**
