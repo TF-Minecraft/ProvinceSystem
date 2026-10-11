@@ -13,7 +13,6 @@ export const animalHusbandryCommands: WikiCommandSet = {
         "Each line shows the name, the kind of animal, whether it is growing, and whether it is happy, hungry, or dirty. Click the coordinates in chat to copy them. If a place is missing, visit that animal once so it can be recorded.",
     },
   ],
-  excludedStaffCommands: ["/animals <player>"],
 };
 
 export const animalHusbandrySection: WikiSection = {

@@ -90,15 +90,6 @@ export const magicCommands: WikiCommandSet = {
         "Requires an active character.",
     },
   ],
-  excludedStaffCommands: [
-    "/magic reload",
-    "/magic open",
-    "/magic resonance <get|set|add|reset> ...",
-    "/magic artifact <roll|give|create|path|setfill> ...",
-    "/magic fillchest <element|random|all>",
-    "/magic shrine fill <element> <amount>",
-    "/magic refresh",
-  ],
 };
 
 export const magicSection: WikiSection = {

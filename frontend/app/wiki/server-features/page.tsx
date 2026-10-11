@@ -149,7 +149,6 @@ export default function ServerFeaturesPage() {
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
       <CommandTable
         commands={serverFeaturesCommands.commands}
-        excludedStaffCommands={serverFeaturesCommands.excludedStaffCommands}
         showAliases={false}
       />
 

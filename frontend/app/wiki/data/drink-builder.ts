@@ -5,13 +5,6 @@ export const drinkBuilderCommands: WikiCommandSet = {
   system: "Drink Builder",
   href: "/wiki/drink-builder",
   commands: [],
-  excludedStaffCommands: [
-    "/drinkbuilder reload",
-    "/drinkbuilder catalog sync",
-    "/drinkbuilder pack pull [force]",
-    "/drinkbuilder pack reapply <id>",
-    "/drinkbuilder drink delete <id>",
-  ],
 };
 
 export const drinkBuilderSection: WikiSection = {

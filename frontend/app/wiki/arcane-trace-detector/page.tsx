@@ -1,5 +1,5 @@
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { StationLink, WikiItemLink, WikiPage } from "@/app/components/wiki";
+import { StationLink, WikiItemLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { detectorRecipes, signalTable } from "../data/detector";
 
 export default function ArcaneTraceDetectorPage() {
@@ -13,22 +13,19 @@ export default function ArcaneTraceDetectorPage() {
         whoever reaches it first gets to collect it.
       </>}>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        Step 1: Get a detector
-      </h2>
-      <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+      <WikiSectionHeading intro={<>
         Everything here is crafted at the <StationLink name="Engineer Station" />. The recharging step needs no profession, so you can trade or buy the
         detector and fuel from other players and keep recharging it yourself.
-      </p>
+      </>}>
+        Step 1: Get a detector
+      </WikiSectionHeading>
       <div className="mt-4 flex flex-col gap-4">
         {detectorRecipes.map((r) => (
           <CraftingGrid key={r.key} recipe={r} />
         ))}
       </div>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        Step 2: Hunt
-      </h2>
+      <WikiSectionHeading>Step 2: Hunt</WikiSectionHeading>
       <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Hold the detector in your main hand.</li>
         <li>Particle rings appear around you and the device begins clicking (only you can hear it).</li>
@@ -37,9 +34,7 @@ export default function ArcaneTraceDetectorPage() {
         <li>Your detector then runs out of charge and the source respawns to a new location.</li>
       </ul>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        Step 3: Read the signal
-      </h2>
+      <WikiSectionHeading>Step 3: Read the signal</WikiSectionHeading>
       <div className="mt-2 overflow-x-auto rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] text-[var(--tfmc-cream)]">
@@ -59,19 +54,18 @@ export default function ArcaneTraceDetectorPage() {
         </table>
       </div>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-        Step 4: Recharge and go again
-      </h2>
-      <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+      <WikiSectionHeading intro={<>
         Claiming the source turns your detector into an <WikiItemLink name="Unpowered Trace Detector" />:
         <br />
         <code className="text-[var(--tfmc-accent)]">&quot;Your Trace Detector has run out of fuel...&quot;</code>
         <br />
         You do not need to re-craft the detector: combine it with a single <WikiItemLink name="Arcane Fuel" /> at the
         <StationLink name="Engineer Station" /> to power it back up. You can collect 1 source per rolling 24 hours.
-      </p>
+      </>}>
+        Step 4: Recharge and go again
+      </WikiSectionHeading>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">FAQ</h2>
+      <WikiSectionHeading>FAQ</WikiSectionHeading>
       <dl className="mt-2 space-y-3 text-sm">
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;My detector shows nothing.&quot;</dt>

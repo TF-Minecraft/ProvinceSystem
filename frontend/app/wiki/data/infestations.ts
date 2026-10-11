@@ -10,12 +10,6 @@ export const infestationsCommands: WikiCommandSet = {
   system: "Infestations",
   href: "/wiki/infestations",
   commands: [],
-  excludedStaffCommands: [
-    "/infestation reload",
-    "/infestation set",
-    "/infestation clear",
-    "/infestation list",
-  ],
 };
 
 export const infestationsSection: WikiSection = {

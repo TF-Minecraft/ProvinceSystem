@@ -32,5 +32,5 @@ export const archaeologyRecipes: Recipe[] = [
     "archeology-cabinet",
   ].map((key) => stationRecipe(`gen-archeology-station-${key}`)),
 ];
-export const archaeologyCommands: WikiCommandSet = {system: "Archaeo", href: "/wiki/archaeology", commands: [], excludedStaffCommands: ["/archaeo give ...", "/archaeo ruin ...", "/archaeo workday ...", "/archaeo find ...", "/archaeo sketch ...", "/archaeo reload"]};
+export const archaeologyCommands: WikiCommandSet = {system: "Archaeo", href: "/wiki/archaeology", commands: []};
 export const archaeologySection: WikiSection = {nav: {href: "/wiki/archaeology", label: "Archaeology", category: "magic", blurb: "Find a ruin, establish a field camp, excavate by sound, then clean, register, and display recovered finds."}, recipes: [archeologyTableRecipe], commands: archaeologyCommands};

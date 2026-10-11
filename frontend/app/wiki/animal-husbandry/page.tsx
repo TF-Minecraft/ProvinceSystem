@@ -81,7 +81,7 @@ export default function AnimalHusbandryPage() {
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
         <code>/animals</code> lists every animal you own or share, and the last place each one was seen. The count at the top is how many of your 15 slots are in use. Click a set of coordinates in chat to copy them. A shared animal is marked Co-owner. Visit an animal once if its place has not been recorded yet.
       </p>
-      <CommandTable className="mt-4" commands={animalHusbandryCommands.commands} excludedStaffCommands={animalHusbandryCommands.excludedStaffCommands} />
+      <CommandTable className="mt-4" commands={animalHusbandryCommands.commands} />
 
       <WikiSectionHeading id="mounts">Caring for mounts</WikiSectionHeading>
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">

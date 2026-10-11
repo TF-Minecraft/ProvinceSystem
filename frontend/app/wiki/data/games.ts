@@ -96,17 +96,6 @@ export const gamesCommands: WikiCommandSet = {
       notes: "games.wager, default true.",
     },
   ],
-  excludedStaffCommands: [
-    "/games reload",
-    "/games deck",
-    "/games deck test",
-    "/games display",
-    "/games place [poker|draw|blackjack|freeplay]",
-    "/games payout [player]",
-    "/games session start|stop",
-    "/games deal",
-    "/games deal table",
-  ],
 };
 
 export const gamesSection: WikiSection = {

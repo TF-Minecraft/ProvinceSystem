@@ -48,13 +48,6 @@ export const marketBlockCommands: WikiCommandSet = {
   system: "Market Block",
   href: "/wiki/market-blocks",
   commands: [],
-  excludedStaffCommands: [
-    "/marketblock reload",
-    "/marketblock add",
-    "/marketblock delete <id>",
-    "/marketblock reset <id>",
-    "/marketblock resetall",
-  ],
 };
 
 export const marketBlockSection: WikiSection = {

@@ -55,7 +55,7 @@ export default function EconomyPage() {
       </Callout>
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable commands={denarCommands.commands} excludedStaffCommands={denarCommands.excludedStaffCommands} />
+      <CommandTable commands={denarCommands.commands} />
 
       <SeeAlso hrefs={["/wiki/market-blocks", "/wiki/factions", "/wiki/commands"]} />
     </WikiPage>

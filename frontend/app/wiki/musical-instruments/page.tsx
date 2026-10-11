@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
+  cx,
   CommandTable,
   DataTable,
   SeeAlso,
   StationLink,
   StatGrid,
   WikiItemLink,
+  wikiCard,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -32,7 +34,7 @@ export default function MusicalInstrumentsPage() {
           <Link
             key={inst.slug}
             href={`/wiki/musical-instruments/${inst.slug}`}
-            className="group flex flex-col items-center gap-2 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)] p-4 transition-colors hover:border-[var(--tfmc-accent)]"
+            className={cx("group flex flex-col items-center gap-2", wikiCard, "transition-colors hover:border-[var(--tfmc-accent)]")}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -92,10 +94,7 @@ export default function MusicalInstrumentsPage() {
       />
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable
-        commands={instrumentCommands.commands}
-        excludedStaffCommands={instrumentCommands.excludedStaffCommands}
-      />
+      <CommandTable commands={instrumentCommands.commands} />
 
       <WikiSectionHeading id="faq">FAQ</WikiSectionHeading>
       <dl className="mt-2 space-y-3 text-sm">

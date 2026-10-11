@@ -6,7 +6,6 @@ export const birdMailCommands: WikiCommandSet = {
   system: "BirdMessenger",
   href: "/wiki/bird-mail",
   commands: [],
-  excludedStaffCommands: ["/birdmessenger reload"],
 };
 
 export const birdMailSection: WikiSection = {

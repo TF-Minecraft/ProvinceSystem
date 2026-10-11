@@ -63,10 +63,7 @@ export default function ArmorStatuesPage() {
       </p>
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable
-        commands={armorStatuesCommands.commands}
-        excludedStaffCommands={armorStatuesCommands.excludedStaffCommands}
-      />
+      <CommandTable commands={armorStatuesCommands.commands} />
 
       <SeeAlso hrefs={["/wiki/sitting", "/wiki/server-features"]} />
     </WikiPage>

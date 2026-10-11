@@ -42,7 +42,6 @@ export const sittingCommands: WikiCommandSet = {
       notes: "Double-tapping sneak to crawl is turned off here, so this command is the only way in.",
     },
   ],
-  excludedStaffCommands: ["/gsitreload"],
 };
 
 export const sittingSection: WikiSection = {

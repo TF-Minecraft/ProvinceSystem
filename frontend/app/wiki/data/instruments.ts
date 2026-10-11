@@ -121,7 +121,6 @@ export const instrumentCommands: WikiCommandSet = {
         "is ever blocked.",
     },
   ],
-  excludedStaffCommands: ["/instruments give <instrument>", "/instruments reload"],
 };
 
 export const instrumentsSection: WikiSection = {

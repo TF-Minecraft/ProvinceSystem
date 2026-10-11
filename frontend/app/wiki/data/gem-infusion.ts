@@ -662,6 +662,6 @@ export const goldHits = {
   ]
 };
 export const gemInfusionTables = [{ title: "Rarity odds", ...gemRarities },{ title: "Basic Gemstones", ...basicGems },{ title: "Polished Gemstones", ...polishedGems },{ title: "Radiant Gemstones", ...radiantGems },{ title: "Mythical Gemstones", ...mythicalGems },{ title: "Gold materials", ...goldMaterials },{ title: "Goldsmithing tools", ...goldTools },{ title: "All 14 jewellery projects", ...jewelleryProjects },{ title: "Material hit totals", ...goldHits }];
-export const gemInfusionCommands: WikiCommandSet = {system: "GemInfusion", href: "/wiki/gem-infusion", commands: [], excludedStaffCommands: ["/geminfusion reload", "/geminfusion select <projectId>"]};
+export const gemInfusionCommands: WikiCommandSet = {system: "GemInfusion", href: "/wiki/gem-infusion", commands: []};
 export const gemInfusionSection: WikiSection = {nav: {href: "/wiki/gem-infusion", label: "Gem Infusion", category: "magic", blurb: "Infuse 40 gemstones and craft 14 jewellery designs with goldsmithing tools."}, commands: gemInfusionCommands};
 

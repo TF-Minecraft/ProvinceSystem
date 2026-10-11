@@ -713,7 +713,6 @@ export const vehicleCommands: WikiCommandSet = {
     { command: "/vf keybinds", description: "Prints controls for your current vehicle and its current state. Sit in a vehicle first." },
     { command: "/vf findvehicles", description: "Lists your vehicles and their world coordinates. An unloaded vehicle can show location unknown (stored)." },
   ],
-  excludedStaffCommands: ["/vf ammo", "/vf kill <radius>", "/vf spawn <vehicle>", "/vf takeover", "/vf reload", "/vf tracktest", "/vf trackcheck", "/vfbuilders reload"],
 };
 // Every distinct ingredient name across `vehicles[].inputs`. Vanilla items live under
 // `vanilla/`, server-added ones under `materials/`, so the root cannot be derived from

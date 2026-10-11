@@ -170,7 +170,7 @@ export default function FactionsPage() {
 
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
       <Callout variant="note">Some actions require a leadership role within your faction, guild, or warband. Check the Notes column before planning a group action.</Callout>
-      <CommandTable commands={factionsCommands.commands} excludedStaffCommands={factionsCommands.excludedStaffCommands} />
+      <CommandTable commands={factionsCommands.commands} />
 
       <SeeAlso hrefs={["/wiki/economy", "/wiki/commands"]} />
     </WikiPage>

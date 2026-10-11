@@ -138,11 +138,6 @@ export type WikiCommandSet = {
   href: string;
   /** The player-facing rows. May be empty: "this system has no commands" is a fact worth stating. */
   commands: CommandRow[];
-  /**
-   * Commands deliberately left out because only staff can run them. Recorded so
-   * the research behind the page is not lost, and rendered as a trailing note.
-   */
-  excludedStaffCommands?: string[];
 };
 
 /** One command row plus the system and page it was registered by. */

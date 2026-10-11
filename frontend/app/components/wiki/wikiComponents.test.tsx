@@ -129,7 +129,7 @@ describe("CommandTable", () => {
     expect(screen.queryByText("instruments.admin")).toBeNull();
   });
 
-  it("renders the four documented columns and aliases without staff commands", () => {
+  it("renders the four documented columns and aliases", () => {
     render(
       <CommandTable
         commands={[
@@ -140,7 +140,6 @@ describe("CommandTable", () => {
             notes: "3s cooldown.",
           },
         ]}
-        excludedStaffCommands={["/mountwhistle reload", "/mountwhistle debug"]}
       />
     );
 
@@ -151,8 +150,6 @@ describe("CommandTable", () => {
       "Notes",
     ]);
     expect(screen.getByText("/mw, /whistle")).toBeTruthy();
-    expect(screen.queryByText("/mountwhistle reload")).toBeNull();
-    expect(screen.queryByText("/mountwhistle debug")).toBeNull();
   });
 
   it("can hide notes while keeping aliases and descriptions", () => {

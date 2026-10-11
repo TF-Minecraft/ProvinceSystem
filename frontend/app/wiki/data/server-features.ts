@@ -49,16 +49,6 @@ export const serverFeaturesCommands: WikiCommandSet = {
       notes: "Skin and drink codes share one cooldown, gated by rank (28 days down to 7 days). This is a rank perk, not something every player has.",
     },
   ],
-  excludedStaffCommands: [
-    "/tcore stats <category> <player>",
-    "/tcore reload [all|config|drops|stations|stats|focus|whistle|letters|lorestones]",
-    "/tcore focus restore <player>",
-    "/tcore stones give <lorestone|namestone> [player] [amount]",
-    "/token create skin staff",
-    "/token resetcooldowns <player>",
-    "/warning <player> <reason>",
-    "/web status|reload|lookup|unlink|reconcile|syncmeta",
-  ],
 };
 
 export const serverFeaturesSection: WikiSection = {

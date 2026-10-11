@@ -9,13 +9,6 @@ export const gatheringCommands: WikiCommandSet = {
   system: "Gathering",
   href: "/wiki/gathering",
   commands: [],
-  excludedStaffCommands: [
-    "/gathering reload",
-    "/gathering clearcache [world]",
-    "/gathering status",
-    "/gathering forcespawn <spotType> [chunkX chunkZ]",
-    "/gathering adminmode <on|off>",
-  ],
 };
 
 export const gatheringSection: WikiSection = {

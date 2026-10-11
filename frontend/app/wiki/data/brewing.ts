@@ -22,25 +22,6 @@ export const brewingCommands: WikiCommandSet = {
       access: "player",
     },
   ],
-  excludedStaffCommands: [
-    "/brew info <player>",
-    "/brew seal",
-    "/brew puke [player] [amount]",
-    "/brew set <player> <drunkenness> [quality]",
-    "/brew create|give <recipe> [quality] [player]",
-    "/brew drink <recipe> [quality] [player]",
-    "/brew copy [qty]",
-    "/brew delete",
-    "/brew static",
-    "/brew distill [runs]",
-    "/brew age <barrel type> <time>",
-    "/brew simulate <options> [ingredients]",
-    "/brew itemname",
-    "/brew reload",
-    "/brew reloadaddons",
-    "/brew datamanager",
-    "/brew wakeup add|list|check|remove",
-  ],
 };
 
 export const brewingSection: WikiSection = {

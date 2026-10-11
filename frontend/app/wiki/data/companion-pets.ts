@@ -82,6 +82,5 @@ export const companionPetsSection: WikiSection = {
     system: "CompanionPets",
     href: "/wiki/companion-pets",
     commands: [],
-    excludedStaffCommands: ["/companionpets"],
   },
 };

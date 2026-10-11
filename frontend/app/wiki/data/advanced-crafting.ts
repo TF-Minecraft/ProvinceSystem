@@ -100,15 +100,6 @@ export const advancedCraftingCommands: WikiCommandSet = {
         "Names may only contain letters and underscores. Underscores appear as spaces, and the naming prompt is available to every player who reaches it.",
     },
   ],
-  excludedStaffCommands: [
-    "/ac reload",
-    "/ac sync recipes [repair]",
-    "/ac refresh",
-    "/ac inspect",
-    "/ac give alloy <id> [player]",
-    "/ac info alloy <id>",
-    "/ac craft <percent>",
-  ],
 };
 
 // ---------- Section ----------
