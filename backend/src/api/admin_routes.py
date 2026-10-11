@@ -28,6 +28,7 @@ from src.api.auth_routes import (
 from src.auth import admin, audit, players, roles, users, view_as
 from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
+from src.servers import inventory as servers
 from src.scripts.util.dirs import validate_map
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
@@ -191,6 +192,13 @@ def get_rail(request: Request, response: Response, map: str = Query("main", max_
     except rail.RailUnavailable as exc:
         return {"status": exc.code, "world": rail.RailConfig.from_env().world, "updated_at": None,
                 "unreadable_files": 0, "lines": [], "tracks": [], "junctions": [], "stops": []}
+
+
+@admin_router.get("/servers")
+def get_servers(request: Request, response: Response):
+    _capable(request, "view_servers")
+    _no_store(response)
+    return servers.overview()
 
 
 @admin_router.post("/accounts/{user_id}/role")
