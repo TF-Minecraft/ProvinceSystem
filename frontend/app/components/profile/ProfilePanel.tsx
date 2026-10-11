@@ -404,13 +404,13 @@ export default function ProfilePanel({
     }),
     [dropCodes, go, loadDashboard],
   );
-  // The card a character was opened from, and where the page was, for coming back to the list.
-  const characterReturn = useRef<{ id: string; scrollY: number } | null>(null);
+  // Where the list was scrolled when each character was opened from it, for coming back.
+  const listScroll = useRef(new Map<string, number>());
   const characterNav = useMemo(() => {
     const nav = itemNav("characters");
     return {
       onOpen: (id: string) => {
-        characterReturn.current = { id, scrollY: window.scrollY };
+        listScroll.current.set(id, window.scrollY);
         nav.onOpen(id);
       },
       onBack: nav.onBack,
@@ -422,18 +422,26 @@ export default function ProfilePanel({
       },
     };
   }, [itemNav, loadDashboard]);
-  // Back on the list: the page where it was, and focus on the card that was opened (or the tab if it's gone).
+  // Leaving a character for the list (←, Back, or Back again after Forward) puts the list where it was
+  // and focuses that character's card, or the tab if the card is gone.
+  const lastCharacter = useRef<string | null>(null);
   const characterListShowing = shown === "characters" && !openItem && dashboard !== null;
   useEffect(() => {
-    const back = characterReturn.current;
-    if (!characterListShowing || !back) return;
-    characterReturn.current = null;
-    window.scrollTo(0, back.scrollY);
+    if (shown !== "characters" || openItem) {
+      lastCharacter.current = openItem;
+      return;
+    }
+    const id = lastCharacter.current;
+    if (!characterListShowing || !id) return;
+    lastCharacter.current = null;
+    const scrollY = listScroll.current.get(id);
+    if (scrollY !== undefined) window.scrollTo(0, scrollY);
     const card = Array.from(document.querySelectorAll<HTMLElement>("[data-character-id]")).find(
-      (el) => el.dataset.characterId === back.id,
+      (el) => el.dataset.characterId === id,
     );
-    (card ?? document.getElementById(`${panelId}-characters`))?.focus({ preventScroll: true });
-  }, [characterListShowing, panelId]);
+    (card ?? document.getElementById(`${panelId}-characters`))?.focus({ preventScroll: scrollY !== undefined });
+  }, [characterListShowing, openItem, panelId, shown]);
+
   const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
 
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);

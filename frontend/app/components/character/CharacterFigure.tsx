@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
-import { characterSkin } from "../../../lib/characters/api";
-import { FRONT_HEIGHT, FRONT_WIDTH, skinFront } from "../../../lib/characters/skinFront";
+import { characterFigure } from "../../../lib/characters/api";
 
 type Props = {
   characterId: string;
@@ -13,59 +12,37 @@ type Props = {
   playerUuid?: string | null;
 };
 
-/** Loading, the skin's front, or the player's head when there's no usable skin. */
-type Shown = { kind: "loading" } | { kind: "skin"; pixels: Uint8ClampedArray } | { kind: "head" };
-
-async function readFront(blob: Blob): Promise<Uint8ClampedArray | null> {
-  if (typeof createImageBitmap !== "function") return null;
-  const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-  return skinFront(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-}
-
-/** The character standing in the skin it wears, drawn flat as pixel art. */
+/** The character standing in the skin it wears, drawn flat as pixel art; else the player's head. */
 export default function CharacterFigure({ characterId, name, sessionToken, playerUuid }: Props) {
-  const [shown, setShown] = useState<Shown>(sessionToken ? { kind: "loading" } : { kind: "head" });
+  // Undefined while loading, null when there's no figure to show.
+  const [figure, setFigure] = useState<string | null | undefined>(sessionToken ? undefined : null);
   const [headFailed, setHeadFailed] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (!sessionToken) return;
     let live = true;
-    characterSkin(sessionToken, characterId)
-      .then((blob) => (blob ? readFront(blob) : null))
+    characterFigure(sessionToken, characterId)
       .catch(() => null)
-      .then((pixels) => live && setShown(pixels ? { kind: "skin", pixels } : { kind: "head" }));
+      .then((next) => live && setFigure(next));
     return () => {
       live = false;
     };
   }, [characterId, sessionToken]);
 
-  useEffect(() => {
-    if (shown.kind !== "skin") return;
-    const ctx = canvasRef.current?.getContext("2d");
-    ctx?.putImageData(new ImageData(new Uint8ClampedArray(shown.pixels), FRONT_WIDTH, FRONT_HEIGHT), 0, 0);
-  }, [shown]);
-
+  const head = figure === null && playerUuid && !headFailed;
   return (
     <div className="grid h-36 w-24 shrink-0 place-items-center rounded-sm bg-[radial-gradient(circle_at_50%_45%,color-mix(in_srgb,var(--tfmc-moss)_88%,var(--tfmc-cream)),color-mix(in_srgb,var(--tfmc-forest-deep)_85%,var(--tfmc-forest))_72%)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] sm:h-[216px] sm:w-[150px]">
-      {shown.kind === "skin" ? (
-        <canvas
-          ref={canvasRef}
-          width={FRONT_WIDTH}
-          height={FRONT_HEIGHT}
-          role="img"
-          aria-label={`${name}'s skin`}
+      {/* A data URL or our own API; next/image adds nothing for pixel art this small. */}
+      {figure ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={figure}
+          alt={`${name}'s skin`}
+          width={96}
+          height={192}
           className="h-32 w-16 [image-rendering:pixelated] drop-shadow-[0_4px_4px_rgba(0,0,0,0.35)] sm:h-48 sm:w-24"
         />
-      ) : shown.kind === "head" && playerUuid && !headFailed ? (
-        /* Our own API; next/image adds nothing for an 8×8 head. */
+      ) : head ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={`${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}`}

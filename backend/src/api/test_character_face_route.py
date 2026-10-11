@@ -1,4 +1,4 @@
-"""GET /characters/{id}/face and /skin serve the worn skin to its owner's Profile session."""
+"""GET /characters/{id}/face and /figure serve the worn skin to its owner's Profile session."""
 
 from __future__ import annotations
 
@@ -57,29 +57,29 @@ def test_no_face_is_404_and_someone_elses_character_is_refused():
         assert client().get("/characters/c1/face", headers=AUTH).status_code == 403
 
 
-def test_serves_the_worn_skin_uncached():
+def test_serves_the_worn_figure_uncached():
     with (
         mock.patch.object(routes, "get_session", return_value=SESSION),
-        mock.patch.object(routes, "active_skin_png", return_value=b"skin") as skin,
+        mock.patch.object(routes, "active_figure_png", return_value=b"figure") as figure,
     ):
-        res = client().get("/characters/c1/skin", headers=AUTH)
+        res = client().get("/characters/c1/figure", headers=AUTH)
     assert res.status_code == 200
-    assert res.content == b"skin"
+    assert res.content == b"figure"
     assert res.headers["content-type"] == "image/png"
     assert res.headers["cache-control"] == "no-store"
-    skin.assert_called_once_with("p-1", "c1")
+    figure.assert_called_once_with("p-1", "c1")
 
 
-def test_no_skin_is_404_and_someone_elses_skin_is_refused():
+def test_no_figure_is_404_and_someone_elses_is_refused():
     with (
         mock.patch.object(routes, "get_session", return_value=SESSION),
-        mock.patch.object(routes, "active_skin_png", return_value=None),
+        mock.patch.object(routes, "active_figure_png", return_value=None),
     ):
-        assert client().get("/characters/c1/skin", headers=AUTH).json() == {"detail": "no_skin"}
+        assert client().get("/characters/c1/figure", headers=AUTH).json() == {"detail": "no_figure"}
     with (
         mock.patch.object(routes, "get_session", return_value=SESSION),
-        mock.patch.object(routes, "active_skin_png", side_effect=WardrobeError("Character not found on roster", status_code=403)),
+        mock.patch.object(routes, "active_figure_png", side_effect=WardrobeError("Character not found on roster", status_code=403)),
     ):
-        assert client().get("/characters/c1/skin", headers=AUTH).status_code == 403
+        assert client().get("/characters/c1/figure", headers=AUTH).status_code == 403
     with mock.patch.object(routes, "get_session", return_value=None):
-        assert client().get("/characters/c1/skin", headers=AUTH).status_code == 401
+        assert client().get("/characters/c1/figure", headers=AUTH).status_code == 401

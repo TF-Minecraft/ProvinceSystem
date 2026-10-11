@@ -108,7 +108,7 @@ vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   getCreationCatalog: vi.fn(),
   logoutCharacter: vi.fn(),
   characterFace: vi.fn(async () => null),
-  characterSkin: vi.fn(async () => null),
+  characterFigure: vi.fn(async () => null),
   deletePendingCreate: vi.fn(),
 }));
 
@@ -884,6 +884,12 @@ it("opens a character in its tab, and Back returns to the list", async () => {
   const card = await screen.findByRole("link", { name: /Vaelthir/ });
   expect(window.location.search).toBe("");
   await vi.waitFor(() => expect(document.activeElement).toBe(card));
+  // Forward and Back again still come back to the card.
+  window.history.forward();
+  expect(await screen.findByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
+  window.history.back();
+  const again = await screen.findByRole("link", { name: /Vaelthir/ });
+  await vi.waitFor(() => expect(document.activeElement).toBe(again));
 });
 
 it("sends a character's address back to the list when it can't be opened", async () => {

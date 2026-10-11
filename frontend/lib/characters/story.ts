@@ -4,14 +4,14 @@ const LEAD_MIN = 650;
 const LEAD_MAX = 800;
 
 /**
- * Splits a long background into the part shown first and the rest, ending the first part at a paragraph
- * break, else a sentence, else a space. Null when the whole text shows.
+ * The opening of a long background, ending at a paragraph break, else a sentence, else a word (with an
+ * ellipsis). Null when the whole text shows.
  */
-export function splitStory(text: string): { lead: string; rest: string } | null {
+export function splitStory(text: string): { lead: string } | null {
   const trimmed = text.trim();
   if (trimmed.length <= COLLAPSE_OVER) return null;
   const window = trimmed.slice(0, LEAD_MAX + 1);
-  const lastIn = (pattern: RegExp): number => {
+  const lastEnd = (pattern: RegExp): number => {
     let at = -1;
     for (const m of window.matchAll(pattern)) {
       const end = m.index + m[0].length;
@@ -19,11 +19,12 @@ export function splitStory(text: string): { lead: string; rest: string } | null 
     }
     return at;
   };
-  let cut = lastIn(/\n/g);
-  if (cut < 0) cut = lastIn(/[.!?]["'”’)]?\s/g);
-  if (cut < 0) cut = lastIn(/\s/g);
-  if (cut < 0) cut = LEAD_MAX;
-  return { lead: trimmed.slice(0, cut).trimEnd(), rest: trimmed.slice(cut).trimStart() };
+  const whole = lastEnd(/\n\s*\n/g);
+  if (whole >= 0) return { lead: trimmed.slice(0, whole).trimEnd() };
+  const sentence = lastEnd(/[.!?]["'”’)]?\s/g);
+  if (sentence >= 0) return { lead: trimmed.slice(0, sentence).trimEnd() };
+  const word = lastEnd(/\s/g);
+  return { lead: `${trimmed.slice(0, word >= 0 ? word : LEAD_MAX).trimEnd()}…` };
 }
 
 /** Paragraphs split on blank lines; single line breaks stay inside a paragraph. */

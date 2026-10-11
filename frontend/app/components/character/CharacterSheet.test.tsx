@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { characterSkin, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
+import { characterFigure, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
 import CharacterSheet from "./CharacterSheet";
 
 vi.mock("../../../lib/characters/api", async (original) => ({
   ...(await original<typeof import("../../../lib/characters/api")>()),
-  characterSkin: vi.fn(async () => null),
+  characterFigure: vi.fn(async () => null),
 }));
 vi.mock("../../../lib/account/api", () => ({ minecraftHeadUrl: () => "https://api.test/account/minecraft/head" }));
 
@@ -60,7 +60,7 @@ it("leads with who the character is and where to dress and equip them", () => {
   expect(document.getElementById(kits.getAttribute("aria-describedby")!)!.textContent).toBe(
     "Starter kit: Not yet claimed",
   );
-  expect(characterSkin).toHaveBeenCalledWith("t", "c1");
+  expect(characterFigure).toHaveBeenCalledWith("t", "c1");
 });
 
 it("lists attributes in the catalogue's order with their rank out of the maximum", () => {
@@ -93,7 +93,7 @@ it("says plainly what a new character doesn't have yet, and hides an empty story
   expect(screen.queryByRole("heading", { name: "Story" })).toBeNull();
   expect(screen.queryByRole("heading", { name: "Attributes" })).toBeNull();
   // A pending character has no wardrobe to read yet.
-  expect(characterSkin).not.toHaveBeenCalled();
+  expect(characterFigure).not.toHaveBeenCalled();
   expect(screen.getByRole("status").textContent).toContain("Being added to the server.");
 });
 
@@ -109,15 +109,16 @@ it("cancels a pending character only after confirming", () => {
   confirm.mockRestore();
 });
 
-it("opens a long background on an excerpt and discloses the rest", () => {
+it("opens a long background on an excerpt and shows it whole on request", () => {
   const first = "He kept the eels. ".repeat(40).trim();
   const rest = "He swore to rebuild the Marsh. ".repeat(30).trim();
   render(<CharacterSheet character={{ ...VAELTHIR, background: `${first}\n\n${rest}` }} catalog={CATALOG} />);
   const more = screen.getByRole("button", { name: "Read full background" });
-  const hidden = document.getElementById(more.getAttribute("aria-controls")!)!;
-  expect(hidden.hidden).toBe(true);
+  const story = document.getElementById(more.getAttribute("aria-controls")!)!;
+  expect(story.textContent).not.toContain("rebuild");
   fireEvent.click(more);
-  expect(hidden.hidden).toBe(false);
+  expect(story.querySelectorAll("p")).toHaveLength(2);
+  expect(story.textContent).toContain("rebuild");
   expect(more.textContent).toBe("Show less");
   expect(more.getAttribute("aria-expanded")).toBe("true");
 });

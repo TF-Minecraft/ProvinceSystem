@@ -49,14 +49,18 @@ export default function ProfileCharacter({
     if (!openable) onLeave();
   }, [onLeave, openable]);
 
-  // Opening a character (this mounts once per character) moves focus to its name, and scrolls it up
-  // when Profile's header would push the hero off screen, as it does on phones.
+  // Opening a character (this mounts once per character) moves focus to its name, and scrolls the back
+  // line under the site header unless the whole hero already shows, as it does on a desktop's first screen.
   useEffect(() => {
     if (!openable) return;
     headingRef.current?.focus({ preventScroll: true });
+    const frame = frameRef.current;
     const hero = headingRef.current?.closest("section");
-    if (hero && hero.getBoundingClientRect().bottom > window.innerHeight)
-      frameRef.current?.scrollIntoView({ block: "start" });
+    if (!frame || !hero) return;
+    const headerBottom = document.querySelector("header")?.getBoundingClientRect().bottom ?? 0;
+    if (frame.getBoundingClientRect().top < headerBottom || hero.getBoundingClientRect().bottom > window.innerHeight) {
+      frame.scrollIntoView({ block: "start" });
+    }
   }, [openable]);
 
   if (!character || !openable) return null;

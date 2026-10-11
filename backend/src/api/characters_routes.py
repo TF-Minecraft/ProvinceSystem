@@ -50,7 +50,7 @@ from src.characters.wardrobe import (
     WardrobeError,
     ack_wardrobe_slots,
     active_face_png,
-    active_skin_png,
+    active_figure_png,
     clear_pending_create_wardrobe,
     clear_slot,
     get_wardrobe,
@@ -630,21 +630,21 @@ def get_character_face(
     return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
-@characters_router.get("/{character_id}/skin")
-def get_character_skin(
+@characters_router.get("/{character_id}/figure")
+def get_character_figure(
     character_id: str,
     authorization: str | None = Header(default=None),
 ):
-    """The skin the character wears, for Profile's character view. Never changes the wardrobe."""
+    """The front of the skin the character wears (16x32), for Profile's character view. Never changes the wardrobe."""
     from fastapi.responses import Response
 
     session = _profile_session_from_auth(authorization)
     try:
-        png = active_skin_png(session["player_uuid"], character_id)
+        png = active_figure_png(session["player_uuid"], character_id)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
     if png is None:
-        raise HTTPException(status_code=404, detail="no_skin")
+        raise HTTPException(status_code=404, detail="no_figure")
     return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 

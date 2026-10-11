@@ -10,28 +10,29 @@ it("shows a background up to the limit in full", () => {
   expect(splitStory(Array.from({ length: 12 }, () => "A line.").join("\n\n"))).toBeNull();
 });
 
-it("ends the excerpt at a paragraph break when there is one in range", () => {
+it("ends the excerpt at a blank line when there is one in range", () => {
   const first = sentence.repeat(12).trim(); // ~700 characters
-  const text = `${first}\n\n${sentence.repeat(12).trim()}`;
-  const split = splitStory(text)!;
-  expect(split.lead).toBe(first);
-  expect(split.rest).toBe(sentence.repeat(12).trim());
+  expect(splitStory(`${first}\n\n${sentence.repeat(12).trim()}`)!.lead).toBe(first);
+});
+
+it("keeps a single line break inside its paragraph and ends at a sentence", () => {
+  const text = `${sentence.repeat(11)}\n${sentence.repeat(20)}`;
+  const { lead } = splitStory(text)!;
+  expect(lead.endsWith("with it.")).toBe(true);
+  expect(lead.length).toBeGreaterThan(text.indexOf("\n"));
+  expect(lead.length).toBeLessThanOrEqual(800);
 });
 
 it("ends one long paragraph at a sentence", () => {
-  const split = splitStory(sentence.repeat(30))!;
-  expect(split.lead.endsWith("with it.")).toBe(true);
-  expect(split.lead.length).toBeGreaterThanOrEqual(650);
-  expect(split.lead.length).toBeLessThanOrEqual(800);
-  expect(`${split.lead} ${split.rest}`).toBe(sentence.repeat(30).trim());
+  const { lead } = splitStory(sentence.repeat(30))!;
+  expect(lead.endsWith("with it.")).toBe(true);
+  expect(lead.length).toBeGreaterThanOrEqual(650);
+  expect(sentence.repeat(30).startsWith(lead)).toBe(true);
 });
 
-it("falls back to a space, then a hard cut", () => {
-  const words = splitStory("word ".repeat(300))!;
-  expect(words.lead.endsWith("word")).toBe(true);
-  const solid = splitStory("x".repeat(1500))!;
-  expect(solid.lead.length).toBe(800);
-  expect(solid.lead + solid.rest).toBe("x".repeat(1500));
+it("falls back to a word, then a hard cut, marking the cut", () => {
+  expect(splitStory("word ".repeat(300))!.lead.endsWith("word…")).toBe(true);
+  expect(splitStory("x".repeat(1500))!.lead).toBe(`${"x".repeat(800)}…`);
 });
 
 it("splits paragraphs on blank lines only", () => {

@@ -111,19 +111,18 @@ function Prose({ text: body }: { text: string }) {
 
 function Background({ text: body }: { text: string }) {
   const [open, setOpen] = useState(false);
-  const restId = useId();
+  const textId = useId();
   const split = splitStory(body);
   if (!split) return <Prose text={body} />;
   return (
     <>
-      <Prose text={split.lead} />
-      <div id={restId} hidden={!open}>
-        <Prose text={split.rest} />
+      <div id={textId}>
+        <Prose text={open ? body : split.lead} />
       </div>
       <button
         type="button"
         aria-expanded={open}
-        aria-controls={restId}
+        aria-controls={textId}
         onClick={() => setOpen((o) => !o)}
         className="min-h-11 text-sm font-semibold text-[var(--tfmc-accent)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--tfmc-cream)]"
       >
@@ -233,7 +232,7 @@ export default function CharacterSheet({
     <>
       <section
         aria-label={name}
-        className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3.5 gap-y-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[radial-gradient(circle_at_80px_50%,color-mix(in_srgb,var(--tfmc-moss)_55%,transparent),transparent_260px),color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-3.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6 sm:p-5"
+        className="grid grid-cols-1 gap-x-3.5 gap-y-4 min-[360px]:grid-cols-[96px_minmax(0,1fr)] rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[radial-gradient(circle_at_80px_50%,color-mix(in_srgb,var(--tfmc-moss)_55%,transparent),transparent_260px),color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-3.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6 sm:p-5"
       >
         <div className="sm:row-span-2">
           <CharacterFigure
@@ -253,7 +252,7 @@ export default function CharacterSheet({
           </h2>
           {lineage ? <p className="mt-1.5 text-[15px] text-[var(--tfmc-mist)] sm:text-base">{lineage}</p> : null}
         </div>
-        <div className="col-span-2 min-w-0 self-start sm:col-span-1 sm:col-start-2">{details}</div>
+        <div className="col-span-full min-w-0 self-start sm:col-span-1 sm:col-start-2">{details}</div>
       </section>
 
       {isPending ? (
@@ -284,7 +283,7 @@ export default function CharacterSheet({
         </div>
       ) : null}
 
-      <div className="mt-8 grid gap-8 sm:grid-cols-[minmax(0,1fr)_256px] sm:gap-6">
+      <div className="mt-8 grid gap-8 md:grid-cols-[minmax(0,1fr)_256px] md:gap-6">
         {attrs.length ? (
           <section>
             <h3 className={sectionHeadingClass}>Attributes</h3>
@@ -313,7 +312,7 @@ export default function CharacterSheet({
             </ul>
           </section>
         ) : null}
-        <section className={attrs.length ? undefined : "sm:col-span-2"}>
+        <section className={attrs.length ? undefined : "md:col-span-2"}>
           <h3 className={sectionHeadingClass}>Profession EXP</h3>
           {xpMods.length ? (
             <ul className={`${panelClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)]`}>
