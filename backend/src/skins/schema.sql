@@ -828,3 +828,18 @@ CREATE TABLE IF NOT EXISTS lp_changes (
 
 CREATE INDEX IF NOT EXISTS idx_lp_changes_status ON lp_changes(status, id);
 CREATE INDEX IF NOT EXISTS idx_lp_changes_target ON lp_changes(target_type, target, id);
+
+-- Reports players send from /diagnostic, looked up by code; kept 30 days.
+CREATE TABLE IF NOT EXISTS diagnostic_reports (
+    code TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    user_id INTEGER,
+    discord_name TEXT,
+    minecraft_name TEXT,
+    country TEXT,
+    worst TEXT NOT NULL CHECK (worst IN ('fail', 'warn', 'info', 'ok')),
+    summary TEXT NOT NULL,
+    report_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_diagnostic_reports_created ON diagnostic_reports(created_at);

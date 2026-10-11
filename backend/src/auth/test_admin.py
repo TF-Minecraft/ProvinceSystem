@@ -85,7 +85,7 @@ def test_role_rules():
     assert roles.outranks("root", "root") and not roles.outranks("admin", "root")
     assert not roles.is_staff("player") and not roles.is_staff("wizard") and roles.is_staff("mod")
     assert roles.capabilities("mod") == ["view_admin", "view_players", "revoke_sessions", "view_luckperms",
-                                        "use_precedent", "inspect_codes"]
+                                        "use_precedent", "inspect_codes", "view_diagnostics"]
     assert roles.capabilities("bogus") == []
 
 

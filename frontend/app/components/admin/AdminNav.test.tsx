@@ -19,6 +19,7 @@ it("puts each staff path under its tab, sub-pages included", () => {
   expect(adminSection("/admin/ranks/groups/staff")).toBe("ranks");
   expect(adminSection("/admin/precedent")).toBe("precedent");
   expect(adminSection("/admin/codes")).toBe("codes");
+  expect(adminSection("/admin/diagnostics")).toBe("diagnostics");
   expect(adminSection("/admin/railway")).toBe("accounts");
   expect(adminSection("/map")).toBeNull();
 });

@@ -26,6 +26,8 @@ CAPABILITIES = {
     "use_precedent": "mod",
     # Read-only lookup of skin and drink codes.
     "inspect_codes": "mod",
+    # Reports players send from the /diagnostic page.
+    "view_diagnostics": "mod",
 }
 
 

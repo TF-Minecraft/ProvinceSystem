@@ -71,6 +71,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   bad_order: "That sort isn’t available.",
   query_too_long: "Search for 64 characters or fewer.",
   directory_busy: "The player list is busy. Try again in a moment.",
+  report_not_found: "No report with that code in the last 30 days.",
   audit_unavailable: "This can’t be shown because the view couldn’t be logged. Try again.",
 };
 

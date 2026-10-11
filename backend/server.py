@@ -117,6 +117,7 @@ app.add_middleware(
 # TypeError instead of silently re-compressing images.
 EXCLUDED_FROM_GZIP = (
     "application/gzip",
+    "application/octet-stream",
     "application/x-gzip",
     "application/zip",
     "audio/*",
@@ -164,6 +165,7 @@ from src.api.patchnotes_routes import patchnotes_router
 from src.api.wars_routes import wars_router
 from src.api.patreon_routes import patreon_router
 from src.api.auth_routes import auth_router
+from src.api.diagnostic_routes import diagnostic_router
 from src.api import admin_routes
 
 app.include_router(map_router)
@@ -190,4 +192,5 @@ app.include_router(patchnotes_router)
 app.include_router(wars_router)
 app.include_router(patreon_router)
 app.include_router(auth_router)
+app.include_router(diagnostic_router)
 admin_routes.install(app)
