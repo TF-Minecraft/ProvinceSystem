@@ -230,7 +230,8 @@ def _log_lines(path: Path) -> Iterator[str]:
 def read_startup(logs: Path) -> dict | None:
     """The most recent startup in the logs: Paper version, whether it finished, and each plugin's enabled version.
 
-    Paper starts a new log at midnight too, so older logs are read until one holds a startup.
+    Each startup begins a new log, and Paper starts one at midnight too, so older
+    logs are read until one holds a startup.
     """
     rotated = [(m.group(1), int(m.group(2)), path) for path in logs.glob("*.log.gz")
                if (m := _ROTATED.match(path.name))]
@@ -249,7 +250,9 @@ def read_startup(logs: Path) -> dict | None:
                     if enabled:
                         startup["enabled"][enabled.group(1).lower()] = enabled.group(2)
                     elif _DONE.search(line):
+                        # Paper starts a new log at each startup, so nothing after this changes it.
                         startup["done"] = True
+                        break
         except (OSError, EOFError):
             continue
         if startup is not None:

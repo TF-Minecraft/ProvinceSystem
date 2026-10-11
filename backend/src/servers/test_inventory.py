@@ -52,7 +52,7 @@ def test_releases_skip_drafts_prereleases_and_releases_without_a_jar():
     assert inventory.repo_releases("Core", {"message": "Not Found"}) == []
 
 
-def test_startup_is_the_last_boot_in_the_newest_log_that_has_one(tmp_path):
+def test_startup_comes_from_the_newest_log_that_has_one(tmp_path):
     logs = tmp_path / "logs"
     logs.mkdir()
     # After midnight, latest.log holds no startup; the rotated logs are read newest first.
@@ -60,7 +60,7 @@ def test_startup_is_the_last_boot_in_the_newest_log_that_has_one(tmp_path):
     with gzip.open(logs / "2026-10-10-2.log.gz", "wt") as handle:
         handle.write(startup_log(("Core", "0.9"), paper="old"))
     with gzip.open(logs / "2026-10-10-10.log.gz", "wt") as handle:
-        handle.write(startup_log(("Core", "1.0")) + startup_log(("Core", "1.1"), done=False))
+        handle.write(startup_log(("Core", "1.1"), done=False))
     startup = inventory.read_startup(logs)
     assert startup == {"paper": "1.21.10-130", "done": False, "log": "2026-10-10-10.log.gz",
                        "enabled": {"core": "1.1"}}
