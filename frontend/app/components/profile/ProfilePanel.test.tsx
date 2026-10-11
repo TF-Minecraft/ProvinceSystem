@@ -677,3 +677,27 @@ it("explains a refused start", async () => {
   expect((await screen.findByRole("alert")).textContent).toBe("Your rank can’t make skins");
   expect(push).not.toHaveBeenCalled();
 });
+
+it("shows a viewed player's accounts with every action disabled", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({
+    minecraft: linked(),
+    patreon: { linked: false },
+    viewing_as: { staff_name: "boss", expires_at: "2099-01-01T00:00:00Z" },
+  }));
+  render(<ProfilePanel tab="accounts" signin={null} />);
+  const card = await screen.findByRole("list", { name: "Connected accounts" });
+  expect(screen.getByText("View only: you can’t change their accounts.")).toBeTruthy();
+  const buttons = within(card).getAllByRole("button");
+  expect(buttons.map((button) => button.textContent)).toEqual(expect.arrayContaining(["Sign out", "Unlink"]));
+  // Browsers send no clicks to these (jsdom does), and the fieldset is inert as well.
+  for (const button of buttons) expect((button as HTMLButtonElement).matches(":disabled")).toBe(true);
+  expect(card.closest("fieldset")?.hasAttribute("inert")).toBe(true);
+});
+
+it("leaves the card usable outside a view", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  render(<ProfilePanel tab="accounts" signin={null} />);
+  const card = await screen.findByRole("list", { name: "Connected accounts" });
+  expect(screen.queryByText(/View only/)).toBeNull();
+  expect((within(card).getByRole("button", { name: "Sign out" }) as HTMLButtonElement).matches(":disabled")).toBe(false);
+});
