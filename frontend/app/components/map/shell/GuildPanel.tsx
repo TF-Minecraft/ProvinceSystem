@@ -7,6 +7,7 @@ import type { RegionRecord, SettlementMarker } from "../types";
 import { Fact, RegionLink, Section } from "./RealmPanel";
 import { FocusIcon, RealmIcon } from "./MapIcons";
 import PanelHeader from "./PanelHeader";
+import { mapControlClass, mapBannerFrameClass, mapLinkClass } from "../ui";
 
 type GuildPanelProps = {
   guild: GuildProfile;
@@ -46,7 +47,7 @@ export function GuildPanelContent({
         visual={
           <div
             aria-hidden
-            className="map-banner-frame h-16 w-16 shrink-0"
+            className={`${mapBannerFrameClass} h-16 w-16 shrink-0`}
             style={{ backgroundColor: guild.rgb ? `rgb(${guild.rgb})` : "#555" }}
           />
         }
@@ -87,7 +88,7 @@ export function GuildPanelContent({
             <button
               type="button"
               onClick={() => onSelectPlace(seat.id)}
-              className="map-link text-left"
+              className={`${mapLinkClass} text-left`}
             >
               {cleanRegionName(seat.name)}
             </button>
@@ -102,7 +103,7 @@ export function GuildPanelContent({
           <button
             type="button"
             onClick={() => onFocusPoint(seatPlaced.map_x!, seatPlaced.map_y!)}
-            className="map-control h-9 px-3 text-sm"
+            className={`${mapControlClass} h-9 px-3 text-sm`}
           >
             <FocusIcon size={16} />
             Zoom to
@@ -111,7 +112,7 @@ export function GuildPanelContent({
         <button
           type="button"
           onClick={() => onSelectRegion(guild.factionId)}
-          className="map-control h-9 px-3 text-sm"
+          className={`${mapControlClass} h-9 px-3 text-sm`}
         >
           <RealmIcon size={16} />
           View realm

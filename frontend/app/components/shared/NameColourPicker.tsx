@@ -203,11 +203,7 @@ export default function NameColourPicker({
           aria-live="polite"
         >
           <p
-            className="m-0 text-xl tracking-wide"
-            style={{
-              fontFamily:
-                'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
-            }}
+            className="m-0 font-[family-name:ui-monospace,Cascadia_Mono,Segoe_UI_Mono,monospace] text-xl tracking-wide"
           >
             <FormattedMcRuns runs={previewRuns} />
           </p>

@@ -161,7 +161,7 @@ export default function CharacterKitDetailPage() {
   }
 
   return (
-    <div className="char-rise">
+    <div className="animate-char-rise">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`/character/${encodeURIComponent(characterId)}/kits`}

@@ -295,10 +295,9 @@ export default function WardrobeSlotModal({
             >
               <span
                 aria-hidden
-                className={`absolute top-0.5 left-0.5 rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
+                className={`absolute top-0.5 left-0.5 size-[1.125rem] rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
                   previewMode === "masked" ? "translate-x-5" : "translate-x-0"
                 }`}
-                style={{ height: "1.125rem", width: "1.125rem" }}
               />
             </button>
             <span
@@ -341,10 +340,9 @@ export default function WardrobeSlotModal({
             >
               <span
                 aria-hidden
-                className={`absolute top-0.5 left-0.5 rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
+                className={`absolute top-0.5 left-0.5 size-[1.125rem] rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
                   armModel === "slim" ? "translate-x-5" : "translate-x-0"
                 }`}
-                style={{ height: "1.125rem", width: "1.125rem" }}
               />
             </button>
             <span

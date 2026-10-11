@@ -254,8 +254,7 @@ export default function ArmorPreview({
         Armor preview
       </span>
       <div
-        className="relative overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]"
-        style={{ height: 240 }}
+        className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]"
       >
         <div ref={hostRef} className="absolute inset-0" />
         {status === "loading" ? (

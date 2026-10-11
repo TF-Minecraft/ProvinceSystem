@@ -20,6 +20,7 @@ import type { MapId, MapMode, RegionRecord, SettlementMarker } from "../types";
 import { FocusIcon, SubjectsIcon } from "./MapIcons";
 import PanelHeader from "./PanelHeader";
 import { GuildList } from "./GuildPanel";
+import { mapControlClass, mapBannerFrameClass, mapLinkClass } from "../ui";
 
 export type RealmPanelProps = {
   mapId: MapId;
@@ -69,10 +70,10 @@ export function Banner({
   className: string;
 }) {
   if (!banner) {
-    return <div aria-hidden className={`map-banner-frame ${className}`} />;
+    return <div aria-hidden className={`${mapBannerFrameClass} bg-[var(--tfmc-forest-deep)] ${className}`} />;
   }
   return (
-    <div className={`map-banner-frame ${className}`}>
+    <div className={`${mapBannerFrameClass} bg-[var(--tfmc-forest-deep)] ${className}`}>
       <MapAuthImage
         mapId={mapId}
         // `banner` is a raw field out of region data, which on a stored day is
@@ -104,7 +105,7 @@ export function RegionLink({
     <button
       type="button"
       onClick={() => onSelectRegion(id)}
-      className="map-link text-left"
+      className={`${mapLinkClass} text-left`}
     >
       {name}
     </button>
@@ -125,7 +126,7 @@ export function Fact({ label, children }: { label: string; children: ReactNode }
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-5">
-      <h3 className="map-rule mb-2.5">{title}</h3>
+      <h3 className="mb-2.5 text-[0.75rem] font-semibold text-[var(--tfmc-mist)]">{title}</h3>
       {children}
     </section>
   );
@@ -178,13 +179,13 @@ function PanelActions({
   return (
     <div className="mt-4 flex flex-wrap gap-2">
       {onFocusRegion ? (
-        <button type="button" onClick={onFocusRegion} className="map-control h-9 px-3 text-sm">
+        <button type="button" onClick={onFocusRegion} className={`${mapControlClass} h-9 px-3 text-sm`}>
           <FocusIcon size={16} />
           Zoom to
         </button>
       ) : null}
       {onShowSubjects ? (
-        <button type="button" onClick={onShowSubjects} className="map-control h-9 px-3 text-sm">
+        <button type="button" onClick={onShowSubjects} className={`${mapControlClass} h-9 px-3 text-sm`}>
           <SubjectsIcon size={16} />
           Show subjects
         </button>
@@ -232,7 +233,7 @@ function RealmBody({
                   onSelectPlace?.(capital.id);
                   onFocusPoint(capital.map_x!, capital.map_y!);
                 }}
-                className="map-link text-left"
+                className={`${mapLinkClass} text-left`}
               >
                 {cleanRegionName(capital.name)}
               </button>
@@ -413,7 +414,7 @@ export function RealmPanelContent(props: RealmPanelProps) {
                     <button
                       type="button"
                       onClick={() => onSelectRegion(subjectId)}
-                      className="map-control h-8 px-2.5 text-xs"
+                      className={`${mapControlClass} h-8 px-2.5 text-xs`}
                     >
                       {regionName(regionData, subjectId)}
                     </button>

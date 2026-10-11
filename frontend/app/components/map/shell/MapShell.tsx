@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
 import type { MapLayersPlacement } from "./MapLayersMenu";
+import { mapFrameClass } from "../ui";
 
 type MapShellProps = {
   /** The map itself. Rendered exactly once, at every breakpoint. */
@@ -143,7 +144,7 @@ export default function MapShell({
       {status ? (
         <div
           role="status"
-          className="map-frame pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)]"
+          className={`${mapFrameClass} pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 px-4 py-1.5 text-sm text-[var(--tfmc-cream)]`}
         >
           {status}
         </div>
@@ -223,7 +224,7 @@ function DetailsSheet({
   return (
     <div
       ref={sheetRef}
-      className={`map-frame map-details-enter pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
+      className={`${mapFrameClass} pointer-events-auto motion-safe:animate-map-sheet-in motion-safe:md:animate-map-panel-in absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
         expanded ? "max-h-[calc(100%-0.75rem)]" : "max-h-[44%]"
       } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
     >

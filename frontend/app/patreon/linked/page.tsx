@@ -26,11 +26,7 @@ export default async function PatreonLinkedPage({
     <main className="relative mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-3xl flex-col justify-center px-6 py-16">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-80"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in srgb, var(--tfmc-moss) 35%, transparent), transparent 65%)",
-        }}
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,color-mix(in_srgb,var(--tfmc-moss)_35%,transparent),transparent_65%)] opacity-80"
       />
       <section className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_28%,transparent)] p-6">
         <PatreonLinkConfirmation fallback={result} />

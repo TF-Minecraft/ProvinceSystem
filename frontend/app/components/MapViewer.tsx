@@ -105,8 +105,9 @@ import {
   paintChronicleFrameToImageData,
   type ProvinceIdGrid,
 } from "@/app/lib/map/chroniclePaint";
+import { mapControlClass } from "./map/ui";
 
-const actionLinkClass = "map-control h-9 px-2.5 text-xs no-underline";
+const actionLinkClass = `${mapControlClass} h-9 px-2.5 text-xs no-underline`;
 
 /**
  * The chronicle is the one feature nothing else on the map hints at, so it

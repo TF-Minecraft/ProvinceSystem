@@ -27,7 +27,7 @@ export default function PlayerTabs({ uuid, current, movement }: { uuid: string; 
     // The strip sits 1px low so the current tab's underline covers the row's border. The tabs must stay
     // inside the scroll box: any overhang lets phones drag it up and down.
     <div className="mt-5 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
-      <nav aria-label="Player" className="scroll-strip -mb-px flex gap-1 overflow-x-auto overflow-y-hidden">
+      <nav aria-label="Player" className="[scrollbar-width:none]! [&::-webkit-scrollbar]:hidden -mb-px flex gap-1 overflow-x-auto overflow-y-hidden">
         {TABS.filter((t) => movement || t.tab !== "movement").map(({ tab, label }) => {
           const active = tab === current;
           return (

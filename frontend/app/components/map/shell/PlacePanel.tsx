@@ -17,6 +17,7 @@ import { GuildList } from "./GuildPanel";
 import { guildsInProvince } from "@/app/lib/map/guildProfile";
 import { FocusIcon, RealmIcon } from "./MapIcons";
 import PanelHeader from "./PanelHeader";
+import { mapControlClass, mapBannerFrameClass, mapLinkClass } from "../ui";
 
 /** Province id -> county name per map, shared by every place panel. */
 const countyNamesByMap = new Map<string, Promise<Map<number, string>>>();
@@ -111,7 +112,7 @@ export function PlacePanelContent({
         title={place.name}
         eyebrow={eyebrow}
         visual={
-          <div className="map-banner-frame flex h-16 w-16 shrink-0 items-center justify-center bg-black/30">
+          <div className={`${mapBannerFrameClass} flex h-16 w-16 shrink-0 items-center justify-center bg-black/30`}>
             <img
               src={resolveMarkerImageSrc(marker.kind, marker.markerSize)}
               alt=""
@@ -130,7 +131,7 @@ export function PlacePanelContent({
               <button
                 type="button"
                 onClick={() => onSelectGuild(onlyGuild.key)}
-                className="map-link text-left"
+                className={`${mapLinkClass} text-left`}
               >
                 {onlyGuild.name}
               </button>
@@ -177,7 +178,7 @@ export function PlacePanelContent({
         <button
           type="button"
           onClick={() => onFocusPoint(place.mapX, place.mapY)}
-          className="map-control h-9 px-3 text-sm"
+          className={`${mapControlClass} h-9 px-3 text-sm`}
         >
           <FocusIcon size={16} />
           Zoom to
@@ -186,7 +187,7 @@ export function PlacePanelContent({
           <button
             type="button"
             onClick={() => onSelectRegion(place.ownerId!)}
-            className="map-control h-9 px-3 text-sm"
+            className={`${mapControlClass} h-9 px-3 text-sm`}
           >
             <RealmIcon size={16} />
             View realm

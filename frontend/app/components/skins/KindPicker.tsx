@@ -98,7 +98,7 @@ export default function KindPicker({
               onClick={() => onChange(opt.value)}
               className={`group relative overflow-hidden rounded-sm border px-3.5 py-3 text-left transition duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-50 ${
                 selected
-                  ? "kind-tile-selected border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_18%,var(--tfmc-forest))] shadow-[inset_3px_0_0_0_var(--tfmc-accent)]"
+                  ? "animate-kind-tile-in border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_18%,var(--tfmc-forest))] shadow-[inset_3px_0_0_0_var(--tfmc-accent)]"
                   : "border-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--tfmc-accent)_45%,var(--tfmc-cream))] hover:bg-[color-mix(in_srgb,var(--tfmc-moss)_55%,var(--tfmc-forest))] hover:shadow-[0_6px_16px_color-mix(in_srgb,black_28%,transparent)] active:translate-y-0 active:scale-[0.99]"
               } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)]`}
             >

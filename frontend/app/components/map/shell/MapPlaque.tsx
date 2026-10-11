@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { mapFrameClass } from "../ui";
 
 type MapPlaqueProps = {
   /** Small caps over the name, e.g. "Archived chapter". */
@@ -21,7 +22,7 @@ export default function MapPlaque({
   search,
 }: MapPlaqueProps) {
   return (
-    <div className="map-frame flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3">
+    <div className={`relative ${mapFrameClass} flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3`}>
       <div className="hidden min-w-0 flex-1 px-0.5 md:block">
         {eyebrow ? (
           <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p>

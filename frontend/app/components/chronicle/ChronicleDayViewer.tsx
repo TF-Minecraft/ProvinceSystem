@@ -30,6 +30,7 @@ import { useChronicleDay } from "../../lib/map/chronicleDayContext";
 import { formatChronicleDay } from "../../lib/map/chronicleDayLabel";
 import { BackIcon, ChevronIcon } from "../map/shell/MapIcons";
 import { chroniclePanelClass } from "./ChroniclePanels";
+import { mapControlClass, mapRoundControlClass } from "../map/ui";
 
 const bannerLinkClass =
   "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
@@ -123,7 +124,7 @@ function ChronicleDayBar({
   range: ChronicleDayRange | null;
   walk: ReturnType<typeof chronicleDayWalk>;
 }) {
-  const stepClass = "map-control h-10 w-10 shrink-0 rounded-full p-0";
+  const stepClass = `${mapRoundControlClass} h-10 w-10 shrink-0 p-0`;
   return (
     <div className={`${chroniclePanelClass} p-2`} role="status">
       <div className="flex items-center gap-1.5">
@@ -347,7 +348,7 @@ export default function ChronicleDayViewer({
         />
       }
       dayActions={
-        <Link href={liveMapHref(mapId)} className="map-control h-9 px-2.5 text-xs no-underline">
+        <Link href={liveMapHref(mapId)} className={`${mapControlClass} h-9 px-2.5 text-xs no-underline`}>
           Live map
         </Link>
       }

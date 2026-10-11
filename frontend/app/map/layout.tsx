@@ -20,8 +20,7 @@ export default function MapLayout({
 }) {
   return (
     <div
-      className="map-route w-full overflow-auto"
-      style={{ minHeight: "calc(100dvh - var(--tfmc-header-h))" }}
+      className="min-h-[calc(100dvh-var(--tfmc-header-h))] w-full overflow-auto in-[.map-fullscreen]:overflow-hidden in-[.map-fullscreen]:overscroll-none"
     >
       {children}
     </div>

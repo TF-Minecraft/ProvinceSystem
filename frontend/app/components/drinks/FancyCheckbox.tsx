@@ -41,7 +41,7 @@ export default function FancyCheckbox({
       aria-disabled={locked || undefined}
       onClick={onClick}
       className={`flex w-full items-start gap-3 rounded-sm border px-3 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] ${
-        shaking ? "char-option-shake" : ""
+        shaking ? "animate-char-option-shake" : ""
       } ${
         shaking
           ? "border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_55%,var(--tfmc-forest))]"

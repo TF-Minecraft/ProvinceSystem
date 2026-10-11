@@ -184,14 +184,7 @@ export default function MapTitleEditor({
     <div className="relative min-h-[calc(100dvh-var(--tfmc-header-h))] overflow-x-hidden text-[var(--tfmc-cream)]">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--tfmc-moss) 45%, transparent), transparent 65%),
-            radial-gradient(ellipse 100% 80% at 50% 100%, color-mix(in srgb, var(--tfmc-forest) 85%, #000), transparent),
-            linear-gradient(165deg, var(--tfmc-forest-deep) 0%, var(--tfmc-forest) 50%, #152820 100%)
-          `,
-        }}
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,color-mix(in_srgb,var(--tfmc-moss)_45%,transparent),transparent_65%),radial-gradient(ellipse_100%_80%_at_50%_100%,color-mix(in_srgb,var(--tfmc-forest)_85%,#000),transparent),linear-gradient(165deg,var(--tfmc-forest-deep)_0%,var(--tfmc-forest)_50%,#152820_100%)]"
       />
       <div className="relative z-10 mx-auto flex min-w-0 max-w-[90rem] flex-col gap-4 px-4 py-6 sm:px-6 md:py-8">
         <header>

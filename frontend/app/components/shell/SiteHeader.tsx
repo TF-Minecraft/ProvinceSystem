@@ -130,8 +130,7 @@ export default function SiteHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-[100] grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6"
-        style={{ height: "var(--tfmc-header-h)" }}
+        className="sticky top-0 z-[100] grid h-[var(--tfmc-header-h)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6"
       >
         <button
           ref={toggleRef}

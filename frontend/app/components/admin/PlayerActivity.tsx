@@ -321,7 +321,7 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
         ref={strip}
         role="group"
         aria-label="Show"
-        className="scroll-strip mt-3 flex gap-1.5 overflow-x-auto overscroll-x-contain py-1 sm:flex-wrap sm:overflow-visible"
+        className="[scrollbar-width:none]! [&::-webkit-scrollbar]:hidden mt-3 flex gap-1.5 overflow-x-auto overscroll-x-contain py-1 sm:flex-wrap sm:overflow-visible"
       >
         <button type="button" aria-pressed={!kinds.length} className={chip(!kinds.length)} onClick={() => choose([])}>
           All

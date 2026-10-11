@@ -32,10 +32,21 @@ const FADE_MS = 160;
 const SHOWN_MS = FADE_MS + 40;
 /**
  * How far, in screen pixels, an opaque tile reaches under its right and
- * bottom neighbours, at rest and mid-zoom alike (see `.map-tile` in
- * globals.css). One pixel let a seam through mid-zoom.
+ * bottom neighbours, at rest and mid-zoom alike (see `OPAQUE_TILE_CLASS`).
+ * One pixel let a seam through mid-zoom.
  */
 const TILE_OVERLAP_PX = 2;
+/**
+ * A tile's edge can land a hair off a pixel boundary, and mid-zoom (the map
+ * scaled past its resting size) between pixels; Chrome then lets about a
+ * quarter of that pixel through and the page shows as a grid of dark lines.
+ * So an opaque tile reaches TILE_OVERLAP_PX under its right and bottom
+ * neighbours, divided by the live scale to stay that size on screen. The same
+ * size mid-zoom and at rest: when it shrank as a zoom settled, every tile's
+ * far side moved back a pixel.
+ */
+export const OPAQUE_TILE_CLASS =
+  "[scale:calc(1_+_var(--tile-ox)_/_var(--map-live-scale,1))_calc(1_+_var(--tile-oy)_/_var(--map-live-scale,1))]";
 /**
  * How far, in screen pixels, the backdrop runs on under the edge of opaque
  * sharp tiles (see the backdrop's clip path below).
@@ -272,7 +283,7 @@ function TileLayer({
         decoding="sync"
         onLoad={(event) => handleLoad(event.currentTarget, loadedKey(tile))}
         onError={reportTileError}
-        className={`absolute left-0 top-0 max-w-none select-none ${seeThrough ? "" : "map-tile"}`}
+        className={`absolute left-0 top-0 max-w-none select-none ${seeThrough ? "" : OPAQUE_TILE_CLASS}`}
         style={{
           translate: `${left}px ${top}px`,
           transformOrigin: "0 0",

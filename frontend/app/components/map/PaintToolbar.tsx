@@ -26,8 +26,9 @@ import {
 } from "../../lib/mapPaint";
 import type { UseMapPaintResult } from "../../hooks/useMapPaint";
 import { downloadBlob } from "../../lib/downloadBlob";
+import { mapFrameClass } from "./ui";
 
-const panelClass = "map-frame";
+const panelClass = `relative ${mapFrameClass}`;
 
 const activeClass =
   "bg-[color-mix(in_srgb,var(--tfmc-cream)_92%,transparent)] text-[var(--tfmc-forest-deep)]";

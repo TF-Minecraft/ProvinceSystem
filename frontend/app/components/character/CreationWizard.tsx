@@ -666,10 +666,14 @@ function PeekCard({
   const title = stageDisplayTitle(stage);
   return (
     <div
-      className={`char-deck-peek char-deck-peek-${position}`}
+      className={`pointer-events-none h-11 shrink-0 scale-94 overflow-hidden opacity-28 blur-[0.2px] ${
+        position === "prev"
+          ? "[mask-image:linear-gradient(to_bottom,transparent,#000_70%)]"
+          : "[mask-image:linear-gradient(to_top,transparent,#000_70%)]"
+      }`}
       aria-hidden
     >
-      <div className="char-deck-peek-inner">
+      <div className="rounded-[0.25rem] border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_45%,transparent)] px-4 py-[0.65rem]">
         <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
           {title}
         </p>
@@ -890,16 +894,18 @@ export default function CreationWizard({
         </button>
       </div>
 
-      <div className="char-deck relative flex min-h-[min(62vh,520px)] flex-1 flex-col">
+      <div className="relative flex min-h-[min(62vh,520px)] flex-1 flex-col gap-[0.35rem] [mask-image:linear-gradient(to_bottom,transparent_0%,#000_12%,#000_88%,transparent_100%)]">
         {prevStage ? <PeekCard stage={prevStage} position="prev" /> : (
-          <div className="char-deck-peek-spacer" aria-hidden />
+          <div className="h-11 shrink-0" aria-hidden />
         )}
 
         <div
           key={`${stage.id}-${dir}`}
-          className={`char-deck-active char-deck-slide-${dir}`}
+          className={`flex min-h-0 flex-1 flex-col ${
+            dir === "forward" ? "animate-char-deck-forward" : "animate-char-deck-back"
+          }`}
         >
-          <div className="char-deck-card">
+          <div className="flex-1 overflow-auto rounded-[0.35rem] border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[linear-gradient(165deg,color-mix(in_srgb,var(--tfmc-moss)_55%,transparent),color-mix(in_srgb,var(--tfmc-forest)_70%,transparent))] px-[1.15rem] pt-5 pb-[1.35rem] shadow-[0_18px_40px_color-mix(in_srgb,#000_35%,transparent)]">
             {!isInfo ? (
               <h2 className="mb-4 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)] sm:text-3xl">
                 {title}
@@ -928,7 +934,7 @@ export default function CreationWizard({
         </div>
 
         {nextStage ? <PeekCard stage={nextStage} position="next" /> : (
-          <div className="char-deck-peek-spacer" aria-hidden />
+          <div className="h-11 shrink-0" aria-hidden />
         )}
       </div>
 

@@ -177,8 +177,7 @@ function SkinThumb({
     <img
       src={src}
       alt=""
-      className="h-8 w-8 image-rendering-pixelated rounded-sm"
-      style={{ imageRendering: "pixelated" }}
+      className="h-8 w-8 rounded-sm [image-rendering:pixelated]"
     />
   );
 }
@@ -873,8 +872,7 @@ export default function LoreItemEditor({
                           <img
                             src={url}
                             alt={`${label} cover preview`}
-                            className="h-full w-full object-contain"
-                            style={{ imageRendering: "pixelated" }}
+                            className="h-full w-full object-contain [image-rendering:pixelated]"
                           />
                         ) : (
                           <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">

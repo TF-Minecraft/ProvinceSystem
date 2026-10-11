@@ -1108,8 +1108,7 @@ export default function UploadForm({
                         <img
                           src={url}
                           alt={`${label} cover preview`}
-                          className="h-full w-full object-contain"
-                          style={{ imageRendering: "pixelated" }}
+                          className="h-full w-full object-contain [image-rendering:pixelated]"
                         />
                       ) : (
                         <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">

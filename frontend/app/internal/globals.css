@@ -19,54 +19,196 @@
   --font-display: var(--font-fraunces);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-source-sans), system-ui, sans-serif;
+@theme {
+  --animate-hub-rise: hub-rise 0.9s ease-out both;
+  --animate-hub-rise-delay: hub-rise 0.9s ease-out 0.15s both;
+  --animate-hub-fade-delay: hub-fade 1s ease-out 0.35s both;
+  --animate-char-rise: hub-rise 0.7s ease-out both;
+  --animate-char-row: hub-fade 0.5s ease-out both;
+  --animate-char-deck-forward: char-deck-forward 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-char-deck-back: char-deck-back 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-kind-tile-in: kind-tile-in 0.22s ease-out;
+  --animate-char-option-shake: char-option-shake 0.35s ease;
+  --animate-char-toast-in: char-toast-in 0.22s ease-out both;
+  --animate-char-toast-out: char-toast-out 0.28s ease-in both;
+  /* Map details rise as a sheet on a phone and slide in from the left on
+     desktop; the layers panel pops up over its corner tile on desktop. */
+  --animate-map-sheet-in: map-sheet-in 200ms ease-out;
+  --animate-map-panel-in: map-panel-in 180ms ease-out;
+  --animate-map-popover-in: map-popover-in 150ms ease-out;
+
+  @keyframes hub-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes hub-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes char-deck-forward {
+    from {
+      opacity: 0.35;
+      transform: translateY(1.75rem) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes char-deck-back {
+    from {
+      opacity: 0.35;
+      transform: translateY(-1.75rem) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes kind-tile-in {
+    from {
+      opacity: 0.65;
+      transform: scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes char-option-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-5px);
+    }
+    40% {
+      transform: translateX(5px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(3px);
+    }
+  }
+
+  @keyframes char-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes char-toast-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+
+  @keyframes map-panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(-0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes map-sheet-in {
+    from {
+      transform: translateY(1.5rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes map-popover-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
-/* Dropdown lists. Boxes are transparent, so Chrome and Firefox open the list
-   on their default white while each option keeps the box's cream text. */
-select option {
-  background-color: var(--tfmc-forest-deep);
-  color: var(--tfmc-cream);
-}
+@layer base {
+  /* Dropdown lists. Boxes are transparent, so Chrome and Firefox open the list
+     on their default white while each option keeps the box's cream text. */
+  select option {
+    background-color: var(--tfmc-forest-deep);
+    color: var(--tfmc-cream);
+  }
 
-/* Staff pages keep the scrollbar's room even when nothing scrolls, so the
-   frame does not shift sideways as a list loads or a tab changes length. */
-html:has(.staff-panel) {
-  scrollbar-gutter: stable;
-}
+  /* Staff pages keep the scrollbar's room even when nothing scrolls, so the
+     frame does not shift sideways as a list loads or a tab changes length. */
+  html:has(.staff-panel) {
+    scrollbar-gutter: stable;
+  }
 
-/* While the full-screen map is open (MapShell), the page does not scroll or
-   bounce: only the map and its panels move. */
-html.map-fullscreen,
-html.map-fullscreen body,
-html.map-fullscreen .map-route {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
+  /* While the full-screen map is open (MapShell), the page does not scroll or
+     bounce: only the map and its panels move. */
+  html.map-fullscreen,
+  html.map-fullscreen body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
 
-/* Nothing on the map page selects, drags or pops up a long-press menu: a long
-   press is a press on the map, not a text selection or "Save image". The
-   search box is the exception, or Safari would not let it be typed in. */
-html.map-fullscreen body {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-html.map-fullscreen img {
-  -webkit-user-drag: none;
-}
-html.map-fullscreen input,
-html.map-fullscreen textarea {
-  -webkit-user-select: text;
-  user-select: text;
+  /* Nothing on the map page selects, drags or pops up a long-press menu: a long
+     press is a press on the map, not a text selection or "Save image". The
+     search box is the exception, or Safari would not let it be typed in. */
+  html.map-fullscreen body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  html.map-fullscreen img {
+    -webkit-user-drag: none;
+  }
+  html.map-fullscreen input,
+  html.map-fullscreen textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* Themed scrollbars. The standard properties are for Firefox only: Chrome
    ignores every ::-webkit-scrollbar rule below once they are set, and falls
-   back to its plain native bar with arrow buttons. */
+   back to its plain native bar with arrow buttons. Unlayered, so they hold
+   over utilities; a strip that hides its bar uses `[scrollbar-width:none]!`. */
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-width: thin;
@@ -78,15 +220,6 @@ html.map-fullscreen textarea {
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-}
-
-/* A sideways strip (the activity filters) that scrolls without a bar. Unlayered
-   like the rules above, which a Tailwind utility could not override. */
-.scroll-strip {
-  scrollbar-width: none;
-}
-.scroll-strip::-webkit-scrollbar {
-  display: none;
 }
 
 *::-webkit-scrollbar-track {
@@ -109,448 +242,4 @@ html.map-fullscreen textarea {
 
 *::-webkit-scrollbar-corner {
   background: transparent;
-}
-
-@keyframes hub-rise {
-  from {
-    opacity: 0;
-    transform: translateY(1.25rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes hub-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.hub-rise {
-  animation: hub-rise 0.9s ease-out both;
-}
-
-.hub-rise-delay {
-  animation: hub-rise 0.9s ease-out 0.15s both;
-}
-
-.hub-fade-delay {
-  animation: hub-fade 1s ease-out 0.35s both;
-}
-
-.char-rise {
-  animation: hub-rise 0.7s ease-out both;
-}
-
-.char-row {
-  animation: hub-fade 0.5s ease-out both;
-}
-
-.char-deck {
-  gap: 0.35rem;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    #000 12%,
-    #000 88%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    #000 12%,
-    #000 88%,
-    transparent 100%
-  );
-}
-
-.char-deck-peek-spacer {
-  height: 2.75rem;
-  flex-shrink: 0;
-}
-
-.char-deck-peek {
-  flex-shrink: 0;
-  height: 2.75rem;
-  overflow: hidden;
-  opacity: 0.28;
-  transform: scale(0.94);
-  pointer-events: none;
-  filter: blur(0.2px);
-}
-
-.char-deck-peek-prev {
-  mask-image: linear-gradient(to bottom, transparent, #000 70%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 70%);
-}
-
-.char-deck-peek-next {
-  mask-image: linear-gradient(to top, transparent, #000 70%);
-  -webkit-mask-image: linear-gradient(to top, transparent, #000 70%);
-}
-
-.char-deck-peek-inner {
-  border: 1px solid color-mix(in srgb, var(--tfmc-cream) 14%, transparent);
-  background: color-mix(in srgb, var(--tfmc-moss) 45%, transparent);
-  border-radius: 0.25rem;
-  padding: 0.65rem 1rem;
-}
-
-.char-deck-active {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.char-deck-card {
-  flex: 1;
-  border: 1px solid color-mix(in srgb, var(--tfmc-cream) 18%, transparent);
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--tfmc-moss) 55%, transparent),
-      color-mix(in srgb, var(--tfmc-forest) 70%, transparent)
-    );
-  border-radius: 0.35rem;
-  padding: 1.25rem 1.15rem 1.35rem;
-  box-shadow: 0 18px 40px color-mix(in srgb, #000 35%, transparent);
-  overflow: auto;
-}
-
-.char-deck-slide-forward {
-  animation: char-deck-forward 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.char-deck-slide-back {
-  animation: char-deck-back 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes char-deck-forward {
-  from {
-    opacity: 0.35;
-    transform: translateY(1.75rem) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes char-deck-back {
-  from {
-    opacity: 0.35;
-    transform: translateY(-1.75rem) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes kind-tile-in {
-  from {
-    opacity: 0.65;
-    transform: scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.kind-tile-selected {
-  animation: kind-tile-in 0.22s ease-out;
-}
-
-@keyframes char-option-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-5px);
-  }
-  40% {
-    transform: translateX(5px);
-  }
-  60% {
-    transform: translateX(-3px);
-  }
-  80% {
-    transform: translateX(3px);
-  }
-}
-
-.char-option-shake {
-  animation: char-option-shake 0.35s ease;
-}
-
-@keyframes char-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.4rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes char-toast-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(0.25rem);
-  }
-}
-
-.char-toast-in {
-  animation: char-toast-in 0.22s ease-out both;
-}
-
-.char-toast-out {
-  animation: char-toast-out 0.28s ease-in both;
-}
-
-/* ------------------------------------------------------------------------
- * Map chrome
- *
- * Every floating control on the world map shares one quiet panel style, the
- * same forest and cream as the rest of the site, so the map stays the thing
- * being looked at.
- * ---------------------------------------------------------------------- */
-
-/* In the components layer so Tailwind utilities on the same element (absolute,
- * border-0, rounded-none…) still win, as they would over any component class. */
-@layer components {
-  .map-frame {
-    position: relative;
-    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--tfmc-forest-deep) 94%, transparent);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
-    color: var(--tfmc-cream);
-    backdrop-filter: blur(8px);
-  }
-
-  .map-frame-header {
-    border-bottom: 1px solid color-mix(in srgb, var(--tfmc-cream) 10%, transparent);
-  }
-
-  /* Section heading inside a panel. */
-  .map-rule {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--tfmc-mist);
-  }
-
-  .map-tooltip {
-    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--tfmc-forest-deep) 96%, transparent);
-    box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
-  }
-
-  .map-control:focus-visible {
-    outline: 2px solid var(--tfmc-accent);
-    outline-offset: 2px;
-  }
-
-  /* Rectangular controls: zoom, layers, panel buttons. */
-  .map-control {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 12%, transparent);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--tfmc-forest-deep) 94%, transparent);
-    color: var(--tfmc-stone);
-    transition:
-      color 120ms ease,
-      border-color 120ms ease,
-      background-color 120ms ease;
-  }
-
-  .map-control:hover:not(:disabled) {
-    color: var(--tfmc-cream);
-    border-color: color-mix(in srgb, var(--tfmc-cream) 25%, transparent);
-    background: color-mix(in srgb, var(--tfmc-forest) 94%, transparent);
-  }
-
-  .map-control[aria-pressed="true"],
-  .map-control[aria-expanded="true"] {
-    color: var(--tfmc-forest-deep);
-    border-color: transparent;
-    background: color-mix(in srgb, var(--tfmc-cream) 92%, transparent);
-  }
-
-  .map-control:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
-
-  /* A realm's banner. */
-  .map-banner-frame {
-    border: 1px solid color-mix(in srgb, var(--tfmc-cream) 15%, transparent);
-    border-radius: 4px;
-    background: var(--tfmc-forest-deep);
-    overflow: hidden;
-  }
-
-  /* A tile's edge can land a hair off a pixel boundary, and mid-zoom (the
-   * map scaled past its resting size) between pixels; Chrome then lets
-   * about a quarter of that pixel through and the page shows as a grid of
-   * dark lines. So an opaque tile reaches TILE_OVERLAP_PX (TileLayer) under
-   * its right and bottom neighbours, divided by the live scale to stay that
-   * size on screen. The same size mid-zoom and at rest: when it shrank as a
-   * zoom settled, every tile's far side moved back a pixel. */
-  .map-tile {
-    scale: calc(1 + var(--tile-ox) / var(--map-live-scale, 1))
-      calc(1 + var(--tile-oy) / var(--map-live-scale, 1));
-  }
-
-  /* An in-text link to another realm or place. */
-  .map-link {
-    color: var(--tfmc-cream);
-    text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--tfmc-cream) 35%, transparent);
-    text-underline-offset: 2px;
-  }
-
-  .map-link:hover {
-    text-decoration-color: var(--tfmc-cream);
-  }
-}
-
-@keyframes map-panel-in {
-  from {
-    opacity: 0;
-    transform: translateX(-0.75rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes map-sheet-in {
-  from {
-    transform: translateY(1.5rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Details rise as a sheet on a phone and slide in from the left on desktop. */
-.map-details-enter {
-  animation: map-sheet-in 200ms ease-out;
-}
-
-@media (min-width: 48rem) {
-  .map-details-enter {
-    animation: map-panel-in 180ms ease-out;
-  }
-}
-
-/* The layers panel: a sheet rising on a phone, a pop-up over the corner tile on a desktop. */
-@keyframes map-popover-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.map-layers-enter {
-  animation: map-sheet-in 200ms ease-out;
-}
-
-@media (min-width: 48rem) {
-  .map-layers-enter {
-    animation: map-popover-in 150ms ease-out;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .map-details-enter,
-  .map-layers-enter {
-    animation: none;
-  }
-}
-
-/* The timelapse player's scrubber: a thin track filled to the play head
-   (`--progress`), and a round thumb, larger under a finger. */
-.chronicle-scrubber {
-  appearance: none;
-  height: 1.75rem;
-  background: transparent;
-  cursor: pointer;
-  --chronicle-thumb: 16px;
-}
-
-@media (pointer: coarse) {
-  .chronicle-scrubber {
-    --chronicle-thumb: 22px;
-  }
-}
-
-.chronicle-scrubber::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    var(--tfmc-accent) var(--progress, 0%),
-    color-mix(in srgb, var(--tfmc-cream) 18%, transparent) var(--progress, 0%)
-  );
-}
-
-.chronicle-scrubber::-moz-range-track {
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    var(--tfmc-accent) var(--progress, 0%),
-    color-mix(in srgb, var(--tfmc-cream) 18%, transparent) var(--progress, 0%)
-  );
-}
-
-.chronicle-scrubber::-webkit-slider-thumb {
-  appearance: none;
-  width: var(--chronicle-thumb);
-  height: var(--chronicle-thumb);
-  margin-top: calc((4px - var(--chronicle-thumb)) / 2);
-  border-radius: 50%;
-  background: var(--tfmc-cream);
-  box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
-}
-
-.chronicle-scrubber::-moz-range-thumb {
-  width: var(--chronicle-thumb);
-  height: var(--chronicle-thumb);
-  border: 0;
-  border-radius: 50%;
-  background: var(--tfmc-cream);
-  box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
-}
-
-.chronicle-scrubber:focus-visible {
-  outline: 2px solid var(--tfmc-accent);
-  outline-offset: 2px;
-  border-radius: 999px;
 }

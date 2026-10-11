@@ -148,7 +148,7 @@ function PaintShapeView({ shape, selected = false }: PaintShapeViewProps) {
             // The stamp assets are 16x16 Minecraft textures. Left to smooth
             // upscaling they turn to mush the moment a shape is resized up, so
             // scale them nearest-neighbour like every other texture in the app.
-            style={{ imageRendering: "pixelated" }}
+            className="[image-rendering:pixelated]"
           />
         </g>
       );

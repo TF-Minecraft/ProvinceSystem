@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TileManifest, TileView } from "@/app/lib/map/tilePyramid";
 
-import TileLayer from "./TileLayer";
+import TileLayer, { OPAQUE_TILE_CLASS } from "./TileLayer";
 
 afterEach(() => {
   cleanup();
@@ -383,14 +383,14 @@ describe("TileLayer", () => {
     // its neighbours, and the backdrop runs on 8 px under the sharp tiles:
     // where two edges meet off a pixel boundary the page would show through.
     const opaque = layer(false);
-    expect(opaque.sharp.classList.contains("map-tile")).toBe(true);
+    expect(opaque.sharp.className).toContain(OPAQUE_TILE_CLASS);
     expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe(String(2 / 256));
     expect(opaque.clip).toContain("0.390625% 0.390625%, 0.390625% 24.609375%");
     cleanup();
 
     // A see-through tile stacked on another would show twice as deep.
     const seeThrough = layer(true);
-    expect(seeThrough.sharp.classList.contains("map-tile")).toBe(false);
+    expect(seeThrough.sharp.className).not.toContain(OPAQUE_TILE_CLASS);
     expect(seeThrough.clip).toContain("0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%");
   });
 

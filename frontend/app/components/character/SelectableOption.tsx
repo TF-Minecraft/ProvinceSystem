@@ -128,7 +128,7 @@ export default function SelectableOption({
       aria-disabled={showConflict || (disabled && !selected)}
       className={`w-full rounded-sm border px-3 py-3 text-left transition-[border-color,background-color,opacity] duration-200 ${borderClass} ${
         disabled && !selected && !showConflict ? "opacity-40" : ""
-      } ${shaking ? "char-option-shake" : ""}`}
+      } ${shaking ? "animate-char-option-shake" : ""}`}
     >
       <span className="flex items-baseline justify-between gap-3">
         <span className="font-medium text-[var(--tfmc-cream)]">{title}</span>

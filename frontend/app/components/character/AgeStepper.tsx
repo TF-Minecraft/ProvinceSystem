@@ -154,7 +154,7 @@ export default function AgeStepper({
         <p
           role="status"
           className={`pointer-events-none absolute bottom-0 right-0 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_88%,transparent)] px-2.5 py-1.5 text-xs text-[var(--tfmc-accent)] shadow-sm ${
-            toast === "in" ? "char-toast-in" : "char-toast-out"
+            toast === "in" ? "animate-char-toast-in" : "animate-char-toast-out"
           }`}
         >
           Applied
