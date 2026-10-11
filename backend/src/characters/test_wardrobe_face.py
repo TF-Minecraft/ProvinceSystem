@@ -153,12 +153,22 @@ class ActiveFaceTest(unittest.TestCase):
             face = self.wardrobe.active_face_png(PLAYER, CHAR_ID)
         self.assertEqual(pixels(face).getpixel((4, 4)), (2, 2, 2, 255))
 
+    def test_skin_is_the_worn_slot_as_stored(self) -> None:
+        base = skin((1, 1, 1, 255))
+        self.put_slot("base", base)
+        self.put_slot("extra_1", skin((2, 2, 2, 255)))
+        # extra_1 is locked, so base is worn.
+        self.assertEqual(self.wardrobe.active_skin_png(PLAYER, CHAR_ID), base)
+
     def test_no_skin_no_face(self) -> None:
+        self.assertIsNone(self.wardrobe.active_skin_png(PLAYER, CHAR_ID))
         self.assertIsNone(self.wardrobe.active_face_png(PLAYER, CHAR_ID))
 
     def test_other_players_characters_are_refused(self) -> None:
         with self.assertRaises(self.wardrobe.WardrobeError):
             self.wardrobe.active_face_png("someone-else", CHAR_ID)
+        with self.assertRaises(self.wardrobe.WardrobeError):
+            self.wardrobe.active_skin_png("someone-else", CHAR_ID)
 
 
 if __name__ == "__main__":

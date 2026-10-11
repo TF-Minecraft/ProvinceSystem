@@ -404,10 +404,15 @@ export default function ProfilePanel({
     }),
     [dropCodes, go, loadDashboard],
   );
+  // The card a character was opened from, and where the page was, for coming back to the list.
+  const characterReturn = useRef<{ id: string; scrollY: number } | null>(null);
   const characterNav = useMemo(() => {
     const nav = itemNav("characters");
     return {
-      onOpen: nav.onOpen,
+      onOpen: (id: string) => {
+        characterReturn.current = { id, scrollY: window.scrollY };
+        nav.onOpen(id);
+      },
       onBack: nav.onBack,
       onLeave: nav.onLeave,
       // The character is gone: back to the list, which reloads without it.
@@ -417,7 +422,20 @@ export default function ProfilePanel({
       },
     };
   }, [itemNav, loadDashboard]);
+  // Back on the list: the page where it was, and focus on the card that was opened (or the tab if it's gone).
+  const characterListShowing = shown === "characters" && !openItem && dashboard !== null;
+  useEffect(() => {
+    const back = characterReturn.current;
+    if (!characterListShowing || !back) return;
+    characterReturn.current = null;
+    window.scrollTo(0, back.scrollY);
+    const card = Array.from(document.querySelectorAll<HTMLElement>("[data-character-id]")).find(
+      (el) => el.dataset.characterId === back.id,
+    );
+    (card ?? document.getElementById(`${panelId}-characters`))?.focus({ preventScroll: true });
+  }, [characterListShowing, panelId]);
   const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
+
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
 
   function onRedeemed(signIn: SignIn) {
@@ -701,6 +719,7 @@ export default function ProfilePanel({
                 character={dashboard.characters.find((c) => c.id === openItem) ?? null}
                 catalog={catalog}
                 sessionToken={uiDev ? null : token}
+                playerUuid={minecraft?.player_uuid}
                 {...characterNav}
               />
             ) : shown === "characters" ? (

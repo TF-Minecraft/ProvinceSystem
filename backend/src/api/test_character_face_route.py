@@ -1,4 +1,4 @@
-"""GET /characters/{id}/face serves the worn skin's face to its owner's Profile session."""
+"""GET /characters/{id}/face and /skin serve the worn skin to its owner's Profile session."""
 
 from __future__ import annotations
 
@@ -55,3 +55,31 @@ def test_no_face_is_404_and_someone_elses_character_is_refused():
         mock.patch.object(routes, "active_face_png", side_effect=WardrobeError("Character not found on roster", status_code=403)),
     ):
         assert client().get("/characters/c1/face", headers=AUTH).status_code == 403
+
+
+def test_serves_the_worn_skin_uncached():
+    with (
+        mock.patch.object(routes, "get_session", return_value=SESSION),
+        mock.patch.object(routes, "active_skin_png", return_value=b"skin") as skin,
+    ):
+        res = client().get("/characters/c1/skin", headers=AUTH)
+    assert res.status_code == 200
+    assert res.content == b"skin"
+    assert res.headers["content-type"] == "image/png"
+    assert res.headers["cache-control"] == "no-store"
+    skin.assert_called_once_with("p-1", "c1")
+
+
+def test_no_skin_is_404_and_someone_elses_skin_is_refused():
+    with (
+        mock.patch.object(routes, "get_session", return_value=SESSION),
+        mock.patch.object(routes, "active_skin_png", return_value=None),
+    ):
+        assert client().get("/characters/c1/skin", headers=AUTH).json() == {"detail": "no_skin"}
+    with (
+        mock.patch.object(routes, "get_session", return_value=SESSION),
+        mock.patch.object(routes, "active_skin_png", side_effect=WardrobeError("Character not found on roster", status_code=403)),
+    ):
+        assert client().get("/characters/c1/skin", headers=AUTH).status_code == 403
+    with mock.patch.object(routes, "get_session", return_value=None):
+        assert client().get("/characters/c1/skin", headers=AUTH).status_code == 401

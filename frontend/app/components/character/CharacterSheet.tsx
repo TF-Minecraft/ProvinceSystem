@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useId, useState, type ReactNode, type Ref } from "react";
 import type {
   CharacterListItem,
   CharacterSheetTrait,
@@ -10,234 +11,413 @@ import type {
 import { displayClass, displayRace, traitSelectionGroupLabel } from "../../../lib/characters/displayNames";
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
+import { paragraphs, splitStory } from "../../../lib/characters/story";
+import CharacterFigure from "./CharacterFigure";
 
 type Props = {
   character: CharacterListItem;
   catalog?: CreationCatalog | null;
+  /** Reads the worn skin; null shows the player's head. */
+  sessionToken?: string | null;
+  playerUuid?: string | null;
+  /** The name's heading, focused when the character opens. */
+  headingRef?: Ref<HTMLHeadingElement>;
   onCancelPending?: () => void | Promise<void>;
   cancelling?: boolean;
 };
 
-function capitalizeKey(raw: string): string {
-  const s = raw.trim();
-  if (!s) return "Other";
-  return s.charAt(0).toUpperCase() + s.slice(1);
+const ATTRIBUTE_ORDER = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
+
+const labelClass = "text-xs font-bold uppercase tracking-[0.08em] text-[var(--tfmc-stone)]";
+const sectionHeadingClass = "mb-3 font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]";
+const panelClass =
+  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_55%,transparent)]";
+const quietClass = "text-sm text-[var(--tfmc-mist)]";
+const proseClass =
+  "max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.6] text-[color-mix(in_srgb,var(--tfmc-cream)_85%,var(--tfmc-mist))]";
+const actionClass =
+  "flex min-h-11 items-center gap-2.5 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_3%,transparent)] px-3.5 py-1.5 text-[15px] font-semibold text-[var(--tfmc-cream)] transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
+
+function text(value: unknown): string {
+  return String(value ?? "").trim();
 }
 
-function formatTraitSuffix(t: CharacterSheetTrait): string {
+function capitalizeKey(raw: string): string {
+  const s = raw.trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Other";
+}
+
+/** "1h remaining", "Fuel: 35%", or both; empty for a permanent trait. */
+function timedNote(t: CharacterSheetTrait): string {
   const parts: string[] = [];
   const ms = t.duration_remaining_ms;
   if (ms != null && Number.isFinite(ms) && ms > 0) {
     const hours = Math.floor(ms / 3_600_000);
-    const mins = Math.floor((ms % 3_600_000) / 60_000);
-    if (hours > 0) {
-      parts.push(`${hours}h remaining`);
-    } else {
-      parts.push(`${mins}m remaining`);
-    }
+    parts.push(hours > 0 ? `${hours}h remaining` : `${Math.floor((ms % 3_600_000) / 60_000)}m remaining`);
   }
-  const fuel = t.fuel_percent;
-  if (fuel != null && Number.isFinite(fuel)) {
-    parts.push(`Fuel: ${fuel}%`);
-  }
-  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+  if (t.fuel_percent != null && Number.isFinite(t.fuel_percent)) parts.push(`Fuel: ${t.fuel_percent}%`);
+  return parts.join(", ");
 }
 
-function groupTraits(traits: CharacterSheetTrait[]): { key: string; label: string; items: CharacterSheetTrait[] }[] {
-  const order: string[] = [];
-  const map = new Map<string, CharacterSheetTrait[]>();
+function groupTraits(traits: CharacterSheetTrait[]): { key: string; label: string; names: string[] }[] {
+  const groups = new Map<string, string[]>();
   for (const t of traits) {
-    const key =
-      String(t.key || "other")
-        .trim()
-        .toLowerCase() || "other";
-    if (!map.has(key)) {
-      map.set(key, []);
-      order.push(key);
-    }
-    map.get(key)!.push(t);
+    const key = text(t.key).toLowerCase() || "other";
+    groups.set(key, [...(groups.get(key) ?? []), text(t.name || t.id)]);
   }
-  return order.map((key) => ({
-    key,
-    label: traitSelectionGroupLabel(key),
-    items: map.get(key) || [],
-  }));
+  return [...groups].map(([key, names]) => ({ key, label: traitSelectionGroupLabel(key), names }));
 }
 
-function formatXpAmount(amount: number): string {
-  if (amount > 0) return `+${amount}%`;
-  return `${amount}%`;
+/** The catalogue's attributes in its order, then any others the character has. */
+function attributeRows(attrs: Record<string, number> | null | undefined, catalog?: CreationCatalog | null) {
+  const values = new Map<string, number>();
+  for (const [k, v] of Object.entries(attrs && typeof attrs === "object" ? attrs : {})) {
+    const key = text(k).toLowerCase();
+    if (key && Number.isFinite(Number(v))) values.set(key, Number(v));
+  }
+  const known = catalog?.attribute_point_buy?.attributes?.map((a) => a.toLowerCase()) ?? ATTRIBUTE_ORDER;
+  const keys = [...known.filter((k) => values.has(k)), ...[...values.keys()].filter((k) => !known.includes(k)).sort()];
+  return keys.map((key) => ({ key, value: values.get(key)! }));
 }
 
-function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
+/** The Kits page's wording: legacy "ineligible" kits can still be claimed in-game. */
+function starterKitLabel(status: string | null | undefined): string | null {
+  const s = text(status).toLowerCase();
+  if (s === "granted") return "Claimed";
+  if (s === "eligible" || s === "ineligible") return "Not yet claimed";
+  return null;
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
-      <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">{title}</h2>
-      <div className="mt-3">{children}</div>
+    <section className="mt-8">
+      <h3 className={sectionHeadingClass}>{title}</h3>
+      {children}
     </section>
   );
 }
 
-export default function CharacterSheet({ character, catalog, onCancelPending, cancelling = false }: Props) {
-  const status = String(character.status || "").toUpperCase();
-  const isPending = status === "PENDING";
+function Prose({ text: body }: { text: string }) {
+  return (
+    <>
+      {paragraphs(body).map((p, i) => (
+        <p key={i} className={`${proseClass} mb-3`}>
+          {p}
+        </p>
+      ))}
+    </>
+  );
+}
 
-  const race = displayRace(character, catalog);
-  const klass = displayClass(character, catalog);
-  const age = String(character.age || "").trim();
-  const birthdayIso = String(character.birthday || "").trim();
-  const birthday = formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) || birthdayIso;
-  const gender = String(character.gender || "").trim();
-  const description = String(character.description || "").trim();
-  const background = String(character.background || "").trim();
+function Background({ text: body }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const restId = useId();
+  const split = splitStory(body);
+  if (!split) return <Prose text={body} />;
+  return (
+    <>
+      <Prose text={split.lead} />
+      <div id={restId} hidden={!open}>
+        <Prose text={split.rest} />
+      </div>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={restId}
+        onClick={() => setOpen((o) => !o)}
+        className="min-h-11 text-sm font-semibold text-[var(--tfmc-accent)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--tfmc-cream)]"
+      >
+        {open ? "Show less" : "Read full background"}
+      </button>
+    </>
+  );
+}
 
-  const identityBits = [
-    race || null,
-    klass || null,
-    age ? `Age ${age}` : null,
-    birthday || null,
-    gender || null,
-  ].filter(Boolean) as string[];
+function Icon({ path }: { path: string }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden
+      className="h-[18px] w-[18px] shrink-0 text-[var(--tfmc-accent)]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
 
-  const attrs = character.attributes;
-  const attrEntries =
-    attrs && typeof attrs === "object"
-      ? Object.entries(attrs)
-          .map(([k, v]) => [String(k).trim(), Number(v)] as const)
-          .filter(([k, v]) => k && Number.isFinite(v))
-          .sort(([a], [b]) => a.localeCompare(b))
-      : [];
+const HANGER =
+  "M10 6.5a1.8 1.8 0 1 1 1.8-1.8c0 1-1.8 1.4-1.8 2.6M10 7.3 2.8 13a1 1 0 0 0 .6 1.8h13.2a1 1 0 0 0 .6-1.8L10 7.3Z";
+const CHEST = "M3 7h14v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Zm4 0V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M3 11h14";
 
+/** One character: who they are, their mechanics, traits, story and clues. */
+export default function CharacterSheet({
+  character,
+  catalog,
+  sessionToken = null,
+  playerUuid = null,
+  headingRef,
+  onCancelPending,
+  cancelling = false,
+}: Props) {
+  const kitNoteId = useId();
+  const isPending = text(character.status).toUpperCase() === "PENDING";
+  const name = character.name || "Unnamed";
+  const id = encodeURIComponent(character.id);
+
+  const lineage = [displayRace(character, catalog), displayClass(character, catalog)].filter(Boolean).join(" · ");
+  const birthdayIso = text(character.birthday);
+  const facts = [
+    ["Age", text(character.age)],
+    ["Born", formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) || birthdayIso],
+    ["Gender", text(character.gender)],
+  ].filter(([, v]) => v);
+  const kit = starterKitLabel(character.kit_status);
+
+  const attrs = attributeRows(character.attributes, catalog);
+  const maxRank = catalog?.attribute_point_buy?.max_rank ?? 0;
   const xpMods: ExperienceModifierDto[] = Array.isArray(character.experience_modifiers)
     ? character.experience_modifiers.filter(
-        (m) => m && String(m.profession || m.alias || "").trim() && Number.isFinite(Number(m.amount)),
+        (m) => m && text(m.profession || m.alias) && Number.isFinite(Number(m.amount)),
       )
     : [];
+  const traits = Array.isArray(character.traits) ? character.traits.filter((t) => t && text(t.name || t.id)) : [];
+  const timed = traits.filter((t) => timedNote(t));
+  const groups = groupTraits(traits.filter((t) => !timedNote(t)));
+  const appearance = text(character.description);
+  const background = text(character.background);
+  const clues = Array.isArray(character.clues) ? character.clues.map(text).filter(Boolean) : [];
 
-  const traits = Array.isArray(character.traits)
-    ? character.traits.filter((t) => t && String(t.name || t.id || "").trim())
-    : [];
-  const traitGroups = traits.length ? groupTraits(traits) : [];
-
-  const clues = Array.isArray(character.clues) ? character.clues.map((c) => String(c).trim()).filter(Boolean) : [];
+  const details = (
+    <>
+      {facts.length ? (
+        <dl className="flex flex-wrap gap-x-6 gap-y-2">
+          {facts.map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className={labelClass}>{label}</dt>
+              <dd className="mt-0.5 text-sm text-[var(--tfmc-cream)]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap">
+        <Link href={`/character/${id}/wardrobe`} className={actionClass}>
+          <Icon path={HANGER} />
+          Wardrobe
+        </Link>
+        <Link href={`/character/${id}/kits`} className={actionClass} aria-describedby={kit ? kitNoteId : undefined}>
+          <Icon path={CHEST} />
+          <span>
+            Kits
+            {kit ? (
+              <span aria-hidden className="hidden text-xs font-normal text-[var(--tfmc-mist)] sm:block">
+                Starter kit: {kit}
+              </span>
+            ) : null}
+          </span>
+        </Link>
+      </div>
+      {kit ? (
+        <p id={kitNoteId} className="mt-2 text-xs text-[var(--tfmc-mist)] sm:hidden">
+          Starter kit: {kit}
+        </p>
+      ) : null}
+    </>
+  );
 
   return (
     <>
-      {identityBits.length > 0 ? (
-        <p className="mt-4 text-sm text-[var(--tfmc-mist)]">{identityBits.join(" · ")}</p>
+      <section
+        aria-label={name}
+        className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3.5 gap-y-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[radial-gradient(circle_at_80px_50%,color-mix(in_srgb,var(--tfmc-moss)_55%,transparent),transparent_260px),color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-3.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6 sm:p-5"
+      >
+        <div className="sm:row-span-2">
+          <CharacterFigure
+            characterId={character.id}
+            name={name}
+            sessionToken={isPending ? null : sessionToken}
+            playerUuid={playerUuid}
+          />
+        </div>
+        <div className="min-w-0">
+          <h2
+            ref={headingRef}
+            tabIndex={-1}
+            className="break-words font-[family-name:var(--font-fraunces)] text-[26px] leading-tight text-[var(--tfmc-cream)] outline-none sm:text-[32px]"
+          >
+            {name}
+          </h2>
+          {lineage ? <p className="mt-1.5 text-[15px] text-[var(--tfmc-mist)] sm:text-base">{lineage}</p> : null}
+        </div>
+        <div className="col-span-2 min-w-0 self-start sm:col-span-1 sm:col-start-2">{details}</div>
+      </section>
+
+      {isPending ? (
+        <div
+          role="status"
+          className="mt-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_10%,transparent)] px-4 py-3 text-sm text-[var(--tfmc-cream)]"
+        >
+          <p>Being added to the server. You can still edit kits and wardrobe.</p>
+          {onCancelPending ? (
+            <button
+              type="button"
+              disabled={cancelling}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone.",
+                  )
+                ) {
+                  return;
+                }
+                void onCancelPending();
+              }}
+              className="mt-3 min-h-11 rounded-sm border border-[color-mix(in_srgb,#e8a0a0_45%,transparent)] px-3.5 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
+            >
+              {cancelling ? "Cancelling…" : "Cancel submission"}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
-      {description ? (
-        <SheetSection title="Description">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">{description}</p>
-        </SheetSection>
+      <div className="mt-8 grid gap-8 sm:grid-cols-[minmax(0,1fr)_256px] sm:gap-6">
+        {attrs.length ? (
+          <section>
+            <h3 className={sectionHeadingClass}>Attributes</h3>
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {attrs.map(({ key, value }) => (
+                <li key={key} className={`${panelClass} flex h-[72px] flex-col justify-between px-3 py-2.5`}>
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-[13px] text-[var(--tfmc-mist)]">{displayAttrName(key)}</span>
+                    <span className="font-[family-name:var(--font-fraunces)] text-[22px] leading-none tabular-nums text-[var(--tfmc-cream)]">
+                      {value}
+                      {maxRank > 0 ? <span className="sr-only"> of {maxRank}</span> : null}
+                    </span>
+                  </span>
+                  {maxRank > 0 ? (
+                    <span aria-hidden className="flex gap-1">
+                      {Array.from({ length: maxRank }, (_, i) => (
+                        <span
+                          key={i}
+                          className={`h-[5px] flex-1 rounded-full ${i < value ? "bg-[var(--tfmc-accent)]" : "bg-[color-mix(in_srgb,var(--tfmc-cream)_13%,transparent)]"}`}
+                        />
+                      ))}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        <section className={attrs.length ? undefined : "sm:col-span-2"}>
+          <h3 className={sectionHeadingClass}>Profession EXP</h3>
+          {xpMods.length ? (
+            <ul className={`${panelClass} divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_7%,transparent)]`}>
+              {xpMods.map((m) => {
+                const label = text(m.alias).replace(/ Experience$/i, "") || capitalizeKey(text(m.profession));
+                const amount = Number(m.amount);
+                return (
+                  <li
+                    key={text(m.profession) || label}
+                    className="flex h-9 items-center justify-between gap-3 px-3 text-sm"
+                  >
+                    <span className="truncate text-[var(--tfmc-cream)]">{label}</span>
+                    <span
+                      className={`font-semibold tabular-nums ${amount > 0 ? "text-[#9cc48a]" : amount < 0 ? "text-[#e0a39a]" : "text-[var(--tfmc-stone)]"}`}
+                    >
+                      {amount > 0 ? `+${amount}%` : amount < 0 ? `−${Math.abs(amount)}%` : "0%"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className={quietClass}>No profession EXP modifiers.</p>
+          )}
+        </section>
+      </div>
+
+      <Section title="Traits">
+        {groups.length || timed.length ? (
+          <>
+            {groups.length ? (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-x-6 gap-y-4">
+                {groups.map((g) => (
+                  <div key={g.key}>
+                    <h4 className={`${labelClass} mb-2`}>{g.label}</h4>
+                    <ul className="flex flex-wrap gap-1.5">
+                      {g.names.map((n) => (
+                        <li
+                          key={n}
+                          className="rounded-[2px] bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] px-2 py-0.5 text-sm text-[var(--tfmc-cream)]"
+                        >
+                          {n}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {timed.length ? (
+              <div className={groups.length ? "mt-5 max-w-md" : "max-w-md"}>
+                <h4 className={`${labelClass} mb-1`}>Temporary</h4>
+                <ul>
+                  {timed.map((t) => (
+                    <li
+                      key={t.id || t.name}
+                      className="flex justify-between gap-3 border-b border-dashed border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-1.5 text-sm"
+                    >
+                      <span className="min-w-0 break-words text-[var(--tfmc-cream)]">{text(t.name || t.id)}</span>
+                      <span className="shrink-0 text-[var(--tfmc-mist)]">{timedNote(t)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <p className={quietClass}>No traits recorded.</p>
+        )}
+      </Section>
+
+      {appearance || background ? (
+        <Section title="Story">
+          {appearance ? (
+            <>
+              <h4 className={`${labelClass} mb-1.5`}>Appearance</h4>
+              <Prose text={appearance} />
+            </>
+          ) : null}
+          {background ? (
+            <>
+              <h4 className={`${labelClass} mb-1.5 ${appearance ? "mt-5" : ""}`}>Background</h4>
+              <Background text={background} />
+            </>
+          ) : null}
+        </Section>
       ) : null}
 
-      {background ? (
-        <SheetSection title="Background">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">{background}</p>
-        </SheetSection>
-      ) : null}
-
-      {attrEntries.length > 0 ? (
-        <SheetSection title="Attributes">
-          <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
-            {attrEntries.map(([key, amount]) => (
-              <li key={key} className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                <span className="text-[var(--tfmc-cream)]">{displayAttrName(key)}</span>
-                <span className="text-[var(--tfmc-stone)]">{amount}</span>
+      <Section title="Clues">
+        {clues.length ? (
+          <ul className="space-y-2.5">
+            {clues.map((clue, i) => (
+              <li
+                key={`${i}-${clue.slice(0, 24)}`}
+                className="relative break-words pl-[22px] text-[15px] leading-normal text-[color-mix(in_srgb,var(--tfmc-cream)_85%,var(--tfmc-mist))] before:absolute before:left-1 before:top-[0.55em] before:h-[7px] before:w-[7px] before:rotate-45 before:bg-[var(--tfmc-accent)] before:opacity-80"
+              >
+                {clue}
               </li>
             ))}
           </ul>
-        </SheetSection>
-      ) : null}
-
-      {xpMods.length > 0 ? (
-        <SheetSection title="Profession EXP">
-          <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
-            {xpMods.map((m) => {
-              const label = String(m.alias || "").trim() || capitalizeKey(String(m.profession || ""));
-              const amount = Number(m.amount);
-              return (
-                <li
-                  key={String(m.profession || label)}
-                  className="flex items-baseline justify-between gap-4 py-2 text-sm"
-                >
-                  <span className="text-[var(--tfmc-cream)]">{label}</span>
-                  <span className="text-[var(--tfmc-stone)]">{formatXpAmount(amount)}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </SheetSection>
-      ) : null}
-
-      {traitGroups.length > 0 ? (
-        <SheetSection title="Traits">
-          <div className="flex flex-col gap-6">
-            {traitGroups.map((group) => (
-              <div key={group.key}>
-                <p className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">{group.label}</p>
-                <ul className="mt-2 space-y-1">
-                  {group.items.map((t) => {
-                    const suffix = formatTraitSuffix(t);
-                    return (
-                      <li key={t.id || t.name} className="text-sm text-[var(--tfmc-mist)]">
-                        {String(t.name || t.id).trim()}
-                        {suffix ? <span className="text-[var(--tfmc-stone)]">{suffix}</span> : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </SheetSection>
-      ) : null}
-
-      {clues.length > 0 ? (
-        <SheetSection title="Clues">
-          <ul className="list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-            {clues.map((clue, i) => (
-              <li key={`${i}-${clue.slice(0, 24)}`}>{clue}</li>
-            ))}
-          </ul>
-        </SheetSection>
-      ) : null}
-
-      <nav className="mt-10 flex flex-col gap-3">
-        <Link
-          href={`/character/${encodeURIComponent(character.id)}/kits`}
-          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-        >
-          Kits
-        </Link>
-        <Link
-          href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
-          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-        >
-          Wardrobe
-        </Link>
-        {isPending && onCancelPending ? (
-          <button
-            type="button"
-            disabled={cancelling}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone.",
-                )
-              ) {
-                return;
-              }
-              void onCancelPending();
-            }}
-            className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
-          >
-            {cancelling ? "Cancelling…" : "Cancel submission"}
-          </button>
-        ) : null}
-      </nav>
+        ) : (
+          <p className={quietClass}>No clues discovered yet.</p>
+        )}
+      </Section>
     </>
   );
 }

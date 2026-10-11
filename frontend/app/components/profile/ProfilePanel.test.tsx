@@ -108,6 +108,7 @@ vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   getCreationCatalog: vi.fn(),
   logoutCharacter: vi.fn(),
   characterFace: vi.fn(async () => null),
+  characterSkin: vi.fn(async () => null),
   deletePendingCreate: vi.fn(),
 }));
 
@@ -877,9 +878,12 @@ it("opens a character in its tab, and Back returns to the list", async () => {
   expect(screen.getByText("A quiet scout.")).toBeTruthy();
   expect(window.location.search).toBe("?tab=characters&character=c1");
   expect(screen.getByRole("tab", { name: "Characters" }).getAttribute("aria-selected")).toBe("true");
+  // Focus moves to the character's name, and back to its card on the list.
+  expect(document.activeElement).toBe(screen.getByRole("heading", { level: 2, name: "Vaelthir" }));
   window.history.back();
-  expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();
+  const card = await screen.findByRole("link", { name: /Vaelthir/ });
   expect(window.location.search).toBe("");
+  await vi.waitFor(() => expect(document.activeElement).toBe(card));
 });
 
 it("sends a character's address back to the list when it can't be opened", async () => {
@@ -898,7 +902,7 @@ it("cancels a pending character from its sheet and returns to the list", async (
   vi.spyOn(window, "confirm").mockReturnValue(true);
   window.history.replaceState(null, "", "/profile?tab=characters&character=c2");
   render(<ProfilePanel />);
-  expect(await screen.findByText("Being added to the server…")).toBeTruthy();
+  expect(await screen.findByText("Being added to the server. You can still edit kits and wardrobe.")).toBeTruthy();
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS.slice(0, 1) }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel submission" }));
   expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();

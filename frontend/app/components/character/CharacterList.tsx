@@ -132,7 +132,12 @@ function Card({
   return (
     <li className="animate-char-row">
       {linkable ? (
-        <a href={characterPath(item.id)} onClick={open} className={`${cardClass} ${linkCardClass}`}>
+        <a
+          href={characterPath(item.id)}
+          onClick={open}
+          data-character-id={item.id}
+          className={`${cardClass} ${linkCardClass}`}
+        >
           {body}
         </a>
       ) : (

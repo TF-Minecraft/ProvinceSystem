@@ -896,6 +896,17 @@ export async function fetchWardrobeTextureBlob(
   return URL.createObjectURL(blob);
 }
 
+/** The skin the character wears, read without touching its wardrobe; null when it has none. */
+export async function characterSkin(sessionToken: string, characterId: string): Promise<Blob | null> {
+  const res = await apiFetch(`${getApiBase()}/characters/${encodeURIComponent(characterId.trim())}/skin`, {
+    headers: authHeaders(sessionToken),
+    cache: "no-store",
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CharactersApiError(`Skin failed (${res.status})`, res.status);
+  return res.blob();
+}
+
 /** The face of the skin the character wears, as a data URL; null without one. Never changes the wardrobe. */
 export async function characterFace(sessionToken: string, characterId: string): Promise<string | null> {
   const res = await apiFetch(`${getApiBase()}/characters/${encodeURIComponent(characterId.trim())}/face`, {

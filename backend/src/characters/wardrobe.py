@@ -1413,9 +1413,9 @@ def skin_face_png(skin_png: bytes) -> bytes | None:
     return buf.getvalue()
 
 
-def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
-    """The face of the skin a roster character wears. Read-only: picks the slot
-    like _normalize_active but never enforces limits or saves the choice."""
+def active_skin_png(player_uuid: str, character_id: str) -> bytes | None:
+    """The skin a roster character wears. Read-only: picks the slot like
+    _normalize_active but never enforces limits or saves the choice."""
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
@@ -1431,7 +1431,13 @@ def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
     path = _png_abspath((slots.get(active) or {}).get("png_relpath"))
     if path is None:
         return None
-    return skin_face_png(path.read_bytes())
+    return path.read_bytes()
+
+
+def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
+    """The face of the skin a roster character wears."""
+    skin = active_skin_png(player_uuid, character_id)
+    return skin_face_png(skin) if skin else None
 
 
 def resolve_slot_texture_path(
