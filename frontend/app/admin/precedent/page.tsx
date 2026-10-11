@@ -100,6 +100,7 @@ export default function AdminPrecedentPage() {
         // A delete can empty the last page; step back to the new last one.
         if (page > last) {
           setPage(last);
+          setReloads((n) => n + 1);
           return;
         }
         setShown({ cases: data.cases, total: data.total, search, page });
