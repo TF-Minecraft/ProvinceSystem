@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import AdminColumn from "@/app/components/admin/AdminColumn";
 import { StaffGateMessage, gateKind, type GateKind } from "@/app/components/admin/StaffGate";
-import { buttonClass, errorClass, headingClass, inputClass, mutedClass, panelClass } from "@/app/components/admin/ui";
+import {
+  buttonClass,
+  errorClass,
+  headingClass,
+  inputClass,
+  mutedClass,
+  panelClass,
+  quietButtonClass,
+} from "@/app/components/admin/ui";
 import ConfirmDeleteDialog from "@/app/components/precedent/ConfirmDeleteDialog";
 import PrecedentCaseModal from "@/app/components/precedent/PrecedentCaseModal";
 import PrecedentSearchPanel from "@/app/components/precedent/PrecedentSearchPanel";
@@ -24,6 +32,18 @@ const PAGE_SIZE = 25;
 const SEARCH_DELAY_MS = 250;
 
 type Shown = { cases: PrecedentCase[]; total: number; search: string; page: number };
+
+/** A failed load, with a retry: a failed page turn leaves nothing else to click. */
+function LoadFailed({ message, onRetry, className }: { message: string; onRetry: () => void; className: string }) {
+  return (
+    <p className={`${className} ${errorClass}`} role="alert">
+      {message}{" "}
+      <button type="button" className={quietButtonClass} onClick={onRetry}>
+        Try again
+      </button>
+    </p>
+  );
+}
 
 export default function AdminPrecedentPage() {
   // Nothing renders until the first list proves access.
@@ -60,9 +80,11 @@ export default function AdminPrecedentPage() {
     const timer = setTimeout(() => {
       const next = filter.trim();
       if (next === search) return;
-      // One render, so a new search fetches its first page once.
+      // One render, so a new search fetches its first page once. The reload count makes it a
+      // fresh request even when it returns to a search whose answer is already on record.
       setSearch(next);
       setPage(1);
+      setReloads((n) => n + 1);
     }, SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
   }, [filter, search]);
@@ -114,7 +136,9 @@ export default function AdminPrecedentPage() {
   }
 
   function goToPage(next: number) {
-    setPage(next);
+    // After a failed turn the page asked for is already `page`; ask for it again.
+    if (next === page) reload();
+    else setPage(next);
     // The pager sits under the list, so bring the top of the new page into view.
     const top = casesRef.current?.getBoundingClientRect().top ?? 0;
     if (top < 0) casesRef.current?.scrollIntoView({ block: "start" });
@@ -160,9 +184,7 @@ export default function AdminPrecedentPage() {
       <AdminColumn>
         {gate === "checking" ? (
           loadError ? (
-            <p className={`mt-6 ${errorClass}`} role="alert">
-              {loadError}
-            </p>
+            <LoadFailed message={loadError} onRetry={reload} className="mt-6" />
           ) : (
             <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
           )
@@ -207,16 +229,13 @@ export default function AdminPrecedentPage() {
             className={`${inputClass} mt-3 w-full`}
             value={filter}
             placeholder="Search every case by text, rule or player"
+            maxLength={200}
             autoComplete="off"
             spellCheck={false}
             onChange={(e) => setFilter(e.target.value)}
           />
 
-          {loadError ? (
-            <p className={`mt-3 ${errorClass}`} role="alert">
-              {loadError}
-            </p>
-          ) : null}
+          {loadError ? <LoadFailed message={loadError} onRetry={reload} className="mt-3" /> : null}
 
           <PrecedentTable
             cases={shown.cases}

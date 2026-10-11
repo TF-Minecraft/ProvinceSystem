@@ -76,13 +76,19 @@ export default function PrecedentTable({
       </ul>
       {pages > 1 ? (
         <div className="mt-4 flex items-center gap-3 text-sm text-[var(--tfmc-stone)]">
-          <button type="button" className={pagerClass} disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          {/* Held while a page loads, so a turn never counts from rows that are about to change. */}
+          <button type="button" className={pagerClass} disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>
             Previous
           </button>
           <span>
             Page {page} of {pages}
           </span>
-          <button type="button" className={pagerClass} disabled={page >= pages} onClick={() => onPage(page + 1)}>
+          <button
+            type="button"
+            className={pagerClass}
+            disabled={loading || page >= pages}
+            onClick={() => onPage(page + 1)}
+          >
             Next
           </button>
         </div>
