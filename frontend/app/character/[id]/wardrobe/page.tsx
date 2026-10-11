@@ -106,7 +106,7 @@ export default function CharacterWardrobePage() {
     }
     const s = getSession();
     if (!s || !isSessionValid(s) || s.scope !== "profile") {
-      router.replace("/character");
+      router.replace("/profile");
       return;
     }
     setSession(s);
@@ -122,7 +122,7 @@ export default function CharacterWardrobePage() {
       /* still clear local */
     }
     clearSession();
-    router.replace("/character");
+    router.replace("/profile");
   }
 
   if (!ready) {

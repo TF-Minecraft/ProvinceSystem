@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
     return [
       // Account became Profile's Linked accounts tab; Next carries the query (sign-in and link notices) across.
       { source: "/account", destination: "/profile?tab=accounts", permanent: false },
+      // The character list lives on Profile's Characters tab.
+      { source: "/character", destination: "/profile", permanent: false },
       // Staff tools that moved into the staff panel.
       { source: "/precedent", destination: "/admin/precedent", permanent: false },
       { source: "/inspect", destination: "/admin/codes", permanent: false },

@@ -93,7 +93,7 @@ export default function CharacterCreatePage() {
     const existing = getSession();
     if (!isSessionValid(existing)) {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
       return;
     }
     setSession(existing);
@@ -140,7 +140,7 @@ export default function CharacterCreatePage() {
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
           clearSession();
-          router.replace("/character");
+          router.replace("/profile");
           return;
         }
         setError(
@@ -154,7 +154,7 @@ export default function CharacterCreatePage() {
 
   async function onLogout() {
     if (uiDev) {
-      router.replace("/character");
+      router.replace("/profile");
       return;
     }
     if (!session) return;
@@ -165,7 +165,7 @@ export default function CharacterCreatePage() {
       // clear locally anyway
     } finally {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
     }
   }
 
@@ -191,7 +191,7 @@ export default function CharacterCreatePage() {
           ) : null}
         </div>
         <Link
-          href="/character"
+          href="/profile"
           className="text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
         >
           Back to list

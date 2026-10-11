@@ -146,7 +146,7 @@ export default function CharacterKitDetailPage() {
     const s = getSession();
     if (!s || !isSessionValid(s) || s.scope !== "profile") {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
       return;
     }
     setSession(s);
@@ -162,7 +162,7 @@ export default function CharacterKitDetailPage() {
       /* clear */
     } finally {
       clearSession();
-      router.replace("/character");
+      router.replace("/profile");
     }
   }
 
