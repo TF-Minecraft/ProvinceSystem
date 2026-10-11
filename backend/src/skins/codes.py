@@ -363,22 +363,6 @@ def list_active_codes() -> list[dict]:
     ]
 
 
-def get_linked_minecraft_name(player_uuid: str) -> str | None:
-    """Display name from the player's Discord link, or None when unlinked."""
-    uuid = (player_uuid or "").strip()
-    if not uuid:
-        return None
-    with connect() as conn:
-        row = conn.execute(
-            "SELECT minecraft_name FROM discord_links WHERE player_uuid = ?",
-            (uuid,),
-        ).fetchone()
-    if row is None:
-        return None
-    name = (row["minecraft_name"] or "").strip()
-    return name or None
-
-
 def revoke_code(plaintext: str) -> dict:
     code = (plaintext or "").strip()
     if not code:

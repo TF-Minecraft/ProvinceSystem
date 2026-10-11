@@ -106,26 +106,6 @@ async def get_base_map(
         path, "original", accept, if_none_match, if_modified_since
     )
 
-@map_router.get("/{map_name}/map/province/{coords}")
-async def get_province(
-    map_name: str,
-    coords: str,
-    authorization: str | None = Header(default=None),
-):
-    map_name = ensure_map_access(map_name, authorization).id
-    try:
-        x, z = map(int, coords.split(","))
-    except ValueError:
-        raise HTTPException(400, "Invalid coordinates")
-
-    t0 = time.time()
-    pid = find_province(map_name, x, z)
-    print(f"[{map_name}] province lookup {time.time() - t0:.3f}s")
-
-    if pid == 0:
-        return JSONResponse({"province_id": 0}, 404)
-    return JSONResponse({"province_id": pid})
-
 @map_router.get("/{map_name}/province/{coords}/meta")
 async def get_province_meta(
     map_name: str,

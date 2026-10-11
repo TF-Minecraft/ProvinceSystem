@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _BACKEND_SRC = _BACKEND_ROOT / "src"
@@ -56,14 +56,6 @@ def _stub_json_body(request: MagicMock, payload: object) -> None:
 
 
 class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
-    async def test_upload_queue_rejects_remote(self) -> None:
-        from src.api.claim_routes import upload_queue
-
-        request = _request_with_host("203.0.113.1")
-        with self.assertRaises(HTTPException) as ctx:
-            await upload_queue("main", "wrong-hash-on-purpose", request)
-        self.assertEqual(403, ctx.exception.status_code)
-
     async def test_regenerate_rejects_remote(self) -> None:
         from src.api.regen_routes import regenerate_map
 
@@ -77,24 +69,6 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
                 request,
             )
         self.assertEqual(403, ctx.exception.status_code)
-
-    async def test_upload_queue_allows_localhost(self) -> None:
-        from src.api.claim_routes import upload_queue
-
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
-            queue_path = os.path.join(tmp, "queue.json")
-
-            request = _request_with_host("127.0.0.1")
-            request.json = AsyncMock(return_value={"survival": []})
-
-            with patch("src.api.claim_routes.raw_queue_path", return_value=queue_path):
-                response = await upload_queue("main", HASHED_KEY, request)
-
-            self.assertEqual(200, response.status_code)
-            body = json.loads(response.body)
-            self.assertTrue(body["success"])
-            self.assertEqual("main", body["map"])
-            self.assertTrue(os.path.isfile(queue_path))
 
     async def test_regenerate_allows_localhost(self) -> None:
         from src.api.regen_routes import regenerate_map

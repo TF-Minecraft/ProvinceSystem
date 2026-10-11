@@ -311,51 +311,6 @@ class EditorRoutesApiTest(unittest.TestCase):
             ),
         )
 
-    def test_post_titles_county_no_auth_403(self) -> None:
-        r = self.client.post(
-            "/main/editor/titles/county",
-            json={"COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"}},
-        )
-        self.assertEqual(r.status_code, 403)
-
-    def test_post_titles_county_staff_writes_file(self) -> None:
-        payload = {
-            "COUNTY_1": {
-                "name": "Elvaris",
-                "provinces": [1, 2],
-                "rgb": "180,80,80",
-            }
-        }
-        staff_session_patch, staff_access_patch = self._staff_patches()
-        with staff_session_patch, staff_access_patch:
-            r = self.client.post(
-                "/main/editor/titles/county",
-                json=payload,
-                headers={"Authorization": self.auth},
-            )
-        self.assertEqual(r.status_code, 200)
-        data = r.json()
-        self.assertTrue(data["ok"])
-        self.assertEqual(data["count"], 1)
-
-        written = json.loads((self.map_dir / "county.json").read_text(encoding="utf-8"))
-        self.assertEqual(written["COUNTY_1"]["name"], "Elvaris")
-        self.assertNotIn("overlay", written["COUNTY_1"])
-
-    def test_post_titles_duplicate_province_400(self) -> None:
-        payload = {
-            "COUNTY_1": {"name": "A", "provinces": [1], "rgb": "10,20,30"},
-            "COUNTY_2": {"name": "B", "provinces": [1], "rgb": "40,50,60"},
-        }
-        staff_session_patch, staff_access_patch = self._staff_patches()
-        with staff_session_patch, staff_access_patch:
-            r = self.client.post(
-                "/main/editor/titles/county",
-                json=payload,
-                headers={"Authorization": self.auth},
-            )
-        self.assertEqual(r.status_code, 400)
-
     def test_upload_county_no_auth_403(self) -> None:
         r = self.client.post(
             "/main/data/upload/county",
@@ -416,21 +371,6 @@ class EditorRoutesApiTest(unittest.TestCase):
         self.assertEqual(provinces[0]["rgb"], "58,132,60")
         self.assertEqual(provinces[0]["terrain"], "plains")
         self.assertEqual(provinces[0]["fertility"], 78)
-
-    def test_get_editor_province_pick_no_auth_403(self) -> None:
-        r = self.client.get("/main/editor/pick/provinces")
-        self.assertEqual(r.status_code, 403)
-
-    def test_get_editor_province_pick_staff(self) -> None:
-        staff_session_patch, staff_access_patch = self._staff_patches()
-        with staff_session_patch, staff_access_patch:
-            r = self.client.get(
-                "/main/editor/pick/provinces",
-                headers={"Authorization": self.auth},
-            )
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.headers.get("content-type"), "image/png")
-        self.assertTrue(len(r.content) > 0)
 
     def test_get_editor_province_index_no_auth_403(self) -> None:
         r = self.client.get("/main/editor/province-index")

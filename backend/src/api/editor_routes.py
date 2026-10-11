@@ -2,62 +2,22 @@
 
 from __future__ import annotations
 
-import json
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from fastapi.responses import JSONResponse
 
-from .data_routes import clear_province_cache
 from .http_headers import add_revalidate, conditional_file_response
-from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from .map_access import ensure_map_staff_write
 from .regen_routes import _regen_start_message
 from src.scripts.loader.provinces import load_province_catalog
 from src.scripts.province_id_grid import GRID_FILENAME, RUNS_FILENAME
-from src.scripts.util.dirs import defines_file, input_file, validate_map
+from src.scripts.util.dirs import defines_file, validate_map
 from src.scripts.util.regeneration import run_regeneration
 from src.scripts.util.regen_types import parse_regen_type
 from src.scripts.util.task_lock import get_map_lock
 
 editor_router = APIRouter()
-
-
-@editor_router.post("/{map_name}/editor/titles/{tier}")
-async def save_title_tier(
-    map_name: str,
-    tier: str,
-    request: Request,
-    authorization: str | None = Header(default=None),
-):
-    map_name = ensure_map_staff_write(map_name, authorization).id
-
-    tier_norm = (tier or "").strip().lower()
-    if tier_norm not in TITLE_TIERS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown title tier '{tier}'. Expected one of: {', '.join(sorted(TITLE_TIERS))}",
-        )
-
-    payload = await request.json()
-    if not isinstance(payload, dict):
-        raise HTTPException(status_code=400, detail="Title data must be a JSON object")
-
-    try:
-        clean = validate_title_tier(tier_norm, payload, map_name)
-    except TitleValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    path = defines_file(map_name, f"{tier_norm}.json")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(clean, handle, ensure_ascii=False, indent=2)
-
-    clear_province_cache(map_name)
-
-    return JSONResponse(
-        {"ok": True, "tier": tier_norm, "count": len(clean)}
-    )
 
 
 @editor_router.post("/{map_name}/editor/regen/{regen_type}")
@@ -112,33 +72,6 @@ async def get_editor_provinces(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return add_revalidate(JSONResponse({"provinces": provinces}))
-
-
-@editor_router.get("/{map_name}/editor/pick/provinces")
-async def get_editor_province_pick(
-    map_name: str,
-    authorization: str | None = Header(default=None),
-    if_none_match: str | None = Header(default=None),
-    if_modified_since: str | None = Header(default=None),
-):
-    """Staff-only raw provinces.png for editor province RGB hit-testing."""
-    map_name = ensure_map_staff_write(map_name, authorization).id
-
-    try:
-        validate_map(map_name)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    path = input_file(map_name, "provinces.png")
-    if not os.path.isfile(path):
-        raise HTTPException(status_code=404, detail="Province pick map not found")
-
-    return conditional_file_response(
-        path,
-        media_type="image/png",
-        if_none_match=if_none_match,
-        if_modified_since=if_modified_since,
-    )
 
 
 @editor_router.get("/{map_name}/editor/province-index")
