@@ -13,7 +13,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import math
-import re
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -138,17 +137,9 @@ def parse_instant(value) -> datetime:
     if not isinstance(value, str) or not value.strip():
         raise LedgerPayloadError("captured_at must be an ISO-8601 instant")
     text = value.strip()
-    # The deployed image uses Python 3.10: fromisoformat there accepts neither
-    # Java Instant's trailing Z nor its nanosecond fractions. Adapt to UTC's
-    # explicit offset and datetime's microsecond precision before parsing.
-    compatible = text[:-1] + "+00:00" if text.endswith("Z") else text
-    compatible = re.sub(
-        r"(\d{2}:\d{2}:\d{2})\.([0-9]+)",
-        lambda match: match[1] + "." + match[2][:6].ljust(6, "0"),
-        compatible,
-    )
+    # Reads Java Instant's trailing Z; nanosecond fractions truncate to microseconds.
     try:
-        parsed = datetime.fromisoformat(compatible)
+        parsed = datetime.fromisoformat(text)
     except ValueError:
         raise LedgerPayloadError(f"Unparsable captured_at '{text}'") from None
     if parsed.tzinfo is None:
