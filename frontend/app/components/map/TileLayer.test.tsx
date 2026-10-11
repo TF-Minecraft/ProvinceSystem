@@ -8,10 +8,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TileManifest, TileView } from "@/app/lib/map/tilePyramid";
 
-import TileLayer, { OPAQUE_TILE_CLASS } from "./TileLayer";
+import TileLayer, { forgetSeenTiles, OPAQUE_TILE_CLASS } from "./TileLayer";
 
 afterEach(() => {
   cleanup();
+  forgetSeenTiles();
   vi.useRealTimers();
 });
 
@@ -264,22 +265,59 @@ describe("TileLayer", () => {
     // Level 2 settled; level 1 is no longer held.
     expect(imgs(1)).toHaveLength(0);
 
-    // Back to level 1: its tiles loaded once, but these are new elements, so
-    // level 2 stays up under them and the backdrop is not cut away yet.
+    // Back to level 1: its tiles loaded once, so they are drawn at once, but
+    // these are new elements: level 2 stays up under them and the backdrop is
+    // not cut away until they have loaded.
     rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
     expect(imgs(1).length).toBeGreaterThan(0);
-    expect(imgs(1).every((img) => img.style.opacity === "0")).toBe(true);
+    expect(imgs(1).every((img) => img.style.opacity === "1" && img.style.transition === "")).toBe(true);
     expect(imgs(2).length).toBeGreaterThan(0);
     expect(imgs(2).some((img) => img.style.visibility === "hidden")).toBe(false);
     expect(imgs(0)[0].parentElement!.style.clipPath).toBe("");
 
+    // No fade to wait for: what is under them stands down once they load.
     loadAll(container);
-    expect(imgs(1).every((img) => img.style.opacity === "1")).toBe(true);
-    // Fading in: level 2 and the backdrop stay up under them until it is done.
-    expect(imgs(2).some((img) => img.style.visibility === "hidden")).toBe(false);
-    expect(imgs(0)[0].parentElement!.style.clipPath).toBe("");
-    fadeIn();
+    expect(imgs(2)).toHaveLength(0);
     expect(imgs(0)[0].parentElement!.style.clipPath).not.toBe("");
+  });
+
+  it("draws tiles a previous mount loaded at once, with no fade over the backdrop", () => {
+    vi.useFakeTimers();
+    // 4096 px map: backdrop level 0 (4x4 tiles), sharp level 1.
+    const pyramid: TileManifest = {
+      ready: true,
+      version: "v1",
+      width: 4096,
+      height: 4096,
+      tile_size: 256,
+      max_level: 1,
+      levels: [
+        { width: 1024, height: 1024 },
+        { width: 2048, height: 2048 },
+      ],
+    };
+    const at: TileView = { displayScale: 0.5, translateX: 0, translateY: 0, viewportW: 200, viewportH: 200 };
+    const sharp = (container: HTMLElement) => [...container.querySelectorAll<HTMLImageElement>('img[src^="/t/1/"]')];
+    const clip = (container: HTMLElement) =>
+      container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!.parentElement!.style.clipPath;
+
+    // First visit: the sharp tiles fade in over the backdrop.
+    const first = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at} />);
+    expect(sharp(first.container).every((img) => img.style.opacity === "0")).toBe(true);
+    loadAll(first.container);
+    expect(sharp(first.container).every((img) => img.style.opacity === "1" && img.style.transition !== "")).toBe(true);
+    expect(clip(first.container)).toBe("");
+    fadeIn();
+    expect(clip(first.container)).not.toBe("");
+    first.unmount();
+
+    // Coming back to the map: the same tiles show from the first frame, and
+    // the backdrop stands down as soon as they load.
+    const { container } = render(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at} />);
+    expect(sharp(container).length).toBeGreaterThan(0);
+    expect(sharp(container).every((img) => img.style.opacity === "1" && img.style.transition === "")).toBe(true);
+    loadAll(container);
+    expect(clip(container)).not.toBe("");
   });
   it("does not let a gone tile's fade timer mark its newer element shown", () => {
     vi.useFakeTimers();
@@ -314,13 +352,13 @@ describe("TileLayer", () => {
     loadAll(container);
     rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(1)} />);
     advance(100);
-    // Back to level 1, on new elements, which load and start their own fade.
+    // Back to level 1, on new elements that have not loaded yet.
     rerender(<TileLayer manifest={pyramid} tileUrl={tileUrl} view={at(0.5)} />);
-    loadAll(container);
-    // Past when the first elements' fade would have ended, but not this one's.
-    advance(120);
+    // Past when the first elements' fade would have ended.
+    advance(200);
     expect(clip()).toBe("");
-    advance(100);
+    // Seen before, so on screen as soon as they load.
+    loadAll(container);
     expect(clip()).not.toBe("");
   });
 
