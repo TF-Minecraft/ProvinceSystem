@@ -41,6 +41,7 @@ import {
   optionModifierPreview,
   parseStageCopy,
   playableStages,
+  pruneUnavailableTraits,
   resolveMutuallyExclusiveNames,
   resolveTraitDependencyNames,
   selectedTraitsForKey,
@@ -49,6 +50,8 @@ import {
   stageDisplayTitle,
   toCreateBody,
   traitCost,
+  traitDependencyBlocked,
+  traitDependencyReason,
   traitExclusiveBlocked,
   traitPlaytimeBlocked,
   traitPlaytimeReason,
@@ -56,7 +59,12 @@ import {
   traitsForStage,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
-import { DISPLAY_NAME_HINT, displayNameError, optionalDisplayNameError, proseError } from "../../../lib/textValidation";
+import {
+  CHARACTER_NAME_HINT,
+  characterNameError,
+  optionalDisplayNameError,
+  proseError,
+} from "../../../lib/textValidation";
 import NameColourPicker from "../shared/NameColourPicker";
 
 type Props = {
@@ -194,8 +202,7 @@ function StageBody({
   if (type === "setter" && target === "name") {
     const min = catalog.validation?.name?.min_length ?? 1;
     const max = catalog.validation?.name?.max_length ?? 32;
-    const nameErr =
-      draft.name.trim().length > 0 ? displayNameError(draft.name, { minLen: min, maxLen: max, field: "name" }) : null;
+    const nameErr = draft.name.trim().length > 0 ? characterNameError(draft.name, { minLen: min, maxLen: max }) : null;
     const colourCap = Math.max(0, Math.min(8, nameColourStops));
     return (
       <div className="flex flex-col gap-4">
@@ -207,7 +214,7 @@ function StageBody({
             placeholder="Character name"
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
           />
-          <span className="text-xs text-[var(--tfmc-mist)]">Allowed: {DISPLAY_NAME_HINT}</span>
+          <span className="text-xs text-[var(--tfmc-mist)]">Allowed: {CHARACTER_NAME_HINT}</span>
           {nameErr ? <span className="text-xs text-[#e8a0a0]">{nameErr}</span> : null}
         </label>
         <NameColourPicker
@@ -389,6 +396,7 @@ function StageBody({
         }
         const others = [...outsideKey, ...nextInKey.filter((x) => x !== id)];
         if (traitExclusiveBlocked(trait, others, catalog)) return;
+        if (traitDependencyBlocked(trait, others, draft.race_id)) return;
         set.clear();
         for (const x of nextInKey) set.add(x);
       }
@@ -420,7 +428,9 @@ function StageBody({
             const outsideKey = draft.traitIds.filter((tid) => !options.some((o) => o.id === tid));
             const exclusivePeers = max <= 1 ? outsideKey : [...outsideKey, ...selected.filter((id) => id !== t.id)];
             const exclusiveConflict = !on && traitExclusiveBlocked(t, exclusivePeers, catalog);
-            const blocked = playtimeBlocked || wouldOverSelect || wouldOverSpend || singleTooExpensive;
+            const dependencyBlocked = !on && traitDependencyBlocked(t, exclusivePeers, draft.race_id);
+            const blocked =
+              playtimeBlocked || dependencyBlocked || wouldOverSelect || wouldOverSpend || singleTooExpensive;
             return (
               <li key={t.id}>
                 <SelectableOption
@@ -437,7 +447,13 @@ function StageBody({
                   modifierLines={optionModifierPreview(modifierTotals, t, catalog)}
                   disabled={blocked}
                   exclusiveConflict={exclusiveConflict}
-                  disabledReason={playtimeBlocked ? traitPlaytimeReason(t) : null}
+                  disabledReason={
+                    playtimeBlocked
+                      ? traitPlaytimeReason(t)
+                      : dependencyBlocked
+                        ? traitDependencyReason(t, catalog)
+                        : null
+                  }
                   onSelect={() => toggle(t.id)}
                 />
               </li>
@@ -571,8 +587,9 @@ export default function CreationWizard({
         evilUnlocked,
         accountAgeSeconds,
         selectedTraitIds: draft.traitIds,
+        raceId: draft.race_id,
       }),
-    [catalog, skipRealAge, evilUnlocked, accountAgeSeconds, draft.traitIds],
+    [catalog, skipRealAge, evilUnlocked, accountAgeSeconds, draft.traitIds, draft.race_id],
   );
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState<"forward" | "back">("forward");
@@ -757,7 +774,7 @@ export default function CreationWizard({
               stage={stage}
               draft={draft}
               catalog={catalog}
-              setDraft={setDraft}
+              setDraft={(next) => setDraft(pruneUnavailableTraits(next, catalog, { evilUnlocked, accountAgeSeconds }))}
               onJump={jumpToKind}
               skipRealAge={skipRealAge}
               accountAgeSeconds={accountAgeSeconds}

@@ -12,6 +12,7 @@ from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
 )
+from src.characters.creation_rules import is_character_name, traits_error
 from src.characters.roster import (
     count_alive,
     get_max_alive,
@@ -153,6 +154,10 @@ def _validate_and_normalize(
         )
     except TextValidationError as e:
         raise CreateError(str(e)) from e
+    if not is_character_name(name):
+        raise CreateError(
+            "name may only use letters, spaces, apostrophes, hyphens and full stops"
+        )
 
     from src.skins.codes import CodeError, normalize_realm_id
     from src.skins.db import connect
@@ -259,6 +264,14 @@ def _validate_and_normalize(
         raise CreateError("race_id is invalid")
     if not class_id or class_id not in class_ids:
         raise CreateError("class_id is invalid")
+    race = next(
+        r
+        for r in catalog.get("races") or []
+        if isinstance(r, dict) and str(r.get("id") or "").strip() == race_id
+    )
+    age_max = _nested_int(race, "age_max")
+    if age_max is not None and age > age_max:
+        raise CreateError(f"age must be between {age_min} and {age_max} for this race")
 
     traits_by_id: dict[str, dict] = {}
     for t in catalog.get("traits") or []:
@@ -273,46 +286,6 @@ def _validate_and_normalize(
     for tid in selected_traits:
         if tid not in traits_by_id:
             raise CreateError(f"unknown trait: {tid}")
-
-    # Selection stages: enforce min/max per trait key
-    for stage in catalog.get("stages") or []:
-        if not isinstance(stage, dict):
-            continue
-        if str(stage.get("type") or "").lower() != "selection":
-            continue
-        target = str(stage.get("target") or "").lower()
-        key = str(stage.get("key") or "").strip().lower()
-        if target != "trait" or not key:
-            continue
-        min_select = int(stage.get("min_select") or 0)
-        max_select = int(stage.get("max_select") or 99)
-        count = 0
-        for tid in selected_traits:
-            tkey = str(traits_by_id[tid].get("key") or "").strip().lower()
-            if tkey == key:
-                count += 1
-        if count < min_select or count > max_select:
-            raise CreateError(
-                f"traits for key '{key}' must be between {min_select} and {max_select}"
-            )
-        try:
-            budget = int(stage.get("points") or 0)
-        except (TypeError, ValueError):
-            budget = 0
-        if budget > 0:
-            spent = 0
-            for tid in selected_traits:
-                tkey = str(traits_by_id[tid].get("key") or "").strip().lower()
-                if tkey != key:
-                    continue
-                try:
-                    spent += int(traits_by_id[tid].get("cost") or 0)
-                except (TypeError, ValueError):
-                    pass
-            if spent > budget:
-                raise CreateError(
-                    f"traits for key '{key}' exceed point budget ({spent} > {budget})"
-                )
 
     clues_raw = _as_list(body.get("clues"), "clues")
     clue_cfg = _as_dict(validation.get("clues"), "validation.clues")
@@ -329,10 +302,14 @@ def _validate_and_normalize(
         required = max(required, int(clue_cfg.get("evil_required") or 0))
     required = min(required, max_clues)
     clues: list[str] = []
+    seen_clues: set[str] = set()
     for raw_clue in clues_raw:
         text = str(raw_clue or "").strip()
         if not text:
             continue
+        if text.lower() in seen_clues:
+            raise CreateError(f"duplicate clue: {text}")
+        seen_clues.add(text.lower())
         try:
             clues.append(
                 assert_prose(
@@ -386,6 +363,13 @@ def _validate_and_normalize(
         if tid not in traits_by_id:
             raise CreateError(f"attribute trait missing from catalog: {tid}")
 
+    selected_traits = _strip_injuries_replaced_by_prosthetics(selected_traits, traits_by_id)
+    problem = traits_error(
+        catalog, selected_traits, attr_traits, race_id, account_age_seconds(meta)
+    )
+    if problem:
+        raise CreateError(problem)
+
     # Soft slot check (per-player entitlement if synced, else catalog default)
     from src.characters.rpc_player_meta import resolve_web_entitlements
 
@@ -397,11 +381,9 @@ def _validate_and_normalize(
             max_alive = get_max_alive(player_uuid, slot_limits)
     else:
         max_alive = get_max_alive(player_uuid, slot_limits)
-    alive = count_alive(player_uuid, realm)
-    if alive >= max_alive:
+    used = count_alive(player_uuid, realm) + count_pending(player_uuid, realm)
+    if used >= max_alive:
         raise CreateError("no free character slot")
-
-    selected_traits = _strip_injuries_replaced_by_prosthetics(selected_traits, traits_by_id)
 
     merged_traits = list(dict.fromkeys([*selected_traits, *attr_traits]))
 
@@ -446,6 +428,32 @@ def _validate_and_normalize(
     if name_colours:
         out["name_colours"] = name_colours
     return out
+
+
+def account_age_seconds(meta: dict[str, Any]) -> int:
+    """Seconds since the account's first join, as RPCharacters pushed it (0 if unknown)."""
+    try:
+        created = int(meta.get("account_created_at_epoch") or 0)
+    except (TypeError, ValueError):
+        return 0
+    if created <= 0:
+        return 0
+    return max(0, int(datetime.now(timezone.utc).timestamp()) - created)
+
+
+def count_pending(player_uuid: str, realm_id: str) -> int:
+    """Creates still waiting for RPCharacters; each holds a slot until applied or rejected."""
+    from src.skins.db import connect
+
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS n FROM character_creates
+            WHERE player_uuid = ? AND realm_id = ? AND status = 'pending'
+            """,
+            (player_uuid, realm_id),
+        ).fetchone()
+    return int(row["n"] if row else 0)
 
 
 def _row_to_dict(row) -> dict[str, Any]:
@@ -658,16 +666,7 @@ def list_for_player(
         max_alive = get_max_alive(uuid, slot_limits)
     alive_count = count_alive(uuid, realm)
 
-    account_age_seconds = 0
-    epoch = meta.get("account_created_at_epoch")
-    if epoch is not None:
-        try:
-            created = int(epoch)
-            if created > 0:
-                now_epoch = int(datetime.now(timezone.utc).timestamp())
-                account_age_seconds = max(0, now_epoch - created)
-        except (TypeError, ValueError):
-            account_age_seconds = 0
+    account_age = account_age_seconds(meta)
 
     hours = 24
     validation = catalog.get("validation") if isinstance(catalog, dict) else {}
@@ -680,7 +679,7 @@ def list_for_player(
         hours = max(0, int(clues.get("evil_min_account_age_hours", hours)))
     except (TypeError, ValueError):
         hours = 24
-    evil_unlocked = account_age_seconds >= hours * 3600
+    evil_unlocked = account_age >= hours * 3600
 
     out: dict[str, Any] = {
         "characters": characters,
@@ -689,7 +688,7 @@ def list_for_player(
         "max_alive_characters": max_alive,
         "alive_count": alive_count,
         "real_age_set": bool(meta.get("real_age_set")),
-        "account_age_seconds": account_age_seconds,
+        "account_age_seconds": account_age,
         "evil_unlocked": evil_unlocked,
         "name_colour_stops": int(entitlements.get("name_colour_stops") or 0),
         "wardrobe_skin_slots": int(entitlements.get("wardrobe_skin_slots") or 1),
