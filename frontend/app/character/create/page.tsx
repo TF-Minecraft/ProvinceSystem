@@ -14,7 +14,6 @@ import { logoutProfile } from "../../../lib/profile/uploads";
 import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
 import { clearSession, getSession, isSessionValid, type CharacterSession } from "../../../lib/characters/session";
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/uiDev";
-import { webCreatorLockLabel } from "../../../lib/characters/webCreatorLock";
 
 export default function CharacterCreatePage() {
   const router = useRouter();
@@ -107,11 +106,6 @@ export default function CharacterCreatePage() {
         }
         setNameColourStops(Math.max(0, Math.min(8, Number(list.name_colour_stops) || 0)));
         setWardrobeSkinSlots(Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1)));
-        if (list.web_creator_allowed === false) {
-          setError(webCreatorLockLabel(false, list.web_creator_min_group_id));
-          setCatalog(null);
-          return;
-        }
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
           clearSession();

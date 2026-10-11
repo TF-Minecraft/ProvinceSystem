@@ -9,8 +9,6 @@ type Props = {
   aliveCount: number;
   maxSlots: number;
   catalog?: CreationCatalog | null;
-  webCreatorAllowed?: boolean;
-  webCreatorLockLabel?: string;
   onRefresh?: () => void;
   refreshing?: boolean;
 };
@@ -105,8 +103,6 @@ export default function CharacterList({
   aliveCount,
   maxSlots,
   catalog = null,
-  webCreatorAllowed = true,
-  webCreatorLockLabel = "",
   onRefresh,
   refreshing = false,
 }: Props) {
@@ -120,8 +116,6 @@ export default function CharacterList({
 
   const atLimit = aliveCount >= maxSlots;
   const hasAny = characters.length > 0;
-  const creatorLocked = !webCreatorAllowed;
-  const lockLabel = webCreatorLockLabel.trim() || "Not available for your rank yet.";
 
   return (
     <div className="animate-char-rise mt-6">
@@ -142,8 +136,6 @@ export default function CharacterList({
           ) : null}
           {atLimit ? (
             <span className="text-sm text-[var(--tfmc-mist)]">No free slot</span>
-          ) : creatorLocked ? (
-            <span className="text-sm text-[var(--tfmc-mist)]">{lockLabel}</span>
           ) : (
             <Link
               href="/character/create"
@@ -158,9 +150,7 @@ export default function CharacterList({
       {!hasAny ? (
         <div className="mt-12 text-center">
           <p className="text-[var(--tfmc-mist)]">No characters yet.</p>
-          {creatorLocked ? (
-            <p className="mt-4 text-sm text-[var(--tfmc-stone)]">{lockLabel}</p>
-          ) : !atLimit ? (
+          {!atLimit ? (
             <Link
               href="/character/create"
               className="mt-6 inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"

@@ -249,7 +249,6 @@ CREATE TABLE IF NOT EXISTS rpc_player_meta (
     name_colour_stops INTEGER NOT NULL DEFAULT 0,
     allow_drink_texture INTEGER NOT NULL DEFAULT 0,
     allow_drink_message INTEGER NOT NULL DEFAULT 0,
-    donator_tier INTEGER NOT NULL DEFAULT 0,
     max_alive_characters INTEGER,
     wardrobe_skin_slots INTEGER NOT NULL DEFAULT 1,
     max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,

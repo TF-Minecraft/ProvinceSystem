@@ -177,7 +177,6 @@ class RpcPlayerMetaBody(BaseModel):
     skin_kinds: list[str] = Field(default_factory=list)
     allow_armor_3d_helmet: bool = False
     permission_flags: dict[str, bool] = Field(default_factory=dict)
-    donator_tier: int = 0
 
 def _lore_http(exc: LoreItemError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))

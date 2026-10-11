@@ -272,50 +272,6 @@ def _normalize_kits(raw: list) -> list[dict[str, Any]]:
     return out
 
 
-def _realm_cfg_value(cfg: dict[str, Any], snake: str, kebab: str) -> Any:
-    if snake in cfg:
-        return cfg[snake]
-    return cfg.get(kebab)
-
-
-def _normalize_web_creator_access(raw: Any) -> dict[str, Any]:
-    """Normalize web_creator_access from RPCharacters (snake or kebab keys)."""
-    if raw is None:
-        return {}
-    data = _as_dict(raw, "web_creator_access")
-    by_realm_raw = _realm_cfg_value(data, "by_realm", "by-realm")
-    if by_realm_raw is None:
-        by_realm_raw = {}
-    if not isinstance(by_realm_raw, dict):
-        raise CreationCatalogError("web_creator_access.by_realm must be an object")
-
-    by_realm: dict[str, dict[str, Any]] = {}
-    for realm_key, cfg in by_realm_raw.items():
-        realm = str(realm_key or "").strip().lower()
-        if not realm:
-            continue
-        if not isinstance(cfg, dict):
-            raise CreationCatalogError(
-                f"web_creator_access.by_realm.{realm_key} must be an object"
-            )
-        min_raw = _realm_cfg_value(cfg, "min_tier", "min-tier")
-        try:
-            min_tier = max(0, int(min_raw if min_raw is not None else 0))
-        except (TypeError, ValueError) as e:
-            raise CreationCatalogError(
-                f"web_creator_access.by_realm.{realm}.min_tier must be an integer"
-            ) from e
-        entry: dict[str, Any] = {"min_tier": min_tier}
-        group_raw = _realm_cfg_value(cfg, "min_group_id", "min-group-id")
-        if group_raw is not None:
-            group_id = str(group_raw).strip().lower()
-            if group_id:
-                entry["min_group_id"] = group_id
-        by_realm[realm] = entry
-
-    return {"by_realm": by_realm}
-
-
 def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise CreationCatalogError("body must be a JSON object")
@@ -343,10 +299,6 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
         "editable_kit": editable_kit,
         "kits": kits,
     }
-    if "web_creator_access" in raw and raw.get("web_creator_access") is not None:
-        out["web_creator_access"] = _normalize_web_creator_access(
-            raw.get("web_creator_access")
-        )
     return out
 
 
@@ -392,7 +344,6 @@ def _empty_catalog() -> dict[str, Any]:
         "slot_limits": {},
         "editable_kit": [],
         "kits": [],
-        "web_creator_access": {},
         "updated_at": None,
     }
 
@@ -428,7 +379,6 @@ def get_catalog() -> dict[str, Any]:
         "attribute_point_buy",
         "editable_kit",
         "kits",
-        "web_creator_access",
     ):
         if key in data:
             out[key] = data[key]
@@ -436,8 +386,6 @@ def get_catalog() -> dict[str, Any]:
         out["editable_kit"] = []
     if not isinstance(out.get("kits"), list):
         out["kits"] = []
-    if not isinstance(out.get("web_creator_access"), dict):
-        out["web_creator_access"] = {}
     return out
 
 

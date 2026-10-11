@@ -495,18 +495,6 @@ def create_character(
     except CodeError as e:
         raise CreateError(str(e)) from e
 
-    from src.characters.rpc_player_meta import resolve_web_entitlements
-    from src.characters.web_creator_access import gate_error_message, resolve_gate
-
-    try:
-        catalog = require_synced_creation_catalog()
-    except CreationCatalogError as e:
-        raise CreateError(str(e)) from e
-    entitlements = resolve_web_entitlements(uuid, realm_id=realm)
-    gate = resolve_gate(catalog, realm_id=realm, entitlements=entitlements)
-    if not gate["web_creator_allowed"]:
-        raise CreateError(gate_error_message(gate))
-
     try:
         normalized = _validate_and_normalize(uuid, body, realm_id=realm)
     except CreationCatalogError as e:
@@ -604,7 +592,6 @@ def list_for_player(
         list_roster,
     )
     from src.characters.rpc_player_meta import resolve_web_entitlements
-    from src.characters.web_creator_access import resolve_gate
     from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
@@ -695,12 +682,6 @@ def list_for_player(
         hours = 24
     evil_unlocked = account_age_seconds >= hours * 3600
 
-    gate = resolve_gate(
-        catalog if isinstance(catalog, dict) else {},
-        realm_id=realm,
-        entitlements=entitlements,
-    )
-
     out: dict[str, Any] = {
         "characters": characters,
         "player_uuid": uuid,
@@ -725,7 +706,6 @@ def list_for_player(
         out["kit_cooldowns"] = kit_cooldowns
     if meta.get("eighteen") is not None:
         out["eighteen"] = bool(meta.get("eighteen"))
-    out.update(gate)
     return out
 
 

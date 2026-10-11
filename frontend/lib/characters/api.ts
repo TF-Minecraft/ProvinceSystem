@@ -299,11 +299,6 @@ export type CharacterListResponse = {
   /** Config echo of kit cooldown length in hours. */
   kit_cooldown_hours?: number;
   kit_cooldowns?: Record<string, { seconds_remaining?: number; hours?: number }> | null;
-  web_creator_allowed?: boolean;
-  web_creator_min_tier?: number;
-  web_creator_min_group_id?: string;
-  web_creator_min_group_display?: string;
-  donator_tier?: number;
 };
 
 export async function listCharacters(sessionToken: string): Promise<CharacterListResponse> {
@@ -332,12 +327,6 @@ export async function listCharacters(sessionToken: string): Promise<CharacterLis
     kit_cooldown_seconds_remaining:
       typeof body.kit_cooldown_seconds_remaining === "number" ? Math.max(0, body.kit_cooldown_seconds_remaining) : 0,
     kit_cooldown_hours: typeof body.kit_cooldown_hours === "number" ? Math.max(0, body.kit_cooldown_hours) : undefined,
-    web_creator_allowed: typeof body.web_creator_allowed === "boolean" ? body.web_creator_allowed : true,
-    web_creator_min_tier: typeof body.web_creator_min_tier === "number" ? body.web_creator_min_tier : 0,
-    web_creator_min_group_id: typeof body.web_creator_min_group_id === "string" ? body.web_creator_min_group_id : "",
-    web_creator_min_group_display:
-      typeof body.web_creator_min_group_display === "string" ? body.web_creator_min_group_display : "",
-    donator_tier: typeof body.donator_tier === "number" ? Math.max(0, body.donator_tier) : 0,
   };
 }
 

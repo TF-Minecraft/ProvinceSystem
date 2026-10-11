@@ -37,7 +37,6 @@ import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN } from "../../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../../lib/characters/loreItemsDev";
 import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
-import { webCreatorLockLabel } from "../../../lib/characters/webCreatorLock";
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { clearSession, getSession, isSessionValid, type ProfileSession } from "../../../lib/profile/session";
 import type { ProfileTab } from "../../../lib/profile/tabs";
@@ -574,11 +573,6 @@ export default function ProfilePanel({
                 aliveCount={aliveCount}
                 maxSlots={dashboard.max_alive_characters ?? 3}
                 catalog={catalog}
-                webCreatorAllowed={dashboard.web_creator_allowed !== false}
-                webCreatorLockLabel={webCreatorLockLabel(
-                  dashboard.web_creator_allowed,
-                  dashboard.web_creator_min_group_id,
-                )}
                 onRefresh={() => token && void loadDashboard(token)}
                 refreshing={loadingDashboard}
               />
