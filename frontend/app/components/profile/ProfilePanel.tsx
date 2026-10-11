@@ -206,7 +206,7 @@ export default function ProfilePanel({
   const [loggingOut, setLoggingOut] = useState(false);
   // Skin and drink codes' sessions, which open just their wardrobes when there's no Profile session.
   const [codes, setCodes] = useState<CodeSessions>(NO_CODE_SESSIONS);
-  // The old /skins and /drinks addresses land on those tabs, from in-game messages about codes.
+  // The Skins and Drinks tabs open with the code form showing (the in-game drink code message links /drinks).
   const [showCode, setShowCode] = useState(tab === "skins" || tab === "drinks");
   const codeId = useId();
   const panelId = useId();

@@ -2,8 +2,7 @@ import type { ProfileTab } from "./tabs";
 
 /**
  * Profile's addresses. A skin or drink opens inside its tab: `?tab=skins&skin=new` is the editor and
- * `&skin=<id>` one skin. The old /skins, /drinks and /profile/{skins,drinks}/* addresses redirect here
- * (next.config.ts).
+ * `&skin=<id>` one skin.
  */
 const ITEM_PARAMS: Partial<Record<ProfileTab, "skin" | "drink">> = { skins: "skin", drinks: "drink" };
 

@@ -1121,7 +1121,7 @@ it("falls back to sign-in when a code's session has run out", async () => {
   expect(getSkinsSession()).toBeNull();
 });
 
-it("opens the code form for old skin and drink links", async () => {
+it("opens the code form on the Skins and Drinks tabs", async () => {
   vi.mocked(getAccount).mockResolvedValue(null);
   visit("drinks");
   render(<ProfilePanel />);
@@ -1142,7 +1142,7 @@ it("lets a Discord account without a Minecraft link open a wardrobe with a code"
   visit("skins");
   render(<ProfilePanel />);
   const toggle = await screen.findByRole("button", { name: "Enter code" });
-  // Old /skins links land here with the form open.
+  // The Skins tab opens with the form showing.
   expect(toggle.getAttribute("aria-expanded")).toBe("true");
   fireEvent.change(screen.getByLabelText("Log in with code"), { target: { value: "SKIN-CODE" } });
   fireEvent.click(screen.getByRole("button", { name: "Enter" }));

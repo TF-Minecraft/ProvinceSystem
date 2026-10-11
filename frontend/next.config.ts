@@ -26,19 +26,8 @@ const nextConfig: NextConfig = {
       { source: "/account", destination: "/profile?tab=accounts", permanent: false },
       // The character list lives on Profile's Characters tab.
       { source: "/character", destination: "/profile", permanent: false },
-      // Skins and drinks are made and followed inside Profile's tabs. Ids are slugs, so /skins/skin.png
-      // and /drinks/assets/* (public files) don't match.
-      { source: "/skins", destination: "/profile?tab=skins", permanent: false },
-      { source: "/skins/:id([a-z][a-z0-9_]{1,47})", destination: "/profile?tab=skins&skin=:id", permanent: false },
+      // The in-game /token create drink message sends players to /drinks.
       { source: "/drinks", destination: "/profile?tab=drinks", permanent: false },
-      { source: "/drinks/:id([a-z][a-z0-9_]{1,47})", destination: "/profile?tab=drinks&drink=:id", permanent: false },
-      // Their old pages under Profile; "new" is the editor. The drinks dev preview keeps its page.
-      { source: "/profile/skins/:id", destination: "/profile?tab=skins&skin=:id", permanent: false },
-      {
-        source: "/profile/drinks/:id((?!dev-preview$)[^/]+)",
-        destination: "/profile?tab=drinks&drink=:id",
-        permanent: false,
-      },
       // Staff tools that moved into the staff panel.
       { source: "/precedent", destination: "/admin/precedent", permanent: false },
       { source: "/inspect", destination: "/admin/codes", permanent: false },
