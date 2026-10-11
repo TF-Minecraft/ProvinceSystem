@@ -14,6 +14,8 @@ CAPABILITIES = {
     "view_player_movement": "admin",
     # The rail network as VehicleFramework saved it.
     "view_rail": "admin",
+    # Each server's plugin jars against their GitHub releases.
+    "view_servers": "admin",
     "revoke_sessions": "mod",
     "change_role": "admin",
     # Open a view-only session as a player, to see the site as they do; audited.
