@@ -30,7 +30,6 @@ import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MapPin, type MovementTrail } from "./MovementMap";
 import {
   CopyButton,
-  EVERYONE_STRIP_HEIGHT,
   InspectBar,
   useLiveMoment,
   PinForm,
@@ -264,7 +263,6 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
 
   return (
     <MapWorkspace
-      stripHeight={EVERYONE_STRIP_HEIGHT}
       panel={
         <>
           {viewSwitch}

@@ -5,12 +5,10 @@ type Props = {
   panel: ReactNode;
   /** The map, filling a square frame. */
   map: ReactNode;
-  /** Under the map, at its width: the timeline. */
+  /** Under the map, at its width: the timeline. Fits in STRIP_ROOM. */
   strip?: ReactNode;
   /** Right: who or what is shown, and details of the inspected moment. */
   inspector?: ReactNode;
-  /** Height the strip needs, taken from the map's side so map and strip fit together (a CSS length). */
-  stripHeight?: string;
   /** Height of anything between the staff tabs and the workspace (a CSS length). */
   above?: string;
   /** Below lg, the map before the panel rather than after it. */
@@ -20,6 +18,12 @@ type Props = {
 /** For the map itself: filling its square, framed. */
 export const mapFrameClass =
   "h-full w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]";
+
+/**
+ * Room under every staff map for a timeline (up to eight rows of bands, its labels and its key),
+ * kept whether or not the page has one, so the map is one size across the staff tabs.
+ */
+const STRIP_ROOM = "9rem";
 
 const asideClass = "flex min-w-0 flex-col gap-3";
 // Each column scrolls on its own when taller than the map, with room for focus rings at the edge.
@@ -33,19 +37,11 @@ const xlScroll = "xl:max-h-[var(--map-h)] xl:overflow-y-auto xl:overscroll-conta
  * lg everything stacks: panel, map and strip, inspector. The map's side never depends on what the
  * panels hold, so selecting something never resizes it.
  */
-export default function MapWorkspace({
-  panel,
-  map,
-  strip,
-  inspector,
-  stripHeight = "0px",
-  above = "0px",
-  mapFirst = false,
-}: Props) {
+export default function MapWorkspace({ panel, map, strip, inspector, above = "0px", mapFirst = false }: Props) {
   // The site header, the staff title and tabs (69px), this workspace's top margin and the page's bottom padding.
   const style = {
     "--map-h": `max(26rem, calc(100dvh - var(--tfmc-header-h) - 69px - 2.75rem - ${above}))`,
-    "--map-w": `calc(var(--map-h) - ${stripHeight})`,
+    "--map-w": `calc(var(--map-h) - ${STRIP_ROOM})`,
   } as CSSProperties;
   return (
     <div

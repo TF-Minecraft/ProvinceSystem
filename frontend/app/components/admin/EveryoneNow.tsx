@@ -19,7 +19,7 @@ import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import AdminColumn from "./AdminColumn";
 import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
 import MovementMap, { type MovementTrail } from "./MovementMap";
-import { EVERYONE_STRIP_HEIGHT, chipClass, chipOff, inputClass, useLiveMapId } from "./MovementControls";
+import { chipClass, chipOff, inputClass, useLiveMapId } from "./MovementControls";
 import { mutedClass } from "./ui";
 
 /** How often the view asks again. Each player's row is at most a ping interval old when it is read. */
@@ -154,7 +154,6 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
 
   return (
     <MapWorkspace
-      stripHeight={EVERYONE_STRIP_HEIGHT}
       panel={
         <>
           {viewSwitch}

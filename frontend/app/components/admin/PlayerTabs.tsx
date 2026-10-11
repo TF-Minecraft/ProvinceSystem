@@ -39,7 +39,7 @@ export default function PlayerTabs({
     <div className="mt-5 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
       <nav
         aria-label="Player"
-        className="[scrollbar-width:none]! [&::-webkit-scrollbar]:hidden -mb-px flex gap-1 overflow-x-auto overflow-y-hidden"
+        className="[scrollbar-width:none]! [&::-webkit-scrollbar]:hidden -mb-px flex select-none gap-1 overflow-x-auto overflow-y-hidden"
       >
         {TABS.filter((t) => movement || t.tab !== "movement").map(({ tab, label }) => {
           const active = tab === current;
