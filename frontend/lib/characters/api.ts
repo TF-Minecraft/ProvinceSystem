@@ -895,3 +895,20 @@ export async function fetchWardrobeTextureBlob(
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+/** The face of the skin the character wears, as a data URL; null without one. Never changes the wardrobe. */
+export async function characterFace(sessionToken: string, characterId: string): Promise<string | null> {
+  const res = await apiFetch(`${getApiBase()}/characters/${encodeURIComponent(characterId.trim())}/face`, {
+    headers: authHeaders(sessionToken),
+    cache: "no-store",
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CharactersApiError(`Face failed (${res.status})`, res.status);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read face"));
+    reader.readAsDataURL(blob);
+  });
+}

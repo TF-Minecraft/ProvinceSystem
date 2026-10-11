@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { CharacterListItem } from "../../../lib/characters/api";
-import { characterFace } from "../../../lib/characters/face";
+import { characterFace, type CharacterListItem } from "../../../lib/characters/api";
 import CharacterList from "./CharacterList";
 
-vi.mock("../../../lib/characters/face", () => ({ characterFace: vi.fn() }));
+vi.mock("../../../lib/characters/api", async (original) => ({
+  ...(await original<typeof import("../../../lib/characters/api")>()),
+  characterFace: vi.fn(),
+}));
 vi.mock("../../../lib/account/api", () => ({ minecraftHeadUrl: () => "https://api.test/account/minecraft/head" }));
 
 afterEach(() => {
@@ -50,4 +52,28 @@ it("offers a new character only while a slot is free", () => {
   rerender(<CharacterList characters={characters} aliveCount={2} maxSlots={2} />);
   expect(screen.queryByRole("link", { name: /New character/ })).toBeNull();
   expect(screen.getByText("No free slot")).toBeTruthy();
+});
+
+it("reads the faces again when the list reloads, and never shows another session's", async () => {
+  vi.mocked(characterFace).mockResolvedValue("data:image/png;base64,old");
+  const one = characters.slice(0, 1);
+  const { rerender } = render(
+    <CharacterList characters={one} aliveCount={1} maxSlots={5} sessionToken="t" playerUuid="p-1" />,
+  );
+  await waitFor(() => expect(portrait("Vaelthir")?.getAttribute("src")).toBe("data:image/png;base64,old"));
+  // A re-render with the same list doesn't fetch again.
+  rerender(<CharacterList characters={one} aliveCount={1} maxSlots={5} sessionToken="t" playerUuid="p-1" />);
+  expect(characterFace).toHaveBeenCalledTimes(1);
+
+  vi.mocked(characterFace).mockResolvedValue("data:image/png;base64,new");
+  rerender(<CharacterList characters={[...one]} aliveCount={1} maxSlots={5} sessionToken="t" playerUuid="p-1" />);
+  await waitFor(() => expect(portrait("Vaelthir")?.getAttribute("src")).toBe("data:image/png;base64,new"));
+
+  let resolve!: (face: string) => void;
+  vi.mocked(characterFace).mockReturnValue(new Promise((r) => (resolve = r)));
+  rerender(<CharacterList characters={one} aliveCount={1} maxSlots={5} sessionToken="u" playerUuid="p-1" />);
+  // The new session's face is still loading: an empty square, not the old face.
+  expect(portrait("Vaelthir")).toBeNull();
+  resolve("data:image/png;base64,other");
+  await waitFor(() => expect(portrait("Vaelthir")?.getAttribute("src")).toBe("data:image/png;base64,other"));
 });

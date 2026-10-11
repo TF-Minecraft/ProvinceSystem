@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
-import type { CharacterListItem, CreationCatalog } from "../../../lib/characters/api";
+import { characterFace, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
-import { characterFace } from "../../../lib/characters/face";
 
 type Props = {
   characters: CharacterListItem[];
@@ -135,25 +134,28 @@ function Card({
 const HAS_WARDROBE = new Set(["ALIVE", "DEAD", "MISSING"]);
 
 function useFaces(sessionToken: string | null, characters: CharacterListItem[]): Faces {
-  const [faces, setFaces] = useState<Faces>({});
-  const ids = characters
-    .filter((c) => c.id && HAS_WARDROBE.has(statusOf(c)))
-    .map((c) => c.id)
-    .join("\n");
+  const [loaded, setLoaded] = useState<{ token: string | null; faces: Faces }>({ token: null, faces: {} });
+  // A new list (each dashboard load or Refresh) reads the faces again; the old ones stay until then.
   useEffect(() => {
-    if (!sessionToken || !ids) return;
+    if (!sessionToken) return;
     let live = true;
-    for (const id of ids.split("\n")) {
-      characterFace(sessionToken, id)
+    for (const c of characters) {
+      if (!c.id || !HAS_WARDROBE.has(statusOf(c))) continue;
+      characterFace(sessionToken, c.id)
         .catch(() => null)
         .then((face) => {
-          if (live) setFaces((old) => ({ ...old, [id]: face }));
+          if (!live) return;
+          setLoaded((old) => ({
+            token: sessionToken,
+            faces: { ...(old.token === sessionToken ? old.faces : {}), [c.id]: face },
+          }));
         });
     }
     return () => {
       live = false;
     };
-  }, [sessionToken, ids]);
+  }, [sessionToken, characters]);
+  const faces = loaded.token === sessionToken ? loaded.faces : {};
   // Characters with no wardrobe go straight to the player's head.
   const all: Faces = {};
   for (const c of characters) all[c.id] = HAS_WARDROBE.has(statusOf(c)) && sessionToken ? faces[c.id] : null;
