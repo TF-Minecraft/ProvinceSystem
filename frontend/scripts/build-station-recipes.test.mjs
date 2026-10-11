@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { build, cookingOrigin, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
+import { build, cookingOrigin, isHiddenOutput, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
 
 describe("station recipe parsing", () => {
   it("reads recipes indented 4/6/8 and 4/8/12 in the same file", () => {
@@ -72,5 +72,23 @@ recipes:
     expect(steak).toMatchObject({ name: "Beef Steak", qty: 2, sourceId: "vanilla:beef" });
     // The Cooking display name must not rename plain vanilla beef.
     expect(beef).toMatchObject({ name: "Beef", sourceId: "vanilla:beef" });
+  });
+
+  it("leaves hidden outputs off the wiki", () => {
+    dir = mkdtempSync(path.join(tmpdir(), "stations-"));
+    writeFileSync(path.join(dir, "tool-station.yml"), `
+recipes:
+    yellow-chip-spruce:
+        output: "itemsadder{id=yellow_chip}"
+        ingredients:
+        - 'vanilla{type=SPRUCE_BUTTON,amount=1}'
+    stick:
+        output: 'vanilla{type=STICK,amount=4}'
+        ingredients:
+        - 'vanilla{type=OAK_PLANKS,amount=2}'
+`);
+    const { recipes } = build({ sourceDir: dir, textureIndex: { byName: new Map() } });
+    expect(recipes.map((recipe) => recipe.output.name)).toEqual(["Stick"]);
+    expect(isHiddenOutput('itemsadder{id="tfmc_games:yellow_chip"}')).toBe(true);
   });
 });

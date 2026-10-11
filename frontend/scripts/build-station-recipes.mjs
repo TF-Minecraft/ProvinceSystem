@@ -78,6 +78,11 @@ const STATION_NAME_BY_FILE = {
 /** `class{list=Bard}` carries no `display`, so its player-facing label is written here. */
 const CLASS_REQUIREMENT_LABELS = { Bard: "Bard class" };
 
+/** Outputs staff asked to keep off the wiki, by item identity. */
+export const HIDDEN_OUTPUTS = new Set([
+  "itemsadder:yellow_chip", "itemsadder:red_chip", "itemsadder:blue_chip", "itemsadder:green_chip",
+]);
+
 /** Resolve item references from the server configuration to available pack assets. */
 const ITEMSADDER_ID_ALIASES = {
   // Dev block-station.yml uses singular `marauder_goldbar`; the pack declares the plural id.
@@ -539,6 +544,12 @@ export function cookingOrigin(ref) {
   return m ? m[1].trim().replace(/\s+/g, "_") : undefined;
 }
 
+/** True for a recipe `output:` that must stay off the wiki. */
+export function isHiddenOutput(value) {
+  const ref = outputRef(value);
+  return Boolean(ref && HIDDEN_OUTPUTS.has(refIdentity(ref)));
+}
+
 /** Normalises `output:`, which is either a ref string or a `{type,id,amount}` map. */
 function outputRef(value) {
   if (typeof value === "string") return parseRef(value);
@@ -701,6 +712,7 @@ export function build({
     for (const r of fileRecipes) {
       const output = outputRef(r.fields.output);
       if (!output) { stats.badRefs.push(`${file}:${r.key} output`); continue; }
+      if (isHiddenOutput(r.fields.output)) continue;
       const ingredients = [];
       for (const raw of asList(r.fields.ingredients)) {
         const ref = parseRef(raw);

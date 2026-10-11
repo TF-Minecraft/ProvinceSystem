@@ -10,7 +10,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { unzipSync } from "fflate";
-import { buildItemIndex, cookingOrigin, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
+import { buildItemIndex, cookingOrigin, isHiddenOutput, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
 
 const FRONTEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_JAR = "C:/Users/MSI/AppData/Roaming/.minecraft/versions/1.21.10/1.21.10.jar";
@@ -36,6 +36,7 @@ function collectVanillaTypes(stationsDir, itemDir) {
   for (const file of readdirSync(stationsDir).filter((name) => name.endsWith(".yml")).sort()) {
     const { recipes } = parseStationRecipes(readFileSync(path.join(stationsDir, file), "utf8"));
     for (const recipe of recipes) {
+      if (isHiddenOutput(recipe.fields.output)) continue;
       const ingredients = Array.isArray(recipe.fields.ingredients)
         ? recipe.fields.ingredients
         : typeof recipe.fields.ingredients === "string" ? [recipe.fields.ingredients] : [];

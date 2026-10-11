@@ -22,14 +22,6 @@
     "sourceConfig": "tfmc_armor/configs/special_armor.yml",
     "sourceTexture": "tfmc_armor/resourcepack/assets/tfmc_armor/textures/armor_icons/special/blindfold_helmet.png"
   },
-  "blue_chip": {
-    "name": "Blue Chip",
-    "material": "PAPER",
-    "texture": "itemsadder/blue_chip.png",
-    "sourceKind": "flat-sprite",
-    "sourceConfig": "tfmc_games/contents/items.yml",
-    "sourceTexture": "tfmc_games/resourcepack/assets/tfmc_games/textures/item/chips/blue_chip.png"
-  },
   "bowl": {
     "name": "Bowl",
     "material": "PAPER"
@@ -129,14 +121,6 @@
   "frying_pan": {
     "name": "Frying Pan",
     "material": "PAPER"
-  },
-  "green_chip": {
-    "name": "Green Chip",
-    "material": "PAPER",
-    "texture": "itemsadder/green_chip.png",
-    "sourceKind": "flat-sprite",
-    "sourceConfig": "tfmc_games/contents/items.yml",
-    "sourceTexture": "tfmc_games/resourcepack/assets/tfmc_games/textures/item/chips/green_chip.png"
   },
   "ignitium_block": {
     "name": "Block of Ignitium",
@@ -270,14 +254,6 @@
     "name": "Pot",
     "material": "PAPER"
   },
-  "red_chip": {
-    "name": "Red Chip",
-    "material": "PAPER",
-    "texture": "itemsadder/red_chip.png",
-    "sourceKind": "flat-sprite",
-    "sourceConfig": "tfmc_games/contents/items.yml",
-    "sourceTexture": "tfmc_games/resourcepack/assets/tfmc_games/textures/item/chips/red_chip.png"
-  },
   "saucepan": {
     "name": "Saucepan",
     "material": "PAPER"
@@ -325,13 +301,5 @@
   "watering_can": {
     "name": "Watering Can",
     "material": "GOLDEN_HORSE_ARMOR"
-  },
-  "yellow_chip": {
-    "name": "Yellow Chip",
-    "material": "PAPER",
-    "texture": "itemsadder/yellow_chip.png",
-    "sourceKind": "flat-sprite",
-    "sourceConfig": "tfmc_games/contents/items.yml",
-    "sourceTexture": "tfmc_games/resourcepack/assets/tfmc_games/textures/item/chips/yellow_chip.png"
   }
 }

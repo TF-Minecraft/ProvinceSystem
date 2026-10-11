@@ -24,7 +24,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildItemIndex, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
+import { buildItemIndex, HIDDEN_OUTPUTS, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
 
 const FRONTEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_CONTENTS_DIR = "C:/Users/MSI/Desktop/plugins/ItemsAdder/contents";
@@ -348,6 +348,7 @@ export function collectReferencedIds(stationsDir) {
       const id = match[1].match(/(?:^|[,;])\s*id=([^,;]+)/)?.[1]?.trim().replace(/^(["'])(.*)\1$/, "$2");
       if (!id) continue;
       const bare = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
+      if (HIDDEN_OUTPUTS.has(`itemsadder:${bare}`)) continue;
       counts.set(bare, (counts.get(bare) ?? 0) + 1);
     }
   }

@@ -174,7 +174,6 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
       { method: "Logging with Tree Gatherer IV", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV." },
       { method: "Detector rewards", detail: "Find a source with the detector." },
       { method: "Pouch of Rare Materials", detail: "Right-click a Pouch of Rare Materials to receive Ignitium." },
-      { method: "Battle loot", detail: "When a battle with loot turned on ends with a winner, every fighter still in it receives 4 Ignitium." },
     ],
   },
   {

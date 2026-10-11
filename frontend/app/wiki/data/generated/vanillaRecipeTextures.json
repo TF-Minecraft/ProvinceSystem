@@ -1,5 +1,5 @@
 {
-  "copied": 1,
+  "copied": 0,
   "existing": 466,
   "unresolved": [],
   "items": {
@@ -1990,12 +1990,6 @@
       "sourceJar": "minecraft-client.jar",
       "sourceModel": "assets/minecraft/models/block/spore_blossom.json",
       "sourceTexture": "assets/minecraft/textures/block/spore_blossom.png"
-    },
-    "spruce_button": {
-      "texture": "vanilla/spruce_button.png",
-      "sourceJar": "minecraft-client.jar",
-      "sourceModel": "assets/minecraft/models/block/spruce_button_inventory.json",
-      "sourceTexture": "assets/minecraft/textures/block/spruce_planks.png"
     },
     "spruce_leaves": {
       "texture": "vanilla/spruce_leaves.png",

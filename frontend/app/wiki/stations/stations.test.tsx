@@ -41,7 +41,7 @@ describe("station registry and source coverage", () => {
       "engineering-table": 16, "fishing-station": 25, "forester-station": 117,
       "gunsmithing-station": 21, "ingot-station": 71, "instrument-station": 9,
       "magic-station": 10, "meal-prep-station": 22, "medicine-station": 42,
-      dockyard: 5, "research-station": 36, "tool-station": 61,
+      dockyard: 5, "research-station": 36, "tool-station": 57,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {
       const station = stations.find((candidate) => candidate.slug === slug)!;
