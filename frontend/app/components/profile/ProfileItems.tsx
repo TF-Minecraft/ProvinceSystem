@@ -27,7 +27,7 @@ const quietClass = "text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:tex
 
 const BACK_LABELS = { characters: "Characters", skins: "Skins", drinks: "Drinks" } as const;
 
-/** An item inside its Profile tab: back to the tab's list, a title, then the editor or the item. */
+/** An item inside its Profile tab: back to the tab's list, a title if the item has none of its own, then the item. */
 export function ItemFrame({
   tab,
   title,
@@ -35,7 +35,7 @@ export function ItemFrame({
   children,
 }: {
   tab: keyof typeof BACK_LABELS;
-  title: ReactNode;
+  title?: ReactNode;
   onBack: () => void;
   children: ReactNode;
 }) {
@@ -50,7 +50,9 @@ export function ItemFrame({
         <a href={profileHref(tab)} onClick={back} className={quietClass}>
           ← {BACK_LABELS[tab]}
         </a>
-        <h2 className="min-w-0 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{title}</h2>
+        {title ? (
+          <h2 className="min-w-0 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{title}</h2>
+        ) : null}
       </div>
       {children}
     </div>

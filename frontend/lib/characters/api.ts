@@ -896,19 +896,29 @@ export async function fetchWardrobeTextureBlob(
   return URL.createObjectURL(blob);
 }
 
-/** The face of the skin the character wears, as a data URL; null without one. Never changes the wardrobe. */
-export async function characterFace(sessionToken: string, characterId: string): Promise<string | null> {
-  const res = await apiFetch(`${getApiBase()}/characters/${encodeURIComponent(characterId.trim())}/face`, {
+/** A picture of the skin a character wears, as a data URL; null without one. Never changes the wardrobe. */
+async function characterPicture(sessionToken: string, characterId: string, kind: "face" | "figure") {
+  const res = await apiFetch(`${getApiBase()}/characters/${encodeURIComponent(characterId.trim())}/${kind}`, {
     headers: authHeaders(sessionToken),
     cache: "no-store",
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw new CharactersApiError(`Face failed (${res.status})`, res.status);
+  if (!res.ok) throw new CharactersApiError(`${kind} failed (${res.status})`, res.status);
   const blob = await res.blob();
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read face"));
+    reader.onerror = () => reject(new Error(`Could not read ${kind}`));
     reader.readAsDataURL(blob);
   });
+}
+
+/** The 8×8 face, for Profile's list. */
+export function characterFace(sessionToken: string, characterId: string): Promise<string | null> {
+  return characterPicture(sessionToken, characterId, "face");
+}
+
+/** The 16×32 front view, for the character's page on Profile. */
+export function characterFigure(sessionToken: string, characterId: string): Promise<string | null> {
+  return characterPicture(sessionToken, characterId, "figure");
 }

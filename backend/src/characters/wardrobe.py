@@ -1413,9 +1413,53 @@ def skin_face_png(skin_png: bytes) -> bytes | None:
     return buf.getvalue()
 
 
-def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
-    """The face of the skin a roster character wears. Read-only: picks the slot
-    like _normalize_active but never enforces limits or saves the choice."""
+# Each part's front face on a 64x64 skin and where it sits in the 16x32 figure:
+# (x, y, width, height, figure x, figure y). Arms take the model's width.
+def _figure_parts(arm: int) -> tuple[list[tuple[int, ...]], list[tuple[int, ...]]]:
+    inner = 4 - arm
+    base = [
+        (8, 8, 8, 8, 4, 0),
+        (20, 20, 8, 12, 4, 8),
+        (44, 20, arm, 12, inner, 8),
+        (36, 52, arm, 12, 12, 8),
+        (4, 20, 4, 12, 4, 20),
+        (20, 52, 4, 12, 8, 20),
+    ]
+    outer = [
+        (40, 8, 8, 8, 4, 0),
+        (20, 36, 8, 12, 4, 8),
+        (44, 36, arm, 12, inner, 8),
+        (52, 52, arm, 12, 12, 8),
+        (4, 36, 4, 12, 4, 20),
+        (4, 52, 4, 12, 8, 20),
+    ]
+    return base, outer
+
+
+def skin_figure_png(skin_png: bytes, model: str | None = None) -> bytes | None:
+    """The 16x32 front of a 64x64 skin with its outer layer, arms as wide as the
+    saved model (else detected); None for a blank face or any other size."""
+    try:
+        skin = Image.open(io.BytesIO(skin_png)).convert("RGBA")
+    except Exception:
+        return None
+    if skin.size != WARDROBE_PNG_SIZE:
+        return None
+    if skin.crop((8, 8, 16, 16)).getchannel("A").getbbox() is None:
+        return None
+    arm = 3 if resolve_skin_model(skin_png, model) == "slim" else 4
+    figure = Image.new("RGBA", (16, 32), (0, 0, 0, 0))
+    base, outer = _figure_parts(arm)
+    for x, y, w, h, fx, fy in base + outer:
+        figure.alpha_composite(skin.crop((x, y, x + w, y + h)), (fx, fy))
+    buf = io.BytesIO()
+    figure.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None] | None:
+    """The PNG and saved model of the slot a roster character wears. Read-only:
+    picks the slot like _normalize_active but never enforces limits or saves it."""
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
@@ -1428,10 +1472,23 @@ def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
         and _slot_filled(slots, active)
     ):
         active = "base"
-    path = _png_abspath((slots.get(active) or {}).get("png_relpath"))
+    slot = slots.get(active) or {}
+    path = _png_abspath(slot.get("png_relpath"))
     if path is None:
         return None
-    return skin_face_png(path.read_bytes())
+    return path.read_bytes(), slot.get("model")
+
+
+def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
+    """The face of the skin a roster character wears."""
+    worn = _active_slot(player_uuid, character_id)
+    return skin_face_png(worn[0]) if worn else None
+
+
+def active_figure_png(player_uuid: str, character_id: str) -> bytes | None:
+    """The front of the skin a roster character wears, for Profile's character view."""
+    worn = _active_slot(player_uuid, character_id)
+    return skin_figure_png(*worn) if worn else None
 
 
 def resolve_slot_texture_path(

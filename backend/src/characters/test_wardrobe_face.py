@@ -63,6 +63,75 @@ class SkinFaceTest(unittest.TestCase):
         self.assertIsNone(skin_face_png(buf.getvalue()))
 
 
+HEAD = (200, 150, 100, 255)
+BODY = (1, 2, 3, 255)
+ARM = (4, 5, 6, 255)
+LEG = (7, 8, 9, 255)
+
+
+def body(slim_arms: bool = False) -> bytes:
+    """A skin with each part's front filled; classic arms also fill the right arm's back."""
+    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    aw = 3 if slim_arms else 4
+    im.paste(HEAD, (8, 8, 16, 16))
+    im.paste(BODY, (20, 20, 28, 32))
+    im.paste(ARM, (44, 20, 44 + aw, 32))
+    if not slim_arms:
+        im.paste(ARM, (52, 20, 56, 32))
+    im.paste(ARM, (36, 52, 36 + aw, 64))
+    im.paste(LEG, (4, 20, 8, 32))
+    im.paste(LEG, (20, 52, 24, 64))
+    buf = io.BytesIO()
+    im.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+class SkinFigureTest(unittest.TestCase):
+    def test_lays_out_the_front_with_the_outer_layer_on_top(self) -> None:
+        from characters.wardrobe import skin_figure_png
+
+        png = body()
+        im = Image.open(io.BytesIO(png))
+        im.paste((10, 20, 30, 255), (40, 8, 42, 10))
+        buf = io.BytesIO()
+        im.save(buf, format="PNG")
+        figure = pixels(skin_figure_png(buf.getvalue()))
+        self.assertEqual(figure.size, (16, 32))
+        self.assertEqual(figure.getpixel((4, 0)), (10, 20, 30, 255))
+        self.assertEqual(figure.getpixel((8, 4)), HEAD)
+        self.assertEqual(figure.getpixel((0, 8)), ARM)
+        self.assertEqual(figure.getpixel((15, 19)), ARM)
+        self.assertEqual(figure.getpixel((8, 12)), BODY)
+        self.assertEqual(figure.getpixel((4, 31)), LEG)
+        self.assertEqual(figure.getpixel((11, 20)), LEG)
+        self.assertEqual(figure.getpixel((0, 0))[3], 0)
+
+    def test_slim_arms_sit_against_the_body(self) -> None:
+        from characters.wardrobe import skin_figure_png
+
+        figure = pixels(skin_figure_png(body(slim_arms=True)))
+        self.assertEqual(figure.getpixel((0, 8))[3], 0)
+        self.assertEqual(figure.getpixel((1, 8)), ARM)
+        self.assertEqual(figure.getpixel((14, 8)), ARM)
+        self.assertEqual(figure.getpixel((15, 8))[3], 0)
+
+    def test_the_saved_model_wins_over_detection(self) -> None:
+        from characters.wardrobe import skin_figure_png
+
+        figure = pixels(skin_figure_png(body(), "slim"))
+        self.assertEqual(figure.getpixel((0, 8))[3], 0)
+        figure = pixels(skin_figure_png(body(slim_arms=True), "classic"))
+        self.assertEqual(figure.getpixel((15, 8))[3], 0)  # the empty fourth column shows
+        self.assertEqual(figure.getpixel((12, 8)), ARM)
+
+    def test_blank_heads_and_odd_sizes_have_no_figure(self) -> None:
+        from characters.wardrobe import skin_figure_png
+
+        self.assertIsNone(skin_figure_png(skin((0, 0, 0, 0))))
+        self.assertIsNone(skin_figure_png(skin((1, 2, 3, 255), height=32)))
+        self.assertIsNone(skin_figure_png(b"not a png"))
+
+
 class ActiveFaceTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
@@ -153,12 +222,27 @@ class ActiveFaceTest(unittest.TestCase):
             face = self.wardrobe.active_face_png(PLAYER, CHAR_ID)
         self.assertEqual(pixels(face).getpixel((4, 4)), (2, 2, 2, 255))
 
+    def test_figure_is_the_worn_slot_with_its_saved_model(self) -> None:
+        self.put_slot("base", body())
+        self.put_slot("extra_1", skin((2, 2, 2, 255)))
+        with self._db_mod.connect() as conn:
+            conn.execute("UPDATE character_wardrobe_slots SET model = 'slim' WHERE slot = 'base'")
+            conn.commit()
+        # extra_1 is locked, so base is worn, with the slim arms it was saved with.
+        figure = pixels(self.wardrobe.active_figure_png(PLAYER, CHAR_ID))
+        self.assertEqual(figure.getpixel((6, 4)), HEAD)
+        self.assertEqual(figure.getpixel((0, 8))[3], 0)
+        self.assertEqual(figure.getpixel((1, 8)), ARM)
+
     def test_no_skin_no_face(self) -> None:
+        self.assertIsNone(self.wardrobe.active_figure_png(PLAYER, CHAR_ID))
         self.assertIsNone(self.wardrobe.active_face_png(PLAYER, CHAR_ID))
 
     def test_other_players_characters_are_refused(self) -> None:
         with self.assertRaises(self.wardrobe.WardrobeError):
             self.wardrobe.active_face_png("someone-else", CHAR_ID)
+        with self.assertRaises(self.wardrobe.WardrobeError):
+            self.wardrobe.active_figure_png("someone-else", CHAR_ID)
 
 
 if __name__ == "__main__":

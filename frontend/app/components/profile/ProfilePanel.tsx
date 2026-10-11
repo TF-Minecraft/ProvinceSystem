@@ -404,10 +404,15 @@ export default function ProfilePanel({
     }),
     [dropCodes, go, loadDashboard],
   );
+  // Where the list was scrolled when each character was opened from it, for coming back.
+  const listScroll = useRef(new Map<string, number>());
   const characterNav = useMemo(() => {
     const nav = itemNav("characters");
     return {
-      onOpen: nav.onOpen,
+      onOpen: (id: string) => {
+        listScroll.current.set(id, window.scrollY);
+        nav.onOpen(id);
+      },
       onBack: nav.onBack,
       onLeave: nav.onLeave,
       // The character is gone: back to the list, which reloads without it.
@@ -417,7 +422,28 @@ export default function ProfilePanel({
       },
     };
   }, [itemNav, loadDashboard]);
+  // Leaving a character for the list (←, Back, or Back again after Forward) puts the list where it was
+  // and focuses that character's card, or the tab if the card is gone.
+  const lastCharacter = useRef<string | null>(null);
+  const characterListShowing = shown === "characters" && !openItem && dashboard !== null;
+  useEffect(() => {
+    if (shown !== "characters" || openItem) {
+      lastCharacter.current = openItem;
+      return;
+    }
+    const id = lastCharacter.current;
+    if (!characterListShowing || !id) return;
+    lastCharacter.current = null;
+    const scrollY = listScroll.current.get(id);
+    if (scrollY !== undefined) window.scrollTo(0, scrollY);
+    const card = Array.from(document.querySelectorAll<HTMLElement>("[data-character-id]")).find(
+      (el) => el.dataset.characterId === id,
+    );
+    (card ?? document.getElementById(`${panelId}-characters`))?.focus({ preventScroll: scrollY !== undefined });
+  }, [characterListShowing, openItem, panelId, shown]);
+
   const skinNav = useMemo(() => itemNav("skins"), [itemNav]);
+
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
 
   function onRedeemed(signIn: SignIn) {
@@ -701,6 +727,7 @@ export default function ProfilePanel({
                 character={dashboard.characters.find((c) => c.id === openItem) ?? null}
                 catalog={catalog}
                 sessionToken={uiDev ? null : token}
+                playerUuid={minecraft?.player_uuid}
                 {...characterNav}
               />
             ) : shown === "characters" ? (
