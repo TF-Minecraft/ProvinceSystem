@@ -34,7 +34,7 @@ export default function WardrobeSlotFrame({
   const pending = Boolean(slot.apply_pending) && slot.filled && !locked;
   const canOpen = slot.unlocked;
   const [buzz, setBuzz] = useState(false);
-  const showEquip = Boolean(onEquip) && slot.unlocked && slot.filled && slot.slot !== "masked" && !active && !pending;
+  const showEquip = Boolean(onEquip) && slot.unlocked && slot.filled && slot.slot !== "masked" && !active;
 
   function onFrameClick() {
     if (locked) {
@@ -49,19 +49,16 @@ export default function WardrobeSlotFrame({
     <div className={`flex w-[7.5rem] flex-col gap-2 sm:w-36 ${buzz ? "animate-char-option-shake" : ""}`}>
       <button
         type="button"
-        disabled={pending && !locked}
         onClick={onFrameClick}
         className={`relative aspect-[3/5] w-full overflow-hidden rounded-sm border transition-colors ${
           locked
             ? "cursor-pointer border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_78%,transparent)] hover:bg-[color-mix(in_srgb,#1a0c0c_88%,transparent)]"
-            : pending
-              ? "cursor-wait border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)]"
-              : active
-                ? "border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-                : "border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+            : active
+              ? "border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+              : "border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
         }`}
         aria-label={
-          locked ? `${label} locked` : pending ? `${label} pending` : `${label}${slot.filled ? "" : " empty"} - edit`
+          locked ? `${label} locked` : `${label}${slot.filled ? "" : " empty"}${pending ? " syncing" : ""} - edit`
         }
       >
         {locked ? (
@@ -89,14 +86,15 @@ export default function WardrobeSlotFrame({
             )}
 
             {pending ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[color-mix(in_srgb,#0c1218_72%,transparent)] px-2">
-                <span className="inline-flex items-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-[color-mix(in_srgb,#0c1218_80%,transparent)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--tfmc-mist)] pointer-events-none select-none">
-                  Pending
-                </span>
-              </div>
+              <span
+                className="absolute right-1 top-1 rounded-sm bg-[color-mix(in_srgb,#0c1218_80%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--tfmc-mist)] select-none"
+                title="Saved. The server applies it while you play this character."
+              >
+                Syncing
+              </span>
             ) : null}
 
-            {active && !pending ? (
+            {active ? (
               <span className="absolute left-1 top-1 rounded-sm bg-[var(--tfmc-accent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--tfmc-ink)]">
                 Active
               </span>

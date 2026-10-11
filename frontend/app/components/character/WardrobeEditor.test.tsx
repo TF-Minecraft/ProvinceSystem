@@ -9,6 +9,7 @@ vi.mock("../../../lib/characters/api", async (original) => ({
   ...(await original<typeof api>()),
   getWardrobe: vi.fn(),
   fetchWardrobeTextureBlob: vi.fn().mockResolvedValue("blob:stored"),
+  setWardrobeActive: vi.fn(),
   uploadWardrobeSlot: vi.fn(),
   renameWardrobeSlot: vi.fn(),
 }));
@@ -40,6 +41,38 @@ it("renders the stored slim model in the wardrobe card", () => {
     />,
   );
   expect(screen.getByTestId("preview").getAttribute("data-model")).toBe("slim");
+});
+
+it("lets a signed skin be equipped and edited before the server syncs it", async () => {
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static revokeObjectURL = vi.fn();
+    },
+  );
+  const pending: api.WardrobeResponse = {
+    ...wardrobe,
+    swappable_slots: 2,
+    slots: [
+      ...wardrobe.slots,
+      {
+        slot: "extra_1",
+        display_name: "Ball suit",
+        filled: true,
+        unlocked: true,
+        model: "classic",
+        apply_pending: true,
+      },
+    ],
+  };
+  vi.mocked(api.getWardrobe).mockResolvedValue(pending);
+  vi.mocked(api.setWardrobeActive).mockResolvedValue({ ...pending, active_slot: "extra_1" });
+  render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  expect(await screen.findByText("Syncing")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+  await waitFor(() => expect(api.setWardrobeActive).toHaveBeenCalledWith("token", "character", "extra_1"));
+  fireEvent.click(screen.getByRole("button", { name: "Ball suit syncing - edit" }));
+  expect(await screen.findByRole("dialog")).toBeTruthy();
 });
 
 it("re-signs the stored PNG when only its arm model changes", async () => {
