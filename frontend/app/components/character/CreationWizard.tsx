@@ -722,9 +722,10 @@ export default function CreationWizard({
             className="h-1 flex-1 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]"
             role="progressbar"
             aria-label="Progress"
-            aria-valuemin={1}
+            aria-valuemin={0}
             aria-valuemax={progress.total}
             aria-valuenow={progress.current}
+            aria-valuetext={`${progress.current} of ${progress.total}`}
           >
             <div
               className="h-full rounded-full bg-[var(--tfmc-accent)] transition-[width] duration-300"
