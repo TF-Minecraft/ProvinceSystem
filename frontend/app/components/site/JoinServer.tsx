@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getGameServer, type GameServer } from "@/lib/diagnostic/api";
 
@@ -15,7 +15,8 @@ function joinAddress(address: string): string {
 function statusLabel(server: GameServer | null, failed: boolean): string {
   if (failed || server?.online === false) return "Offline";
   if (!server) return "Checking…";
-  const count = server.players_online ?? 0;
+  const count = server.players_online;
+  if (count === null) return "Online";
   return `${count} ${count === 1 ? "player" : "players"} online`;
 }
 
@@ -23,7 +24,8 @@ function statusLabel(server: GameServer | null, failed: boolean): string {
 export default function JoinServer() {
   const [server, setServer] = useState<GameServer | null>(null);
   const [failed, setFailed] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
+  const addressRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -46,28 +48,42 @@ export default function JoinServer() {
   }, []);
 
   useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 2000);
+    if (copy === "idle") return;
+    const timer = window.setTimeout(() => setCopy("idle"), 2000);
     return () => window.clearTimeout(timer);
-  }, [copied]);
+  }, [copy]);
 
   const address = server ? joinAddress(server.address) : DEFAULT_ADDRESS;
   const status = statusLabel(server, failed);
 
+  async function copyAddress() {
+    try {
+      if (!navigator.clipboard) throw new Error("no clipboard");
+      await navigator.clipboard.writeText(address);
+      setCopy("copied");
+    } catch {
+      // No clipboard access (plain http, old browsers, denied): select the address to copy by hand.
+      const node = addressRef.current;
+      if (node) window.getSelection()?.selectAllChildren(node);
+      setCopy("failed");
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-stretch overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_70%,transparent)] shadow-[0_8px_30px_rgb(0_0_0/0.25)] backdrop-blur-sm">
-        <span className="flex items-center px-4 text-base font-semibold tracking-wide text-[var(--tfmc-cream)] select-all sm:px-5 sm:text-lg">
+        <span
+          ref={addressRef}
+          className="flex items-center px-4 text-base font-semibold tracking-wide text-[var(--tfmc-cream)] select-all sm:px-5 sm:text-lg"
+        >
           {address}
         </span>
         <button
           type="button"
-          onClick={() => {
-            void navigator.clipboard?.writeText(address).then(() => setCopied(true));
-          }}
+          onClick={() => void copyAddress()}
           className="min-w-[5.5rem] border-l border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-sm font-semibold text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
         >
-          {copied ? "Copied" : "Copy"}
+          {copy === "copied" ? "Copied" : copy === "failed" ? "Copy by hand" : "Copy"}
         </button>
       </div>
       <p className="flex items-center gap-2 text-sm text-[var(--tfmc-mist)]" aria-live="polite">
