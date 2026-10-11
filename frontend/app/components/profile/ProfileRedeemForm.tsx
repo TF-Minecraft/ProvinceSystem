@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import FancyCheckbox from "../skins/FancyCheckbox";
 import {
   CharactersApiError,
   redeemProfile,
@@ -13,16 +12,10 @@ import {
 
 type Props = {
   onRedeemed: (session: ProfileSession) => void;
-  variant?: "default" | "compact";
 };
 
-export default function ProfileRedeemForm({
-  onRedeemed,
-  variant = "default",
-}: Props) {
-  const compact = variant === "compact";
+export default function ProfileRedeemForm({ onRedeemed }: Props) {
   const [code, setCode] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,16 +30,16 @@ export default function ProfileRedeemForm({
 
     setLoading(true);
     try {
-      const result = await redeemProfile(trimmed, rememberMe);
+      const result = await redeemProfile(trimmed);
       const session: ProfileSession = {
         session_token: result.session_token,
         player_uuid: result.player_uuid,
         expires_at: result.expires_at,
         scope: result.scope || "profile",
         ...(result.realm_id ? { realm_id: result.realm_id } : {}),
-        remember_me: rememberMe,
+        remember_me: false,
       };
-      setSession(session, rememberMe);
+      setSession(session);
       onRedeemed(session);
     } catch (err) {
       const message =
@@ -62,13 +55,10 @@ export default function ProfileRedeemForm({
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className={`flex w-full flex-col gap-4 ${compact ? "mt-4" : "mt-8"}`}
-    >
+    <form onSubmit={onSubmit} className="mt-4 flex w-full flex-col gap-4">
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          {compact ? "Log in with code" : "Profile code"}
+          Log in with code
         </span>
         <input
           type="text"
@@ -83,25 +73,6 @@ export default function ProfileRedeemForm({
         />
       </label>
 
-      {!compact ? (
-        <label className="flex items-start gap-3 text-left text-sm text-[var(--tfmc-mist)]">
-          <FancyCheckbox
-            checked={rememberMe}
-            disabled={loading}
-            onChange={setRememberMe}
-            aria-label="Remember me"
-          />
-          <span>
-            <span className="font-medium text-[var(--tfmc-stone)]">
-              Remember me
-            </span>
-            <span className="mt-0.5 block text-[var(--tfmc-mist)]">
-              Stay logged in for 30 days.
-            </span>
-          </span>
-        </label>
-      ) : null}
-
       {error ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">
           {error}
@@ -113,13 +84,7 @@ export default function ProfileRedeemForm({
         disabled={loading}
         className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {loading
-          ? compact
-            ? "Entering…"
-            : "Logging in…"
-          : compact
-            ? "Enter"
-            : "Log in"}
+        {loading ? "Entering…" : "Enter"}
       </button>
     </form>
   );
