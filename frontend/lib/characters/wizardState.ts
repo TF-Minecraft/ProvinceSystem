@@ -833,7 +833,7 @@ export function stageCanContinue(stage: CatalogStage, draft: WizardDraft, catalo
     if (target === "age") {
       const age = Number(draft.age);
       const min = catalog.validation?.age?.minimum ?? 1;
-      return Number.isFinite(age) && age >= min && age <= raceAgeMax(draft, catalog);
+      return Number.isInteger(age) && age >= min && age <= raceAgeMax(draft, catalog);
     }
     if (target === "description") {
       const min = catalog.validation?.description?.min_length ?? 1;
@@ -915,8 +915,12 @@ export function toCreateBody(
     clues,
   };
   const birthday =
-    resolvedBirthdayIso(String(age), draft.client_request_id || "default", draft.birthday, undefined) ||
-    birthdayFromAge(age, draft.client_request_id || "default");
+    resolvedBirthdayIso(
+      String(age),
+      draft.client_request_id || "default",
+      draft.birthday,
+      opts?.catalog?.validation?.calendar,
+    ) || birthdayFromAge(age, draft.client_request_id || "default", opts?.catalog?.validation?.calendar);
   if (birthday) {
     body.birthday = birthday;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import AgeStepper from "./AgeStepper";
 import AttributeSheet from "./AttributeSheet";
@@ -67,6 +67,8 @@ import {
   proseError,
 } from "../../../lib/textValidation";
 import NameColourPicker from "../shared/NameColourPicker";
+import FormattedMcRuns from "../shared/FormattedMcRuns";
+import { previewColourStopRuns } from "../../../lib/skins/namePreview";
 
 type Props = {
   catalog: CreationCatalog;
@@ -104,6 +106,7 @@ function StageBody({
   onWardrobeDraftModelsChange,
   wardrobeSkinSlots = 1,
   sessionToken,
+  wardrobeAutoMasked,
   onWardrobeAutoMaskedChange,
 }: {
   stage: CatalogStage;
@@ -122,6 +125,7 @@ function StageBody({
   onWardrobeDraftModelsChange: (next: WardrobeDraftModels) => void;
   wardrobeSkinSlots?: number;
   sessionToken: string;
+  wardrobeAutoMasked: boolean;
   onWardrobeAutoMaskedChange: (value: boolean) => void;
 }) {
   const type = String(stage.type || "").toLowerCase();
@@ -470,6 +474,7 @@ function StageBody({
       <AttributeSheet
         ranks={draft.attributes}
         apb={catalog.attribute_point_buy}
+        bonuses={modifierTotals.attributes}
         onChange={(attributes) => setDraft({ ...draft, attributes })}
       />
     );
@@ -497,10 +502,27 @@ function StageBody({
       const t = catalog.traits.find((x) => x.id === id);
       return t ? displayName(t) : id;
     });
+    const skinSummary = (["base", "extra_1", "extra_2", "masked"] as const).flatMap((slot) => {
+      if (slot === "masked" && wardrobeAutoMasked && wardrobeDraft.base) return ["Masked: from base"];
+      const file = wardrobeDraft[slot];
+      if (!file) return [];
+      const name = wardrobeDraftNames[slot]?.trim() || file.name;
+      const model = wardrobeDraftModels[slot] === "slim" ? "slim" : "classic";
+      return [`${wardrobeSlotLabel(slot)}: ${name} (${model})`];
+    });
 
     return (
       <div className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto pr-1 text-sm text-[var(--tfmc-mist)]">
-        <SummaryLine label="Name" value={draft.name} onEdit={() => onJump("name")} />
+        <SummaryLine
+          label="Name"
+          value={<FormattedMcRuns runs={previewColourStopRuns(draft.name, draft.name_colours)} />}
+          onEdit={() => onJump("name")}
+        />
+        <SummaryLine
+          label="Name colours"
+          value={draft.name_colours.join(", ") || "Default"}
+          onEdit={() => onJump("name")}
+        />
         {!skipRealAge ? (
           <SummaryLine
             label="18+"
@@ -509,12 +531,26 @@ function StageBody({
           />
         ) : null}
         <SummaryLine label="Age" value={draft.age} onEdit={() => onJump("age")} />
+        <SummaryLine
+          label="Birthday"
+          value={fictionalBirthdayLabel(
+            draft.age,
+            draft.client_request_id,
+            catalog.validation?.calendar,
+            draft.birthday,
+          )}
+          onEdit={() => onJump("age")}
+        />
+        <SummaryLine label="Gender" value={draft.gender.trim() || "Unspecified"} onEdit={() => onJump("description")} />
         <SummaryLine label="Race" value={race ? displayName(race) : draft.race_id} onEdit={() => onJump("race")} />
         <SummaryLine label="Class" value={klass ? displayName(klass) : draft.class_id} onEdit={() => onJump("class")} />
         <SummaryLine
           label="Attributes"
           value={Object.entries(draft.attributes)
-            .map(([k, v]) => `${displayAttrName(k)} +${v}`)
+            .map(
+              ([k, v]) =>
+                `${displayAttrName(k)} +${Math.max(0, v + (modifierTotals.attributes[k.toLowerCase()] ?? 0))}`,
+            )
             .join(", ")}
           onEdit={() => onJump("attributes")}
         />
@@ -525,6 +561,13 @@ function StageBody({
           value={draft.clues.filter((c) => c.trim()).join(" · ") || "-"}
           onEdit={() => onJump("clue")}
         />
+        {catalog.stages.some((s) => s.type.toLowerCase() === "wardrobe") ? (
+          <SummaryLine
+            label="Skins"
+            value={skinSummary.join(" · ") || "None selected"}
+            onEdit={() => onJump("wardrobe")}
+          />
+        ) : null}
       </div>
     );
   }
@@ -532,14 +575,19 @@ function StageBody({
   return <p className="text-[var(--tfmc-mist)]">Nothing to fill in here. Press Next.</p>;
 }
 
-function SummaryLine({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+function SummaryLine({ label, value, onEdit }: { label: string; value: ReactNode; onEdit: () => void }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pb-3">
       <div>
         <p className="text-xs uppercase tracking-wide text-[var(--tfmc-stone)]">{label}</p>
         <p className="mt-1 text-[var(--tfmc-cream)]">{value || "-"}</p>
       </div>
-      <button type="button" onClick={onEdit} className="shrink-0 text-xs text-[var(--tfmc-accent)] hover:underline">
+      <button
+        type="button"
+        aria-label={`Edit ${label}`}
+        onClick={onEdit}
+        className="shrink-0 text-xs text-[var(--tfmc-accent)] hover:underline"
+      >
         Edit
       </button>
     </div>
@@ -621,6 +669,7 @@ export default function CreationWizard({
   const nextStage = index < stages.length - 1 ? stages[index + 1] : null;
   const isLast = index >= stages.length - 1;
   const canNext = stage ? stageCanContinue(stage, draft, catalog) : false;
+  const incompleteStages = stages.filter((s) => !stageCanContinue(s, draft, catalog));
   const clueBlockReason =
     stage && String(stage.type || "").toLowerCase() === "clue" ? clueContinueBlockReason(draft, catalog) : null;
   const progress = interactiveProgress(stages, index);
@@ -647,12 +696,14 @@ export default function CreationWizard({
       }
       if (k === "attributes") return t === "attributes";
       if (k === "clue") return t === "clue";
+      if (k === "wardrobe") return t === "wardrobe";
       return s.id === k;
     });
     if (i >= 0) go(i);
   }
 
   async function onSubmit() {
+    if (incompleteStages.length > 0 || submitting) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -788,6 +839,7 @@ export default function CreationWizard({
               onWardrobeDraftModelsChange={setWardrobeDraftModels}
               wardrobeSkinSlots={wardrobeSkinSlots}
               sessionToken={sessionToken}
+              wardrobeAutoMasked={wardrobeAutoMasked}
               onWardrobeAutoMaskedChange={setWardrobeAutoMasked}
             />
           </div>
@@ -810,6 +862,24 @@ export default function CreationWizard({
           {clueBlockReason}
         </p>
       ) : null}
+      {showSubmit && incompleteStages.length > 0 ? (
+        <div className="mt-3 text-sm text-[#e8a0a0]" role="status">
+          <p>Review these steps before creating your character:</p>
+          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            {incompleteStages.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => go(stages.indexOf(s))}
+                  className="text-[var(--tfmc-accent)] hover:underline"
+                >
+                  Review {stageDisplayTitle(s)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {uiDevDone ? (
         <p className="mt-3 text-sm text-[var(--tfmc-accent)]" role="status">
           Created (UI-dev) - draft logged to console.
@@ -828,7 +898,7 @@ export default function CreationWizard({
         {showSubmit ? (
           <button
             type="button"
-            disabled={!canNext || submitting}
+            disabled={!canNext || incompleteStages.length > 0 || submitting}
             onClick={() => void onSubmit()}
             className="flex-1 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50"
           >

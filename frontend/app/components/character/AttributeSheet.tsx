@@ -12,10 +12,11 @@ import {
 type Props = {
   ranks: Record<string, number>;
   apb: AttributePointBuy;
+  bonuses?: Record<string, number>;
   onChange: (ranks: Record<string, number>) => void;
 };
 
-export default function AttributeSheet({ ranks, apb, onChange }: Props) {
+export default function AttributeSheet({ ranks, apb, bonuses = {}, onChange }: Props) {
   const remaining = remainingPoints(ranks, apb);
 
   function bump(attr: string, delta: 1 | -1) {
@@ -34,6 +35,8 @@ export default function AttributeSheet({ ranks, apb, onChange }: Props) {
       <ul className="flex flex-col gap-3">
         {apb.attributes.map((attr) => {
           const rank = Number(ranks[attr] ?? 0) || 0;
+          const bonus = bonuses[attr.toLowerCase()] ?? 0;
+          const total = Math.max(0, rank + bonus);
           const nextCost = costOfNextRank(rank, apb.cost_for_rank);
           return (
             <li
@@ -42,6 +45,10 @@ export default function AttributeSheet({ ranks, apb, onChange }: Props) {
             >
               <div>
                 <p className="font-medium text-[var(--tfmc-cream)]">{displayAttrName(attr)}</p>
+                <p className="text-xs text-[var(--tfmc-mist)]">
+                  Race &amp; traits {bonus >= 0 ? "+" : ""}
+                  {bonus} · Total +{total}
+                </p>
                 <p className="text-xs text-[var(--tfmc-mist)]">
                   Rank +{rank}
                   {nextCost != null && rank < apb.max_rank ? ` · next costs ${nextCost}` : " · max"}
