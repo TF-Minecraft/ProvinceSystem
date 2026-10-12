@@ -36,8 +36,9 @@ def request(operation: str, **body) -> dict:
                 raise ValueError("invalid control response")
     except (OSError, ValueError) as exc:
         raise ControlError("control_unavailable", 503) from exc
-    if "error" in result:
-        raise ControlError(result["error"], result.get("status", 409))
+    # Refusals are exactly {"error", "status"}; accepted jobs carry their own "error" field.
+    if set(result) == {"error", "status"}:
+        raise ControlError(result["error"], result["status"])
     return result
 
 
