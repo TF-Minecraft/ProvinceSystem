@@ -58,6 +58,7 @@ class ServerJobBody(ReasonBody):
     id: str = Field(..., pattern=r"^[0-9a-f]{32}$")
     backup_ref: str = Field("", max_length=500)
     emergency_override: StrictBool = False
+    replace_test_builds: list[str] = Field(default_factory=list, max_length=100)
 
 
 def _staff(request: Request) -> dict:
@@ -251,9 +252,12 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
             reason = admin.clean_reason(body.reason)
             if body.emergency_override and (server != "main" or operation != "start"):
                 raise HTTPException(400, detail="bad_server_action")
+            if body.replace_test_builds and operation != "start":
+                raise HTTPException(400, detail="bad_server_action")
             detail = {"server": server, "job_id": body.id}
             if operation == "start":
                 detail["emergency_override"] = body.emergency_override
+                detail["replace_test_builds"] = body.replace_test_builds
             # Record the intent before crossing the process boundary. The host
             # persists the accepted job; the same id can safely be retried.
             audit.record(conn, actor=actor, action=action, outcome="requested", reason=reason, detail=detail)
@@ -261,6 +265,8 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
         result = server_control.request(operation, server=server,
                                         **{"plan_id" if operation == "start" else "job_id": body.id},
                                         **({"backup_ref": body.backup_ref, "emergency_override": body.emergency_override} if operation == "start" else {}),
+                                        # Sent only when used, so an older host helper still accepts plain starts.
+                                        **({"replace_test_builds": body.replace_test_builds} if body.replace_test_builds else {}),
                                         actor=f"{urllib.parse.urlparse(config.site_url).hostname}:user:{actor['user_id']}", reason=reason)
         audit.record_refusal(actor=actor, action=action, outcome="ok", reason=reason, detail=detail)
         return result

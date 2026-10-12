@@ -155,14 +155,17 @@ class Controller:
             for path in sorted(folder.glob("*.jar")):
                 if path.is_symlink() or not path.is_file():
                     raise ControlError("unsafe_plugin_file")
-                _, name, version = inventory._describe(path)
-                if not name or not version or name.lower() in names:
-                    raise ControlError("plugin_inventory_conflict")
-                if prefix:
-                    raise ControlError("pending_plugin_update")
-                names.add(name.lower())
-                # Always hash afresh before a write, even for unchanged size/mtime.
-                result.append({"file": path.name, "sha256": digest(path), "name": name, "version": version})
+                try:
+                    _, name, version = inventory._describe(path)
+                    if not name or not version or name.lower() in names:
+                        raise ControlError("plugin_inventory_conflict")
+                    if prefix:
+                        raise ControlError("pending_plugin_update")
+                    names.add(name.lower())
+                    # Always hash afresh before a write, even for unchanged size/mtime.
+                    result.append({"file": path.name, "sha256": digest(path), "name": name, "version": version})
+                except PermissionError:
+                    raise ControlError("plugin_unreadable") from None
         return result
 
     def _maintenance(self, server: str) -> bool:
@@ -222,13 +225,17 @@ class Controller:
                         if old[0]["sha256"] == release["sha256"]:
                             continue
                         known = next((r for r in release["known"] if r.get("sha256") == old[0]["sha256"]), None)
-                        if known is None:
-                            skipped.append({"repo": release["repo"], "reason": "test_or_unknown_build"})
-                            continue
-                        current_version, target_version = numeric_version(known.get("version", "")), numeric_version(version)
-                        if current_version is None or target_version is None or target_version <= current_version:
-                            skipped.append({"repo": release["repo"], "reason": "not_a_newer_version"})
-                            continue
+                        target_version = numeric_version(version)
+                        # A test build is offered for replacement; staff choose it when starting.
+                        test_build = known is None
+                        if test_build:
+                            current_version = numeric_version(old[0]["version"])
+                            newer_test = current_version is not None and target_version is not None and current_version > target_version
+                        else:
+                            current_version = numeric_version(known.get("version", ""))
+                            if current_version is None or target_version is None or target_version <= current_version:
+                                skipped.append({"repo": release["repo"], "reason": "not_a_newer_version"})
+                                continue
                         if server == "main" and not self._dev_verified(release):
                             skipped.append({"repo": release["repo"], "reason": "not_verified_on_dev"})
                             continue
@@ -240,7 +247,8 @@ class Controller:
                         if sha != release["sha256"] or name != old[0]["name"] or jar_version != version:
                             raise ControlError("release_identity_failed")
                         changes.append({**{k: v for k, v in release.items() if k != "known"}, "name": name, "version": jar_version,
-                                        "old_file": old[0]["file"], "old_version": old[0]["version"]})
+                                        "old_file": old[0]["file"], "old_version": old[0]["version"],
+                                        **({"test_build": True, "newer_test": newer_test} if test_build else {})})
                 activation = [{"name": jar["name"], "loaded": startup["enabled"].get(jar["name"].lower()),
                                "version": jar["version"]} for jar in baseline
                               if startup["enabled"].get(jar["name"].lower()) != jar["version"]
@@ -325,9 +333,13 @@ class Controller:
             if digest(self.state / plan["id"] / change["asset"]) != change["sha256"]:
                 raise ControlError("release_checksum_failed")
 
-    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "", emergency_override: bool = False) -> dict:
+    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "", emergency_override: bool = False,
+              replace_test_builds: list[str] | None = None) -> dict:
+        replace_test_builds = [] if replace_test_builds is None else replace_test_builds
         with self.lock:
             if not isinstance(emergency_override, bool) or (server != "main" and emergency_override):
+                raise ControlError("bad_server_action", 400)
+            if not isinstance(replace_test_builds, list) or any(not isinstance(repo, str) for repo in replace_test_builds):
                 raise ControlError("bad_server_action", 400)
             plan = self._plan(plan_id)
             if plan["server"] != server:
@@ -343,6 +355,14 @@ class Controller:
                 raise ControlError("scheduled_restart_conflict")
             if server == "main" and len(backup_ref.strip()) < 3:
                 raise ControlError("backup_required", 400)
+            tests = {change["repo"] for change in plan["changes"] if change.get("test_build")}
+            if not set(replace_test_builds) <= tests:
+                raise ControlError("bad_server_action", 400)
+            kept = tests - set(replace_test_builds)
+            if kept:
+                # Test builds staff left alone are not installed or checked.
+                plan = {**plan, "changes": [c for c in plan["changes"] if c["repo"] not in kept],
+                        "skipped": plan["skipped"] + [{"repo": repo, "reason": "test_build_kept"} for repo in sorted(kept)]}
             self._unchanged(plan)
             if self._maintenance(server):
                 raise ControlError("server_not_ready")
@@ -354,6 +374,8 @@ class Controller:
                    "emergency_override": emergency_override,
                    "actor": actor, "reason": reason, "changes": plan["changes"], "activation": plan["activation"],
                    "error": None, "maintenance_started": False, "backup_ref": backup_ref, "events": []}
+            if kept:
+                save_json(self.state / plan_id / "plan.json", plan)
             self.jobs[server] = job
             self.cancelled.clear()
             self._save()
@@ -395,8 +417,8 @@ class Controller:
         job = job or self.jobs[server]
         if job["id"] != plan["id"]:
             return
+        countdown = server == "main" and not job.get("emergency_override", False)
         try:
-            countdown = server == "main" and not job.get("emergency_override", False)
             announcements = ((300, "5 minutes"), (180, "3 minutes"), (60, "1 minute"),
                              (30, "30 seconds"), (10, "10 seconds"), (0, "")) if countdown else ((0, ""),)
             for remaining, label in announcements:
@@ -410,7 +432,8 @@ class Controller:
                         self.console(server, f"broadcast &c&lServer restart &7in &f{label}&7. Finish what you are doing.")
                     else:
                         self._unchanged(plan)
-                        if scheduled_restart(server, time.time(), job.get("emergency_override", False)):
+                        # The countdown is over; only the restart itself still needs room.
+                        if scheduled_restart(server, time.time(), True):
                             raise ControlError("scheduled_restart_conflict")
                         if self._maintenance(server):
                             raise ControlError("maintenance_changed")
@@ -436,6 +459,12 @@ class Controller:
                 self._reopen(plan, job)
         except Exception as exc:
             logging.exception("Server operation failed for %s", server)
+            if countdown and not job["maintenance_started"]:
+                # Players were warned; tell them the restart is off.
+                try:
+                    self.console(server, "broadcast &eThe server restart has been cancelled.")
+                except Exception:
+                    logging.exception("Could not announce the failed countdown for %s", server)
             self._event(job, "failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
 
     @staticmethod
@@ -524,10 +553,12 @@ class Controller:
             boot = next((line for line in handle if inventory._BOOT.search(line)), None)
         return path.stat().st_ino, boot
 
-    def _startup_ok(self, plan: dict) -> bool:
+    def _startup_ok(self, plan: dict, *, fresh: bool = True) -> bool:
         _, logs = self._paths(plan["server"])
         startup = inventory.read_startup(logs)
-        if not startup or not startup["done"] or startup["log"] != "latest.log":
+        # Right after a restart the startup must be in latest.log. A later
+        # recheck may follow Paper's midnight rotation into an older log.
+        if not startup or not startup["done"] or (fresh and startup["log"] != "latest.log"):
             return False
         expected = {jar["name"].lower(): jar["version"] for jar in plan["baseline"]}
         expected.update({change["name"].lower(): change["version"] for change in plan["changes"]})
@@ -547,11 +578,11 @@ class Controller:
             expected_files[change["asset"]] = change["sha256"]
         if {jar["file"]: jar["sha256"] for jar in current} != expected_files:
             return False
-        return {self._error_key(line) for line in self._boot_errors(logs, "latest.log")} <= {
+        return {self._error_key(line) for line in self._boot_errors(logs, startup["log"])} <= {
             self._error_key(line) for line in plan["boot_errors"]}
 
-    def _reopen(self, plan: dict, job: dict):
-        if not self._startup_ok(plan):
+    def _reopen(self, plan: dict, job: dict, *, fresh: bool = True):
+        if not self._startup_ok(plan, fresh=fresh):
             raise ControlError("startup_check_failed")
         self.console(plan["server"], "list")
         self.console(plan["server"], "maintenance off")
@@ -573,10 +604,10 @@ class Controller:
             try:
                 # An operator may have restored the recorded old jars while
                 # stopped in AMP. Reopen only after those pass the same checks.
-                if not self._startup_ok(plan) and self._startup_ok({**plan, "changes": []}):
+                if not self._startup_ok(plan, fresh=False) and self._startup_ok({**plan, "changes": []}, fresh=False):
                     plan = {**plan, "changes": []}
                     job["rolled_back"] = True
-                self._reopen(plan, job)
+                self._reopen(plan, job, fresh=False)
             except Exception as exc:
                 self._event(job, "failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
                 raise
@@ -599,7 +630,8 @@ class Controller:
                    "cancel": {"operation", "server", "job_id", "actor", "reason"},
                    "reopen": {"operation", "server", "job_id", "actor", "reason"},
                    "resolve": {"operation", "server", "job_id", "actor", "reason"}}
-        if operation not in allowed or set(body) != allowed[operation]:
+        # Older websites omit the optional test-build list.
+        if operation not in allowed or set(body) - ({"replace_test_builds"} if operation == "start" else set()) != allowed[operation]:
             raise ControlError("bad_control_request", 400)
         if operation == "status":
             return {"jobs": json.loads(self.status_json)}
@@ -612,7 +644,11 @@ class Controller:
         if operation == "start":
             if not isinstance(body["backup_ref"], str) or len(body["backup_ref"]) > 500:
                 raise ControlError("bad_control_request", 400)
-            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"], body["emergency_override"])
+            replace = body.get("replace_test_builds", [])
+            if not isinstance(replace, list) or len(replace) > 100:
+                raise ControlError("bad_control_request", 400)
+            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"],
+                              body["emergency_override"], replace)
         with self.lock:
             job = self._job(server, body["job_id"])
             event = {"at": time.time(), "action": operation, "actor": body["actor"],

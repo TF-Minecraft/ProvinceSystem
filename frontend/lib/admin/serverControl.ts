@@ -6,6 +6,10 @@ export type ReleaseChange = {
   old_version: string;
   version: string;
   asset: string;
+  /** Set when the installed file is a test build the release would replace. */
+  test_build?: boolean;
+  /** The test build's own version is higher than the release's. */
+  newer_test?: boolean;
 };
 export type Activation = { name: string; loaded: string | null; version: string };
 export type ServerPlan = {
@@ -56,10 +60,11 @@ export function serverAction(
   reason: string,
   backup_ref = "",
   emergency_override = false,
+  replace_test_builds: string[] = [],
 ): Promise<ServerJob> {
   return adminRequest(`/admin/servers/${server}/${action}`, {
     method: "POST",
-    body: JSON.stringify({ id, reason, backup_ref, emergency_override }),
+    body: JSON.stringify({ id, reason, backup_ref, emergency_override, replace_test_builds }),
   });
 }
 
@@ -70,6 +75,7 @@ export const CONTROL_MESSAGES: Record<string, string> = {
   plugins_changed: "The plugin files changed. Review a fresh plan before restarting.",
   plan_expired: "This plan expired. Review a fresh plan.",
   pending_plugin_update: "A plugin waits in the update folder. Resolve it before using these controls.",
+  plugin_unreadable: "A plugin jar can’t be read by the control helper. Make it world-readable (chmod 0644).",
   plugin_inventory_conflict: "Duplicate or unreadable plugins need resolving before a restart.",
   server_not_ready: "The server must be running with maintenance off before starting a restart.",
   maintenance_changed: "Maintenance changed during the countdown. Check the server before continuing.",

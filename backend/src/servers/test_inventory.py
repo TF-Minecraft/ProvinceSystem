@@ -229,3 +229,13 @@ def test_failed_or_disabled_plugin_is_not_counted_as_enabled(tmp_path, failure):
     text = startup_log(('Core', '1.1'), ('Other', '2.0'))
     (tmp_path / 'latest.log').write_text(text.replace('[06:10:40]', failure + '[06:10:40]'))
     assert inventory.read_startup(tmp_path)['enabled'] == {'other': '2.0'}
+
+
+def test_plugin_text_quoting_an_enable_failure_is_not_a_failure(tmp_path):
+    (tmp_path / "latest.log").write_text(
+        "[06:10:00] [ServerMain/INFO]: [bootstrap] Loading Paper 1.21.10-130-main@abc\n"
+        "[06:10:20] [Server thread/INFO]: [Core] Enabling Core v1.1\n"
+        "[06:10:21] [Server thread/INFO]: [Chat] Player said: Error occurred while enabling Core v1.1\n"
+        "[06:10:40] [Server thread/INFO]: Done (40.0s)! For help, type \"help\"\n")
+    startup = inventory.read_startup(tmp_path)
+    assert startup["enabled"] == {"core": "1.1"} and startup["failed"] == {}
