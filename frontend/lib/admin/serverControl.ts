@@ -34,6 +34,7 @@ export type ServerJob = {
     | "resolved";
   deadline: number;
   maintenance_started: boolean;
+  emergency_override?: boolean;
   error: string | null;
   changes: ReleaseChange[];
   activation: Activation[];
@@ -54,10 +55,11 @@ export function serverAction(
   id: string,
   reason: string,
   backup_ref = "",
+  emergency_override = false,
 ): Promise<ServerJob> {
   return adminRequest(`/admin/servers/${server}/${action}`, {
     method: "POST",
-    body: JSON.stringify({ id, reason, backup_ref }),
+    body: JSON.stringify({ id, reason, backup_ref, emergency_override }),
   });
 }
 
@@ -69,7 +71,7 @@ export const CONTROL_MESSAGES: Record<string, string> = {
   plan_expired: "This plan expired. Review a fresh plan.",
   pending_plugin_update: "A plugin waits in the update folder. Resolve it before using these controls.",
   plugin_inventory_conflict: "Duplicate or unreadable plugins need resolving before a restart.",
-  server_not_ready: "The server must be running with maintenance off before starting a countdown.",
+  server_not_ready: "The server must be running with maintenance off before starting a restart.",
   maintenance_changed: "Maintenance changed during the countdown. Check the server before continuing.",
   maintenance_unavailable: "Maintenance could not be confirmed. Check the server.",
   releases_unavailable: "GitHub releases could not be checked. Try again later.",

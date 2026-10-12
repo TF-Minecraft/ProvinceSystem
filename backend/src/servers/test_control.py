@@ -58,7 +58,7 @@ def controller(tmp_path, monkeypatch):
 
 
 def ready_job(controller, plan):
-    job = {"id": plan["id"], "server": plan["server"], "phase": "countdown", "deadline": 0,
+    job = {"id": plan["id"], "server": plan["server"], "phase": "countdown" if plan["server"] == "main" else "installing", "deadline": 0,
            "maintenance_started": False, "error": None, "events": [], "changes": plan["changes"]}
     controller.jobs[plan["server"]] = job
     return job
@@ -112,12 +112,12 @@ def test_countdown_cancel_and_duplicate_start_are_safe(controller, monkeypatch):
         def __init__(self, **_): pass
         def start(self): pass
     monkeypatch.setattr(host.threading, "Thread", NoWorker)
-    plan = controller.plan("dev", "restart", [])
-    first = controller.start("dev", plan["id"], "site-user:1", "test restart")
-    assert controller.start("dev", plan["id"], "site-user:1", "test restart")["id"] == first["id"]
+    plan = controller.plan("main", "restart", [])
+    first = controller.start("main", plan["id"], "site-user:1", "test restart", "test backup")
+    assert controller.start("main", plan["id"], "site-user:1", "test restart", "test backup")["id"] == first["id"]
     with pytest.raises(control.ControlError, match="server_job_active"):
-        controller.plan("main", "restart", [])
-    assert controller.cancel("dev", first["id"])["phase"] == "cancelled"
+        controller.plan("dev", "restart", [])
+    assert controller.cancel("main", first["id"])["phase"] == "cancelled"
     controller.run(controller._plan(plan["id"]))
     assert not any(c == "stop" for _, c in controller.commands)
 
@@ -355,3 +355,74 @@ def test_accepted_journal_recovers_missing_index_and_is_not_replayed(controller)
     assert recovered.jobs["dev"]["phase"] == "failed"
     assert recovered.start("dev", job["id"], "www:user:1", "retry after disconnect")["phase"] == "failed"
     assert not any(c == "stop" for _, c in controller.commands)
+
+
+@pytest.mark.parametrize("server,override", [("dev", False), ("main", True)])
+@pytest.mark.parametrize("mode", ["restart", "latest"])
+def test_instant_restarts_skip_warnings_but_save_verify_and_stop(controller, monkeypatch, tmp_path, server, override, mode):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    releases = []
+    if mode == "latest":
+        path = tmp_path / "new-instant.jar"
+        sha = jar(path, version="2.0.0")
+        releases = [release_for(controller, sha, server=server)]
+        controller.fetch = lambda release, target: target.write_bytes(path.read_bytes())
+        monkeypatch.setattr(controller, "_dev_verified", lambda *_: True)
+    public = controller.plan(server, mode, releases)
+    result = controller.start(server, public["id"], "www:user:1", "emergency fix" if override else "Dev test", "test backup" if server == "main" else "", override)
+    assert result["phase"] == "installing"
+    assert result["deadline"] == result["accepted_at"]
+    assert result["emergency_override"] is override
+    with pytest.raises(control.ControlError, match="cannot_cancel"):
+        controller.cancel(server, public["id"])
+    monkeypatch.setattr(controller.cancelled, "wait", lambda delay: pytest.fail("countdown delay") if delay > 0 else False)
+    controller.run(controller._plan(public["id"]))
+    commands = [c for _, c in controller.commands]
+    assert not any("Finish what you are doing" in c for c in commands)
+    assert commands.index("maintenance on") < commands.index("save-all flush") < commands.index("stop")
+    assert controller.jobs[server]["phase"] == ("awaiting_review" if server == "main" and mode == "latest" else "complete")
+
+
+def test_main_default_still_has_five_minute_countdown(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    plan = controller.plan("main", "restart", [])
+    result = controller.start("main", plan["id"], "www:user:1", "planned restart", "test backup")
+    assert result["phase"] == "countdown" and result["emergency_override"] is False
+    assert result["deadline"] - result["accepted_at"] == 300
+
+
+def test_emergency_override_is_main_only_and_requires_a_backup(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    plan = controller.plan("main", "restart", [])
+    with pytest.raises(control.ControlError, match="backup_required"):
+        controller.start("main", plan["id"], "www:user:1", "emergency fix", emergency_override=True)
+    dev = controller.plan("dev", "restart", [])
+    with pytest.raises(control.ControlError, match="bad_server_action"):
+        controller.start("dev", dev["id"], "www:user:1", "Dev test", emergency_override=True)
+
+
+def test_emergency_flag_is_strict_audited_and_forwarded(app, database, monkeypatch):
+    calls=[]
+    monkeypatch.setattr(control, "request", lambda op, **body: calls.append(body) or {"id": body["plan_id"]})
+    _, admin = account(database, "instant-admin", "admin")
+    body = {"id": "c"*32, "reason": "emergency plugin fix", "backup_ref": "prepared backup", "emergency_override": True}
+    assert client(app, admin).post("/admin/servers/main/start", json=body, headers=ORIGIN).status_code == 200
+    assert calls[-1]["emergency_override"] is True
+    assert json.loads(audit_rows(database)[-1]["detail_json"])["emergency_override"] is True
+    assert client(app, admin).post("/admin/servers/main/start", json={**body,"emergency_override":"false"}, headers=ORIGIN).status_code == 422
+    assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 400
+    assert len(calls) == 1
+
+
+def test_recovery_orders_instant_jobs_by_acceptance_not_deadline(controller):
+    legacy = controller.plan("dev", "restart", [])
+    old = ready_job(controller, controller._plan(legacy["id"]))
+    old.update(phase="complete", deadline=600)  # legacy acceptance was 300
+    controller._save()
+    instant = controller.plan("dev", "restart", [])
+    new = ready_job(controller, controller._plan(instant["id"]))
+    new.update(accepted_at=400, deadline=400)
+    controller._save()
+    recovered = host.Controller(controller.state, controller.roots, console=controller.console)
+    assert recovered.jobs["dev"]["id"] == new["id"]
+    assert recovered.jobs["dev"]["phase"] == "failed"

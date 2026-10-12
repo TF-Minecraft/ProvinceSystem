@@ -48,6 +48,7 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
   const [pending, setPending] = useState<{ job: ServerJob; action: Action } | null>(null);
   const [reason, setReason] = useState("");
   const [backupRef, setBackupRef] = useState("");
+  const [emergencyOverride, setEmergencyOverride] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(0);
@@ -96,6 +97,7 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
       setPending(null);
       setReason("");
       setBackupRef("");
+      setEmergencyOverride(false);
       setNow(Date.now() / 1000);
     } catch (err) {
       setError(message(err));
@@ -114,7 +116,14 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
     setBusy(true);
     setError(null);
     try {
-      await serverAction(server, action, id, reason, backupRef);
+      await serverAction(
+        server,
+        action,
+        id,
+        reason,
+        backupRef,
+        action === "start" && server === "main" && emergencyOverride,
+      );
       setPlan(null);
       setPending(null);
       await refresh();
@@ -166,6 +175,7 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
                     <div className={`mt-2 ${mutedClass}`} role="status">
                       <p>
                         {PHASE[job.phase]}
+                        {job.emergency_override ? " · emergency override" : ""}
                         {job.phase === "countdown" && now
                           ? ` · ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`
                           : ""}
@@ -212,7 +222,8 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
             })}
           </div>
           <p className={`mt-3 ${mutedClass}`}>
-            Restarts give players five minutes. Cancellation is available until installation starts.
+            Main gives players five minutes and can be cancelled during the countdown. Dev restarts immediately after
+            confirmation.
           </p>
         </>
       )}
@@ -227,8 +238,12 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
             {LABEL[plan.server]} · {plan.mode === "latest" ? "Latest releases and restart" : "Restart"}
           </h4>
           <p className={`mt-2 ${mutedClass}`}>
-            This starts a five-minute countdown on {LABEL[plan.server]}. Check the changes and the restart window before
-            confirming.
+            {plan.server === "main"
+              ? emergencyOverride
+                ? "This restarts Main immediately after confirmation."
+                : "This starts a five-minute countdown on Main."
+              : "This restarts Dev immediately after confirmation."}{" "}
+            Check the changes and the restart window before confirming.
           </p>
           {plan.mode === "latest" ? (
             <p className={`mt-2 ${mutedClass}`}>
@@ -305,6 +320,19 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
               reopen.
             </p>
           ) : null}
+          {plan.server === "main" ? (
+            <label className="mt-4 flex items-start gap-2 text-sm text-[#e8c48a]">
+              <input
+                type="checkbox"
+                className="mt-1 accent-[var(--tfmc-accent)]"
+                checked={emergencyOverride}
+                onChange={(e) => setEmergencyOverride(e.target.checked)}
+              />
+              <span>
+                OVERRIDE: restart immediately for an emergency. Players will be disconnected without a countdown.
+              </span>
+            </label>
+          ) : null}
           <div className="mt-3 flex gap-4">
             <button
               type="button"
@@ -317,7 +345,11 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
               }
               onClick={() => void act(plan.server, "start", plan.id)}
             >
-              Start {LABEL[plan.server]} countdown
+              {plan.server === "main"
+                ? emergencyOverride
+                  ? "Restart Main now"
+                  : "Start Main countdown"
+                : "Restart Dev now"}
             </button>
             <button type="button" className={quietButtonClass} disabled={busy} onClick={() => setPlan(null)}>
               Close

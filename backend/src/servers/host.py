@@ -37,9 +37,9 @@ def numeric_version(value: str) -> tuple[int, ...] | None:
     return tuple(map(int, value.split("."))) if re.fullmatch(r"\d+(?:\.\d+){1,3}", value) else None
 
 
-def scheduled_restart(server: str, now: float) -> bool:
+def scheduled_restart(server: str, now: float, emergency_override: bool = False) -> bool:
     start = datetime.fromtimestamp(now, timezone.utc)
-    end = start + timedelta(minutes=20)  # countdown, save, restart and verification
+    end = start + timedelta(minutes=20 if server == "main" and not emergency_override else 15)
     midnight = start.replace(hour=0, minute=0, second=0, microsecond=0)
     for day in (-1, 0, 1):
         base = midnight + timedelta(days=day)
@@ -114,7 +114,7 @@ class Controller:
         for path in state.glob("*/job.json"):
             recorded = json.loads(path.read_text())
             current = self.jobs.get(recorded["server"])
-            if current is None or recorded["deadline"] > current["deadline"]:
+            if current is None or recorded.get("accepted_at", recorded["deadline"] - 300) > current.get("accepted_at", current["deadline"] - 300):
                 self.jobs[recorded["server"]] = recorded
         # Never replay writes after a helper crash or host restart.
         for job in self.jobs.values():
@@ -313,8 +313,10 @@ class Controller:
             if digest(self.state / plan["id"] / change["asset"]) != change["sha256"]:
                 raise ControlError("release_checksum_failed")
 
-    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "") -> dict:
+    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "", emergency_override: bool = False) -> dict:
         with self.lock:
+            if not isinstance(emergency_override, bool) or (server != "main" and emergency_override):
+                raise ControlError("bad_server_action", 400)
             plan = self._plan(plan_id)
             if plan["server"] != server:
                 raise ControlError("bad_plan", 400)
@@ -325,7 +327,7 @@ class Controller:
             self._idle(server)
             if plan["server"] != server or plan["expires_at"] < time.time():
                 raise ControlError("plan_expired")
-            if scheduled_restart(server, time.time()):
+            if scheduled_restart(server, time.time(), emergency_override):
                 raise ControlError("scheduled_restart_conflict")
             if server == "main" and len(backup_ref.strip()) < 3:
                 raise ControlError("backup_required", 400)
@@ -333,7 +335,11 @@ class Controller:
             if self._maintenance(server):
                 raise ControlError("server_not_ready")
             self.console(server, "list")
-            job = {"id": plan_id, "server": server, "phase": "countdown", "deadline": time.time() + 300,
+            accepted_at = time.time()
+            countdown = server == "main" and not emergency_override
+            job = {"id": plan_id, "server": server, "phase": "countdown" if countdown else "installing",
+                   "accepted_at": accepted_at, "deadline": accepted_at + (300 if countdown else 0),
+                   "emergency_override": emergency_override,
                    "actor": actor, "reason": reason, "changes": plan["changes"], "activation": plan["activation"],
                    "error": None, "maintenance_started": False, "backup_ref": backup_ref, "events": []}
             self.jobs[server] = job
@@ -378,19 +384,21 @@ class Controller:
         if job["id"] != plan["id"]:
             return
         try:
-            for remaining, label in ((300, "5 minutes"), (180, "3 minutes"), (60, "1 minute"),
-                                     (30, "30 seconds"), (10, "10 seconds"), (0, "")):
+            countdown = server == "main" and not job.get("emergency_override", False)
+            announcements = ((300, "5 minutes"), (180, "3 minutes"), (60, "1 minute"),
+                             (30, "30 seconds"), (10, "10 seconds"), (0, "")) if countdown else ((0, ""),)
+            for remaining, label in announcements:
                 delay = max(0, job["deadline"] - remaining - time.time())
                 if self.cancelled.wait(delay):
                     return
                 with self.lock:
-                    if job["phase"] != "countdown":
+                    if job["phase"] != ("countdown" if countdown else "installing"):
                         return
                     if remaining:
                         self.console(server, f"broadcast &c&lServer restart &7in &f{label}&7. Finish what you are doing.")
                     else:
                         self._unchanged(plan)
-                        if scheduled_restart(server, time.time()):
+                        if scheduled_restart(server, time.time(), job.get("emergency_override", False)):
                             raise ControlError("scheduled_restart_conflict")
                         if self._maintenance(server):
                             raise ControlError("maintenance_changed")
@@ -567,7 +575,7 @@ class Controller:
     def dispatch(self, body: dict) -> dict:
         operation = body.get("operation")
         allowed = {"status": {"operation"}, "plan": {"operation", "server", "mode", "releases"},
-                   "start": {"operation", "server", "plan_id", "actor", "reason", "backup_ref"},
+                   "start": {"operation", "server", "plan_id", "actor", "reason", "backup_ref", "emergency_override"},
                    "cancel": {"operation", "server", "job_id", "actor", "reason"},
                    "reopen": {"operation", "server", "job_id", "actor", "reason"},
                    "resolve": {"operation", "server", "job_id", "actor", "reason"}}
@@ -584,7 +592,7 @@ class Controller:
         if operation == "start":
             if not isinstance(body["backup_ref"], str) or len(body["backup_ref"]) > 500:
                 raise ControlError("bad_control_request", 400)
-            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"])
+            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"], body["emergency_override"])
         with self.lock:
             job = self._job(server, body["job_id"])
             job["events"].append({"at": time.time(), "action": operation, "actor": body["actor"], "reason": body["reason"]})

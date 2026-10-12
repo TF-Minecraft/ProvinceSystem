@@ -73,6 +73,7 @@ it("reviews changes and skips, and requires a Main reason and backup before star
       plan.id,
       "publish tested cooking",
       "AMP 2026-10-12 plus province DB",
+      false,
     ),
   );
 });
@@ -96,7 +97,7 @@ it("asks for a cancellation reason before issuing the action", async () => {
   fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Players need more time" } });
   fireEvent.click(button);
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", ""),
+    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", "", false),
   );
 });
 
@@ -121,6 +122,53 @@ it("Main release upgrades require a feature review before reopening", async () =
       job.id,
       "Verified recipes and persisted character data",
       "",
+      false,
+    ),
+  );
+});
+
+it("Dev confirms an instant restart without an override or backup field", async () => {
+  vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["dev"] });
+  vi.mocked(planServer).mockResolvedValue({ ...plan, server: "dev", mode: "restart" });
+  vi.mocked(serverAction).mockResolvedValue({ ...job, server: "dev", phase: "installing" });
+  render(<ServerControls onComplete={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Restart Dev" }));
+  const dialog = await screen.findByRole("dialog", { name: "Confirm Dev restart" });
+  expect(within(dialog).getByText(/restarts Dev immediately after confirmation/)).toBeTruthy();
+  expect(within(dialog).queryByRole("checkbox")).toBeNull();
+  expect(within(dialog).queryByLabelText("Backup prepared for this restart")).toBeNull();
+  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Dev test restart" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Restart Dev now" }));
+  await waitFor(() =>
+    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Dev test restart", "", false),
+  );
+});
+
+it("Main emergency override is unchecked by default and is explicit in the action", async () => {
+  vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["main", "dev"] });
+  vi.mocked(planServer).mockResolvedValue(plan);
+  vi.mocked(serverAction).mockResolvedValue({ ...job, phase: "installing", emergency_override: true });
+  render(<ServerControls onComplete={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Use latest releases and restart Main" }));
+  const dialog = await screen.findByRole("dialog", { name: "Confirm Main restart" });
+  const override = within(dialog).getByRole("checkbox", { name: /OVERRIDE:/ }) as HTMLInputElement;
+  expect(override.checked).toBe(false);
+  fireEvent.click(override);
+  const start = within(dialog).getByRole("button", { name: "Restart Main now" }) as HTMLButtonElement;
+  expect(start.disabled).toBe(true);
+  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Emergency rollback fix" } });
+  fireEvent.change(within(dialog).getByLabelText("Backup prepared for this restart"), {
+    target: { value: "Emergency recovery backup" },
+  });
+  fireEvent.click(start);
+  await waitFor(() =>
+    expect(serverAction).toHaveBeenCalledWith(
+      "main",
+      "start",
+      plan.id,
+      "Emergency rollback fix",
+      "Emergency recovery backup",
+      true,
     ),
   );
 });

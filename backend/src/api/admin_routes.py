@@ -13,7 +13,7 @@ import urllib.parse
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 from starlette.concurrency import run_in_threadpool
 
 from src.api.auth_routes import (
@@ -57,6 +57,7 @@ class ServerPlanBody(BaseModel):
 class ServerJobBody(ReasonBody):
     id: str = Field(..., pattern=r"^[0-9a-f]{32}$")
     backup_ref: str = Field("", max_length=500)
+    emergency_override: StrictBool = False
 
 
 def _staff(request: Request) -> dict:
@@ -248,14 +249,18 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
             if not roles.can(actor["role"], "manage_servers") or actor.get("acting_user_id"):
                 raise HTTPException(403, detail="forbidden")
             reason = admin.clean_reason(body.reason)
+            if body.emergency_override and (server != "main" or operation != "start"):
+                raise HTTPException(400, detail="bad_server_action")
             detail = {"server": server, "job_id": body.id}
+            if operation == "start":
+                detail["emergency_override"] = body.emergency_override
             # Record the intent before crossing the process boundary. The host
             # persists the accepted job; the same id can safely be retried.
             audit.record(conn, actor=actor, action=action, outcome="requested", reason=reason, detail=detail)
             conn.commit()
         result = server_control.request(operation, server=server,
                                         **{"plan_id" if operation == "start" else "job_id": body.id},
-                                        **({"backup_ref": body.backup_ref} if operation == "start" else {}),
+                                        **({"backup_ref": body.backup_ref, "emergency_override": body.emergency_override} if operation == "start" else {}),
                                         actor=f"{urllib.parse.urlparse(config.site_url).hostname}:user:{actor['user_id']}", reason=reason)
         audit.record_refusal(actor=actor, action=action, outcome="ok", reason=reason, detail=detail)
         return result
