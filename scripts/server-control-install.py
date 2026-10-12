@@ -95,6 +95,17 @@ def copy_state(source, target):
     return expected
 
 
+def verify_preserved_state(expected, after):
+    for name, checksum in expected.items():
+        folder = name.split("/", 1)[0]
+        # Read-only plan probes prune expired, never-accepted plans. Journals
+        # and every file belonging to an accepted job must remain identical.
+        if name not in after and re.fullmatch(r"[0-9a-f]{32}", folder) and f"{folder}/job.json" not in expected:
+            continue
+        if after.get(name) != checksum:
+            raise RuntimeError("Migrated job evidence changed during verification; keeping previous installation.")
+
+
 def access_paths():
     ancestors = [Path("/home/amp"), INSTANCES.parent, INSTANCES]
     paths = set(ancestors)
@@ -269,8 +280,7 @@ def main():
         for server in ("main", "dev"):
             rpc(RUN / "www/control.sock", "plan", server=server, mode="restart", releases=[])
         after = manifest(STATE / "state")
-        if any(after.get(name) != digest for name, digest in expected.items()):
-            raise RuntimeError("Migrated job evidence changed during verification; keeping legacy installation.")
+        verify_preserved_state(expected, after)
     except Exception:
         command("systemctl", "disable", "--now", "tfmc-server-control.service", check=False)
         command("setfacl", "--restore=" + str(backup / "access.acl"), check=False)

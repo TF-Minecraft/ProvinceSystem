@@ -61,6 +61,24 @@ def test_state_copy_rejects_symlinks_without_touching_the_target(tmp_path):
     assert outside.read_text() == "preserve unrelated data" and not new.exists()
 
 
+def test_upgrade_probe_can_expire_unaccepted_plans_but_must_preserve_job_evidence(tmp_path):
+    import shutil
+    accepted, expired = tmp_path / ("a" * 32), tmp_path / ("b" * 32)
+    (accepted / "backup").mkdir(parents=True)
+    expired.mkdir()
+    (tmp_path / "jobs.json").write_text('{}')
+    (accepted / "job.json").write_text('{"phase":"complete"}')
+    (accepted / "plan.json").write_text('{"expires_at":0}')
+    (accepted / "backup/old.jar").write_bytes(b"original plugin")
+    (expired / "plan.json").write_text('{"expires_at":0}')
+    expected = installer.manifest(tmp_path)
+    shutil.rmtree(expired)
+    installer.verify_preserved_state(expected, installer.manifest(tmp_path))
+    (accepted / "backup/old.jar").unlink()
+    with pytest.raises(RuntimeError, match="job evidence changed"):
+        installer.verify_preserved_state(expected, installer.manifest(tmp_path))
+
+
 def test_busy_migration_is_refused_before_copy_or_stop(tmp_path, monkeypatch):
     (tmp_path / "state").mkdir()
     for phase in installer.BUSY:

@@ -45,6 +45,8 @@ MAX_LOGS = 12
 
 _BOOT = re.compile(r"\[bootstrap\] Loading Paper (\S+)")
 _ENABLING = re.compile(r"\]: \[[^\]]+\] Enabling (\S+) v(\S+)\s*$")
+_ENABLE_FAILED = re.compile(r"Error occurred while enabling (\S+) v(\S+)")
+_DISABLING = re.compile(r"\]: \[[^\]]+\] Disabling (\S+) v(\S+)")
 _DONE = re.compile(r"\]: Done \(")
 _ROTATED = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d+)\.log\.gz$")
 _YAML_FIELD = re.compile(r"^(name|version):\s*['\"]?([^'\"#\r\n]*?)['\"]?\s*(?:#.*)?$", re.MULTILINE)
@@ -245,11 +247,16 @@ def read_startup(logs: Path) -> dict | None:
             for line in _log_lines(path):
                 boot = _BOOT.search(line)
                 if boot:
-                    startup = {"paper": boot.group(1), "done": False, "log": path.name, "enabled": {}}
+                    startup = {"paper": boot.group(1), "done": False, "log": path.name, "enabled": {}, "failed": {}}
                 elif startup is not None:
                     enabled = _ENABLING.search(line)
+                    failed = _ENABLE_FAILED.search(line) or _DISABLING.search(line)
                     if enabled:
                         startup["enabled"][enabled.group(1).lower()] = enabled.group(2)
+                        startup["failed"].pop(enabled.group(1).lower(), None)
+                    elif failed:
+                        startup["enabled"].pop(failed.group(1).lower(), None)
+                        startup["failed"][failed.group(1).lower()] = failed.group(2)
                     elif _DONE.search(line):
                         # Paper starts a new log at each startup, so nothing after this changes it.
                         startup["done"] = True

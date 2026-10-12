@@ -172,3 +172,19 @@ it("Main emergency override is unchecked by default and is explicit in the actio
     ),
   );
 });
+
+it("warns that a plain Main restart activating staged plugins needs feature review", async () => {
+  vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["main", "dev"] });
+  vi.mocked(planServer).mockResolvedValue({
+    ...plan,
+    mode: "restart",
+    changes: [],
+    activation: [{ name: "Cooking", loaded: "1.0.0", version: "2.0.0" }],
+  });
+  render(<ServerControls onComplete={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Restart Main" }));
+  const dialog = await screen.findByRole("dialog", { name: "Confirm Main restart" });
+  expect(within(dialog).getByText(/Main stays in maintenance after startup/)).toBeTruthy();
+  fireEvent.click(within(dialog).getByRole("checkbox", { name: /OVERRIDE:/ }));
+  expect(within(dialog).getByText(/Main stays in maintenance after startup/)).toBeTruthy();
+});

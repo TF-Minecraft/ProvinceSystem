@@ -452,3 +452,131 @@ def test_dev_bytes_replaced_after_midnight_boot_are_not_verified(controller, mon
     assert not controller._dev_verified({"sha256": "known"})
     jar_time = datetime.fromisoformat(after).timestamp() - 180
     assert controller._dev_verified({"sha256": "known"})
+
+
+def test_known_error_repetition_and_thread_numbers_do_not_block_reopen(controller):
+    logs = controller.roots['main'][1]
+    def write_errors(count, thread, extra=''):
+        startup(logs)
+        path = logs / 'latest.log'
+        errors = '[06:00:02] [Server thread/ERROR]: [MythicMobs] [SCHEDULER] Exception thrown whilst executing task\n' * count
+        errors += f'[06:00:02] [Craft Scheduler Thread - {thread}/ERROR]: [MCPets] Known failure\n'
+        path.write_text(path.read_text().replace('[06:00:03 INFO]: Done', errors + extra + '[06:00:03 INFO]: Done'))
+    write_errors(2, 19)
+    public = controller.plan('main', 'restart', [])
+    plan = controller._plan(public['id'])
+    job = ready_job(controller, plan)
+    job.update(phase='failed', maintenance_started=True)
+    controller.console('main', 'maintenance on')
+    write_errors(3, 27)
+    assert controller.reopen('main', job['id'])['phase'] == 'complete'
+    write_errors(3, 27, '[06:00:02] [Server thread/ERROR]: [Core] New failure\n')
+    assert not controller._startup_ok(plan)
+
+
+@pytest.mark.parametrize('server,override', [('main', False), ('main', True), ('dev', False)])
+def test_staged_main_activation_waits_for_review(controller, server, override):
+    plugins, _ = controller.roots[server]
+    jar(plugins / 'core-1.0.0.jar', version='2.0.0')
+    public = controller.plan(server, 'restart', [])
+    assert public['changes'] == []
+    assert public['activation'] == [{'name': 'Core', 'loaded': '1.0.0', 'version': '2.0.0'}]
+    plan = controller._plan(public['id'])
+    job = ready_job(controller, plan)
+    if override:
+        job.update(phase='installing', emergency_override=True)
+    controller.run(plan)
+    assert job['phase'] == ('awaiting_review' if server == 'main' else 'complete')
+    if server == 'main':
+        assert not any(c == 'maintenance off' for _, c in controller.commands)
+        assert controller.reopen(server, job['id'])['phase'] == 'complete'
+
+
+def test_known_failed_enable_does_not_prove_dev_release_but_allows_unchanged_restart(controller):
+    import os
+    from datetime import datetime, timezone
+    plugins, logs = controller.roots['dev']
+    boot = datetime.fromtimestamp(host.time.time() + 60, timezone.utc).strftime('%H:%M:%S')
+    text = (f'[{boot}] [ServerMain/INFO]: [bootstrap] Loading Paper 1.21.10\n'
+            f'[{boot}] [Server thread/INFO]: [Core] Enabling Core v1.0.0\n'
+            f'[{boot}] [Server thread/INFO]: Done (1s)!\n')
+    path = logs / 'latest.log'
+    stamp = host.time.time() + 120
+    path.write_text(text)
+    os.utime(path, (stamp, stamp))
+    release = {'sha256': host.digest(plugins / 'core-1.0.0.jar')}
+    assert controller._dev_verified(release)
+    failed = f'[{boot}] [Server thread/ERROR]: Error occurred while enabling Core v1.0.0 (Is it up to date?)\n'
+    path.write_text(text.replace(f'[{boot}] [Server thread/INFO]: Done', failed + f'[{boot}] [Server thread/INFO]: Done'))
+    os.utime(path, (stamp, stamp))
+    assert not controller._dev_verified(release)
+    public = controller.plan('dev', 'restart', [])
+    assert not public['activation']
+    assert controller._startup_ok(controller._plan(public['id']))
+
+
+def test_refused_job_action_records_failure_outcome(controller):
+    public = controller.plan('dev', 'restart', [])
+    job = ready_job(controller, controller._plan(public['id']))
+    body = {'operation': 'cancel', 'server': 'dev', 'job_id': job['id'], 'actor': 'www:user:1', 'reason': 'stop this restart'}
+    with pytest.raises(control.ControlError, match='cannot_cancel'):
+        controller.dispatch(body)
+    event = [e for e in json.loads((controller.state / job['id'] / 'job.json').read_text())['events'] if 'action' in e][-1]
+    assert event['action'] == 'cancel' and event['outcome'] == 'failed' and event['error'] == 'cannot_cancel'
+    job['phase'] = 'failed'
+    controller.dispatch({**body, 'operation': 'resolve'})
+    event = [e for e in json.loads((controller.state / job['id'] / 'job.json').read_text())['events'] if 'action' in e][-1]
+    assert event['action'] == 'resolve' and event['outcome'] == 'ok'
+
+
+@pytest.mark.parametrize('upgrade', [False, True])
+def test_unchanged_known_plugin_failure_can_restart_but_upgrade_failure_cannot(controller, tmp_path, upgrade):
+    logs = controller.roots['dev'][1]
+    def fail_enable(version):
+        path = logs / 'latest.log'
+        line = f'[06:00:02 ERROR]: Error occurred while enabling Core v{version} (Is it up to date?)\n'
+        path.write_text(path.read_text().replace('[06:00:03 INFO]: Done', line + '[06:00:03 INFO]: Done'))
+    fail_enable('1.0.0')
+    releases = []
+    if upgrade:
+        new = tmp_path / 'new.jar'
+        sha = jar(new, version='2.0.0')
+        controller.fetch = lambda release, target: target.write_bytes(new.read_bytes())
+        releases = [release_for(controller, sha)]
+    public = controller.plan('dev', 'latest' if upgrade else 'restart', releases)
+    plan = controller._plan(public['id'])
+    original_console = controller.console
+    def console(server, command):
+        original_console(server, command)
+        if command == 'stop':
+            fail_enable('2.0.0' if upgrade else '1.0.0')
+    controller.console = console
+    def immediate_check(predicate, timeout, code):
+        if not predicate():
+            raise control.ControlError(code)
+    controller._wait = immediate_check
+    job = ready_job(controller, plan)
+    controller.run(plan)
+    assert job['phase'] == ('failed' if upgrade else 'complete')
+    assert controller._maintenance('dev') is upgrade
+
+
+def test_newly_staged_plugin_without_a_prior_failure_still_requires_activation(controller):
+    plugins, _ = controller.roots['main']
+    jar(plugins / 'other-1.0.0.jar', name='Other')
+    public = controller.plan('main', 'restart', [])
+    assert public['activation'] == [{'name': 'Other', 'loaded': None, 'version': '1.0.0'}]
+    assert not controller._startup_ok(controller._plan(public['id']))
+
+
+@pytest.mark.parametrize('first,second', [
+    ('Worker-Main-12', 'Worker-Main-15'), ('pool-3-thread-1', 'pool-5-thread-9'),
+    ('ForkJoinPool.commonPool-worker-5', 'ForkJoinPool.commonPool-worker-9'),
+    ('Netty Epoll #3', 'Netty Epoll #4'), ('Timer-0', 'Timer-2'),
+])
+def test_worker_identity_changes_do_not_mask_error_message_changes(first, second):
+    key = host.Controller._error_key
+    before = f'[TIME] [{first}/ERROR]: failure code 23'
+    after = f'[TIME] [{second}/ERROR]: failure code 23'
+    assert key(before) == key(after)
+    assert key(before) != key(after.replace('code 23', 'code 24'))

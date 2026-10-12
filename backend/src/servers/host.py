@@ -1,4 +1,4 @@
-"""Host-side server control. Run as ryan, outside the website containers.
+"""Host-side server control. Run as tfmc-server-control, outside website containers.
 
 The Unix socket only accepts plans, countdowns, cancellation and reopening.
 Console input and paths are fixed here, never supplied by website callers.
@@ -21,7 +21,6 @@ import urllib.request
 import uuid
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from collections import Counter
 from zoneinfo import ZoneInfo
 
 from src.servers import inventory
@@ -244,10 +243,12 @@ class Controller:
                                         "old_file": old[0]["file"], "old_version": old[0]["version"]})
                 activation = [{"name": jar["name"], "loaded": startup["enabled"].get(jar["name"].lower()),
                                "version": jar["version"]} for jar in baseline
-                              if startup["enabled"].get(jar["name"].lower()) != jar["version"]]
+                              if startup["enabled"].get(jar["name"].lower()) != jar["version"]
+                              and startup["failed"].get(jar["name"].lower()) != jar["version"]]
                 plan = {"id": plan_id, "server": server, "mode": mode, "expires_at": time.time() + 600,
                         "baseline": baseline, "changes": changes, "activation": activation, "skipped": skipped,
-                        "boot_errors": self._boot_errors(logs, startup["log"]), "last_backup_at": self._backup_time(server)}
+                        "boot_errors": self._boot_errors(logs, startup["log"]), "failed_at_startup": startup["failed"],
+                        "last_backup_at": self._backup_time(server)}
                 save_json(folder / "plan.json", plan)
                 return self._public_plan(plan)
             except BaseException:
@@ -302,6 +303,12 @@ class Controller:
             if inventory._DONE.search(line):
                 break
         return errors
+
+    @staticmethod
+    def _error_key(line: str) -> str:
+        # Worker IDs change between boots; preserve the actual error message.
+        header, separator, message = line.partition("]:")
+        return re.sub(r"\d+", "N", header) + separator + message if separator else line
 
     def _plan(self, plan_id: str) -> dict:
         if not isinstance(plan_id, str) or not ID.fullmatch(plan_id):
@@ -423,7 +430,7 @@ class Controller:
             self.console(server, "stop")
             self._event(job, "checking")
             self._wait(lambda: self._boot(logs) != before and self._startup_ok(plan), 600, "startup_check_failed")
-            if server == "main" and plan["changes"]:
+            if server == "main" and (plan["changes"] or plan["activation"]):
                 self._event(job, "awaiting_review")
             else:
                 self._reopen(plan, job)
@@ -524,8 +531,15 @@ class Controller:
             return False
         expected = {jar["name"].lower(): jar["version"] for jar in plan["baseline"]}
         expected.update({change["name"].lower(): change["version"] for change in plan["changes"]})
-        if any(startup["enabled"].get(name) != version for name, version in expected.items()):
-            return False
+        changed = {change["name"].lower() for change in plan["changes"]}
+        for name, version in expected.items():
+            if startup["enabled"].get(name) == version:
+                continue
+            # An unchanged plugin may retain its explicitly recorded failure;
+            # missing, newly failed or upgraded plugins must never pass.
+            if (name in changed or plan.get("failed_at_startup", {}).get(name) != version
+                    or startup["failed"].get(name) != version):
+                return False
         current = self.snapshot(plan["server"])
         expected_files = {jar["file"]: jar["sha256"] for jar in plan["baseline"]}
         for change in plan["changes"]:
@@ -533,7 +547,8 @@ class Controller:
             expected_files[change["asset"]] = change["sha256"]
         if {jar["file"]: jar["sha256"] for jar in current} != expected_files:
             return False
-        return not (Counter(self._boot_errors(logs, "latest.log")) - Counter(plan["boot_errors"]))
+        return {self._error_key(line) for line in self._boot_errors(logs, "latest.log")} <= {
+            self._error_key(line) for line in plan["boot_errors"]}
 
     def _reopen(self, plan: dict, job: dict):
         if not self._startup_ok(plan):
@@ -600,11 +615,23 @@ class Controller:
             return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"], body["emergency_override"])
         with self.lock:
             job = self._job(server, body["job_id"])
-            job["events"].append({"at": time.time(), "action": operation, "actor": body["actor"], "reason": body["reason"]})
+            event = {"at": time.time(), "action": operation, "actor": body["actor"],
+                     "reason": body["reason"], "outcome": "requested"}
+            job["events"].append(event)
             self._save()
-        if operation == "resolve":
-            return self.resolve(server, body["job_id"])
-        return self.cancel(server, body["job_id"]) if operation == "cancel" else self.reopen(server, body["job_id"])
+            try:
+                if operation == "resolve":
+                    result = self.resolve(server, body["job_id"])
+                else:
+                    result = self.cancel(server, body["job_id"]) if operation == "cancel" else self.reopen(server, body["job_id"])
+            except Exception as exc:
+                event.update(outcome="failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
+                raise
+            else:
+                event["outcome"] = "ok"
+                return result
+            finally:
+                self._save()
 
 
 class Handler(socketserver.StreamRequestHandler):

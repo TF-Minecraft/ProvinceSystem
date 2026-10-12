@@ -66,7 +66,7 @@ def test_startup_comes_from_the_newest_log_that_has_one(tmp_path):
         handle.write(startup_log(("Core", "1.1"), done=False))
     startup = inventory.read_startup(logs)
     assert startup == {"paper": "1.21.10-130", "done": False, "log": "2026-10-10-10.log.gz",
-                       "enabled": {"core": "1.1"}}
+                       "enabled": {"core": "1.1"}, "failed": {}}
     assert inventory.read_startup(tmp_path / "nowhere") is None
 
 
@@ -219,3 +219,13 @@ def test_the_route_is_for_admins(database, monkeypatch, tmp_path):
     response = client(app, admin).get("/admin/servers")
     assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
     assert [s["status"] for s in response.json()["servers"]] == ["not_configured", "not_configured"]
+
+
+@pytest.mark.parametrize('failure', [
+    '[06:10:30] [Server thread/ERROR]: Error occurred while enabling Core v1.1 (Is it up to date?)\n',
+    '[06:10:30] [Server thread/INFO]: [Core] Disabling Core v1.1\n',
+])
+def test_failed_or_disabled_plugin_is_not_counted_as_enabled(tmp_path, failure):
+    text = startup_log(('Core', '1.1'), ('Other', '2.0'))
+    (tmp_path / 'latest.log').write_text(text.replace('[06:10:40]', failure + '[06:10:40]'))
+    assert inventory.read_startup(tmp_path)['enabled'] == {'other': '2.0'}
