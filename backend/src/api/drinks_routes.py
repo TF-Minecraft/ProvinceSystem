@@ -32,6 +32,7 @@ from src.skins.drinks import (
     get_drink_catalog,
     get_drink_for_plugin,
     get_drink_submission_for_owner,
+    owner_drink_texture,
     list_deletable_drinks,
     list_drinks_pending_apply,
     list_pending_drinks,
@@ -192,6 +193,21 @@ def get_submission(
     if row is None:
         raise HTTPException(status_code=404, detail="Submission not found")
     return row
+
+
+@drinks_router.get("/submissions/{submission_id}/texture")
+def get_owner_texture(
+    submission_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """The owner's custom texture for a drink, for its Profile picture."""
+    session = _owner_session_from_auth(authorization)
+    if not is_safe_segment(submission_id):
+        raise HTTPException(status_code=404, detail="Submission not found")
+    path = owner_drink_texture(submission_id, session["player_uuid"])
+    if path is None:
+        raise HTTPException(status_code=404, detail="No texture")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, max-age=300"})
 
 
 @drinks_router.get("/staff/pending")

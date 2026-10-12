@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSkinThumbnail } from "../../../lib/skins/api";
+import { getDrinkTexture } from "../../../lib/drinks/api";
 import { composeTintedPotionCanvas, loadDrinkAssetImages } from "../../../lib/drinks/potionTint";
 import { HangerGlyph } from "./Wardrobe";
 
@@ -56,26 +57,37 @@ export function SkinPicture({ id, sessionToken }: { id: string; sessionToken: st
   return missing ? <HangerGlyph /> : null;
 }
 
-/** The vanilla potion in the drink's colour. */
-export function DrinkPicture({ color }: { color: string | null }) {
+/** The vanilla potion in the drink's colour, else the drink's own texture. */
+export function DrinkPicture({ id, color, sessionToken }: { id: string; color: string | null; sessionToken: string }) {
   const [src, setSrc] = useState<string | null>(null);
-  const [missing, setMissing] = useState(!color);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    if (!color) return;
     let live = true;
-    loadDrinkAssetImages()
-      .then((assets) => {
-        const canvas = composeTintedPotionCanvas(color, assets);
-        if (!live) return;
-        if (canvas) setSrc(canvas.toDataURL("image/png"));
-        else setMissing(true);
-      })
-      .catch(() => live && setMissing(true));
+    let url: string | null = null;
+    const done = (next: string | null) => {
+      if (!live) return;
+      if (next) setSrc(next);
+      else setMissing(true);
+    };
+    if (color) {
+      loadDrinkAssetImages()
+        .then((assets) => done(composeTintedPotionCanvas(color, assets)?.toDataURL("image/png") ?? null))
+        .catch(() => done(null));
+    } else {
+      getDrinkTexture(id, sessionToken)
+        .then((next) => {
+          url = next;
+          if (!live && next) URL.revokeObjectURL(next);
+          done(next);
+        })
+        .catch(() => done(null));
+    }
     return () => {
       live = false;
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [color]);
+  }, [color, id, sessionToken]);
 
   if (src) return <Picture src={src} small />;
   return missing ? <HangerGlyph /> : null;

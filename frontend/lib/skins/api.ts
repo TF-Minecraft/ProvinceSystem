@@ -419,18 +419,6 @@ export async function getCatalog(): Promise<SkinsCatalog> {
   };
 }
 
-export async function getReviewSheet(id: string, sessionToken: string): Promise<string> {
-  const res = await apiFetch(`${getApiBase()}/skins/submissions/${id}/review-sheet`, {
-    headers: { Authorization: `Bearer ${sessionToken}` },
-  });
-  if (!res.ok) {
-    const data = await parseJson(res);
-    throw new SkinsApiError(detailMessage(data, `Could not load review sheet (${res.status})`), res.status);
-  }
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
 /** Object URL of the owner's wardrobe picture, or null when there is none yet. */
 export async function getSkinThumbnail(id: string, sessionToken: string): Promise<string | null> {
   const res = await apiFetch(`${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/thumbnail`, {
@@ -438,6 +426,17 @@ export async function getSkinThumbnail(id: string, sessionToken: string): Promis
   });
   if (!res.ok) return null;
   return URL.createObjectURL(await res.blob());
+}
+
+/** One of the owner's uploaded textures or models, or null when the skin has no such file. */
+export async function getSubmissionFile(id: string, filename: string, sessionToken: string): Promise<File | null> {
+  const res = await apiFetch(
+    `${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/files/${encodeURIComponent(filename)}`,
+    { headers: { Authorization: `Bearer ${sessionToken}` } },
+  );
+  if (!res.ok) return null;
+  const blob = await res.blob();
+  return new File([blob], filename, { type: blob.type });
 }
 
 export async function getSubmission(id: string, sessionToken: string): Promise<SubmissionPublic> {

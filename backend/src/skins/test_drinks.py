@@ -541,6 +541,55 @@ class DrinkApiTest(unittest.TestCase):
         assert data is not None
         self.assertTrue(data.startswith(b"\x89PNG"))
 
+    def test_owner_drink_texture(self) -> None:
+        from skins.db import connect
+        from skins.drinks import create_drink_submission, owner_drink_texture
+
+        self._link_player()
+        self._seed_catalog()
+        upsert_rpc_player_meta(
+            {"player_uuid": "player-1", "allow_drink_texture": True}
+        )
+        session = self._issue_and_redeem()
+        out = create_drink_submission(
+            session,
+            {
+                "name": "Tex Brew",
+                "ingredients": [{"id": "grape", "amount": 1}],
+                "effects": [],
+            },
+            png_bytes=TINY_PNG,
+        )
+        path = owner_drink_texture(out["id"], "PLAYER-1")
+        self.assertIsNotNone(path)
+        assert path is not None
+        self.assertEqual(TINY_PNG, path.read_bytes())
+        self.assertIsNone(owner_drink_texture(out["id"], "someone-else"))
+
+        # A drink reusing a texture has no upload of its own; the shared file stands in.
+        path.unlink()
+        with connect() as conn:
+            texture_id = conn.execute(
+                "SELECT texture_id FROM drink_submissions WHERE id = ?", (out["id"],)
+            ).fetchone()[0]
+        self.assertTrue(texture_id)
+        shared = owner_drink_texture(out["id"], "player-1")
+        self.assertIsNotNone(shared)
+        assert shared is not None
+        self.assertEqual(f"{texture_id}.png", shared.name)
+
+    def test_owner_drink_texture_colour_only(self) -> None:
+        from skins.drinks import create_drink_submission, owner_drink_texture
+
+        self._link_player()
+        self._seed_catalog()
+        session = self._issue_and_redeem()
+        out = create_drink_submission(
+            session,
+            {"name": "Plain Ale", "ingredients": [{"id": "grape", "amount": 1}], "color": "#AA3344"},
+        )
+        self.assertIsNone(owner_drink_texture(out["id"], "player-1"))
+
     def test_review_sheet_missing_appearance(self) -> None:
         from skins.db import connect
         from skins.drink_review_sheet import (

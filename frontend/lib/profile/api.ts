@@ -41,6 +41,8 @@ export type ProfileCustomItem = {
   character_id: string;
   character_name: string;
   kit_key: string;
+  /** The kit the item comes from; empty on rows saved before kits were recorded. */
+  kit_id?: string;
   display_name: string;
   state: string;
   submission_id?: string | null;

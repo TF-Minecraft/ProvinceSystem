@@ -61,6 +61,8 @@ type Props = {
   /** Tinted potion preview color (#RRGGBB); avoids rebuilding mesh on each change. */
   potionTintColor?: string | null;
   onPreviewError?: (message: string | null) => void;
+  /** Fills its parent on a transparent background, without the editor's label and skin controls. */
+  stage?: boolean;
   className?: string;
 };
 
@@ -361,8 +363,10 @@ export default function ModelPreview({
   gripY = null,
   potionTintColor = null,
   onPreviewError,
+  stage = false,
   className = "",
 }: Props) {
+  const stageRef = useRef(stage);
   const gun = isGunKind(kind);
   const flat = isFlatKind(kind);
   const displayKind = flatDisplayKind(kind, flatDisplayPreset);
@@ -393,7 +397,8 @@ export default function ModelPreview({
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [slot, setSlot] = useState<PreviewSlot>(gun ? "carry_right" : "thirdperson_righthand");
+  // A showcase opens on the item itself; the editor opens in hand.
+  const [slot, setSlot] = useState<PreviewSlot>(stage ? "model" : gun ? "carry_right" : "thirdperson_righthand");
   const [frame, setFrame] = useState<FlatFrameId>("texture");
   const [shieldMode, setShieldMode] = useState<"idle" | "blocking">("idle");
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
@@ -666,13 +671,14 @@ export default function ModelPreview({
     setStatus("loading");
     reportError(null);
 
+    const transparent = stageRef.current;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f1c16);
+    scene.background = transparent ? null : new THREE.Color(0x0f1c16);
     scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
     const widthPx = host.clientWidth || 320;
-    const heightPx = 240;
-    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+    const heightPx = (transparent && host.clientHeight) || 240;
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: transparent });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(widthPx, heightPx, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -688,7 +694,7 @@ export default function ModelPreview({
     const onResize = () => {
       if (!host) return;
       const w = host.clientWidth || 320;
-      const h = 240;
+      const h = (transparent && host.clientHeight) || 240;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
@@ -863,7 +869,7 @@ export default function ModelPreview({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">Model preview</span>
+        {stage ? null : <span className="text-sm font-medium text-[var(--tfmc-stone)]">Model preview</span>}
         <div
           role="radiogroup"
           aria-label="Display preview"
@@ -952,12 +958,18 @@ export default function ModelPreview({
         </div>
       ) : null}
 
-      <div className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]">
+      <div
+        className={
+          stage
+            ? "relative min-h-0 flex-1"
+            : "relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]"
+        }
+      >
         <div ref={hostRef} className="absolute inset-0" />
 
         {status === "loading" ? (
           <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"
+            className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"}`}
             role="status"
             aria-live="polite"
           >
@@ -970,14 +982,16 @@ export default function ModelPreview({
         ) : null}
 
         {status === "error" && error ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-4">
+          <div
+            className={`absolute inset-0 z-10 flex items-center justify-center px-4 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)]"}`}
+          >
             <p className="text-center text-sm text-[#e8a0a0]" role="alert">
               {error}
             </p>
           </div>
         ) : null}
       </div>
-      {mannequinPreview ? (
+      {mannequinPreview && !stage ? (
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-left sm:flex-initial">
             <span className="text-xs font-medium text-[var(--tfmc-stone)]">Preview skin</span>
@@ -1015,7 +1029,9 @@ export default function ModelPreview({
           ) : null}
         </div>
       ) : null}
-      {status === "ready" ? <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p> : null}
+      {status === "ready" && !stage ? (
+        <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p>
+      ) : null}
     </div>
   );
 }

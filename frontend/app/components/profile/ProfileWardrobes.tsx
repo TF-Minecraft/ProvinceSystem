@@ -110,7 +110,7 @@ export function DrinkWardrobe({
         detail: "Drink",
         status: row.status,
         denyReason: row.deny_reason,
-        picture: <DrinkPicture color={row.recipe?.color ?? null} />,
+        picture: <DrinkPicture id={row.id} color={row.recipe?.color ?? null} sessionToken={sessionToken} />,
       }))}
     />
   );

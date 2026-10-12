@@ -22,11 +22,12 @@ import { StartRefusedError } from "../../../lib/profile/start";
 import {
   deletePendingCreate,
   getCreationCatalog,
+  listCharacterKits,
   logoutCharacter,
   type CreationCatalog,
 } from "../../../lib/characters/api";
 import {
-  getReviewSheet,
+  getSubmissionFile,
   getSkinThumbnail,
   getSubmission,
   redeemCode,
@@ -85,7 +86,7 @@ vi.mock("../../../lib/skins/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/skins/api")>()),
   getSkinThumbnail: vi.fn(),
   getSubmission: vi.fn(),
-  getReviewSheet: vi.fn(),
+  getSubmissionFile: vi.fn(),
   getPlayerMeta: vi.fn(() => new Promise(() => undefined)),
   redeemCode: vi.fn(),
   startSkinFromProfile: vi.fn(),
@@ -110,6 +111,7 @@ vi.mock("../../../lib/characters/api", async (importOriginal) => ({
   characterFace: vi.fn(async () => null),
   characterFigure: vi.fn(async () => null),
   deletePendingCreate: vi.fn(),
+  listCharacterKits: vi.fn(),
 }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
@@ -928,7 +930,7 @@ it("opens a skin in its tab, and Back returns to the wardrobe", async () => {
     reviewed_at: null,
     applied_at: null,
   });
-  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  vi.mocked(getSubmissionFile).mockReturnValue(new Promise(() => undefined));
   visit("skins");
   render(<ProfilePanel />);
   fireEvent.click(await screen.findByRole("link", { name: /Emberfang/ }));
@@ -954,7 +956,7 @@ it("opens a skin's address in the tab, and a submit shows the new skin in the ed
     reviewed_at: null,
     applied_at: null,
   });
-  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  vi.mocked(getSubmissionFile).mockReturnValue(new Promise(() => undefined));
   setSkinsSession({ ...SKIN_CODE, from_profile: true });
   visit("skins", "new");
   render(<ProfilePanel />);
@@ -988,7 +990,7 @@ it("closes an open skin when the address leaves it, as the header's Profile link
     reviewed_at: null,
     applied_at: null,
   });
-  vi.mocked(getReviewSheet).mockReturnValue(new Promise(() => undefined));
+  vi.mocked(getSubmissionFile).mockReturnValue(new Promise(() => undefined));
   visit("skins", "sub-1");
   render(<ProfilePanel />);
   expect(await screen.findByRole("heading", { level: 2, name: "Emberfang" })).toBeTruthy();
@@ -1211,4 +1213,65 @@ it("lets a Discord account without a Minecraft link open a wardrobe with a code"
   expect(await screen.findByRole("link", { name: /Emberfang/ })).toBeTruthy();
   expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Skins", "Linked accounts"]);
   expect(screen.queryByRole("button", { name: "Enter code" })).toBeNull();
+});
+
+const CUSTOM_ITEM = {
+  character_id: "c1",
+  character_name: "Aldric",
+  kit_key: "iron_hunting_knife",
+  kit_id: "starter",
+  display_name: "Exhumer's Spade",
+  state: "denied",
+  deny_reason: "Too bright",
+};
+
+it("opens a custom item in its own tab rather than the character's kits", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ custom_items: [CUSTOM_ITEM] }));
+  vi.mocked(listCharacterKits).mockResolvedValue({
+    character_id: "c1",
+    kits: [
+      {
+        id: "starter",
+        display_name: "Starter",
+        cooldown_hours: 0,
+        once_per_character: true,
+        status: "eligible",
+        claimable: true,
+        items: [
+          {
+            path: "MI.iron_hunting_knife",
+            amount: 1,
+            editable: true,
+            kit_key: "iron_hunting_knife",
+            preview: { display_name: "Iron Hunting Knife", lore: ["§7A knife."], material: "IRON_SWORD" },
+            customise: {
+              display_name: "Exhumer's Spade",
+              lore: ["Used for too long"],
+              existing_skin_id: null,
+              submission_id: null,
+              submission_status: null,
+              state: "denied",
+            },
+          },
+        ],
+      },
+    ],
+  });
+  visit("items");
+  render(<ProfilePanel />);
+  const card = await screen.findByRole("link", { name: /Exhumer's Spade/ });
+  expect(card.getAttribute("href")).toBe("/profile?tab=items&item=c1%2Firon_hunting_knife");
+  fireEvent.click(card);
+  expect(await screen.findByRole("heading", { level: 2, name: "Exhumer's Spade" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=items&item=c1%2Firon_hunting_knife");
+  expect(listCharacterKits).toHaveBeenCalledWith("linked-token", "c1");
+  expect(screen.getByText("Too bright")).toBeTruthy();
+  expect(screen.getByText("Used for too long")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Edit item" }).getAttribute("href")).toBe(
+    "/character/c1/kits/starter/edit/iron_hunting_knife",
+  );
+  window.history.back();
+  expect(await screen.findByRole("link", { name: /Exhumer's Spade/ })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=items");
 });

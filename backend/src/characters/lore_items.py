@@ -1988,6 +1988,7 @@ def list_player_custom_items(
                 "character_id": cid,
                 "character_name": name_by_id.get(cid) or cid,
                 "kit_key": kit_key,
+                "kit_id": str(row["kit_id"] or "") if "kit_id" in keys else "",
                 "display_name": str(row["display_name"] or kit_key),
                 "state": state,
                 "submission_id": row["submission_id"],

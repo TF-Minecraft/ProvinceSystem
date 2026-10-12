@@ -867,6 +867,28 @@ def get_drink_submission_for_owner(
     return _public_row(row)
 
 
+def owner_drink_texture(submission_id: str, player_uuid: str) -> Path | None:
+    """The owner's custom drink texture: the upload, else the shared texture it reuses."""
+    row = _get_row(submission_id)
+    if row is None or str(row["player_uuid"]).lower() != str(player_uuid).lower():
+        return None
+    root = db.DRINKS_DIR.resolve()
+    candidates = [_submissions_root() / submission_id / "texture.png"]
+    texture_id = str(row["texture_id"] or "").strip()
+    if texture_id:
+        with connect() as conn:
+            tex = conn.execute(
+                "SELECT png_path FROM drink_textures WHERE id = ?", (texture_id,)
+            ).fetchone()
+        if tex is not None and tex["png_path"]:
+            candidates.append(db.DRINKS_DIR / str(tex["png_path"]))
+    for path in candidates:
+        resolved = path.resolve()
+        if resolved.is_file() and resolved.is_relative_to(root):
+            return resolved
+    return None
+
+
 def list_drink_submissions_for_player(
     player_uuid: str,
     realm_id: str | None = None,

@@ -27,10 +27,15 @@ type Props = {
   helmet3d?: boolean;
   helmetModelFile?: File | null;
   helmetTextureFile?: File | null;
+  /** Fills its parent on a transparent background, without the editor's label and skin controls. */
+  stage?: boolean;
   className?: string;
 };
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+const frameClass =
+  "overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]";
 
 export default function ArmorPreview({
   layer1File,
@@ -38,8 +43,10 @@ export default function ArmorPreview({
   helmet3d = false,
   helmetModelFile = null,
   helmetTextureFile = null,
+  stage = false,
   className = "",
 }: Props) {
+  const stageRef = useRef(stage);
   const hostRef = useRef<HTMLDivElement>(null);
   const steveLiveRef = useRef<SteveMannequin | null>(null);
   const showOuterLayerRef = useRef(true);
@@ -78,8 +85,9 @@ export default function ArmorPreview({
     let steveTexture: THREE.Texture | null = null;
     let helmetItemTex: THREE.Texture | null = null;
     let removeResize: (() => void) | null = null;
+    const transparent = stageRef.current;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f1c16);
+    scene.background = transparent ? null : new THREE.Color(0x0f1c16);
 
     setStatus("loading");
     setError(null);
@@ -144,9 +152,9 @@ export default function ArmorPreview({
         }
 
         const widthPx = host.clientWidth || 320;
-        const heightPx = 240;
+        const heightPx = (transparent && host.clientHeight) || 240;
 
-        renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        renderer = new THREE.WebGLRenderer({ antialias: false, alpha: transparent });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(widthPx, heightPx, false);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -156,7 +164,8 @@ export default function ArmorPreview({
 
         const camera = new THREE.PerspectiveCamera(35, widthPx / heightPx, 0.1, 500);
         const focus = new THREE.Vector3(0, 14, 0);
-        const frameSize = 32;
+        // The taller showcase stage needs the camera further back to keep the feet in view.
+        const frameSize = transparent ? 42 : 32;
         camera.position.set(focus.x + frameSize * 1.4, focus.y + frameSize * 0.55, focus.z + frameSize * 1.6);
         camera.lookAt(focus);
 
@@ -172,7 +181,7 @@ export default function ArmorPreview({
         const onResize = () => {
           if (!renderer || !host) return;
           const w = host.clientWidth || 320;
-          const h = 240;
+          const h = (transparent && host.clientHeight) || 240;
           camera.aspect = w / h;
           camera.updateProjectionMatrix();
           renderer.setSize(w, h, false);
@@ -221,12 +230,12 @@ export default function ArmorPreview({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <span className="text-sm font-medium text-[var(--tfmc-stone)]">Armor preview</span>
-      <div className="relative h-[240px] overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)]">
+      {stage ? null : <span className="text-sm font-medium text-[var(--tfmc-stone)]">Armor preview</span>}
+      <div className={stage ? "relative h-full" : `relative h-[240px] ${frameClass}`}>
         <div ref={hostRef} className="absolute inset-0" />
         {status === "loading" ? (
           <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"
+            className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"}`}
             role="status"
             aria-live="polite"
           >
@@ -238,50 +247,56 @@ export default function ArmorPreview({
           </div>
         ) : null}
         {status === "error" && error ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-4">
+          <div
+            className={`absolute inset-0 z-10 flex items-center justify-center px-4 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)]"}`}
+          >
             <p className="text-center text-sm text-[#e8a0a0]" role="alert">
               {error}
             </p>
           </div>
         ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-left sm:flex-initial">
-          <span className="text-xs font-medium text-[var(--tfmc-stone)]">Preview skin</span>
-          <input
-            type="file"
-            accept="image/png,.png"
-            onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
-              setPlayerSkinFile(file);
-              e.target.value = "";
-            }}
-            className="max-w-full text-xs text-[var(--tfmc-mist)] file:mr-2 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-2.5 file:py-1 file:text-xs file:text-[var(--tfmc-cream)]"
-          />
-        </label>
-        <button
-          type="button"
-          aria-pressed={showOuterLayer}
-          onClick={() => setShowOuterLayer((v) => !v)}
-          className={`self-end rounded-sm border px-2.5 py-1 text-xs transition ${
-            showOuterLayer
-              ? "border-[color-mix(in_srgb,var(--tfmc-accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_18%,transparent)] text-[var(--tfmc-cream)]"
-              : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] text-[var(--tfmc-mist)] hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
-          }`}
-        >
-          Outer layer
-        </button>
-        {playerSkinFile ? (
+      {stage ? null : (
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-left sm:flex-initial">
+            <span className="text-xs font-medium text-[var(--tfmc-stone)]">Preview skin</span>
+            <input
+              type="file"
+              accept="image/png,.png"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setPlayerSkinFile(file);
+                e.target.value = "";
+              }}
+              className="max-w-full text-xs text-[var(--tfmc-mist)] file:mr-2 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-2.5 file:py-1 file:text-xs file:text-[var(--tfmc-cream)]"
+            />
+          </label>
           <button
             type="button"
-            onClick={() => setPlayerSkinFile(null)}
-            className="self-end rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-2.5 py-1 text-xs text-[var(--tfmc-mist)] transition hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
+            aria-pressed={showOuterLayer}
+            onClick={() => setShowOuterLayer((v) => !v)}
+            className={`self-end rounded-sm border px-2.5 py-1 text-xs transition ${
+              showOuterLayer
+                ? "border-[color-mix(in_srgb,var(--tfmc-accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_18%,transparent)] text-[var(--tfmc-cream)]"
+                : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] text-[var(--tfmc-mist)] hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
+            }`}
           >
-            Use default
+            Outer layer
           </button>
-        ) : null}
-      </div>
-      {status === "ready" ? <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p> : null}
+          {playerSkinFile ? (
+            <button
+              type="button"
+              onClick={() => setPlayerSkinFile(null)}
+              className="self-end rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-2.5 py-1 text-xs text-[var(--tfmc-mist)] transition hover:border-[var(--tfmc-accent)] hover:text-[var(--tfmc-cream)]"
+            >
+              Use default
+            </button>
+          ) : null}
+        </div>
+      )}
+      {status === "ready" && !stage ? (
+        <p className="text-xs text-[var(--tfmc-mist)]">Drag to rotate, scroll to zoom.</p>
+      ) : null}
     </div>
   );
 }

@@ -221,6 +221,15 @@ export async function createSubmission(input: {
   return data as DrinkSubmissionPublic;
 }
 
+/** Object URL of the owner's custom drink texture, or null for a colour-only drink. */
+export async function getDrinkTexture(id: string, sessionToken: string): Promise<string | null> {
+  const res = await apiFetch(`${getApiBase()}/drinks/submissions/${encodeURIComponent(id)}/texture`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
+  if (!res.ok) return null;
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function getSubmission(id: string, sessionToken: string): Promise<DrinkSubmissionPublic> {
   const res = await apiFetch(`${getApiBase()}/drinks/submissions/${encodeURIComponent(id)}`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
