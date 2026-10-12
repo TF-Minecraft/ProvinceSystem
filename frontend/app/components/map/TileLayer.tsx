@@ -320,7 +320,14 @@ function TileLayer({
   };
 
   return (
-    <div className={`pointer-events-none absolute inset-0 ${className ?? ""}`} style={style} aria-hidden>
+    // Composite transparent neighbours together before the viewport scales them;
+    // separately scaled edges let the base map through mid-zoom. Keep their
+    // texture coordinates and alpha intact instead of stretching or overlapping.
+    <div
+      className={`pointer-events-none absolute inset-0 ${seeThrough ? "will-change-transform" : ""} ${className ?? ""}`}
+      style={style}
+      aria-hidden
+    >
       <div
         className="absolute left-0 top-0"
         style={{
