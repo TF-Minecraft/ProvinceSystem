@@ -26,9 +26,9 @@ const STEPS: [ServerJob["phase"], string][] = [
   ["reopening", "Reopening"],
 ];
 const DONE: Partial<Record<ServerJob["phase"], [string, string]>> = {
-  complete: ["Last restart finished.", "text-[var(--tfmc-accent)]"],
-  cancelled: ["Last restart was cancelled.", "text-[var(--tfmc-mist)]"],
-  resolved: ["Last failure was handled by staff.", "text-[var(--tfmc-mist)]"],
+  complete: ["Last restart finished", "text-[var(--tfmc-accent)]"],
+  cancelled: ["Last restart cancelled", "text-[var(--tfmc-mist)]"],
+  resolved: ["Last failure handled by staff", "text-[var(--tfmc-mist)]"],
 };
 const SKIPPED: Record<string, string> = {
   test_or_unknown_build: "test or unrecognised build",
@@ -36,7 +36,7 @@ const SKIPPED: Record<string, string> = {
   not_verified_on_dev: "not run on Dev yet",
   test_build_kept: "test build kept",
 };
-const dividerClass = "mt-4 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pt-4";
+const dividerClass = "mt-5 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pt-4";
 const sectionLabel = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 const versionClass = "font-mono text-xs text-[var(--tfmc-cream)]";
 const dangerButtonClass =
@@ -316,9 +316,6 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
       {state}
       {running || stuck ? null : (
         <>
-          {job && DONE[job.phase] ? (
-            <p className={`mb-3 text-xs ${DONE[job.phase]?.[1]}`}>{DONE[job.phase]?.[0]}</p>
-          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -338,13 +335,16 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
             >
               Restart only
             </button>
+            {job && DONE[job.phase] ? (
+              <p className={`ml-auto text-xs ${DONE[job.phase]?.[1]}`}>{DONE[job.phase]?.[0]}</p>
+            ) : null}
           </div>
           <p className="mt-2 text-xs text-[var(--tfmc-mist)]">
             {other
               ? `Wait for the ${LABEL[other.server]} restart to finish.`
               : server === "main"
                 ? "Players get five minutes’ warning. You can cancel during it."
-                : "Dev restarts as soon as you confirm."}
+                : "Restarts as soon as you confirm, without warning players."}
           </p>
         </>
       )}

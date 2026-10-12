@@ -47,51 +47,58 @@ const versionClass = "break-all font-mono text-xs text-[var(--tfmc-cream)]";
 const captionClass = "text-xs text-[var(--tfmc-mist)]";
 const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 
+const STARTUP: Record<string, [string, string]> = {
+  true: ["Running", "bg-[var(--tfmc-accent)]"],
+  false: ["Starting", "animate-pulse bg-[#f0d090]"],
+  null: ["No startup in the logs", "bg-[var(--tfmc-mist)]"],
+};
+
 function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins: ServerPlugin[]; actions: ReactNode }) {
   if (server.status !== "available") {
     return (
-      <section className={`${panelClass} !mt-0`}>
+      <section className={`${panelClass} !mt-0 flex flex-col`}>
         <h3 className={headingClass}>{server.label}</h3>
         <p className={`mt-2 ${mutedClass}`}>
           {server.status === "missing"
             ? "The site can’t find this server’s plugins folder."
             : "The site isn’t set up to read this server’s files."}
         </p>
-        {actions}
+        <div className="mt-auto">{actions}</div>
       </section>
     );
   }
   const c = counts(plugins, server.key);
-  const lines: [number, string, string][] = [
-    [
-      c.notReleases,
-      server.releases_only ? "not releases" : "test builds",
-      server.releases_only ? "#f0a0a0" : "#d6c8f2",
-    ],
-    [c.waiting, "need a restart", "#f0d090"],
-    [c.older, "older releases", "#f0d090"],
+  const issues: [number, string, string, Tone][] = [
+    server.releases_only
+      ? [c.notReleases, "not a release", "not releases", "bad"]
+      : [c.notReleases, "test build", "test builds", "test"],
+    [c.didNotStart, "didn’t start", "didn’t start", "bad"],
+    [c.waiting, "needs a restart", "need a restart", "warn"],
+    [c.older, "older release", "older releases", "warn"],
   ];
-  // Rare, so it only shows when something failed to start.
-  if (c.didNotStart) lines.push([c.didNotStart, "didn’t start", "#f0a0a0"]);
+  const shown = issues.filter(([n]) => n > 0);
+  const [startup, dot] = STARTUP[String(server.started)];
   return (
-    <section className={`${panelClass} !mt-0`}>
-      <h3 className={headingClass}>{server.label}</h3>
-      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
-        {lines.map(([n, text, colour]) => (
-          <div key={text}>
-            <p className="text-2xl font-semibold leading-none" style={{ color: n ? colour : "var(--tfmc-mist)" }}>
-              {n}
-            </p>
-            <p className={captionClass}>{text}</p>
-          </div>
-        ))}
+    <section className={`${panelClass} !mt-0 flex flex-col`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className={headingClass}>{server.label}</h3>
+        <p className={`flex items-center gap-1.5 ${captionClass}`}>
+          <span aria-hidden className={`h-2 w-2 shrink-0 self-center rounded-full ${dot}`} />
+          {startup} · Paper {server.paper?.split("-ver")[0] ?? "unknown"}
+        </p>
       </div>
-      <p className={`mt-3 ${captionClass}`}>
-        Paper {server.paper?.split("-ver")[0] ?? "unknown"}
-        {server.started === false ? " · still starting" : ""}
-        {server.started === null ? " · no startup in the logs" : ""}
-      </p>
-      {actions}
+      {shown.length ? (
+        <ul className="mt-4 flex flex-wrap gap-2">
+          {shown.map(([n, one, many, tone]) => (
+            <li key={many} className={`rounded-sm px-2.5 py-1 text-sm ${TONE[tone]}`}>
+              <span className="font-semibold">{n}</span> {n === 1 ? one : many}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-sm text-[var(--tfmc-accent)]">Every plugin runs its latest release.</p>
+      )}
+      <div className="mt-auto">{actions}</div>
     </section>
   );
 }
