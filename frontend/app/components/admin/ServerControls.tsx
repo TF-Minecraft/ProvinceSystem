@@ -314,17 +314,14 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
   const done = job ? DONE[job.phase] : undefined;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div className="min-w-0 text-xs leading-relaxed">
-        <p className="text-[var(--tfmc-mist)]">
-          {other
-            ? `Waiting for the ${LABEL[other.server]} restart to finish`
-            : server === "main"
-              ? "Players get a five-minute warning"
-              : "Restarts without warning players"}
-        </p>
-        {done ? <p className={done[1]}>{done[0]}</p> : null}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <p className="min-w-0 text-xs">
+        {other ? (
+          <span className="text-[var(--tfmc-mist)]">Waiting for the {LABEL[other.server]} restart</span>
+        ) : done ? (
+          <span className={done[1]}>{done[0]}</span>
+        ) : null}
+      </p>
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <button
           type="button"
           className={pagerClass}
@@ -332,7 +329,7 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
           disabled={blocked}
           onClick={() => void control.review(server, "restart")}
         >
-          Restart only
+          Restart
         </button>
         <button
           type="button"

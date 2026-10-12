@@ -124,11 +124,11 @@ it("lists what needs a look, worst first, and counts each server", async () => {
   const rows = await screen.findAllByRole("listitem");
   const names = rows.map((row) => row.querySelector("p.font-semibold")?.textContent).filter(Boolean);
   expect(names).toEqual(["TLibs", "Cooking", "Archaeo"]);
-  expect(screen.getByRole("button", { name: "Needs a look · 3" }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByRole("button", { name: "Needs a look, 3" }).getAttribute("aria-pressed")).toBe("true");
   expect(screen.getByText("Not a release")).toBeTruthy();
   expect(screen.getByText("Needs restart")).toBeTruthy();
   expect(screen.getByText("Test build")).toBeTruthy();
-  expect(screen.getByText("tlibs-2.2.0.jar")).toBeTruthy();
+  expect(screen.getByText("Not a release").parentElement?.getAttribute("title")).toBe("tlibs-2.2.0.jar");
   // Running 0.3.22, 0.3.23 on disk.
   expect(screen.getByText("→ 0.3.23")).toBeTruthy();
   expect(screen.getByText("Not releases").previousElementSibling?.textContent).toBe("1");
@@ -138,7 +138,7 @@ it("lists what needs a look, worst first, and counts each server", async () => {
 it("shows every plugin, other plugins, and filters by name", async () => {
   vi.mocked(getServers).mockResolvedValue(overview);
   render(<ServersOverview />);
-  fireEvent.click(await screen.findByRole("button", { name: "All TFMC plugins · 4" }));
+  fireEvent.click(await screen.findByRole("button", { name: "TFMC plugins, 4" }));
   expect(screen.getByText("Magic")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Find a plugin"), {
     target: { value: "mag" },
@@ -147,7 +147,7 @@ it("shows every plugin, other plugins, and filters by name", async () => {
   fireEvent.change(screen.getByLabelText("Find a plugin"), {
     target: { value: "" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Other plugins · 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Other plugins, 1" }));
   const row = screen.getByText("Bookshelf").closest("li")!;
   expect(within(row).getByText("Differs")).toBeTruthy();
   expect(within(row).getByText("2026.1")).toBeTruthy();
