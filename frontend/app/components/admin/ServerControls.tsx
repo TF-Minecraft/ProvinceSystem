@@ -36,7 +36,6 @@ const SKIPPED: Record<string, string> = {
   not_verified_on_dev: "not run on Dev yet",
   test_build_kept: "test build kept",
 };
-const dividerClass = "mt-5 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] pt-4";
 const sectionLabel = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 const versionClass = "font-mono text-xs text-[var(--tfmc-cream)]";
 const dangerButtonClass =
@@ -183,7 +182,7 @@ function Steps({ job }: { job: ServerJob }) {
   const steps = job.server === "main" && !job.emergency_override ? STEPS : STEPS.slice(1);
   const at = steps.findIndex(([phase]) => phase === job.phase);
   return (
-    <ol className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+    <ol className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-xs">
       {steps.map(([phase, text], i) => (
         <li
           key={phase}
@@ -228,7 +227,7 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
   if (!status || status.status !== "available") return null;
   const name = LABEL[server];
   if (!(status.allowed_servers ?? ["main", "dev"]).includes(server)) {
-    return <p className={`${dividerClass} ${mutedClass}`}>This site can’t restart {name}.</p>;
+    return <p className={mutedClass}>This site can’t restart {name}.</p>;
   }
   const job = status.jobs.find((j) => j.server === server);
   const other = status.jobs.find((j) => j.server !== server && ACTIVE.includes(j.phase));
@@ -311,43 +310,40 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
     );
   }
 
+  if (running || stuck) return state;
+  const done = job ? DONE[job.phase] : undefined;
   return (
-    <div className={dividerClass}>
-      {state}
-      {running || stuck ? null : (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className={buttonClass}
-              aria-label={`Update and restart ${name}`}
-              disabled={blocked}
-              onClick={() => void control.review(server, "latest")}
-            >
-              Update and restart
-            </button>
-            <button
-              type="button"
-              className={pagerClass}
-              aria-label={`Restart ${name}`}
-              disabled={blocked}
-              onClick={() => void control.review(server, "restart")}
-            >
-              Restart only
-            </button>
-            {job && DONE[job.phase] ? (
-              <p className={`ml-auto text-xs ${DONE[job.phase]?.[1]}`}>{DONE[job.phase]?.[0]}</p>
-            ) : null}
-          </div>
-          <p className="mt-2 text-xs text-[var(--tfmc-mist)]">
-            {other
-              ? `Wait for the ${LABEL[other.server]} restart to finish.`
-              : server === "main"
-                ? "Players get five minutes’ warning. You can cancel during it."
-                : "Restarts as soon as you confirm, without warning players."}
-          </p>
-        </>
-      )}
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      <div className="min-w-0 text-xs leading-relaxed">
+        <p className="text-[var(--tfmc-mist)]">
+          {other
+            ? `Waiting for the ${LABEL[other.server]} restart to finish`
+            : server === "main"
+              ? "Players get a five-minute warning"
+              : "Restarts without warning players"}
+        </p>
+        {done ? <p className={done[1]}>{done[0]}</p> : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          className={pagerClass}
+          aria-label={`Restart ${name}`}
+          disabled={blocked}
+          onClick={() => void control.review(server, "restart")}
+        >
+          Restart only
+        </button>
+        <button
+          type="button"
+          className={buttonClass}
+          aria-label={`Update and restart ${name}`}
+          disabled={blocked}
+          onClick={() => void control.review(server, "latest")}
+        >
+          Update and restart
+        </button>
+      </div>
     </div>
   );
 }

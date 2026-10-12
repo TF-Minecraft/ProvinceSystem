@@ -17,16 +17,7 @@ import {
 import { formatLocal } from "@/lib/skins/formatTime";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import { ControlDialog, ControlNotice, ServerActions, useServerControls } from "./ServerControls";
-import {
-  badgeClass,
-  chipClass,
-  headingClass,
-  inputClass,
-  mutedClass,
-  panelClass,
-  quietButtonClass,
-  warnClass,
-} from "./ui";
+import { badgeClass, chipClass, inputClass, mutedClass, panelClass, quietButtonClass, warnClass } from "./ui";
 
 const TONE: Record<Tone, string> = {
   bad: "bg-[#5a2a2a] text-[#f0c0c0]",
@@ -48,57 +39,77 @@ const captionClass = "text-xs text-[var(--tfmc-mist)]";
 const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 
 const STARTUP: Record<string, [string, string]> = {
-  true: ["Running", "bg-[var(--tfmc-accent)]"],
+  true: ["Running", "bg-[var(--tfmc-accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--tfmc-accent)_25%,transparent)]"],
   false: ["Starting", "animate-pulse bg-[#f0d090]"],
   null: ["No startup in the logs", "bg-[var(--tfmc-mist)]"],
 };
+const STAT_TONE: Record<Tone, string> = {
+  bad: "text-[#f0a0a0]",
+  warn: "text-[#f0d090]",
+  test: "text-[#d6c8f2]",
+  none: "text-[var(--tfmc-mist)]",
+};
+// Written out in full so Tailwind finds them: one stat cell per column.
+const STAT_COLUMNS: Record<number, string> = { 3: "grid-cols-3", 4: "grid-cols-2 sm:grid-cols-4" };
+const hairline = "border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
+const cardClass = `flex flex-col overflow-hidden rounded-md border ${hairline} bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,transparent)]`;
 
 function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins: ServerPlugin[]; actions: ReactNode }) {
-  if (server.status !== "available") {
-    return (
-      <section className={`${panelClass} !mt-0 flex flex-col`}>
-        <h3 className={headingClass}>{server.label}</h3>
-        <p className={`mt-2 ${mutedClass}`}>
+  const available = server.status === "available";
+  const [startup, dot] = STARTUP[String(server.started)];
+  const c = counts(plugins, server.key);
+  const stats: [number, string, Tone][] = [
+    server.releases_only ? [c.notReleases, "Not releases", "bad"] : [c.notReleases, "Test builds", "test"],
+    [c.waiting, "Need a restart", "warn"],
+    [c.older, "Older releases", "warn"],
+  ];
+  // Rare, so it only shows when something failed to start.
+  if (c.didNotStart) stats.push([c.didNotStart, "Didn’t start", "bad"]);
+  return (
+    <section className={cardClass}>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <h3 className="font-[family-name:var(--font-fraunces)] text-lg leading-none text-[var(--tfmc-cream)]">
+            {server.label}
+          </h3>
+          {available ? (
+            <span className="flex items-center gap-1.5 text-xs text-[var(--tfmc-stone)]">
+              <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+              {startup}
+            </span>
+          ) : null}
+        </div>
+        {available ? (
+          <span className="font-mono text-[11px] text-[var(--tfmc-mist)]">
+            Paper {server.paper?.split("-ver")[0] ?? "unknown"}
+          </span>
+        ) : null}
+      </div>
+      {available ? (
+        <div
+          className={`grid border-y ${hairline} ${STAT_COLUMNS[stats.length]} divide-x divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]`}
+        >
+          {stats.map(([n, text, tone]) => (
+            <div key={text} className="px-5 py-3">
+              <p
+                className={`text-2xl font-semibold leading-none tabular-nums ${n ? STAT_TONE[tone] : "text-[var(--tfmc-mist)] opacity-50"}`}
+              >
+                {n}
+              </p>
+              <p className="mt-1.5 text-xs text-[var(--tfmc-mist)]">{text}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className={`border-y ${hairline} px-5 py-4 ${mutedClass}`}>
           {server.status === "missing"
             ? "The site can’t find this server’s plugins folder."
             : "The site isn’t set up to read this server’s files."}
         </p>
-        <div className="mt-auto">{actions}</div>
-      </section>
-    );
-  }
-  const c = counts(plugins, server.key);
-  const issues: [number, string, string, Tone][] = [
-    server.releases_only
-      ? [c.notReleases, "not a release", "not releases", "bad"]
-      : [c.notReleases, "test build", "test builds", "test"],
-    [c.didNotStart, "didn’t start", "didn’t start", "bad"],
-    [c.waiting, "needs a restart", "need a restart", "warn"],
-    [c.older, "older release", "older releases", "warn"],
-  ];
-  const shown = issues.filter(([n]) => n > 0);
-  const [startup, dot] = STARTUP[String(server.started)];
-  return (
-    <section className={`${panelClass} !mt-0 flex flex-col`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className={headingClass}>{server.label}</h3>
-        <p className={`flex items-center gap-1.5 ${captionClass}`}>
-          <span aria-hidden className={`h-2 w-2 shrink-0 self-center rounded-full ${dot}`} />
-          {startup} · Paper {server.paper?.split("-ver")[0] ?? "unknown"}
-        </p>
-      </div>
-      {shown.length ? (
-        <ul className="mt-4 flex flex-wrap gap-2">
-          {shown.map(([n, one, many, tone]) => (
-            <li key={many} className={`rounded-sm px-2.5 py-1 text-sm ${TONE[tone]}`}>
-              <span className="font-semibold">{n}</span> {n === 1 ? one : many}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-sm text-[var(--tfmc-accent)]">Every plugin runs its latest release.</p>
       )}
-      <div className="mt-auto">{actions}</div>
+      <div className="flex flex-1 flex-col justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] px-5 py-3.5">
+        {actions}
+      </div>
     </section>
   );
 }
