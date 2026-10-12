@@ -685,3 +685,24 @@ def test_unreadable_jar_has_its_own_error(controller, monkeypatch):
     monkeypatch.setattr(host.inventory, "_describe", unreadable)
     with pytest.raises(control.ControlError, match="plugin_unreadable"):
         controller.snapshot("dev")
+
+
+def test_accepted_job_with_its_own_error_field_is_not_a_refusal(tmp_path, monkeypatch):
+    class Fake:
+        def dispatch(self, body):
+            if body["operation"] == "cancel":
+                raise control.ControlError("cannot_cancel")
+            return {"id": "e" * 32, "server": "dev", "phase": "installing", "error": None}
+    path = tmp_path / "dev.sock"
+    with host.Server(str(path), host.Handler) as server:
+        server.allowed_servers = {"dev"}
+        server.controller = Fake()
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        monkeypatch.setenv("SERVER_CONTROL_SOCKET", str(path))
+        assert control.request("start", server="dev", plan_id="e" * 32)["phase"] == "installing"
+        with pytest.raises(control.ControlError, match="cannot_cancel") as refused:
+            control.request("cancel", server="dev", job_id="e" * 32)
+        assert refused.value.status == 409
+        server.shutdown()
+        worker.join()
