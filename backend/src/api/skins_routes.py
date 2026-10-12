@@ -797,23 +797,25 @@ _OWNER_FILE_SUFFIXES = (".png", ".json")
 _OWNER_HIDDEN_FILES = frozenset({"meta.json", "review_sheet.png", "name_preview.png"})
 
 
-@skins_router.get("/submissions/{submission_id}/files/{filename}")
+# The name is a query parameter: Cloudflare caches paths ending in .png by URL alone,
+# which would hand one response (a 401 or 404 included) to every later request.
+@skins_router.get("/submissions/{submission_id}/files")
 def owner_file(
     submission_id: str,
-    filename: str,
+    name: str,
     authorization: str | None = Header(default=None),
 ):
     """A texture or model the owner uploaded, for the 3D viewer on their skin's page."""
     session = _session_from_auth(authorization)
-    name = filename.lower()
-    if name in _OWNER_HIDDEN_FILES or not name.endswith(_OWNER_FILE_SUFFIXES):
+    lowered = name.lower()
+    if lowered in _OWNER_HIDDEN_FILES or not lowered.endswith(_OWNER_FILE_SUFFIXES):
         raise HTTPException(status_code=404, detail="File not found")
     if get_submission_for_owner(submission_id, session["player_uuid"]) is None:
         raise HTTPException(status_code=404, detail="Submission not found")
-    path = _resolve_submission_file_safely(submission_id, filename)
+    path = _resolve_submission_file_safely(submission_id, name)
     if path is None:
         raise HTTPException(status_code=404, detail="File not found")
-    media = "image/png" if name.endswith(".png") else "application/json"
+    media = "image/png" if lowered.endswith(".png") else "application/json"
     return FileResponse(path, media_type=media, headers={"Cache-Control": "private, max-age=300"})
 
 

@@ -1,4 +1,4 @@
-"""GET /skins/submissions/{id}/files/{name} serves a skin's uploads to its owner only."""
+"""GET /skins/submissions/{id}/files?name= serves a skin's uploads to its owner only."""
 
 from __future__ import annotations
 
