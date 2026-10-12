@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
   counts,
@@ -16,7 +16,7 @@ import {
 } from "@/lib/admin/servers";
 import { formatLocal } from "@/lib/skins/formatTime";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
-import ServerControls from "./ServerControls";
+import { ControlDialog, ControlNotice, ServerActions, useServerControls } from "./ServerControls";
 import {
   badgeClass,
   chipClass,
@@ -47,7 +47,7 @@ const versionClass = "break-all font-mono text-xs text-[var(--tfmc-cream)]";
 const captionClass = "text-xs text-[var(--tfmc-mist)]";
 const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 
-function ServerCard({ server, plugins }: { server: ServerInfo; plugins: ServerPlugin[] }) {
+function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins: ServerPlugin[]; actions: ReactNode }) {
   if (server.status !== "available") {
     return (
       <section className={`${panelClass} !mt-0`}>
@@ -57,6 +57,7 @@ function ServerCard({ server, plugins }: { server: ServerInfo; plugins: ServerPl
             ? "The site can’t find this server’s plugins folder."
             : "The site isn’t set up to read this server’s files."}
         </p>
+        {actions}
       </section>
     );
   }
@@ -90,6 +91,7 @@ function ServerCard({ server, plugins }: { server: ServerInfo; plugins: ServerPl
         {server.started === false ? " · still starting" : ""}
         {server.started === null ? " · no startup in the logs" : ""}
       </p>
+      {actions}
     </section>
   );
 }
@@ -146,6 +148,8 @@ export default function ServersOverview() {
       .finally(() => setLoading(false));
   }, []);
 
+  const control = useServerControls(load);
+
   useEffect(() => {
     const start = setTimeout(load, 0);
     return () => clearTimeout(start);
@@ -184,11 +188,16 @@ export default function ServersOverview() {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {data.servers.map((server) => (
-          <ServerCard key={server.key} server={server} plugins={data.plugins} />
+          <ServerCard
+            key={server.key}
+            server={server}
+            plugins={data.plugins}
+            actions={<ServerActions control={control} server={server.key} />}
+          />
         ))}
       </div>
-
-      <ServerControls onComplete={load} />
+      <ControlNotice control={control} />
+      <ControlDialog control={control} />
 
       {data.github.status === "unavailable" ? (
         <p className={`mt-4 ${warnClass}`} role="alert">

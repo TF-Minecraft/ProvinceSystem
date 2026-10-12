@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import ServerControls from "./ServerControls";
+import { ControlDialog, ControlNotice, ServerActions, useServerControls } from "./ServerControls";
 import {
   getControl,
   planServer,
@@ -16,6 +16,17 @@ vi.mock("../../../lib/admin/serverControl", async (original) => ({
   planServer: vi.fn(),
   serverAction: vi.fn(),
 }));
+function ServerControls({ onComplete }: { onComplete: () => void }) {
+  const control = useServerControls(onComplete);
+  return (
+    <>
+      <ServerActions control={control} server="main" />
+      <ServerActions control={control} server="dev" />
+      <ControlNotice control={control} />
+      <ControlDialog control={control} />
+    </>
+  );
+}
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
@@ -25,9 +36,12 @@ const plan: ServerPlan = {
   server: "main",
   mode: "latest",
   expires_at: Date.now() / 1000 + 600,
-  changes: [{ repo: "Cooking", old_version: "1.0.0", version: "2.0.0", asset: "cooking-2.0.0.jar" }],
+  changes: [
+    { repo: "Cooking", old_version: "1.0.0", version: "2.0.0", asset: "cooking-2.0.0.jar" },
+    { repo: "TLibs", old_version: "2.2.0", version: "2.3.1", asset: "tlibs-2.3.1.jar", test_build: true },
+  ],
   activation: [],
-  skipped: [{ repo: "TFMCCore", reason: "test_or_unknown_build" }],
+  skipped: [{ repo: "Gathering", reason: "not_verified_on_dev" }],
   last_backup_at: null,
 };
 const job: ServerJob = {
@@ -53,15 +67,16 @@ it("reviews changes and skips, and requires a Main reason and backup before star
   vi.mocked(planServer).mockResolvedValue(plan);
   vi.mocked(serverAction).mockResolvedValue(job);
   render(<ServerControls onComplete={vi.fn()} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Use latest releases and restart Main" }));
-  const dialog = await screen.findByRole("dialog", { name: "Confirm Main restart" });
-  expect(within(dialog).getByText(/Cooking: 1.0.0 → 2.0.0/)).toBeTruthy();
-  expect(within(dialog).getByText(/TFMCCore: test or unrecognised build/)).toBeTruthy();
+  fireEvent.click(await screen.findByRole("button", { name: "Update and restart Main" }));
+  const dialog = await screen.findByRole("dialog", { name: /Main\?$/ });
+  expect(within(dialog).getByText("Cooking")).toBeTruthy();
+  expect(within(dialog).getByText("not run on Dev yet")).toBeTruthy();
+  expect((within(dialog).getByRole("checkbox", { name: /TLibs/ }) as HTMLInputElement).checked).toBe(true);
   const start = within(dialog).getByRole("button", { name: "Start Main countdown" }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
-  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "publish tested cooking" } });
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "publish tested cooking" } });
   expect(start.disabled).toBe(true);
-  fireEvent.change(within(dialog).getByLabelText("Backup prepared for this restart"), {
+  fireEvent.change(within(dialog).getByLabelText(/Backup for this restart/), {
     target: { value: "AMP 2026-10-12 plus province DB" },
   });
   expect(start.disabled).toBe(false);
@@ -74,6 +89,7 @@ it("reviews changes and skips, and requires a Main reason and backup before star
       "publish tested cooking",
       "AMP 2026-10-12 plus province DB",
       false,
+      ["TLibs"],
     ),
   );
 });
@@ -90,14 +106,14 @@ it("asks for a cancellation reason before issuing the action", async () => {
   vi.mocked(serverAction).mockResolvedValue({ ...job, phase: "cancelled" });
   render(<ServerControls onComplete={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Cancel Main restart" }));
-  const dialog = screen.getByRole("dialog", { name: "cancel Main" });
-  const button = within(dialog).getByRole("button", { name: "Confirm cancel" }) as HTMLButtonElement;
+  const dialog = screen.getByRole("dialog", { name: "Cancel the Main restart?" });
+  const button = within(dialog).getByRole("button", { name: "Cancel restart" }) as HTMLButtonElement;
   expect(button.disabled).toBe(true);
   expect(serverAction).not.toHaveBeenCalled();
-  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Players need more time" } });
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Players need more time" } });
   fireEvent.click(button);
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", "", false),
+    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", "", false, []),
   );
 });
 
@@ -109,12 +125,12 @@ it("Main release upgrades require a feature review before reopening", async () =
   vi.mocked(serverAction).mockResolvedValue({ ...job, phase: "complete" });
   render(<ServerControls onComplete={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Recheck and reopen Main" }));
-  const dialog = screen.getByRole("dialog", { name: "reopen Main" });
+  const dialog = screen.getByRole("dialog", { name: "Reopen Main?" });
   expect(within(dialog).getByText(/checked the changed features/)).toBeTruthy();
-  fireEvent.change(within(dialog).getByLabelText("Reason"), {
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), {
     target: { value: "Verified recipes and persisted character data" },
   });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Confirm reopen" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Reopen Main" }));
   await waitFor(() =>
     expect(serverAction).toHaveBeenCalledWith(
       "main",
@@ -123,6 +139,7 @@ it("Main release upgrades require a feature review before reopening", async () =
       "Verified recipes and persisted character data",
       "",
       false,
+      [],
     ),
   );
 });
@@ -133,14 +150,14 @@ it("Dev confirms an instant restart without an override or backup field", async 
   vi.mocked(serverAction).mockResolvedValue({ ...job, server: "dev", phase: "installing" });
   render(<ServerControls onComplete={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Restart Dev" }));
-  const dialog = await screen.findByRole("dialog", { name: "Confirm Dev restart" });
-  expect(within(dialog).getByText(/restarts Dev immediately after confirmation/)).toBeTruthy();
-  expect(within(dialog).queryByRole("checkbox")).toBeNull();
-  expect(within(dialog).queryByLabelText("Backup prepared for this restart")).toBeNull();
-  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Dev test restart" } });
+  const dialog = await screen.findByRole("dialog", { name: "Restart Dev?" });
+  expect(within(dialog).getByText(/Dev restarts as soon as you confirm/)).toBeTruthy();
+  expect(within(dialog).queryByRole("checkbox", { name: /Emergency/ })).toBeNull();
+  expect(within(dialog).queryByLabelText(/Backup for this restart/)).toBeNull();
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Dev test restart" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Restart Dev now" }));
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Dev test restart", "", false),
+    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Dev test restart", "", false, []),
   );
 });
 
@@ -149,15 +166,15 @@ it("Main emergency override is unchecked by default and is explicit in the actio
   vi.mocked(planServer).mockResolvedValue(plan);
   vi.mocked(serverAction).mockResolvedValue({ ...job, phase: "installing", emergency_override: true });
   render(<ServerControls onComplete={vi.fn()} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Use latest releases and restart Main" }));
-  const dialog = await screen.findByRole("dialog", { name: "Confirm Main restart" });
-  const override = within(dialog).getByRole("checkbox", { name: /OVERRIDE:/ }) as HTMLInputElement;
+  fireEvent.click(await screen.findByRole("button", { name: "Update and restart Main" }));
+  const dialog = await screen.findByRole("dialog", { name: /Main\?$/ });
+  const override = within(dialog).getByRole("checkbox", { name: /Emergency/ }) as HTMLInputElement;
   expect(override.checked).toBe(false);
   fireEvent.click(override);
   const start = within(dialog).getByRole("button", { name: "Restart Main now" }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
-  fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Emergency rollback fix" } });
-  fireEvent.change(within(dialog).getByLabelText("Backup prepared for this restart"), {
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Emergency rollback fix" } });
+  fireEvent.change(within(dialog).getByLabelText(/Backup for this restart/), {
     target: { value: "Emergency recovery backup" },
   });
   fireEvent.click(start);
@@ -169,6 +186,7 @@ it("Main emergency override is unchecked by default and is explicit in the actio
       "Emergency rollback fix",
       "Emergency recovery backup",
       true,
+      ["TLibs"],
     ),
   );
 });
@@ -183,8 +201,26 @@ it("warns that a plain Main restart activating staged plugins needs feature revi
   });
   render(<ServerControls onComplete={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Restart Main" }));
-  const dialog = await screen.findByRole("dialog", { name: "Confirm Main restart" });
+  const dialog = await screen.findByRole("dialog", { name: /Main\?$/ });
   expect(within(dialog).getByText(/Main stays in maintenance after startup/)).toBeTruthy();
-  fireEvent.click(within(dialog).getByRole("checkbox", { name: /OVERRIDE:/ }));
+  fireEvent.click(within(dialog).getByRole("checkbox", { name: /Emergency/ }));
   expect(within(dialog).getByText(/Main stays in maintenance after startup/)).toBeTruthy();
+});
+
+it("Dev keeps test builds unless staff choose to replace them", async () => {
+  vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["dev"] });
+  vi.mocked(planServer).mockResolvedValue({ ...plan, server: "dev", skipped: [] });
+  vi.mocked(serverAction).mockResolvedValue({ ...job, server: "dev", phase: "installing" });
+  render(<ServerControls onComplete={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Update and restart Dev" }));
+  const dialog = await screen.findByRole("dialog", { name: "Update and restart Dev?" });
+  const tlibs = within(dialog).getByRole("checkbox", { name: /TLibs/ }) as HTMLInputElement;
+  expect(tlibs.checked).toBe(false);
+  fireEvent.click(within(dialog).getByRole("button", { name: "Replace all" }));
+  expect(tlibs.checked).toBe(true);
+  fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Back to releases" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Restart Dev now" }));
+  await waitFor(() =>
+    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Back to releases", "", false, ["TLibs"]),
+  );
 });

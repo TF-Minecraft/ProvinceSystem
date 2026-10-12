@@ -6,6 +6,10 @@ export type ReleaseChange = {
   old_version: string;
   version: string;
   asset: string;
+  /** Set when the installed file is a test build the release would replace. */
+  test_build?: boolean;
+  /** The test build's own version is higher than the release's. */
+  newer_test?: boolean;
 };
 export type Activation = { name: string; loaded: string | null; version: string };
 export type ServerPlan = {
@@ -56,10 +60,11 @@ export function serverAction(
   reason: string,
   backup_ref = "",
   emergency_override = false,
+  replace_test_builds: string[] = [],
 ): Promise<ServerJob> {
   return adminRequest(`/admin/servers/${server}/${action}`, {
     method: "POST",
-    body: JSON.stringify({ id, reason, backup_ref, emergency_override }),
+    body: JSON.stringify({ id, reason, backup_ref, emergency_override, replace_test_builds }),
   });
 }
 

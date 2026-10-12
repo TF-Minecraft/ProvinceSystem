@@ -232,10 +232,7 @@ def release_for(controller, sha, version="2.0.0", server="dev"):
             "known": [{"sha256": controller.snapshot(server)[0]["sha256"], "version": "1.0.0"}]}
 
 
-def test_unknown_build_and_backport_are_skipped(controller):
-    release = release_for(controller, "0" * 64)
-    plan = controller.plan("dev", "latest", [{**release, "known": []}])
-    assert plan["changes"] == [] and plan["skipped"][0]["reason"] == "test_or_unknown_build"
+def test_backport_is_skipped(controller):
     backport = release_for(controller, "0" * 64, version="0.9.0")
     plan = controller.plan("dev", "latest", [backport])
     assert plan["changes"] == [] and plan["skipped"][0]["reason"] == "not_a_newer_version"
@@ -580,3 +577,65 @@ def test_worker_identity_changes_do_not_mask_error_message_changes(first, second
     after = f'[TIME] [{second}/ERROR]: failure code 23'
     assert key(before) == key(after)
     assert key(before) != key(after.replace('code 23', 'code 24'))
+
+
+def test_test_builds_are_replaced_only_when_chosen(controller, tmp_path, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    plugins, _ = controller.roots["dev"]
+    (plugins / "core-1.0.0.jar").unlink()
+    jar(plugins / "core-stage4-abc.jar", version="3.0.0")
+    new = tmp_path / "new.jar"
+    release = {**release_for(controller, jar(new, version="2.0.0")), "known": []}
+    controller.fetch = lambda release, target: target.write_bytes(new.read_bytes())
+    plan = controller.plan("dev", "latest", [release])
+    assert plan["skipped"] == []
+    assert [(c["repo"], c["old_version"], c["test_build"], c["newer_test"]) for c in plan["changes"]] == [("Core", "3.0.0", True, True)]
+    with pytest.raises(control.ControlError, match="bad_server_action"):
+        controller.start("dev", plan["id"], "www:user:1", "Dev test", replace_test_builds=["Other"])
+    kept = controller.start("dev", plan["id"], "www:user:1", "Dev test")
+    assert kept["changes"] == []
+    stored = controller._plan(plan["id"])
+    assert stored["changes"] == [] and stored["skipped"] == [{"repo": "Core", "reason": "test_build_kept"}]
+
+    controller.jobs.clear()
+    plan = controller.plan("dev", "latest", [release])
+    chosen = controller.start("dev", plan["id"], "www:user:1", "Dev test", replace_test_builds=["Core"])
+    assert [c["repo"] for c in chosen["changes"]] == ["Core"]
+    controller.run(controller._plan(plan["id"]))
+    assert controller.jobs["dev"]["phase"] == "complete"
+    assert [j["file"] for j in controller.snapshot("dev")] == ["core-2.0.0.jar"]
+
+
+def test_main_test_build_still_needs_dev_evidence(controller, tmp_path):
+    plugins, _ = controller.roots["main"]
+    (plugins / "core-1.0.0.jar").unlink()
+    jar(plugins / "core-1.0.0-SNAPSHOT.jar", version="1.0.0-SNAPSHOT")
+    release = {**release_for(controller, "0" * 64, server="main"), "known": []}
+    plan = controller.plan("main", "latest", [release])
+    assert plan["changes"] == [] and plan["skipped"][0]["reason"] == "not_verified_on_dev"
+
+
+def test_test_build_choice_is_start_only_and_forwarded(app, database, monkeypatch):
+    calls = []
+    monkeypatch.setattr(control, "request", lambda op, **body: calls.append(body) or {"id": body.get("plan_id")})
+    _, admin = account(database, "test-build-admin", "admin")
+    body = {"id": "d" * 32, "reason": "replace test builds", "replace_test_builds": ["Core"]}
+    assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 200
+    assert calls[-1]["replace_test_builds"] == ["Core"]
+    assert json.loads(audit_rows(database)[-1]["detail_json"])["replace_test_builds"] == ["Core"]
+    assert client(app, admin).post("/admin/servers/dev/start", json={**body, "replace_test_builds": []}, headers=ORIGIN).status_code == 200
+    assert "replace_test_builds" not in calls[-1]
+    assert client(app, admin).post("/admin/servers/dev/cancel", json=body, headers=ORIGIN).status_code == 400
+    assert len(calls) == 2
+
+
+def test_socket_test_build_list_is_optional_and_checked(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    plan = controller.plan("dev", "restart", [])
+    body = {"operation": "start", "server": "dev", "plan_id": plan["id"], "actor": "www:user:1", "reason": "Dev test",
+            "backup_ref": "", "emergency_override": False}
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({**body, "replace_test_builds": "Core"})
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({**body, "operation": "cancel", "job_id": plan["id"], "replace_test_builds": []})
+    assert controller.dispatch(body)["phase"] == "installing"

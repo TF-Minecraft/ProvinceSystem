@@ -222,13 +222,17 @@ class Controller:
                         if old[0]["sha256"] == release["sha256"]:
                             continue
                         known = next((r for r in release["known"] if r.get("sha256") == old[0]["sha256"]), None)
-                        if known is None:
-                            skipped.append({"repo": release["repo"], "reason": "test_or_unknown_build"})
-                            continue
-                        current_version, target_version = numeric_version(known.get("version", "")), numeric_version(version)
-                        if current_version is None or target_version is None or target_version <= current_version:
-                            skipped.append({"repo": release["repo"], "reason": "not_a_newer_version"})
-                            continue
+                        target_version = numeric_version(version)
+                        # A test build is offered for replacement; staff choose it when starting.
+                        test_build = known is None
+                        if test_build:
+                            current_version = numeric_version(old[0]["version"])
+                            newer_test = current_version is not None and target_version is not None and current_version > target_version
+                        else:
+                            current_version = numeric_version(known.get("version", ""))
+                            if current_version is None or target_version is None or target_version <= current_version:
+                                skipped.append({"repo": release["repo"], "reason": "not_a_newer_version"})
+                                continue
                         if server == "main" and not self._dev_verified(release):
                             skipped.append({"repo": release["repo"], "reason": "not_verified_on_dev"})
                             continue
@@ -240,7 +244,8 @@ class Controller:
                         if sha != release["sha256"] or name != old[0]["name"] or jar_version != version:
                             raise ControlError("release_identity_failed")
                         changes.append({**{k: v for k, v in release.items() if k != "known"}, "name": name, "version": jar_version,
-                                        "old_file": old[0]["file"], "old_version": old[0]["version"]})
+                                        "old_file": old[0]["file"], "old_version": old[0]["version"],
+                                        **({"test_build": True, "newer_test": newer_test} if test_build else {})})
                 activation = [{"name": jar["name"], "loaded": startup["enabled"].get(jar["name"].lower()),
                                "version": jar["version"]} for jar in baseline
                               if startup["enabled"].get(jar["name"].lower()) != jar["version"]
@@ -325,9 +330,13 @@ class Controller:
             if digest(self.state / plan["id"] / change["asset"]) != change["sha256"]:
                 raise ControlError("release_checksum_failed")
 
-    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "", emergency_override: bool = False) -> dict:
+    def start(self, server: str, plan_id: str, actor: str, reason: str, backup_ref: str = "", emergency_override: bool = False,
+              replace_test_builds: list[str] | None = None) -> dict:
+        replace_test_builds = [] if replace_test_builds is None else replace_test_builds
         with self.lock:
             if not isinstance(emergency_override, bool) or (server != "main" and emergency_override):
+                raise ControlError("bad_server_action", 400)
+            if not isinstance(replace_test_builds, list) or any(not isinstance(repo, str) for repo in replace_test_builds):
                 raise ControlError("bad_server_action", 400)
             plan = self._plan(plan_id)
             if plan["server"] != server:
@@ -343,6 +352,14 @@ class Controller:
                 raise ControlError("scheduled_restart_conflict")
             if server == "main" and len(backup_ref.strip()) < 3:
                 raise ControlError("backup_required", 400)
+            tests = {change["repo"] for change in plan["changes"] if change.get("test_build")}
+            if not set(replace_test_builds) <= tests:
+                raise ControlError("bad_server_action", 400)
+            kept = tests - set(replace_test_builds)
+            if kept:
+                # Test builds staff left alone are not installed or checked.
+                plan = {**plan, "changes": [c for c in plan["changes"] if c["repo"] not in kept],
+                        "skipped": plan["skipped"] + [{"repo": repo, "reason": "test_build_kept"} for repo in sorted(kept)]}
             self._unchanged(plan)
             if self._maintenance(server):
                 raise ControlError("server_not_ready")
@@ -354,6 +371,8 @@ class Controller:
                    "emergency_override": emergency_override,
                    "actor": actor, "reason": reason, "changes": plan["changes"], "activation": plan["activation"],
                    "error": None, "maintenance_started": False, "backup_ref": backup_ref, "events": []}
+            if kept:
+                save_json(self.state / plan_id / "plan.json", plan)
             self.jobs[server] = job
             self.cancelled.clear()
             self._save()
@@ -599,7 +618,8 @@ class Controller:
                    "cancel": {"operation", "server", "job_id", "actor", "reason"},
                    "reopen": {"operation", "server", "job_id", "actor", "reason"},
                    "resolve": {"operation", "server", "job_id", "actor", "reason"}}
-        if operation not in allowed or set(body) != allowed[operation]:
+        # Older websites omit the optional test-build list.
+        if operation not in allowed or set(body) - ({"replace_test_builds"} if operation == "start" else set()) != allowed[operation]:
             raise ControlError("bad_control_request", 400)
         if operation == "status":
             return {"jobs": json.loads(self.status_json)}
@@ -612,7 +632,11 @@ class Controller:
         if operation == "start":
             if not isinstance(body["backup_ref"], str) or len(body["backup_ref"]) > 500:
                 raise ControlError("bad_control_request", 400)
-            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"], body["emergency_override"])
+            replace = body.get("replace_test_builds", [])
+            if not isinstance(replace, list) or len(replace) > 100:
+                raise ControlError("bad_control_request", 400)
+            return self.start(server, body["plan_id"], body["actor"], body["reason"], body["backup_ref"],
+                              body["emergency_override"], replace)
         with self.lock:
             job = self._job(server, body["job_id"])
             event = {"at": time.time(), "action": operation, "actor": body["actor"],
