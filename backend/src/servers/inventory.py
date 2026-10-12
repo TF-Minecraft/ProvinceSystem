@@ -45,7 +45,7 @@ MAX_LOGS = 12
 
 _BOOT = re.compile(r"\[bootstrap\] Loading Paper (\S+)")
 _ENABLING = re.compile(r"\]: \[[^\]]+\] Enabling (\S+) v(\S+)\s*$")
-_ENABLE_FAILED = re.compile(r"Error occurred while enabling (\S+) v(\S+)")
+_ENABLE_FAILED = re.compile(r"\]: Error occurred while enabling (\S+) v(\S+)")
 _DISABLING = re.compile(r"\]: \[[^\]]+\] Disabling (\S+) v(\S+)")
 _DONE = re.compile(r"\]: Done \(")
 _ROTATED = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d+)\.log\.gz$")

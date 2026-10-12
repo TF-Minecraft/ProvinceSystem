@@ -71,7 +71,11 @@ def test_upgrade_probe_can_expire_unaccepted_plans_but_must_preserve_job_evidenc
     (accepted / "plan.json").write_text('{"expires_at":0}')
     (accepted / "backup/old.jar").write_bytes(b"original plugin")
     (expired / "plan.json").write_text('{"expires_at":0}')
+    (expired / "core-2.0.0.jar").write_bytes(b"downloaded release")
     expected = installer.manifest(tmp_path)
+    (expired / "core-2.0.0.jar").unlink()
+    with pytest.raises(RuntimeError, match="job evidence changed"):
+        installer.verify_preserved_state(expected, installer.manifest(tmp_path))
     shutil.rmtree(expired)
     installer.verify_preserved_state(expected, installer.manifest(tmp_path))
     (accepted / "backup/old.jar").unlink()

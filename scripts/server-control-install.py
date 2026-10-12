@@ -100,7 +100,9 @@ def verify_preserved_state(expected, after):
         folder = name.split("/", 1)[0]
         # Read-only plan probes prune expired, never-accepted plans. Journals
         # and every file belonging to an accepted job must remain identical.
-        if name not in after and re.fullmatch(r"[0-9a-f]{32}", folder) and f"{folder}/job.json" not in expected:
+        # Only a whole pruned plan folder may disappear, never single files.
+        if (re.fullmatch(r"[0-9a-f]{32}", folder) and f"{folder}/job.json" not in expected
+                and not any(key.startswith(folder + "/") for key in after)):
             continue
         if after.get(name) != checksum:
             raise RuntimeError("Migrated job evidence changed during verification; keeping previous installation.")
