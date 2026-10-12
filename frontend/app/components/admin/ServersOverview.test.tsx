@@ -131,8 +131,8 @@ it("lists what needs a look, worst first, and counts each server", async () => {
   expect(screen.getByText("tlibs-2.2.0.jar")).toBeTruthy();
   // Running 0.3.22, 0.3.23 on disk.
   expect(screen.getByText("→ 0.3.23")).toBeTruthy();
-  expect(screen.getByText("not releases").previousElementSibling?.textContent).toBe("1");
-  expect(screen.getByText("test builds").previousElementSibling?.textContent).toBe("1");
+  expect(screen.getByText("Not releases").previousElementSibling?.textContent).toBe("1");
+  expect(screen.getByText("Test builds").previousElementSibling?.textContent).toBe("1");
 });
 
 it("shows every plugin, other plugins, and filters by name", async () => {
