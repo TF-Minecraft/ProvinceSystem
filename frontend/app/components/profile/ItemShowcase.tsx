@@ -124,15 +124,15 @@ export function Tooltip({ name, lore = [] }: { name: LoreRun[]; lore?: string[] 
 
 function TooltipBox({ name, lore }: { name: LoreRun[]; lore: string[] }) {
   return (
-    <div className="inline-block max-w-full overflow-x-auto rounded-[3px] border-2 border-[#24063f] bg-[#100010f2] p-[3px] font-mono shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+    <div className="inline-block max-w-full rounded-[3px] border-2 border-[#24063f] bg-[#100010f2] p-[3px] font-mono shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
       <div className="rounded-[2px] border border-[#5000ff80] px-3 py-2 [border-bottom-color:#28007f80]">
-        <p className="whitespace-pre text-base leading-snug">
+        <p className="text-base leading-snug break-words">
           <FormattedMcRuns runs={name} />
         </p>
         {lore.length ? (
-          <ul className="mt-1.5 space-y-0.5 text-sm leading-snug">
+          <ul className="mt-1.5 space-y-0.5 text-[13px] leading-snug">
             {lore.map((line, i) => (
-              <li key={`${i}-${line.slice(0, 12)}`} className="whitespace-pre">
+              <li key={`${i}-${line.slice(0, 12)}`} className="break-words">
                 {line.trim() ? <FormattedMcRuns runs={parseLoreRuns(line)} /> : " "}
               </li>
             ))}
