@@ -1465,8 +1465,8 @@ def _worn_slot(active: str | None, slots: dict[str, dict[str, Any]], swappable: 
     return "base"
 
 
-def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None] | None:
-    """The PNG and saved model of the slot a roster character wears. Read-only:
+def _worn_roster_row(player_uuid: str, character_id: str) -> tuple[str, dict[str, Any]]:
+    """The character id and slot row a roster character wears ({} if empty). Read-only:
     picks the slot like _normalize_active but never enforces limits or saves it."""
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
@@ -1474,7 +1474,12 @@ def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None
     slots = _load_slots(uuid, cid)
     swappable = swappable_slot_count(uuid, realm_id=roster.get("realm_id"))
     active = _worn_slot(roster.get("wardrobe_active_slot"), slots, swappable)
-    slot = slots.get(active) or {}
+    return cid, slots.get(active) or {}
+
+
+def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None] | None:
+    """The PNG and saved model of the slot a roster character wears."""
+    _, slot = _worn_roster_row(player_uuid, character_id)
     path = _png_abspath(slot.get("png_relpath"))
     if path is None:
         return None
@@ -1491,6 +1496,17 @@ def worn_skin_name(player_uuid: str, character_id: str) -> str | None:
     swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
     worn = _worn_slot(access.get("wardrobe_active_slot"), slots, swappable)
     return _effective_display_name(worn, slots.get(worn)) if _slot_filled(slots, worn) else None
+
+
+def worn_skin_texture(player_uuid: str, character_id: str) -> dict[str, Any]:
+    """The signed texture a roster character wears, for the in-game character selector.
+    Read-only like _active_slot; value and signature are None unless the worn skin is signed."""
+    cid, slot = _worn_roster_row(player_uuid, character_id)
+    value = slot.get("texture_value") or None
+    signature = slot.get("texture_signature") or None
+    if not (slot.get("png_relpath") and value and signature):
+        value = signature = None
+    return {"character_id": cid, "value": value, "signature": signature}
 
 
 def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
