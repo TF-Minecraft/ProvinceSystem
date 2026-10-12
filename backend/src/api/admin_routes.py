@@ -83,7 +83,7 @@ def _account_json(row: dict) -> dict:
     }
 
 
-def _write(request: Request, action: str, target_id: int, run):
+def _write(request: Request, action: str, target: dict, run):
     config = _config()
     token = request.cookies.get(session_cookie(config))
     try:
@@ -92,7 +92,7 @@ def _write(request: Request, action: str, target_id: int, run):
         actor = users.session_user(token)
         if actor is not None:
             audit.record_refusal(actor=actor, action=action, outcome="denied",
-                                 detail={"error": exc.detail, "target_user_id": target_id})
+                                 detail={"error": exc.detail, **target})
         raise
     try:
         return run(token)
@@ -204,23 +204,24 @@ def get_servers(request: Request, response: Response):
 @admin_router.post("/accounts/{user_id}/role")
 def post_role(user_id: int, body: RoleBody, request: Request, response: Response):
     _no_store(response)
-    return _write(request, "account.role.change", user_id,
+    return _write(request, "account.role.change", {"target_user_id": user_id},
                   lambda token: admin.change_role(token, user_id, body.role, body.reason))
 
 
 @admin_router.post("/accounts/{user_id}/sessions/revoke")
 def post_revoke_sessions(user_id: int, body: ReasonBody, request: Request, response: Response):
     _no_store(response)
-    return _write(request, "account.sessions.revoke", user_id,
+    return _write(request, "account.sessions.revoke", {"target_user_id": user_id},
                   lambda token: admin.revoke_sessions(token, user_id, body.reason))
 
 
-@admin_router.post("/accounts/{user_id}/view-as")
-def post_view_as(user_id: int, request: Request):
+@admin_router.post("/players/{player_uuid}/view-as")
+def post_view_as(player_uuid: str, request: Request):
     """View the site as a player: their session, view only, while the admin's own waits in a cookie."""
     config = _config()
     staff = request.cookies.get(session_cookie(config))
-    view = _write(request, "account.view_as.start", user_id, lambda token: view_as.start(token, user_id))
+    view = _write(request, "account.view_as.start", {"player_uuid": player_uuid[:64]},
+                  lambda token: view_as.start(token, player_uuid))
     response = _no_store(Response(content=json.dumps({"expires_at": view["expires_at"], "return_to": "/profile"}),
                                   media_type="application/json"))
     _set_cookie(response, config, session_cookie(config), view["token"], seconds_left(view["expires_at"]))
@@ -233,7 +234,6 @@ def post_view_as(user_id: int, request: Request):
 _WRITE_ROUTES = (
     (re.compile(r"^/admin/accounts/([^/]+)/role$"), "account.role.change"),
     (re.compile(r"^/admin/accounts/([^/]+)/sessions/revoke$"), "account.sessions.revoke"),
-    (re.compile(r"^/admin/accounts/([^/]+)/view-as$"), "account.view_as.start"),
     (re.compile(r"^/admin/luckperms/changes$"), "luckperms.change"),
 )
 

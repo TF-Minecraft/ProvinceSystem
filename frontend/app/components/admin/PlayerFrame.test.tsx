@@ -70,9 +70,14 @@ it("holds its page back until the player has loaded", () => {
 });
 
 const PLAYER_ACCOUNT = { user_id: 7, role: "player" };
+const DISCORD = { discord_user_id: "42", discord_username: "enzo" };
 
 it("lets an admin view the site as a player with a site account", async () => {
-  vi.mocked(getPlayer).mockResolvedValue({ ...PROFILE, account: PLAYER_ACCOUNT } as unknown as Profile);
+  vi.mocked(getPlayer).mockResolvedValue({
+    ...PROFILE,
+    discord: DISCORD,
+    account: PLAYER_ACCOUNT,
+  } as unknown as Profile);
   vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_as_player"] } as never);
   vi.mocked(viewSiteAs).mockRejectedValue(new AccountApiError("target_is_staff", 403));
   render(
@@ -81,16 +86,29 @@ it("lets an admin view the site as a player with a site account", async () => {
     </PlayerFrame>,
   );
   fireEvent.click(await screen.findByRole("button", { name: "View the site as them →" }));
-  expect(viewSiteAs).toHaveBeenCalledWith(7);
+  expect(viewSiteAs).toHaveBeenCalledWith(UUID);
   expect((await screen.findByRole("alert")).textContent).toBe("You can only view the site as players, not staff.");
 });
 
+it("lets an admin view the site as a linked player who has never signed in", async () => {
+  vi.mocked(getPlayer).mockResolvedValue({ ...PROFILE, discord: DISCORD, account: null } as unknown as Profile);
+  vi.mocked(getAdminMe).mockResolvedValue({ capabilities: ["view_as_player"] } as never);
+  vi.mocked(viewSiteAs).mockReturnValue(new Promise(() => undefined));
+  render(
+    <PlayerFrame uuid={UUID}>
+      <Name />
+    </PlayerFrame>,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "View the site as them →" }));
+  expect(viewSiteAs).toHaveBeenCalledWith(UUID);
+});
+
 it.each([
-  ["a mod", ["view_players"], PLAYER_ACCOUNT],
-  ["a staff account", ["view_as_player"], { user_id: 7, role: "mod" }],
-  ["no site account", ["view_as_player"], null],
-])("offers no view for %s", async (_name, capabilities, account) => {
-  vi.mocked(getPlayer).mockResolvedValue({ ...PROFILE, account } as unknown as Profile);
+  ["a mod", ["view_players"], DISCORD, PLAYER_ACCOUNT],
+  ["a staff account", ["view_as_player"], DISCORD, { user_id: 7, role: "mod" }],
+  ["no Discord link", ["view_as_player"], null, null],
+])("offers no view for %s", async (_name, capabilities, discord, account) => {
+  vi.mocked(getPlayer).mockResolvedValue({ ...PROFILE, discord, account } as unknown as Profile);
   vi.mocked(getAdminMe).mockResolvedValue({ capabilities } as never);
   render(
     <PlayerFrame uuid={UUID}>

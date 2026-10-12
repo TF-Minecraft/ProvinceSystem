@@ -651,7 +651,11 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_at TEXT NOT NULL,
     -- Website staff role. Databases created before roles gain this column in
     -- db.migrate(); index it there, not here.
-    role TEXT NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'mod', 'admin', 'root'))
+    role TEXT NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'mod', 'admin', 'root')),
+    -- 1 for an account made so an admin can view the site as a player who has
+    -- never signed in (src/auth/view_as.py). Deleted once its views end;
+    -- signing in makes it a real account. Added to older databases in db.migrate().
+    placeholder INTEGER NOT NULL DEFAULT 0
 );
 
 -- Cookie sessions for users. Separate from `sessions`, which belong to

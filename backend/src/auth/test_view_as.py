@@ -1,4 +1,5 @@
 import sqlite3
+import uuid
 
 import pytest
 from fastapi import FastAPI
@@ -80,10 +81,40 @@ def audit_rows(db):
         return [dict(r) for r in conn.execute("SELECT * FROM admin_audit ORDER BY id")]
 
 
+def linked_uuid(db, user_id):
+    """The Minecraft UUID linked to this account, linking one first if it has none."""
+    with db.connect() as conn:
+        discord_id = conn.execute("SELECT discord_user_id FROM users WHERE id = ?", (user_id,)).fetchone()[0]
+        row = conn.execute("SELECT player_uuid FROM discord_links WHERE discord_user_id = ?", (discord_id,)).fetchone()
+        if row:
+            return row[0]
+        player_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, discord_id))
+        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, linked_at)"
+                     " VALUES (?, ?, '2026-10-01T00:00:00Z')", (player_uuid, discord_id))
+        conn.commit()
+    return player_uuid
+
+
 def start(app, db, admin_token, player_id):
     c = client(app, admin_token)
-    res = c.post(f"/admin/accounts/{player_id}/view-as", headers=ORIGIN)
+    res = c.post(f"/admin/players/{linked_uuid(db, player_id)}/view-as", headers=ORIGIN)
     return c, res
+
+
+def link_only(db, name, player_uuid=UUID):
+    """A player linked through the Discord bot who has never signed in to the site."""
+    discord_id = str(200000000000000000 + abs(hash(name)) % 10**15)
+    with db.connect() as conn:
+        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username,"
+                     " linked_at) VALUES (?, ?, ?, ?, '2026-10-01T00:00:00Z')",
+                     (player_uuid, discord_id, name.title(), name))
+        conn.commit()
+    return discord_id
+
+
+def placeholders(db):
+    with db.connect() as conn:
+        return conn.execute("SELECT COUNT(*) FROM users WHERE placeholder = 1").fetchone()[0]
 
 
 def test_only_admins_may_view_as():
@@ -130,13 +161,17 @@ def test_refusals_are_audited(app, env, actor_role, target_role, status, code):
 def test_cannot_view_as_self_or_nobody(app, env):
     admin_id, admin_token = account(env, "boss", "admin")
     assert start(app, env, admin_token, admin_id)[1].json()["detail"] == "cannot_act_on_self"
-    assert start(app, env, admin_token, 9999)[1].status_code == 404
+    res = client(app, admin_token).post(f"/admin/players/{UUID}/view-as", headers=ORIGIN)
+    assert (res.status_code, res.json()["detail"]) == (404, "not_linked")
+    res = client(app, admin_token).post("/admin/players/not-a-uuid/view-as", headers=ORIGIN)
+    assert (res.status_code, res.json()["detail"]) == (400, "bad_uuid")
 
 
 def test_start_needs_the_sites_origin(app, env):
     _, admin_token = account(env, "boss", "admin")
     player_id, _ = account(env, "steve")
-    res = client(app, admin_token).post(f"/admin/accounts/{player_id}/view-as", headers={"Origin": "https://evil.example"})
+    res = client(app, admin_token).post(f"/admin/players/{linked_uuid(env, player_id)}/view-as",
+                                        headers={"Origin": "https://evil.example"})
     assert res.status_code == 403
 
 
@@ -145,7 +180,7 @@ def test_a_view_cannot_write(app, env):
     player_id, _ = account(env, "steve", minecraft="Steve")
     c, _ = start(app, env, admin_token, player_id)
     for path in ("/account/minecraft/unlink", "/account/patreon/start", "/characters/anything",
-                 f"/admin/accounts/{player_id}/view-as"):
+                 f"/admin/players/{UUID}/view-as"):
         res = c.post(path, headers=ORIGIN)
         assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player"), path
 
@@ -406,8 +441,59 @@ def test_starting_a_view_from_inside_one_is_refused_and_audited(app, env):
     player_id, _ = account(env, "steve")
     other_id, _ = account(env, "alex")
     c, _ = start(app, env, admin_token, player_id)
-    res = c.post(f"/admin/accounts/{other_id}/view-as", headers=ORIGIN)
+    other_uuid = linked_uuid(env, other_id)
+    res = c.post(f"/admin/players/{other_uuid}/view-as", headers=ORIGIN)
     assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player")
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"], row["actor_name"]) == ("account.view_as.start", "conflict", "boss")
-    assert f'"target_user_id": {other_id}' in row["detail_json"]
+    assert f'"player_uuid": "{other_uuid}"' in row["detail_json"]
+
+
+def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
+    from src.auth import admin, players
+    _, admin_token = account(env, "boss", "admin")
+    discord_id = link_only(env, "steve")
+    c = client(app, admin_token)
+    res = c.post(f"/admin/players/{UUID}/view-as", headers=ORIGIN)
+    assert res.status_code == 200
+    me = c.get("/account").json()
+    assert me["user"]["discord_username"] == "steve" and me["viewing_as"]["staff_name"] == "boss"
+    assert c.post("/characters/anything", headers=ORIGIN).json()["detail"] == "viewing_as_player"
+    started = audit_rows(env)[-1]
+    assert (started["action"], started["target_name"]) == ("account.view_as.start", "steve")
+    assert '"placeholder": true' in started["detail_json"]
+
+    # Staff still see them as having no site account.
+    assert placeholders(env) == 1
+    assert players._site_rows(UUID)[0][0]["user_id"] is None
+    assert admin.lookup(discord_id) == [] and admin.lookup("steve") == []
+
+    assert c.post("/auth/view-as/stop", headers=ORIGIN).json()["restored"] is True
+    assert placeholders(env) == 0
+    with env.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM users WHERE discord_user_id = ?", (discord_id,)).fetchone()[0] == 0
+
+
+def test_a_placeholder_whose_view_ran_out_goes_with_it(app, env):
+    _, admin_token = account(env, "boss", "admin")
+    link_only(env, "steve")
+    c = client(app, admin_token)
+    c.post(f"/admin/players/{UUID}/view-as", headers=ORIGIN)
+    _expire_views(env)
+    assert c.get("/account").json()["user"]["discord_username"] == "boss"
+    assert placeholders(env) == 0
+
+
+def test_signing_in_during_a_view_turns_the_placeholder_into_their_account(app, env):
+    _, admin_token = account(env, "boss", "admin")
+    discord_id = link_only(env, "steve")
+    c = client(app, admin_token)
+    c.post(f"/admin/players/{UUID}/view-as", headers=ORIGIN)
+    users.sign_in({"discord_user_id": discord_id, "discord_username": "steve", "discord_global_name": "Steve",
+                   "discord_avatar": None}, guild_member=True)
+    assert placeholders(env) == 0
+    c.post("/auth/view-as/stop", headers=ORIGIN)
+    with env.connect() as conn:
+        row = conn.execute("SELECT placeholder, discord_global_name FROM users WHERE discord_user_id = ?",
+                           (discord_id,)).fetchone()
+    assert tuple(row) == (0, "Steve")

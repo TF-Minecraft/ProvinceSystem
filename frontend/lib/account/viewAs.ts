@@ -44,8 +44,8 @@ export function onViewSwitch(callback: () => void): () => void {
 }
 
 /** Admins: view the site as a player. A full load, so every part of the page sees the switch. */
-export async function viewSiteAs(userId: number): Promise<void> {
-  const next = await startViewingAs(userId);
+export async function viewSiteAs(playerUuid: string): Promise<void> {
+  const next = await startViewingAs(playerUuid);
   await dropProfile();
   announceSwitch();
   window.location.assign(next);

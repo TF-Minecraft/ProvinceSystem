@@ -19,7 +19,7 @@ from src.skins import db
 
 from . import audit
 from .admin import REASON_MAX, REASON_MIN, AdminError, clean_reason, list_staff
-from .users import drop_orphan_view_profiles
+from .users import drop_view_leftovers
 
 
 def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: str = "player") -> str:
@@ -29,7 +29,7 @@ def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: st
         try:
             row = conn.execute(
                 "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, role "
-                "FROM users WHERE discord_user_id = ?",
+                "FROM users WHERE discord_user_id = ? AND placeholder = 0",
                 (discord_id,),
             ).fetchone()
             if row is None:
@@ -51,7 +51,7 @@ def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: st
                 "DELETE FROM user_sessions WHERE user_id = ? OR acting_user_id = ?",
                 (target["user_id"], target["user_id"]),
             ).rowcount
-            drop_orphan_view_profiles(conn)
+            drop_view_leftovers(conn)
             audit.record(
                 conn, actor=None, action="account.role.change", outcome="ok", target=target, reason=clean,
                 detail={"before": target["role"], "after": new_role, "sessions_revoked": revoked},

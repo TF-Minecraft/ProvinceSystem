@@ -16,7 +16,7 @@ from src.auth import view_as
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 _SESSION_COOKIES = ("__Host-tfmc_session", "tfmc_session")
 # A refused start from inside a view, audited before the 403.
-_START = re.compile(r"/admin/accounts/(\d+)/view-as$")
+_START = re.compile(r"/admin/players/([^/]{1,64})/view-as$")
 # Writes a view still needs: leaving it, and opening or closing its view-only Profile.
 _ALLOWED_SUFFIXES = ("/auth/view-as/stop", "/auth/logout", "/account/profile-session", "/characters/logout")
 
@@ -44,7 +44,7 @@ class ViewAsGuard:
                 if await run_in_threadpool(view_as.refuses_write, cookies, bearer):
                     start = _START.search(request.url.path.rstrip("/"))
                     if start and cookies:
-                        await run_in_threadpool(view_as.audit_refused_start, cookies, int(start[1]))
+                        await run_in_threadpool(view_as.audit_refused_start, cookies, start[1])
                     response = JSONResponse({"detail": "viewing_as_player"}, status_code=403)
                     await response(scope, receive, send)
                     return

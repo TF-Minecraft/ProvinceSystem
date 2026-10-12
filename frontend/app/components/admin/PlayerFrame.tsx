@@ -106,9 +106,11 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
   const { profile } = load;
   const movement = me?.capabilities.includes("view_player_movement") ?? false;
   const notice = coreProtectMessage(profile.coreprotect);
-  // The server views players only, never staff accounts.
+  // Anyone with a Discord link, signed in or not; the server views players only, never staff accounts.
   const viewAs =
-    me?.capabilities.includes("view_as_player") && profile.account?.role === "player" ? profile.account.user_id : null;
+    (me?.capabilities.includes("view_as_player") ?? false) &&
+    profile.discord !== null &&
+    (profile.account === null || profile.account.role === "player");
   const label = profile.coreprotect.server_label;
   const seen = [
     profile.online ? "Seen just now" : `Last seen ${formatAgo(profile.last_seen).toLowerCase()}`,
@@ -138,10 +140,10 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
             >
               In-game ranks and permissions →
             </Link>
-            {viewAs !== null ? (
+            {viewAs ? (
               <>
                 {" · "}
-                <ViewAsButton userId={viewAs} />
+                <ViewAsButton uuid={profile.uuid} />
               </>
             ) : null}
           </p>
@@ -159,7 +161,7 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
 }
 
 /** Opens the site as this player, view only; the bar at the bottom of each page switches back. */
-function ViewAsButton({ userId }: { userId: number }) {
+function ViewAsButton({ uuid }: { uuid: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -170,7 +172,7 @@ function ViewAsButton({ userId }: { userId: number }) {
         onClick={() => {
           setBusy(true);
           setError(null);
-          viewSiteAs(userId).catch((err) => {
+          viewSiteAs(uuid).catch((err) => {
             setBusy(false);
             setError(adminErrorMessage(err));
           });

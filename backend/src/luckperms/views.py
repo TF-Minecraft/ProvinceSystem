@@ -120,7 +120,7 @@ def _account(conn, uuid: str) -> dict | None:
     row = conn.execute(
         """
         SELECT dl.discord_user_id, dl.discord_username, u.id AS user_id, u.role
-        FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id
+        FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0
         WHERE lower(dl.player_uuid) = ?
         """,
         (uuid,),

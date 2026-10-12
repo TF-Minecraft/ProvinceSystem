@@ -25,8 +25,9 @@ _TOKEN_MAX = 256
 VIEW_PROFILE_PREFIX = "staff_view:"
 
 
-def drop_orphan_view_profiles(conn) -> None:
-    """Delete Profile sessions opened during views that no longer exist, however they ended."""
+def drop_view_leftovers(conn) -> None:
+    """Delete what views that no longer exist leave behind, however they ended: Profile
+    sessions opened during them, and placeholder accounts made for them."""
     conn.execute(
         """
         DELETE FROM sessions WHERE code_id IN (
@@ -37,6 +38,7 @@ def drop_orphan_view_profiles(conn) -> None:
         )
         """
     )
+    conn.execute("DELETE FROM users WHERE placeholder = 1 AND id NOT IN (SELECT user_id FROM user_sessions)")
 
 
 def _utcnow() -> datetime:
@@ -129,6 +131,9 @@ def sign_in(
                 created_at, updated_at, last_login_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(discord_user_id) DO UPDATE SET
+                -- A placeholder made for a staff view becomes their account from now.
+                created_at = CASE WHEN users.placeholder = 1 THEN excluded.created_at ELSE users.created_at END,
+                placeholder = 0,
                 discord_username = excluded.discord_username,
                 discord_global_name = excluded.discord_global_name,
                 discord_avatar = excluded.discord_avatar,
@@ -147,7 +152,7 @@ def sign_in(
             conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
         # Views that ran out are left for src/auth/view_as.py to end and audit.
         conn.execute("DELETE FROM user_sessions WHERE expires_at <= ? AND acting_user_id IS NULL", (stamp,))
-        drop_orphan_view_profiles(conn)
+        drop_view_leftovers(conn)
         conn.execute(
             """
             INSERT INTO user_sessions (token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at)

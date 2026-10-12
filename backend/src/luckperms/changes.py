@@ -245,7 +245,7 @@ def _linked_uuid(conn, discord_user_id: str | None) -> str | None:
 
 def _target_account_role(conn, uuid: str) -> str | None:
     row = conn.execute(
-        "SELECT u.role FROM discord_links dl JOIN users u ON u.discord_user_id = dl.discord_user_id "
+        "SELECT u.role FROM discord_links dl JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0 "
         "WHERE lower(dl.player_uuid) = ?",
         (uuid,),
     ).fetchone()
