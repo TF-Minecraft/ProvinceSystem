@@ -639,3 +639,49 @@ def test_socket_test_build_list_is_optional_and_checked(controller, monkeypatch)
     with pytest.raises(control.ControlError, match="bad_control_request"):
         controller.dispatch({**body, "operation": "cancel", "job_id": plan["id"], "replace_test_builds": []})
     assert controller.dispatch(body)["phase"] == "installing"
+
+
+def test_recheck_after_midnight_reads_the_rotated_startup_log(controller, tmp_path, monkeypatch):
+    import gzip
+    new = tmp_path / "new.jar"
+    release = release_for(controller, jar(new, version="2.0.0"), server="main")
+    monkeypatch.setattr(controller, "_dev_verified", lambda *_: True)
+    controller.fetch = lambda release, target: target.write_bytes(new.read_bytes())
+    public = controller.plan("main", "latest", [release])
+    job = ready_job(controller, controller._plan(public["id"]))
+    controller.run(controller._plan(public["id"]))
+    assert job["phase"] == "awaiting_review"
+    logs = controller.roots["main"][1]
+    with gzip.open(logs / "2026-10-12-1.log.gz", "wt") as handle:
+        handle.write((logs / "latest.log").read_text())
+    (logs / "latest.log").write_text("[00:00:05 INFO]: <Player> evening\n")
+    assert controller.reopen("main", job["id"])["phase"] == "complete"
+
+
+def test_countdown_zero_only_reserves_the_restart(controller, monkeypatch):
+    windows = []
+    monkeypatch.setattr(host, "scheduled_restart", lambda server, now, short=False: windows.append(short) or False)
+    monkeypatch.setattr(controller.cancelled, "wait", lambda delay: False)
+    public = controller.plan("main", "restart", [])
+    ready_job(controller, controller._plan(public["id"]))
+    controller.run(controller._plan(public["id"]))
+    assert windows == [True]
+
+
+def test_failed_countdown_tells_players_the_restart_is_off(controller, monkeypatch):
+    monkeypatch.setattr(controller.cancelled, "wait", lambda delay: False)
+    public = controller.plan("main", "restart", [])
+    job = ready_job(controller, controller._plan(public["id"]))
+    jar(controller.roots["main"][0] / "late-1.0.0.jar", name="Late")
+    controller.run(controller._plan(public["id"]))
+    assert job["phase"] == "failed" and job["error"] == "plugins_changed"
+    assert controller.commands[-1] == ("main", "broadcast &eThe server restart has been cancelled.")
+    assert not any(c == "maintenance on" for _, c in controller.commands)
+
+
+def test_unreadable_jar_has_its_own_error(controller, monkeypatch):
+    def unreadable(path):
+        raise PermissionError(path)
+    monkeypatch.setattr(host.inventory, "_describe", unreadable)
+    with pytest.raises(control.ControlError, match="plugin_unreadable"):
+        controller.snapshot("dev")

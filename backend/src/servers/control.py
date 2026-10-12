@@ -22,7 +22,8 @@ def request(operation: str, **body) -> dict:
         raise ControlError("control_not_configured", 503)
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-            connection.settimeout(180 if operation == "plan" else 120 if operation == "reopen" else 35)
+            # Writes can wait behind a plan's downloads for the helper's lock.
+            connection.settimeout(180 if operation == "plan" else 120 if operation in {"start", "cancel", "reopen"} else 35)
             connection.connect(path)
             connection.sendall(json.dumps({"operation": operation, **body}).encode() + b"\n")
             with connection.makefile("rb") as stream:
