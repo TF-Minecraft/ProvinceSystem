@@ -1,14 +1,39 @@
 [Unit]
 Description=TFMC Minecraft server control
+After=network.target
+Before=docker.service
+RequiresMountsFor=/home/amp/.ampdata/instances
 
 [Service]
 Type=simple
-WorkingDirectory=%h/.local/share/tfmc-server-control/code/backend
-Environment=SERVER_CONTROL_HOME=%h/.local/share/tfmc-server-control
-ExecStart=/usr/bin/python3 -m src.servers.host
+User=tfmc-server-control
+Group=tfmc-server-control
+WorkingDirectory=/usr/local/lib/tfmc-server-control/backend
+Environment=SERVER_CONTROL_HOME=/var/lib/tfmc-server-control
+Environment=SERVER_CONTROL_SOCKET_DIR=/run/tfmc-server-control
+Environment=SERVER_CONTROL_LOG_TIMEZONE=Etc/UTC
+Environment=PYTHONNOUSERSITE=1
+ExecStartPre=/usr/bin/install -d -m 0755 /run/tfmc-server-control/www /run/tfmc-server-control/dev
+ExecStart=/usr/bin/python3 -B -m src.servers.host
+StateDirectory=tfmc-server-control
+StateDirectoryMode=0700
+RuntimeDirectory=tfmc-server-control
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
 Restart=on-failure
 RestartSec=5
 UMask=0077
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindPaths=/home/amp/.ampdata/instances/TFMCMain01/Minecraft/plugins
+BindPaths=/home/amp/.ampdata/instances/TFMCDev01/Minecraft/plugins
+BindReadOnlyPaths=/home/amp/.ampdata/instances/TFMCMain01/Minecraft/logs
+BindReadOnlyPaths=/home/amp/.ampdata/instances/TFMCDev01/Minecraft/logs
+BindReadOnlyPaths=-/home/amp/.ampdata/instances/TFMCMain01/Backups
+BindReadOnlyPaths=-/home/amp/.ampdata/instances/TFMCDev01/Backups
+ReadWritePaths=/home/amp/.ampdata/instances/TFMCMain01/Minecraft/plugins
+ReadWritePaths=/home/amp/.ampdata/instances/TFMCDev01/Minecraft/plugins
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

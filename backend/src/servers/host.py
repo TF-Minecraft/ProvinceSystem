@@ -22,6 +22,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from collections import Counter
+from zoneinfo import ZoneInfo
 
 from src.servers import inventory
 from src.servers.control import ControlError, MAX_MESSAGE
@@ -135,8 +136,8 @@ class Controller:
 
     @staticmethod
     def _console(server: str, command: str):
-        subprocess.run(["sudo", "-n", "-u", "amp", "/usr/local/sbin/amp-ctl", "console",
-                        INSTANCES[server], command], check=True, timeout=25,
+        subprocess.run(["sudo", "-n", "-u", "amp", "/usr/local/sbin/tfmc-server-command",
+                        server, command], check=True, timeout=25,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def _paths(self, server: str) -> tuple[Path, Path]:
@@ -257,9 +258,8 @@ class Controller:
     def _public_plan(plan: dict) -> dict:
         return {key: plan[key] for key in ("id", "server", "mode", "expires_at", "changes", "activation", "skipped", "last_backup_at")}
 
-    @staticmethod
-    def _backup_time(server: str) -> float | None:
-        root = Path(f"/home/ryan/work/amp-readonly/{INSTANCES[server]}/Backups")
+    def _backup_time(self, server: str) -> float | None:
+        root = self.roots[server][0].parents[1] / "Backups"
         try:
             return max((p.stat().st_mtime for p in root.glob("*.zip") if p.is_file()), default=None)
         except OSError:
@@ -276,13 +276,18 @@ class Controller:
                 # recorded jar must have been on disk before that startup.
                 log = logs / startup["log"]
                 match = re.match(r"(\d{4}-\d{2}-\d{2})-", log.name)
-                date = match[1] if match else datetime.fromtimestamp(log.stat().st_mtime, timezone.utc).strftime("%Y-%m-%d")
+                zone = ZoneInfo(os.getenv("SERVER_CONTROL_LOG_TIMEZONE", "Etc/UTC"))
+                written_at = log.stat().st_mtime
+                date = match[1] if match else datetime.fromtimestamp(written_at, zone).strftime("%Y-%m-%d")
                 for line in inventory._log_lines(log):
                     if inventory._BOOT.search(line):
                         stamp = re.search(r"\[(\d{2}:\d{2}:\d{2})\]", line)
                         if stamp is None:
                             return False
-                        boot_time = datetime.fromisoformat(date + "T" + stamp[1]).replace(tzinfo=timezone.utc).timestamp()
+                        boot = datetime.fromisoformat(date + "T" + stamp[1]).replace(tzinfo=zone)
+                        if boot.timestamp() > written_at:
+                            boot -= timedelta(days=1)
+                        boot_time = boot.timestamp()
                         path = self.roots["dev"][0] / jar["file"]
                         return max(path.stat().st_mtime, path.stat().st_ctime) <= boot_time
         return False
@@ -638,13 +643,15 @@ def main():
     # Includes separate invocations and sockets; only one deployment owner.
     with (root / "lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        roots = {key: (Path(f"/home/ryan/work/amp/{instance}/plugins"),
-                       Path(f"/home/ryan/work/amp-readonly/{instance}/Minecraft/logs"))
+        instances = Path(os.getenv("SERVER_CONTROL_INSTANCES_DIR", "/home/amp/.ampdata/instances"))
+        sockets = Path(os.getenv("SERVER_CONTROL_SOCKET_DIR", str(root)))
+        roots = {key: (instances / instance / "Minecraft/plugins",
+                       instances / instance / "Minecraft/logs")
                  for key, instance in INSTANCES.items()}
         controller = Controller(root / "state", roots)
         servers = []
         for site, allowed in (("www", {"main", "dev"}), ("dev", {"dev"})):
-            run = root / site
+            run = sockets / site
             run.mkdir(exist_ok=True, mode=0o755)
             path = run / "control.sock"
             path.unlink(missing_ok=True)

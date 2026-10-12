@@ -426,3 +426,29 @@ def test_recovery_orders_instant_jobs_by_acceptance_not_deadline(controller):
     recovered = host.Controller(controller.state, controller.roots, console=controller.console)
     assert recovered.jobs["dev"]["id"] == new["id"]
     assert recovered.jobs["dev"]["phase"] == "failed"
+
+
+@pytest.mark.parametrize("zone,written,boot,after", [
+    ("Etc/UTC", "2026-10-13T00:02:00+00:00", "23:59:00", "2026-10-13T00:01:00+00:00"),
+    ("America/New_York", "2026-10-13T04:02:00+00:00", "23:59:00", "2026-10-13T04:01:00+00:00"),
+])
+def test_dev_bytes_replaced_after_midnight_boot_are_not_verified(controller, monkeypatch, zone, written, boot, after):
+    import os
+    from datetime import datetime
+    from types import SimpleNamespace
+    monkeypatch.setenv("SERVER_CONTROL_LOG_TIMEZONE", zone)
+    plugins, logs = controller.roots["dev"]
+    log = logs / "latest.log"
+    log.write_text(f"[{boot}] [ServerMain/INFO]: [bootstrap] Loading Paper 1.21.10\n"
+                   "[00:00:00] [Server thread/INFO]: [Core] Enabling Core v1.0.0\n"
+                   "[00:00:01] [Server thread/INFO]: Done (1s)!\n")
+    stamp = datetime.fromisoformat(written).timestamp()
+    os.utime(log, (stamp, stamp))
+    jar_path = plugins / "core-1.0.0.jar"
+    jar_time = datetime.fromisoformat(after).timestamp()
+    original = host.Path.stat
+    monkeypatch.setattr(host.Path, "stat", lambda path, *args, **kwargs: SimpleNamespace(st_mtime=jar_time, st_ctime=jar_time) if path == jar_path else original(path, *args, **kwargs))
+    monkeypatch.setattr(controller, "snapshot", lambda *_: [{"file": jar_path.name, "name": "Core", "version": "1.0.0", "sha256": "known"}])
+    assert not controller._dev_verified({"sha256": "known"})
+    jar_time = datetime.fromisoformat(after).timestamp() - 180
+    assert controller._dev_verified({"sha256": "known"})
