@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import UploadForm from "../skins/UploadForm";
-import SkinStatusCard from "../skins/StatusCard";
 import BrewForm from "../drinks/BrewForm";
-import DrinkStatusCard from "../drinks/StatusCard";
+import DrinkShowcase from "./DrinkShowcase";
+import SkinShowcase from "./SkinShowcase";
 import { getPlayerMeta, getSubmission as getSkin, type SubmissionPublic } from "../../../lib/skins/api";
 import * as skins from "../../../lib/skins/session";
 import { getSubmission as getDrink, type DrinkSubmissionPublic } from "../../../lib/drinks/api";
@@ -25,7 +25,7 @@ type Props = {
 
 const quietClass = "text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline";
 
-const BACK_LABELS = { characters: "Characters", skins: "Skins", drinks: "Drinks" } as const;
+const BACK_LABELS = { characters: "Characters", skins: "Skins", drinks: "Drinks", items: "Custom items" } as const;
 
 /** An item inside its Profile tab: back to the tab's list, a title if the item has none of its own, then the item. */
 export function ItemFrame({
@@ -176,13 +176,13 @@ function useOwnedItem<Row, S extends { session_token: string }>(
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Checking again keeps the item on screen; only the first load shows Loading.
   const load = useCallback(async () => {
     const owner = resolveOwnerToken(store);
     if (!owner) {
       onLeave();
       return;
     }
-    setLoading(true);
     setError(null);
     try {
       setRow(await get(id, owner));
@@ -202,17 +202,7 @@ function useOwnedItem<Row, S extends { session_token: string }>(
   return { row, token, error, loading, load };
 }
 
-function ItemBody({
-  loading,
-  error,
-  card,
-  onRefresh,
-}: {
-  loading: boolean;
-  error: string | null;
-  card: ReactNode;
-  onRefresh: () => void;
-}) {
+function ItemBody({ loading, error, children }: { loading: boolean; error: string | null; children: ReactNode }) {
   if (loading) return <Loading />;
   if (error) {
     return (
@@ -221,15 +211,7 @@ function ItemBody({
       </p>
     );
   }
-  if (!card) return null;
-  return (
-    <>
-      {card}
-      <button type="button" onClick={onRefresh} className={`${quietClass} mt-8`}>
-        Refresh status
-      </button>
-    </>
-  );
+  return children;
 }
 
 function SkinView({ id, onBack, onLeave }: Omit<Props, "onShow">) {
@@ -240,32 +222,26 @@ function SkinView({ id, onBack, onLeave }: Omit<Props, "onShow">) {
     onLeave,
   );
   return (
-    <ItemFrame tab="skins" title={row?.display_name || "Skin"} onBack={onBack}>
-      <ItemBody
-        loading={loading}
-        error={error}
-        card={row && token ? <SkinStatusCard row={row} sessionToken={token} /> : null}
-        onRefresh={() => void load()}
-      />
+    <ItemFrame tab="skins" onBack={onBack}>
+      <ItemBody loading={loading} error={error}>
+        {row && token ? <SkinShowcase row={row} sessionToken={token} onRefresh={() => void load()} /> : null}
+      </ItemBody>
     </ItemFrame>
   );
 }
 
 function DrinkView({ id, onBack, onLeave }: Omit<Props, "onShow">) {
-  const { row, error, loading, load } = useOwnedItem<DrinkSubmissionPublic, drinks.DrinksSession>(
+  const { row, token, error, loading, load } = useOwnedItem<DrinkSubmissionPublic, drinks.DrinksSession>(
     id,
     drinks,
     getDrink,
     onLeave,
   );
   return (
-    <ItemFrame tab="drinks" title={row?.display_name || "Drink"} onBack={onBack}>
-      <ItemBody
-        loading={loading}
-        error={error}
-        card={row ? <DrinkStatusCard row={row} /> : null}
-        onRefresh={() => void load()}
-      />
+    <ItemFrame tab="drinks" onBack={onBack}>
+      <ItemBody loading={loading} error={error}>
+        {row && token ? <DrinkShowcase row={row} sessionToken={token} onRefresh={() => void load()} /> : null}
+      </ItemBody>
     </ItemFrame>
   );
 }

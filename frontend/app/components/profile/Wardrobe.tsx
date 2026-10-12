@@ -10,7 +10,6 @@ export type WardrobeItem = {
   /** What it is: "Sword", "Armour set", "Drink". */
   detail: string;
   status: string;
-  denyReason?: string | null;
   picture: ReactNode;
 };
 
@@ -33,7 +32,7 @@ const quietButtonClass =
 const tileClass =
   "flex h-full min-h-44 w-full flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] px-3 text-center text-sm";
 
-const CHIPS: Record<string, { label: string; className: string }> = {
+export const STATUS_CHIPS: Record<string, { label: string; className: string }> = {
   pending: {
     label: "In review",
     className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_16%,transparent)] text-[var(--tfmc-cream)]",
@@ -43,6 +42,11 @@ const CHIPS: Record<string, { label: string; className: string }> = {
   applied: { label: "Live", className: "bg-[var(--tfmc-accent)] text-[var(--tfmc-forest-deep)]" },
   denied: { label: "Denied", className: "bg-[color-mix(in_srgb,#e8a0a0_22%,transparent)] text-[#f0b8b8]" },
   rejected: { label: "Denied", className: "bg-[color-mix(in_srgb,#e8a0a0_22%,transparent)] text-[#f0b8b8]" },
+  ready: { label: "Ready", className: "bg-[#c8b27a] text-[var(--tfmc-forest-deep)]" },
+  draft: {
+    label: "Draft",
+    className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-stone)]",
+  },
   revoked: {
     label: "Removed",
     className: "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-stone)]",
@@ -50,7 +54,7 @@ const CHIPS: Record<string, { label: string; className: string }> = {
 };
 
 function Chip({ status }: { status: string }) {
-  const chip = CHIPS[status.toLowerCase()];
+  const chip = STATUS_CHIPS[status.toLowerCase()];
   if (!chip) return null;
   return (
     <span
@@ -96,7 +100,7 @@ export function HangerGlyph() {
   );
 }
 
-function Card({ item, onOpen }: { item: WardrobeItem; onOpen: (id: string) => void }) {
+export function WardrobeCard({ item, onOpen }: { item: WardrobeItem; onOpen: (id: string) => void }) {
   const denied = ["denied", "rejected", "revoked"].includes(item.status.toLowerCase());
   // A plain click opens it in the tab; a new-tab click follows the address.
   function open(event: MouseEvent<HTMLAnchorElement>) {
@@ -120,7 +124,6 @@ function Card({ item, onOpen }: { item: WardrobeItem; onOpen: (id: string) => vo
         <div className="px-2.5 pb-3 pt-2">
           <p className="truncate font-semibold text-[var(--tfmc-cream)]">{item.name}</p>
           <p className="text-xs text-[var(--tfmc-mist)]">{item.detail}</p>
-          {item.denyReason ? <p className="mt-1 text-xs text-[#e8a0a0]">{item.denyReason}</p> : null}
         </div>
       </a>
     </li>
@@ -221,7 +224,7 @@ export default function Wardrobe({ noun, items, allowance, onStart, codeForm, on
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         <li>{newTile}</li>
         {items.map((item) => (
-          <Card key={item.id} item={item} onOpen={onOpen} />
+          <WardrobeCard key={item.id} item={item} onOpen={onOpen} />
         ))}
       </ul>
     </div>

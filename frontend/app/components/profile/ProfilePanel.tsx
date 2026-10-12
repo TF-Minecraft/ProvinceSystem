@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import CharacterList from "../character/CharacterList";
-import ProfileCustomItemsList from "./ProfileCustomItemsList";
+import { CustomItemList, CustomItemView } from "./ProfileCustomItems";
 import ProfileRedeemForm from "./ProfileRedeemForm";
 import { CodeWardrobe, DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
 import { DrinkItem, SkinItem } from "./ProfileItems";
@@ -446,6 +446,8 @@ export default function ProfilePanel({
 
   const drinkNav = useMemo(() => itemNav("drinks"), [itemNav]);
 
+  const customItemNav = useMemo(() => itemNav("items"), [itemNav]);
+
   function onRedeemed(signIn: SignIn) {
     if (signIn.profile) setSessionState(signIn.profile);
     else setCodes(readCodeSessions());
@@ -693,7 +695,7 @@ export default function ProfilePanel({
               ) : null}
             </>
           )
-        ) : openItem && shown !== "characters" ? (
+        ) : openItem && (shown === "skins" || shown === "drinks") ? (
           shown === "skins" ? (
             <SkinItem id={openItem} {...skinNav} />
           ) : (
@@ -759,8 +761,15 @@ export default function ProfilePanel({
                 sessionToken={token!}
                 onOpen={drinkNav.onOpen}
               />
+            ) : openItem ? (
+              <CustomItemView
+                id={openItem}
+                items={dashboard.custom_items}
+                sessionToken={token!}
+                onBack={customItemNav.onBack}
+              />
             ) : (
-              <ProfileCustomItemsList items={dashboard.custom_items} />
+              <CustomItemList items={dashboard.custom_items} sessionToken={token!} onOpen={customItemNav.onOpen} />
             )}
           </>
         )}

@@ -792,6 +792,31 @@ def get_thumbnail(
     )
 
 
+# The owner's uploads only; staff sheets and server files stay staff-side.
+_OWNER_FILE_SUFFIXES = (".png", ".json")
+_OWNER_HIDDEN_FILES = frozenset({"meta.json", "review_sheet.png", "name_preview.png"})
+
+
+@skins_router.get("/submissions/{submission_id}/files/{filename}")
+def owner_file(
+    submission_id: str,
+    filename: str,
+    authorization: str | None = Header(default=None),
+):
+    """A texture or model the owner uploaded, for the 3D viewer on their skin's page."""
+    session = _session_from_auth(authorization)
+    name = filename.lower()
+    if name in _OWNER_HIDDEN_FILES or not name.endswith(_OWNER_FILE_SUFFIXES):
+        raise HTTPException(status_code=404, detail="File not found")
+    if get_submission_for_owner(submission_id, session["player_uuid"]) is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    path = _resolve_submission_file_safely(submission_id, filename)
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    media = "image/png" if name.endswith(".png") else "application/json"
+    return FileResponse(path, media_type=media, headers={"Cache-Control": "private, max-age=300"})
+
+
 @skins_router.post("/submissions/{submission_id}/approve")
 def post_approve(
     submission_id: str,

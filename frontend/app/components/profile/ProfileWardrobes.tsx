@@ -68,7 +68,6 @@ export function SkinWardrobe({
         name: row.display_name || "Untitled skin",
         detail: kindLabel(row.kind),
         status: row.status,
-        denyReason: row.deny_reason,
         picture: <SkinPicture id={row.id} sessionToken={sessionToken} />,
       }))}
     />
@@ -109,8 +108,7 @@ export function DrinkWardrobe({
         name: row.display_name || "Untitled drink",
         detail: "Drink",
         status: row.status,
-        denyReason: row.deny_reason,
-        picture: <DrinkPicture color={row.recipe?.color ?? null} />,
+        picture: <DrinkPicture id={row.id} color={row.recipe?.color ?? null} sessionToken={sessionToken} />,
       }))}
     />
   );
