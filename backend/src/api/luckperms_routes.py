@@ -118,5 +118,5 @@ class ChangeBody(BaseModel):
 @staff_router.post("/changes")
 def post_change(body: ChangeBody, request: Request, response: Response):
     _no_store(response)
-    return _write(request, "luckperms.change", None,
+    return _write(request, "luckperms.change", {"target_user_id": None},
                   lambda token: changes.queue_change(token, body.target_type, body.target, body.ops, body.reason))

@@ -14,16 +14,22 @@ from src.skins.codes import hash_secret
 from src.skins.db import connect
 
 from . import audit, roles
-from .admin import AdminError, _account
-from .users import VIEW_PROFILE_PREFIX, _iso, _parse_iso, _utcnow, drop_orphan_view_profiles, session_user_in
+from .admin import AdminError
+from .players import canonical_uuid
+from .users import VIEW_PROFILE_PREFIX, _iso, _parse_iso, _utcnow, drop_view_leftovers, session_user_in
 
 VIEW_TTL = timedelta(minutes=30)
 _TOKEN_MAX = 256
 
 
-def start(token: str | None, target_user_id: int) -> dict:
-    """Open a view of the site as a player; returns its session token and expiry."""
+def start(token: str | None, player_uuid: str) -> dict:
+    """Open a view of the site as a player; returns its session token and expiry.
+
+    A player who has never signed in gets a placeholder account for the view
+    (users.placeholder), deleted once its views end.
+    """
     actor = target = None
+    key = canonical_uuid(player_uuid)
     try:
         with connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -35,17 +41,27 @@ def start(token: str | None, target_user_id: int) -> dict:
                     raise AdminError(409, "already_viewing", "conflict")
                 if not roles.can(actor["role"], "view_as_player"):
                     raise AdminError(403, "forbidden", "denied")
-                target = _account(conn, target_user_id)
-                if target is None:
-                    raise AdminError(404, "account_not_found", "not_found")
-                if actor["user_id"] == target["user_id"]:
+                if key is None:
+                    raise AdminError(400, "bad_uuid", "invalid")
+                link = conn.execute(
+                    "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?",
+                    (key,),
+                ).fetchone()
+                # The site knows a player through their Discord link; without one there is nothing to view.
+                if link is None:
+                    raise AdminError(404, "not_linked", "not_found")
+                if actor["discord_user_id"] == link["discord_user_id"]:
                     raise AdminError(403, "cannot_act_on_self", "denied")
+                target = _account_for(conn, link["discord_user_id"])
+                made = target is None
+                if made:
+                    target = _make_placeholder(conn, link)
                 # Players only: staff accounts are never viewed.
                 if target["role"] != "player":
                     raise AdminError(403, "target_is_staff", "denied")
                 view_token, expires_at = _open(conn, actor, target)
                 audit.record(conn, actor=actor, action="account.view_as.start", outcome="ok", target=target,
-                             detail={"expires_at": expires_at})
+                             detail={"expires_at": expires_at, "player_uuid": key, "placeholder": made})
                 conn.commit()
             except BaseException:
                 conn.rollback()
@@ -53,9 +69,30 @@ def start(token: str | None, target_user_id: int) -> dict:
     except AdminError as exc:
         if actor is not None:
             audit.record_refusal(actor=actor, action="account.view_as.start", outcome=exc.outcome, target=target,
-                                 detail={"error": exc.code, "target_user_id": target_user_id})
+                                 detail={"error": exc.code, "player_uuid": key or player_uuid[:64]})
         raise
     return {"token": view_token, "expires_at": expires_at, "staff_expires_at": actor["expires_at"]}
+
+
+def _account_for(conn, discord_user_id: str) -> dict | None:
+    row = conn.execute(
+        "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, role "
+        "FROM users WHERE discord_user_id = ?",
+        (discord_user_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def _make_placeholder(conn, link) -> dict:
+    stamp = _iso(_utcnow())
+    conn.execute(
+        """
+        INSERT INTO users (discord_user_id, discord_username, created_at, updated_at, last_login_at, placeholder)
+        VALUES (?, ?, ?, ?, ?, 1)
+        """,
+        (link["discord_user_id"], link["discord_username"], stamp, stamp, stamp),
+    )
+    return _account_for(conn, link["discord_user_id"])
 
 
 def _open(conn, actor: dict, target: dict) -> tuple[str, str]:
@@ -149,7 +186,7 @@ def _end_where(conn, where: str, params: tuple) -> list[dict]:
         audit.record(conn, actor=dict(actor) if actor else None, action="account.view_as.stop", outcome="ok",
                      target=view, detail={"expired": _parse_iso(view["expires_at"]) <= now})
     if views:
-        drop_orphan_view_profiles(conn)
+        drop_view_leftovers(conn)
     return views
 
 
@@ -186,7 +223,7 @@ def end_lapsed(staff_token: str | None) -> None:
             raise
 
 
-def audit_refused_start(cookie_tokens: list[str], target_user_id: int) -> None:
+def audit_refused_start(cookie_tokens: list[str], player_uuid: str) -> None:
     """Log an attempt to start a view from inside one, which the guard refuses before the route."""
     for token in cookie_tokens:
         if not _valid(token):
@@ -199,7 +236,7 @@ def audit_refused_start(cookie_tokens: list[str], target_user_id: int) -> None:
             ).fetchone()
         if row is not None:
             audit.record_refusal(actor=dict(row), action="account.view_as.start", outcome="conflict",
-                                 detail={"error": "already_viewing", "target_user_id": target_user_id})
+                                 detail={"error": "already_viewing", "player_uuid": player_uuid})
             return
 
 

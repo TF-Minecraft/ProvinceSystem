@@ -116,7 +116,7 @@ def test_migration_adds_role_to_existing_users(tmp_path, monkeypatch):
     db.migrate()
     db.migrate()
     with db.connect() as conn:
-        assert conn.execute("SELECT role FROM users").fetchone()[0] == "player"
+        assert tuple(conn.execute("SELECT role, placeholder FROM users").fetchone()) == ("player", 0)
         assert conn.execute("SELECT COUNT(*) FROM user_sessions").fetchone()[0] == 1
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute("UPDATE users SET role = 'wizard'")

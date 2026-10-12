@@ -10,7 +10,7 @@ from __future__ import annotations
 from src.skins.db import connect
 
 from . import audit, roles
-from .users import drop_orphan_view_profiles, session_user_in
+from .users import drop_view_leftovers, session_user_in
 
 # A user's own sessions and the views they have open as players.
 _REVOKE = "DELETE FROM user_sessions WHERE user_id = ? OR acting_user_id = ?"
@@ -43,7 +43,7 @@ def clean_reason(reason: str | None) -> str:
 
 
 def _account(conn, user_id: int) -> dict | None:
-    row = conn.execute(f"SELECT {_ACCOUNT_COLUMNS} FROM users WHERE id = ?", (user_id,)).fetchone()
+    row = conn.execute(f"SELECT {_ACCOUNT_COLUMNS} FROM users WHERE id = ? AND placeholder = 0", (user_id,)).fetchone()
     return dict(row) if row else None
 
 
@@ -95,7 +95,7 @@ def change_role(token: str, target_id: int, new_role: str, reason: str | None) -
         # Live role checks already apply; signing out also stops open tabs
         # from carrying on with the old role's view.
         revoked = conn.execute(_REVOKE, (target["user_id"], target["user_id"])).rowcount
-        drop_orphan_view_profiles(conn)
+        drop_view_leftovers(conn)
         return {"before": target["role"], "after": new_role, "sessions_revoked": revoked}
 
     return _staff_write(token, "account.role.change", target_id, reason, apply)
@@ -106,7 +106,7 @@ def revoke_sessions(token: str, target_id: int, reason: str | None) -> dict:
         if not roles.can(actor["role"], "revoke_sessions"):
             raise AdminError(403, "forbidden", "denied")
         revoked = conn.execute(_REVOKE, (target["user_id"], target["user_id"])).rowcount
-        drop_orphan_view_profiles(conn)
+        drop_view_leftovers(conn)
         return {"sessions_revoked": revoked}
 
     return _staff_write(token, "account.sessions.revoke", target_id, reason, apply)
@@ -139,8 +139,8 @@ def lookup(query: str) -> list[dict]:
         rows = conn.execute(
             f"""
             {_WITH_MINECRAFT}
-            WHERE u.discord_user_id = ? OR lower(u.discord_username) = lower(?)
-               OR lower(u.discord_global_name) = lower(?)
+            WHERE u.placeholder = 0 AND (u.discord_user_id = ? OR lower(u.discord_username) = lower(?)
+               OR lower(u.discord_global_name) = lower(?))
             ORDER BY u.id LIMIT ?
             """,
             (text, text, text, _LOOKUP_LIMIT),

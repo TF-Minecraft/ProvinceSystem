@@ -60,7 +60,7 @@ _LINKS = """
            dl.linked_at, dl.left_guild_at, dl.grace_until,
            u.id AS user_id, u.role, u.discord_username AS account_username,
            u.discord_global_name, u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
-    FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id
+    FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0
 """
 _ROSTER = """
     SELECT player_uuid, realm_id, character_id, name, status, race, class, updated_at

@@ -94,6 +94,8 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         if "role" not in columns:
             conn.execute(f"ALTER TABLE users ADD COLUMN {_USERS_ROLE_COLUMN}")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+        if "placeholder" not in columns:
+            conn.execute("ALTER TABLE users ADD COLUMN placeholder INTEGER NOT NULL DEFAULT 0")
         user_sessions = {row["name"] for row in conn.execute("PRAGMA table_info(user_sessions)")}
         if "acting_user_id" not in user_sessions:
             conn.execute(
