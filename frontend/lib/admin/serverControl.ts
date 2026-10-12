@@ -1,0 +1,89 @@
+import { adminRequest } from "./api";
+import type { ServerKey } from "./servers";
+
+export type ReleaseChange = {
+  repo: string;
+  old_version: string;
+  version: string;
+  asset: string;
+};
+export type Activation = { name: string; loaded: string | null; version: string };
+export type ServerPlan = {
+  id: string;
+  server: ServerKey;
+  mode: "restart" | "latest";
+  expires_at: number;
+  changes: ReleaseChange[];
+  activation: Activation[];
+  skipped: { repo: string; reason: string }[];
+  last_backup_at: number | null;
+};
+export type ServerJob = {
+  id: string;
+  server: ServerKey;
+  phase:
+    | "countdown"
+    | "installing"
+    | "restarting"
+    | "checking"
+    | "reopening"
+    | "complete"
+    | "failed"
+    | "cancelled"
+    | "awaiting_review"
+    | "resolved";
+  deadline: number;
+  maintenance_started: boolean;
+  emergency_override?: boolean;
+  error: string | null;
+  changes: ReleaseChange[];
+  activation: Activation[];
+};
+export type ControlStatus = { status: string; jobs: ServerJob[]; allowed_servers?: ServerKey[] };
+
+export function getControl(): Promise<ControlStatus> {
+  return adminRequest("/admin/servers/control");
+}
+
+export function planServer(server: ServerKey, mode: ServerPlan["mode"]): Promise<ServerPlan> {
+  return adminRequest(`/admin/servers/${server}/plan`, { method: "POST", body: JSON.stringify({ mode }) });
+}
+
+export function serverAction(
+  server: ServerKey,
+  action: "start" | "cancel" | "reopen" | "resolve",
+  id: string,
+  reason: string,
+  backup_ref = "",
+  emergency_override = false,
+): Promise<ServerJob> {
+  return adminRequest(`/admin/servers/${server}/${action}`, {
+    method: "POST",
+    body: JSON.stringify({ id, reason, backup_ref, emergency_override }),
+  });
+}
+
+export const CONTROL_MESSAGES: Record<string, string> = {
+  control_not_configured: "Server controls need the host connection to be configured.",
+  control_unavailable: "The server control connection is unavailable.",
+  server_job_active: "A restart is already running or needs attention. Finish it before starting another.",
+  plugins_changed: "The plugin files changed. Review a fresh plan before restarting.",
+  plan_expired: "This plan expired. Review a fresh plan.",
+  pending_plugin_update: "A plugin waits in the update folder. Resolve it before using these controls.",
+  plugin_inventory_conflict: "Duplicate or unreadable plugins need resolving before a restart.",
+  server_not_ready: "The server must be running with maintenance off before starting a restart.",
+  maintenance_changed: "Maintenance changed during the countdown. Check the server before continuing.",
+  maintenance_unavailable: "Maintenance could not be confirmed. Check the server.",
+  releases_unavailable: "GitHub releases could not be checked. Try again later.",
+  release_checksum_failed: "A release failed its checksum check. Installation stopped.",
+  release_identity_failed: "A release did not match the installed plugin. Installation stopped.",
+  startup_check_failed: "Startup checks failed. Maintenance stays on until the server passes its checks.",
+  helper_interrupted: "The control helper restarted. Check the server before continuing.",
+  server_operation_failed: "The server operation failed. Check the server and its logs.",
+  save_failed: "The server did not confirm saving. Installation stopped.",
+  cannot_cancel: "The restart has passed the countdown and can no longer be cancelled.",
+  reason_required: "Give a reason of at least 3 characters.",
+  scheduled_restart_conflict: "This would overlap AMP’s scheduled restart. Try outside the scheduled restart window.",
+  backup_required: "Record the backup prepared for this Main restart.",
+  server_not_allowed: "This website can only control Dev.",
+};

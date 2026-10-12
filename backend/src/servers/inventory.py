@@ -60,6 +60,7 @@ class Release:
     url: str
     asset: str
     sha256: str
+    tag: str = ""
 
     @property
     def prefix(self) -> str:
@@ -106,7 +107,7 @@ def repo_releases(repo: str, data: Any) -> list[Release]:
             continue
         found.append(Release(repo=repo, version=tag[1:] if tag[:1] in "vV" else tag, published_at=published,
                              url=str(release.get("html_url") or ""), asset=str(jar["name"]),
-                             sha256=str(jar["digest"]).split(":", 1)[1].lower()))
+                             sha256=str(jar["digest"]).split(":", 1)[1].lower(), tag=tag))
     return sorted(found, key=lambda r: r.published_at, reverse=True)
 
 

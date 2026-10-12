@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import json
 import re
+import urllib.parse
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 from starlette.concurrency import run_in_threadpool
 
 from src.api.auth_routes import (
@@ -29,6 +30,9 @@ from src.auth import admin, audit, players, roles, users, view_as
 from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
 from src.servers import inventory as servers
+from src.servers import control as server_control
+from src.skins.db import connect
+from src.auth.users import session_user_in
 from src.scripts.util.dirs import validate_map
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
@@ -44,6 +48,16 @@ class RoleBody(BaseModel):
 
 class ReasonBody(BaseModel):
     reason: str = Field(..., max_length=admin.REASON_MAX * 2)
+
+
+class ServerPlanBody(BaseModel):
+    mode: str = Field(..., pattern=r"^(restart|latest)$")
+
+
+class ServerJobBody(ReasonBody):
+    id: str = Field(..., pattern=r"^[0-9a-f]{32}$")
+    backup_ref: str = Field("", max_length=500)
+    emergency_override: StrictBool = False
 
 
 def _staff(request: Request) -> dict:
@@ -201,6 +215,88 @@ def get_servers(request: Request, response: Response):
     return servers.overview()
 
 
+@admin_router.get("/servers/control")
+def get_server_control(request: Request, response: Response):
+    _capable(request, "view_servers")
+    _no_store(response)
+    return server_control.status()
+
+
+@admin_router.post("/servers/{server}/plan")
+def plan_server(server: str, body: ServerPlanBody, request: Request, response: Response):
+    _capable(request, "manage_servers")
+    require_same_origin(request, _config())
+    _no_store(response)
+    try:
+        return server_control.plan(server, body.mode)
+    except server_control.ControlError as exc:
+        raise HTTPException(exc.status, detail=exc.code) from None
+
+
+def _server_write(request: Request, server: str, operation: str, body: ServerJobBody):
+    action = "server." + operation
+    actor = None
+    config = _config()
+    token = request.cookies.get(session_cookie(config))
+    try:
+        # Recheck role and session under the same write lock as the audit entry.
+        with connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            actor = session_user_in(conn, token)
+            if actor is None:
+                raise HTTPException(401, detail="not_signed_in")
+            require_same_origin(request, config)
+            if not roles.can(actor["role"], "manage_servers") or actor.get("acting_user_id"):
+                raise HTTPException(403, detail="forbidden")
+            reason = admin.clean_reason(body.reason)
+            if body.emergency_override and (server != "main" or operation != "start"):
+                raise HTTPException(400, detail="bad_server_action")
+            detail = {"server": server, "job_id": body.id}
+            if operation == "start":
+                detail["emergency_override"] = body.emergency_override
+            # Record the intent before crossing the process boundary. The host
+            # persists the accepted job; the same id can safely be retried.
+            audit.record(conn, actor=actor, action=action, outcome="requested", reason=reason, detail=detail)
+            conn.commit()
+        result = server_control.request(operation, server=server,
+                                        **{"plan_id" if operation == "start" else "job_id": body.id},
+                                        **({"backup_ref": body.backup_ref, "emergency_override": body.emergency_override} if operation == "start" else {}),
+                                        actor=f"{urllib.parse.urlparse(config.site_url).hostname}:user:{actor['user_id']}", reason=reason)
+        audit.record_refusal(actor=actor, action=action, outcome="ok", reason=reason, detail=detail)
+        return result
+    except (HTTPException, admin.AdminError, server_control.ControlError) as exc:
+        code = exc.detail if isinstance(exc, HTTPException) else exc.code
+        status = exc.status_code if isinstance(exc, HTTPException) else exc.status
+        if actor is not None:
+            audit.record_refusal(actor=actor, action=action, outcome="denied" if status in {401, 403} else "failed",
+                                 detail={"server": server, "job_id": body.id, "error": code})
+        raise HTTPException(status, detail=code) from None
+
+
+@admin_router.post("/servers/{server}/start")
+def start_server(server: str, body: ServerJobBody, request: Request, response: Response):
+    _no_store(response)
+    return _server_write(request, server, "start", body)
+
+
+@admin_router.post("/servers/{server}/cancel")
+def cancel_server(server: str, body: ServerJobBody, request: Request, response: Response):
+    _no_store(response)
+    return _server_write(request, server, "cancel", body)
+
+
+@admin_router.post("/servers/{server}/reopen")
+def reopen_server(server: str, body: ServerJobBody, request: Request, response: Response):
+    _no_store(response)
+    return _server_write(request, server, "reopen", body)
+
+
+@admin_router.post("/servers/{server}/resolve")
+def resolve_server(server: str, body: ServerJobBody, request: Request, response: Response):
+    _no_store(response)
+    return _server_write(request, server, "resolve", body)
+
+
 @admin_router.post("/accounts/{user_id}/role")
 def post_role(user_id: int, body: RoleBody, request: Request, response: Response):
     _no_store(response)
@@ -232,6 +328,10 @@ def post_view_as(player_uuid: str, request: Request):
 # Request validation runs before the handlers above, so malformed writes are
 # audited here: the action, the target and which fields failed, never values.
 _WRITE_ROUTES = (
+    (re.compile(r"^/admin/servers/[^/]+/start$"), "server.start"),
+    (re.compile(r"^/admin/servers/[^/]+/cancel$"), "server.cancel"),
+    (re.compile(r"^/admin/servers/[^/]+/reopen$"), "server.reopen"),
+    (re.compile(r"^/admin/servers/[^/]+/resolve$"), "server.resolve"),
     (re.compile(r"^/admin/accounts/([^/]+)/role$"), "account.role.change"),
     (re.compile(r"^/admin/accounts/([^/]+)/sessions/revoke$"), "account.sessions.revoke"),
     (re.compile(r"^/admin/luckperms/changes$"), "luckperms.change"),
