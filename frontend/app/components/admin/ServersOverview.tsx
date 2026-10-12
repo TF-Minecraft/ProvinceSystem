@@ -17,7 +17,7 @@ import {
 import { formatLocal } from "@/lib/skins/formatTime";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import { ControlDialog, ControlNotice, ServerActions, useServerControls } from "./ServerControls";
-import { badgeClass, chipClass, inputClass, mutedClass, panelClass, quietButtonClass, warnClass } from "./ui";
+import { badgeClass, inputClass, mutedClass, panelClass, quietButtonClass, warnClass } from "./ui";
 
 const TONE: Record<Tone, string> = {
   bad: "bg-[#5a2a2a] text-[#f0c0c0]",
@@ -28,13 +28,20 @@ const TONE: Record<Tone, string> = {
 
 type View = "look" | "all" | "others";
 
-// Written out in full so Tailwind finds them: one column per readable server.
+// Written out in full so Tailwind finds them: one column per readable server, after the plugin
+// name and (for TFMC plugins) its latest release.
 const COLUMNS: Record<number, string> = {
-  1: "grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)]",
-  2: "grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,1fr)]",
+  1: "grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)]",
+  2: "grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,1fr)]",
+};
+const RELEASE_COLUMNS: Record<number, string> = {
+  1: "grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(10rem,14rem)_6rem_minmax(0,1fr)]",
+  2: "grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(10rem,14rem)_6rem_minmax(0,1fr)_minmax(0,1fr)]",
 };
 
 const versionClass = "break-all font-mono text-xs text-[var(--tfmc-cream)]";
+// A copy that matches the latest release has nothing to say, so it sits back.
+const currentClass = "break-all font-mono text-xs text-[var(--tfmc-mist)]";
 const captionClass = "text-xs text-[var(--tfmc-mist)]";
 const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-[var(--tfmc-mist)]";
 
@@ -114,36 +121,37 @@ function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins:
   );
 }
 
+/** Just the time when the check ran today. */
+function checkedAt(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime()) || at.toDateString() !== new Date().toDateString()) return formatLocal(iso);
+  return at.toLocaleTimeString(undefined, { timeStyle: "short" });
+}
+
 function CopyCell({ copy, label, latest }: { copy: PluginCopy | undefined; label: string; latest: string }) {
   if (!copy) return <div />;
   const found = flags(copy);
   const pending = waiting(copy);
   const shown = copy.version ?? copy.files[0] ?? "";
+  const current = !found.length && shown === latest;
   return (
     <div className="min-w-0">
       <p className={`${labelClass} sm:hidden`}>{label}</p>
-      {copy.state !== "missing" ? (
-        pending && copy.loaded ? (
-          <p className={versionClass}>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1" title={copy.files.join(", ")}>
+        {copy.state === "missing" ? null : pending && copy.loaded ? (
+          <span className={versionClass}>
             {copy.loaded} <span className="text-[#f0d090]">→ {shown}</span>
-          </p>
+          </span>
         ) : (
-          <p className={versionClass}>{copy.loaded ?? shown}</p>
-        )
-      ) : null}
-      {found.length ? (
-        <p className="mt-1 flex flex-wrap gap-1">
-          {found.map((flag) => (
-            <span key={flag.label} className={`${badgeClass} ${TONE[flag.tone]}`}>
-              {flag.label}
-            </span>
-          ))}
-        </p>
-      ) : null}
-      {copy.state === "older_release" ? <p className={captionClass}>v{latest} is out</p> : null}
-      {copy.state === "not_release" || copy.state === "test_build" || copy.duplicate ? (
-        <p className={`${captionClass} break-all`}>{copy.files.join(", ")}</p>
-      ) : null}
+          <span className={current ? currentClass : versionClass}>{copy.loaded ?? shown}</span>
+        )}
+        {found.map((flag) => (
+          <span key={flag.label} className={`${badgeClass} ${TONE[flag.tone]}`}>
+            {flag.label}
+          </span>
+        ))}
+      </p>
+      {copy.duplicate ? <p className={`${captionClass} mt-1 break-all`}>{copy.files.join(", ")}</p> : null}
     </div>
   );
 }
@@ -186,25 +194,23 @@ export default function ServersOverview() {
   const rows = (view === "look" ? needsLook : data.plugins).filter((p) => p.repo.toLowerCase().includes(needle));
   const others = data.others.filter((o) => o.name.toLowerCase().includes(needle));
   const columns = COLUMNS[readable.length] ?? COLUMNS[2];
-  const tabs: [View, string][] = [
-    ["look", `Needs a look · ${needsLook.length}`],
-    ["all", `All TFMC plugins · ${data.plugins.length}`],
-    ["others", `Other plugins · ${data.others.length}`],
+  const releaseColumns = RELEASE_COLUMNS[readable.length] ?? RELEASE_COLUMNS[2];
+  const tabs: [View, string, number][] = [
+    ["look", "Needs a look", needsLook.length],
+    ["all", "TFMC", data.plugins.length],
+    ["others", "Other", data.others.length],
   ];
 
   return (
     <>
-      <div className="mt-6 flex flex-wrap items-baseline justify-between gap-2">
-        <p className={mutedClass}>Main should run the latest release of every TFMC plugin. Dev may run test builds.</p>
-        <p className={captionClass}>
-          Checked {formatLocal(data.checked_at)} ·{" "}
-          <button type="button" className={quietButtonClass} onClick={load} disabled={loading}>
-            {loading ? "Checking…" : "Check again"}
-          </button>
-        </p>
-      </div>
+      <p className={`mt-6 text-right ${captionClass}`}>
+        Checked {checkedAt(data.checked_at)} ·{" "}
+        <button type="button" className={quietButtonClass} onClick={load} disabled={loading}>
+          {loading ? "Checking…" : "Check again"}
+        </button>
+      </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {data.servers.map((server) => (
           <ServerCard
             key={server.key}
@@ -229,18 +235,29 @@ export default function ServersOverview() {
 
       {readable.length ? (
         <section className={panelClass}>
-          <div className="flex flex-wrap items-center gap-2">
-            {tabs.map(([key, text]) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={view === key}
-                onClick={() => setView(key)}
-                className={`${chipClass} ${view === key ? "!border-[var(--tfmc-accent)] !bg-[var(--tfmc-moss)]" : ""}`}
-              >
-                {text}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className={`flex w-full overflow-hidden rounded-sm border sm:inline-flex sm:w-auto ${hairline}`}>
+              {tabs.map(([key, text, n]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={view === key}
+                  aria-label={`${text}${key === "look" ? "" : " plugins"}, ${n}`}
+                  onClick={() => setView(key)}
+                  className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap border-l px-3 py-1.5 text-xs first:border-l-0 ${hairline} ${
+                    view === key
+                      ? "bg-[var(--tfmc-moss)] text-[var(--tfmc-cream)]"
+                      : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
+                  }`}
+                >
+                  <span>
+                    {text}
+                    {key === "look" ? null : <span className="hidden sm:inline"> plugins</span>}
+                  </span>
+                  <span className="tabular-nums text-[var(--tfmc-mist)]">{n}</span>
+                </button>
+              ))}
+            </div>
             <input
               className={`${inputClass} ml-auto w-full sm:w-56`}
               placeholder="Find a plugin"
@@ -265,7 +282,7 @@ export default function ServersOverview() {
               {others.map((other) => (
                 <li
                   key={other.name}
-                  className={`${columns} border-b border-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] py-2`}
+                  className={`${columns} items-baseline border-b border-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] py-2.5`}
                 >
                   <p className="col-span-2 text-sm font-semibold text-[var(--tfmc-cream)] sm:col-span-1">
                     {other.name}
@@ -292,29 +309,30 @@ export default function ServersOverview() {
           ) : (
             <ul className="mt-4">
               <li
-                className={`${columns} hidden border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] pb-2 sm:grid`}
+                className={`${releaseColumns} hidden border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] pb-2 sm:grid`}
               >
-                <span className={labelClass}>Plugin · latest release</span>
+                <span className={labelClass}>Plugin</span>
+                <span className={labelClass}>Latest</span>
                 {readable.map((s) => (
                   <span key={s.key} className={labelClass}>
-                    {s.label} · running
+                    {s.label}
                   </span>
                 ))}
               </li>
               {rows.map((plugin) => (
                 <li
                   key={plugin.repo}
-                  className={`${columns} border-b border-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] py-3`}
+                  className={`${releaseColumns} items-baseline border-b border-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] py-2.5`}
                 >
-                  <div className="col-span-2 flex items-baseline justify-between gap-2 sm:col-span-1 sm:block">
+                  <div className="col-span-2 flex items-baseline justify-between gap-2 sm:contents">
                     <p className="text-sm font-semibold text-[var(--tfmc-cream)]">{plugin.repo}</p>
                     <a
                       href={plugin.latest.url}
                       target="_blank"
                       rel="noreferrer"
-                      className={`${captionClass} font-mono hover:text-[var(--tfmc-cream)] hover:underline`}
+                      className="self-baseline font-mono text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] hover:underline sm:justify-self-start"
                     >
-                      v{plugin.latest.version}
+                      {plugin.latest.version}
                     </a>
                   </div>
                   {readable.map((s) => (
