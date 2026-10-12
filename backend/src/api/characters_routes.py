@@ -64,6 +64,7 @@ from src.characters.wardrobe import (
     store_masked_template,
     upload_pending_create_wardrobe,
     upload_slot,
+    worn_skin_texture,
 )
 from src.skins.auth import (
     HEADER_PLUGIN_KEY,
@@ -1051,6 +1052,20 @@ def plugin_get_wardrobe(
     _require_plugin(x_plugin_key)
     try:
         return get_wardrobe_for_plugin(player_uuid, character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.get("/plugin/wardrobe/{player_uuid}/{character_id}/worn")
+def plugin_get_worn_skin(
+    player_uuid: str,
+    character_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Signed texture of the worn skin for selector portraits. Read-only, unlike the wardrobe pull."""
+    _require_plugin(x_plugin_key)
+    try:
+        return worn_skin_texture(player_uuid, character_id)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
 
