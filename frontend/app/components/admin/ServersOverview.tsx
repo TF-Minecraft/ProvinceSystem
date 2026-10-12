@@ -16,6 +16,7 @@ import {
 } from "@/lib/admin/servers";
 import { formatLocal } from "@/lib/skins/formatTime";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
+import ServerControls from "./ServerControls";
 import {
   badgeClass,
   chipClass,
@@ -186,6 +187,8 @@ export default function ServersOverview() {
           <ServerCard key={server.key} server={server} plugins={data.plugins} />
         ))}
       </div>
+
+      <ServerControls onComplete={load} />
 
       {data.github.status === "unavailable" ? (
         <p className={`mt-4 ${warnClass}`} role="alert">

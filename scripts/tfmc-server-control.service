@@ -1,0 +1,14 @@
+[Unit]
+Description=TFMC Minecraft server control
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/tfmc-server-control/code/backend
+Environment=SERVER_CONTROL_HOME=%h/.local/share/tfmc-server-control
+ExecStart=/usr/bin/python3 -m src.servers.host
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+[Install]
+WantedBy=default.target
