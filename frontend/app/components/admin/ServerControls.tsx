@@ -314,7 +314,7 @@ export default function ServerControls({ onComplete }: { onComplete: () => void 
               />
             </label>
           ) : null}
-          {plan.server === "main" && plan.changes.length ? (
+          {plan.server === "main" && (plan.changes.length || plan.activation.length) ? (
             <p className={`mt-3 ${mutedClass}`}>
               Main stays in maintenance after startup so you can check the changed features, then press Recheck and
               reopen.
