@@ -10,7 +10,6 @@ export type WardrobeItem = {
   /** What it is: "Sword", "Armour set", "Drink". */
   detail: string;
   status: string;
-  denyReason?: string | null;
   picture: ReactNode;
 };
 
@@ -125,7 +124,6 @@ export function WardrobeCard({ item, onOpen }: { item: WardrobeItem; onOpen: (id
         <div className="px-2.5 pb-3 pt-2">
           <p className="truncate font-semibold text-[var(--tfmc-cream)]">{item.name}</p>
           <p className="text-xs text-[var(--tfmc-mist)]">{item.detail}</p>
-          {item.denyReason ? <p className="mt-1 text-xs text-[#e8a0a0]">{item.denyReason}</p> : null}
         </div>
       </a>
     </li>

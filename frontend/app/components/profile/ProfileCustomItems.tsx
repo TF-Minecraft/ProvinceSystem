@@ -122,7 +122,6 @@ export function CustomItemList({
                 name: itemName(item),
                 detail: item.character_name,
                 status: chipStatus(item),
-                denyReason: item.deny_reason,
                 picture: <ItemPicture item={item} sessionToken={sessionToken} />,
               }}
             />

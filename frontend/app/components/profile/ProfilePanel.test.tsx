@@ -1261,6 +1261,8 @@ it("opens a custom item in its own tab rather than the character's kits", async 
   visit("items");
   render(<ProfilePanel />);
   const card = await screen.findByRole("link", { name: /Exhumer's Spade/ });
+  // The card keeps to the grid's height; the reason is on the item's page.
+  expect(screen.queryByText("Too bright")).toBeNull();
   expect(card.getAttribute("href")).toBe("/profile?tab=items&item=c1%2Firon_hunting_knife");
   fireEvent.click(card);
   expect(await screen.findByRole("heading", { level: 2, name: "Exhumer's Spade" })).toBeTruthy();
