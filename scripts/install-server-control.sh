@@ -15,4 +15,21 @@ done
 install -m 600 "$source_root/scripts/tfmc-server-control.service" /home/ryan/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now tfmc-server-control.service
+cd "$control_root/code/backend"
+python3 - <<'PY'
+import os
+import time
+from src.servers import control
+
+for attempt in range(50):
+    ready = True
+    for site in ("www", "dev"):
+        os.environ["SERVER_CONTROL_SOCKET"] = f"/home/ryan/.local/share/tfmc-server-control/{site}/control.sock"
+        ready = ready and control.status()["status"] == "available"
+    if ready:
+        break
+    time.sleep(.2)
+else:
+    raise SystemExit("The helper did not expose both sockets. Check its user journal.")
+PY
 systemctl --user is-active tfmc-server-control.service
