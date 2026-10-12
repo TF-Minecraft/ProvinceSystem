@@ -431,7 +431,7 @@ export async function getSkinThumbnail(id: string, sessionToken: string): Promis
 /** One of the owner's uploaded textures or models, or null when the skin has no such file. */
 export async function getSubmissionFile(id: string, filename: string, sessionToken: string): Promise<File | null> {
   const res = await apiFetch(
-    `${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/files/${encodeURIComponent(filename)}`,
+    `${getApiBase()}/skins/submissions/${encodeURIComponent(id)}/files?name=${encodeURIComponent(filename)}`,
     { headers: { Authorization: `Bearer ${sessionToken}` } },
   );
   if (!res.ok) return null;
