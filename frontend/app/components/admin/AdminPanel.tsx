@@ -78,53 +78,43 @@ export default function AdminPanel() {
 
   const { me, staff } = load;
 
+  // The roster beside the lookup on wide screens; stacked below that.
   return (
-    <>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Signed in as {me.discord_username ? `@${me.discord_username}` : "staff"} · {roleLabel(me.role)}. Changes and
-        reasons are recorded.
-      </p>
+    <div className="grid gap-x-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+      <section className={panelClass} aria-label="Staff">
+        <h2 className={headingClass}>Staff</h2>
+        <AccountTable accounts={staff} me={me} onChanged={afterChange} empty="No staff yet." />
+      </section>
 
-      {/* The roster beside the lookup on wide screens; stacked below that. */}
-      <div className="grid gap-x-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <section className={panelClass} aria-label="Staff">
-          <h2 className={headingClass}>Staff</h2>
-          <AccountTable accounts={staff} me={me} onChanged={afterChange} empty="No staff yet." />
-        </section>
-
-        <section className={panelClass} aria-label="Find an account">
-          <h2 className={headingClass}>Find an account</h2>
-          <form onSubmit={onSearch} className="mt-3 flex flex-wrap gap-3">
-            <label className="sr-only" htmlFor="admin-lookup">
-              Discord username, display name or ID
-            </label>
-            <input
-              id="admin-lookup"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Discord username, display name or ID"
-              autoComplete="off"
-              spellCheck={false}
-              className={`${inputClass} min-w-0 flex-1`}
-            />
-            <button type="submit" disabled={searching} className={buttonClass}>
-              {searching ? "Searching…" : "Find"}
-            </button>
-          </form>
-          <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
-            Exact matches only. People appear once they have signed in to the website.
+      <section className={panelClass} aria-label="Find an account">
+        <h2 className={headingClass}>Find an account</h2>
+        <form onSubmit={onSearch} className="mt-3 flex flex-wrap gap-3">
+          <label className="sr-only" htmlFor="admin-lookup">
+            Discord username, display name or ID
+          </label>
+          <input
+            id="admin-lookup"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Discord username, display name or ID"
+            autoComplete="off"
+            spellCheck={false}
+            className={`${inputClass} min-w-0 flex-1`}
+          />
+          <button type="submit" disabled={searching} className={buttonClass}>
+            {searching ? "Searching…" : "Find"}
+          </button>
+        </form>
+        {searchError ? (
+          <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
+            {searchError}
           </p>
-          {searchError ? (
-            <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
-              {searchError}
-            </p>
-          ) : null}
-          {results ? (
-            <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No account matches that." />
-          ) : null}
-        </section>
-      </div>
-    </>
+        ) : null}
+        {results ? (
+          <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No match. They may not have signed in yet." />
+        ) : null}
+      </section>
+    </div>
   );
 }
 
