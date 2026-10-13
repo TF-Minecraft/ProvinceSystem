@@ -111,7 +111,12 @@ export default function AdminPanel() {
           </p>
         ) : null}
         {results ? (
-          <AccountTable accounts={results} me={me} onChanged={afterChange} empty="No match. They may not have signed in yet." />
+          <AccountTable
+            accounts={results}
+            me={me}
+            onChanged={afterChange}
+            empty="No match. They may not have signed in yet."
+          />
         ) : null}
       </section>
     </div>
