@@ -868,7 +868,23 @@ it("lays skins out as a wardrobe and starts a new one without a code", async () 
 const CHARACTERS = [
   { id: "c1", status: "ALIVE", name: "Vaelthir", description: "A quiet scout." },
   { id: "c2", status: "pending", name: "Mira" },
-  { id: "c3", status: "DEAD", name: "Old Tamsin" },
+  {
+    id: "c3",
+    status: "DEAD",
+    name: "Old Tamsin",
+    died_at: null,
+    estate: {
+      death_id: "d-3",
+      status: "DECIDED",
+      revision: 0,
+      due_at: "2026-10-14T09:00:00Z",
+      decided_at: "2026-10-14T09:01:00Z",
+      heir_name: "Kira",
+      recipients: { money: { kind: "CHARACTER", name: "Kira" }, guild_locks: { kind: "WAITING", name: null } },
+      money_moved_cents: 34025,
+      participants: { thievery: { outcome: "DONE", revision: 0, counts: { locks: 297 } } },
+    },
+  },
 ] as unknown as ProfileDashboard["characters"];
 
 it("opens a character in its tab, and Back returns to the list", async () => {
@@ -897,10 +913,27 @@ it("opens a character in its tab, and Back returns to the list", async () => {
 it("sends a character's address back to the list when it can't be opened", async () => {
   vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
   vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
-  window.history.replaceState(null, "", "/profile?tab=characters&character=c3");
+  window.history.replaceState(null, "", "/profile?tab=characters&character=gone");
   render(<ProfilePanel />);
   expect(await screen.findByRole("link", { name: /Vaelthir/ })).toBeTruthy();
   expect(window.location.search).toBe("");
+});
+
+it("opens a dead character's memorial: death, heir and where the estate went", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
+  render(<ProfilePanel />);
+  fireEvent.click(await screen.findByRole("link", { name: /Old Tamsin/ }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Old Tamsin" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=characters&character=c3");
+  const value = (label: string) => screen.getByText(label, { selector: "dt" }).nextElementSibling?.textContent;
+  expect(value("Died")).toBe("Before records began");
+  expect(value("Heir")).toBe("Kira");
+  expect(value("Estate")).toBe("Passed on 14 Oct 2026");
+  expect(value("Money")).toBe("Kira (340.25)");
+  expect(value("Guild locks")).toBe("Waiting for a guild leader");
+  expect(value("Moved")).toBe("297 locks");
+  expect(screen.queryByRole("link", { name: /Wardrobe/ })).toBeNull();
 });
 
 it("cancels a pending character from its sheet and returns to the list", async () => {

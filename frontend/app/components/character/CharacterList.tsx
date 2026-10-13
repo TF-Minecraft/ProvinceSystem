@@ -7,6 +7,7 @@ import { characterFace, type CharacterListItem, type CreationCatalog } from "../
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
 import { characterPath } from "../../../lib/profile/paths";
 import { OPENABLE } from "../profile/ProfileCharacter";
+import CharacterWill from "./CharacterWill";
 
 type Props = {
   characters: CharacterListItem[];
@@ -17,6 +18,8 @@ type Props = {
   onOpen: (id: string) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** After a will change is sent. */
+  onWillChanged?: () => void;
   /** Reads each character's wardrobe for its face. */
   sessionToken?: string | null;
   /** The player's own head stands in for a character without a skin. */
@@ -27,7 +30,7 @@ type Props = {
 type Faces = Record<string, string | null | undefined>;
 
 const cardClass =
-  "flex h-full min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
+  "flex min-w-0 flex-1 min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
 const linkCardClass =
   "group transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
 const tileClass =
@@ -87,12 +90,16 @@ function Card({
   face,
   playerUuid,
   onOpen,
+  sessionToken,
+  onWillChanged,
 }: {
   item: CharacterListItem;
   catalog?: CreationCatalog | null;
   face: string | null | undefined;
   playerUuid?: string | null;
   onOpen: (id: string) => void;
+  sessionToken?: string | null;
+  onWillChanged?: () => void;
 }) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
@@ -101,6 +108,7 @@ function Card({
   const chip = CHIPS[status];
   const linkable = Boolean(item.id) && OPENABLE.has(status);
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
+  const willShown = status === "ALIVE" && Boolean(item.will && sessionToken);
   const body = (
     <>
       <Portrait face={face} playerUuid={playerUuid} faded={faded} />
@@ -130,19 +138,22 @@ function Card({
     onOpen(item.id);
   }
   return (
-    <li className="animate-char-row">
+    <li className="animate-char-row flex min-w-0 flex-col">
       {linkable ? (
         <a
           href={characterPath(item.id)}
           onClick={open}
           data-character-id={item.id}
-          className={`${cardClass} ${linkCardClass}`}
+          className={`${cardClass} ${linkCardClass} ${willShown ? "flex-none rounded-b-none" : ""}`}
         >
           {body}
         </a>
       ) : (
         <div className={`${cardClass} ${faded ? "text-[var(--tfmc-stone)]" : ""}`}>{body}</div>
       )}
+      {willShown ? (
+        <CharacterWill character={item} sessionToken={sessionToken!} onChanged={onWillChanged ?? (() => {})} />
+      ) : null}
     </li>
   );
 }
@@ -201,6 +212,7 @@ export default function CharacterList({
   onOpen,
   onRefresh,
   refreshing = false,
+  onWillChanged,
   sessionToken = null,
   playerUuid = null,
 }: Props) {
@@ -236,7 +248,16 @@ export default function CharacterList({
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {current.map((c) => (
-          <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
+          <Card
+            key={c.id}
+            item={c}
+            catalog={catalog}
+            face={faces[c.id]}
+            playerUuid={playerUuid}
+            onOpen={onOpen}
+            sessionToken={sessionToken}
+            onWillChanged={onWillChanged ?? onRefresh}
+          />
         ))}
         <li>
           {atLimit ? (
@@ -270,7 +291,16 @@ export default function CharacterList({
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {dead.map((c) => (
-              <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
+              <Card
+                key={c.id}
+                item={c}
+                catalog={catalog}
+                face={faces[c.id]}
+                playerUuid={playerUuid}
+                onOpen={onOpen}
+                sessionToken={sessionToken}
+                onWillChanged={onWillChanged ?? onRefresh}
+              />
             ))}
           </ul>
         </section>
