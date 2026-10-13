@@ -27,6 +27,7 @@ import {
   getAncestryChain,
   getNextDrillTarget,
   hasLandSubjects,
+  selectionCropPaths,
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
@@ -1002,6 +1003,14 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     };
   }, [chronicle, regionData, focusRealmId, mapObjects, mapId, mapType, selectedOverlay, selectedId]);
 
+  const warmCropPaths = useMemo(
+    () =>
+      chronicle || !regionData || !hoveredOverlay || !hoveredRegionId
+        ? undefined
+        : selectionCropPaths(hoveredRegionId, regionData, mapObjects),
+    [chronicle, regionData, hoveredOverlay, hoveredRegionId, mapObjects],
+  );
+
   // Escape puts the details away, unless it is closing something in a field.
   useEffect(() => {
     if (!selectedId && !selectedPlaceId && !selectedGuildKey) return;
@@ -1281,6 +1290,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
         onClick={handleMapClick}
         isHoveringClickable={isHoveringClickable}
         focus={mapFocus}
+        warmCropPaths={warmCropPaths}
         fill
         fitMode={fitMode}
         day={day}
