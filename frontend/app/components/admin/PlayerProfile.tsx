@@ -20,6 +20,7 @@ import { usePlayer } from "./PlayerFrame";
 import { profileTab } from "./PlayerTabs";
 import AccountActions from "./AccountActions";
 import PlayerActivity from "./PlayerActivity";
+import PlayerCharacters from "./PlayerCharacters";
 import { Retry, dayHeadingClass, moreClass, type Failure } from "./profileParts";
 import { headingClass, mutedClass, panelClass, rowClass } from "./ui";
 
@@ -91,24 +92,12 @@ export default function PlayerProfile() {
         {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}
       </section>
 
-      <section hidden={tab !== "characters"} className={panelClass} aria-label="Characters">
-        <h3 className={headingClass}>Characters</h3>
-        {profile.characters.length ? (
-          <ul className="mt-3 space-y-1 text-sm">
-            {profile.characters.map((c) => (
-              <li key={`${c.realm_id}:${c.character_id}`} className="text-[var(--tfmc-cream)]">
-                {c.name}
-                <span className="text-[var(--tfmc-stone)]">
-                  {[c.race, c.class, c.status, c.realm_id !== "main" ? c.realm_id : null]
-                    .filter(Boolean)
-                    .map((v) => ` · ${v}`)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className={`mt-3 ${mutedClass}`}>No characters.</p>
-        )}
+      <section
+        hidden={tab !== "characters"}
+        className="mx-auto mt-6 w-full max-w-[45rem] px-2 sm:px-0"
+        aria-label="Characters"
+      >
+        <PlayerCharacters profile={profile} active={tab === "characters"} />
       </section>
     </>
   );
