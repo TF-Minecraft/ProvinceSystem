@@ -202,7 +202,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
               )}`}
             </p>
           ) : (
-            <LoadingSkeleton variant="line" />
+            <LoadingSkeleton variant="line" decorative />
           )}
           {elsewhere ? <p className={mutedClass}>{elsewhere} in another world, listed but not on the map.</p> : null}
           <input
@@ -212,7 +212,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" label="Loading players…" /> : null}
+          {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" decorative /> : null}
           {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
           <ul
             className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"

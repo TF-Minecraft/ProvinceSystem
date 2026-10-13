@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CharactersApiError,
   clearWardrobeSlot,
@@ -23,7 +23,8 @@ import {
   wardrobeSlotToArmModel,
 } from "../../../lib/characters/wardrobeRanks";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
-import WardrobeSlotFrame from "./WardrobeSlotFrame";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
+import WardrobeSlotFrame, { WardrobeSlotSkeleton } from "./WardrobeSlotFrame";
 import WardrobeSlotModal from "./WardrobeSlotModal";
 
 const SLOT_ORDER = ["base", "extra_1", "extra_2", "masked"] as const;
@@ -153,13 +154,46 @@ function hasPendingSlots(data: WardrobeResponse | null): boolean {
   return data.slots.some((s) => s.filled && s.unlocked && Boolean(s.apply_pending));
 }
 
+function WardrobeOutline() {
+  return (
+    <div className="flex flex-col gap-6">
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">Skins</h2>
+        <div className="flex flex-wrap gap-4">
+          {SWAPPABLE_ORDER.map((id) => (
+            <WardrobeSlotSkeleton key={id} />
+          ))}
+        </div>
+      </section>
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">Masked</h2>
+        <p className="mb-3 text-sm text-[var(--tfmc-mist)]">Worn automatically while you wear a mask.</p>
+        <WardrobeSlotSkeleton />
+      </section>
+    </div>
+  );
+}
+
 export default function WardrobeEditor(props: WardrobeEditorProps) {
   const isDraft = props.mode === "draft";
   const slotLimits = props.slotLimits;
   const swappable = isDraft ? Math.max(1, Math.min(3, props.swappableSlots ?? 1)) : 1;
 
-  const [wardrobe, setWardrobe] = useState<WardrobeResponse | null>(null);
+  const [wardrobe, setWardrobe] = useState<WardrobeResponse | null>(() => {
+    if (props.mode !== "live" || !props.uiDev) return null;
+    const unlocked = Math.max(1, Math.min(3, Number(props.uiDevSwappableSlots) || 1));
+    return {
+      character_id: props.characterId,
+      active_slot: null,
+      swappable_slots: unlocked,
+      slots: emptySlots(unlocked),
+    };
+  });
   const [textures, setTextures] = useState<Record<string, string>>({});
+  const textureUrls = useRef<Record<string, string>>({});
+  const textureRequest = useRef(0);
+  const mounted = useRef(true);
+  const [loadingTextures, setLoadingTextures] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalSlot, setModalSlot] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -176,8 +210,20 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     }
   }, []);
 
+  const replaceTextures = useCallback(
+    (next: Record<string, string>) => {
+      const retained = new Set(Object.values(next));
+      revokeTextures(Object.fromEntries(Object.entries(textureUrls.current).filter(([, url]) => !retained.has(url))));
+      textureUrls.current = next;
+      setTextures(next);
+    },
+    [revokeTextures],
+  );
+
   const loadTextures = useCallback(
     async (token: string, characterId: string, data: WardrobeResponse) => {
+      const request = ++textureRequest.current;
+      setLoadingTextures(true);
       const next: Record<string, string> = {};
       await Promise.all(
         data.slots
@@ -186,16 +232,23 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
             try {
               next[s.slot] = await fetchWardrobeTextureBlob(token, characterId, s.slot, s.updated_at ?? Date.now());
             } catch {
-              /* leave empty */
+              /* keep a previous preview when refreshing */
             }
           }),
       );
-      setTextures((prev) => {
-        revokeTextures(prev);
-        return next;
-      });
+      if (!mounted.current || request !== textureRequest.current) {
+        revokeTextures(next);
+        return;
+      }
+      for (const slot of data.slots) {
+        if (slot.filled && !next[slot.slot] && textureUrls.current[slot.slot]) {
+          next[slot.slot] = textureUrls.current[slot.slot];
+        }
+      }
+      replaceTextures(next);
+      setLoadingTextures(false);
     },
-    [revokeTextures],
+    [replaceTextures, revokeTextures],
   );
 
   // Live load
@@ -204,6 +257,9 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     const { characterId, sessionToken, uiDev } = props;
     const uiDevUnlocked = Math.max(1, Math.min(3, Number(props.uiDevSwappableSlots) || 1));
     let cancelled = false;
+    textureRequest.current += 1;
+    setLoadingTextures(false);
+    if (!wardrobe || wardrobe.character_id !== characterId || uiDev) replaceTextures({});
     setError(null);
     void (async () => {
       try {
@@ -235,6 +291,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     })();
     return () => {
       cancelled = true;
+      textureRequest.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -286,21 +343,25 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       const f = files[id];
       if (f) next[id] = URL.createObjectURL(f);
     }
-    setTextures((prev) => {
-      revokeTextures(prev);
-      return next;
-    });
+    textureRequest.current += 1;
+    setLoadingTextures(false);
+    replaceTextures(next);
     return () => revokeTextures(next);
-  }, [isDraft, isDraft ? props.draftFiles : null, revokeTextures]);
+  }, [isDraft, isDraft ? props.draftFiles : null, replaceTextures, revokeTextures]);
 
   useEffect(() => {
+    mounted.current = true;
     return () => {
-      revokeTextures(textures);
+      mounted.current = false;
+      textureRequest.current += 1;
+      revokeTextures(textureUrls.current);
+      textureUrls.current = {};
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [revokeTextures]);
 
-  const liveSwappable = wardrobe?.swappable_slots ?? swappable;
+  const liveWardrobe = !isDraft && wardrobe?.character_id === props.characterId ? wardrobe : null;
+  const wardrobeUnknown = !isDraft && !liveWardrobe;
+  const liveSwappable = liveWardrobe?.swappable_slots ?? swappable;
 
   const slotsById = useMemo(() => {
     const map = new Map<string, WardrobeSlot>();
@@ -320,7 +381,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       }
       return map;
     }
-    for (const s of wardrobe?.slots || []) {
+    for (const s of liveWardrobe?.slots || []) {
       map.set(String(s.slot), s);
     }
     for (const id of SLOT_ORDER) {
@@ -340,12 +401,12 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     isDraft ? props.draftFiles : null,
     isDraft ? props.draftNames : null,
     isDraft ? props.draftModels : null,
-    wardrobe,
+    liveWardrobe,
     swappable,
     liveSwappable,
   ]);
 
-  const activeSlot = !isDraft && wardrobe?.active_slot ? String(wardrobe.active_slot) : null;
+  const activeSlot = liveWardrobe?.active_slot ? String(liveWardrobe.active_slot) : null;
   const modalData = modalSlot ? slotsById.get(modalSlot) : null;
   const swappableIds = SLOT_ORDER.filter((s) => s !== "masked");
 
@@ -536,12 +597,39 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     return wardrobeSlotLabel(id, slot.display_name);
   }
 
+  if (wardrobeUnknown) {
+    return (
+      <div className="flex flex-col gap-6">
+        {error ? (
+          <>
+            <p className="text-sm text-red-300" role="alert">
+              {error}
+            </p>
+            <div aria-hidden="true">
+              <WardrobeOutline />
+            </div>
+          </>
+        ) : (
+          <LoadingSkeleton label="Loading wardrobe…">
+            <WardrobeOutline />
+          </LoadingSkeleton>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {error ? (
         <p className="text-sm text-red-300" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {loadingTextures && SLOT_ORDER.some((id) => slotsById.get(id)?.filled && !textures[id]) ? (
+        <span role="status" aria-busy="true" className="sr-only">
+          Loading wardrobe previews…
+        </span>
       ) : null}
 
       <section>
@@ -559,6 +647,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                 label={labelFor(id, slot)}
                 active={!isDraft && activeSlot === id}
                 textureSrc={textures[id] || null}
+                textureLoading={loadingTextures}
                 lockRuns={lock?.runs}
                 lockPlain={lock?.plain}
                 onOpen={() => tryOpenSlot(id)}
@@ -581,6 +670,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
               label={labelFor("masked", slot)}
               active={false}
               textureSrc={textures.masked || null}
+              textureLoading={loadingTextures}
               onOpen={() => {
                 setModalError(null);
                 setModalSlot("masked");

@@ -278,7 +278,7 @@ function CardStatusMessage({
     return <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{seriesError}</p>;
   }
   if (seriesLoading) {
-    return <LoadingSkeleton variant="chart" label="Loading the ledger…" className="mt-2" />;
+    return <LoadingSkeleton variant="chart" decorative className="mt-2" />;
   }
   return (
     <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
@@ -854,6 +854,11 @@ export default function LedgerChartsPanel({
   const cardProps = { options, seriesLoading, seriesError };
   return (
     <>
+      {seriesLoading && !seriesError && (!series || !wealthFaction || !prestigeFaction || !incomeFaction) ? (
+        <p role="status" className="sr-only">
+          Loading the ledger…
+        </p>
+      ) : null}
       <WealthChart
         {...cardProps}
         series={series}

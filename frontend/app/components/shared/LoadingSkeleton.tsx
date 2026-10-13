@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 type Variant = "content" | "article" | "form" | "list" | "table" | "model" | "map" | "chart" | "line";
 
@@ -119,19 +119,31 @@ export default function LoadingSkeleton({
   variant = "content",
   label = "Loading…",
   className = "",
+  decorative = false,
+  children,
 }: {
   variant?: Variant;
   label?: string;
   className?: string;
+  decorative?: boolean;
+  children?: ReactNode;
 }) {
   const labelId = useId();
   return (
-    <div role="status" aria-busy="true" aria-labelledby={labelId} className={className}>
-      <span id={labelId} className="sr-only">
-        {label}
-      </span>
+    <div
+      role={decorative ? undefined : "status"}
+      aria-busy={decorative ? undefined : true}
+      aria-labelledby={decorative ? undefined : labelId}
+      aria-hidden={decorative ? true : undefined}
+      className={className}
+    >
+      {decorative ? null : (
+        <span id={labelId} className="sr-only">
+          {label}
+        </span>
+      )}
       <div aria-hidden="true" className="h-full motion-safe:animate-pulse">
-        <Outline variant={variant} />
+        {children ?? <Outline variant={variant} />}
       </div>
     </div>
   );

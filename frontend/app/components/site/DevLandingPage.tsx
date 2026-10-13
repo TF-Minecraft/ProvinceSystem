@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@/app/components/shared/LoadingSkeleton";
+import LoadingSkeleton, { Skeleton } from "@/app/components/shared/LoadingSkeleton";
 
 import { useRouter, usePathname } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -103,16 +103,15 @@ export default function DevLandingPage({ loading = false, accessDenied = false, 
           <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-stone)]">Staff access</p>
 
           {showSpinner ? (
-            <div role="status" aria-busy="true" aria-label="Checking access…" className="mt-4">
-              <span className="sr-only">Checking access…</span>
-              <div aria-hidden="true" className="space-y-4 motion-safe:animate-pulse">
+            <LoadingSkeleton label="Checking access…" className="mt-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Skeleton className="h-5 w-28" />
                   <Skeleton className="h-11 w-full" />
                 </div>
                 <Skeleton className="h-10 w-full" />
               </div>
-            </div>
+            </LoadingSkeleton>
           ) : (
             <>
               <form onSubmit={onSubmit} className="mt-4 flex w-full flex-col gap-4">

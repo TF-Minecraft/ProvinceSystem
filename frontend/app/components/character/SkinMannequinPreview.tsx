@@ -20,6 +20,8 @@ type Props = {
   className?: string;
   /** When set, use this arm model instead of inferring from the texture. */
   armModel?: ArmModel | null;
+  /** For previews inside a control or a group with its own loading announcement. */
+  decorative?: boolean;
   /**
    * When set and a source is available, show a bottom-right download control
    * that saves the current skin PNG (e.g. auto-masked preview for editing).
@@ -46,6 +48,7 @@ export default function SkinMannequinPreview({
   source,
   className = "",
   armModel = null,
+  decorative = false,
   downloadFilename = null,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -182,7 +185,12 @@ export default function SkinMannequinPreview({
     <div className={`relative overflow-hidden bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] ${className}`}>
       <div ref={hostRef} className="h-full w-full" />
       {source && loading ? (
-        <LoadingSkeleton variant="model" label="Loading skin preview…" className="absolute inset-0" />
+        <LoadingSkeleton
+          variant="model"
+          label="Loading skin preview…"
+          className="absolute inset-0"
+          decorative={decorative}
+        />
       ) : null}
       {!source ? (
         <p className="absolute inset-0 flex items-center justify-center px-2 text-center text-xs text-[var(--tfmc-mist)]">

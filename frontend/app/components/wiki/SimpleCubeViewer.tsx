@@ -176,10 +176,9 @@ export default function SimpleCubeViewer({
             :
           </span>
         ) : !ready ? (
-          <div role="status" aria-busy="true" aria-label="Loading 3D preview…" className="absolute inset-0 p-1">
-            <span className="sr-only">Loading 3D preview…</span>
-            <Skeleton className="h-full w-full motion-safe:animate-pulse" />
-          </div>
+          <LoadingSkeleton decorative className="absolute inset-0 p-1">
+            <Skeleton className="h-full w-full" />
+          </LoadingSkeleton>
         ) : null}
       </div>
     );

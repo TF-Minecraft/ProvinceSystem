@@ -339,7 +339,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
               data ? (
                 "Loading… showing the previous results"
               ) : (
-                <LoadingSkeleton variant="line" />
+                <LoadingSkeleton variant="line" decorative />
               )
             ) : data ? (
               `${formatClock(moment, true)} · ${seenNow} of ${drawn.length} players seen or estimated`
@@ -382,7 +382,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                 </button>
               ) : null}
             </div>
-            {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" label="Loading players…" /> : null}
+            {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" decorative /> : null}
             {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
             <ul
               className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"

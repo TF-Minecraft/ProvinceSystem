@@ -5,6 +5,7 @@ import type { LoreRun } from "../../../lib/characters/lorePreview";
 import type { WardrobeSlot } from "../../../lib/characters/api";
 import { wardrobeSlotToArmModel } from "../../../lib/characters/wardrobeRanks";
 import FormattedMcRuns from "../shared/FormattedMcRuns";
+import LoadingSkeleton, { Skeleton } from "../shared/LoadingSkeleton";
 import SkinMannequinPreview from "./SkinMannequinPreview";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   label: string;
   active: boolean;
   textureSrc: string | null;
+  textureLoading?: boolean;
   lockRuns?: LoreRun[] | null;
   lockPlain?: string | null;
   onOpen: () => void;
@@ -19,11 +21,21 @@ type Props = {
   equipping?: boolean;
 };
 
+export function WardrobeSlotSkeleton() {
+  return (
+    <div className="flex w-[7.5rem] flex-col gap-2 sm:w-36">
+      <Skeleton className="aspect-[3/5] w-full border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)]" />
+      <Skeleton className="mx-auto h-4 w-16" />
+    </div>
+  );
+}
+
 export default function WardrobeSlotFrame({
   slot,
   label,
   active,
   textureSrc,
+  textureLoading = false,
   lockRuns,
   lockPlain,
   onOpen,
@@ -77,11 +89,16 @@ export default function WardrobeSlotFrame({
               <SkinMannequinPreview
                 source={textureSrc}
                 armModel={wardrobeSlotToArmModel(slot.model)}
+                decorative
                 className="absolute inset-0 h-full w-full pointer-events-none"
               />
+            ) : slot.filled && textureLoading ? (
+              <LoadingSkeleton variant="model" decorative className="absolute inset-0" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]">
-                <span className="text-xs text-[var(--tfmc-mist)]">Empty</span>
+                <span className="px-2 text-center text-xs text-[var(--tfmc-mist)]">
+                  {slot.filled ? "Preview unavailable" : "Empty"}
+                </span>
               </div>
             )}
 

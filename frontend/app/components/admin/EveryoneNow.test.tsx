@@ -104,7 +104,7 @@ it("shows placeholders while the first positions request is pending", () => {
   vi.mocked(getLatestMovement).mockImplementationOnce(() => new Promise(() => {}));
   render(<EveryoneMovement />);
   expect(screen.getByRole("status", { name: "Loading positions…" })).toBeTruthy();
-  expect(screen.getByRole("status", { name: "Loading players…" })).toBeTruthy();
+  expect(screen.getAllByRole("status")).toHaveLength(1);
   expect(screen.queryByTestId("map")).toBeNull();
 });
 

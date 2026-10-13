@@ -14,7 +14,7 @@ import type { ProfileCustomItem } from "../../../lib/profile/api";
 import { customItemId, parseCustomItemId, profileHref } from "../../../lib/profile/paths";
 import { previewColourStopRuns } from "../../../lib/skins/namePreview";
 import { HangerGlyph, WardrobeCard } from "./Wardrobe";
-import { SkinPicture } from "./WardrobePictures";
+import { PictureSkeleton, SkinPicture } from "./WardrobePictures";
 import { ItemFrame, Loading } from "./ProfileItems";
 import { Facts, formatDay, Heading, Showcase, StagePicture, StatusBlock, Tooltip } from "./ItemShowcase";
 
@@ -85,7 +85,7 @@ function KitTexture({ kitKey, sessionToken }: { kitKey: string; sessionToken: st
     // eslint-disable-next-line @next/next/no-img-element -- object URL
     return <img src={src} alt="" className="h-full w-full object-contain p-[22%] [image-rendering:pixelated]" />;
   }
-  return missing ? <HangerGlyph /> : null;
+  return missing ? <HangerGlyph /> : <PictureSkeleton />;
 }
 
 export function CustomItemList({

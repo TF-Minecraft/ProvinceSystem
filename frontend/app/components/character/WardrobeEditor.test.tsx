@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import * as api from "../../../lib/characters/api";
 import WardrobeEditor from "./WardrobeEditor";
 import WardrobeSlotFrame from "./WardrobeSlotFrame";
@@ -14,8 +14,15 @@ vi.mock("../../../lib/characters/api", async (original) => ({
   renameWardrobeSlot: vi.fn(),
 }));
 vi.mock("./SkinMannequinPreview", () => ({
-  default: ({ armModel }: { armModel: string }) => <div data-testid="preview" data-model={armModel} />,
+  default: ({ armModel, source, decorative }: { armModel: string; source: string; decorative?: boolean }) => (
+    <div data-testid="preview" data-model={armModel} data-source={source} data-decorative={decorative} />
+  ),
 }));
+
+beforeEach(() => {
+  vi.mocked(api.getWardrobe).mockReset();
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReset().mockResolvedValue("blob:stored");
+});
 
 afterEach(() => {
   cleanup();
@@ -29,6 +36,150 @@ const wardrobe: api.WardrobeResponse = {
   swappable_slots: 1,
   slots: [{ slot: "base", filled: true, unlocked: true, model: "classic" }],
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+
+function stubObjectUrls() {
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static revokeObjectURL = revokeObjectURL;
+    },
+  );
+  return revokeObjectURL;
+}
+
+it("keeps four slot-shaped placeholders noninteractive until live metadata arrives", async () => {
+  const request = deferred<api.WardrobeResponse>();
+  vi.mocked(api.getWardrobe).mockReturnValue(request.promise);
+  const { container } = render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+
+  expect(screen.getByRole("status").textContent).toContain("Loading wardrobe");
+  expect(container.querySelectorAll(".aspect-\\[3\\/5\\]")).toHaveLength(4);
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
+  expect(screen.queryByText("Empty")).toBeNull();
+  expect(screen.queryByText("Locked")).toBeNull();
+
+  await act(async () => request.resolve({ ...wardrobe, active_slot: null, slots: [] }));
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.getAllByRole("button")).toHaveLength(4);
+  expect(screen.getByRole("button", { name: "Base empty - edit" })).toBeTruthy();
+});
+
+it("shows UI-dev slots immediately without a live metadata request", () => {
+  render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" uiDev uiDevSwappableSlots={3} />);
+  expect(api.getWardrobe).not.toHaveBeenCalled();
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.getAllByRole("button")).toHaveLength(4);
+  expect(screen.getByRole("button", { name: "Skin 3 empty - edit" })).toBeTruthy();
+});
+
+it("ends initial loading on metadata errors without exposing unknown slots for editing", async () => {
+  const request = deferred<api.WardrobeResponse>();
+  vi.mocked(api.getWardrobe).mockReturnValue(request.promise);
+  render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  await act(async () => request.reject(new Error("Wardrobe unavailable")));
+  expect(screen.getByRole("alert").textContent).toBe("Wardrobe unavailable");
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
+  expect(screen.queryByText("Empty")).toBeNull();
+  expect(screen.queryByText("Locked")).toBeNull();
+});
+
+it("shows a filled slot preview skeleton until its texture arrives", async () => {
+  stubObjectUrls();
+  const texture = deferred<string>();
+  vi.mocked(api.getWardrobe).mockResolvedValue(wardrobe);
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReturnValue(texture.promise);
+  render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  const base = await screen.findByRole("button", { name: "Base - edit" });
+  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.getByRole("status").textContent).toContain("Loading wardrobe previews");
+  expect(base.querySelector('[aria-hidden="true"]')).toBeTruthy();
+  expect(within(base).queryByRole("status")).toBeNull();
+  expect(within(base).queryByText("Empty")).toBeNull();
+  expect(within(base).queryByText("Preview unavailable")).toBeNull();
+
+  await act(async () => texture.resolve("blob:loaded"));
+  expect(screen.getByTestId("preview").getAttribute("data-source")).toBe("blob:loaded");
+  expect(screen.getByTestId("preview").getAttribute("data-decorative")).toBe("true");
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("ends a failed texture load with an unavailable preview instead of a false empty slot", async () => {
+  const texture = deferred<string>();
+  vi.mocked(api.getWardrobe).mockResolvedValue(wardrobe);
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReturnValue(texture.promise);
+  render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  const base = await screen.findByRole("button", { name: "Base - edit" });
+  await act(async () => texture.reject(new Error("Texture unavailable")));
+  expect(within(base).getByText("Preview unavailable")).toBeTruthy();
+  expect(within(base).queryByText("Empty")).toBeNull();
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("preserves known slots and textures during refresh and after a refresh texture failure", async () => {
+  const revokeObjectURL = stubObjectUrls();
+  vi.mocked(api.getWardrobe).mockResolvedValueOnce(wardrobe);
+  const { rerender } = render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  await screen.findByTestId("preview");
+  const request = deferred<api.WardrobeResponse>();
+  const texture = deferred<string>();
+  vi.mocked(api.getWardrobe).mockReturnValueOnce(request.promise);
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReturnValueOnce(texture.promise);
+  rerender(<WardrobeEditor mode="live" characterId="character" sessionToken="refreshed-token" />);
+  expect(screen.getByRole("button", { name: "Base - edit" })).toBeTruthy();
+  expect(screen.getByTestId("preview").getAttribute("data-source")).toBe("blob:stored");
+  expect(screen.queryByRole("status")).toBeNull();
+
+  await act(async () => request.resolve(wardrobe));
+  expect(screen.getByTestId("preview").getAttribute("data-source")).toBe("blob:stored");
+  expect(screen.queryByRole("status")).toBeNull();
+  await act(async () => texture.reject(new Error("Refresh texture unavailable")));
+  expect(screen.getByTestId("preview").getAttribute("data-source")).toBe("blob:stored");
+  expect(revokeObjectURL).not.toHaveBeenCalledWith("blob:stored");
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("hides the old character's controls and discards textures completed after switching characters", async () => {
+  const revokeObjectURL = stubObjectUrls();
+  const oldTexture = deferred<string>();
+  const nextWardrobe = deferred<api.WardrobeResponse>();
+  vi.mocked(api.getWardrobe).mockResolvedValueOnce(wardrobe).mockReturnValueOnce(nextWardrobe.promise);
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReturnValueOnce(oldTexture.promise);
+  const { rerender } = render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  await screen.findByRole("button", { name: "Base - edit" });
+  rerender(<WardrobeEditor mode="live" characterId="next-character" sessionToken="token" />);
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
+  expect(screen.getByRole("status").textContent).toContain("Loading wardrobe");
+  await act(async () => nextWardrobe.resolve({ ...wardrobe, character_id: "next-character", slots: [] }));
+  expect(screen.getByRole("button", { name: "Base empty - edit" })).toBeTruthy();
+  await act(async () => oldTexture.resolve("blob:old-character"));
+  expect(revokeObjectURL).toHaveBeenCalledWith("blob:old-character");
+  expect(screen.queryByTestId("preview")).toBeNull();
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("revokes textures that arrive after the editor unmounts", async () => {
+  const revokeObjectURL = stubObjectUrls();
+  const texture = deferred<string>();
+  vi.mocked(api.getWardrobe).mockResolvedValue(wardrobe);
+  vi.mocked(api.fetchWardrobeTextureBlob).mockReturnValue(texture.promise);
+  const { unmount } = render(<WardrobeEditor mode="live" characterId="character" sessionToken="token" />);
+  await screen.findByRole("button", { name: "Base - edit" });
+  unmount();
+  await act(async () => texture.resolve("blob:unmounted"));
+  expect(revokeObjectURL).toHaveBeenCalledWith("blob:unmounted");
+});
 
 it("renders the stored slim model in the wardrobe card", () => {
   render(
