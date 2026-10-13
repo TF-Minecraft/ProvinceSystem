@@ -42,9 +42,11 @@ from PIL import __version__ as PILLOW_VERSION, features
 
 TILE_SIZE = 256
 # Neighbour pixels (in level pixels) carried past a tile's right and bottom
-# edges. A few are plenty: the client draws at least a level pixel per device
-# pixel, so the gutter always covers the seam's split pixel.
-TILE_GUTTER = 4
+# edges. At rest the client draws between half and one device pixel per
+# level pixel, so this covers 4-8 device pixels; a zoom-out gesture shrinks
+# it by the gesture's factor until the view settles, so it stays at least a
+# device pixel through a 4x pinch.
+TILE_GUTTER = 8
 _QUALITY = 80
 _METHOD = 4
 

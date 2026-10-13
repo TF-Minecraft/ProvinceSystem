@@ -392,7 +392,10 @@ describe("TileLayer", () => {
       fadeIn();
       const sharp = container.querySelector<HTMLImageElement>('img[src="/t/1/0/0.webp"]')!;
       const backdrop = container.querySelector<HTMLImageElement>('img[src^="/t/0/"]')!;
-      return { sharp, clip: backdrop.parentElement!.style.clipPath };
+      const sharpOrder = [...container.querySelectorAll("img")]
+        .map((img) => img.getAttribute("src")!)
+        .filter((src) => src.startsWith("/t/1/"));
+      return { sharp, sharpOrder, clip: backdrop.parentElement!.style.clipPath };
     };
 
     // The tile file itself carries 4 px of its neighbours (260 px across
@@ -407,6 +410,10 @@ describe("TileLayer", () => {
     expect(opaque.sharp.className).not.toContain("scale:");
     expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe("");
     expect(opaque.sharp.style.clipPath).toBe("");
+    // The gutter only stays hidden if the right and bottom neighbours are
+    // drawn after the tile carrying it.
+    expect(opaque.sharpOrder.indexOf("/t/1/1/0.webp")).toBeGreaterThan(opaque.sharpOrder.indexOf("/t/1/0/0.webp"));
+    expect(opaque.sharpOrder.indexOf("/t/1/0/1.webp")).toBeGreaterThan(opaque.sharpOrder.indexOf("/t/1/0/0.webp"));
     expect(opaque.clip).toContain("0.390625% 0.390625%, 0.390625% 24.609375%");
     cleanup();
 
@@ -416,6 +423,21 @@ describe("TileLayer", () => {
     expect(seeThrough.sharp.style.width).toBe("260px");
     expect(seeThrough.sharp.style.clipPath).toBe("inset(0 4px 4px 0)");
     expect(seeThrough.clip).toContain("0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%");
+  });
+
+  it("draws a pyramid built before gutters at each tile's exact size", () => {
+    // `manifest` has no `gutter` field: tiles meet edge to edge as they did,
+    // and a see-through layer's zero inset clips nothing away.
+    for (const seeThrough of [false, true]) {
+      const { container } = render(
+        <TileLayer manifest={manifest("v1")} tileUrl={tileUrl} view={view} seeThrough={seeThrough} />,
+      );
+      const tile = container.querySelector<HTMLImageElement>('img[src="/t/0/0/0.webp"]')!;
+      expect(tile.style.width).toBe("256px");
+      expect(tile.style.height).toBe("256px");
+      expect(tile.style.clipPath).toBe(seeThrough ? "inset(0 0px 0px 0)" : "");
+      cleanup();
+    }
   });
 
   it("keeps opaque tiles in place and snaps only see-through ones to pixels", () => {
