@@ -155,7 +155,9 @@ def _require_character_id(character_id: str | None) -> str:
     return cid
 
 
-def _require_owned_character(player_uuid: str, character_id: str) -> dict[str, Any]:
+def _require_owned_character(
+    player_uuid: str, character_id: str, *, realm_id: str | None = None,
+) -> dict[str, Any]:
     uuid = (player_uuid or "").strip()
     cid = _require_character_id(character_id)
     if not uuid:
@@ -166,8 +168,8 @@ def _require_owned_character(player_uuid: str, character_id: str) -> dict[str, A
             SELECT player_uuid, character_id, wardrobe_active_slot, realm_id
             FROM character_roster
             WHERE player_uuid = ? AND character_id = ?
-            """,
-            (uuid, cid),
+            """ + (" AND realm_id = ?" if realm_id is not None else ""),
+            (uuid, cid, realm_id) if realm_id is not None else (uuid, cid),
         ).fetchone()
     if row is None:
         raise WardrobeError("Character not found on roster", status_code=403)
@@ -1465,10 +1467,12 @@ def _worn_slot(active: str | None, slots: dict[str, dict[str, Any]], swappable: 
     return "base"
 
 
-def _worn_roster_row(player_uuid: str, character_id: str) -> tuple[str, dict[str, Any]]:
+def _worn_roster_row(
+    player_uuid: str, character_id: str, *, realm_id: str | None = None,
+) -> tuple[str, dict[str, Any]]:
     """The character id and slot row a roster character wears ({} if empty). Read-only:
     picks the slot like _normalize_active but never enforces limits or saves it."""
-    roster = _require_owned_character(player_uuid, character_id)
+    roster = _require_owned_character(player_uuid, character_id, realm_id=realm_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
     slots = _load_slots(uuid, cid)
@@ -1477,9 +1481,11 @@ def _worn_roster_row(player_uuid: str, character_id: str) -> tuple[str, dict[str
     return cid, slots.get(active) or {}
 
 
-def _active_slot(player_uuid: str, character_id: str) -> tuple[bytes, str | None] | None:
+def _active_slot(
+    player_uuid: str, character_id: str, *, realm_id: str | None = None,
+) -> tuple[bytes, str | None] | None:
     """The PNG and saved model of the slot a roster character wears."""
-    _, slot = _worn_roster_row(player_uuid, character_id)
+    _, slot = _worn_roster_row(player_uuid, character_id, realm_id=realm_id)
     path = _png_abspath(slot.get("png_relpath"))
     if path is None:
         return None
@@ -1509,15 +1515,15 @@ def worn_skin_texture(player_uuid: str, character_id: str) -> dict[str, Any]:
     return {"character_id": cid, "value": value, "signature": signature}
 
 
-def active_face_png(player_uuid: str, character_id: str) -> bytes | None:
+def active_face_png(player_uuid: str, character_id: str, *, realm_id: str | None = None) -> bytes | None:
     """The face of the skin a roster character wears."""
-    worn = _active_slot(player_uuid, character_id)
+    worn = _active_slot(player_uuid, character_id, realm_id=realm_id)
     return skin_face_png(worn[0]) if worn else None
 
 
-def active_figure_png(player_uuid: str, character_id: str) -> bytes | None:
+def active_figure_png(player_uuid: str, character_id: str, *, realm_id: str | None = None) -> bytes | None:
     """The front of the skin a roster character wears, for Profile's character view."""
-    worn = _active_slot(player_uuid, character_id)
+    worn = _active_slot(player_uuid, character_id, realm_id=realm_id)
     return skin_figure_png(*worn) if worn else None
 
 

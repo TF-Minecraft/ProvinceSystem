@@ -32,6 +32,7 @@ from src.rail import network as rail
 from src.servers import inventory as servers
 from src.servers import control as server_control
 from src.skins.db import connect
+from src.characters.creation_catalog import get_catalog
 from src.auth.users import session_user_in
 from src.scripts.util.dirs import validate_map
 
@@ -154,11 +155,33 @@ def get_player(player_uuid: str, request: Request, response: Response):
     return _players(request, response, lambda config, _viewer: players.profile(config, player_uuid))
 
 
+@admin_router.get("/characters/creation-catalog")
+def get_player_character_catalog(request: Request, response: Response):
+    _capable(request, "view_players")
+    _no_store(response)
+    return get_catalog()
+
+
 @admin_router.get("/players/{player_uuid}/sessions")
 def get_player_sessions(player_uuid: str, request: Request, response: Response, before: str | None = None,
                         limit: int = Query(20, ge=1, le=100)):
     return _players(request, response,
                     lambda config, _viewer: players.player_sessions(config, player_uuid, before, limit))
+
+
+@admin_router.get("/players/{player_uuid}/characters/{character_id}/{kind}")
+def get_player_character_picture(player_uuid: str, character_id: str, kind: str, request: Request,
+                                 realm_id: str = "main"):
+    _capable(request, "view_players")
+    if kind not in {"face", "figure"}:
+        raise HTTPException(404, detail="not_found")
+    try:
+        png = players.character_picture(player_uuid, realm_id, character_id, kind)
+    except players.PlayerError as exc:
+        raise HTTPException(exc.status, detail=exc.code) from None
+    response = Response(png, media_type="image/png")
+    _no_store(response)
+    return response
 
 
 @admin_router.get("/players/{player_uuid}/activity")

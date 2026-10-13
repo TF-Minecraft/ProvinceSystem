@@ -61,9 +61,12 @@ function Portrait({
   faded?: boolean;
 }) {
   const [headFailed, setHeadFailed] = useState(false);
+  const [faceFailed, setFaceFailed] = useState(false);
   const src =
-    face ??
-    (face === null && playerUuid && !headFailed ? `${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}` : null);
+    (faceFailed ? null : face) ??
+    ((face === null || faceFailed) && playerUuid && !headFailed
+      ? `${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}`
+      : null);
   if (!src) {
     return <span aria-hidden className={`${portraitClass} bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`} />;
   }
@@ -75,41 +78,47 @@ function Portrait({
       alt=""
       width={56}
       height={56}
-      onError={() => setHeadFailed(true)}
+      onError={() => (face && !faceFailed ? setFaceFailed(true) : setHeadFailed(true))}
       className={`${portraitClass} [image-rendering:pixelated] ${faded ? "opacity-50 grayscale" : ""}`}
     />
   );
 }
 
-function Card({
+export function CharacterCard({
   item,
   catalog,
   face,
   playerUuid,
   onOpen,
+  href,
+  note,
 }: {
   item: CharacterListItem;
   catalog?: CreationCatalog | null;
   face: string | null | undefined;
   playerUuid?: string | null;
-  onOpen: (id: string) => void;
+  onOpen?: (id: string) => void;
+  /** Staff cards stay in the player's frame and can open historical characters. */
+  href?: string;
+  note?: string;
 }) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
   const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
   const err = String(item.error || "").trim();
   const chip = CHIPS[status];
-  const linkable = Boolean(item.id) && OPENABLE.has(status);
+  const linkable = Boolean(item.id) && (Boolean(href) || OPENABLE.has(status));
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
   const body = (
     <>
-      <Portrait face={face} playerUuid={playerUuid} faded={faded} />
+      <Portrait key={face} face={face} playerUuid={playerUuid} faded={faded} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{name}</p>
           {chip ? <span className={`${chipClass} ${chip.className}`}>{chip.label}</span> : null}
         </div>
         <p className="truncate text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
+        {note ? <p className="mt-0.5 text-xs text-[var(--tfmc-stone)]">{note}</p> : null}
         {status === "REJECTED" && err ? <p className="mt-0.5 text-xs text-[#e8a0a0]">{err}</p> : null}
       </div>
       {linkable ? (
@@ -125,7 +134,7 @@ function Card({
   );
   // A plain click opens it in the tab; a new-tab click follows the address.
   function open(event: MouseEvent<HTMLAnchorElement>) {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     onOpen(item.id);
   }
@@ -133,7 +142,7 @@ function Card({
     <li className="animate-char-row">
       {linkable ? (
         <a
-          href={characterPath(item.id)}
+          href={href || characterPath(item.id)}
           onClick={open}
           data-character-id={item.id}
           className={`${cardClass} ${linkCardClass}`}
@@ -236,7 +245,14 @@ export default function CharacterList({
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {current.map((c) => (
-          <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
+          <CharacterCard
+            key={c.id}
+            item={c}
+            catalog={catalog}
+            face={faces[c.id]}
+            playerUuid={playerUuid}
+            onOpen={onOpen}
+          />
         ))}
         <li>
           {atLimit ? (
@@ -270,7 +286,14 @@ export default function CharacterList({
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {dead.map((c) => (
-              <Card key={c.id} item={c} catalog={catalog} face={faces[c.id]} playerUuid={playerUuid} onOpen={onOpen} />
+              <CharacterCard
+                key={c.id}
+                item={c}
+                catalog={catalog}
+                face={faces[c.id]}
+                playerUuid={playerUuid}
+                onOpen={onOpen}
+              />
             ))}
           </ul>
         </section>

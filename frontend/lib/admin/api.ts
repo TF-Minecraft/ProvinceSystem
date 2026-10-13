@@ -1,5 +1,6 @@
 import { AccountApiError } from "../account/api";
 import { detailMessage, getApiBase, parseJson } from "../site/api";
+import type { CharacterListItem, CreationCatalog } from "../characters/api";
 
 export type StaffRole = "player" | "mod" | "admin" | "root";
 
@@ -222,17 +223,26 @@ export type PlayerProfile = {
     created_at: string;
     last_login_at: string;
   } | null;
-  characters: {
+  characters: (CharacterListItem & {
     realm_id: string;
     character_id: string;
-    name: string;
-    status: string | null;
-    race: string | null;
-    class: string | null;
     updated_at: string | null;
-  }[];
+  })[];
   coreprotect: CoreProtectStatus & { server_label: string | null; ping_seconds: number | null };
 };
+
+export function playerCharacterPictureUrl(
+  uuid: string,
+  realm: string,
+  characterId: string,
+  kind: "face" | "figure",
+): string {
+  return `${getApiBase()}/admin/players/${encodeURIComponent(uuid)}/characters/${encodeURIComponent(characterId)}/${kind}?realm_id=${encodeURIComponent(realm)}`;
+}
+
+export function getPlayerCharacterCatalog(): Promise<CreationCatalog> {
+  return adminRequest("/admin/characters/creation-catalog");
+}
 
 export type WorldPoint = { time: number; world: string | null; x: number; y: number; z: number };
 
