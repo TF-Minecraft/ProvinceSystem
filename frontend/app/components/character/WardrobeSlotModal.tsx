@@ -239,6 +239,7 @@ export default function WardrobeSlotModal({
             {showMaskedToggle && maskedPreviewBusy ? (
               <LoadingSkeleton
                 variant="model"
+                decorative
                 className="absolute inset-0 bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50"
               />
             ) : null}

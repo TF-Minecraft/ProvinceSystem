@@ -69,7 +69,7 @@ it("fills a custom item's large stage until its kit texture arrives", async () =
   const { container, unmount } = await renderShowcase();
   expect(container.querySelector("span[aria-hidden='true']")).toBeTruthy();
   expect(screen.queryByRole("status")).toBeNull();
-  await act(async () => pending.resolve(new Response(new Blob(["texture"]), { status: 200 })));
+  await act(async () => pending.resolve({ ok: true, blob: async () => new Blob(["texture"]) } as Response));
   expect(container.querySelector("span[aria-hidden='true']")).toBeNull();
   expect(container.querySelector("img")?.getAttribute("src")).toBe("blob:kit");
   unmount();
@@ -82,7 +82,7 @@ it.each(["missing", "request failure"])("uses the hanger after a kit texture %s"
   const { container } = await renderShowcase();
   await act(async () => {
     if (failure === "request failure") pending.reject(new Error("unavailable"));
-    else pending.resolve(new Response(null, { status: 404 }));
+    else pending.resolve({ ok: false } as Response);
   });
   expect(container.querySelector("span[aria-hidden='true']")).toBeNull();
   expect(container.querySelector("svg")).toBeTruthy();
