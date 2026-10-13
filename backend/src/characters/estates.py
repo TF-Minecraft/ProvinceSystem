@@ -53,6 +53,17 @@ def iso_from_epoch_ms(raw: Any) -> str | None:
     return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def iso_ms_from_epoch_ms(raw: Any) -> str | None:
+    """Like iso_from_epoch_ms but keeps milliseconds, for ordering pushes inside one second."""
+    if raw is None or isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw <= 0:
+        return iso_from_epoch_ms(raw)
+    try:
+        moment = datetime.fromtimestamp(int(raw) / 1000, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{int(raw) % 1000:03d}Z"
+
+
 def _short_text(raw: Any, limit: int) -> str | None:
     if raw is None:
         return None
@@ -126,7 +137,7 @@ def _counts(raw: Any) -> dict[str, int]:
         if not label or isinstance(value, bool):
             continue
         try:
-            out[label] = int(value)
+            out[label] = max(0, int(value))
         except (TypeError, ValueError):
             continue
     return out
@@ -169,14 +180,14 @@ def parse_estate(raw: Any, death_id: str | None) -> dict[str, Any] | None:
                 recipients[part] = parsed
     money_moved = raw.get("money_moved_cents")
     try:
-        money_cents = None if money_moved is None or isinstance(money_moved, bool) else int(money_moved)
+        money_cents = None if money_moved is None or isinstance(money_moved, bool) else max(0, int(money_moved))
     except (TypeError, ValueError):
         money_cents = None
     return {
         "death_id": did,
         "status": status,
         "revision": revision,
-        "updated_at": iso_from_epoch_ms(raw.get("updated_at")),
+        "updated_at": iso_ms_from_epoch_ms(raw.get("updated_at")),
         "payload": {
             "due_at": iso_from_epoch_ms(raw.get("due_at")),
             "decided_at": iso_from_epoch_ms(raw.get("decided_at")),

@@ -233,8 +233,15 @@ def ack_will_results(realm_id: str | None, results: Any) -> dict[str, Any]:
                 (result, now, rid),
             )
             acked.append(rid)
+            # Applying bumps the will by one; any other revision waits for the roster push, so a bad
+            # ack cannot pin the stored will at a revision the game never reaches.
             revision = raw.get("will_revision")
-            if result == "applied" and isinstance(revision, int) and not isinstance(revision, bool) and revision >= 0:
+            if (
+                result == "applied"
+                and isinstance(revision, int)
+                and not isinstance(revision, bool)
+                and revision == row["base_revision"] + 1
+            ):
                 heir = row["heir_character_id"]
                 name = str(raw.get("heir_name") or "").strip()[:64] or _heir_name(conn, realm, heir)
                 store_will(

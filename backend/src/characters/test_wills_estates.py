@@ -169,6 +169,25 @@ def test_estate_revision_and_update_time_order(db):
     assert (row["status"], row["revision"]) == ("DECIDED", 2)
 
 
+def test_same_second_pushes_are_ordered_by_milliseconds(db):
+    def push(status, updated_at):
+        replace_roster(OWNER, [char("c1", "Ana", "DEAD", death_id="d-1", estate=estate(status, updated_at=updated_at))])
+
+    push("DECIDED", DIED_MS + 800)
+    push("OPEN", DIED_MS + 200)  # built earlier in the same second, delivered later
+    assert estate_row("d-1")["status"] == "DECIDED"
+    push("REVERTED", DIED_MS + 801)
+    assert estate_row("d-1")["status"] == "REVERTED"
+
+
+def test_negative_counts_and_money_read_as_zero(db):
+    raw = estate("DECIDED", money_moved_cents=-5, participants={"thievery": {"outcome": "DONE", "counts": {"locks": -3}}})
+    replace_roster(OWNER, [char("c1", "Ana", "DEAD", death_id="d-1", estate=raw)])
+    payload = json.loads(estate_row("d-1")["payload"])
+    assert payload["money_moved_cents"] == 0
+    assert payload["participants"]["thievery"]["counts"] == {"locks": 0}
+
+
 def test_bad_estate_is_dropped_but_the_rest_of_the_push_applies(db):
     replace_roster(
         OWNER,
@@ -425,6 +444,22 @@ def test_unknown_result_is_refused(api):
     res = api.post("/characters/plugin/wills/applied", json={"realm_id": "main", "results": [{"id": rid, "result": "maybe"}]}, headers=PLUGIN)
     assert res.json()["refused"] == [{"id": rid, "reason": "result"}]
     assert len(api.get("/characters/plugin/wills/pending?realm_id=main", headers=PLUGIN).json()["requests"]) == 1
+
+
+@pytest.mark.parametrize("revision", [999, 2, 4])
+def test_applied_ack_updates_the_will_only_one_past_its_base(api, revision):
+    seed_owner()
+    rid = api.post("/characters/c-ana/will", json={"heir_character_id": "c-kira", "base_revision": 2}, headers=bearer()).json()["request"]["id"]
+    res = api.post(
+        "/characters/plugin/wills/applied",
+        json={"realm_id": "main", "results": [{"id": rid, "result": "applied", "will_revision": revision}]},
+        headers=PLUGIN,
+    ).json()
+    assert res["acked"] == [rid]
+    row = roster_row("c-ana")
+    assert (row["will_heir_id"], row["will_revision"]) == (None, 2)  # left for the roster push
+    replace_roster(OWNER, [char("c-ana", "Ana", will_heir_id="c-kira", will_heir_name="Kira", will_revision=3)])
+    assert roster_row("c-ana")["will_revision"] == 3
 
 
 def test_applied_ack_never_rolls_a_newer_will_back(api):
