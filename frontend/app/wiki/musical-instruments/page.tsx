@@ -89,8 +89,8 @@ export default function MusicalInstrumentsPage() {
       <WikiSectionHeading id="recording-discs">Record your own music discs</WikiSectionHeading>
       <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
         Craft a <strong>Music Station</strong> at the <StationLink name="Instrument Station" />, place it and
-        right-click it to open the recording studio. Create a song, hold an instrument in your off-hand and record
-        your performance. You can layer multiple tracks and preview the mix before publishing.
+        right-click it to open the recording studio. Create a song, hold an instrument in your off-hand and record your
+        performance. You can layer multiple tracks and preview the mix before publishing.
       </p>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
         Place a single vanilla music disc on the studio&apos;s <strong>Publish full song</strong> control to turn it
