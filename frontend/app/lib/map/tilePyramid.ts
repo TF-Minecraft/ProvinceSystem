@@ -13,6 +13,11 @@ export type TileManifest = {
   width: number;
   height: number;
   tile_size: number;
+  /**
+   * Neighbour pixels (level pixels) each tile file carries past its right
+   * and bottom edges. Absent from pyramids built before guttered tiles.
+   */
+  gutter?: number;
   max_level: number;
   levels: TileLevel[];
 };
@@ -36,6 +41,10 @@ export type PlacedTile = {
   top: number;
   width: number;
   height: number;
+  /** Neighbour terrain the tile file carries past its right edge, in map pixels. */
+  gutterRight: number;
+  /** Neighbour terrain the tile file carries past its bottom edge, in map pixels. */
+  gutterBottom: number;
 };
 
 export function isTileManifest(value: unknown): value is TileManifest {
@@ -48,6 +57,7 @@ export function isTileManifest(value: unknown): value is TileManifest {
     typeof m.height === "number" &&
     typeof m.tile_size === "number" &&
     m.tile_size > 0 &&
+    (m.gutter === undefined || (typeof m.gutter === "number" && Number.isFinite(m.gutter) && m.gutter >= 0)) &&
     typeof m.max_level === "number" &&
     Array.isArray(m.levels) &&
     m.levels.length === m.max_level + 1
@@ -93,6 +103,10 @@ function placeTile(manifest: TileManifest, level: number, x: number, y: number):
   const toMap = manifest.width / lw;
   const pixelW = Math.min(size, lw - x * size);
   const pixelH = Math.min(size, lh - y * size);
+  // The gutter the file actually carries: the full gutter, or however many
+  // neighbour pixels remain where a partial edge tile nearly reaches the
+  // level's edge, and none on the last column or row.
+  const gutter = manifest.gutter ?? 0;
   return {
     key: `${level}/${x}/${y}`,
     level,
@@ -102,6 +116,8 @@ function placeTile(manifest: TileManifest, level: number, x: number, y: number):
     top: y * size * toMap,
     width: pixelW * toMap,
     height: pixelH * toMap,
+    gutterRight: Math.min(gutter, lw - (x * size + pixelW)) * toMap,
+    gutterBottom: Math.min(gutter, lh - (y * size + pixelH)) * toMap,
   };
 }
 

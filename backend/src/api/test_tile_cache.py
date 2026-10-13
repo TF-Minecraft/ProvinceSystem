@@ -69,6 +69,41 @@ class PyramidTest(unittest.TestCase):
         self.assertIsNone(tile_cache.tile_file(self.source, version, 2, 3, 0))
         self.assertIsNotNone(tile_cache.tile_file(self.source, version, 0, 0, 0))
 
+    def test_tiles_carry_a_gutter_of_neighbouring_pixels(self) -> None:
+        # Left of x=256 red, right blue: the first tile's gutter must be the
+        # second tile's own first columns, so the client can tuck it under
+        # its neighbour instead of stretching the tile to cover the seam.
+        image = Image.new("RGB", (600, 300), (0, 0, 255))
+        image.paste(Image.new("RGB", (256, 300), (255, 0, 0)), (0, 0))
+        image.save(self.source, "PNG")
+
+        manifest = tile_cache.build_pyramid(self.source)
+        assert manifest is not None
+        self.assertEqual(manifest["gutter"], tile_cache.TILE_GUTTER)
+        gutter = tile_cache.TILE_GUTTER
+        version = manifest["version"]
+
+        first = tile_cache.tile_file(self.source, version, 2, 0, 0)
+        assert first is not None
+        with Image.open(first) as tile:
+            self.assertEqual(tile.size, (256 + gutter, 256 + gutter))
+            red, _, blue = tile.convert("RGB").getpixel((240, 100))
+            self.assertGreater(red, blue)
+            red, _, blue = tile.convert("RGB").getpixel((256 + gutter - 1, 100))
+            self.assertGreater(blue, red)
+
+        # The last column and row have no neighbour: no gutter there.
+        edge = tile_cache.tile_file(self.source, version, 2, 2, 1)
+        assert edge is not None
+        with Image.open(edge) as tile:
+            self.assertEqual(tile.size, (600 - 512, 300 - 256))
+
+        # A level shorter than a tile gutters only where pixels remain.
+        lower = tile_cache.tile_file(self.source, version, 1, 0, 0)
+        assert lower is not None
+        with Image.open(lower) as tile:
+            self.assertEqual(tile.size, (256 + gutter, 150))
+
     def test_keeps_transparency(self) -> None:
         Image.new("RGBA", (300, 300), (255, 0, 0, 0)).save(self.source, "PNG")
         manifest = tile_cache.build_pyramid(self.source)

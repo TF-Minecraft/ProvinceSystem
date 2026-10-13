@@ -6,7 +6,10 @@ visible. That decoding work makes zooming stutter.
 
 Images are divided into 256 px tiles at a ladder of resolutions, each level
 half the size of the one above. The client fetches and decodes only the tiles
-on screen at the level matching its zoom.
+on screen at the level matching its zoom. Each tile also carries a gutter of
+`TILE_GUTTER` pixels from its right and bottom neighbours, which the client
+tucks under those neighbours so tile edges that land between device pixels
+show the same terrain either way, with nothing stretched to cover the seam.
 
 Building a pyramid takes a few seconds, so it is never done inside a request.
 A request finds a ready pyramid for the source's current pixels or, while a
@@ -38,6 +41,12 @@ from anyio import CapacityLimiter, to_thread
 from PIL import __version__ as PILLOW_VERSION, features
 
 TILE_SIZE = 256
+# Neighbour pixels (in level pixels) carried past a tile's right and bottom
+# edges. At rest the client draws between half and one device pixel per
+# level pixel, so this covers 4-8 device pixels; a zoom-out gesture shrinks
+# it by the gesture's factor until the view settles, so it stays at least a
+# device pixel through a 4x pinch.
+TILE_GUTTER = 8
 _QUALITY = 80
 _METHOD = 4
 
@@ -62,7 +71,7 @@ def _source_key(source: Path) -> str:
 # Include encoder inputs so an algorithm or Pillow upgrade cannot change an
 # immutable URL's meaning. File timestamps only memoise the expensive hash.
 _RENDERER_VERSION = (
-    f"tiles-v2:{TILE_SIZE}:{_QUALITY}:{_METHOD}:lod-lossless-2:pick-nearest-6:"
+    f"tiles-v3:{TILE_SIZE}:gutter{TILE_GUTTER}:{_QUALITY}:{_METHOD}:lod-lossless-2:pick-nearest-6:"
     f"{PILLOW_VERSION}:{features.version('webp')}"
 )
 _versions: OrderedDict[Path, tuple[tuple, str]] = OrderedDict()
@@ -261,8 +270,8 @@ def _encode_level(image, level_dir: Path) -> None:
             box = (
                 tx * TILE_SIZE,
                 ty * TILE_SIZE,
-                min(width, (tx + 1) * TILE_SIZE),
-                min(height, (ty + 1) * TILE_SIZE),
+                min(width, (tx + 1) * TILE_SIZE + TILE_GUTTER),
+                min(height, (ty + 1) * TILE_SIZE + TILE_GUTTER),
             )
             image.crop(box).save(
                 level_dir / f"{tx}_{ty}.webp",
@@ -317,6 +326,7 @@ def build_pyramid(source: os.PathLike[str] | str) -> dict | None:
             "width": width,
             "height": height,
             "tile_size": TILE_SIZE,
+            "gutter": TILE_GUTTER,
             "max_level": top,
             "levels": levels,
             "format": "webp",

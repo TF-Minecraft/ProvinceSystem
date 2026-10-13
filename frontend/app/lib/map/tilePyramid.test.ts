@@ -19,6 +19,7 @@ const manifest: TileManifest = {
   width: 6400,
   height: 6400,
   tile_size: 256,
+  gutter: 4,
   max_level: 5,
   levels: [
     { width: 200, height: 200 },
@@ -36,6 +37,11 @@ describe("isTileManifest", () => {
     expect(isTileManifest({ ready: false })).toBe(false);
     expect(isTileManifest({ ...manifest, levels: [] })).toBe(false);
     expect(isTileManifest(null)).toBe(false);
+    // A pyramid built before guttered tiles says nothing about a gutter.
+    const { gutter: _gutter, ...legacy } = manifest;
+    expect(isTileManifest(legacy)).toBe(true);
+    expect(isTileManifest({ ...manifest, gutter: -1 })).toBe(false);
+    expect(isTileManifest({ ...manifest, gutter: "4" })).toBe(false);
   });
 });
 
@@ -77,6 +83,49 @@ describe("tiles", () => {
     // 1600 px is 6.25 tiles: the seventh column is a quarter tile wide.
     const edge = allTiles(manifest, 3).find((tile) => tile.x === 6 && tile.y === 0);
     expect(edge).toMatchObject({ left: 6 * 1024, width: 64 * 4 });
+  });
+
+  it("places each tile's gutter of neighbour pixels in map pixels", () => {
+    // Full size: 4 level px of gutter is 4 map px. Interior tiles carry it
+    // on the right and bottom; the last column and row have no neighbour.
+    const top = allTiles(manifest, 5);
+    expect(top.find((tile) => tile.x === 3 && tile.y === 3)).toMatchObject({
+      gutterRight: 4,
+      gutterBottom: 4,
+    });
+    expect(top.find((tile) => tile.x === 24 && tile.y === 3)).toMatchObject({
+      gutterRight: 0,
+      gutterBottom: 4,
+    });
+    expect(top.find((tile) => tile.x === 3 && tile.y === 24)).toMatchObject({
+      gutterRight: 4,
+      gutterBottom: 0,
+    });
+
+    // At the 1600 px level each level pixel is 4 map px, so is the gutter.
+    const mid = allTiles(manifest, 3).find((tile) => tile.x === 0 && tile.y === 0);
+    expect(mid).toMatchObject({ gutterRight: 16, gutterBottom: 16 });
+  });
+
+  it("shortens the gutter where fewer neighbour pixels remain", () => {
+    const small: TileManifest = {
+      ready: true,
+      version: "9",
+      width: 514,
+      height: 300,
+      tile_size: 256,
+      gutter: 4,
+      max_level: 0,
+      levels: [{ width: 514, height: 300 }],
+    };
+    const tiles = allTiles(small, 0);
+    expect(tiles.find((tile) => tile.x === 0)).toMatchObject({ gutterRight: 4 });
+    // Two pixels of the next tile remain: the gutter is those two.
+    expect(tiles.find((tile) => tile.x === 1)).toMatchObject({ gutterRight: 2 });
+    expect(tiles.find((tile) => tile.x === 2)).toMatchObject({ gutterRight: 0, width: 2 });
+
+    const { gutter: _gutter, ...legacy } = small;
+    expect(allTiles(legacy as TileManifest, 0)[0]).toMatchObject({ gutterRight: 0, gutterBottom: 0 });
   });
 
   it("only returns tiles on screen, plus a margin", () => {

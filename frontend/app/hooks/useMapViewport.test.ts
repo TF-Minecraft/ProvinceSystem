@@ -120,7 +120,6 @@ describe("useMapViewport", () => {
     const live = content.style.transform;
     expect(live).not.toContain("scale(1)");
     for (const value of devicePixels(live, 1.25)) expect(value).toBeCloseTo(Math.round(value), 9);
-    expect(content.style.getPropertyValue("--map-live-scale")).not.toBe("");
 
     // Settled, the scale moves into `zoom` and the map stays where it was.
     act(() => {
@@ -129,6 +128,5 @@ describe("useMapViewport", () => {
     const rest = content.style.transform;
     expect(rest).toContain("scale(1)");
     expect(devicePixels(rest, 1.25)).toEqual(devicePixels(live, 1.25));
-    expect(content.style.getPropertyValue("--map-live-scale")).toBe("");
   });
 });

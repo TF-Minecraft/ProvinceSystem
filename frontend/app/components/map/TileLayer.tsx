@@ -23,23 +23,6 @@ const FADE_MS = 160;
  */
 const SHOWN_MS = FADE_MS + 40;
 /**
- * How far, in screen pixels, an opaque tile reaches under its right and
- * bottom neighbours, at rest and mid-zoom alike (see `OPAQUE_TILE_CLASS`).
- * One pixel let a seam through mid-zoom.
- */
-const TILE_OVERLAP_PX = 2;
-/**
- * A tile's edge can land a hair off a pixel boundary, and mid-zoom (the map
- * scaled past its resting size) between pixels; Chrome then lets about a
- * quarter of that pixel through and the page shows as a grid of dark lines.
- * So an opaque tile reaches TILE_OVERLAP_PX under its right and bottom
- * neighbours, divided by the live scale to stay that size on screen. The same
- * size mid-zoom and at rest: when it shrank as a zoom settled, every tile's
- * far side moved back a pixel.
- */
-export const OPAQUE_TILE_CLASS =
-  "[scale:calc(1_+_var(--tile-ox)_/_var(--map-live-scale,1))_calc(1_+_var(--tile-oy)_/_var(--map-live-scale,1))]";
-/**
  * How far, in screen pixels, the backdrop runs on under the edge of opaque
  * sharp tiles (see the backdrop's clip path below).
  */
@@ -72,8 +55,8 @@ type TileLayerProps = {
   /** A tile failed to load, typically because its pyramid was replaced. */
   onTileError?: () => void;
   /**
-   * A see-through raster: its tiles never overlap, where the strips under a
-   * neighbour would show twice as deep.
+   * A see-through raster: each tile's gutter is clipped off, where a strip
+   * under a neighbour would show twice as deep.
    */
   seeThrough?: boolean;
 };
@@ -253,14 +236,17 @@ function TileLayer({
   // dark lines. A translate keeps the exact position. The size still goes
   // through `zoom` and can end a hair short of the pixel, and mid-zoom the
   // edges land between pixels anyway; Chrome lets about a quarter of such a
-  // pixel through. So opaque tiles reach a little under their right and
-  // bottom neighbours, which are drawn after them (on top), and keep their
-  // exact place: snapped to the pixels of each new zoom they moved by up to
-  // a pixel, each its own way, when a zoom settled.
+  // pixel through. So each tile file carries a gutter of its right and
+  // bottom neighbours' own pixels (see the manifest's `gutter`), drawn at
+  // full size under those neighbours, which are drawn after it: the split
+  // pixel then shows the same terrain from either tile. Stretching the
+  // tile to cover the seam instead displaced its terrain by up to the
+  // stretch, hardest at the far edge, so ridges kinked at every seam and
+  // hopped as each tile re-rasterised through a zoom.
   //
   // See-through rasters such as prosperity cannot overlap, which would
-  // darken the strip, so their edges snap to whole screen pixels to meet
-  // without gaps.
+  // darken the strip, so their gutter is clipped off and their edges snap
+  // to whole screen pixels to meet without gaps.
   const screenDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   const mapPxPerScreenPx = 1 / (view.displayScale * screenDpr);
   const snap = (value: number) =>
@@ -283,8 +269,8 @@ function TileLayer({
     const fades = fadeIn && fadesRef.current.get(key)!;
     const left = snap(tile.left);
     const top = snap(tile.top);
-    const width = snap(tile.left + tile.width) - left;
-    const height = snap(tile.top + tile.height) - top;
+    const width = snap(tile.left + tile.width) - left + tile.gutterRight;
+    const height = snap(tile.top + tile.height) - top + tile.gutterBottom;
     return (
       <img
         key={key}
@@ -300,15 +286,11 @@ function TileLayer({
         decoding="sync"
         onLoad={(event) => handleLoad(event.currentTarget, key, src)}
         onError={reportTileError}
-        className={`absolute left-0 top-0 max-w-none select-none ${seeThrough ? "" : OPAQUE_TILE_CLASS}`}
+        className="absolute left-0 top-0 max-w-none select-none"
         style={{
           translate: `${left}px ${top}px`,
           transformOrigin: "0 0",
-          // The overlap as a fraction of the tile's size on screen at rest.
-          ...({
-            "--tile-ox": TILE_OVERLAP_PX / (width * view.displayScale),
-            "--tile-oy": TILE_OVERLAP_PX / (height * view.displayScale),
-          } as CSSProperties),
+          clipPath: seeThrough ? `inset(0 ${tile.gutterRight}px ${tile.gutterBottom}px 0)` : undefined,
           width,
           height,
           opacity: !fades || loaded ? 1 : 0,

@@ -174,18 +174,6 @@ function onDevicePixel(value: number): number {
   return Math.round(value * ratio) / ratio;
 }
 
-/**
- * Tell the tile layers how far the content is scaled past its resting zoom
- * (see `OPAQUE_TILE_CLASS` in TileLayer), or, with null, that it is not.
- */
-function markScaling(content: HTMLElement, scale: number | null): void {
-  if (scale === null) {
-    content.style.removeProperty("--map-live-scale");
-    return;
-  }
-  content.style.setProperty("--map-live-scale", String(scale));
-}
-
 export function readViewportSize(element: HTMLElement): Size {
   const rect = element.getBoundingClientRect();
   return { w: rect.width, h: rect.height };
@@ -293,7 +281,6 @@ export function useMapViewport({
         pixelAligned ? onDevicePixel(next.translateX) : next.translateX,
         pixelAligned ? onDevicePixel(next.translateY) : next.translateY,
       );
-      markScaling(content, restingZoomRef.current && liveScale !== 1 ? liveScale : null);
       onLiveTransformRef.current?.({
         displayScale,
         translateX: next.translateX,
@@ -805,16 +792,6 @@ export function useMapViewport({
     if (!(displayScale > 0) || displayScale === zoomBase) return;
     setZoomBase(displayScale);
   }, [restingZoom, displayScale, transition, isPanning, zoomBase]);
-
-  // An animated zoom runs from the zoom held so far to the new scale: size
-  // the tiles' overlap for the smaller end, so it covers the whole way.
-  const restingScale = displayScale / appliedZoom;
-  const overlapScale = transition === undefined ? restingScale : Math.min(1, restingScale);
-  useLayoutEffect(() => {
-    const content = contentRef.current;
-    if (!content || liveActiveRef.current) return;
-    markScaling(content, restingZoom && restingScale !== 1 ? overlapScale : null);
-  });
 
   // At rest the position sits on a whole device pixel, so the see-through
   // tiles' snapped edges (see TileLayer) land on pixel boundaries too; a
