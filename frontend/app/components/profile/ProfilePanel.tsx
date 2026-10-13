@@ -18,6 +18,7 @@ import LinkedAccounts, {
   type Load,
 } from "../account/LinkedAccounts";
 import { DiscordSignInLink } from "../account/BrandButtons";
+import { pageScroller } from "../shell/pageScroll";
 import {
   discordSignInUrl,
   getAccount,
@@ -410,7 +411,7 @@ export default function ProfilePanel({
     const nav = itemNav("characters");
     return {
       onOpen: (id: string) => {
-        listScroll.current.set(id, window.scrollY);
+        listScroll.current.set(id, pageScroller().scrollTop);
         nav.onOpen(id);
       },
       onBack: nav.onBack,
@@ -435,7 +436,7 @@ export default function ProfilePanel({
     if (!characterListShowing || !id) return;
     lastCharacter.current = null;
     const scrollY = listScroll.current.get(id);
-    if (scrollY !== undefined) window.scrollTo(0, scrollY);
+    if (scrollY !== undefined) pageScroller().scrollTop = scrollY;
     const card = Array.from(document.querySelectorAll<HTMLElement>("[data-character-id]")).find(
       (el) => el.dataset.characterId === id,
     );

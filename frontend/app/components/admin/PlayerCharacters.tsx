@@ -53,7 +53,7 @@ export default function PlayerCharacters({ profile, active }: { profile: PlayerP
     return (
       <div
         ref={frameRef}
-        className="scroll-mt-[calc(var(--tfmc-header-h)+12px)] md:scroll-mt-[calc(var(--tfmc-header-h)+5rem)]"
+        className="scroll-mt-[calc(var(--tfmc-sticky-top)+12px)] md:scroll-mt-[calc(var(--tfmc-sticky-top)+5rem)]"
       >
         <ItemFrame tab="characters" backHref={base} onBack={() => router.push(base, { scroll: false })}>
           {selected ? (

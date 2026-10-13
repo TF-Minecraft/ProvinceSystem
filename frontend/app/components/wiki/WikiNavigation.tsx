@@ -12,7 +12,7 @@ export default function WikiNavigation({ children }: { children: ReactNode }) {
   useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <aside className="relative z-30 shrink-0 lg:sticky lg:top-[calc(var(--tfmc-header-h)+2.5rem)] lg:flex lg:max-h-[calc(100dvh-var(--tfmc-header-h)-5rem)] lg:w-56 lg:self-start lg:flex-col">
+    <aside className="relative z-30 shrink-0 lg:sticky lg:top-[calc(var(--tfmc-sticky-top)+2.5rem)] lg:flex lg:max-h-[calc(100dvh-var(--tfmc-header-h)-5rem)] lg:w-56 lg:self-start lg:flex-col">
       <button
         ref={toggleRef}
         type="button"

@@ -24,7 +24,7 @@ export default function WikiSectionHeading({ children, id, intro }: WikiSectionH
       <h2
         id={id}
         className={cx(
-          "mt-8 scroll-mt-[calc(var(--tfmc-header-h)+1rem)]",
+          "mt-8 scroll-mt-[calc(var(--tfmc-sticky-top)+1rem)]",
           wikiDisplayFont,
           "text-xl text-[var(--tfmc-cream)]",
         )}
