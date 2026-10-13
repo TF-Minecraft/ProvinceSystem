@@ -1154,12 +1154,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     </>
   );
 
-  const archiveFooter =
-    chronicle || archived ? null : (
-      <div className="flex justify-end">
-        <MapArchiveMenu maps={maps} linkClass={actionLinkClass} />
-      </div>
-    );
+  const archiveFooter = chronicle || archived ? null : <MapArchiveMenu maps={maps} linkClass={actionLinkClass} />;
 
   const zoomControls = (
     <MapZoomControls
@@ -1223,6 +1218,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
       banner={dayBar}
       plaque={
         <MapPlaque
+          docked={details !== null}
           eyebrow={archived ? "Archived chapter" : undefined}
           mapDisplayName={displayName}
           actions={plaqueActions}

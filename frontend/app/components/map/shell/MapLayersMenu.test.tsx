@@ -105,7 +105,7 @@ describe("MapLayersMenu", () => {
 
   it("leaves a pull to the content while it is scrolled down", () => {
     const sheet = renderMenu();
-    sheet.scrollTop = 120;
+    screen.getByRole("group", { name: "Map layer options" }).scrollTop = 120;
     pull(sheet, 300, 500, 200);
     act(() => {
       vi.advanceTimersByTime(300);
