@@ -205,7 +205,7 @@ export default function AdminPrecedentPage() {
         <section
           ref={casesRef}
           // Clear of the pinned site header and staff tabs when a new page scrolls it into view.
-          className={`${panelClass} scroll-mt-[calc(var(--tfmc-header-h)+5rem)] lg:col-start-1 lg:row-start-1`}
+          className={`${panelClass} scroll-mt-[calc(var(--tfmc-sticky-top)+5rem)] lg:col-start-1 lg:row-start-1`}
           aria-label="Cases"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">

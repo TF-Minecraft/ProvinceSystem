@@ -81,7 +81,7 @@ export default function SiteHeader() {
   useEffect(() => {
     if (!open) return;
     const root = document.documentElement;
-    root.classList.add("overflow-hidden");
+    root.classList.add("scroll-locked");
     menuRef.current?.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
 
     // Widening past the breakpoint hides the menu, so drop its scroll lock with it.
@@ -91,7 +91,7 @@ export default function SiteHeader() {
     };
     desktop.addEventListener("change", closeOnDesktop);
     return () => {
-      root.classList.remove("overflow-hidden");
+      root.classList.remove("scroll-locked");
       desktop.removeEventListener("change", closeOnDesktop);
     };
   }, [open, closeMenu]);
@@ -126,7 +126,7 @@ export default function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-[100] grid h-[var(--tfmc-header-h)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6">
+      <header className="sticky top-0 z-[100] grid shrink-0 h-[var(--tfmc-header-h)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-2 backdrop-blur-md lg:flex lg:px-6">
         <button
           ref={toggleRef}
           type="button"

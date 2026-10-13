@@ -79,7 +79,7 @@ export default function ProfileCharacter({
   }
 
   return (
-    <div ref={frameRef} className="scroll-mt-[calc(var(--tfmc-header-h)+12px)]">
+    <div ref={frameRef} className="scroll-mt-[calc(var(--tfmc-sticky-top)+12px)]">
       <ItemFrame tab="characters" onBack={onBack}>
         <div className="mt-3">
           {error ? (

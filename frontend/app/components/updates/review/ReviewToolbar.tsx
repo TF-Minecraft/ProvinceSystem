@@ -42,7 +42,7 @@ export default function ReviewToolbar({
 }: ReviewToolbarProps) {
   return (
     <div
-      className="sticky top-[var(--tfmc-header-h)] z-20 -mx-4 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]
+      className="sticky top-[var(--tfmc-sticky-top)] z-20 -mx-4 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]
         bg-[var(--tfmc-forest-deep)] px-4 py-2 sm:-mx-6 sm:px-6"
     >
       <div className="flex flex-wrap items-center gap-2">

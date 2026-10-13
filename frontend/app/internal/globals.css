@@ -9,6 +9,10 @@
   --tfmc-mist: #a8b5a8;
   --tfmc-accent: #7a9e6a;
   --tfmc-header-h: 3.5rem;
+  /* Where sticky bars pin and scroll targets stop, measured in the page's
+     scroller: below the site header while the document scrolls, at the top
+     of PageScroll's area once that scrolls instead. */
+  --tfmc-sticky-top: var(--tfmc-header-h);
 
   --background: var(--tfmc-forest-deep);
   --foreground: var(--tfmc-cream);
@@ -173,22 +177,6 @@
     color: var(--tfmc-cream);
   }
 
-  /* Pages keep the scrollbar's room even when nothing scrolls, so the layout
-     does not shift sideways as a page grows past the screen. The full-screen
-     map never scrolls, so it gets the whole width, from its first frame: the
-     `map-fullscreen` class arrives after the map has measured itself. */
-  html:not(:has(.map-shell)) {
-    scrollbar-gutter: stable;
-  }
-
-  /* While the full-screen map is open (MapShell), the page does not scroll or
-     bounce: only the map and its panels move. */
-  html.map-fullscreen,
-  html.map-fullscreen body {
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-
   /* Nothing on the map page selects, drags or pops up a long-press menu: a long
      press is a press on the map, not a text selection or "Save image". The
      search box is the exception, or Safari would not let it be typed in. */
@@ -205,6 +193,64 @@
     -webkit-user-select: text;
     user-select: text;
   }
+}
+
+/* Where the page scrolls. With a mouse or trackpad, the area below the site
+   header scrolls (PageScroll), so the header spans the full width and the
+   scrollbar starts beneath it. Touch screens draw no page scrollbar, and
+   scroll the document so the browser's toolbars still tuck away.
+   Unlayered, so the overflow rules hold over utilities. */
+@media (hover: hover) and (pointer: fine) {
+  :root {
+    --tfmc-sticky-top: 0px;
+  }
+
+  html {
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  .page-scroll {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* Pages keep the scrollbar's room even when nothing scrolls, so the layout
+   does not shift sideways as a page grows past the screen. The full-screen
+   map never scrolls, so it gets the whole width, from its first frame: the
+   `map-fullscreen` class arrives after the map has measured itself. */
+@media (hover: hover) and (pointer: fine) {
+  .page-scroll:not(:has(.map-shell)) {
+    scrollbar-gutter: stable;
+  }
+}
+
+@media not ((hover: hover) and (pointer: fine)) {
+  html:not(:has(.map-shell)) {
+    scrollbar-gutter: stable;
+  }
+}
+
+/* While the full-screen map is open (MapShell), the page does not scroll or
+   bounce: only the map and its panels move. */
+html.map-fullscreen,
+html.map-fullscreen body,
+html.map-fullscreen .page-scroll {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* The open site menu holds the page still behind it. */
+html.scroll-locked,
+html.scroll-locked .page-scroll {
+  overflow: hidden;
 }
 
 /* Themed scrollbars, for mouse and trackpad only. The standard properties are

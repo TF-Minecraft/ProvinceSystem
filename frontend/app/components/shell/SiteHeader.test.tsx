@@ -60,11 +60,11 @@ it("opens the menu, locks page scroll and focuses the first link", () => {
   fireEvent.click(toggle);
   expect(toggle.getAttribute("aria-expanded")).toBe("true");
   expect(menu.hasAttribute("inert")).toBe(false);
-  expect(document.documentElement.classList.contains("overflow-hidden")).toBe(true);
+  expect(document.documentElement.classList.contains("scroll-locked")).toBe(true);
   expect(document.activeElement?.closest(`#${CSS.escape(menu.id)}`)).toBe(menu);
 
   fireEvent.click(toggle);
-  expect(document.documentElement.classList.contains("overflow-hidden")).toBe(false);
+  expect(document.documentElement.classList.contains("scroll-locked")).toBe(false);
 });
 
 it("closes on a link, the backdrop, Escape and navigation", () => {
