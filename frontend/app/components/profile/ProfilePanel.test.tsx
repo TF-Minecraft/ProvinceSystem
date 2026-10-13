@@ -1342,7 +1342,7 @@ it("opens a character's kits inside Profile, and ← returns to the character", 
   window.history.replaceState(null, "", "/profile?tab=characters&character=c1");
   render(<ProfilePanel />);
   fireEvent.click(await screen.findByRole("link", { name: "Kits" }));
-  expect(await screen.findByRole("heading", { level: 3, name: "Starter kit" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { level: 2, name: "Starter kit" })).toBeTruthy();
   expect(window.location.search).toBe("?tab=characters&character=c1&view=kits");
   // Profile's tabs stay; config names are cased like item names.
   expect(screen.getByRole("tab", { name: "Characters" }).getAttribute("aria-selected")).toBe("true");
@@ -1353,7 +1353,7 @@ it("opens a character's kits inside Profile, and ← returns to the character", 
   expect(await screen.findByRole("heading", { level: 2, name: "Exhumer's Spade" })).toBeTruthy();
   expect(window.location.search).toBe("?tab=items&item=c1%2Firon_hunting_knife");
   window.history.back();
-  expect(await screen.findByRole("heading", { level: 3, name: "Starter kit" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { level: 2, name: "Starter kit" })).toBeTruthy();
   fireEvent.click(screen.getByRole("link", { name: "← Vaelthir" }));
   expect(await screen.findByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
   expect(window.location.search).toBe("?tab=characters&character=c1");

@@ -166,9 +166,9 @@ function KitCard({
   return (
     <section aria-labelledby={`kit-${kit.id}`} className="mt-5">
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h3 id={`kit-${kit.id}`} className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
+        <h2 id={`kit-${kit.id}`} className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           {kit.display_name || titleCase(kit.id)} kit
-        </h3>
+        </h2>
         <p className="text-sm text-[var(--tfmc-mist)]">
           <span className={kit.claimable ? "font-semibold text-[var(--tfmc-accent)]" : undefined}>{status}</span>
           {" · "}
