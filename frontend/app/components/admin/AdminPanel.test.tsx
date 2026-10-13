@@ -165,7 +165,7 @@ it("tells a failed search apart from no match", async () => {
   fireEvent.change(await screen.findByLabelText("Discord username, display name or ID"), { target: { value: "pat" } });
   fireEvent.click(screen.getByRole("button", { name: "Find" }));
   expect((await screen.findByRole("alert")).textContent).toBe("Something went wrong. Please try again.");
-  expect(screen.queryByText("No account matches that.")).toBeNull();
+  expect(screen.queryByText("No match. They may not have signed in yet.")).toBeNull();
 });
 
 it("returns to the sign-in prompt when the session ends mid-search", async () => {
