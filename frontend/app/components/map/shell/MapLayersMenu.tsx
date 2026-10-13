@@ -339,20 +339,18 @@ function LayersPanel({
   const sectionGap = "border-t border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]";
   const phoneToggles = toggles.some((toggle) => !toggle.desktopOnly);
   const sheetRef = useRef<HTMLDivElement>(null);
-  useBottomSheetDrag(sheetRef, { onClose });
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useBottomSheetDrag(sheetRef, { onClose, scrollerRef });
 
   return (
     <div
       ref={sheetRef}
       role="dialog"
       aria-label="Map layers"
-      className={`${mapFrameClass} pointer-events-auto motion-safe:animate-map-sheet-in motion-safe:md:animate-map-popover-in fixed inset-x-0 bottom-0 z-40 max-md:bg-[var(--tfmc-forest-deep)] max-h-[78dvh] overflow-y-auto overscroll-none rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-full md:left-0 md:mb-3 md:max-h-[calc(100dvh-var(--tfmc-header-h)-8.5rem)] md:w-[24rem] md:rounded-[10px] md:pb-2`}
+      className={`${mapFrameClass} pointer-events-auto motion-safe:animate-map-sheet-in motion-safe:md:animate-map-popover-in fixed inset-x-0 bottom-0 z-40 flex flex-col max-md:bg-[var(--tfmc-forest-deep)] max-h-[78dvh] overflow-hidden rounded-b-none rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-full md:left-0 md:mb-3 md:max-h-[calc(100dvh-var(--tfmc-header-h)-8.5rem)] md:w-[24rem] md:rounded-[10px] md:pb-2`}
     >
-      {/* Pinned, so the close button stays in reach however far the sheet
-          scrolls, as on the details sheet. The upward shadow seals the
-          hairline iOS leaves above a sticky bar at a fractional position,
-          which otherwise shows the thumbnails scrolling past. */}
-      <div className="sticky top-0 z-10 bg-[var(--tfmc-forest-deep)] shadow-[0_-4px_0_var(--tfmc-forest-deep)]">
+      {/* Only the choices scroll; close and chapter navigation stay in reach. */}
+      <div className="shrink-0 bg-[var(--tfmc-forest-deep)]">
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>
           <span className="h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]" />
         </div>
@@ -361,59 +359,34 @@ function LayersPanel({
           <SheetCloseButton onClick={onClose} label="Close layers" />
         </div>
       </div>
-      <section className="px-3 pb-4 md:px-4">
-        {/* Twelve modes, three rows of four in the panel's order: realms,
+      <div
+        ref={scrollerRef}
+        role="group"
+        aria-label="Map layer options"
+        className="min-h-0 overflow-y-auto overscroll-none"
+      >
+        <section className="px-3 pb-4 md:px-4">
+          {/* Twelve modes, three rows of four in the panel's order: realms,
             the title tiers from the top, then the world modes. */}
-        <ul className="grid grid-cols-4 gap-x-1 gap-y-3">
-          {options.map((option) => {
-            const active = option.value === mapType;
-            return (
-              <li key={option.value}>
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    onMapTypeChange(option.value);
-                    onClose();
-                  }}
-                  className={layerTileButtonClass}
-                >
-                  <span className={`${layerTileFrameClass} ${layerTileRingClass(active)}`}>
-                    <ModePreview mapId={mapId} mode={option.value} base={base} enabled={previews} />
-                  </span>
-                  <span lang="en" className={layerTileLabelClass(active)}>
-                    {option.label}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {toggles.length > 0 ? (
-        <section className={`${sectionGap} px-3 py-4 md:px-4 ${phoneToggles ? "" : "max-md:hidden"}`}>
-          <h2 className="mb-3 px-1 text-lg font-semibold text-[var(--tfmc-cream)]">Map details</h2>
           <ul className="grid grid-cols-4 gap-x-1 gap-y-3">
-            {toggles.map((toggle) => {
-              const Glyph = toggle.icon;
+            {options.map((option) => {
+              const active = option.value === mapType;
               return (
-                <li key={toggle.id} className={toggle.desktopOnly ? "max-md:hidden" : undefined}>
+                <li key={option.value}>
                   <button
                     type="button"
-                    role="switch"
-                    aria-checked={toggle.checked}
-                    title={toggle.hint}
-                    onClick={() => toggle.onChange(!toggle.checked)}
+                    aria-pressed={active}
+                    onClick={() => {
+                      onMapTypeChange(option.value);
+                      onClose();
+                    }}
                     className={layerTileButtonClass}
                   >
-                    <span
-                      className={`${layerTileFrameClass} ${layerTileRingClass(toggle.checked)} ${layerTileIconClass(toggle.checked)}`}
-                    >
-                      <Glyph size={28} />
+                    <span className={`${layerTileFrameClass} ${layerTileRingClass(active)}`}>
+                      <ModePreview mapId={mapId} mode={option.value} base={base} enabled={previews} />
                     </span>
-                    <span lang="en" className={layerTileLabelClass(toggle.checked)}>
-                      {toggle.label}
+                    <span lang="en" className={layerTileLabelClass(active)}>
+                      {option.label}
                     </span>
                   </button>
                 </li>
@@ -421,9 +394,41 @@ function LayersPanel({
             })}
           </ul>
         </section>
-      ) : null}
 
-      {footer ? <div className={`${sectionGap} px-4 py-3`}>{footer}</div> : null}
+        {toggles.length > 0 ? (
+          <section className={`${sectionGap} px-3 py-4 md:px-4 ${phoneToggles ? "" : "max-md:hidden"}`}>
+            <h2 className="mb-3 px-1 text-lg font-semibold text-[var(--tfmc-cream)]">Map details</h2>
+            <ul className="grid grid-cols-4 gap-x-1 gap-y-3">
+              {toggles.map((toggle) => {
+                const Glyph = toggle.icon;
+                return (
+                  <li key={toggle.id} className={toggle.desktopOnly ? "max-md:hidden" : undefined}>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={toggle.checked}
+                      title={toggle.hint}
+                      onClick={() => toggle.onChange(!toggle.checked)}
+                      className={layerTileButtonClass}
+                    >
+                      <span
+                        className={`${layerTileFrameClass} ${layerTileRingClass(toggle.checked)} ${layerTileIconClass(toggle.checked)}`}
+                      >
+                        <Glyph size={28} />
+                      </span>
+                      <span lang="en" className={layerTileLabelClass(toggle.checked)}>
+                        {toggle.label}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+
+      {footer ? <div className={`${sectionGap} shrink-0 px-4 py-3`}>{footer}</div> : null}
     </div>
   );
 }

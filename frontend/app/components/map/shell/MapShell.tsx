@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { useBottomSheetDrag } from "@/app/hooks/useBottomSheetDrag";
 
 import type { MapLayersPlacement } from "./MapLayersMenu";
+import { ChevronIcon } from "./MapIcons";
 import { mapFrameClass } from "../ui";
 
 type MapShellProps = {
@@ -53,10 +54,9 @@ type MapShellProps = {
 };
 
 /**
- * Full-bleed map with its controls floating over it, laid out like Google
- * Maps. Search and the details panel down the left, the layers tile in the
- * bottom-left corner (beside the details while they are open), zoom bottom
- * right.
+ * Full-bleed map with a full-height desktop selection drawer. Search stays
+ * above its scrolling details; the edge handle hides the whole drawer while
+ * retaining the selection. Layers sits beside the open drawer, zoom bottom right.
  *
  * On a phone the same pieces regroup instead of shrinking: one slim search
  * row across the top with the breadcrumb and layers under it, details in a
@@ -81,6 +81,44 @@ export default function MapShell({
   paintPanel,
   banner,
 }: MapShellProps) {
+  const sidebarId = useId();
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const hasDetails = Boolean(details);
+  const selectionKey = hasDetails ? (detailsKey ?? "details") : null;
+  const [desktopDrawer, setDesktopDrawer] = useState({ key: selectionKey, collapsed: false });
+  if (desktopDrawer.key !== selectionKey) {
+    setDesktopDrawer({ key: selectionKey, collapsed: false });
+  }
+  const collapsed = hasDetails && desktopDrawer.key === selectionKey && desktopDrawer.collapsed;
+  const desktopDrawerOpen = hasDetails && !collapsed;
+
+  // Desktop collapse must not hide the phone's search or bottom sheet.
+  useEffect(() => {
+    const desktop = window.matchMedia?.("(min-width: 48rem)");
+    if (!desktop) return;
+    function onChange(event: MediaQueryListEvent) {
+      if (!event.matches) setDesktopDrawer((drawer) => ({ ...drawer, collapsed: false }));
+    }
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, []);
+
+  // Preserve the search shortcut even while its input is in the hidden drawer.
+  useEffect(() => {
+    if (!collapsed) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (!sidebarRef.current?.querySelector("input[role=combobox]")) return;
+      event.preventDefault();
+      setDesktopDrawer((drawer) => ({ ...drawer, collapsed: false }));
+      requestAnimationFrame(() => sidebarRef.current?.querySelector<HTMLInputElement>("input[role=combobox]")?.focus());
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [collapsed]);
+
   // The map fills the screen below the header and nothing else is on the
   // page, so the page itself must not move: on an iPhone a drag on the panels
   // scrolled or rubber-banded it, sliding them under the header. Scrolling
@@ -97,36 +135,63 @@ export default function MapShell({
     <div className="map-shell relative h-[calc(100dvh-var(--tfmc-header-h))] overflow-hidden bg-[radial-gradient(ellipse_at_center,#16231c_0%,#0a110d_70%)] text-[var(--tfmc-cream)] [touch-action:pan-x_pan-y]">
       <div className="absolute inset-0">{children}</div>
 
-      {/* Left column: plaque on top, details under it on desktop; on mobile
-          the details are a bottom sheet pinned to the column's foot, which
-          at full height rises over the search. The column itself lets clicks
-          through to the map; only its panels take them. */}
-      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col gap-2 p-3 md:inset-auto md:bottom-4 md:left-4 md:top-4 md:w-[23rem] md:gap-3 md:p-0">
-        {/* Above the details panel, so search results drop down over it. */}
-        <div className="pointer-events-auto relative z-10 shrink-0">
-          {banner ? <div className="mb-2 md:mb-3">{banner}</div> : null}
-          {plaque}
-          {/* Breadcrumb left, layers right, as Google Maps' phone app puts
-              its layers button under the search bar. The gap between them
-              lets clicks through to the map. */}
-          {breadcrumb || layers ? (
-            <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
-              <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
-              {layers ? <div className="pointer-events-auto ml-auto shrink-0">{layers("phone")}</div> : null}
-            </div>
+      {/* One search and one details node at every breakpoint. Only the
+          desktop drawer moves away; on phones the details remain a sheet. */}
+      <div
+        className={`pointer-events-none absolute inset-0 z-20 md:inset-y-0 md:left-0 md:right-auto md:w-[23rem] motion-safe:md:transition-transform motion-safe:md:duration-200 ${
+          collapsed ? "md:-translate-x-full" : "md:translate-x-0"
+        }`}
+      >
+        <div
+          id={sidebarId}
+          ref={sidebarRef}
+          inert={collapsed}
+          aria-hidden={collapsed || undefined}
+          className={`relative flex h-full min-h-0 flex-col gap-2 p-3 md:gap-0 md:border-r md:p-0 ${
+            hasDetails
+              ? "md:border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] md:bg-[var(--tfmc-forest-deep)] md:shadow-[8px_0_24px_rgb(0_0_0/0.3)]"
+              : "md:border-transparent"
+          }`}
+        >
+          {/* Search never joins the details' scroller, and its results sit above it. */}
+          <div
+            className={`pointer-events-auto relative z-10 shrink-0 has-[[role=dialog]]:z-30 md:z-30 md:p-4 ${
+              hasDetails ? "md:border-b md:border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]" : ""
+            }`}
+          >
+            {banner ? <div className="mb-2 md:mb-3">{banner}</div> : null}
+            {plaque}
+            {breadcrumb || layers ? (
+              <div className="pointer-events-none mt-2 flex items-start gap-2 md:hidden">
+                <div className="min-w-0 flex-1 empty:hidden">{breadcrumb}</div>
+                {layers ? <div className="pointer-events-auto ml-auto shrink-0">{layers("phone")}</div> : null}
+              </div>
+            ) : null}
+          </div>
+
+          {details ? (
+            <DetailsSheet
+              key={detailsKey ?? undefined}
+              onClose={onDetailsClose}
+              header={detailsHeader}
+              footer={detailsFooter}
+            >
+              {details}
+            </DetailsSheet>
           ) : null}
         </div>
-
-        {details ? (
-          // Keyed, so a newly selected region opens at the peek height again.
-          <DetailsSheet
-            key={detailsKey ?? undefined}
-            onClose={onDetailsClose}
-            header={detailsHeader}
-            footer={detailsFooter}
+        {hasDetails ? (
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand map panel" : "Collapse map panel"}
+            aria-expanded={!collapsed}
+            aria-controls={sidebarId}
+            title={collapsed ? "Expand map panel" : "Collapse map panel"}
+            onClick={() => setDesktopDrawer((drawer) => ({ ...drawer, collapsed: !drawer.collapsed }))}
+            className="pointer-events-auto absolute left-full top-1/2 hidden h-12 w-7 -translate-y-1/2 items-center justify-center rounded-r-lg border border-l-0 border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[var(--tfmc-forest-deep)] text-[var(--tfmc-stone)] shadow-[4px_2px_10px_rgb(0_0_0/0.25)] hover:bg-[var(--tfmc-forest)] hover:text-[var(--tfmc-cream)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] md:flex"
           >
-            {details}
-          </DetailsSheet>
+            <ChevronIcon size={18} className={collapsed ? "" : "rotate-180"} />
+          </button>
         ) : null}
       </div>
 
@@ -152,13 +217,12 @@ export default function MapShell({
         </div>
       ) : null}
 
-      {/* As in Google Maps: bottom left, moving aside for the details panel
-          (23rem from 1rem in). Its strip of choices unfolds to the right as
+      {/* Bottom left, moving aside for the open 23rem drawer. The choices unfold as
           far as the zoom buttons, wrapping upwards when it runs out of room. */}
       {layers ? (
         <div
           className={`pointer-events-none absolute bottom-4 right-[4.5rem] z-40 hidden md:flex ${
-            details ? "left-[25rem]" : "left-4"
+            desktopDrawerOpen ? "left-[24rem]" : "left-4"
           }`}
         >
           {layers("desktop")}
@@ -172,8 +236,11 @@ export default function MapShell({
       ) : null}
 
       {footer ? (
-        // Clear of the left column (23rem from 1rem in) and the zoom buttons.
-        <div className="pointer-events-none absolute bottom-4 left-[25rem] right-[4.5rem] z-20 hidden justify-center md:flex">
+        <div
+          className={`pointer-events-none absolute bottom-4 right-[4.5rem] z-20 hidden justify-center md:flex ${
+            desktopDrawerOpen ? "left-[24rem]" : "left-4"
+          }`}
+        >
           <div className="pointer-events-auto w-full max-w-3xl">{footer}</div>
         </div>
       ) : null}
@@ -218,7 +285,7 @@ function DetailsSheet({
   return (
     <div
       ref={sheetRef}
-      className={`${mapFrameClass} pointer-events-auto motion-safe:animate-map-sheet-in motion-safe:md:animate-map-panel-in absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:rounded-b-[10px] ${
+      className={`${mapFrameClass} pointer-events-auto motion-safe:max-md:animate-map-sheet-in absolute inset-x-0 bottom-0 z-20 flex max-md:bg-[var(--tfmc-forest-deep)] min-h-0 flex-col rounded-b-none md:static md:z-auto md:flex-1 md:rounded-none md:border-0 md:bg-transparent md:shadow-none md:backdrop-blur-none ${
         expanded ? "max-h-[calc(100%-0.75rem)]" : "max-h-[44%]"
       } max-md:transition-[max-height] max-md:duration-200 max-md:ease-out md:max-h-full`}
     >

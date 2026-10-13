@@ -8,6 +8,8 @@ type MapPlaqueProps = {
   /** Icon buttons beside the name: history, archive, edit titles. */
   actions?: ReactNode;
   search?: ReactNode;
+  /** The desktop selection drawer supplies its frame. */
+  docked?: boolean;
 };
 
 /**
@@ -15,9 +17,13 @@ type MapPlaqueProps = {
  * is one slim row, search and actions: the search box already names the map
  * ("Search Vardera"), and the screen has little height to spare.
  */
-export default function MapPlaque({ eyebrow, mapDisplayName, actions, search }: MapPlaqueProps) {
+export default function MapPlaque({ eyebrow, mapDisplayName, actions, search, docked = false }: MapPlaqueProps) {
   return (
-    <div className={`relative ${mapFrameClass} flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3`}>
+    <div
+      className={`relative ${mapFrameClass} flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3 ${
+        docked ? "md:rounded-none md:border-transparent md:bg-transparent md:shadow-none md:backdrop-blur-none" : ""
+      }`}
+    >
       <div className="hidden min-w-0 flex-1 px-0.5 md:block">
         {eyebrow ? <p className="text-xs text-[var(--tfmc-mist)]">{eyebrow}</p> : null}
         <h1 className="truncate font-[family-name:var(--font-fraunces)] text-2xl leading-tight text-[var(--tfmc-cream)]">
