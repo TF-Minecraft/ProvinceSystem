@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import AdminColumn from "../../../components/admin/AdminColumn";
 import PlayerFrame from "../../../components/admin/PlayerFrame";
 
@@ -18,7 +19,7 @@ export default async function AdminPlayerLayout({
     <Suspense
       fallback={
         <AdminColumn>
-          <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+          <LoadingSkeleton variant="content" className="mt-6" />
         </AdminColumn>
       }
     >

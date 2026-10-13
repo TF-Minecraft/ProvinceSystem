@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useEffect, useState } from "react";
 
 import AdminColumn from "../../components/admin/AdminColumn";
@@ -28,7 +29,7 @@ export default function AdminDiagnosticsPage() {
   return (
     <AdminColumn>
       {gate === "loading" ? (
-        <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+        <LoadingSkeleton variant="table" className="mt-6" />
       ) : gate === "ready" ? (
         <DiagnosticReports initial={reports} />
       ) : (

@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   createSubmission,
@@ -274,7 +276,7 @@ export default function BrewForm({ session, onSubmitted }: Props) {
   }
 
   if (loadingCatalog) {
-    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
+    return <LoadingSkeleton variant="form" className="mt-8" />;
   }
 
   if (loadError) {

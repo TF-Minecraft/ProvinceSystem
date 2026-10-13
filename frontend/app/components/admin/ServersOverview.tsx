@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
@@ -188,7 +189,7 @@ export default function ServersOverview() {
   }, [data]);
 
   if (gate && !data) return <StaffGateMessage kind={gate} />;
-  if (!data) return <p className={`mt-6 ${mutedClass}`}>Loading…</p>;
+  if (!data) return <LoadingSkeleton variant="table" className="mt-6" />;
 
   const needle = query.trim().toLowerCase();
   const rows = (view === "look" ? needsLook : data.plugins).filter((p) => p.repo.toLowerCase().includes(needle));

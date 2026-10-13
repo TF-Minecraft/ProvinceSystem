@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
@@ -296,7 +297,9 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
       }
       map={
         <div className={`h-full ${load.kind !== "ready" && data ? "opacity-70" : ""}`}>
-          {mapId ? (
+          {!data && load.kind === "loading" ? (
+            <LoadingSkeleton variant="map" label="Loading movement…" className={`${mapFrameClass} overflow-hidden`} />
+          ) : mapId ? (
             <MovementMap
               mapId={mapId}
               mapWorld={mapWorld}
@@ -332,13 +335,17 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
         <>
           {/* Shown while loading too, saying so, so nothing below it moves when the answer comes. */}
           <InspectBar cursor={moment} since={since} until={until} times={times} onCursor={setMoment}>
-            {load.kind === "loading"
-              ? data
-                ? "Loading… showing the previous results"
-                : "Loading…"
-              : data
-                ? `${formatClock(moment, true)} · ${seenNow} of ${drawn.length} players seen or estimated`
-                : "Nothing to show."}
+            {load.kind === "loading" ? (
+              data ? (
+                "Loading… showing the previous results"
+              ) : (
+                <LoadingSkeleton variant="line" />
+              )
+            ) : data ? (
+              `${formatClock(moment, true)} · ${seenNow} of ${drawn.length} players seen or estimated`
+            ) : (
+              "Nothing to show."
+            )}
           </InspectBar>
           {data && completeFrom > since ? (
             <p className={mutedClass}>Too many positions to show; the range starts at {formatMoment(completeFrom)}.</p>
@@ -375,6 +382,7 @@ function EveryoneRange({ viewSwitch }: { viewSwitch: ReactNode }) {
                 </button>
               ) : null}
             </div>
+            {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" label="Loading players…" /> : null}
             {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
             <ul
               className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"

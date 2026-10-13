@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 
 import { adminErrorMessage, coreProtectMessage } from "../../../lib/admin/api";
 import {
@@ -172,7 +173,9 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
         </>
       }
       map={
-        mapId ? (
+        !data && load.kind === "loading" ? (
+          <LoadingSkeleton variant="map" label="Loading positions…" className={`${mapFrameClass} overflow-hidden`} />
+        ) : mapId ? (
           <MovementMap
             mapId={mapId}
             mapWorld={mapWorld}
@@ -191,14 +194,16 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
       }
       inspector={
         <>
-          <p className="text-sm text-[var(--tfmc-cream)]" aria-live="polite">
-            {data
-              ? `${positions.length} ${positions.length === 1 ? "player" : "players"} seen recently · updated ${formatClock(
-                  data.as_of ?? data.until,
-                  true,
-                )}`
-              : "Loading…"}
-          </p>
+          {data ? (
+            <p className="text-sm text-[var(--tfmc-cream)]" aria-live="polite">
+              {`${positions.length} ${positions.length === 1 ? "player" : "players"} seen recently · updated ${formatClock(
+                data.as_of ?? data.until,
+                true,
+              )}`}
+            </p>
+          ) : (
+            <LoadingSkeleton variant="line" />
+          )}
           {elsewhere ? <p className={mutedClass}>{elsewhere} in another world, listed but not on the map.</p> : null}
           <input
             aria-label="Search players"
@@ -207,6 +212,7 @@ export default function EveryoneNow({ viewSwitch = null }: { viewSwitch?: ReactN
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          {!data && load.kind === "loading" ? <LoadingSkeleton variant="list" label="Loading players…" /> : null}
           {/* Its own scroll on a phone; on wider screens the whole column scrolls. */}
           <ul
             className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto lg:max-h-none lg:overflow-visible"

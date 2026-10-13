@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useEffect, useRef, useState } from "react";
 
 import { getGameServer, type GameServer } from "@/lib/diagnostic/api";
@@ -86,11 +88,11 @@ export default function JoinServer() {
           {copy === "copied" ? "Copied" : copy === "failed" ? "Copy by hand" : "Copy"}
         </button>
       </div>
-      <p className="flex items-center gap-2 text-sm text-[var(--tfmc-mist)]" aria-live="polite">
-        <span>{status}</span>
+      <div className="flex min-h-5 items-center gap-2 text-sm text-[var(--tfmc-mist)]" aria-live="polite">
+        {!server && !failed ? <LoadingSkeleton variant="line" label={status} /> : <span>{status}</span>}
         {server ? <span aria-hidden>·</span> : null}
         {server ? <span>Java {server.game_version}</span> : null}
-      </p>
+      </div>
     </div>
   );
 }

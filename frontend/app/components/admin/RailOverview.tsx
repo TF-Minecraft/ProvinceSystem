@@ -16,7 +16,7 @@ import {
 import { writeUrl } from "../../../lib/admin/urlState";
 import { StaffGateMessage, gateKind, type GateKind } from "./StaffGate";
 import AdminColumn from "./AdminColumn";
-import MapWorkspace, { mapFrameClass } from "./MapWorkspace";
+import MapWorkspace, { MapWorkspaceSkeleton, mapFrameClass } from "./MapWorkspace";
 import RailMap, { pointFocus, type RailFocus } from "./RailMap";
 import RailTubeMap, { tubeColour } from "./RailTubeMap";
 import { chipClass, chipOff, chipOn, useLiveMapId } from "./MovementControls";
@@ -116,13 +116,7 @@ export default function RailOverview() {
       </AdminColumn>
     );
   }
-  if (!data) {
-    return (
-      <AdminColumn>
-        <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
-      </AdminColumn>
-    );
-  }
+  if (!data) return <MapWorkspaceSkeleton mapFirst />;
 
   const notice = statusMessage(data.status);
   if (notice) {

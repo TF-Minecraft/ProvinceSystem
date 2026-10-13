@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import LoadingSkeleton, { Skeleton } from "../shared/LoadingSkeleton";
 import {
   createStationTextureAnimation,
   createStationTextureAtlasFallback,
@@ -145,6 +146,7 @@ export default function StationModelViewer({
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -162,6 +164,7 @@ export default function StationModelViewer({
   }, []);
 
   useEffect(() => {
+    setReady(false);
     if (!visible) return;
     let disposed = false;
     let cleanedUp = false;
@@ -363,6 +366,7 @@ export default function StationModelViewer({
         if (renderer) renderer.render(scene, camera);
       }
       animate();
+      if (!disposed) setReady(true);
 
       function handleResize() {
         if (!mount || !renderer) return;
@@ -418,6 +422,11 @@ export default function StationModelViewer({
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">
             :
           </span>
+        ) : !ready ? (
+          <div role="status" aria-busy="true" aria-label="Loading 3D preview…" className="absolute inset-0 p-1">
+            <span className="sr-only">Loading 3D preview…</span>
+            <Skeleton className="h-full w-full motion-safe:animate-pulse" />
+          </div>
         ) : null}
       </div>
     );
@@ -430,6 +439,8 @@ export default function StationModelViewer({
     >
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">{error}</p>
+      ) : !ready ? (
+        <LoadingSkeleton variant="model" label="Loading 3D preview…" className="absolute inset-0" />
       ) : null}
     </div>
   );

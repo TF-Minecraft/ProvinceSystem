@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { adminErrorMessage } from "../../../../lib/admin/api";
@@ -47,7 +48,7 @@ export default function RanksOverview({ initialQuery = "" }: { initialQuery?: st
     void refresh();
   }, [refresh]);
 
-  if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
+  if (load.kind === "loading") return <LoadingSkeleton variant="content" className="mt-6" />;
   if (load.kind !== "ready") return <StaffGateMessage kind={load.kind} />;
   const { data } = load;
 

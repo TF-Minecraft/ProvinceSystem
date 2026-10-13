@@ -1,5 +1,7 @@
 "use client";
 
+import { PageSkeleton } from "@/app/components/shared/LoadingSkeleton";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -123,11 +125,7 @@ export default function CharacterCreatePage() {
   }, [router, uiDev]);
 
   if (!ready) {
-    return (
-      <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col justify-center px-6 py-16">
-        <p className="text-[var(--tfmc-mist)]">Loading…</p>
-      </main>
-    );
+    return <PageSkeleton variant="form" label="Loading…" className="max-w-lg py-8 sm:py-12" />;
   }
 
   return (

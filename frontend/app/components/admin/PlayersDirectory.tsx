@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AccountApiError } from "../../../lib/account/api";
@@ -557,7 +558,7 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
             ) : null}
           </>
         ) : load.kind === "loading" || load.kind === "ready" ? (
-          <p className="mt-4 text-[var(--tfmc-mist)]">Loading…</p>
+          <LoadingSkeleton variant="table" className="mt-4" />
         ) : null}
       </div>
     </section>

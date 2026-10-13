@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import LoadingSkeleton, { Skeleton } from "@/app/components/shared/LoadingSkeleton";
 
 type Props = {
   /** Left: what to show (view, range, filters) and notices. */
@@ -29,6 +30,34 @@ const asideClass = "flex min-w-0 flex-col gap-3";
 // Each column scrolls on its own when taller than the map, with room for focus rings at the edge.
 const lgScroll = "lg:max-h-[var(--map-h)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1";
 const xlScroll = "xl:max-h-[var(--map-h)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1";
+
+/** Keep the staff map's square and side panels in place during its first load. */
+export function MapWorkspaceSkeleton({ above, mapFirst }: { above?: string; mapFirst?: boolean }) {
+  const panel = (
+    <div aria-hidden="true" className="space-y-4 motion-safe:animate-pulse">
+      <Skeleton className="h-10 w-40 max-w-full" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+    </div>
+  );
+  return (
+    <MapWorkspace
+      above={above}
+      mapFirst={mapFirst}
+      panel={panel}
+      inspector={panel}
+      map={<LoadingSkeleton variant="map" className={`${mapFrameClass} overflow-hidden`} />}
+      strip={
+        <div aria-hidden="true" className="space-y-3 motion-safe:animate-pulse">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      }
+    />
+  );
+}
 
 /**
  * The staff map pages' layout. On wide screens: a panel, the largest square

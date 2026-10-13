@@ -19,6 +19,7 @@ import type { LedgerSeries } from "../../lib/map/ledgerData";
 import { chroniclePanelClass } from "./ChroniclePanels";
 import LedgerFactionSelect from "./LedgerFactionSelect";
 import { factionForKey, type LedgerChartsResult } from "./useLedgerSeries";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 
 /**
  * The play-stage economy panel: wealth, prestige and income for one focused
@@ -276,9 +277,12 @@ function CardStatusMessage({
   if (seriesError) {
     return <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{seriesError}</p>;
   }
+  if (seriesLoading) {
+    return <LoadingSkeleton variant="chart" label="Loading the ledger…" className="mt-2" />;
+  }
   return (
     <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
-      {seriesLoading ? "Loading the ledger…" : "The selected nation has no ledger history in this range."}
+      The selected nation has no ledger history in this range.
     </p>
   );
 }
@@ -812,7 +816,7 @@ export default function LedgerChartsPanel({
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <SectionHeading title="Ledger" />
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">Loading the ledger…</p>
+        <LoadingSkeleton variant="chart" label="Loading the ledger…" className="mt-2" />
       </div>
     );
   }

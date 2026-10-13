@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import LoadingSkeleton, { Skeleton } from "../shared/LoadingSkeleton";
 import { wikiBlockPreviewHeight } from "./wikiStyles";
 
 export type CubeFaces = {
@@ -24,8 +25,11 @@ export default function SimpleCubeViewer({
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setReady(false);
+    setError(null);
     let disposed = false;
     let renderer: THREE.WebGLRenderer | null = null;
     let frameId: number;
@@ -123,6 +127,7 @@ export default function SimpleCubeViewer({
         if (renderer) renderer.render(scene, camera);
       }
       animate();
+      if (!disposed) setReady(true);
 
       function handleResize() {
         if (!mount || !renderer) return;
@@ -170,6 +175,11 @@ export default function SimpleCubeViewer({
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">
             :
           </span>
+        ) : !ready ? (
+          <div role="status" aria-busy="true" aria-label="Loading 3D preview…" className="absolute inset-0 p-1">
+            <span className="sr-only">Loading 3D preview…</span>
+            <Skeleton className="h-full w-full motion-safe:animate-pulse" />
+          </div>
         ) : null}
       </div>
     );
@@ -182,6 +192,8 @@ export default function SimpleCubeViewer({
     >
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">{error}</p>
+      ) : !ready ? (
+        <LoadingSkeleton variant="model" label="Loading 3D preview…" className="absolute inset-0" />
       ) : null}
     </div>
   );

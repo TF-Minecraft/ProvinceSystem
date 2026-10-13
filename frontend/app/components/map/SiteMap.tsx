@@ -5,18 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { MapEngineProvider } from "@/app/core/MapEngineContext";
 import MapViewer from "@/app/components/MapViewer";
+import { MapSkeleton } from "@/app/components/shared/LoadingSkeleton";
 import { useAccessibleMaps } from "@/app/hooks/useAccessibleMaps";
 import { liveMapIdFrom, setLiveMapId } from "@/app/lib/map/chronicleDayRoute";
 
 import type { MapId } from "./types";
-
-function Loading() {
-  return (
-    <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-      <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading map…</p>
-    </div>
-  );
-}
 
 /**
  * A map page, given either a map id from the URL or, for `/map`, nothing: the
@@ -54,7 +47,7 @@ export default function SiteMap({ mapId }: { mapId?: MapId }) {
       </div>
     );
   }
-  if (liveId === null || forwardToLive) return <Loading />;
+  if (liveId === null || forwardToLive) return <MapSkeleton />;
 
   const shown = mapId ?? liveId;
   return (

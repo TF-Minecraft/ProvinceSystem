@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton, { Skeleton } from "@/app/components/shared/LoadingSkeleton";
+
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import CharacterList from "../character/CharacterList";
@@ -58,7 +60,6 @@ const ACCOUNTS_TAB: [ProfileTab, string] = ["accounts", "Linked accounts"];
 const sectionHeadingClass = "font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]";
 const titleClass = "font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl";
 const chipClass = "rounded-sm border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider";
-const placeholderClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]";
 const tabClass = "rounded-sm px-3 py-1.5 text-sm font-medium transition-colors";
 const activeTabClass = "bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] text-[var(--tfmc-cream)]";
 const idleTabClass = "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]";
@@ -724,7 +725,7 @@ export default function ProfilePanel({
             {loadError ? <p className="mb-4 text-sm text-[#e8a0a0]">{loadError}</p> : null}
             {!dashboard ? (
               loadingDashboard || !sessionChecked ? (
-                <p className="text-sm text-[var(--tfmc-mist)]">Loading…</p>
+                <LoadingSkeleton variant="list" />
               ) : null
             ) : shown === "characters" && openItem ? (
               <ProfileCharacter
@@ -793,9 +794,7 @@ function drawnShape(load: Load, overview: AccountOverview | null, contentTabs: b
 
 /** The page's outline, sized to its lines and shaped like last time, so nothing moves when the account arrives. */
 function ProfilePlaceholder({ shape, tab }: { shape: AccountShape; tab: ProfileTab | null }) {
-  const bar = (className: string, round = "rounded-sm") => (
-    <span className={`${placeholderClass} block ${round} ${className}`} />
-  );
+  const bar = (className: string, round = "rounded-sm") => <Skeleton className={className} round={round} />;
   if (!shape.signedIn) {
     return (
       <div aria-busy="true">
@@ -809,7 +808,7 @@ function ProfilePlaceholder({ shape, tab }: { shape: AccountShape; tab: ProfileT
   return (
     <div aria-busy="true">
       <p className="sr-only">Loading your profile…</p>
-      <div aria-hidden className="animate-pulse">
+      <div aria-hidden className="motion-safe:animate-pulse">
         <div className="flex items-center gap-5">
           {bar("h-[72px] w-[72px] shrink-0")}
           <div className="min-w-0 flex-1">

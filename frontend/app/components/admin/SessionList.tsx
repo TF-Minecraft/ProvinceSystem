@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 
 import { adminErrorMessage, coreProtectMessage, getPlayerSessions, type PlayerSession } from "../../../lib/admin/api";
 import { formatDuration } from "../../../lib/admin/time";
@@ -116,7 +117,13 @@ export default function SessionList({
       {!state.busy && !state.sessions.length && !state.error ? (
         <p className={mutedClass}>No sessions recorded.</p>
       ) : null}
-      {state.busy ? <p className={mutedClass}>Loading sessions…</p> : null}
+      {state.busy ? (
+        state.sessions.length ? (
+          <p className={mutedClass}>Loading sessions…</p>
+        ) : (
+          <LoadingSkeleton variant="list" label="Loading sessions…" />
+        )
+      ) : null}
       {state.next && !state.busy ? (
         <button type="button" className={`${chipClass} ${chipOff}`} onClick={() => void load(state.next)}>
           Load older sessions

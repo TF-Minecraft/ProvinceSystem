@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
 import { characterFigure } from "../../../lib/characters/api";
+import { Skeleton } from "@/app/components/shared/LoadingSkeleton";
 
 type Props = {
   characterId: string;
@@ -38,7 +39,12 @@ export default function CharacterFigure({ characterId, name, sessionToken, playe
   return (
     <div className="grid h-36 w-24 shrink-0 place-items-center rounded-sm bg-[radial-gradient(circle_at_50%_45%,color-mix(in_srgb,var(--tfmc-moss)_88%,var(--tfmc-cream)),color-mix(in_srgb,var(--tfmc-forest-deep)_85%,var(--tfmc-forest))_72%)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] sm:h-[216px] sm:w-[150px]">
       {/* A data URL or our own API; next/image adds nothing for pixel art this small. */}
-      {picture ? (
+      {picture === undefined ? (
+        <div role="status" aria-busy="true" aria-label={`Loading ${name}'s skin…`}>
+          <span className="sr-only">Loading {name}&apos;s skin…</span>
+          <Skeleton className="h-32 w-16 motion-safe:animate-pulse sm:h-48 sm:w-24" />
+        </div>
+      ) : picture ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={picture}

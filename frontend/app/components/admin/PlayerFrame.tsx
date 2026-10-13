@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
@@ -91,7 +92,7 @@ export default function PlayerFrame({ uuid, children }: { uuid: string; children
       <AdminColumn>
         <p className="mt-4">{back}</p>
         {load.kind === "loading" ? (
-          <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+          <LoadingSkeleton variant="content" className="mt-6" />
         ) : load.kind === "failed" ? (
           <p className="mt-6 text-[var(--tfmc-mist)]" role="alert">
             {load.message}

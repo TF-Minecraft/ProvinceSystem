@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { mutedClass, pagerClass, quietButtonClass, rowClass } from "@/app/components/admin/ui";
 import type { PrecedentCase } from "@/lib/precedent/api";
 import { formatCreatedAt } from "@/lib/precedent/filter";
@@ -37,7 +38,7 @@ export default function PrecedentTable({
 }: Props) {
   // Only the first load blanks the list; later pages and searches keep the old rows until theirs arrive.
   if (loading && cases.length === 0) {
-    return <p className={`mt-3 ${mutedClass}`}>Loading cases…</p>;
+    return <LoadingSkeleton variant="table" label="Loading cases…" className="mt-3" />;
   }
 
   if (cases.length === 0) {

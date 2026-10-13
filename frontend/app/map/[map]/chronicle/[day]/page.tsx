@@ -6,6 +6,7 @@ import ChronicleDayViewer from "../../../../components/chronicle/ChronicleDayVie
 import { ChronicleDayProvider } from "../../../../lib/map/chronicleDayContext";
 import { isValidChronicleDay, parseMapRouteSegment } from "../../../../lib/map/chronicleDayRoute";
 import InvalidChronicleDay from "../../../../components/chronicle/InvalidChronicleDay";
+import { MapSkeleton } from "@/app/components/shared/LoadingSkeleton";
 
 export default async function Page({ params }: { params: Promise<{ map: string; day: string }> }) {
   const { map, day } = await params;
@@ -19,7 +20,7 @@ export default async function Page({ params }: { params: Promise<{ map: string; 
   return (
     <MapEngineProvider>
       <ChronicleDayProvider day={day}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<MapSkeleton label="Loading this day…" />}>
           {/*
             Keyed by day so a params-only navigation remounts instead of
             re-rendering. The banner date is derived during render while
