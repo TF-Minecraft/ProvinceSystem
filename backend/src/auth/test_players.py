@@ -77,7 +77,9 @@ def staff(env, role="mod"):
 
 def test_requires_a_staff_role(app, env, world):
     assert client(app).get("/admin/players").status_code == 401
+    assert client(app).get(f"/admin/players/{HAZEL}").status_code == 401
     assert client(app, staff(env, "player")).get("/admin/players").status_code == 403
+    assert client(app, staff(env, "player")).get(f"/admin/players/{HAZEL}").status_code == 403
     assert client(app, staff(env, "player")).get(f"/admin/players/{HAZEL}/activity").status_code == 403
     assert client(app, staff(env, "mod")).get("/admin/players").status_code == 200
 
@@ -215,6 +217,117 @@ def test_profile(app, env, world):
     assert body["account"] is None
     assert body["characters"][0]["name"] == "Hazel Stonebrook"
     assert body["coreprotect"]["status"] == "available"
+
+
+def test_profile_includes_the_shared_character_sheet_in_each_realm(app, env, world):
+    from src.characters.roster import replace_roster
+
+    replace_roster(HAZEL, [{
+        "id": "same-id", "name": "Hazel Stonebrook", "status": "ALIVE", "race": "human", "class": "smith",
+        "race_name": "Human", "class_name": "Smith", "age": "34", "description": "A traveller in green.",
+        "background": "Raised in the woods.", "attributes": {"strength": 4},
+        "experience_modifiers": [{"profession": "smith", "alias": "Smith Experience", "amount": 10}],
+        "traits": [{"id": "patient", "name": "Patient", "key": "personality"}],
+        "clues": ["Carries a red banner."], "kit_status": "granted",
+    }], realm_id="main")
+    replace_roster(HAZEL, [{"id": "same-id", "name": "Tutorial Hazel", "status": "ALIVE"}], realm_id="tutorial")
+    body = client(app, staff(env)).get(f"/admin/players/{HAZEL}").json()
+    main, tutorial = body["characters"]
+    assert main["id"] == main["character_id"] == tutorial["id"] == "same-id"
+    assert (main["realm_id"], tutorial["realm_id"]) == ("main", "tutorial")
+    assert main["race_name"] == "Human"
+    assert main["class_name"] == "Smith"
+    assert main["description"] == "A traveller in green."
+    assert main["attributes"] == {"strength": 4}
+    assert main["experience_modifiers"][0]["amount"] == 10
+    assert main["traits"][0]["name"] == "Patient"
+    assert main["clues"] == ["Carries a red banner."]
+    assert main["kit_status"] == "granted"
+    assert "description" not in tutorial
+
+
+@pytest.mark.parametrize("kind,size", [("face", (8, 8)), ("figure", (16, 32))])
+@pytest.mark.parametrize("status", ["ALIVE", "DEAD", "MISSING"])
+def test_character_pictures_require_staff_and_read_the_requested_realm(app, env, world, monkeypatch, kind, size, status):
+    import io
+    from PIL import Image
+    from src.characters import wardrobe
+
+    monkeypatch.setattr(wardrobe, "DATA_DIR", env.DATA_DIR)
+    monkeypatch.setattr(wardrobe, "WARDROBE_DIR", env.DATA_DIR / "wardrobe")
+    monkeypatch.setattr(wardrobe, "swappable_slot_count", lambda *args, **kwargs: 2)
+    cid = "c-Hazel Stonebrook"
+    character(env, HAZEL, "Tutorial Hazel", realm="tutorial", character_id=cid)
+    with env.connect() as conn:
+        conn.execute("UPDATE character_roster SET status = ? WHERE player_uuid = ? AND character_id = ?",
+                     (status, HAZEL, cid))
+        conn.execute("UPDATE character_roster SET wardrobe_active_slot = CASE realm_id "
+                     "WHEN 'tutorial' THEN 'extra_1' ELSE 'base' END WHERE player_uuid = ?", (HAZEL,))
+        for slot, colour in [("base", (10, 20, 30, 255)), ("extra_1", (40, 50, 60, 255))]:
+            rel = f"wardrobe/{HAZEL}/{cid}/{slot}.png"
+            path = env.DATA_DIR / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGBA", (64, 64), colour).save(path)
+            conn.execute("INSERT INTO character_wardrobe_slots "
+                         "(player_uuid, character_id, slot, png_relpath, updated_at) VALUES (?, ?, ?, ?, 'now')",
+                         (HAZEL, cid, slot, rel))
+        conn.commit()
+        before = [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots")]
+    path = f"/admin/players/{HAZEL}/characters/{cid}/{kind}"
+    assert client(app).get(path).status_code == 401
+    assert client(app, staff(env, "player")).get(path).status_code == 403
+    c = client(app, staff(env))
+    for realm, expected in [("main", (10, 20, 30, 255)), ("tutorial", (40, 50, 60, 255))]:
+        res = c.get(path, params={"realm_id": realm})
+        assert res.status_code == 200, res.text
+        assert res.headers["content-type"] == "image/png"
+        assert "no-store" in res.headers["cache-control"]
+        png = Image.open(io.BytesIO(res.content))
+        assert png.size == size
+        assert png.getpixel((4, 4)) == expected
+    assert c.get(path, params={"realm_id": "missing"}).status_code == 404
+    assert c.get(path.replace(HAZEL, LINKED_ONLY)).status_code == 404
+    assert c.get(path.replace(HAZEL, "not-a-uuid")).status_code == 400
+    assert c.get(path.replace(cid, "missing")).status_code == 404
+    with env.connect() as conn:
+        assert [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots")] == before
+        assert conn.execute("SELECT wardrobe_active_slot FROM character_roster "
+                            "WHERE realm_id = 'tutorial' AND character_id = ?", (cid,)).fetchone()[0] == "extra_1"
+    if status != "ALIVE":
+        with pytest.raises(wardrobe.WardrobeError, match="Character is not alive") as error:
+            wardrobe.get_wardrobe(HAZEL, cid)
+        assert error.value.status_code == 403
+
+
+@pytest.mark.parametrize("kind", ["face", "figure"])
+def test_character_picture_accepts_slashes_in_ids(app, env, world, monkeypatch, kind):
+    from unittest.mock import Mock
+
+    cid = "realm/character"
+    character(env, HAZEL, "Slash Character", character_id=cid)
+    render = Mock(return_value=b"png")
+    monkeypatch.setattr(players, f"active_{kind}_png", render)
+    path = f"/admin/players/{HAZEL}/characters/realm%2Fcharacter/{kind}"
+    res = client(app, staff(env)).get(path)
+    assert res.status_code == 200
+    assert res.content == b"png"
+    render.assert_called_once_with(HAZEL, cid, realm_id="main")
+
+
+def test_character_picture_without_a_skin_and_staff_catalog(app, env, world):
+    path = f"/admin/players/{HAZEL}/characters/c-Hazel Stonebrook"
+    c = client(app, staff(env))
+    for kind in ("face", "figure"):
+        assert c.get(f"{path}/{kind}").status_code == 404
+        assert c.get(f"{path}/{kind}").json()["detail"] == f"no_{kind}"
+    assert c.get(f"{path}/wardrobe").status_code == 404
+    catalog_path = "/admin/characters/creation-catalog"
+    assert client(app).get(catalog_path).status_code == 401
+    assert client(app, staff(env, "player")).get(catalog_path).status_code == 403
+    res = c.get(catalog_path)
+    assert res.status_code == 200
+    assert "no-store" in res.headers["cache-control"]
+    assert "validation" in res.json()
 
 
 def test_profile_shows_the_website_account(app, env, world):

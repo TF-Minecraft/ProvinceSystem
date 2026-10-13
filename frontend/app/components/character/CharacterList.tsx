@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
 import { characterFace, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
@@ -64,9 +64,12 @@ function Portrait({
   faded?: boolean;
 }) {
   const [headFailed, setHeadFailed] = useState(false);
+  const [faceFailed, setFaceFailed] = useState(false);
   const src =
-    face ??
-    (face === null && playerUuid && !headFailed ? `${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}` : null);
+    (faceFailed ? null : face) ??
+    ((face === null || faceFailed) && playerUuid && !headFailed
+      ? `${minecraftHeadUrl()}?u=${encodeURIComponent(playerUuid)}`
+      : null);
   if (!src) {
     return <span aria-hidden className={`${portraitClass} bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)]`} />;
   }
@@ -78,13 +81,13 @@ function Portrait({
       alt=""
       width={56}
       height={56}
-      onError={() => setHeadFailed(true)}
+      onError={() => (face && !faceFailed ? setFaceFailed(true) : setHeadFailed(true))}
       className={`${portraitClass} [image-rendering:pixelated] ${faded ? "opacity-50 grayscale" : ""}`}
     />
   );
 }
 
-function Card({
+export function CharacterCard({
   item,
   catalog,
   face,
@@ -92,30 +95,36 @@ function Card({
   onOpen,
   sessionToken,
   onWillChanged,
+  href,
+  realmLabel,
 }: {
   item: CharacterListItem;
   catalog?: CreationCatalog | null;
   face: string | null | undefined;
   playerUuid?: string | null;
-  onOpen: (id: string) => void;
+  onOpen?: (id: string) => void;
   sessionToken?: string | null;
   onWillChanged?: () => void;
+  /** Staff cards stay in the player's frame and can open historical characters. */
+  href?: string;
+  realmLabel?: string;
 }) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
   const meta = [displayRace(item, catalog), displayClass(item, catalog)].filter(Boolean).join(" · ");
   const err = String(item.error || "").trim();
   const chip = CHIPS[status];
-  const linkable = Boolean(item.id) && OPENABLE.has(status);
+  const linkable = Boolean(item.id) && (Boolean(href) || OPENABLE.has(status));
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
   const willShown = status === "ALIVE" && Boolean(item.will && sessionToken);
   const body = (
     <>
-      <Portrait face={face} playerUuid={playerUuid} faded={faded} />
+      <Portrait key={face} face={face} playerUuid={playerUuid} faded={faded} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{name}</p>
           {chip ? <span className={`${chipClass} ${chip.className}`}>{chip.label}</span> : null}
+          {realmLabel ? <span className={`${chipClass} text-[var(--tfmc-stone)]`}>{realmLabel}</span> : null}
         </div>
         <p className="truncate text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
         {status === "REJECTED" && err ? <p className="mt-0.5 text-xs text-[#e8a0a0]">{err}</p> : null}
@@ -133,7 +142,7 @@ function Card({
   );
   // A plain click opens it in the tab; a new-tab click follows the address.
   function open(event: MouseEvent<HTMLAnchorElement>) {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     onOpen(item.id);
   }
@@ -141,7 +150,7 @@ function Card({
     <li className="animate-char-row flex min-w-0 flex-col">
       {linkable ? (
         <a
-          href={characterPath(item.id)}
+          href={href || characterPath(item.id)}
           onClick={open}
           data-character-id={item.id}
           className={`${cardClass} ${linkCardClass} ${willShown ? "flex-none rounded-b-none" : ""}`}
@@ -204,6 +213,50 @@ function SlotPips({ used, total }: { used: number; total: number }) {
   );
 }
 
+/** Shared card spacing, status order and historical section for player and staff views. */
+export function CharacterRoster<T extends CharacterListItem>({
+  characters,
+  renderCard,
+  createSlot,
+  pendingNotice,
+  includeOther = false,
+}: {
+  characters: T[];
+  renderCard: (character: T) => ReactNode;
+  createSlot?: ReactNode;
+  pendingNotice?: ReactNode;
+  includeOther?: boolean;
+}) {
+  const order = ["ALIVE", "PENDING", "REJECTED"];
+  const historical = (c: CharacterListItem) => statusOf(c) === "DEAD" || statusOf(c) === "MISSING";
+  const rank = (c: CharacterListItem) => {
+    const index = order.indexOf(statusOf(c));
+    return index < 0 ? order.length : index;
+  };
+  const current = characters
+    .filter((c) => !historical(c) && (includeOther || order.includes(statusOf(c))))
+    .sort((a, b) => rank(a) - rank(b));
+  const dead = characters.filter(historical);
+
+  return (
+    <>
+      {current.length || createSlot ? (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {current.map(renderCard)}
+          {createSlot}
+        </ul>
+      ) : null}
+      {pendingNotice}
+      {dead.length ? (
+        <section className="mt-10">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">{dead.map(renderCard)}</ul>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
 export default function CharacterList({
   characters,
   aliveCount,
@@ -217,12 +270,7 @@ export default function CharacterList({
   playerUuid = null,
 }: Props) {
   const faces = useFaces(sessionToken, characters);
-  const order = ["ALIVE", "PENDING", "REJECTED"];
-  const current = characters
-    .filter((c) => order.includes(statusOf(c)))
-    .sort((a, b) => order.indexOf(statusOf(a)) - order.indexOf(statusOf(b)));
-  const dead = characters.filter((c) => statusOf(c) === "DEAD" || statusOf(c) === "MISSING");
-  const hasPending = current.some((c) => statusOf(c) === "PENDING");
+  const hasPending = characters.some((c) => statusOf(c) === "PENDING");
   const atLimit = aliveCount >= maxSlots;
 
   return (
@@ -246,9 +294,10 @@ export default function CharacterList({
         ) : null}
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {current.map((c) => (
-          <Card
+      <CharacterRoster
+        characters={characters}
+        renderCard={(c) => (
+          <CharacterCard
             key={c.id}
             item={c}
             catalog={catalog}
@@ -258,53 +307,37 @@ export default function CharacterList({
             sessionToken={sessionToken}
             onWillChanged={onWillChanged ?? onRefresh}
           />
-        ))}
-        <li>
-          {atLimit ? (
-            <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
-              No free slot
-            </div>
-          ) : (
-            <Link
-              href="/character/create"
-              className={`${tileClass} text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]`}
-            >
-              <span
-                aria-hidden
-                className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] text-lg leading-none"
+        )}
+        createSlot={
+          <li>
+            {atLimit ? (
+              <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
+                No free slot
+              </div>
+            ) : (
+              <Link
+                href="/character/create"
+                className={`${tileClass} text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]`}
               >
-                +
-              </span>
-              New character
-            </Link>
-          )}
-        </li>
-      </ul>
-      {hasPending ? (
-        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-          Pending characters take up to a minute. You can still edit kits and wardrobe.
-        </p>
-      ) : null}
-
-      {dead.length ? (
-        <section className="mt-10">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {dead.map((c) => (
-              <Card
-                key={c.id}
-                item={c}
-                catalog={catalog}
-                face={faces[c.id]}
-                playerUuid={playerUuid}
-                onOpen={onOpen}
-                sessionToken={sessionToken}
-                onWillChanged={onWillChanged ?? onRefresh}
-              />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+                <span
+                  aria-hidden
+                  className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] text-lg leading-none"
+                >
+                  +
+                </span>
+                New character
+              </Link>
+            )}
+          </li>
+        }
+        pendingNotice={
+          hasPending ? (
+            <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+              Pending characters take up to a minute. You can still edit kits and wardrobe.
+            </p>
+          ) : null
+        }
+      />
     </div>
   );
 }

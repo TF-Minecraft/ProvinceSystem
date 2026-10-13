@@ -22,6 +22,9 @@ type Props = {
   /** Reads the worn skin; null shows the player's head. */
   sessionToken?: string | null;
   playerUuid?: string | null;
+  figureUrl?: string | null;
+  /** Staff can inspect a sheet without opening the player's editing tools. */
+  readOnly?: boolean;
   /** The name's heading, focused when the character opens. */
   headingRef?: Ref<HTMLHeadingElement>;
   onCancelPending?: () => void | Promise<void>;
@@ -202,6 +205,8 @@ export default function CharacterSheet({
   catalog,
   sessionToken = null,
   playerUuid = null,
+  figureUrl = null,
+  readOnly = false,
   headingRef,
   onCancelPending,
   cancelling = false,
@@ -260,15 +265,17 @@ export default function CharacterSheet({
           ))}
         </dl>
       ) : null}
-      <div className="mt-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
-        <ActionCard href={`/character/${id}/wardrobe`} icon={HANGER} title="Wardrobe" note={wornNote} />
-        <ActionCard
-          href={`/character/${id}/kits`}
-          icon={CHEST}
-          title="Kits"
-          note={kit ? `Starter kit: ${kit}` : null}
-        />
-      </div>
+      {!readOnly ? (
+        <div className="mt-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+          <ActionCard href={`/character/${id}/wardrobe`} icon={HANGER} title="Wardrobe" note={wornNote} />
+          <ActionCard
+            href={`/character/${id}/kits`}
+            icon={CHEST}
+            title="Kits"
+            note={kit ? `Starter kit: ${kit}` : null}
+          />
+        </div>
+      ) : null}
     </>
   );
 
@@ -284,6 +291,7 @@ export default function CharacterSheet({
             name={name}
             sessionToken={isPending ? null : sessionToken}
             playerUuid={playerUuid}
+            figureUrl={figureUrl}
           />
         </div>
         <div className="min-w-0">
@@ -304,8 +312,12 @@ export default function CharacterSheet({
           role="status"
           className="mt-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_10%,transparent)] px-4 py-3 text-sm text-[var(--tfmc-cream)]"
         >
-          <p>Being added to the server. You can still edit kits and wardrobe.</p>
-          {onCancelPending ? (
+          <p>
+            {readOnly
+              ? "Being added to the server."
+              : "Being added to the server. You can still edit kits and wardrobe."}
+          </p>
+          {!readOnly && onCancelPending ? (
             <button
               type="button"
               disabled={cancelling}

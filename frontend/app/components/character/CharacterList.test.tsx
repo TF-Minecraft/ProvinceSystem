@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { characterFace, type CharacterListItem } from "../../../lib/characters/api";
+import { characterFace, requestWill, type CharacterListItem } from "../../../lib/characters/api";
 import CharacterList from "./CharacterList";
 
 vi.mock("../../../lib/characters/api", async (original) => ({
   ...(await original<typeof import("../../../lib/characters/api")>()),
   characterFace: vi.fn(),
+  requestWill: vi.fn(),
 }));
 vi.mock("../../../lib/account/api", () => ({ minecraftHeadUrl: () => "https://api.test/account/minecraft/head" }));
 
@@ -143,4 +144,42 @@ it("shows each living character's will under its card", () => {
   expect(screen.getByText("Kira").closest("a")).toBeNull();
   expect(screen.getByText("Brin").closest("li")!.textContent).toContain("No will");
   expect(screen.getByText("Old Tamsin").closest("li")!.textContent).not.toMatch(/will|Heir/);
+});
+
+it.each([true, false])("refreshes Profile after a will revoke with an explicit callback: %s", async (explicit) => {
+  vi.mocked(characterFace).mockResolvedValue(null);
+  vi.mocked(requestWill).mockResolvedValue({
+    id: "request-1",
+    heir_character_id: null,
+    heir_name: null,
+    base_revision: 3,
+    status: "pending",
+    result: null,
+    created_at: "2026-10-13T17:00:00Z",
+    acked_at: null,
+  });
+  const refresh = vi.fn();
+  const changed = vi.fn();
+  const character = {
+    id: "c1",
+    name: "Vaelthir",
+    status: "ALIVE",
+    will: { heir_id: "c9", heir_name: "Kira", revision: 3 },
+  } as CharacterListItem;
+  render(
+    <CharacterList
+      onOpen={open}
+      characters={[character]}
+      aliveCount={1}
+      maxSlots={5}
+      sessionToken="profile-session"
+      onRefresh={refresh}
+      onWillChanged={explicit ? changed : undefined}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Revoke" }));
+  await waitFor(() => expect(requestWill).toHaveBeenCalledWith("profile-session", "c1", null, 3));
+  await waitFor(() => expect(explicit ? changed : refresh).toHaveBeenCalledTimes(1));
+  expect(explicit ? refresh : changed).not.toHaveBeenCalled();
+  expect(open).not.toHaveBeenCalled();
 });

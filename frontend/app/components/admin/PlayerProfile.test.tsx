@@ -18,10 +18,11 @@ import {
 } from "../../../lib/admin/api";
 
 // The profile's tab is `?tab=`; each test sets the query it opens with.
-const nav = vi.hoisted(() => ({ query: "" }));
+const nav = vi.hoisted(() => ({ query: "", push: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(nav.query),
   usePathname: () => `/admin/players/${UUID}`,
+  useRouter: () => ({ push: nav.push }),
 }));
 
 vi.mock("../../../lib/admin/api", async (importOriginal) => ({
@@ -30,6 +31,7 @@ vi.mock("../../../lib/admin/api", async (importOriginal) => ({
   getPlayer: vi.fn(),
   getPlayerSessions: vi.fn(),
   getPlayerActivity: vi.fn(),
+  getPlayerCharacterCatalog: vi.fn(async () => null),
 }));
 
 const UUID = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8";
@@ -56,6 +58,7 @@ const PROFILE: Profile = {
     {
       realm_id: "main",
       character_id: "c1",
+      id: "c1",
       name: "Hazel Stonebrook",
       status: "alive",
       race: "human",
@@ -87,6 +90,7 @@ function entry(id: string, extra: Partial<ActivityEntry>): ActivityEntry {
 }
 
 beforeEach(() => {
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.test");
   nav.query = "";
   vi.spyOn(Date, "now").mockReturnValue(NOW * 1000);
   vi.mocked(getPlayer).mockResolvedValue(PROFILE);
@@ -144,6 +148,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 it("shows identity, Discord and characters", async () => {

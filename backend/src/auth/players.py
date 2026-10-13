@@ -19,6 +19,8 @@ from src.coreprotect import activity, maps as co_maps, movement, sessions
 from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode as encode_cursor
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src.skins.db import connect
+from src.characters.roster import list_roster
+from src.characters.wardrobe import active_face_png, active_figure_png, WardrobeError
 
 from . import audit, discord_names, roles, users
 
@@ -377,6 +379,11 @@ def profile(config: CoreProtectConfig, text: str) -> dict:
         raise PlayerError(404, "player_not_found")
     link = links[0] if links else None
     current = accounts[-1]["user"] if accounts else (link["minecraft_name"] if link else None)
+    sheets = {
+        (realm, c["id"]): c
+        for uuid, realm in {(c["player_uuid"], c["realm_id"]) for c in roster}
+        for c in list_roster(uuid, realm)
+    }
     return {
         "uuid": key,
         "minecraft_name": current,
@@ -387,12 +394,34 @@ def profile(config: CoreProtectConfig, text: str) -> dict:
         "discord": _discord(link),
         "account": _account(link),
         "characters": [
-            {k: c[k] for k in ("realm_id", "character_id", "name", "status", "race", "class", "updated_at")}
+            {**sheets.get((c["realm_id"], c["character_id"]), {}),
+             **{k: c[k] for k in ("realm_id", "character_id", "name", "race", "class", "updated_at")},
+             "id": c["character_id"], "status": c["status"] or ""}
             for c in roster
         ],
         "coreprotect": {**_status(error), "server_label": config.label or None,
                         "ping_seconds": config.ping_seconds or None},
     }
+
+
+def character_picture(text: str, realm: str, character_id: str, kind: str) -> bytes:
+    key = _require(text)
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT player_uuid FROM character_roster "
+            "WHERE lower(player_uuid) = ? AND realm_id = ? AND character_id = ?",
+            (key, realm, character_id),
+        ).fetchone()
+    if row is None:
+        raise PlayerError(404, "character_not_found")
+    render = active_face_png if kind == "face" else active_figure_png
+    try:
+        png = render(row["player_uuid"], character_id, realm_id=realm)
+    except WardrobeError as exc:
+        raise PlayerError(exc.status_code, "character_not_found") from None
+    if png is None:
+        raise PlayerError(404, f"no_{kind}")
+    return png
 
 
 def player_sessions(config: CoreProtectConfig, text: str, before: str | None, limit: int) -> dict:
