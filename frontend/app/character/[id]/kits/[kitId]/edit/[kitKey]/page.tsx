@@ -50,7 +50,6 @@ export default function CharacterKitEditPage() {
   const [deleting, setDeleting] = useState(false);
 
   const statusHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}/status`;
-  const backHref = kitsPath(characterId);
 
   const load = useCallback(
     async (token: string) => {
@@ -76,6 +75,8 @@ export default function CharacterKitEditPage() {
     },
     [characterId, kitId, kitKey, uiDev],
   );
+
+  const backHref = kitsPath(characterId);
 
   useEffect(() => {
     if (!characterId || !kitKey) {
