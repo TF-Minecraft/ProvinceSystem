@@ -290,6 +290,21 @@ def test_character_pictures_require_staff_and_read_the_requested_realm(app, env,
                             "WHERE realm_id = 'tutorial' AND character_id = ?", (cid,)).fetchone()[0] == "extra_1"
 
 
+@pytest.mark.parametrize("kind", ["face", "figure"])
+def test_character_picture_accepts_slashes_in_ids(app, env, world, monkeypatch, kind):
+    from unittest.mock import Mock
+
+    cid = "realm/character"
+    character(env, HAZEL, "Slash Character", character_id=cid)
+    render = Mock(return_value=b"png")
+    monkeypatch.setattr(players, f"active_{kind}_png", render)
+    path = f"/admin/players/{HAZEL}/characters/realm%2Fcharacter/{kind}"
+    res = client(app, staff(env)).get(path)
+    assert res.status_code == 200
+    assert res.content == b"png"
+    render.assert_called_once_with(HAZEL, cid, realm_id="main")
+
+
 def test_character_picture_without_a_skin_and_staff_catalog(app, env, world):
     path = f"/admin/players/{HAZEL}/characters/c-Hazel Stonebrook"
     c = client(app, staff(env))

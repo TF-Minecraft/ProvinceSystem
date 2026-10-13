@@ -169,7 +169,7 @@ def get_player_sessions(player_uuid: str, request: Request, response: Response, 
                     lambda config, _viewer: players.player_sessions(config, player_uuid, before, limit))
 
 
-@admin_router.get("/players/{player_uuid}/characters/{character_id}/{kind}")
+@admin_router.get("/players/{player_uuid}/characters/{character_id:path}/{kind}")
 def get_player_character_picture(player_uuid: str, character_id: str, kind: str, request: Request,
                                  realm_id: str = "main"):
     _capable(request, "view_players")
