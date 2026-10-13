@@ -588,8 +588,50 @@ CREATE TABLE IF NOT EXISTS character_roster (
     kit_statuses_json TEXT,
     sheet_json TEXT,
     wardrobe_active_slot TEXT,
+    died_at TEXT,
+    death_id TEXT,
+    will_heir_id TEXT,
+    will_heir_name TEXT,
+    will_revision INTEGER,
     PRIMARY KEY (player_uuid, realm_id, character_id)
 );
+
+-- One row per death, from RPCharacters' roster pushes. A push never deletes these.
+CREATE TABLE IF NOT EXISTS character_estates (
+    realm_id TEXT NOT NULL,
+    death_id TEXT NOT NULL,
+    player_uuid TEXT NOT NULL,
+    character_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    source_updated_at TEXT,
+    payload TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    PRIMARY KEY (realm_id, death_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_character_estates_character
+    ON character_estates(realm_id, character_id);
+
+-- Will changes made on Profile, pulled and acknowledged by RPCharacters.
+CREATE TABLE IF NOT EXISTS will_requests (
+    id TEXT PRIMARY KEY,
+    realm_id TEXT NOT NULL,
+    character_id TEXT NOT NULL,
+    account_uuid TEXT NOT NULL,
+    heir_character_id TEXT,
+    base_revision INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'acked', 'replaced')),
+    result TEXT,
+    acked_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_will_requests_pending
+    ON will_requests(realm_id, status, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_will_requests_character
+    ON will_requests(realm_id, character_id, created_at);
 
 CREATE TABLE IF NOT EXISTS character_player_meta (
     player_uuid TEXT PRIMARY KEY,

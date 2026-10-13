@@ -611,7 +611,9 @@ def list_for_player(
         get_player_meta,
         list_roster,
     )
+    from src.characters.estates import estate_for
     from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.wills import will_requests_for
     from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
@@ -641,6 +643,14 @@ def list_for_player(
             """,
             (uuid, realm),
         ).fetchall()
+
+        alive_ids = [c["id"] for c in roster if "will" in c]
+        requests = will_requests_for(conn, realm, uuid, alive_ids)
+        for c in roster:
+            if c["id"] in requests:
+                c["will_request"] = requests[c["id"]]
+            if str(c.get("status") or "").upper() in ("DEAD", "MISSING"):
+                c["estate"] = estate_for(conn, realm, c["id"], c.get("death_id"))
 
     catalog = get_catalog()
     characters: list[dict[str, Any]] = list(roster)

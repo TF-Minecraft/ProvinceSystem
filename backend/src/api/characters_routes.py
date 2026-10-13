@@ -47,6 +47,14 @@ from src.characters.realm_wipe import (
     wipe_realm_character_data,
 )
 from src.characters.roster import RosterError, replace_roster
+from src.characters.wills import (
+    WillError,
+    ack_will_results,
+    check_heir_search_rate,
+    create_will_request,
+    list_pending_wills,
+    search_heirs,
+)
 from src.characters.wardrobe import (
     WardrobeError,
     ack_wardrobe_slots,
@@ -97,6 +105,18 @@ class RosterBody(BaseModel):
     kit_cooldown_hours: int | None = None
     kit_cooldowns: dict | None = None
     realm_id: str | None = None
+
+
+class WillRequestBody(BaseModel):
+    """Profile will change: an heir, or null to revoke, against the revision the page showed."""
+
+    heir_character_id: str | None
+    base_revision: int
+
+
+class WillAppliedBody(BaseModel):
+    realm_id: str | None = None
+    results: list[dict] = Field(default_factory=list)
 
 
 class WardrobeActiveBody(BaseModel):
@@ -587,6 +607,47 @@ def delete_lore_item_customise_route(
         raise _lore_http(e) from e
 
 
+def _will_http(exc: WillError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail=str(exc))
+
+
+@characters_router.get("/heirs")
+def get_heir_search(
+    q: str | None = None,
+    character_id: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Living characters of the session's realm by name, for naming an heir."""
+    session = _profile_session_from_auth(authorization)
+    try:
+        check_heir_search_rate(session["player_uuid"])
+        results = search_heirs(session["player_uuid"], session.get("realm_id"), q, character_id)
+    except WillError as e:
+        raise _will_http(e) from e
+    return {"results": results}
+
+
+@characters_router.post("/{character_id}/will")
+def post_character_will(
+    character_id: str,
+    body: WillRequestBody,
+    authorization: str | None = Header(default=None),
+):
+    """Queue a will change for RPCharacters to apply in game."""
+    session = _profile_session_from_auth(authorization)
+    try:
+        request = create_will_request(
+            session["player_uuid"],
+            session.get("realm_id"),
+            character_id,
+            body.heir_character_id,
+            body.base_revision,
+        )
+    except WillError as e:
+        raise _will_http(e) from e
+    return {"ok": True, "request": request}
+
+
 @characters_router.get("/{character_id}/wardrobe")
 def get_character_wardrobe(
     character_id: str,
@@ -984,6 +1045,32 @@ def plugin_applied_creates(
         return mark_applied_results(body.results)
     except CreateError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@characters_router.get("/plugin/wills/pending")
+def plugin_pending_wills(
+    realm_id: str | None = None,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Will changes made on Profile for this realm. The realm is required."""
+    _require_plugin(x_plugin_key)
+    try:
+        return {"requests": list_pending_wills(realm_id)}
+    except WillError as e:
+        raise _will_http(e) from e
+
+
+@characters_router.post("/plugin/wills/applied")
+def plugin_applied_wills(
+    body: WillAppliedBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """RPCharacters' answer for each pulled will request. The realm must match the request's."""
+    _require_plugin(x_plugin_key)
+    try:
+        return ack_will_results(body.realm_id, body.results)
+    except WillError as e:
+        raise _will_http(e) from e
 
 
 @characters_router.put("/plugin/roster")
