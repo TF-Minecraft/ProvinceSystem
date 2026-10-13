@@ -147,10 +147,10 @@ export default function MapShell({
           ref={sidebarRef}
           inert={collapsed}
           aria-hidden={collapsed || undefined}
-          className={`relative flex h-full min-h-0 flex-col gap-2 p-3 md:gap-0 md:p-0 ${
+          className={`relative flex h-full min-h-0 flex-col gap-2 p-3 md:gap-0 md:border-r md:p-0 ${
             hasDetails
-              ? "md:border-r md:border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] md:bg-[var(--tfmc-forest-deep)] md:shadow-[8px_0_24px_rgb(0_0_0/0.3)]"
-              : ""
+              ? "md:border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] md:bg-[var(--tfmc-forest-deep)] md:shadow-[8px_0_24px_rgb(0_0_0/0.3)]"
+              : "md:border-transparent"
           }`}
         >
           {/* Search never joins the details' scroller, and its results sit above it. */}

@@ -20,8 +20,8 @@ type MapPlaqueProps = {
 export default function MapPlaque({ eyebrow, mapDisplayName, actions, search, docked = false }: MapPlaqueProps) {
   return (
     <div
-      className={`relative ${mapFrameClass} flex flex-wrap items-center gap-2 p-2 md:gap-0 ${
-        docked ? "md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none" : "md:p-3"
+      className={`relative ${mapFrameClass} flex flex-wrap items-center gap-2 p-2 md:gap-0 md:p-3 ${
+        docked ? "md:rounded-none md:border-transparent md:bg-transparent md:shadow-none md:backdrop-blur-none" : ""
       }`}
     >
       <div className="hidden min-w-0 flex-1 px-0.5 md:block">
