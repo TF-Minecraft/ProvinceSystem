@@ -51,7 +51,7 @@ export default function AdminNav() {
           key={link.key}
           href={link.href}
           aria-current={link.key === current ? "page" : undefined}
-          className={`shrink-0 border-b-2 pb-2 text-sm font-semibold transition-colors ${
+          className={`shrink-0 border-b-2 pb-2 text-sm font-semibold outline-none transition-colors focus-visible:text-[var(--tfmc-accent)] ${
             link.key === current
               ? "border-[var(--tfmc-accent)] text-[var(--tfmc-cream)]"
               : "border-transparent text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
