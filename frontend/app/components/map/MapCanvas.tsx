@@ -226,10 +226,19 @@ function useWarmCrops(urls: string[]) {
   const key = urls.join("\n");
   useEffect(() => {
     for (const url of key ? key.split("\n") : []) {
-      if (warmedCrops.has(url)) continue;
+      const warmed = warmedCrops.get(url);
+      // Re-hovered crops move to the back of the queue, so the newest stay.
+      warmedCrops.delete(url);
+      if (warmed) {
+        warmedCrops.set(url, warmed);
+        continue;
+      }
       const image = new Image();
       image.crossOrigin = "anonymous";
       image.decoding = "async";
+      image.onerror = () => {
+        if (warmedCrops.get(url) === image) warmedCrops.delete(url);
+      };
       image.src = url;
       warmedCrops.set(url, image);
       if (warmedCrops.size > WARMED_CROPS_KEPT) warmedCrops.delete(warmedCrops.keys().next().value!);
