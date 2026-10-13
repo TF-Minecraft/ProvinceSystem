@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 import { applyDisplayToObject, resolveDisplayTab } from "../../../lib/skins/displayTransform";
 import {
   buildJavaModelGroup,
@@ -234,17 +235,11 @@ export default function ArmorPreview({
       <div className={stage ? "relative h-full" : `relative h-[240px] ${frameClass}`}>
         <div ref={hostRef} className="absolute inset-0" />
         {status === "loading" ? (
-          <div
-            className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"}`}
-            role="status"
-            aria-live="polite"
-          >
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-2 border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] border-t-[var(--tfmc-accent)]"
-              aria-hidden
-            />
-            <p className="text-sm text-[var(--tfmc-mist)]">Loading preview…</p>
-          </div>
+          <LoadingSkeleton
+            variant="model"
+            label="Loading preview…"
+            className={`absolute inset-0 z-10 ${stage ? "" : "bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,transparent)]"}`}
+          />
         ) : null}
         {status === "error" && error ? (
           <div

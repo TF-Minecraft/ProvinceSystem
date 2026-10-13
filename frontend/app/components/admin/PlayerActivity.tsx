@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminErrorMessage, coreProtectMessage, getPlayerActivity, type ActivityEntry } from "../../../lib/admin/api";
@@ -350,7 +351,13 @@ export default function PlayerActivity({ uuid }: { uuid: string }) {
             Showing {kinds.map((kind) => (KIND_LABELS[kind] ?? kind).toLowerCase()).join(", ")}
           </p>
         ) : null}
-        {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
+        {state === "loading" ? (
+          entries.length ? (
+            <p className={`mt-3 ${mutedClass}`}>Loading…</p>
+          ) : (
+            <LoadingSkeleton variant="list" className="mt-3" />
+          )
+        ) : null}
         {state !== "loading" && !entries.length && !failure ? (
           <p className={`mt-3 ${mutedClass}`}>{searchedTo ? "No matching activity in the period searched." : empty}</p>
         ) : null}

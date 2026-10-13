@@ -35,6 +35,7 @@ import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCan
 import PaintToolbar from "./map/PaintToolbar";
 import { mapModeLabel } from "./map/mapModes";
 import MapShell from "./map/shell/MapShell";
+import { MapSkeleton } from "./shared/LoadingSkeleton";
 import MapPlaque from "./map/shell/MapPlaque";
 import MapSearch from "./map/shell/MapSearch";
 import MapZoomControls from "./map/shell/MapZoomControls";
@@ -1041,11 +1042,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   }, [selectedId, regionData]);
 
   if (!accessChecked) {
-    return (
-      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading map…</p>
-      </div>
-    );
+    return <MapSkeleton />;
   }
 
   if (gateReason || accessError || provincePaint.accessError) {

@@ -100,6 +100,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it("shows placeholders while the first positions request is pending", () => {
+  vi.mocked(getLatestMovement).mockImplementationOnce(() => new Promise(() => {}));
+  render(<EveryoneMovement />);
+  expect(screen.getByRole("status", { name: "Loading positions…" })).toBeTruthy();
+  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.queryByTestId("map")).toBeNull();
+});
+
 it("opens on where everyone online is now, and refreshes", async () => {
   render(<EveryoneMovement />);
   await screen.findByText(/2 players seen recently · updated 14:00:00/);
@@ -115,10 +123,14 @@ it("opens on where everyone online is now, and refreshes", async () => {
   expect(map.dataset.fit).toBe("now");
   expect(map.dataset.players).toBe("Alice,Bob");
 
+  vi.mocked(getLatestMovement).mockImplementationOnce(() => new Promise(() => {}));
   await act(async () => {
     vi.advanceTimersByTime(NOW_REFRESH_MS);
   });
   expect(getLatestMovement).toHaveBeenCalledTimes(2);
+  expect(screen.getByTestId("map")).toBe(map);
+  expect(screen.getByRole("link", { name: "Alice" })).toBeTruthy();
+  expect(screen.queryByRole("status", { name: "Loading positions…" })).toBeNull();
 });
 
 it("keeps the last positions when a refresh fails", async () => {

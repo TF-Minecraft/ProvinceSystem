@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { normalizeSearchText, searchWikiIndex, type WikiSearchEntry } from "@/lib/wikiSearch";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -177,7 +178,7 @@ export default function WikiSearch() {
       {isOpen ? (
         <div className="absolute left-0 z-50 mt-1 max-h-80 w-[min(22rem,calc(100vw-3rem))] overflow-y-auto rounded-md border border-[color-mix(in_srgb,var(--tfmc-stone)_45%,transparent)] bg-[var(--tfmc-forest-deep)] p-1 shadow-xl">
           {loadState === "loading" ? (
-            <p className="px-3 py-2 text-sm text-[var(--tfmc-stone)]">Loading search...</p>
+            <LoadingSkeleton variant="list" label="Loading search..." className="px-3 py-2" />
           ) : null}
           {loadState === "error" ? (
             <p role="status" className="px-3 py-2 text-sm text-[var(--tfmc-stone)]">

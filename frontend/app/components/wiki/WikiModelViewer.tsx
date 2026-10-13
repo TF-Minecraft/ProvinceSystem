@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 import {
   buildModelBuffers,
   applySkinUvs,
@@ -308,9 +309,7 @@ export default function WikiModelViewer({
           {error}
         </p>
       ) : !ready ? (
-        <p className="absolute inset-0 flex items-center justify-center text-xs text-[var(--tfmc-mist)]">
-          Loading {label}&hellip;
-        </p>
+        <LoadingSkeleton variant="model" label={`Loading ${label}…`} className="absolute inset-0" />
       ) : null}
     </div>
   );

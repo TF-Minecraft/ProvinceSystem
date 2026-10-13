@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { WeekSections } from "@/app/components/updates/WeekArchiveList";
+import LoadingSkeleton, { PageSkeleton } from "@/app/components/shared/LoadingSkeleton";
 import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 import { getSession, isSessionValid } from "@/lib/characters/session";
 import { isWeekKey, SECTION_LABELS, SECTION_ORDER, type PublicBullet, type SectionName } from "@/lib/patchnotes/notes";
@@ -33,6 +34,8 @@ import ReviewToolbar, { type ToolbarPanel } from "./ReviewToolbar";
 export default function ReviewPageClient() {
   const { state } = useSiteStaffAccess();
   const [token, setToken] = useState("");
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [weeksLoading, setWeeksLoading] = useState(true);
   const [weeks, setWeeks] = useState<ReviewWeek[]>([]);
   const [week, setWeek] = useState("");
   const [review, setReview] = useState<ReviewPayload | null>(null);
@@ -193,6 +196,7 @@ export default function ReviewPageClient() {
     }
     const session = getSession();
     setToken(isSessionValid(session) ? (session?.session_token ?? "") : "");
+    setSessionChecked(true);
   }, [state]);
 
   useEffect(() => {
@@ -214,6 +218,8 @@ export default function ReviewPageClient() {
         if (!cancelled) {
           setError(reason instanceof Error ? reason.message : "Could not load review weeks.");
         }
+      } finally {
+        if (!cancelled) setWeeksLoading(false);
       }
     })();
     return () => {
@@ -268,11 +274,13 @@ export default function ReviewPageClient() {
     };
   }, [activeJob?.id, reloadAll, token, week]);
 
-  if (state === "loading") {
+  if (state === "loading" || (state === "staff" && (!sessionChecked || (token && weeksLoading && !week)))) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <p className="text-sm text-[var(--tfmc-mist)]">Checking access…</p>
-      </main>
+      <PageSkeleton
+        variant="form"
+        label={state === "loading" || !sessionChecked ? "Checking access…" : "Loading review weeks…"}
+        className="max-w-5xl py-8 sm:py-12"
+      />
     );
   }
   if (state !== "staff") {
@@ -343,7 +351,9 @@ export default function ReviewPageClient() {
           {success}
         </p>
       )}
-      {!week ? (
+      {week && !review && !error ? (
+        <LoadingSkeleton variant="form" label="Loading weekly notes…" className="mt-8" />
+      ) : !week ? (
         <p className="mt-8 text-sm text-[var(--tfmc-stone)]">There are no weeks to review.</p>
       ) : (
         review && (

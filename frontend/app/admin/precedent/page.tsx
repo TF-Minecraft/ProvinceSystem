@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import AdminColumn from "@/app/components/admin/AdminColumn";
@@ -187,7 +188,7 @@ export default function AdminPrecedentPage() {
           loadError ? (
             <LoadFailed message={loadError} onRetry={reload} className="mt-6" />
           ) : (
-            <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>
+            <LoadingSkeleton variant="table" className="mt-6" />
           )
         ) : (
           <StaffGateMessage kind={gate} />

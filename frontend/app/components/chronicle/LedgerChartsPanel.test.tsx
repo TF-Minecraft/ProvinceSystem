@@ -76,6 +76,21 @@ function readyResult(bandCount: number): LedgerChartsResult {
 }
 
 describe("LedgerChartsPanel", () => {
+  it("announces a pending ledger once across its three cards, then clears on success", () => {
+    const ready = readyResult(3);
+    if (ready.status !== "ready") throw new Error("Expected ready fixture");
+    const { rerender } = render(
+      <LedgerChartsPanel result={{ ...ready, series: null, seriesLoading: true }} cursorDay={null} />,
+    );
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status").textContent).toBe("Loading the ledger…");
+    expect(screen.getByText("Wealth")).toBeTruthy();
+    expect(screen.getByText("Prestige")).toBeTruthy();
+    expect(screen.getByText("Income")).toBeTruthy();
+    rerender(<LedgerChartsPanel result={ready} cursorDay={null} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("mounts the ready state and renders all three cards", () => {
     render(<LedgerChartsPanel result={readyResult(3)} cursorDay={DAYS[0]!} />);
     expect(screen.getByText("Wealth")).toBeDefined();

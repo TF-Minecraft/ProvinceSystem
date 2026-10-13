@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import type { MapId } from "@/app/components/map/types";
 import MapAuthImage from "@/app/components/map/MapAuthImage";
 import MapViewport from "@/app/components/map/MapViewport";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useMapViewport } from "@/app/hooks/useMapViewport";
 import type { MapPickViewport } from "@/app/hooks/useMapCoords";
 import { useEditorPick } from "@/app/hooks/useEditorPick";
@@ -473,9 +474,7 @@ export default function MapEditorCanvas({
       ) : null}
 
       {loading && !suppressLoadingOverlay ? (
-        <div className="flex min-h-[28rem] items-center justify-center p-8">
-          <p className="text-sm text-[var(--tfmc-mist)]">Loading map…</p>
-        </div>
+        <LoadingSkeleton variant="map" label="Loading map…" className="h-[28rem]" />
       ) : error ? (
         <div className="flex min-h-[28rem] items-center justify-center p-8">
           <p className="text-sm text-[#e8a0a0]">{error}</p>

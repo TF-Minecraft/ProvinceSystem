@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -87,7 +89,7 @@ export default function CharacterWardrobePage() {
   }, [characterId, loadCatalog, router, uiDev]);
 
   if (!ready) {
-    return <p className="text-sm text-[var(--tfmc-mist)]">Loading wardrobe…</p>;
+    return <LoadingSkeleton variant="form" label="Loading wardrobe…" />;
   }
 
   if (!characterId || !session) {

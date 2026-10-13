@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, expect, it, vi } from "vitest";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
 import { inferArmModel } from "../../../lib/skins/steveMannequin";
+import { fetchMaskedTemplateBlob } from "../../../lib/characters/api";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 import WardrobeSlotModal from "./WardrobeSlotModal";
 
 vi.mock("../../../lib/characters/wardrobeSkin", () => ({
@@ -12,9 +14,17 @@ vi.mock("../../../lib/characters/wardrobeSkin", () => ({
 vi.mock("../../../lib/skins/steveMannequin", () => ({
   inferArmModel: vi.fn(),
 }));
+vi.mock("../../../lib/characters/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../lib/characters/api")>()),
+  fetchMaskedTemplateBlob: vi.fn(),
+}));
 vi.mock("./SkinMannequinPreview", () => ({
-  default: function Preview({ armModel }: { armModel: ArmModel }) {
-    return <div data-testid="preview" data-arm-model={armModel} />;
+  default: function Preview({ armModel, source }: { armModel: ArmModel; source: unknown }) {
+    return (
+      <div data-testid="preview" data-arm-model={armModel}>
+        {source ? <LoadingSkeleton variant="model" label="Loading skin preview…" /> : null}
+      </div>
+    );
   },
 }));
 
@@ -22,6 +32,43 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+it("announces loading once while the skin preview and masked composition overlap", async () => {
+  vi.mocked(fetchMaskedTemplateBlob).mockReturnValue(new Promise(() => {}));
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static createObjectURL = vi.fn(() => "blob:skin");
+      static revokeObjectURL = vi.fn();
+    },
+  );
+  render(
+    <WardrobeSlotModal
+      open
+      slotLabel="Base"
+      slotId="base"
+      filled
+      canEquip
+      canCreateMasked
+      defaultEquipOnSave={false}
+      defaultCreateMasked
+      sessionToken="owner"
+      existingTextureSrc="/base.png"
+      initialDisplayName="Base"
+      namePlaceholder="Base"
+      saving={false}
+      error={null}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText("Skin file"), {
+    target: { files: [new File(["skin"], "skin.png", { type: "image/png" })] },
+  });
+  await waitFor(() => expect(fetchMaskedTemplateBlob).toHaveBeenCalledWith("owner"));
+  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.getByRole("status", { name: "Loading skin preview…" })).toBeTruthy();
 });
 
 it.each<ArmModel>(["default", "slim"])(

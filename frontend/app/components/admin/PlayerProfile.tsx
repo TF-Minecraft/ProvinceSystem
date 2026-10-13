@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -203,7 +204,13 @@ function Sessions({ uuid, movement }: { uuid: string; movement: boolean }) {
   return (
     <section className={panelClass} aria-label="Sessions">
       <h3 className={headingClass}>Sessions</h3>
-      {state === "loading" ? <p className={`mt-3 ${mutedClass}`}>Loading…</p> : null}
+      {state === "loading" ? (
+        rows.length ? (
+          <p className={`mt-3 ${mutedClass}`}>Loading…</p>
+        ) : (
+          <LoadingSkeleton variant="list" className="mt-3" />
+        )
+      ) : null}
       {state !== "loading" && !rows.length && !failure ? (
         <p className={`mt-3 ${mutedClass}`}>No sessions recorded.</p>
       ) : null}

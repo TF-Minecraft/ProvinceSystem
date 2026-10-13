@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
 import { MapAccessError, fetchMapApi, fetchMapJson, isAbortError, staffMapAccessReason } from "@/lib/map/api";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
+import LoadingSkeleton, { PageSkeleton } from "../shared/LoadingSkeleton";
 import { mapDisplayName, type MapId } from "../map/types";
 import { isArchivedMap } from "@/app/lib/map/archiveMaps";
 import { invalidateAccessibleMaps, useAccessibleMaps } from "../../hooks/useAccessibleMaps";
@@ -340,7 +341,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
   );
 
   if (!sessionChecked) {
-    return <main className="min-h-[calc(100dvh-var(--tfmc-header-h))] bg-[var(--tfmc-forest-deep)] px-4 py-8" />;
+    return <PageSkeleton variant="form" label="Checking chronicle access…" className="max-w-4xl py-8" />;
   }
   if (!sessionToken) {
     return <MapAccessGate reason="login" mapDisplayName={displayName} />;
@@ -554,6 +555,10 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
               {loading ? "Loading…" : "Reload"}
             </button>
           </div>
+
+          {loading && backups === null ? (
+            <LoadingSkeleton variant="table" label="Loading backups…" className="mt-3" />
+          ) : null}
 
           {loadFailure && (
             <div className="mt-3">

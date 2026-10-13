@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AccountApiError } from "../../../../lib/account/api";
@@ -69,7 +70,7 @@ export default function RankGroup({ name }: { name: string }) {
     void refresh();
   }, [refresh]);
 
-  if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
+  if (load.kind === "loading") return <LoadingSkeleton variant="content" className="mt-6" />;
   if (load.kind === "failed") {
     return (
       <p className="mt-6 text-[var(--tfmc-mist)]" role="alert">

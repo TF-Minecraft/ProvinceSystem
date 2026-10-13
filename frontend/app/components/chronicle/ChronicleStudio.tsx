@@ -31,6 +31,7 @@ import { buildProsperityColorLut } from "../../lib/map/chronicleProsperity";
 import { buildTradeLeagueColorLut } from "../../lib/map/chronicleTradeLeagues";
 import { chronicleDiscardedProvinceMask, omitDiscardedProvinces } from "../../lib/map/chronicleWater";
 import ChronicleBorderCanvas from "./ChronicleBorderCanvas";
+import LoadingSkeleton from "../shared/LoadingSkeleton";
 import type { NationColorLut, ProvinceIdGrid } from "../../lib/map/chroniclePaint";
 import {
   CHRONICLE_FETCH_CONCURRENCY,
@@ -1768,7 +1769,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   );
 
   const stepBody =
-    emptyChronicle || (indexError && !index) ? null : stage === "compose" ? (
+    indexLoading && !index ? (
+      <LoadingSkeleton variant="form" label="Loading the timelapse…" />
+    ) : emptyChronicle || (indexError && !index) ? null : stage === "compose" ? (
       <ChronicleTogglePanel
         toggles={toggles}
         onToggle={toggleLayer}

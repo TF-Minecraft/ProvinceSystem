@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import DiagnosticSections, { FindingList } from "@/app/components/diagnostic/DiagnosticSections";
+import LoadingSkeleton, { Skeleton } from "@/app/components/shared/LoadingSkeleton";
 import { adminErrorMessage } from "@/lib/admin/api";
 import { writeUrl } from "@/lib/admin/urlState";
 import { getDiagnosticReport, type DiagnosticReportRow } from "@/lib/diagnostic/api";
@@ -89,6 +90,39 @@ function ReportView({ opened }: { opened: Opened }) {
   );
 }
 
+function ReportSkeleton() {
+  return (
+    <section className={panelClass}>
+      <LoadingSkeleton label="Loading diagnostic report…">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <Skeleton className="mt-2 h-4 w-72 max-w-full" />
+        <div className="mt-6 space-y-8">
+          {[0, 1, 2].map((section) => (
+            <div key={section}>
+              <Skeleton className="mb-3 h-3 w-32" />
+              <div className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]">
+                {[0, 1, 2].map((row) => (
+                  <div
+                    key={row}
+                    className="grid grid-cols-[1.25rem_7.5rem_1fr] gap-x-3 py-2 sm:grid-cols-[1.25rem_11rem_1fr]"
+                  >
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-full max-w-64" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </LoadingSkeleton>
+    </section>
+  );
+}
+
 export default function DiagnosticReports({ initial }: { initial: DiagnosticReportRow[] }) {
   const [code, setCode] = useState("");
   const [opened, setOpened] = useState<Opened | null>(null);
@@ -154,7 +188,7 @@ export default function DiagnosticReports({ initial }: { initial: DiagnosticRepo
         ) : null}
       </section>
 
-      {opened ? <ReportView opened={opened} /> : null}
+      {opened ? <ReportView opened={opened} /> : loading ? <ReportSkeleton /> : null}
 
       <section className={panelClass}>
         <h2 className={headingClass}>Recent</h2>

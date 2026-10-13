@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useEffect, useId, useRef, useState } from "react";
 import { CharactersApiError, fetchMaskedTemplateBlob } from "../../../lib/characters/api";
 import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
@@ -235,9 +237,11 @@ export default function WardrobeSlotModal({
               }
             />
             {showMaskedToggle && maskedPreviewBusy ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50 text-xs text-[var(--tfmc-mist)]">
-                Loading…
-              </div>
+              <LoadingSkeleton
+                variant="model"
+                decorative
+                className="absolute inset-0 bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50"
+              />
             ) : null}
           </div>
         </div>

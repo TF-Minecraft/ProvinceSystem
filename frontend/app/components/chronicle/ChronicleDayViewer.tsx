@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import MapViewer from "../MapViewer";
+import { MapSkeleton } from "../shared/LoadingSkeleton";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
 import { mapDisplayName, type MapId } from "../map/types";
 import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
@@ -261,11 +262,7 @@ export default function ChronicleDayViewer({ mapId, day }: { mapId: MapId; day: 
   }
 
   if (status.kind === "loading") {
-    return (
-      <div className={shellClass}>
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">Loading…</p>
-      </div>
-    );
+    return <MapSkeleton label="Loading this day…" />;
   }
 
   if (status.kind === "error") {

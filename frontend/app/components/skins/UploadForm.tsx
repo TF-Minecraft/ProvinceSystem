@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { FormEvent, useEffect, useState } from "react";
 import { createSubmission, checkSubmissionConflict, getCatalog, SkinsApiError } from "../../../lib/skins/api";
 import type { SkinsCatalog } from "../../../lib/skins/catalog";
@@ -567,7 +569,7 @@ export default function UploadForm({
                 {catalogError}
               </p>
             ) : !catalog ? (
-              <p className="text-xs text-[var(--tfmc-mist)]">Loading catalog…</p>
+              <LoadingSkeleton variant="form" label="Loading catalog…" />
             ) : (
               <>
                 <label className="flex flex-col gap-2 text-left">

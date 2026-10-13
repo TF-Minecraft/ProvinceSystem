@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import {
   confirmationCopy,
   confirmationToken,
@@ -62,12 +63,11 @@ export default function PatreonLinkConfirmation({ fallback }: { fallback: Patreo
     }
   }
 
-  const title =
-    state.kind === "pending"
-      ? confirmationCopy.title
-      : state.kind === "result"
-        ? state.result.title
-        : "Checking Patreon link…";
+  if (state.kind === "loading") {
+    return <LoadingSkeleton variant="form" label="Checking Patreon link…" />;
+  }
+
+  const title = state.kind === "pending" ? confirmationCopy.title : state.result.title;
   return (
     <div aria-live="polite">
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">{title}</h1>

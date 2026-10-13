@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AccountApiError } from "../../../lib/account/api";
 import {
@@ -73,7 +74,7 @@ export default function AdminPanel() {
     }
   }
 
-  if (load.kind === "loading") return <p className="mt-6 text-[var(--tfmc-mist)]">Loading…</p>;
+  if (load.kind === "loading") return <LoadingSkeleton variant="table" className="mt-6" />;
   if (load.kind !== "ready") return <StaffGateMessage kind={load.kind} />;
 
   const { me, staff } = load;

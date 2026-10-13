@@ -7,6 +7,7 @@ import MapAccessGate, { type MapAccessGateReason } from "@/app/components/map/Ma
 import EditorDisabledGate from "@/app/components/map/editor/EditorDisabledGate";
 import EditorEntryGate from "@/app/components/map/editor/EditorEntryGate";
 import MapTitleEditor from "@/app/components/map/editor/MapTitleEditor";
+import { MapSkeleton } from "@/app/components/shared/LoadingSkeleton";
 import { useCharacterSessionToken } from "@/app/hooks/useCharacterSessionToken";
 import { MapAccessError, fetchEditorProvinces, staffMapAccessReason } from "@/lib/map/api";
 import { parseEditorTierParam, parseRequiredEditorMapIdParam } from "@/lib/map/editorParams";
@@ -73,11 +74,7 @@ export default function MapEditorPageClient() {
   }
 
   if (!accessChecked) {
-    return (
-      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-        <p className="text-sm text-[var(--tfmc-stone)]">Checking editor access...</p>
-      </div>
-    );
+    return <MapSkeleton label="Checking editor access…" />;
   }
 
   if (gateReason) {

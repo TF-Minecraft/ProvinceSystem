@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -124,7 +126,7 @@ export default function CharacterKitDetailPage() {
   }, [characterId, kitId, load, router, uiDev]);
 
   if (!ready) {
-    return <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
+    return <LoadingSkeleton variant="form" className="mt-8" />;
   }
 
   return (

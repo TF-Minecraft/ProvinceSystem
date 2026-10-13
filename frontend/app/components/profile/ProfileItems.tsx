@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import UploadForm from "../skins/UploadForm";
 import BrewForm from "../drinks/BrewForm";
@@ -63,7 +65,7 @@ export function ItemFrame({
 }
 
 export function Loading() {
-  return <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Loading…</p>;
+  return <LoadingSkeleton variant="form" className="mt-6" />;
 }
 
 /** The skin editor, for a session Profile started or an in-game code opened. */

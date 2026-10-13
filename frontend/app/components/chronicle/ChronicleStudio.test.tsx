@@ -30,7 +30,7 @@ describe("ChronicleStudio", () => {
     expect(typeof ChronicleStudio).toBe("function");
   });
 
-  it("mounts and paints its first step", async () => {
+  it("keeps the studio shell visible while its first step loads", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
     // This shell smoke test does not render canvas content; jsdom has no backend.
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
@@ -53,6 +53,7 @@ describe("ChronicleStudio", () => {
 
     render(<ChronicleStudio mapId="main" />);
     await waitFor(() => expect(screen.getByRole("navigation", { name: "Timelapse steps" })).toBeDefined());
-    expect(screen.getByRole("switch", { name: "Nation fill" })).toBeDefined();
+    expect(screen.getByRole("status", { name: "Loading the timelapse…" })).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Nation fill" })).toBeNull();
   });
 });

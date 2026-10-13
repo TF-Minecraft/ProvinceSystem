@@ -2,6 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 
 import { AccountApiError } from "../../../lib/account/api";
 import { adminErrorMessage, coreProtectMessage, type PlayerSession } from "../../../lib/admin/api";
@@ -294,8 +295,8 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
               </button>
             </div>
           ) : null}
-          {load.kind === "loading" ? (
-            <p className={mutedClass}>{load.previous ? "Loading… (showing the previous results)" : "Loading…"}</p>
+          {load.kind === "loading" && load.previous ? (
+            <p className={mutedClass}>Loading… (showing the previous results)</p>
           ) : null}
           <div
             className="flex gap-2 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3"
@@ -335,7 +336,9 @@ export default function PlayerMovementPage({ uuid }: { uuid: string }) {
       }
       map={
         <div className={`h-full ${stale ? "opacity-70 transition-opacity" : ""}`}>
-          {mapId ? (
+          {!view && load.kind === "loading" ? (
+            <LoadingSkeleton variant="map" className={`${mapFrameClass} overflow-hidden`} />
+          ) : mapId ? (
             <MovementMap
               mapId={mapId}
               mapWorld={mapWorld}

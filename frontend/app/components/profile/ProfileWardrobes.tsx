@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
+
 import { useCallback, useEffect, useState } from "react";
 import { ProfileApiError, type ProfileDrinkSubmission, type ProfileSkinSubmission } from "../../../lib/profile/api";
 import { getCodeWardrobe, type CodeWardrobe as CodeWardrobeData } from "../../../lib/profile/codes";
@@ -159,7 +161,7 @@ export function CodeWardrobe({
   }, [load, pending]);
 
   if (error && !data) return <p className="text-sm text-[#e8a0a0]">{error}</p>;
-  if (!data) return <p className="text-sm text-[var(--tfmc-mist)]">Loading…</p>;
+  if (!data) return <LoadingSkeleton variant="list" />;
   return noun === "skin" ? (
     <SkinWardrobe
       rows={data.items as ProfileSkinSubmission[]}

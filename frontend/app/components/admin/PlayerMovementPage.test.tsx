@@ -99,6 +99,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it("finishes loading when the player has no recorded sessions", async () => {
+  vi.mocked(getPlayerSessions).mockResolvedValueOnce({
+    sessions: [],
+    next: null,
+    coreprotect: { status: "available" },
+  });
+  render(<PlayerMovementPage uuid={UUID} />);
+  await screen.findByText("No sessions recorded.");
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.getByTestId("map")).toBeTruthy();
+});
+
 it("opens the newest session and inspects where it ended", async () => {
   render(<PlayerMovementPage uuid={UUID} />);
   await screen.findByText(/14:10:00 · 30, 64, 0/);

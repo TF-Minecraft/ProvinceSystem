@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "../shared/LoadingSkeleton";
 import { getSkinThumbnail } from "../../../lib/skins/api";
 import { getDrinkTexture } from "../../../lib/drinks/api";
 import { composeTintedPotionCanvas, loadDrinkAssetImages } from "../../../lib/drinks/potionTint";
 import { HangerGlyph } from "./Wardrobe";
+
+/** Fits both wardrobe tiles and the fixed showcase stage. */
+export function PictureSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid h-full w-full place-items-center">
+      <Skeleton className="h-1/2 max-h-48 w-1/2 max-w-48 motion-safe:animate-pulse" />
+    </div>
+  );
+}
 
 function Picture({ src, small }: { src: string; small: boolean }) {
   return (
@@ -54,7 +64,7 @@ export function SkinPicture({ id, sessionToken }: { id: string; sessionToken: st
   }, [id, sessionToken]);
 
   if (src) return <Picture src={src} small={small} />;
-  return missing ? <HangerGlyph /> : null;
+  return missing ? <HangerGlyph /> : <PictureSkeleton />;
 }
 
 /** The vanilla potion in the drink's colour, else the drink's own texture. */
@@ -90,5 +100,5 @@ export function DrinkPicture({ id, color, sessionToken }: { id: string; color: s
   }, [color, id, sessionToken]);
 
   if (src) return <Picture src={src} small />;
-  return missing ? <HangerGlyph /> : null;
+  return missing ? <HangerGlyph /> : <PictureSkeleton />;
 }
