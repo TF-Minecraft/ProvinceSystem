@@ -89,6 +89,12 @@ export function formatDenars(cents: number): string {
   return (cents / 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Labels arrive plural ("locks", "entities"); one of a kind reads "1 lock", "1 entity". */
+function singular(label: string): string {
+  if (label.endsWith("ies")) return `${label.slice(0, -3)}y`;
+  return label.endsWith("s") ? label.slice(0, -1) : label;
+}
+
 /** What the estate moved, summed over every part of the server: "297 locks, 2 vehicles". */
 export function estateMoved(estate: CharacterEstate): string | null {
   const totals = new Map<string, number>();
@@ -98,8 +104,5 @@ export function estateMoved(estate: CharacterEstate): string | null {
     }
   }
   if (!totals.size) return null;
-  // Labels arrive plural ("locks"); one of a kind drops the s.
-  return [...totals]
-    .map(([label, count]) => `${count} ${count === 1 && label.endsWith("s") ? label.slice(0, -1) : label}`)
-    .join(", ");
+  return [...totals].map(([label, count]) => `${count} ${count === 1 ? singular(label) : label}`).join(", ");
 }

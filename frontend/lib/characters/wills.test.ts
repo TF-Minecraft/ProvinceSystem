@@ -54,6 +54,10 @@ it("sums what each part of the server moved", () => {
     estate({ participants: { bartershops: { outcome: "DONE", revision: 0, counts: { shops: 1 } } } }),
   );
   expect(one).toBe("1 shop");
+  const entity = estateMoved(
+    estate({ participants: { thievery: { outcome: "DONE", revision: 0, counts: { entities: 1, doors: 3 } } } }),
+  );
+  expect(entity).toBe("1 entity, 3 doors");
 });
 
 it("words will results and refusals", () => {
