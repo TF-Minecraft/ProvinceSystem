@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { PlayerProfile } from "../../../lib/admin/api";
 import { characterFigure } from "../../../lib/characters/api";
@@ -63,6 +63,10 @@ it("opens portrait cards inside the staff player, including the realm and histor
     "https://api.test/admin/players/p-1/characters/c1/face?realm_id=tutorial",
   );
   expect(screen.getByRole("link", { name: /Old Hazel/ })).toBeTruthy();
+  expect(
+    within(screen.getByRole("heading", { name: "Dead" }).parentElement!).getByRole("link", { name: /Old Hazel/ }),
+  ).toBeTruthy();
+  expect(screen.queryByText(/^Alive/)).toBeNull();
   expect(screen.queryByText("New character")).toBeNull();
   expect(screen.getByText("Human · Smith")).toBeTruthy();
   fireEvent.click(card);
@@ -82,6 +86,8 @@ it("opens the shared full sheet from its address, focuses the name and keeps the
   expect(screen.getByText("Raised in the woods.")).toBeTruthy();
   expect(screen.getByText("Carries a red banner.")).toBeTruthy();
   expect(screen.getByRole("link", { name: "← Characters" }).getAttribute("href")).toBe(base);
+  fireEvent.click(screen.getByRole("link", { name: "← Characters" }));
+  expect(nav.push).toHaveBeenCalledWith(base, { scroll: false });
   expect(screen.queryByRole("link", { name: "Wardrobe" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Kits" })).toBeNull();
   const figure = screen.getByAltText("Hazel's skin");

@@ -92,7 +92,11 @@ export default function PlayerProfile() {
         {profile.discord ? null : <p className={`mt-3 ${mutedClass}`}>Not linked to Discord.</p>}
       </section>
 
-      <section hidden={tab !== "characters"} className={panelClass} aria-label="Characters">
+      <section
+        hidden={tab !== "characters"}
+        className="mx-auto mt-6 w-full max-w-[45rem] px-2 sm:px-0"
+        aria-label="Characters"
+      >
         <PlayerCharacters profile={profile} active={tab === "characters"} />
       </section>
     </>

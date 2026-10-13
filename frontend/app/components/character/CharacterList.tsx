@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { minecraftHeadUrl } from "../../../lib/account/api";
 import { characterFace, type CharacterListItem, type CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
@@ -91,7 +91,7 @@ export function CharacterCard({
   playerUuid,
   onOpen,
   href,
-  note,
+  realmLabel,
 }: {
   item: CharacterListItem;
   catalog?: CreationCatalog | null;
@@ -100,7 +100,7 @@ export function CharacterCard({
   onOpen?: (id: string) => void;
   /** Staff cards stay in the player's frame and can open historical characters. */
   href?: string;
-  note?: string;
+  realmLabel?: string;
 }) {
   const status = statusOf(item);
   const name = item.name || "Unnamed";
@@ -116,9 +116,9 @@ export function CharacterCard({
         <div className="flex items-center gap-2">
           <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{name}</p>
           {chip ? <span className={`${chipClass} ${chip.className}`}>{chip.label}</span> : null}
+          {realmLabel ? <span className={`${chipClass} text-[var(--tfmc-stone)]`}>{realmLabel}</span> : null}
         </div>
         <p className="truncate text-sm text-[var(--tfmc-mist)]">{meta || "-"}</p>
-        {note ? <p className="mt-0.5 text-xs text-[var(--tfmc-stone)]">{note}</p> : null}
         {status === "REJECTED" && err ? <p className="mt-0.5 text-xs text-[#e8a0a0]">{err}</p> : null}
       </div>
       {linkable ? (
@@ -202,6 +202,50 @@ function SlotPips({ used, total }: { used: number; total: number }) {
   );
 }
 
+/** Shared card spacing, status order and historical section for player and staff views. */
+export function CharacterRoster<T extends CharacterListItem>({
+  characters,
+  renderCard,
+  createSlot,
+  pendingNotice,
+  includeOther = false,
+}: {
+  characters: T[];
+  renderCard: (character: T) => ReactNode;
+  createSlot?: ReactNode;
+  pendingNotice?: ReactNode;
+  includeOther?: boolean;
+}) {
+  const order = ["ALIVE", "PENDING", "REJECTED"];
+  const historical = (c: CharacterListItem) => statusOf(c) === "DEAD" || statusOf(c) === "MISSING";
+  const rank = (c: CharacterListItem) => {
+    const index = order.indexOf(statusOf(c));
+    return index < 0 ? order.length : index;
+  };
+  const current = characters
+    .filter((c) => !historical(c) && (includeOther || order.includes(statusOf(c))))
+    .sort((a, b) => rank(a) - rank(b));
+  const dead = characters.filter(historical);
+
+  return (
+    <>
+      {current.length || createSlot ? (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {current.map(renderCard)}
+          {createSlot}
+        </ul>
+      ) : null}
+      {pendingNotice}
+      {dead.length ? (
+        <section className="mt-10">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">{dead.map(renderCard)}</ul>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
 export default function CharacterList({
   characters,
   aliveCount,
@@ -214,12 +258,7 @@ export default function CharacterList({
   playerUuid = null,
 }: Props) {
   const faces = useFaces(sessionToken, characters);
-  const order = ["ALIVE", "PENDING", "REJECTED"];
-  const current = characters
-    .filter((c) => order.includes(statusOf(c)))
-    .sort((a, b) => order.indexOf(statusOf(a)) - order.indexOf(statusOf(b)));
-  const dead = characters.filter((c) => statusOf(c) === "DEAD" || statusOf(c) === "MISSING");
-  const hasPending = current.some((c) => statusOf(c) === "PENDING");
+  const hasPending = characters.some((c) => statusOf(c) === "PENDING");
   const atLimit = aliveCount >= maxSlots;
 
   return (
@@ -243,8 +282,9 @@ export default function CharacterList({
         ) : null}
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {current.map((c) => (
+      <CharacterRoster
+        characters={characters}
+        renderCard={(c) => (
           <CharacterCard
             key={c.id}
             item={c}
@@ -253,51 +293,37 @@ export default function CharacterList({
             playerUuid={playerUuid}
             onOpen={onOpen}
           />
-        ))}
-        <li>
-          {atLimit ? (
-            <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
-              No free slot
-            </div>
-          ) : (
-            <Link
-              href="/character/create"
-              className={`${tileClass} text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]`}
-            >
-              <span
-                aria-hidden
-                className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] text-lg leading-none"
+        )}
+        createSlot={
+          <li>
+            {atLimit ? (
+              <div className={`${tileClass} text-[var(--tfmc-stone)] opacity-70`} aria-disabled>
+                No free slot
+              </div>
+            ) : (
+              <Link
+                href="/character/create"
+                className={`${tileClass} text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]`}
               >
-                +
-              </span>
-              New character
-            </Link>
-          )}
-        </li>
-      </ul>
-      {hasPending ? (
-        <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-          Pending characters take up to a minute. You can still edit kits and wardrobe.
-        </p>
-      ) : null}
-
-      {dead.length ? (
-        <section className="mt-10">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--tfmc-stone)]">Dead</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {dead.map((c) => (
-              <CharacterCard
-                key={c.id}
-                item={c}
-                catalog={catalog}
-                face={faces[c.id]}
-                playerUuid={playerUuid}
-                onOpen={onOpen}
-              />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+                <span
+                  aria-hidden
+                  className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] text-lg leading-none"
+                >
+                  +
+                </span>
+                New character
+              </Link>
+            )}
+          </li>
+        }
+        pendingNotice={
+          hasPending ? (
+            <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+              Pending characters take up to a minute. You can still edit kits and wardrobe.
+            </p>
+          ) : null
+        }
+      />
     </div>
   );
 }

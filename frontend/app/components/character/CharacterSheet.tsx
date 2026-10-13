@@ -285,7 +285,7 @@ export default function CharacterSheet({
         aria-label={name}
         className="grid grid-cols-1 gap-x-3.5 gap-y-4 min-[360px]:grid-cols-[96px_minmax(0,1fr)] rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[radial-gradient(circle_at_80px_50%,color-mix(in_srgb,var(--tfmc-moss)_55%,transparent),transparent_260px),color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-3.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6 sm:p-5"
       >
-        <div className={readOnly ? undefined : "sm:row-span-2"}>
+        <div className="sm:row-span-2">
           <CharacterFigure
             characterId={character.id}
             name={name}
@@ -303,11 +303,8 @@ export default function CharacterSheet({
             {name}
           </h2>
           {lineage ? <p className="mt-1.5 text-[15px] text-[var(--tfmc-mist)] sm:text-base">{lineage}</p> : null}
-          {readOnly ? <div className="mt-4">{details}</div> : null}
         </div>
-        {!readOnly ? (
-          <div className="col-span-full min-w-0 self-start sm:col-span-1 sm:col-start-2">{details}</div>
-        ) : null}
+        <div className="col-span-full min-w-0 self-start sm:col-span-1 sm:col-start-2">{details}</div>
       </section>
 
       {isPending ? (
