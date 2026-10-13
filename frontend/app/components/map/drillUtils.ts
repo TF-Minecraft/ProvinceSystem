@@ -103,3 +103,25 @@ export function canDrillIntoRegion(regionId: string, regionData: RegionRecord, m
 
   return true;
 }
+
+/**
+ * Overlay crops a click on `regionId` draws: the region itself and, for the
+ * realm the click opens (see `focusOnRegion`), its shape, its nested layout
+ * and its subjects. Loading them during hover means the click needs no
+ * network round trip before the rest of the map dims.
+ */
+export function selectionCropPaths(regionId: string, regionData: RegionRecord, mapObjects: MapObject[]): string[] {
+  if (!regionData[regionId]) return [];
+  const chain = getAncestryChain(regionId, regionData);
+  const realmId = hasLandSubjects(regionId, regionData) ? regionId : (chain[1] ?? null);
+  const base = (id: string) => mapObjects.find((obj) => !obj.nested && obj.baseId === id);
+  const objects = [base(regionId)];
+  if (realmId) {
+    objects.push(
+      base(realmId),
+      mapObjects.find((obj) => obj.nested && obj.baseId === realmId),
+    );
+    for (const subjectId of regionData[realmId]?.subjects ?? []) objects.push(base(subjectId));
+  }
+  return [...new Set(objects.flatMap((obj) => (obj ? [obj.path] : [])))];
+}

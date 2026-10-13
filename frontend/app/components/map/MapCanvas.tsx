@@ -24,7 +24,8 @@ import type { FitMode, MapRect } from "../../lib/mapViewportMath";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
-import { mapApiPathFromUrl, mapApiUrl } from "@/lib/map/api";
+import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
+import { mapApiPathFromUrl, mapApiUrl, mapRequiresAuth } from "@/lib/map/api";
 import { PROVINCE_RASTER_MODES, showsLiveProvinceRaster } from "@/app/lib/map/chronicleDayModes";
 
 const panelClass =
@@ -213,6 +214,38 @@ function useImageLoaded(url: string | null): boolean {
   return loaded;
 }
 
+/** Crops loaded ahead of a click, kept so the browser keeps them in memory. */
+const warmedCrops = new Map<string, HTMLImageElement>();
+const WARMED_CROPS_KEPT = 64;
+
+/**
+ * Load `urls` in the selection's CORS mode. Its `<img>`s then draw from the
+ * browser's memory cache at once instead of revalidating each crop first.
+ */
+function useWarmCrops(urls: string[]) {
+  const key = urls.join("\n");
+  useEffect(() => {
+    for (const url of key ? key.split("\n") : []) {
+      const warmed = warmedCrops.get(url);
+      // Re-hovered crops move to the back of the queue, so the newest stay.
+      warmedCrops.delete(url);
+      if (warmed) {
+        warmedCrops.set(url, warmed);
+        continue;
+      }
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.decoding = "async";
+      image.onerror = () => {
+        if (warmedCrops.get(url) === image) warmedCrops.delete(url);
+      };
+      image.src = url;
+      warmedCrops.set(url, image);
+      if (warmedCrops.size > WARMED_CROPS_KEPT) warmedCrops.delete(warmedCrops.keys().next().value!);
+    }
+  }, [key]);
+}
+
 /**
  * Where the pointer's tooltip goes: below and to the right of it, flipped to
  * the other side near the window's right or bottom edge so it is never cut off
@@ -298,6 +331,9 @@ function HoverOverlayImage({
       key={shape}
       src={url}
       alt={alt}
+      // The selection's crops load in this mode; a different one would make
+      // the browser fetch the hovered shape again on click.
+      crossOrigin="anonymous"
       ref={(node) => {
         if (node?.complete && node.naturalWidth > 0) markLoaded();
       }}
@@ -346,6 +382,11 @@ type MapCanvasProps = {
    * flattened tiles, which otherwise stay as first shown.
    */
   focus?: MapFocus | null;
+  /**
+   * Live map only: region crops (`MapObject.path`) a click under the pointer
+   * would draw, loaded ahead so the click draws them at once.
+   */
+  warmCropPaths?: string[];
   /** Filled with the camera controls once the viewport is mounted. */
   controlsRef?: MutableRefObject<MapViewportControls | null>;
   /** Full-bleed mode: fills its container instead of sizing to the map itself
@@ -401,6 +442,7 @@ export default function MapCanvas({
   onClick,
   isHoveringClickable = false,
   focus = null,
+  warmCropPaths,
   controlsRef,
   fill = false,
   fitMode = "cover",
@@ -513,6 +555,14 @@ export default function MapCanvas({
       : "";
   const { url: focusShapeUrl } = useMapAssetUrl(mapId, focusShapePath, sessionToken, Boolean(focusShapePath));
   const focusShapeLoaded = useImageLoaded(focusShapeUrl);
+  // A staff map's crops come as blob URLs, one fetch each, so only the
+  // public map's direct URLs can be shared with the selection.
+  const { maps } = useAccessibleMaps();
+  const warmCrops =
+    regionOverlay === undefined && useRegionTiles && warmCropPaths && !mapRequiresAuth(mapId, maps)
+      ? warmCropPaths.map((path) => mapApiUrl(`/${mapId}/regions/${mapType}/${path}${lod > 0 ? `?lod=${lod}` : ""}`))
+      : [];
+  useWarmCrops(warmCrops);
   // An opened realm draws its own layers instead; the colours fade once they
   // have all loaded, so the realm never shows faded in between.
   const focusObjects = useRegionTiles && focus ? focus.objects : [];
