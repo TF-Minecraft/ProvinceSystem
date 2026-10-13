@@ -57,7 +57,7 @@ def resolve_player_character(
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT player_uuid, character_id, wardrobe_active_slot, realm_id
+            SELECT player_uuid, character_id, wardrobe_active_slot, realm_id, status
             FROM character_roster
             WHERE player_uuid = ? AND character_id = ?
             """,
@@ -70,6 +70,7 @@ def resolve_player_character(
             "character_id": str(row["character_id"]),
             "realm_id": row["realm_id"],
             "wardrobe_active_slot": row["wardrobe_active_slot"],
+            "status": str(row["status"] or "").upper(),
         }
 
     pending = fetch_owned_pending_create(uuid, cid)
@@ -85,3 +86,9 @@ def resolve_player_character(
         }
 
     raise PendingCreateError("Character not found", status_code=403)
+
+
+def require_living(access: dict[str, Any]) -> None:
+    """Wardrobe and kit edits are for living (or pending) characters only."""
+    if access["kind"] == "roster" and access.get("status") != "ALIVE":
+        raise PendingCreateError("Character is not alive", status_code=403)

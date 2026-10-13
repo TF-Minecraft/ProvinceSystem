@@ -14,6 +14,7 @@ from PIL import Image
 from src.characters.wardrobe_sign import sign_wardrobe_skin
 from src.characters.pending_create import (
     PendingCreateError,
+    require_living,
     resolve_player_character,
 )
 from src.skins.db import DATA_DIR, WARDROBE_DIR, connect
@@ -940,17 +941,21 @@ def _build_pending_wardrobe_payload(
 
 
 def _resolve_player_wardrobe_access(
-    player_uuid: str, character_id: str
+    player_uuid: str, character_id: str, *, living: bool = False
 ) -> dict[str, Any]:
+    """Owned roster or pending character; ``living`` refuses dead and missing ones (edits)."""
     try:
-        return resolve_player_character(player_uuid, character_id)
+        access = resolve_player_character(player_uuid, character_id)
+        if living:
+            require_living(access)
+        return access
     except PendingCreateError as e:
         raise WardrobeError(str(e), status_code=e.status_code) from e
 
 
 def get_wardrobe(player_uuid: str, character_id: str) -> dict[str, Any]:
     """Session-safe wardrobe list (no Mojang texture value/signature)."""
-    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
     if access["kind"] == "pending":
         return _build_pending_wardrobe_payload(
             access["player_uuid"],
@@ -1015,7 +1020,7 @@ def _upload_slot_impl(
     create_masked: bool = False,
     model_override: str | None = None,
 ) -> dict[str, Any]:
-    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
     if access["kind"] == "pending":
         uuid = access["player_uuid"]
         cid = access["character_id"]
@@ -1144,7 +1149,7 @@ def set_slot_display_name(
     display_name: str | None,
 ) -> dict[str, Any]:
     """Rename a filled slot. Does not re-sign or set apply_pending."""
-    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
     uuid = access["player_uuid"]
     cid = access["character_id"]
     slot_key = _normalize_slot(slot)
@@ -1233,7 +1238,7 @@ def ack_wardrobe_slots(
 def clear_slot(
     player_uuid: str, character_id: str, slot: str
 ) -> dict[str, Any]:
-    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
     if access["kind"] == "pending":
         uuid = access["player_uuid"]
         cid = access["character_id"]
@@ -1331,7 +1336,7 @@ def _set_active_slot(
             **_require_owned_character(player_uuid, character_id),
         }
     else:
-        access = _resolve_player_wardrobe_access(player_uuid, character_id)
+        access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
 
     uuid = str(access["player_uuid"])
     cid = str(access["character_id"])

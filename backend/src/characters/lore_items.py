@@ -132,6 +132,7 @@ def _require_customise_allowed(
     """Allow customise for roster (claimable kit) or pending web create."""
     from src.characters.pending_create import (
         PendingCreateError,
+        require_living,
         resolve_player_character,
     )
 
@@ -140,6 +141,7 @@ def _require_customise_allowed(
     kit = (kit_id or "starter").strip().lower() or "starter"
     try:
         access = resolve_player_character(uuid, cid)
+        require_living(access)
     except PendingCreateError as e:
         raise LoreItemError(str(e), status_code=e.status_code) from e
     if access["kind"] == "pending":
@@ -1063,6 +1065,7 @@ def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str,
     from src.characters.creation_catalog import get_catalog
     from src.characters.pending_create import (
         PendingCreateError,
+        require_living,
         resolve_player_character,
     )
     from src.characters.roster import get_player_meta
@@ -1073,6 +1076,7 @@ def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str,
     cid = _require_character_id(character_id)
     try:
         access = resolve_player_character(uuid, cid)
+        require_living(access)
     except PendingCreateError as e:
         raise LoreItemError(str(e), status_code=e.status_code) from e
     is_pending = access["kind"] == "pending"
