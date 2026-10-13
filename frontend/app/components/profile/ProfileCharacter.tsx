@@ -28,6 +28,8 @@ type Props = {
   onLeave: () => void;
   /** After a pending character is cancelled. */
   onCancelled: () => void;
+  /** Opens the character's kits in the tab. */
+  onOpenKits: () => void;
 };
 
 /** One character's sheet inside Profile's Characters tab. */
@@ -39,6 +41,7 @@ export default function ProfileCharacter({
   onBack,
   onLeave,
   onCancelled,
+  onOpenKits,
 }: Props) {
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +109,7 @@ export default function ProfileCharacter({
               headingRef={headingRef}
               onCancelPending={sessionToken ? onCancelPending : undefined}
               cancelling={cancelling}
+              onOpenKits={onOpenKits}
             />
           )}
         </div>

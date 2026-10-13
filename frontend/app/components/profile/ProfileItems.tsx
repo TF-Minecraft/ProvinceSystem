@@ -35,11 +35,14 @@ export function ItemFrame({
   title,
   onBack,
   backHref,
+  backLabel,
   children,
 }: {
   tab: keyof typeof BACK_LABELS;
   title?: ReactNode;
   onBack: () => void;
+  /** What ← names when it leads somewhere other than the tab's list. */
+  backLabel?: string;
   /** Staff uses the same frame with a back address inside the staff panel. */
   backHref?: string;
   children: ReactNode;
@@ -53,7 +56,7 @@ export function ItemFrame({
     <div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <a href={backHref || profileHref(tab)} onClick={back} className={quietClass}>
-          ← {BACK_LABELS[tab]}
+          ← {backLabel || BACK_LABELS[tab]}
         </a>
         {title ? (
           <h2 className="min-w-0 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">{title}</h2>

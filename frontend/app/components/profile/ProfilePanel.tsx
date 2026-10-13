@@ -10,6 +10,7 @@ import ProfileRedeemForm from "./ProfileRedeemForm";
 import { CodeWardrobe, DrinkWardrobe, SkinWardrobe } from "./ProfileWardrobes";
 import { DrinkItem, SkinItem } from "./ProfileItems";
 import ProfileCharacter from "./ProfileCharacter";
+import ProfileKits from "./ProfileKits";
 import LinkedAccounts, {
   ACCOUNTS_PATH,
   cardClass,
@@ -46,7 +47,7 @@ import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
 import { ProfileApiError, getProfileDashboard, type ProfileDashboard } from "../../../lib/profile/api";
 import { NO_CODE_SESSIONS, readCodeSessions, type CodeSessions, type SignIn } from "../../../lib/profile/codes";
 import { clearSession, getSession, isSessionValid, type ProfileSession } from "../../../lib/profile/session";
-import { itemParam, profileHref } from "../../../lib/profile/paths";
+import { characterPath, characterView, itemParam, kitsPath, profileHref } from "../../../lib/profile/paths";
 import { profileTab, type ProfileTab } from "../../../lib/profile/tabs";
 import { endCodeUploads, logoutProfile } from "../../../lib/profile/uploads";
 
@@ -203,6 +204,7 @@ export default function ProfilePanel({
   const tab = profileTab(searchParams.get("tab"));
   const param = itemParam(tab);
   const item = param ? searchParams.get(param) : null;
+  const view = tab === "characters" && item ? characterView(searchParams.get("view")) : null;
   // Set once this page has pushed an item's address, so ← goes back to the wardrobe entry.
   const openedHere = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -424,6 +426,17 @@ export default function ProfilePanel({
       },
     };
   }, [itemNav, loadDashboard]);
+  // Set once this page has opened a character's kits, so ← goes back to the character's entry.
+  const kitsOpenedHere = useRef(false);
+  const openKits = useCallback((id: string) => {
+    kitsOpenedHere.current = true;
+    window.history.pushState(null, "", kitsPath(id));
+  }, []);
+  const leaveKits = useCallback((id: string) => {
+    if (kitsOpenedHere.current) window.history.back();
+    else window.history.replaceState(null, "", characterPath(id));
+    kitsOpenedHere.current = false;
+  }, []);
   // Leaving a character for the list (←, Back, or Back again after Forward) puts the list where it was
   // and focuses that character's card, or the tab if the card is gone.
   const lastCharacter = useRef<string | null>(null);
@@ -514,7 +527,7 @@ export default function ProfilePanel({
               </p>
             ) : null}
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <DiscordSignInLink href={discordSignInUrl(profileHref(tab, item))} />
+              <DiscordSignInLink href={discordSignInUrl(view && item ? kitsPath(item) : profileHref(tab, item))} />
               <button
                 type="button"
                 onClick={() => setShowCode((open) => !open)}
@@ -728,9 +741,19 @@ export default function ProfilePanel({
               loadingDashboard || !sessionChecked ? (
                 <LoadingSkeleton variant="list" />
               ) : null
+            ) : shown === "characters" && openItem && view === "kits" ? (
+              <ProfileKits
+                key={`${openItem}-kits`}
+                character={dashboard.characters.find((c) => c.id === openItem) ?? null}
+                customItems={dashboard.custom_items}
+                sessionToken={uiDev ? null : token}
+                onBack={() => leaveKits(openItem)}
+                onOpenItem={customItemNav.onOpen}
+              />
             ) : shown === "characters" && openItem ? (
               <ProfileCharacter
                 key={openItem}
+                onOpenKits={() => openKits(openItem)}
                 character={dashboard.characters.find((c) => c.id === openItem) ?? null}
                 catalog={catalog}
                 sessionToken={uiDev ? null : token}

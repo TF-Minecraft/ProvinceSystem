@@ -61,8 +61,8 @@ it("leads with who the character is and where to dress and equip them", () => {
     "Wearing Ranger's cloak",
   );
   const kits = screen.getByRole("link", { name: "Kits" });
-  expect(kits.getAttribute("href")).toBe("/character/c1/kits");
-  // Legacy "ineligible" reads like the Kits page.
+  expect(kits.getAttribute("href")).toBe("/profile?tab=characters&character=c1&view=kits");
+  // Legacy "ineligible" reads like the kits view.
   expect(document.getElementById(kits.getAttribute("aria-describedby")!)!.textContent).toBe(
     "Starter kit: Not yet claimed",
   );
