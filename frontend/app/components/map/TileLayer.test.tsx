@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TileManifest, TileView } from "@/app/lib/map/tilePyramid";
 
-import TileLayer, { forgetSeenTiles, OPAQUE_TILE_CLASS } from "./TileLayer";
+import TileLayer, { forgetSeenTiles } from "./TileLayer";
 
 afterEach(() => {
   cleanup();
@@ -362,7 +362,7 @@ describe("TileLayer", () => {
     expect(clip()).not.toBe("");
   });
 
-  it("overlaps opaque tiles, and leaves see-through ones exactly edge to edge", () => {
+  it("draws each tile's gutter under its neighbours, unstretched, and clips it off see-through tiles", () => {
     vi.useFakeTimers();
     const pyramid: TileManifest = {
       ready: true,
@@ -370,6 +370,7 @@ describe("TileLayer", () => {
       width: 2048,
       height: 2048,
       tile_size: 256,
+      gutter: 4,
       max_level: 1,
       levels: [
         { width: 1024, height: 1024 },
@@ -394,18 +395,26 @@ describe("TileLayer", () => {
       return { sharp, clip: backdrop.parentElement!.style.clipPath };
     };
 
-    // An opaque tile reaches two screen pixels (here 2/256 of itself) under
-    // its neighbours, and the backdrop runs on 8 px under the sharp tiles:
-    // where two edges meet off a pixel boundary the page would show through.
+    // The tile file itself carries 4 px of its neighbours (260 px across
+    // here), drawn at that size so the terrain inside keeps its exact
+    // place; the neighbour drawn after it covers the gutter. Stretching
+    // the tile to reach under its neighbours instead displaced the terrain
+    // by up to the overlap, hardest at each seam. The backdrop still runs
+    // on 8 px under the sharp tiles' coverage edge.
     const opaque = layer(false);
-    expect(opaque.sharp.className).toContain(OPAQUE_TILE_CLASS);
-    expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe(String(2 / 256));
+    expect(opaque.sharp.style.width).toBe("260px");
+    expect(opaque.sharp.style.height).toBe("260px");
+    expect(opaque.sharp.className).not.toContain("scale:");
+    expect(opaque.sharp.style.getPropertyValue("--tile-ox")).toBe("");
+    expect(opaque.sharp.style.clipPath).toBe("");
     expect(opaque.clip).toContain("0.390625% 0.390625%, 0.390625% 24.609375%");
     cleanup();
 
-    // A see-through tile stacked on another would show twice as deep.
+    // A see-through tile's gutter stacked on its neighbour would show twice
+    // as deep, so it is clipped away, leaving the tile exactly edge to edge.
     const seeThrough = layer(true);
-    expect(seeThrough.sharp.className).not.toContain(OPAQUE_TILE_CLASS);
+    expect(seeThrough.sharp.style.width).toBe("260px");
+    expect(seeThrough.sharp.style.clipPath).toBe("inset(0 4px 4px 0)");
     expect(seeThrough.clip).toContain("0% 0%, 0% 25%, 25% 25%, 25% 0%, 0% 0%");
   });
 
