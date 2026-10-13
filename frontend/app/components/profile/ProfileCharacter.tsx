@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import CharacterMemorial from "../character/CharacterMemorial";
 import CharacterSheet from "../character/CharacterSheet";
 import {
   CharactersApiError,
@@ -10,8 +11,9 @@ import {
 } from "../../../lib/characters/api";
 import { ItemFrame } from "./ProfileItems";
 
-/** Characters that open in the tab; the rest only show on their card. */
-export const OPENABLE = new Set(["ALIVE", "PENDING"]);
+/** Characters that open in the tab; the rest only show on their card. Dead and missing ones open read only. */
+export const OPENABLE = new Set(["ALIVE", "PENDING", "DEAD", "MISSING"]);
+const MEMORIAL = new Set(["DEAD", "MISSING"]);
 
 type Props = {
   /** The dashboard's row for the address's id, or null when Profile has none. */
@@ -87,15 +89,25 @@ export default function ProfileCharacter({
               {error}
             </p>
           ) : null}
-          <CharacterSheet
-            character={character}
-            catalog={catalog}
-            sessionToken={sessionToken}
-            playerUuid={playerUuid}
-            headingRef={headingRef}
-            onCancelPending={sessionToken ? onCancelPending : undefined}
-            cancelling={cancelling}
-          />
+          {MEMORIAL.has(status) ? (
+            <CharacterMemorial
+              character={character}
+              catalog={catalog}
+              sessionToken={sessionToken}
+              playerUuid={playerUuid}
+              headingRef={headingRef}
+            />
+          ) : (
+            <CharacterSheet
+              character={character}
+              catalog={catalog}
+              sessionToken={sessionToken}
+              playerUuid={playerUuid}
+              headingRef={headingRef}
+              onCancelPending={sessionToken ? onCancelPending : undefined}
+              cancelling={cancelling}
+            />
+          )}
         </div>
       </ItemFrame>
     </div>

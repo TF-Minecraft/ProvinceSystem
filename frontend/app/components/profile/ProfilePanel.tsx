@@ -96,7 +96,7 @@ function hasPending(dashboard: ProfileDashboard | null): boolean {
   if (!dashboard) return false;
   const status = (value: unknown) => String(value || "").toLowerCase();
   return (
-    dashboard.characters.some((c) => status(c.status) === "pending") ||
+    dashboard.characters.some((c) => status(c.status) === "pending" || c.will_request?.status === "pending") ||
     dashboard.skins.some((s) => s.status === "pending") ||
     dashboard.drinks.some((d) => d.status === "pending") ||
     dashboard.custom_items.some((i) => i.state === "pending_skin" || status(i.submission_status) === "pending")
@@ -743,6 +743,7 @@ export default function ProfilePanel({
                 maxSlots={dashboard.max_alive_characters ?? 3}
                 catalog={catalog}
                 onRefresh={() => token && void loadDashboard(token)}
+                onWillChanged={() => token && void loadDashboard(token, { quiet: true })}
                 refreshing={loadingDashboard}
                 sessionToken={token}
                 playerUuid={minecraft?.player_uuid}

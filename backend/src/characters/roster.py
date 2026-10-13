@@ -6,6 +6,14 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from src.characters.estates import (
+    death_fields,
+    parse_estate,
+    store_estate,
+    store_will,
+    will_fields,
+)
+
 
 class RosterError(ValueError):
     """Invalid roster payload."""
@@ -317,7 +325,8 @@ def list_roster(
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
-                   kit_status, kit_statuses_json, sheet_json, realm_id
+                   kit_status, kit_statuses_json, sheet_json, realm_id,
+                   died_at, death_id, will_heir_id, will_heir_name, will_revision
             FROM character_roster
             WHERE player_uuid = ? AND realm_id = ?
             ORDER BY created_at ASC, character_id ASC
@@ -336,7 +345,15 @@ def list_roster(
             "updated_at": row["updated_at"],
             "realm_id": realm,
             "source": "roster",
+            "died_at": row["died_at"],
+            "death_id": row["death_id"],
         }
+        if str(row["status"] or "").upper() == "ALIVE":
+            item["will"] = {
+                "heir_id": row["will_heir_id"],
+                "heir_name": row["will_heir_name"] if row["will_heir_id"] else None,
+                "revision": int(row["will_revision"] or 0),
+            }
         kit_status = row["kit_status"]
         if kit_status is not None and str(kit_status).strip():
             item["kit_status"] = str(kit_status).strip().lower()
@@ -475,6 +492,9 @@ def replace_roster(
     now = _iso_now()
     normalized: list[tuple] = []
     seen: set[str] = set()
+    deaths: list[tuple] = []
+    wills: list[tuple] = []
+    estates: list[tuple] = []
     for i, raw in enumerate(characters):
         if not isinstance(raw, dict):
             raise RosterError(f"characters[{i}] must be an object")
@@ -509,6 +529,18 @@ def replace_roster(
                 kit_statuses_json = json.dumps(cleaned, separators=(",", ":"))
                 if kit_status is None and "starter" in cleaned:
                     kit_status = cleaned["starter"]
+        if "died_at" in raw or "death_id" in raw:
+            died_at, death_id = death_fields(raw)
+            deaths.append((died_at, death_id, uuid, realm, cid))
+        else:
+            death_id = None
+        will = will_fields(raw)
+        if will is not None:
+            wills.append((cid, will))
+        if "estate" in raw:
+            estate = parse_estate(raw.get("estate"), death_id)
+            if estate is not None:
+                estates.append((cid, estate))
         sheet = _sheet_from_character(raw)
         sheet_json = (
             json.dumps(sheet, separators=(",", ":")) if sheet is not None else None
@@ -558,6 +590,17 @@ def replace_roster(
             """,
             normalized,
         )
+        conn.executemany(
+            """
+            UPDATE character_roster SET died_at = ?, death_id = ?
+            WHERE player_uuid = ? AND realm_id = ? AND character_id = ?
+            """,
+            deaths,
+        )
+        for cid, will in wills:
+            store_will(conn, uuid, realm, cid, will)
+        for cid, estate in estates:
+            store_estate(conn, uuid, realm, cid, estate)
         if (
             max_alive is not None
             or eighteen is not None

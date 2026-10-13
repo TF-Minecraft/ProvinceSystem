@@ -98,6 +98,28 @@ it("opens the shared full sheet from its address, focuses the name and keeps the
   expect(document.querySelector("img")?.getAttribute("src")).toContain("/account/minecraft/head?u=p-1");
 });
 
+it("keeps staff cards and sheets read only when the roster carries a living will", () => {
+  const withWill = {
+    ...profile,
+    characters: [{ ...profile.characters[0], will: { heir_id: "heir", heir_name: "Kira", revision: 3 } }],
+  };
+  const { rerender } = render(<PlayerCharacters profile={withWill} active />);
+  expect(screen.getByRole("link", { name: /Hazel Human/ })).toBeTruthy();
+  expect(screen.queryByText("Kira")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Change" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
+  nav.query = "tab=characters&character=c1&realm=main";
+  rerender(<PlayerCharacters profile={withWill} active />);
+  expect(screen.getByRole("heading", { name: "Hazel", level: 2 })).toBeTruthy();
+  expect(screen.getByText("A traveller in green.")).toBeTruthy();
+  expect(screen.queryByText("Kira")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Change" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Wardrobe" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Kits" })).toBeNull();
+  expect(characterFigure).not.toHaveBeenCalled();
+});
+
 it("keeps characters with the same id in different realms separate when navigating", () => {
   nav.query = "tab=characters&character=c1&realm=main";
   const { rerender } = render(<PlayerCharacters profile={profile} active />);

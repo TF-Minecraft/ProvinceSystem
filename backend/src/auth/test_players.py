@@ -77,7 +77,9 @@ def staff(env, role="mod"):
 
 def test_requires_a_staff_role(app, env, world):
     assert client(app).get("/admin/players").status_code == 401
+    assert client(app).get(f"/admin/players/{HAZEL}").status_code == 401
     assert client(app, staff(env, "player")).get("/admin/players").status_code == 403
+    assert client(app, staff(env, "player")).get(f"/admin/players/{HAZEL}").status_code == 403
     assert client(app, staff(env, "player")).get(f"/admin/players/{HAZEL}/activity").status_code == 403
     assert client(app, staff(env, "mod")).get("/admin/players").status_code == 200
 
@@ -245,7 +247,8 @@ def test_profile_includes_the_shared_character_sheet_in_each_realm(app, env, wor
 
 
 @pytest.mark.parametrize("kind,size", [("face", (8, 8)), ("figure", (16, 32))])
-def test_character_pictures_require_staff_and_read_the_requested_realm(app, env, world, monkeypatch, kind, size):
+@pytest.mark.parametrize("status", ["ALIVE", "DEAD", "MISSING"])
+def test_character_pictures_require_staff_and_read_the_requested_realm(app, env, world, monkeypatch, kind, size, status):
     import io
     from PIL import Image
     from src.characters import wardrobe
@@ -256,6 +259,8 @@ def test_character_pictures_require_staff_and_read_the_requested_realm(app, env,
     cid = "c-Hazel Stonebrook"
     character(env, HAZEL, "Tutorial Hazel", realm="tutorial", character_id=cid)
     with env.connect() as conn:
+        conn.execute("UPDATE character_roster SET status = ? WHERE player_uuid = ? AND character_id = ?",
+                     (status, HAZEL, cid))
         conn.execute("UPDATE character_roster SET wardrobe_active_slot = CASE realm_id "
                      "WHEN 'tutorial' THEN 'extra_1' ELSE 'base' END WHERE player_uuid = ?", (HAZEL,))
         for slot, colour in [("base", (10, 20, 30, 255)), ("extra_1", (40, 50, 60, 255))]:
@@ -288,6 +293,10 @@ def test_character_pictures_require_staff_and_read_the_requested_realm(app, env,
         assert [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots")] == before
         assert conn.execute("SELECT wardrobe_active_slot FROM character_roster "
                             "WHERE realm_id = 'tutorial' AND character_id = ?", (cid,)).fetchone()[0] == "extra_1"
+    if status != "ALIVE":
+        with pytest.raises(wardrobe.WardrobeError, match="Character is not alive") as error:
+            wardrobe.get_wardrobe(HAZEL, cid)
+        assert error.value.status_code == 403
 
 
 @pytest.mark.parametrize("kind", ["face", "figure"])

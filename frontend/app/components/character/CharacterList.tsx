@@ -7,6 +7,7 @@ import { characterFace, type CharacterListItem, type CreationCatalog } from "../
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
 import { characterPath } from "../../../lib/profile/paths";
 import { OPENABLE } from "../profile/ProfileCharacter";
+import CharacterWill from "./CharacterWill";
 
 type Props = {
   characters: CharacterListItem[];
@@ -17,6 +18,8 @@ type Props = {
   onOpen: (id: string) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** After a will change is sent. */
+  onWillChanged?: () => void;
   /** Reads each character's wardrobe for its face. */
   sessionToken?: string | null;
   /** The player's own head stands in for a character without a skin. */
@@ -27,7 +30,7 @@ type Props = {
 type Faces = Record<string, string | null | undefined>;
 
 const cardClass =
-  "flex h-full min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
+  "flex min-w-0 flex-1 min-h-[84px] items-center gap-4 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_50%,transparent)] p-3 pr-4";
 const linkCardClass =
   "group transition-colors hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]";
 const tileClass =
@@ -90,6 +93,8 @@ export function CharacterCard({
   face,
   playerUuid,
   onOpen,
+  sessionToken,
+  onWillChanged,
   href,
   realmLabel,
 }: {
@@ -98,6 +103,8 @@ export function CharacterCard({
   face: string | null | undefined;
   playerUuid?: string | null;
   onOpen?: (id: string) => void;
+  sessionToken?: string | null;
+  onWillChanged?: () => void;
   /** Staff cards stay in the player's frame and can open historical characters. */
   href?: string;
   realmLabel?: string;
@@ -109,6 +116,7 @@ export function CharacterCard({
   const chip = CHIPS[status];
   const linkable = Boolean(item.id) && (Boolean(href) || OPENABLE.has(status));
   const faded = status === "DEAD" || status === "MISSING" || status === "REJECTED";
+  const willShown = status === "ALIVE" && Boolean(item.will && sessionToken);
   const body = (
     <>
       <Portrait key={face} face={face} playerUuid={playerUuid} faded={faded} />
@@ -139,19 +147,22 @@ export function CharacterCard({
     onOpen(item.id);
   }
   return (
-    <li className="animate-char-row">
+    <li className="animate-char-row flex min-w-0 flex-col">
       {linkable ? (
         <a
           href={href || characterPath(item.id)}
           onClick={open}
           data-character-id={item.id}
-          className={`${cardClass} ${linkCardClass}`}
+          className={`${cardClass} ${linkCardClass} ${willShown ? "flex-none rounded-b-none" : ""}`}
         >
           {body}
         </a>
       ) : (
         <div className={`${cardClass} ${faded ? "text-[var(--tfmc-stone)]" : ""}`}>{body}</div>
       )}
+      {willShown ? (
+        <CharacterWill character={item} sessionToken={sessionToken!} onChanged={onWillChanged ?? (() => {})} />
+      ) : null}
     </li>
   );
 }
@@ -254,6 +265,7 @@ export default function CharacterList({
   onOpen,
   onRefresh,
   refreshing = false,
+  onWillChanged,
   sessionToken = null,
   playerUuid = null,
 }: Props) {
@@ -292,6 +304,8 @@ export default function CharacterList({
             face={faces[c.id]}
             playerUuid={playerUuid}
             onOpen={onOpen}
+            sessionToken={sessionToken}
+            onWillChanged={onWillChanged ?? onRefresh}
           />
         )}
         createSlot={

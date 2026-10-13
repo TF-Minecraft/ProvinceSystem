@@ -86,6 +86,16 @@ def _set_legacy_armor_sets(conn: sqlite3.Connection) -> None:
         )
 
 
+# Death and will fields from RPCharacters' roster push (stage 6b).
+_ROSTER_DEATH_COLUMNS = (
+    ("died_at", "TEXT"),
+    ("death_id", "TEXT"),
+    ("will_heir_id", "TEXT"),
+    ("will_heir_name", "TEXT"),
+    ("will_revision", "INTEGER"),
+)
+
+
 def _upgrade(conn: sqlite3.Connection) -> None:
     """Add and drop columns that CREATE TABLE IF NOT EXISTS cannot change on old tables."""
     conn.execute("BEGIN IMMEDIATE")
@@ -117,6 +127,10 @@ def _upgrade(conn: sqlite3.Connection) -> None:
         creates = {row["name"] for row in conn.execute("PRAGMA table_info(character_creates)")}
         if "held_until" not in creates:
             conn.execute("ALTER TABLE character_creates ADD COLUMN held_until TEXT")
+        roster = {row["name"] for row in conn.execute("PRAGMA table_info(character_roster)")}
+        for column, kind in _ROSTER_DEATH_COLUMNS:
+            if column not in roster:
+                conn.execute(f"ALTER TABLE character_roster ADD COLUMN {column} {kind}")
         rpc_meta = {row["name"] for row in conn.execute("PRAGMA table_info(rpc_player_meta)")}
         if "donator_tier" in rpc_meta:
             conn.execute("ALTER TABLE rpc_player_meta DROP COLUMN donator_tier")

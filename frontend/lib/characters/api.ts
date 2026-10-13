@@ -278,6 +278,57 @@ export type CharacterListItem = {
   clues?: string[] | null;
   /** Profile only: the name of the skin the character wears, null with none. */
   worn_skin?: string | null;
+  /** ISO time of the latest death; null for legacy deaths. */
+  died_at?: string | null;
+  death_id?: string | null;
+  /** Living characters: the will as the server last reported it. */
+  will?: CharacterWill;
+  /** Living characters: a Profile change waiting for the server, or its recent refusal. */
+  will_request?: WillRequest;
+  /** Dead and missing characters: the estate of the latest death, null before the server sends one. */
+  estate?: CharacterEstate | null;
+};
+
+export type CharacterWill = {
+  heir_id: string | null;
+  heir_name: string | null;
+  revision: number;
+};
+
+export type WillResult = "applied" | "stale" | "invalid heir" | "invalid" | "character dead";
+
+export type WillRequest = {
+  id: string;
+  heir_character_id: string | null;
+  heir_name: string | null;
+  base_revision: number;
+  status: "pending" | "acked";
+  result: WillResult | null;
+  created_at: string;
+  acked_at: string | null;
+};
+
+export type EstateRecipient = { kind: string; name: string | null };
+
+export type CharacterEstate = {
+  death_id: string;
+  status: "OPEN" | "HELD" | "CANCELLED" | "DECIDED" | "REVERTED";
+  revision: number;
+  due_at: string | null;
+  decided_at: string | null;
+  heir_name: string | null;
+  recipients: Partial<Record<"money" | "property" | "guild_locks" | "letters", EstateRecipient>>;
+  money_moved_cents: number | null;
+  participants: Record<string, { outcome: string | null; revision: number | null; counts: Record<string, number> }>;
+};
+
+export type HeirMatch = {
+  id: string;
+  short_id: string;
+  name: string;
+  race: string | null;
+  /** One of the signed-in player's own characters. */
+  own: boolean;
 };
 
 export type CharacterListResponse = {
@@ -937,4 +988,36 @@ export function characterFace(sessionToken: string, characterId: string): Promis
 /** The 16×32 front view, for the character's page on Profile. */
 export function characterFigure(sessionToken: string, characterId: string): Promise<string | null> {
   return characterPicture(sessionToken, characterId, "figure");
+}
+
+/** Ask the server to name an heir (null revokes) against the will revision the page showed. */
+export async function requestWill(
+  sessionToken: string,
+  characterId: string,
+  heirId: string | null,
+  baseRevision: number,
+): Promise<WillRequest> {
+  const id = encodeURIComponent(characterId.trim());
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/will`, {
+    method: "POST",
+    headers: { ...authHeaders(sessionToken), "Content-Type": "application/json" },
+    body: JSON.stringify({ heir_character_id: heirId, base_revision: baseRevision }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(detailMessage(data, `Will change failed (${res.status})`), res.status);
+  }
+  return (data as { request: WillRequest }).request;
+}
+
+/** Living characters on this server whose name contains the query (three letters or more). */
+export async function searchHeirs(sessionToken: string, query: string, characterId: string): Promise<HeirMatch[]> {
+  const params = new URLSearchParams({ q: query, character_id: characterId });
+  const res = await apiFetch(`${getApiBase()}/characters/heirs?${params}`, { headers: authHeaders(sessionToken) });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(detailMessage(data, `Search failed (${res.status})`), res.status);
+  }
+  const results = (data as { results?: unknown }).results;
+  return Array.isArray(results) ? (results as HeirMatch[]) : [];
 }
