@@ -1310,3 +1310,88 @@ it("opens a custom item in its own tab rather than the character's kits", async 
   expect(await screen.findByRole("link", { name: /Exhumer's Spade/ })).toBeTruthy();
   expect(window.location.search).toBe("?tab=items");
 });
+
+it("opens a character's kits inside Profile, and ← returns to the character", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(
+    wardrobe({ characters: CHARACTERS, custom_items: [{ ...CUSTOM_ITEM, character_name: "Vaelthir" }] }),
+  );
+  vi.mocked(listCharacterKits).mockResolvedValue({
+    character_id: "c1",
+    kits: [
+      {
+        id: "starter",
+        display_name: "Starter",
+        cooldown_hours: 0,
+        once_per_character: true,
+        status: "granted",
+        claimable: false,
+        items: [
+          {
+            path: "MI.iron_hunting_knife",
+            amount: 1,
+            editable: true,
+            kit_key: "iron_hunting_knife",
+            customise: { display_name: "Exhumer's Spade", lore: [], state: "applied" },
+          },
+          { path: "m.currency.GOLD_COIN", amount: 32, editable: false },
+        ],
+      },
+    ],
+  });
+  window.history.replaceState(null, "", "/profile?tab=characters&character=c1");
+  render(<ProfilePanel />);
+  fireEvent.click(await screen.findByRole("link", { name: "Kits" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Starter kit" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=characters&character=c1&view=kits");
+  // Profile's tabs stay; config names are cased like item names.
+  expect(screen.getByRole("tab", { name: "Characters" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByText("Gold Coin")).toBeTruthy();
+  expect(screen.getByText("Claimed")).toBeTruthy();
+  // A customised item opens in Custom items, and Back returns to the kit.
+  fireEvent.click(screen.getByRole("link", { name: "View" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Exhumer's Spade" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=items&item=c1%2Firon_hunting_knife");
+  window.history.back();
+  expect(await screen.findByRole("heading", { level: 2, name: "Starter kit" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("link", { name: "← Vaelthir" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=characters&character=c1");
+});
+
+it("offers to customise an unclaimed kit's items and sends a direct kits address back to its character", async () => {
+  vi.mocked(getAccount).mockResolvedValue(account({ minecraft: linked() }));
+  vi.mocked(getProfileDashboard).mockResolvedValue(wardrobe({ characters: CHARACTERS }));
+  vi.mocked(listCharacterKits).mockResolvedValue({
+    character_id: "c1",
+    kits: [
+      {
+        id: "starter",
+        display_name: "Starter",
+        cooldown_hours: 0,
+        once_per_character: true,
+        status: "eligible",
+        claimable: true,
+        items: [
+          {
+            path: "MI.iron_hunting_knife",
+            amount: 1,
+            editable: true,
+            kit_key: "iron_hunting_knife",
+            preview: { display_name: "Iron Hunting Knife", lore: [], material: "IRON_SWORD" },
+          },
+        ],
+      },
+    ],
+  });
+  window.history.replaceState(null, "", "/profile?tab=characters&character=c1&view=kits");
+  render(<ProfilePanel />);
+  expect(await screen.findByText("Iron Hunting Knife")).toBeTruthy();
+  expect(screen.getByText("/rpcharacter kit starter")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Customise" }).getAttribute("href")).toBe(
+    "/character/c1/kits/starter/edit/iron_hunting_knife",
+  );
+  fireEvent.click(screen.getByRole("link", { name: "← Vaelthir" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Vaelthir" })).toBeTruthy();
+  expect(window.location.search).toBe("?tab=characters&character=c1");
+});

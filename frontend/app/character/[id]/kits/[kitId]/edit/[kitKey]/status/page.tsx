@@ -15,6 +15,7 @@ import {
   type CharacterSession,
 } from "../../../../../../../../lib/characters/session";
 import { isCharacterUiDev, uiDevSession } from "../../../../../../../../lib/characters/uiDev";
+import { kitsPath } from "../../../../../../../../lib/profile/paths";
 
 function customiseState(item: LoreItemRow): string {
   const fromRow = String(item.state || "")
@@ -109,7 +110,7 @@ export default function CharacterKitCustomiseStatusPage() {
     return <LoadingSkeleton variant="content" className="mt-8" />;
   }
 
-  const kitHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
+  const kitHref = kitsPath(characterId);
   const editHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}`;
   const denied = item ? customiseState(item) === "denied" : false;
 

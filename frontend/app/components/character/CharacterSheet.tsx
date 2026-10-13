@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState, type ReactNode, type Ref } from "react";
+import { useId, useMemo, useState, type MouseEvent, type ReactNode, type Ref } from "react";
 import type {
   CharacterListItem,
   CharacterSheetTrait,
@@ -14,6 +14,7 @@ import { displayClass, displayRace, traitSelectionGroupLabel } from "../../../li
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
 import { paragraphs, splitStory } from "../../../lib/characters/story";
+import { kitsPath } from "../../../lib/profile/paths";
 import CharacterFigure from "./CharacterFigure";
 
 type Props = {
@@ -29,6 +30,8 @@ type Props = {
   headingRef?: Ref<HTMLHeadingElement>;
   onCancelPending?: () => void | Promise<void>;
   cancelling?: boolean;
+  /** Opens the kits in place; without it the Kits card follows its address. */
+  onOpenKits?: () => void;
 };
 
 /** Each attribute bar splits its ceiling into this many segments. */
@@ -95,7 +98,7 @@ function attributeRows(attrs: Record<string, number> | null | undefined, catalog
   return keys.map((key) => ({ key, value: values.get(key)! }));
 }
 
-/** The Kits page's wording: legacy "ineligible" kits can still be claimed in-game. */
+/** The kits view's wording: legacy "ineligible" kits can still be claimed in-game. */
 function starterKitLabel(status: string | null | undefined): string | null {
   const s = text(status).toLowerCase();
   if (s === "granted") return "Claimed";
@@ -170,10 +173,27 @@ const CHEVRON = "M7.5 4.5 13 10l-5.5 5.5";
 const CHEST = "M3 7h14v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Zm4 0V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M3 11h14";
 
 /** A way into the wardrobe or kits, with what's there now. */
-function ActionCard({ href, icon, title, note }: { href: string; icon: string; title: string; note: string | null }) {
+function ActionCard({
+  href,
+  icon,
+  title,
+  note,
+  onOpen,
+}: {
+  href: string;
+  icon: string;
+  title: string;
+  note: string | null;
+  onOpen?: () => void;
+}) {
   const noteId = useId();
+  function open(event: MouseEvent<HTMLAnchorElement>) {
+    if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    onOpen();
+  }
   return (
-    <Link href={href} className={actionClass} aria-describedby={note ? noteId : undefined}>
+    <Link href={href} onClick={open} className={actionClass} aria-describedby={note ? noteId : undefined}>
       <Icon path={icon} />
       <span className="min-w-0 flex-1">
         {title}
@@ -210,6 +230,7 @@ export default function CharacterSheet({
   headingRef,
   onCancelPending,
   cancelling = false,
+  onOpenKits,
 }: Props) {
   const isPending = text(character.status).toUpperCase() === "PENDING";
   const name = character.name || "Unnamed";
@@ -269,7 +290,8 @@ export default function CharacterSheet({
         <div className="mt-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
           <ActionCard href={`/character/${id}/wardrobe`} icon={HANGER} title="Wardrobe" note={wornNote} />
           <ActionCard
-            href={`/character/${id}/kits`}
+            href={kitsPath(character.id)}
+            onOpen={onOpenKits}
             icon={CHEST}
             title="Kits"
             note={kit ? `Starter kit: ${kit}` : null}

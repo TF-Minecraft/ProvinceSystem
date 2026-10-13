@@ -2,8 +2,8 @@ import type { ProfileTab } from "./tabs";
 
 /**
  * Profile's addresses. A character, skin, drink or custom item opens inside its tab: `?tab=skins&skin=new`
- * is the editor, `&skin=<id>` one skin, `?tab=characters&character=<id>` one character and
- * `?tab=items&item=<character id>/<kit key>` one custom item.
+ * is the editor, `&skin=<id>` one skin, `?tab=characters&character=<id>` one character (`&view=kits` its kits)
+ * and `?tab=items&item=<character id>/<kit key>` one custom item.
  */
 type ItemParam = "character" | "skin" | "drink" | "item";
 const ITEM_PARAMS: Partial<Record<ProfileTab, ItemParam>> = {
@@ -26,6 +26,17 @@ export function profileHref(tab: ProfileTab | null, item: string | null = null):
 
 export function characterPath(id: string): string {
   return profileHref("characters", id);
+}
+
+/** The view open inside a character, if any. */
+export type CharacterView = "kits";
+
+export function characterView(value: string | null): CharacterView | null {
+  return value === "kits" ? value : null;
+}
+
+export function kitsPath(characterId: string): string {
+  return `${characterPath(characterId)}&view=kits`;
 }
 
 export function skinPath(id: string): string {

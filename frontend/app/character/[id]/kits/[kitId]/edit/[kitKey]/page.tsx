@@ -26,6 +26,7 @@ import {
   type CharacterSession,
 } from "../../../../../../../lib/characters/session";
 import { isCharacterUiDev, UI_DEV_SESSION_TOKEN, uiDevSession } from "../../../../../../../lib/characters/uiDev";
+import { kitsPath } from "../../../../../../../lib/profile/paths";
 
 export default function CharacterKitEditPage() {
   const router = useRouter();
@@ -49,7 +50,6 @@ export default function CharacterKitEditPage() {
   const [deleting, setDeleting] = useState(false);
 
   const statusHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}/status`;
-  const backHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
 
   const load = useCallback(
     async (token: string) => {
@@ -75,6 +75,8 @@ export default function CharacterKitEditPage() {
     },
     [characterId, kitId, kitKey, uiDev],
   );
+
+  const backHref = kitsPath(characterId);
 
   useEffect(() => {
     if (!characterId || !kitKey) {
