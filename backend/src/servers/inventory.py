@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -245,7 +246,7 @@ def _compare_branches(fetch: Fetch, latest: dict[str, tuple[str, str]]) -> dict[
         lambda i, repo: {f"t{i}": f"refs/tags/{latest[repo][0]}", f"b{i}": latest[repo][1]})
     try:
         data = _graphql(fetch, query, variables, partial=True)
-    except (urllib.error.URLError, OSError, ValueError):
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
         return {}
     org = urllib.parse.quote(github_org())
     found = {}
@@ -259,9 +260,6 @@ def _compare_branches(fetch: Fetch, latest: dict[str, tuple[str, str]]) -> dict[
                        "url": f"https://github.com/{org}/{urllib.parse.quote(repo)}/compare/"
                               f"{urllib.parse.quote(tag, safe='')}...{urllib.parse.quote(branch, safe='')}"}
     return found
-
-
-_FETCH_ERRORS = (urllib.error.URLError, OSError, ValueError, KeyError, TypeError, AttributeError)
 
 
 class _ReleaseCache:
@@ -310,7 +308,8 @@ class _ReleaseCache:
     def _run(self, fetch: Fetch | None, generation: int):
         try:
             releases, failed = fetch_releases(fetch), False
-        except _FETCH_ERRORS:
+        except Exception:
+            # Whatever went wrong, record it: a caller waiting on this fetch must not take the old releases as fresh.
             releases, failed = None, True
         with self._lock:
             if generation != self._generation:

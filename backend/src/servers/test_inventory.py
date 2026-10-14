@@ -1,5 +1,6 @@
 import gzip
 import hashlib
+import http.client
 import threading
 import urllib.error
 import zipfile
@@ -302,7 +303,8 @@ def test_github_is_read_by_one_fetch_at_a_time(tmp_path):
         return github(shas)(path)
 
     def unused(path, body=None):
-        raise AssertionError("a second fetch started")
+        fetches.append("second")
+        return github(shas)(path)
 
     inventory.releases_cache.get(slow)  # starts the background refresh
     assert entered.wait(5)
@@ -317,6 +319,18 @@ def test_github_is_read_by_one_fetch_at_a_time(tmp_path):
     waiter.join(5)
     [(releases, _, failed)] = waited
     assert releases is not None and failed is False and len(fetches) == 1
+
+
+def test_any_fetch_error_is_recorded_for_a_waiting_caller(tmp_path):
+    _, _, shas = servers_fixture(tmp_path)
+    inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+
+    def cut_short(path, body=None):
+        raise http.client.IncompleteRead(b"")
+
+    releases, _, failed = inventory.releases_cache.get(cut_short, wait=True)
+    assert releases is not None and failed is True
 
 
 def test_a_fetch_running_when_the_cache_is_cleared_is_ignored(tmp_path):
