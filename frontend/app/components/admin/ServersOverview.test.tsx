@@ -4,7 +4,12 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import ServersOverview from "./ServersOverview";
 import { AccountApiError } from "../../../lib/account/api";
-import { getServers, type PluginCopy, type ServersOverview as Overview } from "../../../lib/admin/servers";
+import {
+  getServers,
+  type PluginCopy,
+  type ServerPlugin,
+  type ServersOverview as Overview,
+} from "../../../lib/admin/servers";
 
 vi.mock("../../../lib/admin/servers", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/admin/servers")>()),
@@ -28,10 +33,11 @@ const copy = (over: Partial<PluginCopy> = {}): PluginCopy => ({
   ...over,
 });
 
-const latest = (version: string) => ({
+const latest = (version: string, branch: ServerPlugin["latest"]["branch"] = null) => ({
   version,
   published_at: "2026-10-01T00:00:00Z",
   url: "https://github.com/x",
+  branch,
 });
 
 const overview: Overview = {
@@ -64,7 +70,7 @@ const overview: Overview = {
   plugins: [
     {
       repo: "Archaeo",
-      latest: latest("2.0.7"),
+      latest: latest("2.0.7", { name: "main", status: "ahead", ahead: 3, url: "https://github.com/compare/a" }),
       servers: {
         main: copy({ version: "2.0.7", loaded: "2.0.7" }),
         dev: copy({
@@ -77,7 +83,7 @@ const overview: Overview = {
     },
     {
       repo: "Cooking",
-      latest: latest("0.3.23"),
+      latest: latest("0.3.23", { name: "main", status: "identical", ahead: 0, url: "https://github.com/compare/c" }),
       servers: {
         main: copy({
           version: "0.3.23",
@@ -133,6 +139,11 @@ it("lists what needs a look, worst first, and counts each server", async () => {
   expect(screen.getByText("→ 0.3.23")).toBeTruthy();
   expect(screen.getByText("Not releases").previousElementSibling?.textContent).toBe("1");
   expect(screen.getByText("Test builds").previousElementSibling?.textContent).toBe("1");
+  // Archaeo's main has moved on since 2.0.7; Cooking's release is main.
+  const ahead = screen.getByText("main +3");
+  expect(ahead.getAttribute("href")).toBe("https://github.com/compare/a");
+  expect(ahead.getAttribute("title")).toBe("main has 3 commits since this release");
+  expect(screen.getByText("= main")).toBeTruthy();
 });
 
 it("shows every plugin, other plugins, and filters by name", async () => {

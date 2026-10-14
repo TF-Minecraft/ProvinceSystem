@@ -33,7 +33,9 @@ def startup_log(*plugins, paper="1.21.10-130", done=True):
 
 
 @pytest.fixture(autouse=True)
-def fresh_cache():
+def fresh_cache(monkeypatch):
+    monkeypatch.delenv("SERVERS_GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("PATCHNOTES_GITHUB_TOKEN", raising=False)
     inventory.releases_cache.clear()
     yield
     inventory.releases_cache.clear()
@@ -100,7 +102,13 @@ def github(shas, fail=False):
         if fail:
             raise urllib.error.URLError("down")
         if path.startswith("/orgs/"):
-            return [{"name": "Core"}, {"name": "Lib"}, {"name": "Docs"}, {"name": "Old", "archived": True}]
+            return [{"name": "Core", "default_branch": "main"}, {"name": "Lib", "default_branch": "master"},
+                    {"name": "Docs"}, {"name": "Old", "archived": True}]
+        if path == "/repos/TF-Minecraft/Core/compare/v1.1.0...main?per_page=1":
+            return {"status": "ahead", "ahead_by": 3, "behind_by": 0,
+                    "html_url": "https://github.com/TF-Minecraft/Core/compare/v1.1.0...main"}
+        if "/compare/" in path:
+            raise urllib.error.HTTPError(path, 404, "Not Found", None, None)
         if "/Core/" in path:
             return [release("v1.1.0", "2026-10-02T00:00:00Z", "core-1.1.0.jar", shas["core-new"]),
                     release("v1.0.0", "2026-10-01T00:00:00Z", "core-1.0.0.jar", shas["core-old"])]
@@ -126,6 +134,7 @@ def test_overview_compares_each_server_with_the_releases(tmp_path, monkeypatch):
     plugins = {p["repo"]: p for p in result["plugins"]}
     assert set(plugins) == {"Core", "Lib"}
     assert plugins["Core"]["latest"]["version"] == "1.1.0"
+    assert plugins["Core"]["latest"]["branch"] is None
 
     core_main = plugins["Core"]["servers"]["main"]
     assert core_main["state"] == "older_release" and core_main["release"] == "1.0.0"
@@ -182,6 +191,21 @@ def test_releases_are_cached_and_kept_when_github_fails(tmp_path, monkeypatch):
     result = inventory.overview(github(shas, fail=True))
     assert result["github"]["status"] == "available" and result["github"]["stale"] is True
     assert {p["repo"] for p in result["plugins"]} == {"Core", "Lib"}
+
+
+def test_with_a_token_latest_releases_are_compared_with_the_default_branch(tmp_path, monkeypatch):
+    main, _, shas = servers_fixture(tmp_path)
+    monkeypatch.setenv("SERVER_MAIN_DIR", str(main))
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    fetch = github(shas)
+    plugins = {p["repo"]: p["latest"] for p in inventory.overview(fetch)["plugins"]}
+    assert plugins["Core"]["branch"] == {"name": "main", "status": "ahead", "ahead": 3,
+                                         "url": "https://github.com/TF-Minecraft/Core/compare/v1.1.0...main"}
+    # GitHub couldn't compare Lib's release with master, so nothing is claimed.
+    assert plugins["Lib"]["branch"] is None
+    assert "/repos/TF-Minecraft/Lib/compare/v2.0.0...master?per_page=1" in fetch.calls
+    # Only the latest release is compared.
+    assert not any("v1.0.0" in call for call in fetch.calls)
 
 
 def test_unreadable_jar_keeps_its_hash_without_a_version(tmp_path):

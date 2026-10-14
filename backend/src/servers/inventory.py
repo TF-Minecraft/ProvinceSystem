@@ -3,7 +3,9 @@
 Each server's `plugins/` and `logs/` folders are mounted read-only into the
 backend. A jar is identified by its SHA-256: GitHub reports the digest of every
 release asset, so a jar is a release only if its bytes are that release's
-file, whatever it is called. The version a server is running comes from the
+file, whatever it is called. Each latest release is also compared with its
+repository's default branch, to show merged work that is not released yet.
+The version a server is running comes from the
 `Enabling <name> v<version>` lines of its most recent startup log, so a newer
 jar on disk shows as waiting for a restart.
 
@@ -23,7 +25,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator
@@ -35,7 +37,8 @@ SERVERS = (
 )
 DEFAULT_ORG = "TF-Minecraft"
 # Releases are fetched again after this many seconds; failures are retried sooner.
-# One check costs about 40 requests, and GitHub allows 60 an hour without a token.
+# One check costs about 40 requests, and GitHub allows 60 an hour without a token, so
+# latest releases are only compared with the default branch (40 more) when there is a token.
 RELEASES_TTL = 600
 RELEASES_TTL_WITHOUT_TOKEN = 3600
 RETRY_TTL = 60
@@ -63,6 +66,10 @@ class Release:
     asset: str
     sha256: str
     tag: str = ""
+    # The default branch against this release, for a repository's latest release when known:
+    # GitHub's compare status ("identical", "ahead", "behind", "diverged"), how many commits the
+    # branch has that the release lacks, and the compare page.
+    branch: dict | None = None
 
     @property
     def prefix(self) -> str:
@@ -117,21 +124,40 @@ def fetch_releases(fetch: Fetch | None = None) -> dict[str, list[Release]]:
     """Every active repository's published plugin releases, by repository name."""
     fetch = fetch or _github
     org = urllib.parse.quote(github_org())
-    repos: list[str] = []
+    repos: dict[str, str] = {}
     for page in range(1, 4):
         data = fetch(f"/orgs/{org}/repos?per_page=100&page={page}")
         if not isinstance(data, list):
             raise ValueError("unexpected repository list")
-        repos += [str(r["name"]) for r in data if isinstance(r, dict) and r.get("name") and not r.get("archived")]
+        repos.update((str(r["name"]), str(r.get("default_branch") or "main")) for r in data
+                     if isinstance(r, dict) and r.get("name") and not r.get("archived"))
         if len(data) < 100:
             break
+    compare_branch = bool(_token())
 
     def one(repo: str) -> tuple[str, list[Release]]:
-        data = fetch(f"/repos/{org}/{urllib.parse.quote(repo)}/releases?per_page={RELEASES_PER_REPO}")
-        return repo, repo_releases(repo, data)
+        path = f"/repos/{org}/{urllib.parse.quote(repo)}"
+        found = repo_releases(repo, fetch(f"{path}/releases?per_page={RELEASES_PER_REPO}"))
+        if found and compare_branch:
+            base, head = urllib.parse.quote(found[0].tag, safe=""), urllib.parse.quote(repos[repo], safe="")
+            compared = branch_state(repos[repo], fetch, f"{path}/compare/{base}...{head}?per_page=1")
+            found[0] = replace(found[0], branch=compared)
+        return repo, found
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         return {repo: found for repo, found in pool.map(one, repos) if found}
+
+
+def branch_state(name: str, fetch: Fetch, path: str) -> dict | None:
+    """How the default branch compares with a release; None when GitHub can't say."""
+    try:
+        data = fetch(path)
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("status") not in {"identical", "ahead", "behind", "diverged"}:
+        return None
+    return {"name": name, "status": data["status"], "ahead": int(data.get("ahead_by") or 0),
+            "url": str(data.get("html_url") or "")}
 
 
 class _ReleaseCache:
@@ -341,7 +367,8 @@ def compare(releases: dict[str, list[Release]], servers: dict[str, dict]) -> tup
         latest = releases[repo][0]
         plugins.append({
             "repo": repo,
-            "latest": {"version": latest.version, "published_at": latest.published_at, "url": latest.url},
+            "latest": {"version": latest.version, "published_at": latest.published_at, "url": latest.url,
+                       "branch": latest.branch},
             "servers": {key: _plugin_state(grouped[key].get(repo, []), latest, by_hash,
                                            server["startup"], server["releases_only"])
                         for key, server in servers.items()},
