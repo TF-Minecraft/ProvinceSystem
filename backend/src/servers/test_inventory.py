@@ -287,6 +287,54 @@ def test_after_the_first_check_releases_refresh_in_the_background(tmp_path, monk
     assert kept is first and failed is True
 
 
+@pytest.mark.parametrize("background_fails", [False, True])
+def test_a_background_refresh_that_finishes_late_never_replaces_a_newer_fetch(tmp_path, background_fails):
+    _, _, shas = servers_fixture(tmp_path)
+    inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+    release_it = threading.Event()
+    old = inventory.fetch_releases(github(shas))
+
+    def slow(path, body=None):
+        release_it.wait(5)
+        if background_fails:
+            raise urllib.error.URLError("down")
+        return github(shas)(path)
+
+    inventory.releases_cache.get(slow)  # starts the background refresh
+    fresh, _, failed = inventory.releases_cache.get(github(shas), wait=True)
+    assert fresh is not None and failed is False
+    release_it.set()
+    inventory.releases_cache.wait_for_refresh()
+    kept, _, failed = inventory.releases_cache.get(github(shas))
+    assert kept is fresh and kept is not old and failed is False
+
+
+def test_a_graphql_error_in_releases_fails_the_check_but_not_in_comparisons(tmp_path, monkeypatch):
+    _, _, shas = servers_fixture(tmp_path)
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    fetch = graphql(shas)
+
+    def missing_repository(path, body=None):
+        answer = fetch(path, body)
+        if "...releases" in body["query"]:
+            answer["data"]["r0"] = None
+            answer["errors"] = [{"type": "NOT_FOUND", "path": ["r0"]}]
+        return answer
+
+    releases, _, failed = inventory.releases_cache.get(missing_repository)
+    assert releases is None and failed is True
+
+    def compare_error(path, body=None):
+        answer = fetch(path, body)
+        if "compare" in body["query"]:
+            answer["errors"] = [{"type": "NOT_FOUND", "path": ["r1", "ref"]}]
+        return answer
+
+    releases = inventory.fetch_releases(compare_error)
+    assert releases["Core"][0].branch["status"] == "ahead" and releases["Lib"][0].branch is None
+
+
 def test_a_caller_can_wait_for_fresh_releases(tmp_path, monkeypatch):
     _, _, shas = servers_fixture(tmp_path)
     inventory.releases_cache.get(github(shas))

@@ -37,7 +37,7 @@ SERVERS = (
 )
 DEFAULT_ORG = "TF-Minecraft"
 # Releases are fetched again after this many seconds; failures are retried sooner.
-# With a token a check is about 11 GraphQL queries; without one it is about 40 REST
+# With a token a check is about 13 GraphQL queries; without one it is about 40 REST
 # requests, and GitHub allows 60 an hour.
 RELEASES_TTL = 600
 RELEASES_TTL_WITHOUT_TOKEN = 3600
@@ -170,9 +170,11 @@ _RELEASES = """fragment releases on Repository {
 }""" % RELEASES_PER_REPO
 
 
-def _graphql(fetch: Fetch, query: str, variables: dict) -> dict:
+def _graphql(fetch: Fetch, query: str, variables: dict, partial: bool = False) -> dict:
+    """A query's data. GitHub answers errors in some fields with the rest of the data;
+    that fails the query unless `partial` allows it."""
     data = fetch("/graphql", {"query": query, "variables": variables})
-    if not isinstance(data, dict) or not isinstance(data.get("data"), dict):
+    if not isinstance(data, dict) or not isinstance(data.get("data"), dict) or (data.get("errors") and not partial):
         raise ValueError("unexpected GraphQL answer")
     return data["data"]
 
@@ -242,7 +244,7 @@ def _compare_branches(fetch: Fetch, latest: dict[str, tuple[str, str]]) -> dict[
         repos, lambda i: f"ref(qualifiedName: $t{i}) {{ compare(headRef: $b{i}) {{ status aheadBy }} }}",
         lambda i, repo: {f"t{i}": f"refs/tags/{latest[repo][0]}", f"b{i}": latest[repo][1]})
     try:
-        data = _graphql(fetch, query, variables)
+        data = _graphql(fetch, query, variables, partial=True)
     except (urllib.error.URLError, OSError, ValueError):
         return {}
     org = urllib.parse.quote(github_org())
@@ -267,59 +269,71 @@ class _ReleaseCache:
 
     Only the first fetch makes a caller wait. After that an expired cache is
     refreshed in the background and callers get the releases already known,
-    unless they ask to wait for fresh ones.
+    unless they ask to wait for releases fetched after they asked.
     """
 
     def __init__(self):
         self._lock = threading.Lock()
+        # Held while a caller waits for a fetch, so callers waiting together share one.
+        self._fetching = threading.Lock()
         self._releases: dict[str, list[Release]] | None = None
         self._checked_at: str | None = None
         self._next = 0.0
         self._failed = False
+        # When the fetch behind the current state started; an older fetch finishing later is ignored.
+        self._started = float("-inf")
         self._refresh: threading.Thread | None = None
 
     def get(self, fetch: Fetch | None = None, wait: bool = False
             ) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
         """(releases, when they were fetched, whether the last fetch failed). Keeps old releases on failure."""
+        asked = time.monotonic()
         with self._lock:
-            if time.monotonic() >= self._next:
-                if wait or self._releases is None:
-                    self._store(*self._load(fetch))
-                elif self._refresh is None or not self._refresh.is_alive():
-                    self._refresh = threading.Thread(target=self._background, args=(fetch,), daemon=True)
+            if asked < self._next or (self._releases is not None and not wait):
+                if asked >= self._next and (self._refresh is None or not self._refresh.is_alive()):
+                    self._refresh = threading.Thread(target=self._fetch, args=(fetch,), daemon=True)
                     self._refresh.start()
-            return self._releases, self._checked_at, self._failed
+                return self._state()
+        # Fetch outside the main lock, so other callers keep getting the cached releases.
+        with self._fetching:
+            with self._lock:
+                if self._started > asked:
+                    return self._state()
+            self._fetch(fetch)
+            with self._lock:
+                return self._state()
 
     def wait_for_refresh(self):
         refresh = self._refresh
         if refresh is not None:
             refresh.join()
 
-    @staticmethod
-    def _load(fetch: Fetch | None) -> tuple[dict[str, list[Release]] | None, bool]:
+    def _state(self) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
+        return self._releases, self._checked_at, self._failed
+
+    def _fetch(self, fetch: Fetch | None):
+        started = time.monotonic()
         try:
-            return fetch_releases(fetch), False
+            releases, failed = fetch_releases(fetch), False
         except _FETCH_ERRORS:
-            return None, True
-
-    def _background(self, fetch: Fetch | None):
-        releases, failed = self._load(fetch)
+            releases, failed = None, True
         with self._lock:
-            self._store(releases, failed)
-
-    def _store(self, releases: dict[str, list[Release]] | None, failed: bool):
-        now = time.monotonic()
-        if failed:
-            self._failed = True
-            self._next = now + RETRY_TTL
-        else:
-            self._releases, self._checked_at, self._failed = releases, _now(), False
-            self._next = now + (RELEASES_TTL if _token() else RELEASES_TTL_WITHOUT_TOKEN)
+            if started < self._started:
+                return
+            self._started = started
+            now = time.monotonic()
+            if failed:
+                self._failed = True
+                self._next = now + RETRY_TTL
+            else:
+                self._releases, self._checked_at, self._failed = releases, _now(), False
+                self._next = now + (RELEASES_TTL if _token() else RELEASES_TTL_WITHOUT_TOKEN)
 
     def clear(self):
-        self.wait_for_refresh()
         with self._lock:
             self._releases, self._checked_at, self._next, self._failed = None, None, 0.0, False
+            # A fetch still running started before this, so it is ignored.
+            self._started = time.monotonic()
 
 
 releases_cache = _ReleaseCache()
