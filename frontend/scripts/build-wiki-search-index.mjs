@@ -94,7 +94,9 @@ export function routeFromHtmlPath(filePath, wikiRoot) {
 
 export function extractSearchEntries(html, href) {
   const document = new JSDOM(html).window.document;
-  const source = document.querySelector("main article");
+  // With a loading.tsx boundary, Next prerenders the skeleton inside <main> and streams
+  // the article into a hidden segment after it, so accept either place.
+  const source = document.querySelector("main article, [hidden] > article");
   if (!source) return [];
 
   const article = source.cloneNode(true);
@@ -181,5 +183,7 @@ if (isMain) {
   const wikiRoot = path.join(frontendRoot, ".next", "server", "app", "wiki");
   const outputFile = path.join(frontendRoot, "public", "wiki", "search-index.json");
   const entries = await buildWikiSearchIndex({ wikiRoot, outputFile });
+  // An empty index means the article selector no longer matches Next's output.
+  if (!entries.length) throw new Error(`No guide search entries found under ${wikiRoot}.`);
   console.log(`Generated ${entries.length} guide search entries.`);
 }
