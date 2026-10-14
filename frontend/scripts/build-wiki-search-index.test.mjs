@@ -35,6 +35,18 @@ describe("guide search index generation", () => {
     expect(serialized).not.toMatch(/Hidden nav|Permission node|source diagnostics|Known bug|Draft source/i);
   });
 
+  it("reads the article Next streams after a loading skeleton", () => {
+    const entries = extractSearchEntries(
+      `<main><div role="status"><span>Loading guide…</span></div></main><footer>Site footer</footer>
+      <div hidden id="S:1"><article><h1>Classes</h1><h2 id="skills">Skill reference</h2><p>Fireball.</p></article></div>`,
+      "/wiki/classes",
+    );
+
+    expect(entries).toEqual([
+      { href: "/wiki/classes#skills", pageTitle: "Classes", sectionTitle: "Skill reference", text: "Fireball." },
+    ]);
+  });
+
   it("separates structural text while preserving per-letter rank spans", () => {
     const entries = extractSearchEntries(
       `<main><article><h1>Ranks</h1><h2 id="benefits">Benefits</h2>
