@@ -3,7 +3,9 @@
 Each server's `plugins/` and `logs/` folders are mounted read-only into the
 backend. A jar is identified by its SHA-256: GitHub reports the digest of every
 release asset, so a jar is a release only if its bytes are that release's
-file, whatever it is called. The version a server is running comes from the
+file, whatever it is called. Each latest release is also compared with its
+repository's default branch, to show merged work that is not released yet.
+The version a server is running comes from the
 `Enabling <name> v<version>` lines of its most recent startup log, so a newer
 jar on disk shows as waiting for a restart.
 
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -23,7 +26,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator
@@ -35,7 +38,8 @@ SERVERS = (
 )
 DEFAULT_ORG = "TF-Minecraft"
 # Releases are fetched again after this many seconds; failures are retried sooner.
-# One check costs about 40 requests, and GitHub allows 60 an hour without a token.
+# With a token a check is about 13 GraphQL queries; without one it is about 40 REST
+# requests, and GitHub allows 60 an hour.
 RELEASES_TTL = 600
 RELEASES_TTL_WITHOUT_TOKEN = 3600
 RETRY_TTL = 60
@@ -51,7 +55,8 @@ _DONE = re.compile(r"\]: Done \(")
 _ROTATED = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d+)\.log\.gz$")
 _YAML_FIELD = re.compile(r"^(name|version):\s*['\"]?([^'\"#\r\n]*?)['\"]?\s*(?:#.*)?$", re.MULTILINE)
 
-Fetch = Callable[[str], Any]
+# (path, body): a REST GET of `path`, or a POST of `body` when given.
+Fetch = Callable[..., Any]
 
 
 @dataclass(frozen=True)
@@ -63,6 +68,10 @@ class Release:
     asset: str
     sha256: str
     tag: str = ""
+    # The default branch against this release, for a repository's latest release when known:
+    # GitHub's compare status ("identical", "ahead", "behind", "diverged"), how many commits the
+    # branch has that the release lacks, and the compare page.
+    branch: dict | None = None
 
     @property
     def prefix(self) -> str:
@@ -84,12 +93,14 @@ def _token() -> str:
     return os.getenv("SERVERS_GITHUB_TOKEN", "").strip() or os.getenv("PATCHNOTES_GITHUB_TOKEN", "").strip()
 
 
-def _github(path: str) -> Any:
+def _github(path: str, body: dict | None = None) -> Any:
+    """A REST GET, or a POST of `body` (a GraphQL query to `/graphql`)."""
     headers = {"User-Agent": "TFMC-Servers/1.0", "Accept": "application/vnd.github+json"}
     token = _token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(f"https://api.github.com{path}", headers=headers)
+    data = None if body is None else json.dumps(body).encode()
+    request = urllib.request.Request(f"https://api.github.com{path}", data=data, headers=headers)
     with urllib.request.urlopen(request, timeout=20) as response:
         return json.loads(response.read().decode() or "null")
 
@@ -114,8 +125,15 @@ def repo_releases(repo: str, data: Any) -> list[Release]:
 
 
 def fetch_releases(fetch: Fetch | None = None) -> dict[str, list[Release]]:
-    """Every active repository's published plugin releases, by repository name."""
+    """Every active repository's published plugin releases, by repository name.
+
+    With a token this takes a handful of GraphQL queries, and each latest release
+    is compared with its default branch. Without one GraphQL isn't available, so it
+    reads each repository's releases over REST and skips the comparison.
+    """
     fetch = fetch or _github
+    if _token():
+        return _graphql_releases(fetch)
     org = urllib.parse.quote(github_org())
     repos: list[str] = []
     for page in range(1, 4):
@@ -134,32 +152,181 @@ def fetch_releases(fetch: Fetch | None = None) -> dict[str, list[Release]]:
         return {repo: found for repo, found in pool.map(one, repos) if found}
 
 
+# Repositories per releases (and comparison) query: GitHub answers several small
+# queries in parallel much sooner than one large one.
+GRAPHQL_CHUNK = 8
+
+_REPOSITORIES = """query($org: String!, $after: String) {
+  organization(login: $org) {
+    repositories(first: 100, after: $after, isArchived: false) {
+      pageInfo { hasNextPage endCursor }
+      nodes { name defaultBranchRef { name } }
+    }
+  }
+}"""
+_RELEASES = """fragment releases on Repository {
+  releases(first: %d, orderBy: {field: CREATED_AT, direction: DESC}) {
+    nodes { tagName publishedAt isDraft isPrerelease url releaseAssets(first: 20) { nodes { name digest } } }
+  }
+}""" % RELEASES_PER_REPO
+
+
+def _graphql(fetch: Fetch, query: str, variables: dict, partial: bool = False) -> dict:
+    """A query's data. GitHub answers errors in some fields with the rest of the data;
+    that fails the query unless `partial` allows it."""
+    data = fetch("/graphql", {"query": query, "variables": variables})
+    if not isinstance(data, dict) or not isinstance(data.get("data"), dict) or (data.get("errors") and not partial):
+        raise ValueError("unexpected GraphQL answer")
+    return data["data"]
+
+
+def _aliased(repos: list[str], body: Callable[[int], str], extra: Callable[[int, str], dict] | None = None
+             ) -> tuple[str, dict]:
+    """One `rN: repository(...)` field per repository, with its name passed as a variable."""
+    fields, params, variables = [], ["$org: String!"], {"org": github_org()}
+    for i, repo in enumerate(repos):
+        params.append(f"$r{i}: String!")
+        variables[f"r{i}"] = repo
+        for name, value in (extra(i, repo) if extra else {}).items():
+            params.append(f"${name}: String!")
+            variables[name] = value
+        fields.append(f"r{i}: repository(owner: $org, name: $r{i}) {{ {body(i)} }}")
+    return f"query({', '.join(params)}) {{\n  " + "\n  ".join(fields) + "\n}", variables
+
+
+def _graphql_releases(fetch: Fetch) -> dict[str, list[Release]]:
+    branches: dict[str, str] = {}
+    after = None
+    for _ in range(3):
+        page = _graphql(fetch, _REPOSITORIES, {"org": github_org(), "after": after})["organization"]["repositories"]
+        branches.update((str(r["name"]), str((r.get("defaultBranchRef") or {}).get("name") or "main"))
+                        for r in page["nodes"] if isinstance(r, dict) and r.get("name"))
+        if not page["pageInfo"]["hasNextPage"]:
+            break
+        after = page["pageInfo"]["endCursor"]
+
+    def chunk(repos: list[str]) -> dict[str, list[Release]]:
+        query, variables = _aliased(repos, lambda i: "...releases")
+        data = _graphql(fetch, f"{query}\n{_RELEASES}", variables)
+        found = {}
+        for i, repo in enumerate(repos):
+            nodes = ((data.get(f"r{i}") or {}).get("releases") or {}).get("nodes") or []
+            found[repo] = repo_releases(repo, [{
+                "tag_name": n.get("tagName"), "published_at": n.get("publishedAt"), "draft": n.get("isDraft"),
+                "prerelease": n.get("isPrerelease"), "html_url": n.get("url"),
+                "assets": (n.get("releaseAssets") or {}).get("nodes") or [],
+            } for n in nodes if isinstance(n, dict)])
+        found = {repo: f for repo, f in found.items() if f}
+        compared = _compare_branches(fetch, {repo: (f[0].tag, branches[repo]) for repo, f in found.items()})
+        for repo, state in compared.items():
+            found[repo][0] = replace(found[repo][0], branch=state)
+        return found
+
+    names = sorted(branches)
+    releases: dict[str, list[Release]] = {}
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for found in pool.map(chunk, [names[i:i + GRAPHQL_CHUNK] for i in range(0, len(names), GRAPHQL_CHUNK)]):
+            releases.update(found)
+    return releases
+
+
+def _compare_branches(fetch: Fetch, latest: dict[str, tuple[str, str]]) -> dict[str, dict]:
+    """Each repository's default branch against its latest release's tag, in one query.
+
+    One large query is much slower than several small ones, so each releases
+    query is followed by the comparisons for its own repositories.
+
+    A failure leaves the releases without a comparison rather than failing them.
+    """
+    repos = sorted(latest)
+    if not repos:
+        return {}
+    query, variables = _aliased(
+        repos, lambda i: f"ref(qualifiedName: $t{i}) {{ compare(headRef: $b{i}) {{ status aheadBy }} }}",
+        lambda i, repo: {f"t{i}": f"refs/tags/{latest[repo][0]}", f"b{i}": latest[repo][1]})
+    try:
+        data = _graphql(fetch, query, variables, partial=True)
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
+        return {}
+    org = urllib.parse.quote(github_org())
+    found = {}
+    for i, repo in enumerate(repos):
+        compare = (((data.get(f"r{i}") or {}).get("ref") or {}).get("compare") or {})
+        status = str(compare.get("status") or "").lower()
+        if status not in {"identical", "ahead", "behind", "diverged"}:
+            continue
+        tag, branch = latest[repo]
+        found[repo] = {"name": branch, "status": status, "ahead": int(compare.get("aheadBy") or 0),
+                       "url": f"https://github.com/{org}/{urllib.parse.quote(repo)}/compare/"
+                              f"{urllib.parse.quote(tag, safe='')}...{urllib.parse.quote(branch, safe='')}"}
+    return found
+
+
 class _ReleaseCache:
+    """Releases, refreshed after a while.
+
+    GitHub is read by one fetch at a time, in a thread of its own. Only the
+    first fetch makes callers wait; after that an expired cache is refreshed in
+    the background and callers get the releases already known, unless they ask
+    to wait for the refresh.
+    """
+
     def __init__(self):
         self._lock = threading.Lock()
         self._releases: dict[str, list[Release]] | None = None
         self._checked_at: str | None = None
         self._next = 0.0
         self._failed = False
+        self._fetch: threading.Thread | None = None
+        # Bumped by clear(), so a fetch running then is ignored.
+        self._generation = 0
 
-    def get(self, fetch: Fetch | None = None) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
+    def get(self, fetch: Fetch | None = None, wait: bool = False
+            ) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
         """(releases, when they were fetched, whether the last fetch failed). Keeps old releases on failure."""
         with self._lock:
+            if time.monotonic() < self._next:
+                return self._state()
+            if self._fetch is None or not self._fetch.is_alive():
+                self._fetch = threading.Thread(target=self._run, args=(fetch, self._generation), daemon=True)
+                self._fetch.start()
+            running = self._fetch
+            if self._releases is not None and not wait:
+                return self._state()
+        running.join()
+        with self._lock:
+            return self._state()
+
+    def wait_for_refresh(self):
+        running = self._fetch
+        if running is not None:
+            running.join()
+
+    def _state(self) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
+        return self._releases, self._checked_at, self._failed
+
+    def _run(self, fetch: Fetch | None, generation: int):
+        try:
+            releases, failed = fetch_releases(fetch), False
+        except Exception:
+            # Whatever went wrong, record it: a caller waiting on this fetch must not take the old releases as fresh.
+            releases, failed = None, True
+        with self._lock:
+            if generation != self._generation:
+                return
             now = time.monotonic()
-            if now >= self._next:
-                try:
-                    self._releases = fetch_releases(fetch)
-                    self._checked_at = _now()
-                    self._failed = False
-                    self._next = now + (RELEASES_TTL if _token() else RELEASES_TTL_WITHOUT_TOKEN)
-                except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError, AttributeError):
-                    self._failed = True
-                    self._next = now + RETRY_TTL
-            return self._releases, self._checked_at, self._failed
+            if failed:
+                self._failed = True
+                self._next = now + RETRY_TTL
+            else:
+                self._releases, self._checked_at, self._failed = releases, _now(), False
+                self._next = now + (RELEASES_TTL if _token() else RELEASES_TTL_WITHOUT_TOKEN)
 
     def clear(self):
         with self._lock:
             self._releases, self._checked_at, self._next, self._failed = None, None, 0.0, False
+            self._fetch = None
+            self._generation += 1
 
 
 releases_cache = _ReleaseCache()
@@ -341,7 +508,8 @@ def compare(releases: dict[str, list[Release]], servers: dict[str, dict]) -> tup
         latest = releases[repo][0]
         plugins.append({
             "repo": repo,
-            "latest": {"version": latest.version, "published_at": latest.published_at, "url": latest.url},
+            "latest": {"version": latest.version, "published_at": latest.published_at, "url": latest.url,
+                       "branch": latest.branch},
             "servers": {key: _plugin_state(grouped[key].get(repo, []), latest, by_hash,
                                            server["startup"], server["releases_only"])
                         for key, server in servers.items()},

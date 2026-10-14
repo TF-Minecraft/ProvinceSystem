@@ -4,6 +4,7 @@ import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
+  branchFlag,
   counts,
   flags,
   getServers,
@@ -119,6 +120,34 @@ function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins:
         {actions}
       </div>
     </section>
+  );
+}
+
+/** The latest release, and whether it is the repository's default branch. */
+function LatestCell({ latest }: { latest: ServerPlugin["latest"] }) {
+  const mark = branchFlag(latest.branch);
+  return (
+    <div className="flex items-baseline gap-2 sm:flex-col sm:items-start sm:gap-0.5">
+      <a
+        href={latest.url}
+        target="_blank"
+        rel="noreferrer"
+        className="font-mono text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] hover:underline"
+      >
+        {latest.version}
+      </a>
+      {mark ? (
+        <a
+          href={mark.url}
+          target="_blank"
+          rel="noreferrer"
+          title={mark.title}
+          className={`font-mono text-[11px] hover:underline ${STAT_TONE[mark.tone]} ${mark.tone === "none" ? "opacity-70" : ""}`}
+        >
+          {mark.label}
+        </a>
+      ) : null}
+    </div>
   );
 }
 
@@ -327,14 +356,7 @@ export default function ServersOverview() {
                 >
                   <div className="col-span-2 flex items-baseline justify-between gap-2 sm:contents">
                     <p className="text-sm font-semibold text-[var(--tfmc-cream)]">{plugin.repo}</p>
-                    <a
-                      href={plugin.latest.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="self-baseline font-mono text-xs text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] hover:underline sm:justify-self-start"
-                    >
-                      {plugin.latest.version}
-                    </a>
+                    <LatestCell latest={plugin.latest} />
                   </div>
                   {readable.map((s) => (
                     <CopyCell key={s.key} copy={plugin.servers[s.key]} label={s.label} latest={plugin.latest.version} />

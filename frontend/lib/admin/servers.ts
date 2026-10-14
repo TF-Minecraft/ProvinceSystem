@@ -29,9 +29,18 @@ export type PluginCopy = {
   duplicate: boolean;
 };
 
+/** The repository's default branch against its latest release, from GitHub's compare. */
+export type ReleaseBranch = {
+  name: string;
+  status: "identical" | "ahead" | "behind" | "diverged";
+  /** Commits on the branch that the release lacks. */
+  ahead: number;
+  url: string;
+};
+
 export type ServerPlugin = {
   repo: string;
-  latest: { version: string; published_at: string; url: string };
+  latest: { version: string; published_at: string; url: string; branch: ReleaseBranch | null };
   servers: Partial<Record<ServerKey, PluginCopy>>;
 };
 
@@ -59,6 +68,18 @@ export function getServers(): Promise<ServersOverview> {
 
 export type Tone = "bad" | "warn" | "test" | "none";
 export type Flag = { label: string; tone: Tone };
+
+/** Whether the latest release is the default branch; null when GitHub couldn't compare them. */
+export function branchFlag(branch: ReleaseBranch | null): (Flag & { title: string; url: string }) | null {
+  if (!branch) return null;
+  const { name, url } = branch;
+  if (branch.status === "identical") return { label: `= ${name}`, tone: "none", title: `The release is ${name}`, url };
+  if (branch.status === "ahead") {
+    const commits = `${branch.ahead} commit${branch.ahead === 1 ? "" : "s"}`;
+    return { label: `${name} +${branch.ahead}`, tone: "warn", title: `${name} has ${commits} since this release`, url };
+  }
+  return { label: `Off ${name}`, tone: "bad", title: `The release has commits that aren’t on ${name}`, url };
+}
 
 /** What is off about one server's copy of a plugin; an empty list means it runs the latest release. */
 export function flags(copy: PluginCopy): Flag[] {

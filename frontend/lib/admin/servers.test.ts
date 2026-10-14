@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { counts, flags, severity, waiting, type PluginCopy, type ServerPlugin } from "./servers";
+import { branchFlag, counts, flags, severity, waiting, type PluginCopy, type ServerPlugin } from "./servers";
 
 const copy = (over: Partial<PluginCopy> = {}): PluginCopy => ({
   state: "latest",
@@ -16,7 +16,7 @@ const copy = (over: Partial<PluginCopy> = {}): PluginCopy => ({
 
 const plugin = (main?: PluginCopy, dev?: PluginCopy): ServerPlugin => ({
   repo: "Core",
-  latest: { version: "1.0.0", published_at: "2026-10-01T00:00:00Z", url: "" },
+  latest: { version: "1.0.0", published_at: "2026-10-01T00:00:00Z", url: "", branch: null },
   servers: { main, dev },
 });
 
@@ -71,5 +71,27 @@ describe("server plugin flags", () => {
       waiting: 0,
       didNotStart: 1,
     });
+  });
+});
+
+describe("latest release against the default branch", () => {
+  const branch = (status: "identical" | "ahead" | "behind" | "diverged", ahead = 0) => ({
+    name: "main",
+    status,
+    ahead,
+    url: "https://github.com/o/r/compare/v1.0.0...main",
+  });
+
+  it("says whether the release is the branch", () => {
+    expect(branchFlag(null)).toBeNull();
+    expect(branchFlag(branch("identical"))).toMatchObject({ label: "= main", tone: "none" });
+    expect(branchFlag(branch("ahead", 1))).toMatchObject({
+      label: "main +1",
+      tone: "warn",
+      title: "main has 1 commit since this release",
+    });
+    expect(branchFlag(branch("ahead", 4))?.title).toBe("main has 4 commits since this release");
+    expect(branchFlag(branch("behind"))).toMatchObject({ label: "Off main", tone: "bad" });
+    expect(branchFlag(branch("diverged", 2))?.label).toBe("Off main");
   });
 });

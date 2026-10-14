@@ -57,7 +57,7 @@ def plan(server: str, mode: str) -> dict:
         if inventory.github_org() != inventory.DEFAULT_ORG:
             raise ControlError("release_org_not_supported", 400)
         # A write must never silently use stale release information.
-        releases, _, failed = inventory.releases_cache.get()
+        releases, _, failed = inventory.releases_cache.get(wait=True)
         if releases is None or failed:
             raise ControlError("releases_unavailable", 503)
         for repo, found in releases.items():

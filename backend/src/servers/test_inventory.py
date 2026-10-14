@@ -1,5 +1,7 @@
 import gzip
 import hashlib
+import http.client
+import threading
 import urllib.error
 import zipfile
 
@@ -33,7 +35,9 @@ def startup_log(*plugins, paper="1.21.10-130", done=True):
 
 
 @pytest.fixture(autouse=True)
-def fresh_cache():
+def fresh_cache(monkeypatch):
+    monkeypatch.delenv("SERVERS_GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("PATCHNOTES_GITHUB_TOKEN", raising=False)
     inventory.releases_cache.clear()
     yield
     inventory.releases_cache.clear()
@@ -92,25 +96,66 @@ def servers_fixture(tmp_path):
     return main, dev, shas
 
 
+def repo_data(shas):
+    return {
+        "Core": [release("v1.1.0", "2026-10-02T00:00:00Z", "core-1.1.0.jar", shas["core-new"]),
+                 release("v1.0.0", "2026-10-01T00:00:00Z", "core-1.0.0.jar", shas["core-old"])],
+        "Lib": [release("v2.0.0", "2026-10-01T00:00:00Z", "lib-2.0.0.jar", shas["lib"])],
+        "Docs": [],
+    }
+
+
 def github(shas, fail=False):
+    """GitHub's REST API, as read without a token."""
     calls = []
 
-    def fetch(path):
+    def fetch(path, body=None):
         calls.append(path)
         if fail:
             raise urllib.error.URLError("down")
+        assert body is None, "GraphQL needs a token"
+        repos = repo_data(shas)
         if path.startswith("/orgs/"):
-            return [{"name": "Core"}, {"name": "Lib"}, {"name": "Docs"}, {"name": "Old", "archived": True}]
-        if "/Core/" in path:
-            return [release("v1.1.0", "2026-10-02T00:00:00Z", "core-1.1.0.jar", shas["core-new"]),
-                    release("v1.0.0", "2026-10-01T00:00:00Z", "core-1.0.0.jar", shas["core-old"])]
-        if "/Lib/" in path:
-            return [release("v2.0.0", "2026-10-01T00:00:00Z", "lib-2.0.0.jar", shas["lib"])]
+            return [{"name": name} for name in repos] + [{"name": "Old", "archived": True}]
         if "/Old/" in path:
             raise AssertionError("archived repositories are not read")
-        return []
+        return next((found for name, found in repos.items() if f"/{name}/" in path), [])
 
     fetch.calls = calls
+    return fetch
+
+
+def graphql(shas):
+    """GitHub's GraphQL API, as read with a token."""
+    queries = []
+    repos = repo_data(shas)
+    branches = {"Core": "main", "Lib": "master", "Docs": "main"}
+
+    def node(r):
+        return {"tagName": r["tag_name"], "publishedAt": r["published_at"], "isDraft": r["draft"],
+                "isPrerelease": r["prerelease"], "url": r["html_url"], "releaseAssets": {"nodes": r["assets"]}}
+
+    def fetch(path, body=None):
+        assert path == "/graphql"
+        query, variables = body["query"], body["variables"]
+        queries.append(body)
+        aliases = sorted(k for k in variables if k[0] == "r")
+        if "pageInfo" in query:
+            # Two pages, to follow the cursor.
+            names = ["Core", "Lib"] if variables["after"] is None else ["Docs"]
+            nodes = [{"name": n, "defaultBranchRef": {"name": branches[n]}} for n in names]
+            return {"data": {"organization": {"repositories": {
+                "pageInfo": {"hasNextPage": variables["after"] is None, "endCursor": "c1"}, "nodes": nodes}}}}
+        if "compare" in query:
+            data = {}
+            for alias in aliases:
+                # GitHub can't find Lib's tag.
+                data[alias] = {"ref": None} if variables[alias] == "Lib" else {"ref": {"compare": {
+                    "status": "AHEAD", "aheadBy": 3}}}
+            return {"data": data}
+        return {"data": {a: {"releases": {"nodes": [node(r) for r in repos[variables[a]]]}} for a in aliases}}
+
+    fetch.queries = queries
     return fetch
 
 
@@ -126,6 +171,8 @@ def test_overview_compares_each_server_with_the_releases(tmp_path, monkeypatch):
     plugins = {p["repo"]: p for p in result["plugins"]}
     assert set(plugins) == {"Core", "Lib"}
     assert plugins["Core"]["latest"]["version"] == "1.1.0"
+    # Without a token, releases aren't compared with the branch.
+    assert plugins["Core"]["latest"]["branch"] is None
 
     core_main = plugins["Core"]["servers"]["main"]
     assert core_main["state"] == "older_release" and core_main["release"] == "1.0.0"
@@ -179,9 +226,162 @@ def test_releases_are_cached_and_kept_when_github_fails(tmp_path, monkeypatch):
     assert len(fetch.calls) == calls
 
     inventory.releases_cache._next = 0
+    inventory.overview(github(shas, fail=True))
+    inventory.releases_cache.wait_for_refresh()
     result = inventory.overview(github(shas, fail=True))
     assert result["github"]["status"] == "available" and result["github"]["stale"] is True
     assert {p["repo"] for p in result["plugins"]} == {"Core", "Lib"}
+
+
+def test_with_a_token_releases_come_from_graphql_and_are_compared_with_the_default_branch(tmp_path, monkeypatch):
+    main, _, shas = servers_fixture(tmp_path)
+    monkeypatch.setenv("SERVER_MAIN_DIR", str(main))
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    fetch = graphql(shas)
+    result = inventory.overview(fetch)
+    plugins = {p["repo"]: p for p in result["plugins"]}
+    assert set(plugins) == {"Core", "Lib"}
+    assert plugins["Core"]["servers"]["main"]["state"] == "older_release"
+    assert plugins["Core"]["latest"]["branch"] == {"name": "main", "status": "ahead", "ahead": 3,
+                                                   "url": "https://github.com/TF-Minecraft/Core/compare/v1.1.0...main"}
+    # GitHub couldn't compare Lib's release with master, so nothing is claimed.
+    assert plugins["Lib"]["latest"]["branch"] is None
+    # Two pages of repositories, one releases query and one comparison of the latest releases.
+    assert len(fetch.queries) == 4
+    compare = fetch.queries[-1]["variables"]
+    assert {compare["t0"], compare["b0"], compare["t1"], compare["b1"]} == {
+        "refs/tags/v1.1.0", "main", "refs/tags/v2.0.0", "master"}
+
+
+def test_queries_are_split_into_small_groups(tmp_path, monkeypatch):
+    _, _, shas = servers_fixture(tmp_path)
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    monkeypatch.setattr(inventory, "GRAPHQL_CHUNK", 1)
+    fetch = graphql(shas)
+    assert set(inventory.fetch_releases(fetch)) == {"Core", "Lib"}
+    # 2 repository pages, then releases for each of 3 repositories and comparisons for the 2 with releases.
+    assert len(fetch.queries) == 7
+
+
+def test_a_bad_graphql_answer_fails_the_check(monkeypatch):
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    releases, _, failed = inventory.releases_cache.get(lambda path, body=None: {"errors": [{"message": "nope"}]})
+    assert releases is None and failed is True
+
+
+def test_after_the_first_check_releases_refresh_in_the_background(tmp_path, monkeypatch):
+    _, _, shas = servers_fixture(tmp_path)
+    first, _, _ = inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+    slow = threading.Event()
+
+    def waiting(path, body=None):
+        slow.wait(5)
+        raise urllib.error.URLError("down")
+
+    # The expired releases come back at once while GitHub is asked again.
+    again, _, failed = inventory.releases_cache.get(waiting)
+    assert again is first and failed is False
+    slow.set()
+    inventory.releases_cache.wait_for_refresh()
+    kept, _, failed = inventory.releases_cache.get(waiting)
+    assert kept is first and failed is True
+
+
+def test_github_is_read_by_one_fetch_at_a_time(tmp_path):
+    _, _, shas = servers_fixture(tmp_path)
+    inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+    entered, release_it = threading.Event(), threading.Event()
+    fetches = []
+
+    def slow(path, body=None):
+        if path.startswith("/orgs/"):
+            fetches.append(path)
+            entered.set()
+            release_it.wait(5)
+        return github(shas)(path)
+
+    def unused(path, body=None):
+        fetches.append("second")
+        return github(shas)(path)
+
+    inventory.releases_cache.get(slow)  # starts the background refresh
+    assert entered.wait(5)
+    # Another page load and a waiting caller share the refresh in flight.
+    inventory.releases_cache.get(unused)
+    waited = []
+    waiter = threading.Thread(target=lambda: waited.append(inventory.releases_cache.get(unused, wait=True)))
+    waiter.start()
+    waiter.join(0.1)
+    assert waiter.is_alive()
+    release_it.set()
+    waiter.join(5)
+    [(releases, _, failed)] = waited
+    assert releases is not None and failed is False and len(fetches) == 1
+
+
+def test_any_fetch_error_is_recorded_for_a_waiting_caller(tmp_path):
+    _, _, shas = servers_fixture(tmp_path)
+    inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+
+    def cut_short(path, body=None):
+        raise http.client.IncompleteRead(b"")
+
+    releases, _, failed = inventory.releases_cache.get(cut_short, wait=True)
+    assert releases is not None and failed is True
+
+
+def test_a_fetch_running_when_the_cache_is_cleared_is_ignored(tmp_path):
+    _, _, shas = servers_fixture(tmp_path)
+    entered, release_it = threading.Event(), threading.Event()
+
+    def slow(path, body=None):
+        entered.set()
+        release_it.wait(5)
+        return github(shas)(path)
+
+    waiter = threading.Thread(target=lambda: inventory.releases_cache.get(slow))
+    waiter.start()
+    assert entered.wait(5)
+    inventory.releases_cache.clear()
+    release_it.set()
+    waiter.join(5)
+    assert inventory.releases_cache._state() == (None, None, False)
+
+
+def test_a_graphql_error_in_releases_fails_the_check_but_not_in_comparisons(tmp_path, monkeypatch):
+    _, _, shas = servers_fixture(tmp_path)
+    monkeypatch.setenv("SERVERS_GITHUB_TOKEN", "token")
+    fetch = graphql(shas)
+
+    def missing_repository(path, body=None):
+        answer = fetch(path, body)
+        if "...releases" in body["query"]:
+            answer["data"]["r0"] = None
+            answer["errors"] = [{"type": "NOT_FOUND", "path": ["r0"]}]
+        return answer
+
+    releases, _, failed = inventory.releases_cache.get(missing_repository)
+    assert releases is None and failed is True
+
+    def compare_error(path, body=None):
+        answer = fetch(path, body)
+        if "compare" in body["query"]:
+            answer["errors"] = [{"type": "NOT_FOUND", "path": ["r1", "ref"]}]
+        return answer
+
+    releases = inventory.fetch_releases(compare_error)
+    assert releases["Core"][0].branch["status"] == "ahead" and releases["Lib"][0].branch is None
+
+
+def test_a_caller_can_wait_for_fresh_releases(tmp_path, monkeypatch):
+    _, _, shas = servers_fixture(tmp_path)
+    inventory.releases_cache.get(github(shas))
+    inventory.releases_cache._next = 0
+    releases, _, failed = inventory.releases_cache.get(github(shas, fail=True), wait=True)
+    assert releases is not None and failed is True
 
 
 def test_unreadable_jar_keeps_its_hash_without_a_version(tmp_path):
