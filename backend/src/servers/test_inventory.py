@@ -287,27 +287,54 @@ def test_after_the_first_check_releases_refresh_in_the_background(tmp_path, monk
     assert kept is first and failed is True
 
 
-@pytest.mark.parametrize("background_fails", [False, True])
-def test_a_background_refresh_that_finishes_late_never_replaces_a_newer_fetch(tmp_path, background_fails):
+def test_github_is_read_by_one_fetch_at_a_time(tmp_path):
     _, _, shas = servers_fixture(tmp_path)
     inventory.releases_cache.get(github(shas))
     inventory.releases_cache._next = 0
-    release_it = threading.Event()
-    old = inventory.fetch_releases(github(shas))
+    entered, release_it = threading.Event(), threading.Event()
+    fetches = []
 
     def slow(path, body=None):
-        release_it.wait(5)
-        if background_fails:
-            raise urllib.error.URLError("down")
+        if path.startswith("/orgs/"):
+            fetches.append(path)
+            entered.set()
+            release_it.wait(5)
         return github(shas)(path)
 
+    def unused(path, body=None):
+        raise AssertionError("a second fetch started")
+
     inventory.releases_cache.get(slow)  # starts the background refresh
-    fresh, _, failed = inventory.releases_cache.get(github(shas), wait=True)
-    assert fresh is not None and failed is False
+    assert entered.wait(5)
+    # Another page load and a waiting caller share the refresh in flight.
+    inventory.releases_cache.get(unused)
+    waited = []
+    waiter = threading.Thread(target=lambda: waited.append(inventory.releases_cache.get(unused, wait=True)))
+    waiter.start()
+    waiter.join(0.1)
+    assert waiter.is_alive()
     release_it.set()
-    inventory.releases_cache.wait_for_refresh()
-    kept, _, failed = inventory.releases_cache.get(github(shas))
-    assert kept is fresh and kept is not old and failed is False
+    waiter.join(5)
+    [(releases, _, failed)] = waited
+    assert releases is not None and failed is False and len(fetches) == 1
+
+
+def test_a_fetch_running_when_the_cache_is_cleared_is_ignored(tmp_path):
+    _, _, shas = servers_fixture(tmp_path)
+    entered, release_it = threading.Event(), threading.Event()
+
+    def slow(path, body=None):
+        entered.set()
+        release_it.wait(5)
+        return github(shas)(path)
+
+    waiter = threading.Thread(target=lambda: inventory.releases_cache.get(slow))
+    waiter.start()
+    assert entered.wait(5)
+    inventory.releases_cache.clear()
+    release_it.set()
+    waiter.join(5)
+    assert inventory.releases_cache._state() == (None, None, False)
 
 
 def test_a_graphql_error_in_releases_fails_the_check_but_not_in_comparisons(tmp_path, monkeypatch):

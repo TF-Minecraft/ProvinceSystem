@@ -267,60 +267,54 @@ _FETCH_ERRORS = (urllib.error.URLError, OSError, ValueError, KeyError, TypeError
 class _ReleaseCache:
     """Releases, refreshed after a while.
 
-    Only the first fetch makes a caller wait. After that an expired cache is
-    refreshed in the background and callers get the releases already known,
-    unless they ask to wait for releases fetched after they asked.
+    GitHub is read by one fetch at a time, in a thread of its own. Only the
+    first fetch makes callers wait; after that an expired cache is refreshed in
+    the background and callers get the releases already known, unless they ask
+    to wait for the refresh.
     """
 
     def __init__(self):
         self._lock = threading.Lock()
-        # Held while a caller waits for a fetch, so callers waiting together share one.
-        self._fetching = threading.Lock()
         self._releases: dict[str, list[Release]] | None = None
         self._checked_at: str | None = None
         self._next = 0.0
         self._failed = False
-        # When the fetch behind the current state started; an older fetch finishing later is ignored.
-        self._started = float("-inf")
-        self._refresh: threading.Thread | None = None
+        self._fetch: threading.Thread | None = None
+        # Bumped by clear(), so a fetch running then is ignored.
+        self._generation = 0
 
     def get(self, fetch: Fetch | None = None, wait: bool = False
             ) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
         """(releases, when they were fetched, whether the last fetch failed). Keeps old releases on failure."""
-        asked = time.monotonic()
         with self._lock:
-            if asked < self._next or (self._releases is not None and not wait):
-                if asked >= self._next and (self._refresh is None or not self._refresh.is_alive()):
-                    self._refresh = threading.Thread(target=self._fetch, args=(fetch,), daemon=True)
-                    self._refresh.start()
+            if time.monotonic() < self._next:
                 return self._state()
-        # Fetch outside the main lock, so other callers keep getting the cached releases.
-        with self._fetching:
-            with self._lock:
-                if self._started > asked:
-                    return self._state()
-            self._fetch(fetch)
-            with self._lock:
+            if self._fetch is None or not self._fetch.is_alive():
+                self._fetch = threading.Thread(target=self._run, args=(fetch, self._generation), daemon=True)
+                self._fetch.start()
+            running = self._fetch
+            if self._releases is not None and not wait:
                 return self._state()
+        running.join()
+        with self._lock:
+            return self._state()
 
     def wait_for_refresh(self):
-        refresh = self._refresh
-        if refresh is not None:
-            refresh.join()
+        running = self._fetch
+        if running is not None:
+            running.join()
 
     def _state(self) -> tuple[dict[str, list[Release]] | None, str | None, bool]:
         return self._releases, self._checked_at, self._failed
 
-    def _fetch(self, fetch: Fetch | None):
-        started = time.monotonic()
+    def _run(self, fetch: Fetch | None, generation: int):
         try:
             releases, failed = fetch_releases(fetch), False
         except _FETCH_ERRORS:
             releases, failed = None, True
         with self._lock:
-            if started < self._started:
+            if generation != self._generation:
                 return
-            self._started = started
             now = time.monotonic()
             if failed:
                 self._failed = True
@@ -332,8 +326,8 @@ class _ReleaseCache:
     def clear(self):
         with self._lock:
             self._releases, self._checked_at, self._next, self._failed = None, None, 0.0, False
-            # A fetch still running started before this, so it is ignored.
-            self._started = time.monotonic()
+            self._fetch = None
+            self._generation += 1
 
 
 releases_cache = _ReleaseCache()
