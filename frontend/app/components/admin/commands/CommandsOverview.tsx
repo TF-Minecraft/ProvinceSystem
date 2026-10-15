@@ -28,6 +28,8 @@ function subscribePhone(onChange: () => void) {
   return () => media?.removeEventListener?.("change", onChange);
 }
 
+const STALE_SECONDS = 30 * 60;
+
 export default function CommandsOverview({ initialState = defaultState() }: { initialState?: CommandsUrlState }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [state, setState] = useState(initialState);
@@ -75,6 +77,8 @@ export default function CommandsOverview({ initialState = defaultState() }: { in
       ? `${Math.floor((now - status.generated_at) / 86400)} d ago`
       : formatAgo(status.generated_at, now).toLowerCase()
     : "";
+  // The server resends at least every ten minutes; 30 minutes without one means the list may be out of date.
+  const stale = status ? !status.fresh || now - Date.parse(status.received_at) / 1000 > STALE_SECONDS : false;
   const noPermission = data.plugins
     .flatMap((plugin) => plugin.commands)
     .filter((command) => command.access === null).length;
@@ -106,7 +110,7 @@ export default function CommandsOverview({ initialState = defaultState() }: { in
         </p>
       ) : (
         <>
-          {!status.fresh ? (
+          {stale ? (
             <p role="status" className={`mb-4 ${warnClass}`}>
               Command list is stale · published {age}.
             </p>
@@ -192,7 +196,7 @@ export default function CommandsOverview({ initialState = defaultState() }: { in
               <StateMark state="o" />
               <p className="flex-1">
                 <span className="text-[var(--tfmc-stone)]">{noPermission} commands have no permission set.</span>
-                <span className="hidden sm:inline"> Visible to everyone; the plugin decides when run.</span>
+                <span className="hidden sm:inline"> Players are offered them unless the plugin hides them itself.</span>
               </p>
               <button
                 type="button"

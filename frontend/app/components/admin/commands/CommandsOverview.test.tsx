@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AccountApiError } from "@/lib/account/api";
 import {
@@ -220,6 +220,22 @@ it("shows missing and stale command lists", async () => {
   vi.mocked(getCommands).mockResolvedValue(data);
   render(<CommandsOverview />);
   expect(await screen.findByText("Command list is stale · published 2 h ago.")).toBeTruthy();
+});
+
+it("marks the list stale once 30 minutes pass without a new one", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    vi.mocked(getCommands).mockResolvedValue(snapshot());
+    render(<CommandsOverview />);
+    await screen.findByRole("searchbox");
+    expect(screen.queryByText(/Command list is stale/)).toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(31 * 60_000);
+    });
+    expect(screen.getByText(/Command list is stale/)).toBeTruthy();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it.each([

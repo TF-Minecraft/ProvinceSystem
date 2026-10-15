@@ -187,9 +187,9 @@ export function CommandDetail({
         ]
       : []),
     [
-      command.access === null ? "Offered to" : "Allowed for",
+      "Allowed for",
       command.access === null
-        ? "Everyone"
+        ? "Up to the plugin"
         : allowed.length === groups.length
           ? "All roles"
           : allowed.map(groupLabel).join(", ") || "No listed roles",
