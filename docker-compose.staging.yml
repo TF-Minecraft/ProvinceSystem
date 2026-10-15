@@ -5,9 +5,6 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    env_file:
-      - path: .env
-        required: false
     ports:
       # Host 8001 is often taken; use 18001 for staging
       - "18001:8000"
