@@ -1,8 +1,9 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import ServersOverview from "./ServersOverview";
+import * as ServerControls from "./ServerControls";
 import { AccountApiError } from "../../../lib/account/api";
 import {
   getServers,
@@ -18,6 +19,7 @@ vi.mock("../../../lib/admin/servers", async (importOriginal) => ({
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.mocked(getServers).mockReset();
 });
 
@@ -33,7 +35,7 @@ const copy = (over: Partial<PluginCopy> = {}): PluginCopy => ({
   ...over,
 });
 
-const latest = (version: string, branch: ServerPlugin["latest"]["branch"] = null) => ({
+const latest = (version: string, branch: NonNullable<ServerPlugin["latest"]>["branch"] = null) => ({
   version,
   published_at: "2026-10-01T00:00:00Z",
   url: "https://github.com/x",
@@ -45,7 +47,6 @@ const overview: Overview = {
   github: {
     status: "available",
     checked_at: "2026-10-11T18:00:00Z",
-    stale: false,
   },
   servers: [
     {
@@ -167,7 +168,7 @@ it("shows every plugin, other plugins, and filters by name", async () => {
 it("says when a server or GitHub can't be read", async () => {
   vi.mocked(getServers).mockResolvedValue({
     ...overview,
-    github: { status: "unavailable", checked_at: null, stale: false },
+    github: { status: "unavailable", checked_at: null },
     servers: [overview.servers[0], { ...overview.servers[1], status: "not_configured" }],
     plugins: [],
     others: [],
@@ -181,4 +182,63 @@ it("shows the staff gate when the role is too low", async () => {
   vi.mocked(getServers).mockRejectedValue(new AccountApiError("forbidden", 403));
   render(<ServersOverview />);
   expect(await screen.findByText("This page is for TFMC staff only.")).toBeTruthy();
+});
+
+it("shows a failed fresh check without relabelling the previous result", async () => {
+  vi.mocked(getServers).mockResolvedValueOnce(overview).mockRejectedValueOnce(new Error("offline"));
+  render(<ServersOverview />);
+  await screen.findByText("= main");
+  fireEvent.click(screen.getByRole("button", { name: "Check again" }));
+  expect(await screen.findByText(/Check failed/)).toBeTruthy();
+  expect(screen.getByText("= main")).toBeTruthy();
+  expect(getServers).toHaveBeenCalledTimes(2);
+});
+
+it("shows failed repository lookups and unverified jars as warnings", async () => {
+  vi.mocked(getServers).mockResolvedValue({
+    ...overview,
+    github: { status: "partial", checked_at: overview.checked_at },
+    plugins: [
+      { repo: "Core", latest: null, error: "github_unavailable", servers: { main: copy({ state: "unverified" }) } },
+    ],
+  });
+  render(<ServersOverview />);
+  expect(
+    (await screen.findAllByText(/Unverified|Couldn.t check|couldn’t check|didn.t answer|didn’t answer/i)).length,
+  ).toBeGreaterThan(0);
+  expect(screen.getByText("Core")).toBeTruthy();
+});
+
+it("keeps the newer check when an older request completes afterwards", async () => {
+  let refresh: (() => void) | undefined;
+  const original = ServerControls.useServerControls;
+  vi.spyOn(ServerControls, "useServerControls").mockImplementation((onChange) => {
+    refresh = onChange;
+    return original(onChange);
+  });
+  let finishOlder!: (data: Overview) => void;
+  let finishNewer!: (data: Overview) => void;
+  const older = new Promise<Overview>((resolve) => {
+    finishOlder = resolve;
+  });
+  const newer = new Promise<Overview>((resolve) => {
+    finishNewer = resolve;
+  });
+  vi.mocked(getServers).mockResolvedValueOnce(overview).mockReturnValueOnce(older).mockReturnValueOnce(newer);
+  render(<ServersOverview />);
+  await screen.findByText("= main");
+  act(() => {
+    refresh!();
+    refresh!();
+  });
+  await act(async () =>
+    finishNewer({
+      ...overview,
+      plugins: [{ repo: "FreshResult", latest: latest("9.0.0"), servers: { main: copy({ state: "older_release" }) } }],
+    }),
+  );
+  expect(await screen.findByText("FreshResult")).toBeTruthy();
+  await act(async () => finishOlder(overview));
+  expect(screen.getByText("FreshResult")).toBeTruthy();
+  expect(screen.queryByText("Archaeo")).toBeNull();
 });

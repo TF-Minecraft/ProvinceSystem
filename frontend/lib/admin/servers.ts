@@ -15,7 +15,7 @@ export type ServerInfo = {
 };
 
 export type PluginCopy = {
-  state: "latest" | "older_release" | "not_release" | "test_build" | "missing";
+  state: "latest" | "older_release" | "not_release" | "test_build" | "unverified" | "missing";
   files: string[];
   /** The jar's own version (plugin.yml). */
   version: string | null;
@@ -40,22 +40,23 @@ export type ReleaseBranch = {
 
 export type ServerPlugin = {
   repo: string;
-  latest: { version: string; published_at: string; url: string; branch: ReleaseBranch | null };
+  latest: { version: string; published_at: string; url: string; branch: ReleaseBranch | null } | null;
+  error?: "github_unavailable" | "unverified";
   servers: Partial<Record<ServerKey, PluginCopy>>;
 };
 
 export type OtherPlugin = {
   name: string;
   differs: boolean;
+  unverified?: boolean;
   servers: Partial<Record<ServerKey, { file: string; version: string | null } | null>>;
 };
 
 export type ServersOverview = {
   checked_at: string;
   github: {
-    status: "available" | "unavailable";
+    status: "available" | "partial" | "unavailable" | "busy";
     checked_at: string | null;
-    stale: boolean;
   };
   servers: ServerInfo[];
   plugins: ServerPlugin[];
@@ -88,6 +89,7 @@ export function flags(copy: PluginCopy): Flag[] {
   if (copy.state === "not_release") found.push({ label: "Not a release", tone: "bad" });
   if (copy.state === "test_build") found.push({ label: "Test build", tone: "test" });
   if (copy.state === "older_release") found.push({ label: "Older release", tone: "warn" });
+  if (copy.state === "unverified") found.push({ label: "Unverified", tone: "warn" });
   if (copy.duplicate) found.push({ label: "Two jars", tone: "bad" });
   if (copy.loaded_state === "not_loaded") found.push({ label: "Didn’t start", tone: "bad" });
   if (waiting(copy)) found.push({ label: "Needs restart", tone: "warn" });
@@ -107,6 +109,7 @@ export function severity(plugin: ServerPlugin): number | null {
     .flatMap((copy) => (copy ? flags(copy) : []))
     .filter((flag) => flag.tone !== "none")
     .map((flag) => RANK[flag.tone]);
+  if (!plugin.latest || plugin.error) tones.push(RANK.warn);
   return tones.length ? Math.min(...tones) : null;
 }
 

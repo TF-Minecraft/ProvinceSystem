@@ -95,3 +95,9 @@ describe("latest release against the default branch", () => {
     expect(branchFlag(branch("diverged", 2))?.label).toBe("Off main");
   });
 });
+
+it("keeps unverified data visible without claiming it is a test build", () => {
+  const unknown = copy({ state: "unverified" });
+  expect(flags(unknown)).toContainEqual({ label: "Unverified", tone: "warn" });
+  expect(severity({ repo: "Core", latest: null, error: "github_unavailable", servers: { main: unknown } })).toBe(1);
+});
