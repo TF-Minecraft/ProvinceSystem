@@ -16,10 +16,11 @@ from src.api.auth_routes import _no_store
 from src.api.patreon_routes import require_writer
 from src.api.request_body import read_json_body
 from src.auth import admin
-from src.luckperms import changes, mirror, views
+from src.luckperms import changes, commands, mirror, views
 
 SNAPSHOT_MAX_BYTES = 16 * 1024 * 1024
 RESULTS_MAX_BYTES = 4 * 1024 * 1024
+COMMANDS_MAX_BYTES = 8 * 1024 * 1024
 
 plugin_router = APIRouter(prefix="/luckperms/plugin", tags=["luckperms"], dependencies=[Depends(require_writer)])
 staff_router = APIRouter(prefix="/admin/luckperms", tags=["admin"])
@@ -31,6 +32,15 @@ async def put_snapshot(request: Request):
     try:
         return await run_in_threadpool(mirror.replace_snapshot, payload)
     except mirror.SnapshotError as exc:
+        raise HTTPException(400, detail=exc.code) from None
+
+
+@plugin_router.put("/commands")
+async def put_commands(request: Request):
+    payload = await read_json_body(request, COMMANDS_MAX_BYTES)
+    try:
+        return await run_in_threadpool(commands.store, payload)
+    except commands.CommandsError as exc:
         raise HTTPException(400, detail=exc.code) from None
 
 
@@ -80,6 +90,11 @@ def _read(request: Request, response: Response, run):
 @staff_router.get("")
 def get_overview(request: Request, response: Response):
     return _read(request, response, views.overview)
+
+
+@staff_router.get("/commands")
+def get_commands(request: Request, response: Response):
+    return _read(request, response, commands.view)
 
 
 @staff_router.get("/groups/{name}")
