@@ -19,7 +19,7 @@ COMMANDS_MAX = 10_000
 ALIASES_MAX = 64
 NAME_MAX = 64
 TEXT_MAX = 300
-PERMISSION_MAX = 512
+PERMISSION_MAX = 2048
 # TFMCWeb resends at least every ten minutes.
 FRESH_SECONDS = 30 * 60
 KIND_ORDER = {"rank": 0, "staff": 1, "step": 2}
