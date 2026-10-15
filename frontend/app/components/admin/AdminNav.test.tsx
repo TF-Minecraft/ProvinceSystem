@@ -17,6 +17,7 @@ it("puts each staff path under its tab, sub-pages included", () => {
   expect(adminSection("/admin/movement")).toBe("movement");
   expect(adminSection("/admin/rail")).toBe("rail");
   expect(adminSection("/admin/ranks/groups/staff")).toBe("ranks");
+  expect(adminSection("/admin/commands")).toBe("commands");
   expect(adminSection("/admin/precedent")).toBe("precedent");
   expect(adminSection("/admin/codes")).toBe("codes");
   expect(adminSection("/admin/servers")).toBe("servers");
@@ -30,4 +31,13 @@ it("marks the tab for the current path", () => {
   render(<AdminNav />);
   expect(screen.getByRole("link", { name: "Ranks" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "Accounts" }).getAttribute("aria-current")).toBeNull();
+});
+
+it("places Commands after Ranks and marks it current", () => {
+  pathname.current = "/admin/commands";
+  render(<AdminNav />);
+  const links = screen.getAllByRole("link");
+  const ranksIndex = links.findIndex((link) => link.textContent === "Ranks");
+  expect(links[ranksIndex + 1].textContent).toBe("Commands");
+  expect(links[ranksIndex + 1].getAttribute("aria-current")).toBe("page");
 });

@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/admin/movement", label: "Movement", key: "movement" },
   { href: "/admin/rail", label: "Rail", key: "rail" },
   { href: "/admin/ranks", label: "Ranks", key: "ranks" },
+  { href: "/admin/commands", label: "Commands", key: "commands" },
   { href: "/admin/precedent", label: "Precedent", key: "precedent" },
   { href: "/admin/codes", label: "Codes", key: "codes" },
   { href: "/admin/servers", label: "Servers", key: "servers" },

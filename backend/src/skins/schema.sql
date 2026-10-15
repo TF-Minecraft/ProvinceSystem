@@ -851,6 +851,17 @@ CREATE TABLE IF NOT EXISTS lp_user_nodes (
 CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_uuid ON lp_user_nodes(uuid);
 CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_key ON lp_user_nodes(key);
 
+-- The server's commands and each group's access, as TFMCWeb last published
+-- them for the Commands tab; see src/luckperms/commands.py.
+CREATE TABLE IF NOT EXISTS lp_commands (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    server TEXT,
+    hash TEXT,
+    generated_at INTEGER,
+    received_at TEXT,
+    payload TEXT NOT NULL
+);
+
 -- Changes staff queued for the bridge. Rows are kept as the change history.
 CREATE TABLE IF NOT EXISTS lp_changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
