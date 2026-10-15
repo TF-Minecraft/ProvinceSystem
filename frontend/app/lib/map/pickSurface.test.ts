@@ -32,15 +32,22 @@ describe("PickSurface", () => {
       "10,20,30",
     ]);
     expect(surface.rgbAt(4, 1)).toBe("40,50,60");
-    expect(surface.rgbAt(0, 2)).toBe("0,0,0");
+    expect(surface.rgbAt(0, 2)).toBeNull();
     expect(surface.rgbAt(2, 2)).toBe("10,20,30");
     expect(surface.rgbAt(4, 2)).toBe("40,50,60");
   });
 
-  it("reads a transparent pixel as 0,0,0 whatever colour it carries", () => {
+  it("has nothing under a transparent pixel whatever colour it carries", () => {
     const surface = pickSurfaceFromImageData(image([[[10, 20, 30, 0], A]]));
-    expect(surface.rgbAt(0, 0)).toBe("0,0,0");
+    expect(surface.rgbAt(0, 0)).toBeNull();
     expect(surface.rgbAt(1, 0)).toBe("10,20,30");
+  });
+
+  it("tells a realm coloured black from the transparent land around it", () => {
+    const surface = pickSurfaceFromImageData(image([[CLEAR, [0, 0, 0, 255], CLEAR]]));
+    expect(surface.rgbAt(0, 0)).toBeNull();
+    expect(surface.rgbAt(1, 0)).toBe("0,0,0");
+    expect(surface.rgbAt(2, 0)).toBeNull();
   });
 
   it("has nothing outside the map", () => {
@@ -106,7 +113,7 @@ describe("PickSurface", () => {
       expect(draws).toEqual([0, 64, 128, 192, 256, 320, 384, 448, 512, 576]);
       expect(yields).toBe(5);
       expect(surface?.rgbAt(0, 299)).toBe("10,20,30");
-      expect(surface?.rgbAt(1, 300)).toBe("0,0,0");
+      expect(surface?.rgbAt(1, 300)).toBeNull();
       expect(surface?.rgbAt(0, 300)).toBe("40,50,60");
 
       let frames = 0;

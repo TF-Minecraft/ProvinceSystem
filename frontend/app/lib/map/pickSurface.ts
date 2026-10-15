@@ -4,13 +4,13 @@
  * Hover and click read one pixel at a time, so retaining a canvas is wasteful:
  * a 6400 × 6400 pick canvas holds 164 MB for the life of the page, while its
  * realms typically need 70–120 thousand runs, well under 1 MB. Colours match
- * canvas readback, including transparent pixels (0,0,0), so `rgbToId` lookups
- * preserve the same picks.
+ * canvas readback. Transparent pixels hold no region: a canvas reads them back
+ * as 0,0,0, which a realm coloured black would otherwise claim.
  */
 export type PickSurface = {
   readonly width: number;
   readonly height: number;
-  /** The colour at (x, y) as `r,g,b`, the form `rgbToId` is keyed by. */
+  /** The colour at (x, y) as `r,g,b`, the form `rgbToId` is keyed by; null where transparent. */
   rgbAt(x: number, y: number): string | null;
 };
 
@@ -20,6 +20,9 @@ export const EMPTY_PICK_SURFACE: PickSurface = {
   height: 0,
   rgbAt: () => null,
 };
+
+/** Above any 24-bit colour, so no `r,g,b` can match it. */
+const TRANSPARENT = 0x1000000;
 
 /** Built a band of rows at a time, top to bottom (see `addRows`). */
 export class PickSurfaceBuilder {
@@ -50,8 +53,8 @@ export class PickSurfaceBuilder {
       let previous = -1;
       for (let x = 0; x < width; x++) {
         const i = base + x * 4;
-        // Transparent reads back as 0,0,0 from a canvas, whatever was put there.
-        const colour = data[i + 3] === 0 ? 0 : (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+        // Transparent, whatever colour was put there: no region.
+        const colour = data[i + 3] === 0 ? TRANSPARENT : (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
         if (colour === previous) continue;
         previous = colour;
         this.push(x, colour);
@@ -81,6 +84,7 @@ export class PickSurfaceBuilder {
           else hi = mid - 1;
         }
         const colour = colours[lo];
+        if (colour === TRANSPARENT) return null;
         return `${(colour >> 16) & 0xff},${(colour >> 8) & 0xff},${colour & 0xff}`;
       },
     };
