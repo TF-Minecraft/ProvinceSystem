@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
     ports:
       # Host 8001 is often taken; use 18001 for staging
       - "18001:8000"
@@ -12,7 +15,6 @@ services:
       - SKINS_DEV=1
       - STAFF_KEY=dev-staff-key
       - PLUGIN_KEY=dev-plugin-key
-      - SERVERS_GITHUB_TOKEN=${SERVERS_GITHUB_TOKEN:-}
       # Patch notes need Postgres. Staging keeps its own, so nothing here reaches production.
       - SUPABASE_DB_URL=postgresql://postgres:dev-patchnotes@patchnotes-db:5432/tfmc
     volumes:
