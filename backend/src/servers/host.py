@@ -156,14 +156,14 @@ class Controller:
                 if path.is_symlink() or not path.is_file():
                     raise ControlError("unsafe_plugin_file")
                 try:
-                    _, name, version = inventory._describe(path)
+                    sha, name, version = inventory._describe(path)
                     if not name or not version or name.lower() in names:
                         raise ControlError("plugin_inventory_conflict")
                     if prefix:
                         raise ControlError("pending_plugin_update")
                     names.add(name.lower())
-                    # Always hash afresh before a write, even for unchanged size/mtime.
-                    result.append({"file": path.name, "sha256": digest(path), "name": name, "version": version})
+                    # _describe reads fresh bytes and metadata from the same open file.
+                    result.append({"file": path.name, "sha256": sha, "name": name, "version": version})
                 except PermissionError:
                     raise ControlError("plugin_unreadable") from None
         return result
@@ -181,7 +181,7 @@ class Controller:
                for key, job in self.jobs.items()):
             raise ControlError("server_job_active")
 
-    def plan(self, server: str, mode: str, releases: list[dict]) -> dict:
+    def plan(self, server: str, mode: str, releases: list[dict], expected: list[dict] | None = None) -> dict:
         if mode not in {"restart", "latest"} or not isinstance(releases, list) or len(releases) > 100:
             raise ControlError("bad_server_action", 400)
         with self.lock:
@@ -194,6 +194,8 @@ class Controller:
                     if not (folder / "job.json").exists() and (not path.exists() or json.loads(path.read_text())["expires_at"] < time.time()):
                         shutil.rmtree(folder)
             baseline = self.snapshot(server)
+            if expected is not None and baseline != expected:
+                raise ControlError("plugins_changed")
             _, logs = self._paths(server)
             startup = inventory.read_startup(logs)
             if not startup or not startup["done"] or self._maintenance(server):
@@ -216,7 +218,7 @@ class Controller:
                         version = release["tag"].removeprefix("v")
                         prefix = release["asset"].removesuffix(".jar").removesuffix("-" + version)
                         old = [jar for jar in baseline if jar["file"].lower().startswith(prefix.lower() + "-")
-                               or jar["name"].lower() == release["repo"].lower()]
+                               or inventory.plugin_identifier(jar["name"]) == release["repo"].lower()]
                         if not old:
                             continue  # Never add plugins that are not already installed.
                         if len(old) != 1 or old[0]["file"] in used:
@@ -630,15 +632,19 @@ class Controller:
                    "cancel": {"operation", "server", "job_id", "actor", "reason"},
                    "reopen": {"operation", "server", "job_id", "actor", "reason"},
                    "resolve": {"operation", "server", "job_id", "actor", "reason"}}
-        # Older websites omit the optional test-build list.
-        if operation not in allowed or set(body) - ({"replace_test_builds"} if operation == "start" else set()) != allowed[operation]:
+        # Older websites omit the optional baseline and test-build choices.
+        optional = {"replace_test_builds"} if operation == "start" else {"expected"} if operation == "plan" else set()
+        if operation not in allowed or set(body) - optional != allowed[operation]:
             raise ControlError("bad_control_request", 400)
         if operation == "status":
             return {"jobs": json.loads(self.status_json)}
         server = body["server"]
         self._paths(server)
         if operation == "plan":
-            return self.plan(server, body["mode"], body["releases"])
+            expected = body.get("expected")
+            if "expected" in body and (not isinstance(expected, list) or len(expected) > 300):
+                raise ControlError("bad_control_request", 400)
+            return self.plan(server, body["mode"], body["releases"], expected)
         if any(not isinstance(body[key], str) or not 3 <= len(body[key]) <= 500 for key in ("actor", "reason")):
             raise ControlError("bad_control_request", 400)
         if operation == "start":

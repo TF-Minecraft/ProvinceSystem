@@ -1,7 +1,7 @@
 "use client";
 
 import LoadingSkeleton from "@/app/components/shared/LoadingSkeleton";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   branchFlag,
@@ -67,6 +67,7 @@ function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins:
   const available = server.status === "available";
   const [startup, dot] = STARTUP[String(server.started)];
   const c = counts(plugins, server.key);
+  const unverified = plugins.filter((plugin) => plugin.servers[server.key]?.state === "unverified").length;
   const stats: [number, string, Tone][] = [
     server.releases_only ? [c.notReleases, "Not releases", "bad"] : [c.notReleases, "Test builds", "test"],
     [c.waiting, "Need a restart", "warn"],
@@ -116,6 +117,11 @@ function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins:
             : "The site isn’t set up to read this server’s files."}
         </p>
       )}
+      {available && unverified ? (
+        <p className="px-5 py-2 text-xs text-[#f0d090]">
+          {unverified} plugin{unverified === 1 ? "" : "s"} unverified
+        </p>
+      ) : null}
       <div className="flex flex-1 flex-col justify-center bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] px-5 py-3.5">
         {actions}
       </div>
@@ -124,7 +130,14 @@ function ServerCard({ server, plugins, actions }: { server: ServerInfo; plugins:
 }
 
 /** The latest release, and whether it is the repository's default branch. */
-function LatestCell({ latest }: { latest: ServerPlugin["latest"] }) {
+function LatestCell({ latest, error }: { latest: ServerPlugin["latest"]; error?: ServerPlugin["error"] }) {
+  if (!latest) {
+    return (
+      <span className={`${badgeClass} ${TONE.warn}`} title="The latest release couldn’t be verified with GitHub.">
+        Unverified
+      </span>
+    );
+  }
   const mark = branchFlag(latest.branch);
   return (
     <div className="flex items-baseline gap-2 sm:flex-col sm:items-start sm:gap-0.5">
@@ -147,6 +160,7 @@ function LatestCell({ latest }: { latest: ServerPlugin["latest"] }) {
           {mark.label}
         </a>
       ) : null}
+      {error ? <span className={`${badgeClass} ${TONE.warn}`}>Unverified</span> : null}
     </div>
   );
 }
@@ -158,7 +172,7 @@ function checkedAt(iso: string): string {
   return at.toLocaleTimeString(undefined, { timeStyle: "short" });
 }
 
-function CopyCell({ copy, label, latest }: { copy: PluginCopy | undefined; label: string; latest: string }) {
+function CopyCell({ copy, label, latest }: { copy: PluginCopy | undefined; label: string; latest: string | null }) {
   if (!copy) return <div />;
   const found = flags(copy);
   const pending = waiting(copy);
@@ -190,25 +204,39 @@ export default function ServersOverview() {
   const [data, setData] = useState<Overview | null>(null);
   const [gate, setGate] = useState<GateKind | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const requestSequence = useRef(0);
   const [view, setView] = useState<View>("look");
   const [query, setQuery] = useState("");
 
   const load = useCallback(() => {
+    const sequence = ++requestSequence.current;
     setLoading(true);
+    setCheckFailed(false);
     getServers()
       .then((overview) => {
+        if (sequence !== requestSequence.current) return;
         setData(overview);
         setGate(null);
       })
-      .catch((err) => setGate(gateKind(err)))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (sequence !== requestSequence.current) return;
+        setCheckFailed(true);
+        setGate(gateKind(err));
+      })
+      .finally(() => {
+        if (sequence === requestSequence.current) setLoading(false);
+      });
   }, []);
 
   const control = useServerControls(load);
 
   useEffect(() => {
     const start = setTimeout(load, 0);
-    return () => clearTimeout(start);
+    return () => {
+      clearTimeout(start);
+      requestSequence.current += 1;
+    };
   }, [load]);
 
   const readable = useMemo(() => data?.servers.filter((s) => s.status === "available") ?? [], [data]);
@@ -218,13 +246,23 @@ export default function ServersOverview() {
   }, [data]);
 
   if (gate && !data) return <StaffGateMessage kind={gate} />;
-  if (!data) return <LoadingSkeleton variant="table" className="mt-6" />;
+  if (!data)
+    return (
+      <>
+        <p className={`mt-6 ${captionClass}`} role="status">
+          Checking servers and releases…
+        </p>
+        <LoadingSkeleton variant="table" className="mt-6" />
+      </>
+    );
 
   const needle = query.trim().toLowerCase();
   const rows = (view === "look" ? needsLook : data.plugins).filter((p) => p.repo.toLowerCase().includes(needle));
   const others = data.others.filter((o) => o.name.toLowerCase().includes(needle));
   const columns = COLUMNS[readable.length] ?? COLUMNS[2];
   const releaseColumns = RELEASE_COLUMNS[readable.length] ?? RELEASE_COLUMNS[2];
+  const unverifiedOthers = data.others.some((other) => other.unverified);
+  const incomplete = checkFailed || data.github.status !== "available" || unverifiedOthers;
   const tabs: [View, string, number][] = [
     ["look", "Needs a look", needsLook.length],
     ["all", "TFMC", data.plugins.length],
@@ -239,6 +277,11 @@ export default function ServersOverview() {
           {loading ? "Checking…" : "Check again"}
         </button>
       </p>
+      {checkFailed ? (
+        <p className={`mt-2 ${warnClass}`} role="alert">
+          Check failed. Showing the previous results from {formatLocal(data.checked_at)}. Try checking again.
+        </p>
+      ) : null}
 
       <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {data.servers.map((server) => (
@@ -257,9 +300,17 @@ export default function ServersOverview() {
         <p className={`mt-4 ${warnClass}`} role="alert">
           GitHub didn’t answer, so releases can’t be compared. Try again in a minute.
         </p>
-      ) : data.github.stale ? (
-        <p className={`mt-4 ${warnClass}`}>
-          GitHub didn’t answer; releases are from {formatLocal(data.github.checked_at)}.
+      ) : data.github.status === "partial" ? (
+        <p className={`mt-4 ${warnClass}`} role="alert">
+          Some GitHub checks failed. Plugins marked Unverified need another check.
+        </p>
+      ) : data.github.status === "busy" ? (
+        <p className={`mt-4 ${warnClass}`} role="alert">
+          Another release check is running. Try checking again shortly.
+        </p>
+      ) : unverifiedOthers ? (
+        <p className={`mt-4 ${warnClass}`} role="alert">
+          Some installed files couldn’t be verified. Check plugins marked Unverified in Other plugins.
         </p>
       ) : null}
 
@@ -319,6 +370,9 @@ export default function ServersOverview() {
                     {other.differs ? (
                       <span className={`${badgeClass} ${TONE.warn} ml-2 align-middle`}>Differs</span>
                     ) : null}
+                    {other.unverified ? (
+                      <span className={`${badgeClass} ${TONE.warn} ml-2 align-middle`}>Unverified</span>
+                    ) : null}
                   </p>
                   {readable.map((s) => {
                     const found = other.servers[s.key];
@@ -356,17 +410,24 @@ export default function ServersOverview() {
                 >
                   <div className="col-span-2 flex items-baseline justify-between gap-2 sm:contents">
                     <p className="text-sm font-semibold text-[var(--tfmc-cream)]">{plugin.repo}</p>
-                    <LatestCell latest={plugin.latest} />
+                    <LatestCell latest={plugin.latest} error={plugin.error} />
                   </div>
                   {readable.map((s) => (
-                    <CopyCell key={s.key} copy={plugin.servers[s.key]} label={s.label} latest={plugin.latest.version} />
+                    <CopyCell
+                      key={s.key}
+                      copy={plugin.servers[s.key]}
+                      label={s.label}
+                      latest={plugin.latest?.version ?? null}
+                    />
                   ))}
                 </li>
               ))}
               {!rows.length ? (
                 <li className={`py-6 text-center ${mutedClass}`}>
                   {view === "look" && !needle
-                    ? "Every server runs the latest release of every plugin."
+                    ? incomplete
+                      ? "Release checks are incomplete. Check again to verify these plugins."
+                      : "Every server runs the latest release of every plugin."
                     : "No plugins match."}
                 </li>
               ) : null}

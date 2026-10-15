@@ -706,3 +706,136 @@ def test_accepted_job_with_its_own_error_field_is_not_a_refusal(tmp_path, monkey
         assert refused.value.status == 409
         server.shutdown()
         worker.join()
+
+
+def test_latest_plan_fetches_fresh_releases_and_passes_verified_full_inventory(controller, monkeypatch):
+    from src.servers.test_inventory import Github, release
+    plugins, _ = controller.roots["dev"]
+    monkeypatch.setenv("SERVER_DEV_DIR", str(plugins.parent))
+    monkeypatch.delenv("SERVERS_GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("PATCHNOTES_GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("SERVERS_GITHUB_ORG", raising=False)
+    baseline = controller.snapshot("dev")
+    rows = [release("v2.0.0", "2026-10-01T00:00:00Z", "core-2.0.0.jar", "2" * 64),
+            release("v1.0.0", "2026-09-01T00:00:00Z", "core-1.0.0.jar", baseline[0]["sha256"])]
+    fetch = Github({"Core": rows})
+    monkeypatch.setattr(inventory, "_github", lambda path, body=None, **_: fetch(path, body))
+    sent = []
+    monkeypatch.setattr(control, "request", lambda operation, **body: sent.append((operation, body)) or {"id": "plan"})
+    assert control.plan("dev", "latest") == {"id": "plan"}
+    rows.insert(0, release("v3.0.0", "2026-10-02T00:00:00Z", "core-3.0.0.jar", "3" * 64))
+    control.plan("dev", "latest")
+    assert [body["releases"][0]["tag"] for _, body in sent] == ["v2.0.0", "v3.0.0"]
+    assert all(operation == "plan" and body["expected"] == baseline for operation, body in sent)
+    assert all({"sha256": baseline[0]["sha256"], "version": "1.0.0"} in body["releases"][0]["known"] for _, body in sent)
+    assert sum(path.startswith("/orgs/") for path, _ in fetch.calls) == 2
+    assert controller.commands == []
+
+
+@pytest.mark.parametrize("failure", ["global", "partial", "history", "renamed"])
+def test_latest_plan_fails_closed_before_helper_for_unverified_releases(controller, monkeypatch, failure):
+    plugins, _ = controller.roots["dev"]
+    monkeypatch.setenv("SERVER_DEV_DIR", str(plugins.parent))
+    monkeypatch.delenv("SERVERS_GITHUB_ORG", raising=False)
+    found = inventory.Releases()
+    found.repos.add("Core")
+    found["Core"] = [inventory.Release("Core", "2.0.0", "2026-10-01T00:00:00Z", "url", "core-2.0.0.jar", "2" * 64, "v2.0.0")]
+    if failure == "global":
+        found.error = "github_unavailable"
+    elif failure == "partial":
+        found.errors["Core"] = "github_unavailable"
+    elif failure == "renamed":
+        found.clear()
+        found.repos = {"DifferentRepo"}
+    local = {"dev": {"jars": inventory.read_jars(plugins), "startup": None, "releases_only": False}}
+    if failure == "renamed":
+        monkeypatch.setattr(inventory, "compare", lambda *_: ([], [{"name": "Core", "unverified": True}]))
+    monkeypatch.setattr(inventory, "check_servers", lambda *_: (found, local))
+    monkeypatch.setattr(control, "request", lambda *_args, **_kwargs: pytest.fail("unverified data reached helper"))
+    with pytest.raises(control.ControlError, match="releases_unavailable"):
+        control.plan("dev", "latest")
+    assert controller.commands == []
+
+
+def test_latest_plan_refuses_an_old_helper_protocol_instead_of_retrying_unsafely(controller, monkeypatch):
+    plugins, _ = controller.roots["dev"]
+    monkeypatch.setenv("SERVER_DEV_DIR", str(plugins.parent))
+    monkeypatch.delenv("SERVERS_GITHUB_ORG", raising=False)
+    found = inventory.Releases()
+    calls = []
+    monkeypatch.setattr(inventory, "check_servers", lambda *_: (found, {"dev": {"jars": []}}))
+    def refused(operation, **body):
+        calls.append(body)
+        assert "expected" in body
+        raise control.ControlError("bad_control_request", 400)
+    monkeypatch.setattr(control, "request", refused)
+    with pytest.raises(control.ControlError, match="control_unavailable") as error:
+        control.plan("dev", "latest")
+    assert error.value.status == 503 and len(calls) == 1
+
+
+def test_restart_plan_keeps_legacy_protocol_without_a_github_check(monkeypatch):
+    monkeypatch.setattr(inventory, "check_servers", lambda *_: pytest.fail("restart looked up releases"))
+    sent = []
+    monkeypatch.setattr(control, "request", lambda op, **body: sent.append((op, body)) or {"id": "legacy"})
+    assert control.plan("dev", "restart") == {"id": "legacy"}
+    assert sent == [("plan", {"server": "dev", "mode": "restart", "releases": []})]
+
+
+def test_helper_plan_accepts_old_protocol_and_matching_new_inventory(controller):
+    old = controller.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": []})
+    expected = controller.snapshot("dev")
+    new = controller.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": [], "expected": expected})
+    assert old["id"] != new["id"]
+    assert controller._plan(new["id"])["baseline"] == expected
+
+
+def test_helper_rejects_changed_expected_inventory_before_commands_or_new_files(controller):
+    expected = controller.snapshot("dev")
+    old = controller.roots["dev"][0] / expected[0]["file"]
+    import os
+    stamp = old.stat()
+    raw = old.read_bytes()
+    old.write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
+    os.utime(old, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+    before = set(controller.state.iterdir())
+    with pytest.raises(control.ControlError, match="plugins_changed"):
+        controller.dispatch({"operation": "plan", "server": "dev", "mode": "latest", "releases": [], "expected": expected})
+    assert controller.commands == []
+    assert set(controller.state.iterdir()) == before
+
+
+@pytest.mark.parametrize("expected", [None, "invalid", {}, [{}] * 301])
+def test_helper_rejects_malformed_new_inventory_field(controller, expected):
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({"operation": "plan", "server": "dev", "mode": "latest", "releases": [], "expected": expected})
+    assert controller.commands == []
+
+
+def test_snapshot_hashes_each_jar_once(controller, monkeypatch):
+    original = inventory._describe
+    calls = []
+    def describe(path):
+        calls.append(path)
+        return original(path)
+    monkeypatch.setattr(inventory, "_describe", describe)
+    monkeypatch.setattr(host, "digest", lambda *_: pytest.fail("snapshot hashed the jar twice"))
+    [copy] = controller.snapshot("dev")
+    assert calls == [controller.roots["dev"][0] / "core-1.0.0.jar"]
+    assert copy["name"] == "Core" and len(copy["sha256"]) == 64
+
+
+def test_latest_plan_upgrades_renamed_geiger_counter_from_its_verified_old_hash(controller, tmp_path):
+    plugins, _ = controller.roots["dev"]
+    old_sha = jar(plugins / "radiation-old.jar", name="geiger_counter", version="1.0.0")
+    target = tmp_path / "geiger-release.jar"
+    new_sha = jar(target, name="geiger_counter", version="2.0.0")
+    controller.fetch = lambda release, path: path.write_bytes(target.read_bytes())
+    release = {"repo": "GeigerCounters", "tag": "v2.0.0", "asset": "geigercounters-2.0.0.jar", "sha256": new_sha,
+               "known": [{"sha256": old_sha, "version": "1.0.0"}]}
+    plan = controller.plan("dev", "latest", [release], expected=controller.snapshot("dev"))
+    [change] = plan["changes"]
+    assert change["repo"] == "GeigerCounters" and change["name"] == "geiger_counter"
+    assert change["old_file"] == "radiation-old.jar" and change["old_version"] == "1.0.0"
+    assert change["sha256"] == new_sha and "test_build" not in change
+    assert plan["skipped"] == []
