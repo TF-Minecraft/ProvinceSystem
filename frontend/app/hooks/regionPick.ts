@@ -164,13 +164,20 @@ function titleIdsOf(entity: TitleEntity | undefined): string[] {
 }
 
 /**
- * Membership for the title tiers, following the backend painter's chain
- * exactly: a province belongs to a duchy only through a county the duchy
- * lists, to a kingdom only through such a duchy, to an empire only through
- * such a kingdom. Direct `provinces` on an upper-tier entity and incomplete
- * chains paint nothing backend-side, so they pick nothing here either —
+ * Membership for the title tiers, mirroring the backend painter
+ * (`build_color_mapping`) exactly — chain, traversal order and erasure:
+ * a province belongs to a duchy only through a county the duchy lists, to
+ * a kingdom only through such a duchy, to an empire only through such a
+ * kingdom. Direct `provinces` on an upper-tier entity and incomplete chains
+ * paint nothing backend-side, so they pick nothing here either —
  * deliberately narrower than the label/geometry helpers in titleProvinces,
  * which union direct provinces and fall back across tiers for placement.
+ *
+ * Duplicate ownership resolves as the painter's last-write-wins does: parent
+ * lookups are built in parent-tier order, then provinces are painted in
+ * lower-tier order. At kingdom/empire level an unparented branch paints the
+ * black sentinel, erasing any earlier claim; at duchy level an unparented
+ * county is skipped outright.
  *
  * Returns null while a lower tier the chain needs has not loaded, so the
  * caller can withhold picking instead of answering from half a chain.
@@ -183,32 +190,61 @@ export function buildTitleProvinceRegionIndex(
   if (mapType === "county") return buildProvinceRegionIndex(regionData);
   if (!layers) return null;
 
-  const countyProvinces = (countyId: string): number[] => provinceIdsOf(layers.county[countyId] ?? {}, "provinces");
-  const duchyProvinces = (duchyId: string): number[] =>
-    titleIdsOf(layers.duchy?.[duchyId]).flatMap((countyId) => countyProvinces(countyId));
-  const kingdomProvinces = (kingdomId: string): number[] =>
-    titleIdsOf(layers.kingdom?.[kingdomId]).flatMap((duchyId) => duchyProvinces(duchyId));
+  const index: ProvinceRegionIndex = new Map();
+  /** Paint one county's provinces as `targetId`; null is the black sentinel and erases. */
+  const paint = (countyId: string, targetId: string | null) => {
+    const county = layers.county[countyId];
+    if (!county) return;
+    for (const provinceId of provinceIdsOf(county, "provinces")) {
+      if (targetId !== null && regionData[targetId]) index.set(provinceId, targetId);
+      else index.delete(provinceId);
+    }
+  };
+  /** Child id -> parent id, last parent in tier order winning, as the painter's dicts do. */
+  const parentOf = (parents: Record<string, TitleEntity>): Map<string, string> => {
+    const map = new Map<string, string>();
+    for (const [parentId, parent] of Object.entries(parents)) {
+      for (const childId of titleIdsOf(parent)) map.set(childId, parentId);
+    }
+    return map;
+  };
 
-  let resolve: ((entityId: string) => number[]) | null = null;
   if (mapType === "duchy") {
     if (!layers.duchy) return null;
-    resolve = duchyProvinces;
-  } else if (mapType === "kingdom") {
-    if (!layers.duchy || !layers.kingdom) return null;
-    resolve = kingdomProvinces;
-  } else if (mapType === "empire") {
-    if (!layers.duchy || !layers.kingdom || !layers.empire) return null;
-    resolve = (empireId) => titleIdsOf(layers.empire?.[empireId]).flatMap((kingdomId) => kingdomProvinces(kingdomId));
-  }
-  if (!resolve) return null;
-
-  const index: ProvinceRegionIndex = new Map();
-  for (const pickId of Object.keys(regionData)) {
-    for (const provinceId of resolve(pickId)) {
-      if (Number.isInteger(provinceId) && provinceId > 0) index.set(provinceId, pickId);
+    const countyDuchy = parentOf(layers.duchy);
+    for (const countyId of Object.keys(layers.county)) {
+      const duchyId = countyDuchy.get(countyId);
+      if (duchyId === undefined) continue;
+      paint(countyId, duchyId);
     }
+    return index;
   }
-  return index;
+
+  if (mapType === "kingdom") {
+    if (!layers.duchy || !layers.kingdom) return null;
+    const duchyKingdom = parentOf(layers.kingdom);
+    for (const [duchyId, duchy] of Object.entries(layers.duchy)) {
+      const kingdomId = duchyKingdom.get(duchyId) ?? null;
+      for (const countyId of titleIdsOf(duchy)) paint(countyId, kingdomId);
+    }
+    return index;
+  }
+
+  if (mapType === "empire") {
+    if (!layers.duchy || !layers.kingdom || !layers.empire) return null;
+    const kingdomEmpire = parentOf(layers.empire);
+    for (const [kingdomId, kingdom] of Object.entries(layers.kingdom)) {
+      const empireId = kingdomEmpire.get(kingdomId) ?? null;
+      for (const duchyId of titleIdsOf(kingdom)) {
+        const duchy = layers.duchy[duchyId];
+        if (!duchy) continue;
+        for (const countyId of titleIdsOf(duchy)) paint(countyId, empireId);
+      }
+    }
+    return index;
+  }
+
+  return null;
 }
 
 /**

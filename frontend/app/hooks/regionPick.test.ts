@@ -408,7 +408,90 @@ describe("resolveRegionAtProvincePoint", () => {
     const data: RegionRecord = { DuchyA: { rgb: "2,2,2", name: "DuchyA" } };
     expect(buildTitleProvinceRegionIndex("duchy", data, null)).toBeNull();
     expect(buildTitleProvinceRegionIndex("duchy", data, { county: {} })).toBeNull();
+    expect(buildTitleProvinceRegionIndex("kingdom", data, { county: {}, duchy: {} })).toBeNull();
+    expect(buildTitleProvinceRegionIndex("kingdom", data, { county: {}, kingdom: {} })).toBeNull();
+    expect(buildTitleProvinceRegionIndex("empire", data, { county: {}, duchy: {}, kingdom: {} })).toBeNull();
+    expect(buildTitleProvinceRegionIndex("empire", data, { county: {}, kingdom: {}, empire: {} })).toBeNull();
     expect(buildTitleProvinceRegionIndex("kingdom", data, { county: {}, duchy: {}, kingdom: {} })?.size).toBe(0);
+  });
+
+  it("duplicate title ownership follows the painter's traversal order", () => {
+    // Province 1 is claimed by both counties; each county has its own duchy,
+    // listed opposite the county order. The painter resolves the county's
+    // duchy first, then paints counties in order, so CountyB's duchy wins.
+    const duchyLayers: TitleLayers = {
+      county: {
+        CountyA: { provinces: [1] },
+        CountyB: { provinces: [1] },
+      },
+      duchy: {
+        DuchyB: { titles: ["CountyB"] },
+        DuchyA: { titles: ["CountyA"] },
+      },
+    };
+    const duchyData: RegionRecord = {
+      DuchyB: { rgb: "5,5,5", name: "DuchyB" },
+      DuchyA: { rgb: "6,6,6", name: "DuchyA" },
+    };
+    expect(buildTitleProvinceRegionIndex("duchy", duchyData, duchyLayers)?.get(1)).toBe("DuchyB");
+
+    // One county claimed by two duchies in different kingdoms, listed
+    // opposite the duchy order: the later duchy's kingdom paints last.
+    const kingdomLayers: TitleLayers = {
+      county: { CountyC: { provinces: [2] } },
+      duchy: {
+        DuchyC1: { titles: ["CountyC"] },
+        DuchyC2: { titles: ["CountyC"] },
+      },
+      kingdom: {
+        KingdomC2: { titles: ["DuchyC2"] },
+        KingdomC1: { titles: ["DuchyC1"] },
+      },
+    };
+    const kingdomData: RegionRecord = {
+      KingdomC2: { rgb: "7,7,7", name: "KingdomC2" },
+      KingdomC1: { rgb: "8,8,8", name: "KingdomC1" },
+    };
+    expect(buildTitleProvinceRegionIndex("kingdom", kingdomData, kingdomLayers)?.get(2)).toBe("KingdomC2");
+  });
+
+  it("an unparented branch erases an earlier claim at kingdom and empire level", () => {
+    // The painter walks every duchy, painting the black sentinel for ones no
+    // kingdom lists; a later orphan duchy re-claiming the county erases it.
+    const layers: TitleLayers = {
+      county: { CountyD: { provinces: [3] } },
+      duchy: {
+        DuchyHeld: { titles: ["CountyD"] },
+        DuchyOrphan: { titles: ["CountyD"] },
+      },
+      kingdom: { KingdomD: { titles: ["DuchyHeld"] } },
+    };
+    const kingdomData: RegionRecord = { KingdomD: { rgb: "9,9,9", name: "KingdomD" } };
+    expect(buildTitleProvinceRegionIndex("kingdom", kingdomData, layers)?.get(3)).toBeUndefined();
+
+    // Same at empire level: a kingdom no empire lists, walking after a held
+    // kingdom that claims the same duchy, erases the empire's paint.
+    const empireLayers: TitleLayers = {
+      county: { CountyE: { provinces: [4] } },
+      duchy: { DuchyE: { titles: ["CountyE"] } },
+      kingdom: {
+        KingdomHeld: { titles: ["DuchyE"] },
+        KingdomOrphan: { titles: ["DuchyE"] },
+      },
+      empire: { EmpireE: { titles: ["KingdomHeld"] } },
+    };
+    const empireData: RegionRecord = { EmpireE: { rgb: "10,10,10", name: "EmpireE" } };
+    expect(buildTitleProvinceRegionIndex("empire", empireData, empireLayers)?.get(4)).toBeUndefined();
+
+    // With the orphan first, the parented branch's later paint stands.
+    const flipped: TitleLayers = {
+      ...layers,
+      duchy: {
+        DuchyOrphan: { titles: ["CountyD"] },
+        DuchyHeld: { titles: ["CountyD"] },
+      },
+    };
+    expect(buildTitleProvinceRegionIndex("kingdom", kingdomData, flipped)?.get(3)).toBe("KingdomD");
   });
 
   it("an occupier wins the point over the legal owner", () => {
