@@ -1,6 +1,8 @@
 import { fetchMapJson } from "@/lib/map/api";
 import type { MapId } from "@/app/components/map/types";
 
+import { chronicleDiscardedProvinceMask } from "./chronicleWater";
+
 /**
  * The live `/compiled_data/provinces` payload (~740KB: terrain, trade,
  * prosperity per province), fetched once per map and access context and
@@ -17,7 +19,16 @@ export function fetchCompiledProvinces(mapId: MapId, sessionToken?: string | nul
   if (cached) return cached;
 
   const pending = fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, { sessionToken }).then(
-    (all) => all ?? {},
+    (all) => {
+      // Reject before caching: a payload the terrain mask cannot trust
+      // (not a province record, or entries without a readable terrain)
+      // must not settle into the cache, or every retry would reuse it and
+      // trade membership would treat it as "no water anywhere".
+      if (chronicleDiscardedProvinceMask(all) === null) {
+        throw new Error("Compiled provinces payload is not a readable province record");
+      }
+      return all;
+    },
   );
   compiledCache.set(key, pending);
   pending.catch(() => {

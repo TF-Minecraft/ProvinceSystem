@@ -24,6 +24,17 @@ describe("fetchCompiledProvinces", () => {
     expect(vi.mocked(fetchMapJson)).toHaveBeenCalledWith("/shared/compiled_data/provinces", { sessionToken: "tok" });
   });
 
+  it("rejects malformed payloads instead of caching them", async () => {
+    vi.mocked(fetchMapJson)
+      .mockResolvedValueOnce({ 1: {} })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ 1: { terrain: "plains" } });
+    await expect(fetchCompiledProvinces("malformed")).rejects.toThrow("readable province record");
+    await expect(fetchCompiledProvinces("malformed")).rejects.toThrow("readable province record");
+    await expect(fetchCompiledProvinces("malformed")).resolves.toEqual({ 1: { terrain: "plains" } });
+    expect(vi.mocked(fetchMapJson)).toHaveBeenCalledTimes(3);
+  });
+
   it("keeps maps and access contexts apart, and evicts failures for retry", async () => {
     vi.mocked(fetchMapJson)
       .mockRejectedValueOnce(new Error("offline"))
