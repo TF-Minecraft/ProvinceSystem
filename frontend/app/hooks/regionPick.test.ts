@@ -170,6 +170,35 @@ describe("resolveRegionAtPickPixel", () => {
     expect(picked?.pickId).toBe("Vassal");
   });
 
+  it("reaches as far as the pick surface's scale allows, and no further", () => {
+    // One row is enough: the reach scales off the surface width alone.
+    for (const [width, reach] of [
+      [6400, 6],
+      [3200, 3],
+      [1600, 2],
+    ] as const) {
+      const atReach = mockSurface(width, 1, (x) => (x === 100 + reach ? [10, 20, 30, 255] : [0, 0, 0, 0]));
+      const pastReach = mockSurface(width, 1, (x) => (x === 100 + reach + 1 ? [10, 20, 30, 255] : [0, 0, 0, 0]));
+      const pick = (surface: PickSurface) =>
+        resolveRegionAtPickPixel(
+          surface,
+          100,
+          0,
+          { "10,20,30": "Vassal" },
+          (_mapType, _mapId, pickId) => ({
+            regionId: pickId,
+            imagePath: null,
+            region: { name: pickId },
+          }),
+          "nation",
+          "main",
+          regionData,
+        );
+      expect(pick(atReach)?.pickId).toBe("Vassal");
+      expect(pick(pastReach)).toBeNull();
+    }
+  });
+
   it("returns null for out-of-bounds pixels", () => {
     const surface = mockSurface(2, 2, () => [10, 20, 30, 255]);
     const picked = resolveRegionAtPickPixel(
