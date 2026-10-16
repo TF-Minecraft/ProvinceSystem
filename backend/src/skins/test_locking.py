@@ -8,6 +8,7 @@ holder commit, and checks the waiter acted on the holder's result.
 """
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -504,3 +505,143 @@ def test_times_leave_in_the_api_form(env):
         0]["payload"]["grace_until"]
     assert datetime.strptime(left["grace_until"], "%Y-%m-%dT%H:%M:%SZ").replace(
         tzinfo=timezone.utc) > datetime.now(timezone.utc)
+
+
+# Independent review round 1: expiry after lock waits and reuse lock order.
+
+def after_expiry_wait(monkeypatch, module, expiry, hold, fn):
+    """Advance a controlled UTC clock only after observing a real Postgres row wait."""
+    clock = [expiry - timedelta(seconds=1)]
+    monkeypatch.setattr(module, "_utcnow", lambda: clock[0])
+    run = None
+    try:
+        with database.connect() as conn:
+            hold(conn)
+            run = Run(fn)
+            lock_wait(run, ROW)
+            clock[0] = expiry + timedelta(seconds=1)
+    finally:
+        if run is not None:
+            run.join()
+    return run
+
+
+@pytest.mark.parametrize("expiring", ["session", "state"])
+def test_round1_microsoft_link_rechecks_expiry_after_wait(env, monkeypatch, expiring):
+    user = signed_in()
+    saved = microsoft_link.consume(microsoft_link.start(MICROSOFT, user)[0])
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    testing.execute("UPDATE user_sessions SET expires_at = %s", (expiry + timedelta(hours=1),))
+    testing.execute("UPDATE microsoft_link_states SET expires_at = %s", (expiry + timedelta(hours=1),))
+    table = "user_sessions" if expiring == "session" else "microsoft_link_states"
+    testing.execute(f"UPDATE {table} SET expires_at = %s", (expiry,))
+    run = after_expiry_wait(monkeypatch, microsoft_link, expiry,
+                            lambda conn: conn.execute(f"SELECT * FROM {table} FOR UPDATE"), link_profile(saved))
+    assert isinstance(run.error, discord_link.LinkError) and str(run.error) == "This link attempt is no longer valid"
+    assert testing.value("SELECT COUNT(*) FROM discord_links WHERE player_uuid = %s", (OTHER_PLAYER,)) == 0
+
+
+def test_round1_microsoft_consume_rechecks_expiry_after_wait(env, monkeypatch):
+    state, _ = microsoft_link.start(MICROSOFT, signed_in())
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    testing.execute("UPDATE microsoft_link_states SET expires_at = %s", (expiry,))
+    run = after_expiry_wait(monkeypatch, microsoft_link, expiry,
+                            lambda conn: conn.execute("SELECT * FROM microsoft_link_states FOR UPDATE"),
+                            lambda: microsoft_link.consume(state))
+    assert run.error is None and run.value is None
+    assert testing.value("SELECT used_at FROM microsoft_link_states") is None
+
+
+@pytest.mark.parametrize("scope", ["profile", "skin", "drink"])
+def test_round1_redemption_rechecks_expiry_after_wait(env, monkeypatch, scope):
+    issued = codes.issue_code(PLAYER, scope)
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    redeem = {"profile": lambda: codes.redeem_profile_code(issued["code"], remember_me=True),
+              "skin": lambda: codes.redeem_code(issued["code"]),
+              "drink": lambda: codes.redeem_drink_code(issued["code"])}[scope]
+    run = after_expiry_wait(monkeypatch, codes, expiry,
+                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"), redeem)
+    assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
+    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+    assert testing.value("SELECT redeemed_at FROM codes") is None
+
+
+def test_round1_revocation_rechecks_expiry_after_wait(env, monkeypatch):
+    issued = codes.issue_code(PLAYER, "skin")
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    run = after_expiry_wait(monkeypatch, codes, expiry,
+                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"),
+                            lambda: codes.revoke_code(issued["code"]))
+    assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
+    assert testing.value("SELECT revoked FROM codes") is False
+
+
+@pytest.mark.parametrize("scope", ["skin", "drink"])
+def test_round1_site_reuse_rechecks_expiry_after_wait(env, monkeypatch, scope):
+    codes.issue_code(PLAYER, scope)
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    run = after_expiry_wait(monkeypatch, codes, expiry,
+                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"),
+                            lambda: codes.start_site_session(PLAYER, "main", scope))
+    assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
+    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+
+
+@pytest.mark.parametrize("scope", ["skin", "drink"])
+@pytest.mark.parametrize("change", ["revoked", "consumed"])
+def test_round1_site_reuse_revalidates_selected_code(env, monkeypatch, scope, change):
+    codes.issue_code(PLAYER, scope)
+    code_id = testing.value("SELECT id FROM codes")
+    selected, release = threading.Event(), threading.Event()
+    original = codes._open_code
+
+    def pause_after_selection(*args):
+        row = original(*args)
+        selected.set()
+        assert release.wait(10), "candidate selection was never released"
+        return row
+
+    monkeypatch.setattr(codes, "_open_code", pause_after_selection)
+    run = Run(lambda: codes.start_site_session(PLAYER, "main", scope))
+    try:
+        assert selected.wait(10), run.error
+        with database.connect() as conn:
+            if change == "revoked":
+                conn.execute("UPDATE codes SET revoked = true WHERE id = %s", (code_id,))
+            else:
+                if scope == "skin":
+                    conn.execute("INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, "
+                                 "status, dir_path, created_at) VALUES ('used', %s, %s, 'handheld', 'used', 'Used', "
+                                 "'pending', 'skins/used', now())", (PLAYER, code_id))
+                else:
+                    conn.execute("INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, "
+                                 "recipe_json, status, dir_path, created_at) VALUES ('used', %s, %s, 'used', 'Used', "
+                                 "'{}', 'pending', 'drinks/used', now())", (PLAYER, code_id))
+                conn.execute("UPDATE codes SET redeemed_at = now() WHERE id = %s", (code_id,))
+            release.set()
+            lock_wait(run, ROW)
+    finally:
+        release.set()
+        run.join()
+    assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
+    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+    if change == "consumed":
+        assert testing.value("SELECT redeemed_at FROM codes") is not None
+
+
+@pytest.mark.parametrize("scope", ["skin", "drink"])
+def test_round1_site_reuse_and_redemption_share_lock_order(env, monkeypatch, scope):
+    issued = codes.issue_code(PLAYER, scope)
+    redeem = codes.redeem_drink_code if scope == "drink" else codes.redeem_code
+    initial = redeem(issued["code"])
+    gate = Gate(monkeypatch, "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE")
+    redemption, site = race(gate, lambda: redeem(issued["code"]),
+                            lambda: codes.start_site_session(PLAYER, "main", scope), ROW)
+    assert redemption.error is None and site.error is None
+    assert codes.get_session(initial["session_token"]) is None
+    assert codes.get_session(redemption.value["session_token"]) is None
+    assert codes.get_session(site.value["session_token"]) is not None
+    assert testing.value("SELECT COUNT(*) FROM sessions") == 1

@@ -45,14 +45,21 @@ def start(config: MicrosoftConfig, user: dict) -> tuple[str, str]:
 def consume(state: str | None) -> dict | None:
     """Spend a state once; return its session, user and verifier, or None if unknown, used or expired.
 
-    The update itself checks and spends it, so of two callbacks only one gets it back.
+    Lock before reading the clock; a state can expire while its row is busy.
+    The update itself spends it, so of two callbacks only one gets it back.
     The row stays, marked used, until finish(): unlinking deletes it meanwhile.
     """
     if not valid_state(state):
         return None
     digest = hash_secret(state)
-    now = _utcnow()
     with database.connect() as conn:
+        row = conn.execute(
+            "SELECT expires_at FROM microsoft_link_states WHERE state_hash = %s FOR UPDATE",
+            (digest,),
+        ).fetchone()
+        now = _utcnow()
+        if row is None or row["expires_at"] <= now:
+            return None
         row = conn.execute(
             """
             UPDATE microsoft_link_states SET used_at = %s
@@ -81,12 +88,16 @@ def still_valid(conn, saved: dict) -> bool:
 
     The state and the session that started it are held FOR SHARE until the link
     commits, so signing out or unlinking waits for it, or lands first and is seen here.
+    Both expiry checks use the clock after those locks have been acquired.
     """
-    return conn.execute(
+    row = conn.execute(
         """
-        SELECT 1 FROM microsoft_link_states m JOIN user_sessions s ON s.id = m.session_id
-        WHERE m.state_hash = %s AND s.id = %s AND s.expires_at > %s
+        SELECT m.expires_at AS state_expires_at, s.expires_at AS session_expires_at
+        FROM microsoft_link_states m JOIN user_sessions s ON s.id = m.session_id
+        WHERE m.state_hash = %s AND s.id = %s
         FOR SHARE OF m, s
         """,
-        (saved["state_hash"], saved["session_id"], _utcnow()),
-    ).fetchone() is not None
+        (saved["state_hash"], saved["session_id"]),
+    ).fetchone()
+    now = _utcnow()
+    return row is not None and row["state_expires_at"] > now and row["session_expires_at"] > now

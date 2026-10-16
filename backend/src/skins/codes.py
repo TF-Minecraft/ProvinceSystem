@@ -187,7 +187,8 @@ def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
     """Replace sessions and clear redemption time for a code with no submission.
 
     Skin and drink codes remain reusable until a submission consumes them;
-    callers must check consumption before resetting the session here.
+    callers must hold the code row FOR UPDATE and check consumption before
+    resetting the session here. Always lock codes before their sessions.
     """
     conn.execute("DELETE FROM sessions WHERE code_id = %s", (code_id,))
     conn.execute(
@@ -397,14 +398,13 @@ def revoke_code(plaintext: str) -> dict:
         raise CodeError("code is required")
 
     code_hash = hash_secret(code)
-    now = _utcnow()
-
     with database.connect() as conn:
         # Locked so a submission consuming the code meanwhile is either seen here or refused.
         row = conn.execute(
             "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
+        now = _utcnow()
 
         if row is None:
             raise CodeError("Invalid code")
@@ -534,14 +534,13 @@ def redeem_code(plaintext: str) -> dict:
         raise CodeError("code is required")
 
     code_hash = hash_secret(code)
-    now = _utcnow()
-
     with database.connect() as conn:
         # Locked like a submission's: a code being consumed meanwhile is seen as used.
         row = conn.execute(
             "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
+        now = _utcnow()
 
         if row is None:
             raise CodeError("Invalid code")
@@ -612,10 +611,12 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
         raise CodeError("code is required")
 
     code_hash = hash_secret(code)
-    now = _utcnow()
     remember = bool(remember_me)
 
     with database.connect() as conn:
+        # The expiry decision must be made after any code-row wait has finished.
+        conn.execute("SELECT id FROM codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
+        now = _utcnow()
         # Spent by the update itself: of two redeems of one code, only one gets the row back.
         row = conn.execute(
             """
@@ -782,13 +783,12 @@ def redeem_drink_code(plaintext: str) -> dict:
         raise CodeError("code is required")
 
     code_hash = hash_secret(code)
-    now = _utcnow()
-
     with database.connect() as conn:
         row = conn.execute(
             "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
+        now = _utcnow()
 
         if row is None:
             raise CodeError("Invalid code")
@@ -952,9 +952,17 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
     # Two clicks, or a click and a TFMCWeb mint, can't both pass the cooldown and mint twice.
     with database.transaction(lock=cosmetic_mint_lock(uuid)) as conn:
         now = _utcnow()
-        session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
         row = _open_code(conn, uuid, realm, scope, now)
+        if row is not None:
+            # Match every redemption path: code first, then sessions. Selection
+            # was only a hint; revalidate after waiting, using a fresh snapshot.
+            row = conn.execute("SELECT * FROM codes WHERE id = %s FOR UPDATE", (row["id"],)).fetchone()
+            now = _utcnow()
+            if (row is None or row["revoked"] or row["expires_at"] <= now
+                    or _code_is_consumed(conn, row["id"], scope)):
+                row = None
         if row is None:
+            now = _utcnow()
             until = _cooldown_until(conn, uuid, days, now)
             if until is not None:
                 raise SiteStartRefused("cooldown", until)
@@ -976,6 +984,7 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
                     MINTED_VIA_SITE,
                 ),
             ).fetchone()
+        session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
         _prepare_skin_drink_redeem(conn, row["id"])
         conn.execute(
             """
