@@ -94,7 +94,7 @@ it("lists databases with size, access and links, and sorts and filters them", as
   fireEvent.click(screen.getByRole("button", { name: /Size/ }));
   const names = () => screen.getAllByRole("link").map((l) => l.textContent);
   expect(names()).toEqual(["CoreProtect · Main", "Site"]);
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search databases" }), { target: { value: "province" } });
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search databases" }), { target: { value: "wardrobes" } });
   expect(names()).toEqual(["Site"]);
 });
 
