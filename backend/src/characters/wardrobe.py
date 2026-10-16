@@ -1534,6 +1534,25 @@ def worn_skin_texture(player_uuid: str, character_id: str) -> dict[str, Any]:
     return {"character_id": cid, "value": value, "signature": signature}
 
 
+def wardrobe_slot_texture(player_uuid: str, character_id: str, slot: str) -> dict[str, Any]:
+    """Read one unlocked outfit for a head without reconciling, equipping or acknowledging it."""
+    slot_key = _normalize_slot(slot)
+    if slot_key not in SWAPPABLE_SLOTS:
+        raise WardrobeError("Expected a wardrobe outfit", status_code=400)
+    roster = _require_owned_character(player_uuid, character_id)
+    uuid = str(roster["player_uuid"])
+    cid = str(roster["character_id"])
+    swappable = swappable_slot_count(uuid, realm_id=roster.get("realm_id"))
+    if not _slot_unlocked(slot_key, swappable):
+        raise WardrobeError("Wardrobe outfit is locked", status_code=403)
+    row = _load_slots(uuid, cid).get(slot_key) or {}
+    value = row.get("texture_value") or None
+    signature = row.get("texture_signature") or None
+    if not (row.get("png_relpath") and value and signature):
+        value = signature = None
+    return {"character_id": cid, "slot": slot_key, "value": value, "signature": signature}
+
+
 def active_face_png(player_uuid: str, character_id: str, *, realm_id: str | None = None) -> bytes | None:
     """The face of the skin a roster character wears."""
     worn = _active_slot(player_uuid, character_id, realm_id=realm_id)
