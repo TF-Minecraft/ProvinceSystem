@@ -742,6 +742,27 @@ def test_amp_logs_in_again_when_its_session_expires(monkeypatch):
     assert posts[-1] == ("http://127.0.0.1:8081", "Core/GetStatus")
 
 
+def test_amp_finds_the_instance_again_after_a_connection_failure(monkeypatch):
+    posts = []
+
+    def post(base, method, **body):
+        posts.append(method)
+        if method == "Core/Login":
+            return {"success": True, "sessionID": "s"}
+        if method == "ADSModule/GetInstances":
+            return [{"AvailableInstances": [{"InstanceName": "TFMCMain01", "Port": 8081}]}]
+        if posts.count("Core/GetStatus") == 1:
+            raise control.ControlError("amp_unavailable")
+        return "ok"
+    monkeypatch.setattr(host.Amp, "_post", staticmethod(post))
+    amp = host.Amp("TFWeb", "secret", ads="http://ads")
+    with pytest.raises(control.ControlError, match="amp_unavailable"):
+        amp.call("main", "Core/GetStatus")
+    assert posts.count("Core/GetStatus") == 1 and "main" not in amp.sessions
+    assert amp.call("main", "Core/GetStatus") == "ok"
+    assert posts.count("ADSModule/GetInstances") == 2
+
+
 def test_recheck_after_midnight_reads_the_rotated_startup_log(controller, tmp_path, monkeypatch):
     import gzip
     new = tmp_path / "new.jar"
