@@ -10,6 +10,8 @@ sys.path.insert(0, str(backend / "src"))
 
 import src.skins as skins
 from src.skins import db
+# Postgres fixtures (`postgres`, `scratch_database`); see src/database/testing.py.
+from src.database.testing import postgres, postgres_session, scratch_database  # noqa: F401
 
 # Fixtures replace db paths with temporary directories. All imported connect
 # functions must retain that same module's globals throughout test collection.
