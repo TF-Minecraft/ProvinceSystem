@@ -69,6 +69,7 @@ def rank(player_uuid: str) -> str | None:
     if key is None:
         return None
     try:
+        # PG-MIGRATION: until the LuckPerms area converts, its mirror is in SQLite.
         with connect() as conn:
             if mirror.user_row(conn, key) is None:
                 return None

@@ -10,7 +10,7 @@ import httpx
 import pytest
 
 from src.api import auth_routes as routes
-from src.auth import microsoft, microsoft_link, users
+from src.auth import microsoft, microsoft_link, testing, users
 from src.auth.microsoft import MicrosoftClient, MicrosoftConfig, MicrosoftError
 from src.auth.test_auth_routes import (  # noqa: F401 - fixtures
     DISCORD_ID,
@@ -222,7 +222,8 @@ def test_microsoft_link_end_to_end(api, monkeypatch, ms_env, caplog):
     with ms_env.connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
         notice = conn.execute("SELECT type FROM plugin_notices WHERE player_uuid=?", (PLAYER,)).fetchone()
-        dump = "\n".join(str(tuple(r)) for t in ("users", "user_sessions", "discord_links") for r in conn.execute(f"SELECT * FROM {t}"))
+        dump = "\n".join(str(tuple(r)) for r in conn.execute("SELECT * FROM discord_links"))
+    dump += "\n".join(str(r) for t in ("users", "user_sessions") for r in testing.rows(f"SELECT * FROM {t}"))
     assert notice[0] == "link_success"
     logs = "\n".join(r.getMessage() for r in caplog.records if r.name == "auth")
     for secret in (MS_CODE, MS_TOKEN, MC_TOKEN, "xsts-token", "xbl-token"):
@@ -286,9 +287,7 @@ def test_new_attempt_replaces_older_one(api, monkeypatch, ms_env):
 
 def age_guild_check(database):
     old = users._iso(users._utcnow() - users.GUILD_CHECK_MAX_AGE - timedelta(minutes=1))
-    with database.connect() as conn:
-        conn.execute("UPDATE user_sessions SET guild_checked_at=?", (old,))
-        conn.commit()
+    testing.execute("UPDATE user_sessions SET guild_checked_at=%s", (old,))
 
 
 def test_callback_without_state_cookie_is_expired(api, monkeypatch, ms_env):
@@ -387,9 +386,7 @@ def test_sign_out_during_the_chain_stops_the_link(api, monkeypatch, ms_env):
     sign_in(api, monkeypatch)
 
     def profile_after_logout(request):
-        with ms_env.connect() as conn:
-            conn.execute("DELETE FROM user_sessions")
-            conn.commit()
+        testing.execute("DELETE FROM user_sessions")
         return httpx.Response(200, json={"id": PROFILE_ID, "name": "SteveMC"})
 
     use_chain(monkeypatch, {microsoft.MC_PROFILE_URL: profile_after_logout})

@@ -21,8 +21,8 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from src import database
 from src.skins.codes import hash_secret
-from src.skins.db import connect
 
 from . import users
 from .config import SNOWFLAKE_MAX_LEN, AuthConfig
@@ -71,42 +71,42 @@ def issue(site: str, user: dict) -> str:
     """A ticket for the signed-in dev user, redeemable once by that preview."""
     ticket = secrets.token_urlsafe(32)
     now = users._utcnow()
-    with connect() as conn:
-        conn.execute("DELETE FROM preview_sign_in_tickets WHERE expires_at <= ?", (users._iso(now),))
+    with database.connect() as conn:
+        conn.execute("DELETE FROM preview_sign_in_tickets WHERE expires_at <= %s", (now,))
         conn.execute(
             """
             INSERT INTO preview_sign_in_tickets
                 (ticket_hash, site, user_id, guild_member, guild_checked_at, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
             (
-                hash_secret(ticket), site, user["user_id"], 1 if user["guild_member"] else 0,
-                user["guild_checked_at"], users._iso(now + TICKET_TTL),
+                hash_secret(ticket), site, user["user_id"], bool(user["guild_member"]),
+                users._as_time(user["guild_checked_at"]), now + TICKET_TTL,
             ),
         )
-        conn.commit()
     return ticket
 
 
 def redeem(ticket: str | None, site: str | None) -> dict | None:
-    """Spend a ticket once; the player it carries, or None if unknown, expired or for another site."""
+    """Spend a ticket once; the player it carries, or None if unknown, expired or for another site.
+
+    The answer is the preview hand-off: `guild_checked_at` stays `YYYY-MM-DDTHH:MM:SSZ`,
+    the only form a preview accepts (`_checked_at`).
+    """
     if not valid_token(ticket) or not site:
         return None
-    digest = hash_secret(ticket)
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    # One DELETE both reads and spends the ticket, so two redeems cannot both get it.
+    with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT t.site, t.guild_member, t.guild_checked_at, t.expires_at,
-                   u.discord_user_id, u.discord_username, u.discord_global_name, u.discord_avatar, u.role
-            FROM preview_sign_in_tickets t JOIN users u ON u.id = t.user_id
-            WHERE t.ticket_hash = ?
+            DELETE FROM preview_sign_in_tickets t USING users u
+            WHERE t.ticket_hash = %s AND u.id = t.user_id
+            RETURNING t.site, t.guild_member, t.guild_checked_at, t.expires_at,
+                      u.discord_user_id, u.discord_username, u.discord_global_name, u.discord_avatar, u.role
             """,
-            (digest,),
+            (hash_secret(ticket),),
         ).fetchone()
-        conn.execute("DELETE FROM preview_sign_in_tickets WHERE ticket_hash = ?", (digest,))
-        conn.commit()
-    if row is None or row["site"] != site or users._parse_iso(row["expires_at"]) <= users._utcnow():
+    if row is None or row["site"] != site or row["expires_at"] <= users._utcnow():
         return None
     return {
         "discord_user_id": row["discord_user_id"],
@@ -115,7 +115,7 @@ def redeem(ticket: str | None, site: str | None) -> dict | None:
         "discord_avatar": row["discord_avatar"],
         "role": row["role"],
         "guild_member": bool(row["guild_member"]),
-        "guild_checked_at": row["guild_checked_at"],
+        "guild_checked_at": users.api_time(row["guild_checked_at"]),
     }
 
 

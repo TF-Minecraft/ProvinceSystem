@@ -7,16 +7,27 @@ waits in a second cookie and comes back when the view stops or runs out.
 """
 from __future__ import annotations
 
+import json
 import secrets
+import sqlite3
 from datetime import timedelta
 
+from src import database
+from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
-from src.skins.db import connect
 
 from . import audit, roles
 from .admin import AdminError
 from .players import canonical_uuid
-from .users import VIEW_PROFILE_PREFIX, _iso, _parse_iso, _utcnow, drop_view_leftovers, session_user_in
+from .users import (
+    PLACEHOLDERS_LOCK,
+    VIEW_PROFILE_PREFIX,
+    _iso,
+    _utcnow,
+    api_time,
+    drop_view_leftovers,
+    session_user_in,
+)
 
 VIEW_TTL = timedelta(minutes=30)
 _TOKEN_MAX = 256
@@ -31,41 +42,32 @@ def start(token: str | None, player_uuid: str) -> dict:
     actor = target = None
     key = canonical_uuid(player_uuid)
     try:
-        with connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            try:
-                actor = session_user_in(conn, token)
-                if actor is None:
-                    raise AdminError(401, "not_signed_in", "denied")
-                if actor["acting_user_id"] is not None:
-                    raise AdminError(409, "already_viewing", "conflict")
-                if not roles.can(actor["role"], "view_as_player"):
-                    raise AdminError(403, "forbidden", "denied")
-                if key is None:
-                    raise AdminError(400, "bad_uuid", "invalid")
-                link = conn.execute(
-                    "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?",
-                    (key,),
-                ).fetchone()
-                # The site knows a player through their Discord link; without one there is nothing to view.
-                if link is None:
-                    raise AdminError(404, "not_linked", "not_found")
-                if actor["discord_user_id"] == link["discord_user_id"]:
-                    raise AdminError(403, "cannot_act_on_self", "denied")
-                target = _account_for(conn, link["discord_user_id"])
-                made = target is None
-                if made:
-                    target = _make_placeholder(conn, link)
-                # Players only: staff accounts are never viewed.
-                if target["role"] != "player":
-                    raise AdminError(403, "target_is_staff", "denied")
-                view_token, expires_at = _open(conn, actor, target)
-                audit.record(conn, actor=actor, action="account.view_as.start", outcome="ok", target=target,
-                             detail={"expires_at": expires_at, "player_uuid": key, "placeholder": made})
-                conn.commit()
-            except BaseException:
-                conn.rollback()
-                raise
+        with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
+            actor = session_user_in(conn, token, lock=True)
+            if actor is None:
+                raise AdminError(401, "not_signed_in", "denied")
+            if actor["acting_user_id"] is not None:
+                raise AdminError(409, "already_viewing", "conflict")
+            if not roles.can(actor["role"], "view_as_player"):
+                raise AdminError(403, "forbidden", "denied")
+            if key is None:
+                raise AdminError(400, "bad_uuid", "invalid")
+            link = _link_for_player(key)
+            # The site knows a player through their Discord link; without one there is nothing to view.
+            if link is None:
+                raise AdminError(404, "not_linked", "not_found")
+            if actor["discord_user_id"] == link["discord_user_id"]:
+                raise AdminError(403, "cannot_act_on_self", "denied")
+            target = _account_for(conn, link["discord_user_id"])
+            made = target is None
+            if made:
+                target = _make_placeholder(conn, link)
+            # Players only: staff accounts are never viewed.
+            if target["role"] != "player":
+                raise AdminError(403, "target_is_staff", "denied")
+            view_token, expires_at = _open(conn, actor, target)
+            audit.record(conn, actor=actor, action="account.view_as.start", outcome="ok", target=target,
+                         detail={"expires_at": expires_at, "player_uuid": key, "placeholder": made})
     except AdminError as exc:
         if actor is not None:
             audit.record_refusal(actor=actor, action="account.view_as.start", outcome=exc.outcome, target=target,
@@ -74,53 +76,64 @@ def start(token: str | None, player_uuid: str) -> dict:
     return {"token": view_token, "expires_at": expires_at, "staff_expires_at": actor["expires_at"]}
 
 
+def _link_for_player(key: str) -> dict | None:
+    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite. Its PR
+    # reads it on the view's connection.
+    with sqlite_db.connect() as lite:
+        row = lite.execute(
+            "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?", (key,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def _account_for(conn, discord_user_id: str) -> dict | None:
     row = conn.execute(
         "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, role "
-        "FROM users WHERE discord_user_id = ?",
+        "FROM users WHERE discord_user_id = %s",
         (discord_user_id,),
     ).fetchone()
     return dict(row) if row else None
 
 
 def _make_placeholder(conn, link) -> dict:
-    stamp = _iso(_utcnow())
+    now = _utcnow()
+    # A sign-in may have made the account meanwhile: keep theirs.
     conn.execute(
         """
         INSERT INTO users (discord_user_id, discord_username, created_at, updated_at, last_login_at, placeholder)
-        VALUES (?, ?, ?, ?, ?, 1)
+        VALUES (%s, %s, %s, %s, %s, true)
+        ON CONFLICT (discord_user_id) DO NOTHING
         """,
-        (link["discord_user_id"], link["discord_username"], stamp, stamp, stamp),
+        (link["discord_user_id"], link["discord_username"], now, now, now),
     )
     return _account_for(conn, link["discord_user_id"])
 
 
 def _open(conn, actor: dict, target: dict) -> tuple[str, str]:
     now = _utcnow()
-    stamp = _iso(now)
-    expires_at = _iso(now + VIEW_TTL)
+    expires = now + VIEW_TTL
     # The player's own last membership check, so the Account page shows what they would see.
     last = conn.execute(
         "SELECT guild_member, guild_checked_at FROM user_sessions "
-        "WHERE user_id = ? AND acting_user_id IS NULL ORDER BY id DESC LIMIT 1",
+        "WHERE user_id = %s AND acting_user_id IS NULL ORDER BY id DESC LIMIT 1",
         (target["user_id"],),
     ).fetchone()
     view_token = secrets.token_urlsafe(32)
     # users.sign_in skips views that ran out; end them here so each is audited.
-    _end_where(conn, "s.acting_user_id IS NOT NULL AND s.expires_at <= ?", (stamp,))
-    conn.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (stamp,))
+    _end_where(conn, "s.acting_user_id IS NOT NULL AND s.expires_at <= %s", (now,))
+    conn.execute("DELETE FROM user_sessions WHERE expires_at <= %s", (now,))
     conn.execute(
         """
         INSERT INTO user_sessions (
             token_hash, user_id, guild_member, guild_checked_at, created_at, expires_at, acting_user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            hash_secret(view_token), target["user_id"], last["guild_member"] if last else 0,
-            last["guild_checked_at"] if last else None, stamp, expires_at, actor["user_id"],
+            hash_secret(view_token), target["user_id"], last["guild_member"] if last else False,
+            last["guild_checked_at"] if last else None, now, expires, actor["user_id"],
         ),
     )
-    return view_token, expires_at
+    return view_token, _iso(expires)
 
 
 def stop(view_token: str | None, staff_token: str | None) -> dict:
@@ -130,25 +143,19 @@ def stop(view_token: str | None, staff_token: str | None) -> dict:
     the admin who opened this view. The browser drops a view's cookie once it runs
     out, so without one this ends the admin's lapsed views instead.
     """
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            ended = _end_where(conn, "s.token_hash = ?", (hash_secret(view_token),)) if _valid(view_token) else []
-            view = ended[0] if ended else None
-            staff = session_user_in(conn, staff_token) if _valid(staff_token) else None
-            if staff is not None and (
-                staff["acting_user_id"] is not None
-                or (view is not None and staff["user_id"] != view["acting_user_id"])
-            ):
-                staff = None
-            if staff is not None and view is None:
-                lapsed = _end_where(conn, "s.acting_user_id = ? AND s.expires_at <= ?",
-                                    (staff["user_id"], _iso(_utcnow())))
-                view = lapsed[-1] if lapsed else None
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
+    with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
+        ended = _end_where(conn, "s.token_hash = %s", (hash_secret(view_token),)) if _valid(view_token) else []
+        view = ended[0] if ended else None
+        staff = session_user_in(conn, staff_token) if _valid(staff_token) else None
+        if staff is not None and (
+            staff["acting_user_id"] is not None
+            or (view is not None and staff["user_id"] != view["acting_user_id"])
+        ):
+            staff = None
+        if staff is not None and view is None:
+            lapsed = _end_where(conn, "s.acting_user_id = %s AND s.expires_at <= %s",
+                                (staff["user_id"], _utcnow()))
+            view = lapsed[-1] if lapsed else None
     return {
         "ended": view is not None,
         "restored": staff is not None,
@@ -162,46 +169,62 @@ def _valid(token: str | None) -> bool:
 
 
 def _end_where(conn, where: str, params: tuple) -> list[dict]:
-    """Delete the matching views and their Profile sessions, auditing each; oldest first."""
+    """Delete the matching views and their Profile sessions, auditing each; oldest first.
+
+    The views are locked first, so two requests ending the same view end and audit it once.
+    The caller's transaction opened with the placeholders lock.
+    """
     rows = conn.execute(
         f"""
         SELECT s.id, s.acting_user_id, s.expires_at, u.id AS user_id, u.discord_user_id,
-               u.discord_username, u.discord_global_name, dl.player_uuid
+               u.discord_username, u.discord_global_name
         FROM user_sessions s JOIN users u ON u.id = s.user_id
-        LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id
         WHERE s.acting_user_id IS NOT NULL AND {where}
         ORDER BY s.id
+        FOR UPDATE OF s
         """,
         params,
     ).fetchall()
     now = _utcnow()
     views = [dict(row) for row in rows]
+    players = _players_for([view["discord_user_id"] for view in views])
     for view in views:
-        conn.execute("DELETE FROM user_sessions WHERE id = ?", (view["id"],))
+        view["player_uuid"] = players.get(view["discord_user_id"])
+        conn.execute("DELETE FROM user_sessions WHERE id = %s", (view["id"],))
         actor = conn.execute(
             "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, role "
-            "FROM users WHERE id = ?",
+            "FROM users WHERE id = %s",
             (view["acting_user_id"],),
         ).fetchone()
         audit.record(conn, actor=dict(actor) if actor else None, action="account.view_as.stop", outcome="ok",
-                     target=view, detail={"expired": _parse_iso(view["expires_at"]) <= now})
+                     target=view, detail={"expired": view["expires_at"] <= now})
+        view["expires_at"] = api_time(view["expires_at"])
     if views:
         drop_view_leftovers(conn)
     return views
+
+
+def _players_for(discord_ids: list[str]) -> dict[str, str]:
+    """The Minecraft UUID linked to each Discord account."""
+    if not discord_ids:
+        return {}
+    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite. Its PR puts
+    # back the join: LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id.
+    with sqlite_db.connect() as lite:
+        rows = lite.execute(
+            "SELECT discord_user_id, player_uuid FROM discord_links "
+            "WHERE discord_user_id IN (SELECT value FROM json_each(?))",
+            (json.dumps(discord_ids),),
+        ).fetchall()
+    return {row["discord_user_id"]: row["player_uuid"] for row in rows}
 
 
 def end(token: str | None) -> None:
     """End the view this session token belongs to, if it is one."""
     if not _valid(token):
         return
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            _end_where(conn, "s.token_hash = ?", (hash_secret(token),))
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
+    with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
+        _end_where(conn, "s.token_hash = %s", (hash_secret(token),))
 
 
 def end_lapsed(staff_token: str | None) -> None:
@@ -211,16 +234,10 @@ def end_lapsed(staff_token: str | None) -> None:
     """
     if not _valid(staff_token):
         return
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            staff = session_user_in(conn, staff_token)
-            if staff is not None and staff["acting_user_id"] is None:
-                _end_where(conn, "s.acting_user_id = ? AND s.expires_at <= ?", (staff["user_id"], _iso(_utcnow())))
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
+    with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
+        staff = session_user_in(conn, staff_token, lock=True)
+        if staff is not None and staff["acting_user_id"] is None:
+            _end_where(conn, "s.acting_user_id = %s AND s.expires_at <= %s", (staff["user_id"], _utcnow()))
 
 
 def audit_refused_start(cookie_tokens: list[str], player_uuid: str) -> None:
@@ -228,10 +245,10 @@ def audit_refused_start(cookie_tokens: list[str], player_uuid: str) -> None:
     for token in cookie_tokens:
         if not _valid(token):
             continue
-        with connect() as conn:
+        with database.connect() as conn:
             row = conn.execute(
                 "SELECT a.id AS user_id, a.discord_user_id, a.discord_username, a.discord_global_name, a.role "
-                "FROM user_sessions s JOIN users a ON a.id = s.acting_user_id WHERE s.token_hash = ?",
+                "FROM user_sessions s JOIN users a ON a.id = s.acting_user_id WHERE s.token_hash = %s",
                 (hash_secret(token),),
             ).fetchone()
         if row is not None:
@@ -248,31 +265,43 @@ def profile_minted_via(user: dict) -> str | None:
 
 
 def view_still_open(session_id: int):
-    """A check, run inside a write, that this view has not ended or run out."""
+    """A check, run inside a write, that this view has not ended or run out.
+
+    On a Postgres connection the view's row is held FOR SHARE until that write
+    commits, so ending the view waits for it or is seen by it.
+    """
     def check(conn) -> bool:
+        if isinstance(conn, sqlite3.Connection):
+            # PG-MIGRATION: until the Skins area converts, start_linked_profile_session passes its
+            # SQLite connection. Views are in Postgres now, so check there; nothing holds the view
+            # open for the caller's write meanwhile.
+            with database.connect() as pg:
+                return check(pg)
         return conn.execute(
-            "SELECT 1 FROM user_sessions WHERE id = ? AND acting_user_id IS NOT NULL AND expires_at > ?",
-            (session_id, _iso(_utcnow())),
+            "SELECT 1 FROM user_sessions WHERE id = %s AND acting_user_id IS NOT NULL AND expires_at > %s "
+            "FOR SHARE",
+            (session_id, _utcnow()),
         ).fetchone() is not None
     return check
 
 
 def refuses_write(cookie_tokens: list[str], bearer_token: str | None) -> bool:
     """A view's session cookie, or a Profile session opened during a view, sent with a write."""
-    with connect() as conn:
-        for token in cookie_tokens:
-            if not _valid(token):
-                continue
-            row = conn.execute(
-                "SELECT acting_user_id FROM user_sessions WHERE token_hash = ?", (hash_secret(token),)
-            ).fetchone()
-            if row is not None and row["acting_user_id"] is not None:
+    hashes = [hash_secret(token) for token in cookie_tokens if _valid(token)]
+    if hashes:
+        with database.connect() as conn:
+            if conn.execute(
+                "SELECT 1 FROM user_sessions WHERE token_hash = ANY(%s) AND acting_user_id IS NOT NULL", (hashes,)
+            ).fetchone() is not None:
                 return True
-        if _valid(bearer_token):
-            row = conn.execute(
+    if _valid(bearer_token):
+        # PG-MIGRATION: until the Skins area converts, Profile sessions and their codes are in
+        # SQLite. Its PR reads them on the connection above.
+        with sqlite_db.connect() as lite:
+            row = lite.execute(
                 "SELECT c.minted_via FROM sessions s JOIN codes c ON c.id = s.code_id WHERE s.token_hash = ?",
                 (hash_secret(bearer_token),),
             ).fetchone()
-            if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):
-                return True
+        if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):
+            return True
     return False

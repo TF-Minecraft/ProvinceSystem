@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import time
 
+from src import database
 from src.auth import roles
 from src.auth.admin import AdminError
 from src.auth.players import canonical_uuid
@@ -118,14 +119,18 @@ def _pending(target_type: str, target: str) -> dict | None:
 
 def _account(conn, uuid: str) -> dict | None:
     row = conn.execute(
-        """
-        SELECT dl.discord_user_id, dl.discord_username, u.id AS user_id, u.role
-        FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0
-        WHERE lower(dl.player_uuid) = ?
-        """,
+        "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?",
         (uuid,),
     ).fetchone()
-    return dict(row) if row else None
+    if row is None:
+        return None
+    # PG-MIGRATION: until the LuckPerms area converts, `conn` is SQLite and users are in
+    # Postgres. Its PR puts back the join: LEFT JOIN users u ON u.discord_user_id =
+    # dl.discord_user_id AND NOT u.placeholder.
+    with database.connect() as pg:
+        user = pg.execute("SELECT id AS user_id, role FROM users WHERE discord_user_id = %s AND NOT placeholder",
+                          (row["discord_user_id"],)).fetchone()
+    return {**dict(row), **(user or {"user_id": None, "role": None})}
 
 
 def _track_moves(conn, uuid: str, tracks: list[dict], viewer: dict, allowed: bool, now: int) -> list[dict]:

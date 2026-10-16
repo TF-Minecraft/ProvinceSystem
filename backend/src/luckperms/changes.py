@@ -16,6 +16,7 @@ import os
 import time
 from datetime import datetime, timezone
 
+from src import database
 from src.auth import audit, roles
 from src.auth.admin import AdminError, clean_reason
 from src.auth.players import canonical_uuid
@@ -244,11 +245,15 @@ def _linked_uuid(conn, discord_user_id: str | None) -> str | None:
 
 
 def _target_account_role(conn, uuid: str) -> str | None:
-    row = conn.execute(
-        "SELECT u.role FROM discord_links dl JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0 "
-        "WHERE lower(dl.player_uuid) = ?",
-        (uuid,),
-    ).fetchone()
+    link = conn.execute("SELECT discord_user_id FROM discord_links WHERE lower(player_uuid) = ?", (uuid,)).fetchone()
+    if link is None:
+        return None
+    # PG-MIGRATION: until the LuckPerms area converts, `conn` is SQLite and users are in
+    # Postgres. Its PR puts back the join: JOIN users u ON u.discord_user_id = dl.discord_user_id
+    # AND NOT u.placeholder.
+    with database.connect() as pg:
+        row = pg.execute("SELECT role FROM users WHERE discord_user_id = %s AND NOT placeholder",
+                         (link["discord_user_id"],)).fetchone()
     return row["role"] if row else None
 
 
@@ -443,8 +448,11 @@ def _actor_name(row) -> str:
 
 def _current_actor(conn, row) -> dict | None:
     """The actor's rights again at collection time: a demotion since queueing cancels the change."""
-    actor = conn.execute("SELECT id AS user_id, discord_user_id, role FROM users WHERE id = ?",
-                         (row["actor_user_id"],)).fetchone()
+    # PG-MIGRATION: until the LuckPerms area converts, `conn` is SQLite and users are in
+    # Postgres. Its PR reads the actor on `conn` FOR SHARE.
+    with database.connect() as pg:
+        actor = pg.execute("SELECT id AS user_id, discord_user_id, role FROM users WHERE id = %s",
+                           (row["actor_user_id"],)).fetchone()
     if actor is None or not roles.can(actor["role"], "change_luckperms"):
         return None
     actor = dict(actor)

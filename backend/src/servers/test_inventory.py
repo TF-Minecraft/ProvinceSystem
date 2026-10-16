@@ -469,7 +469,7 @@ def test_unreadable_jar_keeps_its_hash_without_a_version(tmp_path):
     assert jar.name is None and jar.version is None
 
 
-def test_the_route_is_for_admins(database, monkeypatch, tmp_path):
+def test_the_route_is_for_admins(database, postgres, monkeypatch, tmp_path):
     from fastapi import FastAPI
 
     from src.api import admin_routes, auth_routes

@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field, StrictBool
 from src.api.auth_routes import _no_store
 from src.api.staff_access import require_staff_account
 from src.auth import audit
+from src import database
 from src.dbstudio import studio
-from src.skins.db import connect
 
 database_router = APIRouter(prefix="/admin/database", tags=["admin"])
 
@@ -55,11 +55,11 @@ def _audited(actor: dict, source_id: str, sql: str, write: bool, run, action: st
 def database_overview(request: Request, response: Response):
     actor = require_staff_account(request, "use_database")
     _no_store(response)
-    with connect() as conn:
-        counts = dict(conn.execute(
-            "SELECT json_extract(detail_json, '$.database'), count(*) FROM admin_audit "
+    with database.connect() as conn:
+        counts = {row["source"]: row["n"] for row in conn.execute(
+            "SELECT detail_json ->> 'database' AS source, count(*) AS n FROM admin_audit "
             "WHERE action IN ('database.read', 'database.write') AND outcome IN ('ok', 'failed') "
-            "GROUP BY 1").fetchall())
+            "GROUP BY 1")}
     return _audited(actor, "*", "list databases", False, lambda: studio.overview(counts), "database.list")
 
 

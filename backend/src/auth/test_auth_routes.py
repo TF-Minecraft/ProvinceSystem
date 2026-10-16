@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
@@ -8,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api import auth_routes as routes
-from src.auth import guild_check, users
+from src.auth import guild_check, testing, users
 from src.auth.discord import DiscordError
 from src.skins import codes, discord_link
 
@@ -22,6 +23,7 @@ ACCESS_TOKEN = "discord-access-token-should-not-leak"
 OAUTH_CODE = "discord-oauth-code-should-not-leak"
 SESSION = "__Host-tfmc_session"
 STATE = "__Host-tfmc_discord_state"
+API_TIME = r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"
 
 
 class Stub:
@@ -55,7 +57,7 @@ class Stub:
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -146,16 +148,30 @@ def test_callback_signs_in_and_returns_to_saved_path(api, monkeypatch, env, capl
     cookies = response.headers.get_list("set-cookie")
     assert any(c.startswith(SESSION + "=") and "Secure" in c and "HttpOnly" in c for c in cookies)
     assert any(c.startswith(STATE + '=""') or c.startswith(STATE + "=;") or (c.startswith(STATE) and "Max-Age=0" in c) for c in cookies)
-    with env.connect() as conn:
-        user = conn.execute("SELECT * FROM users").fetchone()
-        session = conn.execute("SELECT * FROM user_sessions").fetchone()
-        dump = "\n".join(str(tuple(r)) for t in ("users", "user_sessions", "discord_oauth_states") for r in conn.execute(f"SELECT * FROM {t}"))
+    [user] = testing.rows("SELECT * FROM users")
+    [session] = testing.rows("SELECT * FROM user_sessions")
+    dump = "\n".join(str(r) for t in ("users", "user_sessions", "discord_oauth_states")
+                     for r in testing.rows(f"SELECT * FROM {t}"))
     assert user["discord_user_id"] == DISCORD_ID and user["discord_username"] == "steve_tfmc"
-    assert session["guild_member"] == 1 and session["user_id"] == user["id"]
+    assert session["guild_member"] is True and session["user_id"] == user["id"]
+    assert session["expires_at"] - session["created_at"] == users.SESSION_TTL
     assert ACCESS_TOKEN not in dump and OAUTH_CODE not in dump
     assert api.cookies.get(SESSION) not in dump
     logs = "\n".join(r.getMessage() for r in caplog.records if r.name == "auth")
     assert ACCESS_TOKEN not in logs and OAUTH_CODE not in logs
+
+
+def test_session_times_keep_the_api_form(api, monkeypatch, env):
+    """Stored as timestamptz; cookies, /account and other areas still get YYYY-MM-DDTHH:MM:SSZ."""
+    response, _ = sign_in(api, monkeypatch)
+    cookie = next(c for c in response.headers.get_list("set-cookie") if c.startswith(SESSION + "="))
+    assert f"Max-Age={int(users.SESSION_TTL.total_seconds())}" in cookie
+    assert re.fullmatch(API_TIME, api.get("/account").json()["guild"]["checked_at"])
+    user = users.session_user(api.cookies.get(SESSION))
+    assert all(re.fullmatch(API_TIME, user[key]) for key in ("expires_at", "guild_checked_at", "created_at"))
+    assert users.SESSION_TTL.total_seconds() - 5 < routes.seconds_left(user["expires_at"]) <= users.SESSION_TTL.total_seconds()
+    assert user["guild_member"] is True
+    assert re.fullmatch(API_TIME, users.guild_state(user["session_id"])["guild_checked_at"])
 
 
 def test_second_sign_in_updates_user_not_duplicate(api, monkeypatch, env):
@@ -164,10 +180,9 @@ def test_second_sign_in_updates_user_not_duplicate(api, monkeypatch, env):
     stub.identity = lambda token: {"discord_user_id": DISCORD_ID, "discord_username": "renamed",
                                    "discord_global_name": None, "discord_avatar": None}
     sign_in(api, monkeypatch, stub)
-    with env.connect() as conn:
-        rows = conn.execute("SELECT discord_username FROM users").fetchall()
-        sessions = conn.execute("SELECT COUNT(*) FROM user_sessions").fetchone()[0]
-    assert [r[0] for r in rows] == ["renamed"] and sessions == 2
+    rows = testing.rows("SELECT discord_username FROM users")
+    sessions = testing.value("SELECT COUNT(*) FROM user_sessions")
+    assert [r["discord_username"] for r in rows] == ["renamed"] and sessions == 2
 
 
 def test_callback_without_matching_state_cookie_is_expired(api, monkeypatch, env):
@@ -198,9 +213,7 @@ def test_expired_state_is_refused(api, monkeypatch, env):
     stub = Stub()
     monkeypatch.setattr(routes, "build_client", lambda config: stub)
     query, _ = start(api)
-    with env.connect() as conn:
-        conn.execute("UPDATE discord_oauth_states SET expires_at='2000-01-01T00:00:00Z'")
-        conn.commit()
+    testing.execute("UPDATE discord_oauth_states SET expires_at='2000-01-01T00:00:00Z'")
     response = api.get("/auth/discord/callback", params={"code": OAUTH_CODE, "state": query["state"][0]}, follow_redirects=False)
     assert response.headers["location"].endswith("signin=expired") and stub.exchanged == []
 
@@ -211,8 +224,7 @@ def test_denied_consent_creates_nothing(api, monkeypatch, env):
     query, _ = start(api)
     response = api.get("/auth/discord/callback", params={"error": "access_denied", "state": query["state"][0]}, follow_redirects=False)
     assert response.headers["location"].endswith("signin=denied") and stub.exchanged == []
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM users") == 0
 
 
 @pytest.mark.parametrize("fail", ["exchange", "identity"])
@@ -220,8 +232,7 @@ def test_discord_failures_redirect_with_error(api, monkeypatch, env, fail):
     response, stub = sign_in(api, monkeypatch, Stub(fail=fail))
     assert response.headers["location"] == SITE + "/account?signin=error"
     assert stub.closed
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM user_sessions").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM user_sessions") == 0
 
 
 def test_guild_check_failure_still_signs_in_without_membership(api, monkeypatch, env):
@@ -240,9 +251,7 @@ def test_account_requires_session(api):
 
 def test_expired_session_is_refused(api, monkeypatch, env):
     sign_in(api, monkeypatch)
-    with env.connect() as conn:
-        conn.execute("UPDATE user_sessions SET expires_at='2000-01-01T00:00:00Z'")
-        conn.commit()
+    testing.execute("UPDATE user_sessions SET expires_at='2000-01-01T00:00:00Z'")
     assert api.get("/account").status_code == 401
 
 
@@ -299,9 +308,7 @@ def test_link_requires_guild_membership(api, monkeypatch):
 def test_link_requires_recent_guild_check(api, monkeypatch, env):
     sign_in(api, monkeypatch)
     old = users._iso(users._utcnow() - users.GUILD_CHECK_MAX_AGE - timedelta(minutes=1))
-    with env.connect() as conn:
-        conn.execute("UPDATE user_sessions SET guild_checked_at=?", (old,))
-        conn.commit()
+    testing.execute("UPDATE user_sessions SET guild_checked_at=%s", (old,))
     response = api.post("/account/minecraft/link", json={"code": link_code()}, headers=ORIGIN)
     assert response.status_code == 403 and response.json()["detail"] == "guild_check_stale"
     assert api.get("/account").json()["guild"]["fresh"] is False
@@ -602,9 +609,7 @@ def test_patreon_unlink_uses_signed_in_discord_account(api, monkeypatch):
 
 def make_stale(env, member=True):
     old = users._iso(users._utcnow() - users.GUILD_CHECK_MAX_AGE - timedelta(minutes=1))
-    with env.connect() as conn:
-        conn.execute("UPDATE user_sessions SET guild_checked_at=?, guild_member=?", (old, 1 if member else 0))
-        conn.commit()
+    testing.execute("UPDATE user_sessions SET guild_checked_at=%s, guild_member=%s", (old, member))
 
 
 def bot_says(monkeypatch, answer, pause=0.0):

@@ -1,12 +1,14 @@
 import json
 import sqlite3
 
+import psycopg
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from src import database
 from src.api import admin_routes, auth_routes
-from src.auth import admin, admin_cli, audit, roles, users
+from src.auth import admin, admin_cli, audit, roles, testing, users
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -14,7 +16,7 @@ SESSION = "__Host-tfmc_session"
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -41,11 +43,11 @@ def account(db, name, role="player"):
          "discord_avatar": None},
         guild_member=True,
     )
-    with db.connect() as conn:
-        conn.execute("UPDATE users SET role = ? WHERE discord_user_id = ?", (role, discord_id))
-        conn.commit()
-        user_id = conn.execute("SELECT id FROM users WHERE discord_user_id = ?", (discord_id,)).fetchone()[0]
-    return user_id, token
+    return testing.set_role(discord_id, role), token
+
+
+def discord_id_of(name):
+    return str(100000000000000000 + abs(hash(name)) % 10**15)
 
 
 def client(app, token=None):
@@ -56,18 +58,16 @@ def client(app, token=None):
 
 
 def role_of(db, user_id):
-    with db.connect() as conn:
-        return conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()[0]
+    return testing.value("SELECT role FROM users WHERE id = %s", (user_id,))
 
 
-def audit_rows(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute("SELECT * FROM admin_audit ORDER BY id")]
+def audit_rows(db=None):
+    """The audit log, oldest first; detail_json is the parsed object."""
+    return testing.audit_rows()
 
 
 def sessions_of(db, user_id):
-    with db.connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM user_sessions WHERE user_id = ?", (user_id,)).fetchone()[0]
+    return testing.value("SELECT COUNT(*) FROM user_sessions WHERE user_id = %s", (user_id,))
 
 
 # --------------------
@@ -126,8 +126,8 @@ def test_migration_adds_role_to_existing_users(tmp_path, monkeypatch):
 
 def test_fresh_database_rejects_unknown_roles(env):
     account(env, "alice")
-    with env.connect() as conn, pytest.raises(sqlite3.IntegrityError):
-        conn.execute("UPDATE users SET role = 'owner'")
+    with pytest.raises(database.CheckViolation):
+        testing.execute("UPDATE users SET role = 'owner'")
 
 
 # --------------------
@@ -135,19 +135,16 @@ def test_fresh_database_rejects_unknown_roles(env):
 # --------------------
 
 def test_audit_rows_cannot_change(env):
-    with env.connect() as conn:
-        audit.record(conn, actor=None, action="test", outcome="ok")
-        conn.commit()
-        with pytest.raises(sqlite3.DatabaseError, match="append-only"):
-            conn.execute("UPDATE admin_audit SET outcome = 'x'")
-        with pytest.raises(sqlite3.DatabaseError, match="append-only"):
-            conn.execute("DELETE FROM admin_audit")
-        row_id = conn.execute("SELECT id FROM admin_audit").fetchone()[0]
-        with pytest.raises(sqlite3.DatabaseError, match="append-only"):
-            conn.execute(
-                "INSERT OR REPLACE INTO admin_audit (id, created_at, actor_type, action, outcome) "
-                "VALUES (?, 'x', 'system', 'forged', 'ok')", (row_id,))
-    assert [r["action"] for r in audit_rows(env)] == ["test"]
+    with database.connect() as conn:
+        audit.record(conn, actor=None, action="test", outcome="ok", detail={"b": 1, "a": [2]})
+    row_id = audit_rows(env)[0]["id"]
+    for statement in ("UPDATE admin_audit SET outcome = 'x'", "DELETE FROM admin_audit",
+                      "INSERT INTO admin_audit (id, created_at, actor_type, action, outcome) "
+                      f"VALUES ({row_id}, now(), 'system', 'forged', 'ok') ON CONFLICT (id) DO UPDATE SET outcome = 'x'"):
+        with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
+            testing.execute(statement)
+    [row] = audit_rows(env)
+    assert (row["action"], row["actor_name"], row["detail_json"]) == ("test", "operator", {"a": [2], "b": 1})
 
 
 # --------------------
@@ -178,10 +175,14 @@ def test_staff_list_and_lookup(app, env):
     pat_id, _ = account(env, "pat")
     with env.connect() as conn:
         conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, linked_at) "
-                     "SELECT 'u-pat', discord_user_id, 'PatMC', 'x' FROM users WHERE id = ?", (pat_id,))
+                     "VALUES ('u-pat', ?, 'PatMC', 'x')", (discord_id_of("pat"),))
         conn.commit()
     c = client(app, root)
-    assert [s["discord_username"] for s in c.get("/admin/staff").json()["staff"]] == ["rory", "adam", "mona"]
+    staff = c.get("/admin/staff").json()["staff"]
+    assert [s["discord_username"] for s in staff] == ["rory", "adam", "mona"]
+    # Times keep the API form the panel has always had.
+    assert all(len(s["created_at"]) == 20 and s["created_at"].endswith("Z") for s in staff)
+    assert staff[0]["last_login_at"] == users._iso(users._parse_iso(staff[0]["last_login_at"]))
     found = c.get("/admin/accounts/lookup", params={"q": "@PAT"}).json()["accounts"]
     assert [(a["user_id"], a["minecraft_name"], a["role"]) for a in found] == [(pat_id, "PatMC", "player")]
     assert c.get("/admin/accounts/lookup", params={"q": "pa"}).json()["accounts"] == []
@@ -208,7 +209,7 @@ def test_root_can_make_admins_and_target_is_signed_out(app, env):
     assert (row["action"], row["outcome"], row["actor_user_id"], row["actor_role"], row["target_user_id"]) == (
         "account.role.change", "ok", root_id, "root", pat_id)
     assert row["reason"] == "Promoted for events" and row["target_name"] == "pat"
-    assert json.loads(row["detail_json"]) == {"after": "admin", "before": "player", "sessions_revoked": 1}
+    assert row["detail_json"] == {"after": "admin", "before": "player", "sessions_revoked": 1}
 
 
 @pytest.mark.parametrize("actor_role,target_role,new_role,status,code", [
@@ -235,7 +236,7 @@ def test_role_change_rules(app, env, actor_role, target_role, new_role, status, 
     if code:
         assert response.json()["detail"] == code
         assert role_of(env, target_id) == target_role
-        assert (row["outcome"], json.loads(row["detail_json"])["error"]) in {
+        assert (row["outcome"], row["detail_json"]["error"]) in {
             ("denied", code), ("conflict", code)}
         assert row["actor_role"] == actor_role
     else:
@@ -263,6 +264,8 @@ def test_unknown_target(app, env):
     response = change(app, root, 9999, "mod")
     assert response.status_code == 404
     assert audit_rows(env)[-1]["outcome"] == "not_found"
+    # Past bigint: no account, not a database error.
+    assert change(app, root, 2**70, "mod").status_code == 404
 
 
 @pytest.mark.parametrize("headers", [{}, {"Origin": "https://evil.example"}, {"Origin": "https://dev.tfminecraft.net"}])
@@ -286,9 +289,7 @@ def test_demotion_that_lands_first_wins(app, env):
     """The actor's role is read inside the write, not from an earlier check."""
     adam_id, adam = account(env, "adam", "admin")
     pat_id, _ = account(env, "pat")
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'mod' WHERE id = ?", (adam_id,))
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'mod' WHERE id = %s", (adam_id,))
     response = change(app, adam, pat_id, "mod")
     assert response.status_code == 403 and role_of(env, pat_id) == "player"
 
@@ -296,9 +297,7 @@ def test_demotion_that_lands_first_wins(app, env):
 def test_revoked_actor_session_cannot_write(app, env):
     adam_id, adam = account(env, "adam", "admin")
     pat_id, _ = account(env, "pat")
-    with env.connect() as conn:
-        conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (adam_id,))
-        conn.commit()
+    testing.execute("DELETE FROM user_sessions WHERE user_id = %s", (adam_id,))
     assert change(app, adam, pat_id, "mod").status_code == 401
     assert role_of(env, pat_id) == "player"
 
@@ -308,10 +307,10 @@ def test_failed_audit_rolls_back_the_change(app, env, monkeypatch):
     pat_id, _ = account(env, "pat")
 
     def broken(conn, **kwargs):
-        raise sqlite3.OperationalError("disk I/O error")
+        raise database.OperationalError("disk I/O error")
 
     monkeypatch.setattr(admin.audit, "record", broken)
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(database.OperationalError):
         admin.change_role(client(app, root).cookies.get(SESSION), pat_id, "mod", "Promoted for events")
     assert role_of(env, pat_id) == "player" and sessions_of(env, pat_id) == 1
 
@@ -323,7 +322,7 @@ def test_failed_audit_rolls_back_the_change(app, env, monkeypatch):
 def test_mod_can_sign_out_a_player_everywhere(app, env):
     _, mod = account(env, "mona", "mod")
     pat_id, _ = account(env, "pat")
-    users.sign_in({"discord_user_id": str(100000000000000000 + abs(hash("pat")) % 10**15), "discord_username": "pat",
+    users.sign_in({"discord_user_id": discord_id_of("pat"), "discord_username": "pat",
                    "discord_global_name": None, "discord_avatar": None}, guild_member=True)
     response = client(app, mod).post(f"/admin/accounts/{pat_id}/sessions/revoke",
                                      json={"reason": "Reported shared login"}, headers=ORIGIN)
@@ -347,8 +346,8 @@ def test_mod_cannot_sign_out_another_mod(app, env):
 def test_cli_grants_and_removes_root(env, capsys):
     rory_id, _ = account(env, "rory")
     sam_id, _ = account(env, "sam")
-    rory_discord = str(100000000000000000 + abs(hash("rory")) % 10**15)
-    sam_discord = str(100000000000000000 + abs(hash("sam")) % 10**15)
+    rory_discord = discord_id_of("rory")
+    sam_discord = discord_id_of("sam")
 
     assert admin_cli.main(["grant-root", "--discord-id", rory_discord, "--reason", "First owner"]) == 0
     assert role_of(env, rory_id) == "root" and sessions_of(env, rory_id) == 0
@@ -384,8 +383,8 @@ def test_malformed_writes_are_audited_without_values(app, env, body, fields):
     assert response.status_code == 422
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"], row["actor_role"]) == ("account.role.change", "invalid", "root")
-    assert json.loads(row["detail_json"]) == {"error": "invalid_request", "fields": fields, "target_user_id": pat_id}
-    assert "x" * 50 not in row["detail_json"] and row["reason"] is None
+    assert row["detail_json"] == {"error": "invalid_request", "fields": fields, "target_user_id": pat_id}
+    assert "x" * 50 not in json.dumps(row["detail_json"]) and row["reason"] is None
 
 
 def test_malformed_writes_by_strangers_are_not_audited(app, env):
@@ -398,4 +397,4 @@ def test_non_numeric_target_is_audited_without_an_id(app, env):
     _, root = account(env, "rory", "root")
     assert client(app, root).post("/admin/accounts/abc/sessions/revoke", json={"reason": "abc"},
                                   headers=ORIGIN).status_code == 422
-    assert json.loads(audit_rows(env)[-1]["detail_json"])["target_user_id"] is None
+    assert audit_rows(env)[-1]["detail_json"]["target_user_id"] is None

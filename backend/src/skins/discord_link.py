@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from .codes import generate_plaintext_code, hash_secret
 from .db import connect
 from .plugin_notices import enqueue_link_success, enqueue_plugin_notice
+from src import database
 from src.text_validation import TextValidationError, assert_optional_display_name
 
 
@@ -570,10 +571,16 @@ def record_guild_joined(discord_user_id: str) -> dict:
 
 def _cancel_microsoft_attempts(conn, discord_id: str) -> None:
     """Unlinking cancels Microsoft link attempts still open for that Discord account."""
-    conn.execute(
-        "DELETE FROM microsoft_link_states WHERE user_id IN (SELECT id FROM users WHERE discord_user_id = ?)",
-        (discord_id,),
-    )
+    # PG-MIGRATION: until the Linking area converts, users are in Postgres and these states in
+    # SQLite. Its PR puts back the subquery: user_id IN (SELECT id FROM users WHERE discord_user_id = %s).
+    pending = [row["user_id"] for row in conn.execute("SELECT DISTINCT user_id FROM microsoft_link_states")]
+    if not pending:
+        return
+    with database.connect() as pg:
+        user = pg.execute("SELECT id FROM users WHERE discord_user_id = %s AND id = ANY(%s)",
+                          (discord_id, pending)).fetchone()
+    if user is not None:
+        conn.execute("DELETE FROM microsoft_link_states WHERE user_id = ?", (user["id"],))
 
 
 def expire_due_graces() -> int:

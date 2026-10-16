@@ -1,5 +1,4 @@
 import contextlib
-import json
 import os
 import sqlite3
 from types import SimpleNamespace
@@ -43,29 +42,41 @@ def test_only_root_can_use_the_studio(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
     overview = c.get("/admin/database")
     assert overview.status_code == 200 and overview.headers["cache-control"] == "no-store"
-    [site] = overview.json()["databases"]
+    # The accounts tests' Postgres (DATABASE_URL) is listed too.
+    site = next(d for d in overview.json()["databases"] if d["id"] == "site")
     assert site["id"] == "site" and site["writable"] and site["available"] and site["tables"] > 10
+
+
+def link(env, name):
+    # The studio's site source is still province.db; accounts are in Postgres.
+    with env.connect() as conn:
+        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, linked_at) "
+                     "VALUES (?, ?, ?, '2026-10-01T00:00:00Z')", (f"uuid-{name}", f"id-{name}", name))
+        conn.commit()
 
 
 def test_reads_cannot_write_and_are_audited(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    result = query(c, "SELECT id, role FROM users ORDER BY id")
+    link(env, "RoryMC")
+    result = query(c, "SELECT player_uuid, minecraft_name FROM discord_links ORDER BY player_uuid")
     assert result.status_code == 200
     body = result.json()
-    assert body["columns"] == ["id", "role"] and body["rows"][0][1] == "root" and body["changes"] is None
-    refused = query(c, "UPDATE users SET role = 'player'")
+    assert body["columns"] == ["player_uuid", "minecraft_name"] and body["rows"][0][1] == "RoryMC"
+    assert body["changes"] is None
+    refused = query(c, "UPDATE discord_links SET minecraft_name = 'x'")
     assert refused.status_code == 400 and "readonly" in refused.json()["detail"]
     rows = [r for r in audit_rows(env) if r["action"].startswith("database.")]
     assert [(r["action"], r["outcome"]) for r in rows] == [("database.read", "ok"), ("database.read", "failed")]
-    assert json.loads(rows[0]["detail_json"])["sql"] == "SELECT id, role FROM users ORDER BY id"
+    assert rows[0]["detail_json"]["sql"] == "SELECT player_uuid, minecraft_name FROM discord_links ORDER BY player_uuid"
     assert c.get("/admin/database").json()["databases"][0]["queries"] == 2
 
 
 def test_root_edits_are_audited_but_the_audit_log_is_protected(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    edited = query(c, "UPDATE users SET discord_global_name = 'Renamed' WHERE discord_username = 'rory'", write=True)
+    link(env, "RoryMC")
+    edited = query(c, "UPDATE discord_links SET minecraft_name = 'Renamed' WHERE minecraft_name = 'RoryMC'", write=True)
     assert edited.status_code == 200 and edited.json()["changes"] == 1
-    assert query(c, "SELECT discord_global_name FROM users").json()["rows"] == [["Renamed"]]
+    assert query(c, "SELECT minecraft_name FROM discord_links").json()["rows"] == [["Renamed"]]
     for sql in ("DELETE FROM admin_audit", "UPDATE admin_audit SET outcome = 'x'", "DROP TABLE admin_audit",
                 "DROP TRIGGER IF EXISTS admin_audit_no_update"):
         refused = query(c, sql, write=True)
@@ -73,7 +84,7 @@ def test_root_edits_are_audited_but_the_audit_log_is_protected(app, env):  # noq
     written = [r for r in audit_rows(env) if r["action"] == "database.write"]
     # Each edit is logged as requested before it runs, then with its outcome.
     assert [r["outcome"] for r in written] == ["requested", "ok"] + ["requested", "failed"] * 4
-    assert "Renamed" in json.loads(written[0]["detail_json"])["sql"]
+    assert "Renamed" in written[0]["detail_json"]["sql"]
 
 
 def test_writes_need_the_sites_origin(app, env):  # noqa: F811
@@ -91,7 +102,7 @@ def test_attach_is_refused(app, env, tmp_path):  # noqa: F811
 
 def test_secrets_are_masked_and_values_travel_safely(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    body = query(c, "SELECT token_hash, 9007199254740993 AS big, x'00ff' AS raw, 1.5 AS f FROM user_sessions").json()
+    body = query(c, "SELECT 'abc' AS token_hash, 9007199254740993 AS big, x'00ff' AS raw, 1.5 AS f").json()
     assert body["rows"][0] == [studio.MASK, "9007199254740993", {"blob": 2, "hex": "00ff"}, 1.5]
 
 
@@ -148,7 +159,7 @@ def test_coreprotect_queries_have_a_short_budget(app, env, coreprotect_db, monke
 
 def test_unknown_database(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    assert c.get("/admin/database/postgres/schema").status_code == 404
+    assert c.get("/admin/database/nowhere/schema").status_code == 404
     assert query(c, "SELECT 1", "nope").status_code == 404
 
 
@@ -333,7 +344,7 @@ def test_schema_and_list_loads_are_audited(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
     assert c.get("/admin/database").status_code == 200
     assert c.get("/admin/database/site/schema").status_code == 200
-    assert c.get("/admin/database/postgres/schema").status_code == 404
+    assert c.get("/admin/database/nowhere/schema").status_code == 404
     rows = [(r["action"], r["outcome"]) for r in audit_rows(env) if r["action"].startswith("database.")]
     assert rows == [("database.list", "ok"), ("database.schema", "ok"), ("database.schema", "failed")]
     # Only reads and edits count as queries.

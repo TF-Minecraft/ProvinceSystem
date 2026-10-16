@@ -1,10 +1,11 @@
 import json
+import re
 
 import pytest
 from fastapi import FastAPI
 
 from src.api import admin_routes, auth_routes
-from src.auth import players
+from src.auth import players, testing
 from src.auth.test_admin import account, client
 
 HAZEL = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8"
@@ -24,7 +25,7 @@ def app(env, coreprotect):
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -332,12 +333,14 @@ def test_character_picture_without_a_skin_and_staff_catalog(app, env, world):
 
 def test_profile_shows_the_website_account(app, env, world):
     token = staff(env, "admin")
+    staff_discord_id = testing.value("SELECT discord_user_id FROM users LIMIT 1")
     with env.connect() as conn:
-        conn.execute("UPDATE discord_links SET discord_user_id = (SELECT discord_user_id FROM users LIMIT 1) "
-                     "WHERE player_uuid = ?", (HAZEL,))
+        conn.execute("UPDATE discord_links SET discord_user_id = ? WHERE player_uuid = ?", (staff_discord_id, HAZEL))
         conn.commit()
     body = client(app, token).get(f"/admin/players/{HAZEL}").json()
     assert body["account"]["role"] == "admin"
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", body["account"]["created_at"])
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", body["account"]["last_login_at"])
 
 
 def test_profile_errors(app, env, world, monkeypatch):
@@ -389,9 +392,7 @@ def test_unknown_player_sections_are_empty(app, env, world, monkeypatch):
 
 
 def message_audits(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute(
-            "SELECT * FROM admin_audit WHERE action = 'player.messages.view' ORDER BY id")]
+    return testing.rows("SELECT * FROM admin_audit WHERE action = 'player.messages.view' ORDER BY id")
 
 
 def test_mods_never_see_messages(app, env, world, coreprotect):
@@ -425,11 +426,11 @@ def test_admins_see_chat_and_whole_commands_and_it_is_audited(app, env, world, c
     assert rows[0]["actor_role"] == role
     assert rows[0]["outcome"] == "ok"
     assert rows[0]["reason"] is None
-    detail = json.loads(rows[0]["detail_json"])
+    detail = rows[0]["detail_json"]
     assert detail["player_uuid"] == HAZEL and detail["rows"] == 3 and detail["paged"] is False
     assert detail["newest"]["time"] == 180 and detail["oldest"]["time"] == 160
     # The audit records which rows were shown, never what they said.
-    assert "docks" not in rows[0]["detail_json"] and "private" not in rows[0]["detail_json"]
+    assert "docks" not in json.dumps(rows[0]["detail_json"]) and "private" not in json.dumps(rows[0]["detail_json"])
 
 
 def test_channel_commands_are_chat_for_admins_and_a_channel_name_for_mods(app, env, world, coreprotect):
@@ -445,7 +446,7 @@ def test_channel_commands_are_chat_for_admins_and_a_channel_name_for_mods(app, e
     assert [e["target"] for e in feed["entries"] if e["kind"] == "command"] == ["/home", "/msg Bob a private thing"]
     only_chat = client(app, token).get(f"/admin/players/{HAZEL}/activity", params={"kinds": "chat"}).json()
     assert [e["channel"] for e in only_chat["entries"]] == ["Emote", "FOOC", "LOOC"]
-    assert json.loads(message_audits(env)[0]["detail_json"])["rows"] == 5
+    assert message_audits(env)[0]["detail_json"]["rows"] == 5
 
     mod = client(app, staff(env, "mod")).get(f"/admin/players/{HAZEL}/activity").json()
     commands = [(e["target"], e["channel"]) for e in mod["entries"] if e["kind"] == "command"]
@@ -483,9 +484,7 @@ def test_oversized_cursor_values_are_refused(app, env, world):
 
 
 def movement_audits(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute(
-            "SELECT * FROM admin_audit WHERE action = 'player.movement.view' ORDER BY id")]
+    return testing.rows("SELECT * FROM admin_audit WHERE action = 'player.movement.view' ORDER BY id")
 
 
 @pytest.mark.parametrize("role", ["admin", "root"])
@@ -506,8 +505,8 @@ def test_movement_routes_are_audited(app, env, world, coreprotect, role):
     assert {p["minecraft_name"] for p in body["players"]} == {"MrEnzo99", "Quiet"}
 
     rows = movement_audits(env)
-    assert [json.loads(r["detail_json"])["player_uuid"] for r in rows] == [HAZEL, "everyone"]
-    detail = json.loads(rows[0]["detail_json"])
+    assert [r["detail_json"]["player_uuid"] for r in rows] == [HAZEL, "everyone"]
+    detail = rows[0]["detail_json"]
     assert (detail["since"], detail["until"], detail["rows"]) == (50, 300, 3)
     # Which window and how much, never where.
     assert set(detail) == {"server", "player_uuid", "since", "until", "complete_from", "rows"}
@@ -537,7 +536,7 @@ def test_session_movement(app, env, world, coreprotect):
     assert (body["since"], body["until"]) == (100, 200)
     assert [p[0] for p in body["points"]] == [100, 160, 200]
     assert body["as_of"] > 0
-    detail = json.loads(movement_audits(env)[-1]["detail_json"])
+    detail = movement_audits(env)[-1]["detail_json"]
     assert detail["session"] == sid and detail["rows"] == 3
 
     # Another player's session id, a forged one, and a mod are all refused.
