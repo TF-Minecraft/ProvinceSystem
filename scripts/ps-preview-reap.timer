@@ -1,0 +1,10 @@
+[Unit]
+Description=Stop expired ProvinceSystem website previews every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
