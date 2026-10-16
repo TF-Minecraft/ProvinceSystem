@@ -89,6 +89,87 @@ describe("resolveRegionAtPickPixel", () => {
     expect(picked).toBeNull();
   });
 
+  it("bridges a small water cutout inside a region", () => {
+    // A transparent pond pixel inside Vassal: the exact pick misses, the
+    // nearest land within the reach is still Vassal.
+    const surface = mockSurface(9, 9, (x, y) => (x === 4 && y === 4 ? [0, 0, 0, 0] : [10, 20, 30, 255]));
+    const picked = resolveRegionAtPickPixel(
+      surface,
+      4,
+      4,
+      { "10,20,30": "Vassal" },
+      (_mapType, _mapId, pickId) => ({
+        regionId: pickId,
+        imagePath: null,
+        region: { name: pickId },
+      }),
+      "nation",
+      "main",
+      regionData,
+    );
+    expect(picked?.pickId).toBe("Vassal");
+  });
+
+  it("bridges a water pixel that resolves to no region", () => {
+    const surface = mockSurface(9, 9, (x, y) => (x === 4 && y === 4 ? [99, 88, 77, 255] : [10, 20, 30, 255]));
+    const picked = resolveRegionAtPickPixel(
+      surface,
+      4,
+      4,
+      { "10,20,30": "Vassal", "99,88,77": "Water" },
+      (_mapType, _mapId, pickId) =>
+        pickId === "Water"
+          ? { regionId: null, imagePath: null, region: null }
+          : { regionId: pickId, imagePath: null, region: { name: pickId } },
+      "nation",
+      "main",
+      regionData,
+    );
+    expect(picked?.pickId).toBe("Vassal");
+  });
+
+  it("picks nothing over open water beyond the reach of any region", () => {
+    const surface = mockSurface(15, 15, (x, y) => (x === 0 && y === 0 ? [10, 20, 30, 255] : [0, 0, 0, 0]));
+    const picked = resolveRegionAtPickPixel(
+      surface,
+      7,
+      7,
+      { "10,20,30": "Vassal" },
+      (_mapType, _mapId, pickId) => ({
+        regionId: pickId,
+        imagePath: null,
+        region: { name: pickId },
+      }),
+      "nation",
+      "main",
+      regionData,
+    );
+    expect(picked).toBeNull();
+  });
+
+  it("takes the nearest region when a cutout sits between two", () => {
+    const surface = mockSurface(9, 9, (x, y) => {
+      if (x === 5 && y === 4) return [10, 20, 30, 255]; // Vassal, 1 px away
+      if (x === 4 && y === 2) return [40, 50, 60, 255]; // Overlord, 2 px away
+      return [0, 0, 0, 0];
+    });
+    const picked = resolveRegionAtPickPixel(
+      surface,
+      4,
+      4,
+      { "10,20,30": "Vassal", "40,50,60": "Overlord" },
+      (_mapType, _mapId, pickId) => ({
+        regionId: pickId,
+        imagePath: null,
+        region: { name: pickId },
+      }),
+      "nation",
+      "main",
+      regionData,
+    );
+    expect(picked?.pickId).toBe("Vassal");
+  });
+
   it("returns null for out-of-bounds pixels", () => {
     const surface = mockSurface(2, 2, () => [10, 20, 30, 255]);
     const picked = resolveRegionAtPickPixel(
