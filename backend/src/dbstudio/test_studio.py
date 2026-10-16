@@ -3,10 +3,33 @@ import os
 import sqlite3
 from types import SimpleNamespace
 
+import psycopg
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
+
 import pytest
 
 from src.auth.test_admin import ORIGIN, account, app, audit_rows, client, env  # noqa: F401
 from src.dbstudio import studio
+from src.database.studio_role import provision, StudioRoleError
+
+
+@pytest.fixture(scope="session")
+def studio_login(postgres_session):
+    role = f"studio_test_{os.getpid()}"
+    password = "studio-test-password"
+    provision(postgres_session.url, role, password)
+    try:
+        yield make_conninfo(postgres_session.url, user=role, password=password)
+    finally:
+        with psycopg.connect(postgres_session.url, autocommit=True) as conn:
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+
+
+@pytest.fixture(autouse=True)
+def studio_url(studio_login, monkeypatch):
+    monkeypatch.setenv("DATABASE_STUDIO_URL", studio_login)
 
 
 @pytest.fixture
@@ -48,11 +71,10 @@ def test_only_root_can_use_the_studio(app, env):  # noqa: F811
 
 
 def link(env, name):
-    # The studio's site source is still province.db; accounts are in Postgres.
-    with env.connect() as conn:
+    from src import database
+    with database.connect() as conn:
         conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, linked_at) "
-                     "VALUES (?, ?, ?, '2026-10-01T00:00:00Z')", (f"uuid-{name}", f"id-{name}", name))
-        conn.commit()
+                     "VALUES (%s, %s, %s, '2026-10-01T00:00:00Z')", (f"uuid-{name.lower()}", f"id-{name}", name))
 
 
 def test_reads_cannot_write_and_are_audited(app, env):  # noqa: F811
@@ -64,7 +86,7 @@ def test_reads_cannot_write_and_are_audited(app, env):  # noqa: F811
     assert body["columns"] == ["player_uuid", "minecraft_name"] and body["rows"][0][1] == "RoryMC"
     assert body["changes"] is None
     refused = query(c, "UPDATE discord_links SET minecraft_name = 'x'")
-    assert refused.status_code == 400 and "readonly" in refused.json()["detail"]
+    assert refused.status_code == 400 and "Read mode" in refused.json()["detail"]
     rows = [r for r in audit_rows(env) if r["action"].startswith("database.")]
     assert [(r["action"], r["outcome"]) for r in rows] == [("database.read", "ok"), ("database.read", "failed")]
     assert rows[0]["detail_json"]["sql"] == "SELECT player_uuid, minecraft_name FROM discord_links ORDER BY player_uuid"
@@ -78,7 +100,7 @@ def test_root_edits_are_audited_but_the_audit_log_is_protected(app, env):  # noq
     assert edited.status_code == 200 and edited.json()["changes"] == 1
     assert query(c, "SELECT minecraft_name FROM discord_links").json()["rows"] == [["Renamed"]]
     for sql in ("DELETE FROM admin_audit", "UPDATE admin_audit SET outcome = 'x'", "DROP TABLE admin_audit",
-                "DROP TRIGGER IF EXISTS admin_audit_no_update"):
+                "ALTER TABLE admin_audit DISABLE TRIGGER ALL"):
         refused = query(c, sql, write=True)
         assert refused.status_code == 403, sql
     written = [r for r in audit_rows(env) if r["action"] == "database.write"]
@@ -102,19 +124,27 @@ def test_attach_is_refused(app, env, tmp_path):  # noqa: F811
 
 def test_secrets_are_masked_and_values_travel_safely(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    body = query(c, "SELECT 'abc' AS token_hash, 9007199254740993 AS big, x'00ff' AS raw, 1.5 AS f").json()
+    body = query(c, "SELECT 'abc' AS token_hash, 9007199254740993 AS big, decode('00ff', 'hex') AS raw, 1.5::float8 AS f").json()
     assert body["rows"][0] == [studio.MASK, "9007199254740993", {"blob": 2, "hex": "00ff"}, 1.5]
+
+
+def test_jsonb_values_keep_json_format_and_secrets_stay_masked(app, env):
+    c = client(app, account(env, "rory", "root")[1])
+    body = query(c, "SELECT '{\"x\":[1,true]}'::jsonb AS payload, "
+                    "'{\"secret\":\"hidden\"}'::jsonb AS token_json, "
+                    "'2026-10-01T00:00:00Z'::timestamptz AS created_at").json()
+    assert body["rows"] == [['{"x":[1,true]}', studio.MASK, "2026-10-01T00:00:00+00:00"]]
 
 
 def test_results_stop_at_the_row_limit(app, env, monkeypatch):  # noqa: F811
     monkeypatch.setattr(studio, "MAX_ROWS", 5)
     c = client(app, account(env, "rory", "root")[1])
-    body = query(c, "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n LIMIT 50) SELECT i FROM n").json()
+    body = query(c, "SELECT i FROM generate_series(1, 50) n(i)").json()
     assert len(body["rows"]) == 5 and body["truncated"] and body["limit"] == 5
 
 
 def test_slow_queries_are_stopped(app, env, monkeypatch):  # noqa: F811
-    monkeypatch.setattr(studio, "SITE_SECONDS", 0.05)
+    monkeypatch.setattr(studio, "POSTGRES_TIMEOUT", "50ms")
     c = client(app, account(env, "rory", "root")[1])
     slow = query(c, "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) SELECT count(*) FROM n")
     assert slow.status_code == 408
@@ -216,35 +246,35 @@ def test_postgres_reads_use_a_read_only_server_cursor_and_edits_a_pipeline(monke
     def connect(dsn, **_):
         connections.append(FakeConnection(log))
         return connections[-1]
-    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
+    monkeypatch.setenv("DATABASE_STUDIO_URL", "postgresql://example")
     monkeypatch.setattr(studio.psycopg, "connect", connect)
-    result = studio.run("postgres", "SELECT name, token FROM precedent_cases")
+    result = studio.run("site", "SELECT name, token FROM precedent_cases")
     assert connections[0].read_only is True
     assert log == ["SET LOCAL statement_timeout = '10s'", "DECLARE studio: SELECT name, token FROM precedent_cases",
                    "ROLLBACK"]
     assert result.rows == [["case", studio.MASK]]
     log.clear()
-    studio.run("postgres", "UPDATE precedent_cases SET title = 'x'", write=True)
+    studio.run("site", "UPDATE precedent_cases SET title = 'x'", write=True)
     assert connections[1].read_only is False
     assert log == ["SET LOCAL statement_timeout = '10s'", "PIPELINE", "UPDATE precedent_cases SET title = 'x'", "COMMIT"]
 
 
-# Set STUDIO_TEST_POSTGRES to a throwaway database (it creates and drops a table) to run these.
-REAL_POSTGRES = os.getenv("STUDIO_TEST_POSTGRES", "")
-
-
 @pytest.fixture
-def real_postgres(monkeypatch):
-    if not REAL_POSTGRES:
-        pytest.skip("STUDIO_TEST_POSTGRES is not set")
-    monkeypatch.setenv("DATABASE_URL", REAL_POSTGRES)
-    with studio.psycopg.connect(REAL_POSTGRES, autocommit=True) as conn:
-        conn.execute("DROP TABLE IF EXISTS studio_probe; CREATE TABLE studio_probe (id int, v text)")
+def real_postgres(postgres, studio_login):
+    with psycopg.connect(postgres, autocommit=True) as conn:
+        conn.execute("CREATE TABLE studio_probe (id int, v text)")
         conn.execute("INSERT INTO studio_probe VALUES (1, 'orig')")
-    yield lambda: studio.psycopg.connect(REAL_POSTGRES, autocommit=True).execute(
-        "SELECT v FROM studio_probe").fetchone()[0]
-    with studio.psycopg.connect(REAL_POSTGRES, autocommit=True) as conn:
-        conn.execute("DROP TABLE IF EXISTS studio_probe")
+    provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
+
+    def value():
+        with psycopg.connect(postgres) as conn:
+            return conn.execute("SELECT v FROM studio_probe").fetchone()[0]
+
+    try:
+        yield value
+    finally:
+        with psycopg.connect(postgres, autocommit=True) as conn:
+            conn.execute("DROP TABLE studio_probe")
 
 
 @pytest.mark.parametrize("write", [False, True])
@@ -254,17 +284,17 @@ def test_real_postgres_refuses_hidden_statements(real_postgres, monkeypatch, wri
     monkeypatch.setattr(studio, "_check", lambda *_: None)
     sql = "SELECT 1 --\r; COMMIT; BEGIN READ WRITE; UPDATE studio_probe SET v = 'changed'; COMMIT"
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("postgres", sql, write=write)
+        studio.run("site", sql, write=write)
     assert "multiple commands" in refused.value.message
     assert real_postgres() == "orig"
 
 
 def test_real_postgres_reads_and_edits(real_postgres):
-    assert studio.run("postgres", "SELECT id, v FROM studio_probe").rows == [[1, "orig"]]
+    assert studio.run("site", "SELECT id, v FROM studio_probe").rows == [[1, "orig"]]
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("postgres", "WITH x AS (UPDATE studio_probe SET v = 'cte' RETURNING 1) SELECT * FROM x")
+        studio.run("site", "WITH x AS (UPDATE studio_probe SET v = 'cte' RETURNING 1) SELECT * FROM x")
     assert refused.value.code == "sql_error"
-    edited = studio.run("postgres", "UPDATE studio_probe SET v = 'edited' RETURNING id, v", write=True)
+    edited = studio.run("site", "UPDATE studio_probe SET v = 'edited' RETURNING id, v", write=True)
     assert edited.rows == [[1, "edited"]] and edited.changes == 1
     assert real_postgres() == "edited"
 
@@ -282,10 +312,10 @@ def test_real_postgres_reads_and_edits(real_postgres):
     ("/* hi */ begin", True, "not_allowed"),
 ])
 def test_postgres_statements_that_could_escape_are_refused_before_connecting(monkeypatch, sql, write, code):
-    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
+    monkeypatch.setenv("DATABASE_STUDIO_URL", "postgresql://example")
     monkeypatch.setattr(studio.psycopg, "connect", lambda *a, **k: pytest.fail("connected"))
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("postgres", sql, write=write)
+        studio.run("site", sql, write=write)
     assert refused.value.code == code
 
 
@@ -299,36 +329,61 @@ def test_semicolons_inside_strings_and_comments_are_fine(sql):
     studio._check(sql, "postgres", False)
 
 
-def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # noqa: F811
+@pytest.mark.parametrize("statement", [
+    "DELETE FROM admin_audit",
+    "INSERT INTO admin_audit (created_at, actor_type, action, outcome) VALUES (now(), 'system', 'forged', 'ok')",
+    "UPDATE admin_audit SET outcome = 'forged'",
+    "TRUNCATE admin_audit",
+    "DROP TABLE admin_audit CASCADE",
+    "ALTER TABLE admin_audit DISABLE TRIGGER ALL",
+    "DROP FUNCTION admin_audit_append_only() CASCADE",
+    "DELETE FROM schema_migrations",
+    "SELECT setval('admin_audit_id_seq', 9223372036854775807)",
+    "SELECT set_config('role', 'postgres', false)",
+    "SELECT set_config('session_authorization', 'postgres', false)",
+    "SELECT set_config('session_replication_role', 'replica', false)",
+    "ALTER ROLE postgres SUPERUSER",
+    "CREATE TABLE public.studio_unowned (id int)",
+    "CREATE TRIGGER forged AFTER UPDATE ON discord_links FOR EACH ROW EXECUTE FUNCTION admin_audit_append_only()",
+    "CREATE OR REPLACE FUNCTION admin_audit_append_only() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$",
+])
+def test_restricted_login_protects_the_database_even_without_the_text_check(
+    app, env, monkeypatch, statement,
+):
     c = client(app, account(env, "rory", "root")[1])
-    for sql in (
-        # Sol: a stored trigger would forge audit rows when the site later updates a link.
-        "CREATE TRIGGER forge AFTER UPDATE ON discord_links BEGIN INSERT INTO admin_audit (created_at, actor_type, "
-        "action, outcome) VALUES ('x', 'system', 'forged', 'ok'); END",
-        "CREATE TEMP TRIGGER t AFTER UPDATE ON discord_links BEGIN SELECT 1; END",
-        "PRAGMA writable_schema = ON",
-        "PRAGMA foreign_keys = OFF",
-        "VACUUM INTO '/tmp/copy.db'",
-        "BEGIN",
-        "COMMIT",
-        "SAVEPOINT s",
-    ):
-        assert query(c, sql, write=True).status_code == 403, sql
-    with env.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'forge'").fetchone()[0] == 0
-    # Schema pragmas that only describe still work in reads.
-    assert query(c, "PRAGMA table_info(discord_links)").status_code == 200
+    monkeypatch.setattr(studio, "_check", lambda *_: None)
+    assert query(c, statement, write=True).status_code == 403
+    assert [r["outcome"] for r in audit_rows(env) if r["action"] == "database.write"] == ["requested", "failed"]
 
 
-def test_edits_cannot_touch_the_autoincrement_counters(app, env):  # noqa: F811
+def test_studio_never_falls_back_to_the_database_owner(app, env, monkeypatch):
     c = client(app, account(env, "rory", "root")[1])
-    # Sol: a maxed-out counter makes every later audit insert fail.
-    refused = query(c, "UPDATE sqlite_sequence SET seq = 9223372036854775807 WHERE name = 'admin_audit'", write=True)
-    assert refused.status_code == 403
-    assert query(c, "SELECT name FROM sqlite_sequence WHERE name = 'admin_audit'").status_code == 200
-    # Ordinary autoincrement inserts still update the counter.
-    assert query(c, "CREATE TABLE studio_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, v TEXT)", write=True).status_code == 200
-    assert query(c, "INSERT INTO studio_tmp (v) VALUES ('a')", write=True).json()["changes"] == 1
+    monkeypatch.delenv("DATABASE_STUDIO_URL")
+    assert query(c, "SELECT 1").status_code == 503
+
+
+def test_provisioning_is_repeatable_and_refuses_an_owner(postgres, studio_login):
+    provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
+    with pytest.raises(StudioRoleError):
+        provision(postgres, "postgres", "unused")
+
+
+def test_provisioning_refuses_public_grants_that_bypass_restrictions(postgres, studio_login):
+    with psycopg.connect(postgres, autocommit=True) as conn:
+        conn.execute("GRANT INSERT ON admin_audit TO PUBLIC")
+        try:
+            with pytest.raises(StudioRoleError, match="PUBLIC grants"):
+                provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
+        finally:
+            conn.execute("REVOKE INSERT ON admin_audit FROM PUBLIC")
+
+
+def test_studio_inserts_can_allocate_an_identity_without_resetting_it(app, env):
+    c = client(app, account(env, "rory", "root")[1])
+    result = query(c, "INSERT INTO users (discord_user_id, created_at, updated_at, last_login_at) "
+                      "VALUES ('studio-insert', now(), now(), now()) RETURNING id", write=True)
+    assert result.status_code == 200, result.text
+    assert result.json()["changes"] == 1 and isinstance(result.json()["rows"][0][0], int)
 
 
 def test_edits_cannot_index_the_audit_log(app, env):  # noqa: F811

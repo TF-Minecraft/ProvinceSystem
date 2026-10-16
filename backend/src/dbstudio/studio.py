@@ -1,41 +1,37 @@
 """Root's database studio: list, browse and query the site's databases.
 
-Three sources, each shown only when this site has it:
+Two sources, each shown only when this site has it:
 
-- site: province.db (accounts, characters, wardrobes, chronicle and ledger
-  indexes, the staff audit log). Root may write it, except the audit log.
+- site: the site's Postgres, including accounts, characters, wardrobes,
+  chronicle, ledger, Precedent and patch notes. Data edits use a separate login
+  that owns nothing and can only read the audit log and migration history.
 - coreprotect: this site's CoreProtect SQLite, read through the guarded
-  reader (one reader at a time, a short budget) and never written: the
-  server writes it, and the site mounts it read-only.
-- postgres: the site's Postgres database holding Precedent and patch notes.
+  reader (one reader at a time, a short budget) and never written.
 
-Reads use connections that cannot write (SQLite mode=ro with query_only,
-Postgres read-only transactions). Each request runs one statement, enforced by
-the database itself: Python's sqlite3 refuses a second statement, and Postgres
-statements go through the extended protocol, which refuses several commands.
+Reads use read-only connections. Each request runs one statement, enforced
+by SQLite's execute or Postgres's extended protocol.
 The text check in _check() is a second layer with clearer messages. Every
 result stops at MAX_ROWS and every statement has a time limit. Secret-looking text values are masked in
 results; that only keeps them off the screen, it is not access control.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import sqlite3
 import time
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
-from urllib.parse import quote
 
 import psycopg
 
 from src.coreprotect import reader as coreprotect
-from src.skins import db as site_db
 
 MAX_ROWS = 1000
 MAX_SQL = 20_000
 MAX_PAGE = 500
-SITE_SECONDS = 10.0
 COREPROTECT_SECONDS = 3.0
 POSTGRES_TIMEOUT = "10s"
 # Matched against result column names; only text values are masked.
@@ -43,16 +39,12 @@ SECRET = re.compile(r"(^|_)(token|secret|password|nonce)(_|$)|api_?key", re.IGNO
 MASK = "••••••"
 # JavaScript loses integer precision past 2^53, so larger ones travel as text.
 SAFE_INTEGER = 2 ** 53 - 1
-# The audit log is append-only by trigger; this also stops dropping it or its triggers.
-PROTECTED = "admin_audit"
 # Statements the studio never runs. Transaction and session control would let a read
 # leave its read-only transaction or end an edit early; VACUUM INTO and COPY write files.
 REFUSED = {"BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SAVEPOINT", "RELEASE", "PREPARE",
            "SET", "RESET", "DISCARD", "VACUUM", "ATTACH", "DETACH", "COPY"}
 # Postgres reads run through a server-side cursor, which only takes a query.
 POSTGRES_READS = {"SELECT", "WITH", "VALUES", "TABLE"}
-# SQLite pragmas a read may call with an argument; they only describe the schema.
-INFO_PRAGMAS = {"table_info", "table_xinfo", "index_list", "index_info", "index_xinfo", "foreign_key_list"}
 
 
 class StudioError(Exception):
@@ -84,20 +76,13 @@ class Result:
 
 
 def sources() -> list[Source]:
-    # PG-MIGRATION: until the database studio area converts, "site" is province.db. Accounts, the
-    # audit log, characters, Discord links, codes, skins and drinks are in Postgres; their SQLite tables
-    # are stale leftovers. The studio's PR moves this source to Postgres under the province_studio role.
-    found = [Source("site", "Site", "sqlite", True,
-                    "province.db: legacy tables. Characters, accounts, Discord links, skins, drinks, "
-                    "chronicle and ledger are in Postgres; their tables here are stale")]
+    found = [Source("site", "Site", "postgres", True,
+                    "Accounts, characters, wardrobes, skins, chronicle, ledger, Precedent and patch notes")]
     config = coreprotect.CoreProtectConfig.from_env()
     if config.path:
         label = config.label or config.server.title()
         found.append(Source("coreprotect", f"CoreProtect · {label}", "sqlite", False,
                             "Blocks, containers, chat, commands and sessions. Read-only."))
-    if os.environ.get("DATABASE_URL", "").strip():
-        found.append(Source("postgres", "Precedent and patch notes", "postgres", True,
-                            "The site's Postgres, public schema"))
     return found
 
 
@@ -113,6 +98,8 @@ def source(source_id: str) -> Source:
 # --------------------
 
 def _cell(column: str, value):
+    if isinstance(value, (str, dict, list)) and value and SECRET.search(column):
+        return MASK
     if value is None or isinstance(value, (bool, float)):
         return value
     if isinstance(value, int):
@@ -121,7 +108,11 @@ def _cell(column: str, value):
         data = bytes(value)
         return {"blob": len(data), "hex": data[:32].hex()}
     if isinstance(value, str):
-        return MASK if value and SECRET.search(column) else value
+        return value
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
     return str(value)
 
 
@@ -209,67 +200,6 @@ def _check(sql: str, engine: str, write: bool) -> None:
 # SQLite
 # --------------------
 
-def _authorizer(write: bool):
-    def check(action: int, first, second, *_):
-        if action in (sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH, sqlite3.SQLITE_TRANSACTION,
-                      sqlite3.SQLITE_SAVEPOINT, sqlite3.SQLITE_CREATE_TRIGGER, sqlite3.SQLITE_CREATE_TEMP_TRIGGER):
-            # A stored trigger would later run without this check, e.g. writing the audit log.
-            return sqlite3.SQLITE_DENY
-        if action == sqlite3.SQLITE_PRAGMA and (
-            first == "writable_schema" or (second is not None and first not in INFO_PRAGMAS)
-        ):
-            return sqlite3.SQLITE_DENY
-        if write and first == "sqlite_sequence" and action in (
-            sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE,
-        ):
-            # A maxed-out counter would make every later audit insert fail.
-            return sqlite3.SQLITE_DENY
-        if write and PROTECTED in (first, second) and action in (
-            sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE, sqlite3.SQLITE_DROP_TABLE,
-            sqlite3.SQLITE_ALTER_TABLE, sqlite3.SQLITE_DROP_TRIGGER, sqlite3.SQLITE_CREATE_TRIGGER,
-            # An index on the audit log could make every later audit insert fail.
-            sqlite3.SQLITE_CREATE_INDEX, sqlite3.SQLITE_DROP_INDEX,
-        ):
-            return sqlite3.SQLITE_DENY
-        return sqlite3.SQLITE_OK
-    return check
-
-
-def _site(sql: str, *, write: bool = False) -> Result:
-    path = Path(site_db.DB_PATH)
-    if not path.is_file():
-        raise StudioError("database_unavailable", 503)
-    started = time.monotonic()
-    deadline = started + SITE_SECONDS
-    conn = sqlite3.connect(f"file:{quote(str(path))}?mode={'rw' if write else 'ro'}", uri=True,
-                           isolation_level=None, timeout=5)
-    try:
-        conn.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
-        if write:
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("BEGIN IMMEDIATE")
-        else:
-            conn.execute("PRAGMA query_only = 1")
-        conn.set_authorizer(_authorizer(write))
-        cursor = conn.execute(sql)
-        columns = [d[0] for d in cursor.description or ()]
-        rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
-        changes = conn.total_changes if write else None
-        cursor.close()
-        # The authorizer refuses transaction control, so lift it for the studio's own.
-        conn.set_authorizer(None)
-        if write:
-            conn.execute("COMMIT")
-        return _result(columns, rows[:MAX_ROWS], len(rows) > MAX_ROWS, changes, started)
-    except sqlite3.Error as exc:
-        conn.set_authorizer(None)
-        if conn.in_transaction:
-            conn.execute("ROLLBACK")
-        raise _sqlite_error(exc) from None
-    finally:
-        conn.close()
-
-
 def _sqlite_error(exc: sqlite3.Error) -> StudioError:
     text = str(exc)
     if "interrupted" in text.lower():
@@ -305,7 +235,13 @@ def _postgres(sql: str, *, write: bool = False) -> Result:
     started = time.monotonic()
     try:
         # UTF-8 so the text Postgres parses is the text _check() inspected.
-        conn = psycopg.connect(os.environ.get("DATABASE_URL", "").strip(), connect_timeout=5, client_encoding="utf8")
+        # A separate login is essential: SET ROLE on an owner connection can be
+        # undone by a query calling set_config('role', ...).
+        url = os.environ.get("DATABASE_STUDIO_URL", "").strip()
+        if not url:
+            raise StudioError("database_unavailable", 503)
+        conn = psycopg.connect(url, connect_timeout=5, client_encoding="utf8",
+                               options="-c search_path=public -c TimeZone=UTC -c lock_timeout=5s")
     except psycopg.OperationalError:
         raise StudioError("database_unavailable", 503) from None
     try:
@@ -336,6 +272,8 @@ def _postgres(sql: str, *, write: bool = False) -> Result:
         raise
     except psycopg.Error as exc:
         conn.rollback()
+        if isinstance(exc, psycopg.errors.InsufficientPrivilege):
+            raise StudioError("not_allowed", 403, "That statement isn’t allowed here.") from None
         if isinstance(exc, psycopg.errors.QueryCanceled):
             raise StudioError("timeout", 408, "The query ran past its time limit and was stopped.") from None
         if isinstance(exc, psycopg.errors.ReadOnlySqlTransaction):
@@ -359,8 +297,6 @@ def run(source_id: str, sql: str, *, write: bool = False) -> Result:
     if write and not item.writable:
         raise StudioError("read_only_database", 403)
     _check(sql, item.engine, write)
-    if item.id == "site":
-        return _site(sql, write=write)
     if item.id == "coreprotect":
         return _coreprotect(sql)
     return _postgres(sql, write=write)
@@ -454,6 +390,6 @@ def _measure(item: Source) -> dict:
         return {"tables": tables, "size_bytes": size}
     [[tables]] = run(item.id, "SELECT count(*) FROM sqlite_master WHERE type IN ('table', 'view') "
                               "AND name NOT LIKE 'sqlite_%'").rows
-    path = Path(site_db.DB_PATH if item.id == "site" else coreprotect.CoreProtectConfig.from_env().path or "")
+    path = Path(coreprotect.CoreProtectConfig.from_env().path or "")
     size = sum(p.stat().st_size for p in (path, path.with_name(path.name + "-wal")) if p.is_file())
     return {"tables": tables, "size_bytes": size}

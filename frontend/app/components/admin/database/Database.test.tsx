@@ -29,9 +29,9 @@ vi.mock("../../../../lib/admin/database", async (importOriginal) => ({
 const site: DatabaseInfo = {
   id: "site",
   name: "Site",
-  engine: "sqlite",
+  engine: "postgres",
   writable: true,
-  detail: "province.db",
+  detail: "Accounts, characters, wardrobes, skins, chronicle, ledger, Precedent and patch notes",
   queries: 12,
   available: true,
   tables: 40,
@@ -40,6 +40,7 @@ const site: DatabaseInfo = {
 const coreprotect: DatabaseInfo = {
   ...site,
   id: "coreprotect",
+  engine: "sqlite",
   name: "CoreProtect · Main",
   writable: false,
   detail: "Blocks and chat",
