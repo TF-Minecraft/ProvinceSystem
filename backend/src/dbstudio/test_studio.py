@@ -1,5 +1,7 @@
 import json
+import os
 import sqlite3
+from types import SimpleNamespace
 
 import pytest
 
@@ -68,8 +70,9 @@ def test_root_edits_are_audited_but_the_audit_log_is_protected(app, env):  # noq
         refused = query(c, sql, write=True)
         assert refused.status_code == 403, sql
     written = [r for r in audit_rows(env) if r["action"] == "database.write"]
-    assert written[0]["outcome"] == "ok" and "Renamed" in json.loads(written[0]["detail_json"])["sql"]
-    assert all(r["outcome"] == "failed" for r in written[1:])
+    # Each edit is logged as requested before it runs, then with its outcome.
+    assert [r["outcome"] for r in written] == ["requested", "ok"] + ["requested", "failed"] * 4
+    assert "Renamed" in json.loads(written[0]["detail_json"])["sql"]
 
 
 def test_writes_need_the_sites_origin(app, env):  # noqa: F811
@@ -150,8 +153,8 @@ def test_unknown_database(app, env):  # noqa: F811
 
 class FakeCursor:
     def __init__(self, log, rows, name=None):
-        self.log, self.rows, self.description, self.rowcount, self.name = log, rows, None, -1, name
-        self.itersize = 2000
+        self.log, self.rows, self.name, self.description, self.rowcount = log, rows, name, None, -1
+        self.itersize = 100
 
     def __enter__(self):
         return self
@@ -161,9 +164,10 @@ class FakeCursor:
 
     def execute(self, sql):
         self.log.append(f"DECLARE {self.name}: {sql}" if self.name else sql)
-        if sql.startswith("SELECT"):
-            self.description = [("name",), ("token",)]
+        if not sql.startswith("SET"):
+            self.description = [SimpleNamespace(name="name"), SimpleNamespace(name="token")]
             self.rowcount = len(self.rows)
+        return self
 
     def fetchmany(self, n):
         return self.rows[:n]
@@ -171,10 +175,15 @@ class FakeCursor:
 
 class FakeConnection:
     def __init__(self, log):
-        self.log, self.session = log, None
+        self.log, self.read_only = log, None
+        self.pgconn = SimpleNamespace(prepare=self.prepare)
 
-    def set_session(self, **kwargs):
-        self.session = kwargs
+    def prepare(self, name, sql):
+        self.log.append(f"PARSE {sql.decode()}")
+        return SimpleNamespace(status=studio.pq.ExecStatus.COMMAND_OK, error_message=b"")
+
+    def execute(self, sql):
+        return FakeCursor(self.log, [("case", "secret")]).execute(sql)
 
     def cursor(self, name=None):
         return FakeCursor(self.log, [("case", "secret")], name)
@@ -189,22 +198,64 @@ class FakeConnection:
         pass
 
 
-def test_postgres_reads_run_in_read_only_transactions(monkeypatch):
+def test_postgres_reads_use_a_read_only_server_cursor_and_edits_are_parsed_first(monkeypatch):
     log, connections = [], []
 
     def connect(dsn, **_):
         connections.append(FakeConnection(log))
         return connections[-1]
     monkeypatch.setenv("SUPABASE_DB_URL", "postgresql://example")
-    monkeypatch.setattr(studio.psycopg2, "connect", connect)
+    monkeypatch.setattr(studio.psycopg, "connect", connect)
     result = studio.run("supabase", "SELECT name, token FROM precedent_cases")
-    assert connections[0].session == {"readonly": True, "autocommit": False}
+    assert connections[0].read_only is True
     assert log == ["SET LOCAL statement_timeout = '10s'", "DECLARE studio: SELECT name, token FROM precedent_cases",
                    "ROLLBACK"]
     assert result.rows == [["case", studio.MASK]]
+    log.clear()
     studio.run("supabase", "UPDATE precedent_cases SET title = 'x'", write=True)
-    assert connections[1].session == {"readonly": False, "autocommit": False} and log[-1] == "COMMIT"
+    assert connections[1].read_only is False
+    assert log == ["SET LOCAL statement_timeout = '10s'", "PARSE UPDATE precedent_cases SET title = 'x'",
+                   "UPDATE precedent_cases SET title = 'x'", "COMMIT"]
 
+
+# Set STUDIO_TEST_POSTGRES to a throwaway database (it creates and drops a table) to run these.
+REAL_POSTGRES = os.getenv("STUDIO_TEST_POSTGRES", "")
+
+
+@pytest.fixture
+def real_postgres(monkeypatch):
+    if not REAL_POSTGRES:
+        pytest.skip("STUDIO_TEST_POSTGRES is not set")
+    monkeypatch.setenv("SUPABASE_DB_URL", REAL_POSTGRES)
+    with studio.psycopg.connect(REAL_POSTGRES, autocommit=True) as conn:
+        conn.execute("DROP TABLE IF EXISTS studio_probe; CREATE TABLE studio_probe (id int, v text)")
+        conn.execute("INSERT INTO studio_probe VALUES (1, 'orig')")
+    yield lambda: studio.psycopg.connect(REAL_POSTGRES, autocommit=True).execute(
+        "SELECT v FROM studio_probe").fetchone()[0]
+    with studio.psycopg.connect(REAL_POSTGRES, autocommit=True) as conn:
+        conn.execute("DROP TABLE IF EXISTS studio_probe")
+
+
+@pytest.mark.parametrize("write", [False, True])
+def test_real_postgres_refuses_hidden_statements(real_postgres, monkeypatch, write):
+    # Sol's second payload: a carriage return ends the comment for Postgres. With the text
+    # check out of the way, Postgres itself must still refuse the extra commands.
+    monkeypatch.setattr(studio, "_check", lambda *_: None)
+    sql = "SELECT 1 --\r; COMMIT; BEGIN READ WRITE; UPDATE studio_probe SET v = 'changed'; COMMIT"
+    with pytest.raises(studio.StudioError) as refused:
+        studio.run("supabase", sql, write=write)
+    assert "multiple commands" in refused.value.message
+    assert real_postgres() == "orig"
+
+
+def test_real_postgres_reads_and_edits(real_postgres):
+    assert studio.run("supabase", "SELECT id, v FROM studio_probe").rows == [[1, "orig"]]
+    with pytest.raises(studio.StudioError) as refused:
+        studio.run("supabase", "WITH x AS (UPDATE studio_probe SET v = 'cte' RETURNING 1) SELECT * FROM x")
+    assert refused.value.code == "sql_error"
+    edited = studio.run("supabase", "UPDATE studio_probe SET v = 'edited' RETURNING id, v", write=True)
+    assert edited.rows == [[1, "edited"]] and edited.changes == 1
+    assert real_postgres() == "edited"
 
 
 @pytest.mark.parametrize("sql,write,code", [
@@ -221,7 +272,7 @@ def test_postgres_reads_run_in_read_only_transactions(monkeypatch):
 ])
 def test_postgres_statements_that_could_escape_are_refused_before_connecting(monkeypatch, sql, write, code):
     monkeypatch.setenv("SUPABASE_DB_URL", "postgresql://example")
-    monkeypatch.setattr(studio.psycopg2, "connect", lambda *a, **k: pytest.fail("connected"))
+    monkeypatch.setattr(studio.psycopg, "connect", lambda *a, **k: pytest.fail("connected"))
     with pytest.raises(studio.StudioError) as refused:
         studio.run("supabase", sql, write=write)
     assert refused.value.code == code
@@ -256,3 +307,29 @@ def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # n
         assert conn.execute("SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'forge'").fetchone()[0] == 0
     # Schema pragmas that only describe still work in reads.
     assert query(c, "PRAGMA table_info(users)").status_code == 200
+
+
+def test_edits_cannot_index_the_audit_log(app, env):  # noqa: F811
+    c = client(app, account(env, "rory", "root")[1])
+    # Sol: an index whose expression overflows would make every later audit insert fail.
+    refused = query(c, "CREATE INDEX block_audit ON admin_audit(abs(-9223372036854775808)) WHERE id > 0", write=True)
+    assert refused.status_code == 403
+    assert query(c, "UPDATE users SET discord_global_name = 'Still logged'", write=True).status_code == 200
+    assert [r["outcome"] for r in audit_rows(env) if r["action"] == "database.write"][-2:] == ["requested", "ok"]
+
+
+def test_schema_and_list_loads_are_audited(app, env):  # noqa: F811
+    c = client(app, account(env, "rory", "root")[1])
+    assert c.get("/admin/database").status_code == 200
+    assert c.get("/admin/database/site/schema").status_code == 200
+    assert c.get("/admin/database/supabase/schema").status_code == 404
+    rows = [(r["action"], r["outcome"]) for r in audit_rows(env) if r["action"].startswith("database.")]
+    assert rows == [("database.list", "ok"), ("database.schema", "ok"), ("database.schema", "failed")]
+    # Only reads and edits count as queries.
+    assert c.get("/admin/database").json()["databases"][0]["queries"] == 0
+
+
+def test_postgres_comment_ends_at_a_carriage_return():
+    with pytest.raises(studio.StudioError) as refused:
+        studio._check("SELECT 1 --\r; COMMIT; BEGIN READ WRITE; UPDATE t SET v = 'x'", "postgres", False)
+    assert refused.value.code == "one_statement"

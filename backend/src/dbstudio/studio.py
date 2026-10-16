@@ -10,8 +10,11 @@ Three sources, each shown only when this site has it:
 - supabase: the Postgres database holding Precedent and patch notes.
 
 Reads use connections that cannot write (SQLite mode=ro with query_only,
-Postgres read-only transactions). Every result stops at MAX_ROWS and every
-statement has a time limit. Secret-looking text values are masked in
+Postgres read-only transactions). Each request runs one statement, enforced by
+the database itself: Python's sqlite3 refuses a second statement, and Postgres
+statements go through the extended protocol, which refuses several commands.
+The text check in _check() is a second layer with clearer messages. Every
+result stops at MAX_ROWS and every statement has a time limit. Secret-looking text values are masked in
 results; that only keeps them off the screen, it is not access control.
 """
 from __future__ import annotations
@@ -24,7 +27,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
-import psycopg2
+import psycopg
+from psycopg import pq
 
 from src.coreprotect import reader as coreprotect
 from src.skins import db as site_db
@@ -139,8 +143,9 @@ def _code(sql: str, engine: str) -> str:
     while i < n:
         c = sql[i]
         if sql.startswith("--", i):
-            j = sql.find("\n", i)
-            j = n if j < 0 else j
+            # Postgres also ends a line comment at a carriage return; SQLite only at a newline.
+            ends = [k for k in (sql.find("\n", i), sql.find("\r", i) if engine == "postgres" else -1) if k >= 0]
+            j = min(ends) if ends else n
         elif sql.startswith("/*", i):
             depth, j = 1, i + 2
             while j < n and depth:
@@ -214,6 +219,8 @@ def _authorizer(write: bool):
         if write and PROTECTED in (first, second) and action in (
             sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE, sqlite3.SQLITE_DROP_TABLE,
             sqlite3.SQLITE_ALTER_TABLE, sqlite3.SQLITE_DROP_TRIGGER, sqlite3.SQLITE_CREATE_TRIGGER,
+            # An index on the audit log could make every later audit insert fail.
+            sqlite3.SQLITE_CREATE_INDEX, sqlite3.SQLITE_DROP_INDEX,
         ):
             return sqlite3.SQLITE_DENY
         return sqlite3.SQLITE_OK
@@ -289,38 +296,45 @@ def _coreprotect(sql: str) -> Result:
 def _postgres(sql: str, *, write: bool = False) -> Result:
     started = time.monotonic()
     try:
-        conn = psycopg2.connect(os.environ["SUPABASE_DB_URL"].strip(), connect_timeout=5)
-    except (KeyError, psycopg2.OperationalError):
+        conn = psycopg.connect(os.environ["SUPABASE_DB_URL"].strip(), connect_timeout=5)
+    except (KeyError, psycopg.OperationalError):
         raise StudioError("database_unavailable", 503) from None
     try:
-        conn.set_session(readonly=not write, autocommit=False)
-        with conn.cursor() as setup:
-            setup.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
+        conn.read_only = not write
+        conn.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
         if write:
-            with conn.cursor() as cursor:
-                cursor.execute(sql)
-                columns = [d[0] for d in cursor.description or ()]
-                rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
-                changes = cursor.rowcount
+            # Postgres parses the text as one unnamed statement first, refusing several
+            # commands, and then runs exactly that statement.
+            parsed = conn.pgconn.prepare(b"", sql.encode())
+            if parsed.status != pq.ExecStatus.COMMAND_OK:
+                message = (parsed.error_message or b"").decode("utf-8", "replace")
+                raise StudioError("sql_error", 400, re.sub(r"^ERROR:\s*", "", message.strip()))
+            cursor = conn.execute(sql)
+            columns = [d.name for d in cursor.description or ()]
+            rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
+            changes = cursor.rowcount
             conn.commit()
         else:
-            # A named cursor is DECLARE ... CURSOR FOR <query>: Postgres accepts one query
-            # and sends rows as they are fetched, so the row cap also caps memory.
+            # A server-side cursor is DECLARE ... CURSOR FOR <query>, sent as one prepared
+            # statement: Postgres takes one query and sends rows as they are fetched.
             with conn.cursor(name="studio") as cursor:
                 cursor.itersize = MAX_ROWS + 1
                 cursor.execute(sql)
                 rows = cursor.fetchmany(MAX_ROWS + 1)
-                columns = [d[0] for d in cursor.description or ()]
+                columns = [d.name for d in cursor.description or ()]
                 changes = None
             conn.rollback()
         return _result(columns, rows[:MAX_ROWS], len(rows) > MAX_ROWS, changes, started)
-    except psycopg2.Error as exc:
+    except StudioError:
         conn.rollback()
-        if isinstance(exc, psycopg2.errors.QueryCanceled):
+        raise
+    except psycopg.Error as exc:
+        conn.rollback()
+        if isinstance(exc, psycopg.errors.QueryCanceled):
             raise StudioError("timeout", 408, "The query ran past its time limit and was stopped.") from None
-        if isinstance(exc, psycopg2.errors.ReadOnlySqlTransaction):
+        if isinstance(exc, psycopg.errors.ReadOnlySqlTransaction):
             raise StudioError("read_only", 400, "This is a read query. Switch to Edit to change data.") from None
-        raise StudioError("sql_error", 400, (exc.pgerror or str(exc)).strip()) from None
+        raise StudioError("sql_error", 400, (exc.diag.message_primary or str(exc)).strip()) from None
     finally:
         conn.close()
 

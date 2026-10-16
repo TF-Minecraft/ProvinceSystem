@@ -34,38 +34,41 @@ def _refuse(exc: studio.StudioError):
     raise HTTPException(exc.status, detail=exc.message or exc.code)
 
 
-def _audited(actor: dict, source_id: str, sql: str, write: bool, run):
+def _audited(actor: dict, source_id: str, sql: str, write: bool, run, action: str | None = None):
     detail = {"database": source_id, "sql": sql[:AUDIT_SQL]}
-    action = "database.write" if write else "database.read"
+    action = action or ("database.write" if write else "database.read")
+    if write:
+        # Logged before the edit runs: if the audit log can't be written, nothing changes.
+        audit.record_refusal(actor=actor, action=action, outcome="requested", detail=detail)
     try:
         result = run()
     except studio.StudioError as exc:
         audit.record_refusal(actor=actor, action=action, outcome="failed", detail={**detail, "error": exc.code})
         _refuse(exc)
+    rows = result.get("rows")
     audit.record_refusal(actor=actor, action=action, outcome="ok",
-                         detail={**detail, "rows": len(result["rows"]), "changes": result["changes"]})
+                         detail={**detail, **({"rows": len(rows), "changes": result.get("changes")} if rows is not None else {})})
     return result
 
 
 @database_router.get("")
 def database_overview(request: Request, response: Response):
-    require_staff_account(request, "use_database")
+    actor = require_staff_account(request, "use_database")
     _no_store(response)
     with connect() as conn:
         counts = dict(conn.execute(
             "SELECT json_extract(detail_json, '$.database'), count(*) FROM admin_audit "
-            "WHERE action IN ('database.read', 'database.write') GROUP BY 1").fetchall())
-    return studio.overview(counts)
+            "WHERE action IN ('database.read', 'database.write') AND outcome IN ('ok', 'failed') "
+            "GROUP BY 1").fetchall())
+    return _audited(actor, "*", "list databases", False, lambda: studio.overview(counts), "database.list")
 
 
 @database_router.get("/{source_id}/schema")
 def database_schema(source_id: str, request: Request, response: Response):
-    require_staff_account(request, "use_database")
+    actor = require_staff_account(request, "use_database")
     _no_store(response)
-    try:
-        return {**studio.schema(source_id), "database": _describe(source_id)}
-    except studio.StudioError as exc:
-        _refuse(exc)
+    return _audited(actor, source_id, "schema", False,
+                    lambda: {**studio.schema(source_id), "database": _describe(source_id)}, "database.schema")
 
 
 @database_router.post("/{source_id}/browse")
