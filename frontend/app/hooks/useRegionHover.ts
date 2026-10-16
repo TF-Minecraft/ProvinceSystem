@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
-import { resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
+import { resolveRegionAtPickPixel, resolveRegionById, type RegionPickResult } from "./regionPick";
 import type { PickSurface } from "../lib/map/pickSurface";
 import type { HoverOverlay, MapMode, MapObject, RegionRecord } from "../components/map/types";
 
@@ -58,10 +58,19 @@ export function useRegionHover({
     setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void,
     /** Hover this region rather than what the pick canvas has at (x, y). */
     regionIdOverride?: string,
+    /**
+     * A pick already resolved by another geometry (province-ID runs):
+     * a result to hover, or null for a resolved miss. Takes precedence over
+     * both the pick canvas and `regionIdOverride` when provided.
+     */
+    pickedOverride?: RegionPickResult | null,
   ): boolean => {
-    const picked = regionIdOverride
-      ? resolveRegionById(regionIdOverride, getHoverRegion, mapType, mapId, regionData)
-      : resolveRegionAtPickPixel(surface, x, y, rgbToId, getHoverRegion, mapType, mapId, regionData);
+    const picked =
+      pickedOverride !== undefined
+        ? pickedOverride
+        : regionIdOverride
+          ? resolveRegionById(regionIdOverride, getHoverRegion, mapType, mapId, regionData)
+          : resolveRegionAtPickPixel(surface, x, y, rgbToId, getHoverRegion, mapType, mapId, regionData);
 
     if (!picked) {
       clearHover(setCursorTooltip);
