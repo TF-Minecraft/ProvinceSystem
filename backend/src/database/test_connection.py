@@ -4,6 +4,7 @@ import threading
 from datetime import datetime, timezone
 
 import pytest
+from psycopg.rows import tuple_row
 
 from src import database
 from src.database import connection
@@ -58,8 +59,10 @@ def test_session_settings():
                     for name in ("TimeZone", "lock_timeout", "statement_timeout",
                                  "idle_in_transaction_session_timeout")}
         assert conn.execute("SHOW application_name").fetchone()["application_name"] == "provincesystem"
+        search_path = conn.execute("SHOW search_path").fetchone()["search_path"]
     assert settings == {"TimeZone": "UTC", "lock_timeout": "5s", "statement_timeout": "30s",
                         "idle_in_transaction_session_timeout": "1min"}
+    assert search_path == "public"
 
 
 @pytest.mark.parametrize(("isolation", "expected"), [
@@ -206,3 +209,83 @@ def test_pool_sizes_come_from_the_environment(postgres, monkeypatch):
     pool = database.open_pool(postgres)
     assert (pool.min_size, pool.max_size) == (0, 3)
     assert database.get_pool() is pool
+
+
+def test_a_returned_connection_leaks_nothing(postgres):
+    database.open_pool(postgres, min_size=1, max_size=1)
+    pids = set()
+    for _ in range(2):  # the same connection, reset twice
+        with database.connect() as conn:
+            pids.add(conn.info.backend_pid)
+            conn.execute("SET TimeZone = 'Europe/London'")
+            conn.execute("SET statement_timeout = '1s'")
+            conn.execute("SET search_path = pg_catalog")
+            conn.execute("CREATE TEMP TABLE leak (x int)")
+            conn.execute("LISTEN leak")
+            conn.execute("SELECT pg_advisory_lock(42)")
+            for _ in range(6):  # past psycopg's prepare threshold
+                conn.execute("SELECT 1 AS one WHERE %s", (True,))
+            conn.commit()
+            conn.autocommit = True
+            conn.read_only = True
+            conn.row_factory = tuple_row
+        with database.connect() as conn:
+            assert (conn.autocommit, conn.read_only, conn.isolation_level) == (False, None, None)
+            settings = {name: next(iter(conn.execute(f"SHOW {name}").fetchone().values()))
+                        for name in ("TimeZone", "statement_timeout", "search_path")}
+            assert settings == {"TimeZone": "UTC", "statement_timeout": "30s", "search_path": "public"}
+            assert conn.execute("SELECT to_regclass('pg_temp.leak') AS t").fetchone() == {"t": None}
+            assert conn.execute("SELECT count(*) AS n FROM pg_listening_channels()").fetchone()["n"] == 0
+            assert conn.execute("SELECT count(*) AS n FROM pg_locks WHERE locktype = 'advisory' "
+                                "AND pid = pg_backend_pid()").fetchone()["n"] == 0
+            assert conn.execute("SELECT 1 AS one WHERE %s", (True,)).fetchone() == {"one": 1}
+    assert len(pids) == 1
+
+
+def test_a_leaked_autocommit_cannot_commit_a_failed_block(postgres):
+    database.open_pool(postgres, min_size=1, max_size=1)
+    with database.connect() as conn:
+        conn.autocommit = True
+    with pytest.raises(RuntimeError):
+        with database.connect() as conn:
+            _warn(conn)
+            raise RuntimeError
+    assert _warnings() == 0
+
+
+def _hold(name, holding, release):
+    with database.connect() as conn:
+        database.advisory_lock(conn, name)
+        holding.set()
+        release.wait(5)
+
+
+def test_advisory_lock_waits_past_lock_timeout():
+    holding, release = threading.Event(), threading.Event()
+    thread = threading.Thread(target=_hold, args=("test:slow", holding, release))
+    thread.start()
+    assert holding.wait(5)
+    threading.Timer(1.0, release.set).start()
+    try:
+        with database.connect() as conn:
+            conn.execute("SET LOCAL lock_timeout = '300ms'")
+            assert database.advisory_lock(conn, "test:slow")
+            assert conn.execute("SHOW lock_timeout").fetchone()["lock_timeout"] == "300ms"
+    finally:
+        release.set()
+        thread.join(5)
+
+
+def test_advisory_lock_gives_up_after_its_own_timeout(monkeypatch):
+    monkeypatch.setattr(connection, "ADVISORY_LOCK_TIMEOUT", "300ms")
+    holding, release = threading.Event(), threading.Event()
+    thread = threading.Thread(target=_hold, args=("test:stuck", holding, release))
+    thread.start()
+    assert holding.wait(5)
+    try:
+        with pytest.raises(database.LockNotAvailable):
+            with database.transaction(lock="test:stuck"):
+                pass
+    finally:
+        release.set()
+        thread.join(5)
