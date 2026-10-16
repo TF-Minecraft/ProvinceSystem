@@ -6,7 +6,6 @@ Times are timestamptz in Postgres. The session user dict carries them as the
 """
 from __future__ import annotations
 
-import json
 import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
@@ -14,7 +13,6 @@ from urllib.parse import urlencode
 from fastapi import HTTPException
 
 from src import database
-from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
 from src.skins.discord_link import remember_discord_nicknames, remember_discord_usernames
 
@@ -64,26 +62,18 @@ def drop_view_leftovers(conn) -> None:
 
     The caller's transaction must have opened with `database.transaction(lock=PLACEHOLDERS_LOCK)`.
     """
-    # PG-MIGRATION: until the Skins area converts, Profile sessions and their codes are in
-    # SQLite. This commits its SQLite delete in the middle of the Postgres transaction (it stays
-    # if that transaction rolls back) and takes SQLite's write lock while holding Postgres locks.
-    # Accepted until then; the Skins PR runs this on `conn` instead:
-    #   DELETE FROM sessions WHERE code_id IN (SELECT id FROM codes WHERE minted_via LIKE 'staff_view:%'
-    #     AND CAST(substr(minted_via, length('staff_view:') + 1) AS bigint) NOT IN (SELECT id FROM user_sessions))
-    views = [row["id"] for row in conn.execute("SELECT id FROM user_sessions WHERE acting_user_id IS NOT NULL")]
-    with sqlite_db.connect() as lite:
-        lite.execute(
-            """
-            DELETE FROM sessions WHERE code_id IN (
-                SELECT id FROM codes
-                WHERE minted_via LIKE 'staff_view:%'
-                  AND CAST(substr(minted_via, length('staff_view:') + 1) AS INTEGER)
-                      NOT IN (SELECT value FROM json_each(?))
-            )
-            """,
-            (json.dumps(views),),
+    # A view's id is compared as text, so a malformed tag never fails the delete.
+    conn.execute(
+        """
+        DELETE FROM sessions WHERE code_id IN (
+            SELECT id FROM codes
+            WHERE starts_with(minted_via, %s)
+              AND substr(minted_via, %s) NOT IN (
+                  SELECT id::text FROM user_sessions WHERE acting_user_id IS NOT NULL)
         )
-        lite.commit()
+        """,
+        (VIEW_PROFILE_PREFIX, len(VIEW_PROFILE_PREFIX) + 1),
+    )
     conn.execute("DELETE FROM users WHERE placeholder AND id NOT IN (SELECT user_id FROM user_sessions)")
 
 

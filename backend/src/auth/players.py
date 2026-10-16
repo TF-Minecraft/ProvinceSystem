@@ -58,18 +58,16 @@ def _status(error: Unavailable | None) -> dict:
 # province.db
 # --------------------
 
+# Discord links with the website account of the same Discord user, if any.
 _LINKS = """
-    SELECT player_uuid, discord_user_id, discord_username, discord_nickname, minecraft_name,
-           linked_at, left_guild_at, grace_until
-    FROM discord_links
+    SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.discord_nickname, dl.minecraft_name,
+           dl.linked_at, dl.left_guild_at, dl.grace_until,
+           u.id AS user_id, u.role, u.discord_username AS account_username, u.discord_global_name,
+           u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
+    FROM discord_links dl
+    LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND NOT u.placeholder
 """
-_ACCOUNTS = """
-    SELECT discord_user_id, id AS user_id, role, discord_username AS account_username,
-           discord_global_name, discord_avatar, created_at AS account_created_at, last_login_at
-    FROM users WHERE NOT placeholder AND discord_user_id = ANY(%s)
-"""
-_NO_ACCOUNT = dict.fromkeys(("user_id", "role", "account_username", "discord_global_name", "discord_avatar",
-                             "account_created_at", "last_login_at"))
+_LINK_TIMES = ("linked_at", "left_guild_at", "grace_until", "account_created_at", "last_login_at")
 _ROSTER = """
     SELECT player_uuid, realm_id, character_id, name, status, race, class, updated_at
     FROM character_roster
@@ -78,29 +76,20 @@ _ROSTER = """
 
 def _site_rows(key: str | None = None) -> tuple[list[dict], list[dict]]:
     """Discord links (with any website account) and characters, for one player or everyone."""
-    # PG-MIGRATION: until the Linking and Characters areas convert, discord_links and
-    # character_roster are in SQLite. Their PRs read them here with the accounts, as one
-    # query: discord_links LEFT JOIN users ON discord_user_id AND NOT placeholder.
+    with database.connect() as conn:
+        if key is None:
+            links = conn.execute(_LINKS).fetchall()
+        else:
+            links = conn.execute(f"{_LINKS} WHERE lower(dl.player_uuid) = %s", (key,)).fetchall()
+    links = [{**link, **{name: users.api_time(link[name]) for name in _LINK_TIMES}} for link in links]
+    # PG-MIGRATION: Characters. character_roster is still in SQLite; its PR reads it here
+    # on the connection above.
     with connect() as lite:
         if key is None:
-            links = lite.execute(_LINKS).fetchall()
             roster = lite.execute(f"{_ROSTER} ORDER BY realm_id, lower(name)").fetchall()
         else:
-            links = lite.execute(f"{_LINKS} WHERE lower(player_uuid) = ?", (key,)).fetchall()
             roster = lite.execute(f"{_ROSTER} WHERE lower(player_uuid) = ? ORDER BY realm_id, lower(name)",
                                   (key,)).fetchall()
-    links = [dict(r) for r in links]
-    accounts = {}
-    if links:
-        with database.connect() as conn:
-            for row in conn.execute(_ACCOUNTS, ([link["discord_user_id"] for link in links],)):
-                accounts[row["discord_user_id"]] = {
-                    **row, "account_created_at": users.api_time(row["account_created_at"]),
-                    "last_login_at": users.api_time(row["last_login_at"]),
-                }
-    for link in links:
-        link.update({k: v for k, v in accounts.get(link["discord_user_id"], _NO_ACCOUNT).items()
-                     if k != "discord_user_id"})
     return links, [dict(r) for r in roster]
 
 

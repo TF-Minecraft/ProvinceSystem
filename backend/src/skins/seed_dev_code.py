@@ -11,55 +11,37 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
+from src import database
 from src.skins.codes import hash_secret
-from src.skins.db import connect, migrate
 
 DEV_CODE = "TEST-CODE-1"
 DEV_UUID = "00000000-0000-0000-0000-000000000001"
 
 
-def _iso(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def main() -> None:
-    migrate()
-    now = datetime.now(timezone.utc)
-    expires_at = _iso(now + timedelta(hours=48))
-    created_at = _iso(now)
+    """Writes to the Postgres in DATABASE_URL, migrated first."""
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    expires = now + timedelta(hours=48)
     code_hash = hash_secret(DEV_CODE)
 
-    with connect() as conn:
-        existing = conn.execute(
-            "SELECT id FROM codes WHERE code_hash = ?",
-            (code_hash,),
+    with database.connect() as conn:
+        row = conn.execute(
+            """
+            INSERT INTO codes (
+                code_hash, code_plaintext, player_uuid, scope,
+                created_at, expires_at, redeemed_at, revoked
+            )
+            VALUES (%s, %s, %s, 'skin', %s, %s, NULL, false)
+            ON CONFLICT (code_hash) DO UPDATE
+            SET player_uuid = excluded.player_uuid, scope = 'skin', code_plaintext = excluded.code_plaintext,
+                created_at = excluded.created_at, expires_at = excluded.expires_at,
+                redeemed_at = NULL, revoked = false
+            RETURNING (xmax = 0) AS inserted
+            """,
+            (code_hash, DEV_CODE, DEV_UUID, now, expires),
         ).fetchone()
-
-        if existing:
-            conn.execute(
-                """
-                UPDATE codes
-                SET player_uuid = ?, scope = 'skin', code_plaintext = ?,
-                    created_at = ?, expires_at = ?,
-                    redeemed_at = NULL, revoked = 0
-                WHERE id = ?
-                """,
-                (DEV_UUID, DEV_CODE, created_at, expires_at, existing["id"]),
-            )
-            action = "updated"
-        else:
-            conn.execute(
-                """
-                INSERT INTO codes (
-                    code_hash, code_plaintext, player_uuid, scope,
-                    created_at, expires_at, redeemed_at, revoked
-                )
-                VALUES (?, ?, ?, 'skin', ?, ?, NULL, 0)
-                """,
-                (code_hash, DEV_CODE, DEV_UUID, created_at, expires_at),
-            )
-            action = "inserted"
-        conn.commit()
+    action = "inserted" if row["inserted"] else "updated"
+    expires_at = expires.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     print(f"Seed {action}: code={DEV_CODE} uuid={DEV_UUID} expires_at={expires_at}")
     print("Set SKINS_DEV=1 (see backend/.env.example) for local plugin/staff keys.")

@@ -8,14 +8,14 @@ Assets are synced from DrinkBuilder into data/drinks/assets/.
 from __future__ import annotations
 
 import io
-import json
 import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from src import database
+
 from . import db
-from .db import connect
 
 REVIEW_SHEET_NAME = "review_sheet.png"
 TILE_DISPLAY = 128
@@ -163,9 +163,9 @@ def build_drink_review_sheet(submission_id: str) -> bytes | None:
     Returns None if the submission row does not exist.
     Raises DrinkReviewSheetError if appearance files/color are missing.
     """
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM drink_submissions WHERE id = ?",
+            "SELECT * FROM drink_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
     if row is None:
@@ -183,10 +183,7 @@ def build_drink_review_sheet(submission_id: str) -> bytes | None:
     if cached.is_file() and cached.stat().st_size > 0:
         return cached.read_bytes()
 
-    try:
-        recipe = json.loads(row["recipe_json"])
-    except (json.JSONDecodeError, TypeError, KeyError):
-        recipe = {}
+    recipe = row["recipe_json"]
     if not isinstance(recipe, dict):
         recipe = {}
 

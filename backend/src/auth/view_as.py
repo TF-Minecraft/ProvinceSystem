@@ -7,13 +7,10 @@ waits in a second cookie and comes back when the view stops or runs out.
 """
 from __future__ import annotations
 
-import json
 import secrets
-import sqlite3
 from datetime import timedelta
 
 from src import database
-from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
 
 from . import audit, roles
@@ -55,7 +52,7 @@ def start(token: str | None, player_uuid: str) -> dict:
                 raise AdminError(403, "forbidden", "denied")
             if key is None:
                 raise AdminError(400, "bad_uuid", "invalid")
-            link = _link_for_player(key)
+            link = _link_for_player(conn, key)
             # The site knows a player through their Discord link; without one there is nothing to view.
             if link is None:
                 raise AdminError(404, "not_linked", "not_found")
@@ -79,13 +76,10 @@ def start(token: str | None, player_uuid: str) -> dict:
     return {"token": view_token, "expires_at": expires_at, "staff_expires_at": actor["expires_at"]}
 
 
-def _link_for_player(key: str) -> dict | None:
-    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite. Its PR
-    # reads it on the view's connection.
-    with sqlite_db.connect() as lite:
-        row = lite.execute(
-            "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?", (key,)
-        ).fetchone()
+def _link_for_player(conn, key: str) -> dict | None:
+    row = conn.execute(
+        "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = %s", (key,)
+    ).fetchone()
     return dict(row) if row else None
 
 
@@ -183,8 +177,9 @@ def _end_where(conn, where: str, params: tuple) -> list[dict]:
     rows = conn.execute(
         f"""
         SELECT s.id, s.acting_user_id, s.expires_at, u.id AS user_id, u.discord_user_id,
-               u.discord_username, u.discord_global_name
+               u.discord_username, u.discord_global_name, dl.player_uuid
         FROM user_sessions s JOIN users u ON u.id = s.user_id
+        LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id
         WHERE s.acting_user_id IS NOT NULL AND {where}
         ORDER BY s.id
         FOR UPDATE OF s
@@ -193,9 +188,7 @@ def _end_where(conn, where: str, params: tuple) -> list[dict]:
     ).fetchall()
     now = _utcnow()
     views = [dict(row) for row in rows]
-    players = _players_for([view["discord_user_id"] for view in views])
     for view in views:
-        view["player_uuid"] = players.get(view["discord_user_id"])
         conn.execute("DELETE FROM user_sessions WHERE id = %s", (view["id"],))
         actor = conn.execute(
             "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, role "
@@ -208,21 +201,6 @@ def _end_where(conn, where: str, params: tuple) -> list[dict]:
     if views:
         drop_view_leftovers(conn)
     return views
-
-
-def _players_for(discord_ids: list[str]) -> dict[str, str]:
-    """The Minecraft UUID linked to each Discord account."""
-    if not discord_ids:
-        return {}
-    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite. Its PR puts
-    # back the join: LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id.
-    with sqlite_db.connect() as lite:
-        rows = lite.execute(
-            "SELECT discord_user_id, player_uuid FROM discord_links "
-            "WHERE discord_user_id IN (SELECT value FROM json_each(?))",
-            (json.dumps(discord_ids),),
-        ).fetchall()
-    return {row["discord_user_id"]: row["player_uuid"] for row in rows}
 
 
 def end(token: str | None) -> None:
@@ -273,17 +251,10 @@ def profile_minted_via(user: dict) -> str | None:
 def view_still_open(session_id: int):
     """A check, run inside a write, that this view has not ended or run out.
 
-    On a Postgres connection the view's row is held FOR SHARE until that write
-    commits, so ending the view waits for it or is seen by it.
+    The view's row is held FOR SHARE until that write commits, so ending the
+    view waits for it or is seen by it.
     """
     def check(conn) -> bool:
-        if isinstance(conn, sqlite3.Connection):
-            # PG-MIGRATION: until the Skins area converts, start_linked_profile_session passes its
-            # SQLite connection. Views are in Postgres now, so check there. Nothing holds the view
-            # open for the caller's write meanwhile: a narrow window between this check and the
-            # caller's commit is open again until the Skins PR checks on its own connection.
-            with database.connect() as pg:
-                return check(pg)
         return conn.execute(
             "SELECT 1 FROM user_sessions WHERE id = %s AND acting_user_id IS NOT NULL AND expires_at > %s "
             "FOR SHARE",
@@ -295,21 +266,20 @@ def view_still_open(session_id: int):
 def refuses_write(cookie_tokens: list[str], bearer_token: str | None) -> bool:
     """A view's session cookie, or a Profile session opened during a view, sent with a write."""
     hashes = [hash_secret(token) for token in cookie_tokens if _valid(token)]
-    # Without an accounts database no view can exist.
-    if hashes and accounts_configured():
-        with database.connect() as conn:
-            if conn.execute(
-                "SELECT 1 FROM user_sessions WHERE token_hash = ANY(%s) AND acting_user_id IS NOT NULL", (hashes,)
-            ).fetchone() is not None:
-                return True
-    if _valid(bearer_token):
-        # PG-MIGRATION: until the Skins area converts, Profile sessions and their codes are in
-        # SQLite. Its PR reads them on the connection above.
-        with sqlite_db.connect() as lite:
-            row = lite.execute(
-                "SELECT c.minted_via FROM sessions s JOIN codes c ON c.id = s.code_id WHERE s.token_hash = ?",
-                (hash_secret(bearer_token),),
-            ).fetchone()
-        if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):
+    bearer = hash_secret(bearer_token) if _valid(bearer_token) else None
+    # Without the site database no view or Profile session can exist.
+    if not (hashes or bearer) or not accounts_configured():
+        return False
+    with database.connect() as conn:
+        if hashes and conn.execute(
+            "SELECT 1 FROM user_sessions WHERE token_hash = ANY(%s) AND acting_user_id IS NOT NULL", (hashes,)
+        ).fetchone() is not None:
             return True
+        if bearer is not None:
+            row = conn.execute(
+                "SELECT c.minted_via FROM sessions s JOIN codes c ON c.id = s.code_id WHERE s.token_hash = %s",
+                (bearer,),
+            ).fetchone()
+            if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):
+                return True
     return False

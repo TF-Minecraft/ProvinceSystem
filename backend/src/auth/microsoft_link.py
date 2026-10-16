@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 
 from src import database
 from src.skins.codes import hash_secret
-from src.skins.db import connect
 
 from .microsoft import MicrosoftConfig, authorize_url, new_verifier
 
@@ -18,60 +17,51 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _iso(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _parse_iso(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-
-
 def valid_state(value: str | None) -> bool:
     return bool(value) and len(value) <= _STATE_MAX and value.isascii() and value.isprintable()
 
 
 def start(config: MicrosoftConfig, user: dict) -> tuple[str, str]:
-    """Return (state, Microsoft authorise URL). A new attempt replaces the user's older ones."""
+    """Return (state, Microsoft authorise URL). A new attempt replaces the user's older one."""
     state = secrets.token_urlsafe(32)
     verifier = new_verifier()
     now = _utcnow()
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("DELETE FROM microsoft_link_states WHERE expires_at <= ?", (_iso(now),))
-        conn.execute("DELETE FROM microsoft_link_states WHERE user_id = ?", (user["user_id"],))
+    with database.connect() as conn:
+        conn.execute("DELETE FROM microsoft_link_states WHERE expires_at <= %s", (now,))
+        # One attempt per user: two starts at once leave the later one, never two rows.
         conn.execute(
             """
             INSERT INTO microsoft_link_states (state_hash, session_id, user_id, code_verifier, expires_at)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (user_id) DO UPDATE
+            SET state_hash = excluded.state_hash, session_id = excluded.session_id,
+                code_verifier = excluded.code_verifier, expires_at = excluded.expires_at, used_at = NULL
             """,
-            (hash_secret(state), user["session_id"], user["user_id"], verifier, _iso(now + STATE_TTL)),
+            (hash_secret(state), user["session_id"], user["user_id"], verifier, now + STATE_TTL),
         )
-        conn.commit()
     return state, authorize_url(config, state, verifier)
 
 
 def consume(state: str | None) -> dict | None:
     """Spend a state once; return its session, user and verifier, or None if unknown, used or expired.
 
+    The update itself checks and spends it, so of two callbacks only one gets it back.
     The row stays, marked used, until finish(): unlinking deletes it meanwhile.
     """
     if not valid_state(state):
         return None
     digest = hash_secret(state)
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    now = _utcnow()
+    with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT session_id, user_id, code_verifier, expires_at FROM microsoft_link_states
-            WHERE state_hash = ? AND used_at IS NULL
+            UPDATE microsoft_link_states SET used_at = %s
+            WHERE state_hash = %s AND used_at IS NULL AND expires_at > %s
+            RETURNING session_id, user_id, code_verifier
             """,
-            (digest,),
+            (now, digest, now),
         ).fetchone()
-        conn.execute(
-            "UPDATE microsoft_link_states SET used_at = ? WHERE state_hash = ?", (_iso(_utcnow()), digest)
-        )
-        conn.commit()
-    if row is None or _parse_iso(row["expires_at"]) <= _utcnow():
+    if row is None:
         return None
     return {
         "state_hash": digest,
@@ -82,21 +72,21 @@ def consume(state: str | None) -> dict | None:
 
 
 def finish(saved: dict) -> None:
-    with connect() as conn:
-        conn.execute("DELETE FROM microsoft_link_states WHERE state_hash = ?", (saved["state_hash"],))
-        conn.commit()
+    with database.connect() as conn:
+        conn.execute("DELETE FROM microsoft_link_states WHERE state_hash = %s", (saved["state_hash"],))
 
 
 def still_valid(conn, saved: dict) -> bool:
-    """Checked inside the link write: signing out or unlinking mid-attempt stops the link."""
-    if conn.execute(
-        "SELECT 1 FROM microsoft_link_states WHERE state_hash = ?", (saved["state_hash"],)
-    ).fetchone() is None:
-        return False
-    # PG-MIGRATION: until the Linking area converts, `conn` is SQLite and sessions are in
-    # Postgres, so the session is checked on its own connection. That reopens a narrow window
-    # between this check and the caller's commit (signing out in it no longer stops the link);
-    # the Linking PR reads the session on `conn` FOR SHARE, with the state row.
-    with database.connect() as pg:
-        row = pg.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (saved["session_id"],)).fetchone()
-    return row is not None and row["expires_at"] > _utcnow()
+    """Checked inside the link write: signing out or unlinking mid-attempt stops the link.
+
+    The state and the session that started it are held FOR SHARE until the link
+    commits, so signing out or unlinking waits for it, or lands first and is seen here.
+    """
+    return conn.execute(
+        """
+        SELECT 1 FROM microsoft_link_states m JOIN user_sessions s ON s.id = m.session_id
+        WHERE m.state_hash = %s AND s.id = %s AND s.expires_at > %s
+        FOR SHARE OF m, s
+        """,
+        (saved["state_hash"], saved["session_id"], _utcnow()),
+    ).fetchone() is not None

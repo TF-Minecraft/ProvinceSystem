@@ -919,7 +919,10 @@ def plugin_approved(
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    return {"submissions": list_approved_pending_apply(since, realm_id)}
+    try:
+        return {"submissions": list_approved_pending_apply(since, realm_id)}
+    except SubmissionError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @skins_router.get("/plugin/submissions/deletable")

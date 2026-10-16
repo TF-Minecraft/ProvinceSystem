@@ -8,10 +8,7 @@ is then logged on its own.
 """
 from __future__ import annotations
 
-import json
-
 from src import database
-from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
 
 from . import audit, roles
@@ -142,43 +139,23 @@ def revoke_sessions(token: str, target_id: int, reason: str | None) -> dict:
     return _staff_write(token, "account.sessions.revoke", target_id, reason, apply)
 
 
+# Accounts with the Minecraft name of their Discord link, if any. A read-only view of
+# the link: listing never expires graces or queues notices.
 _ACCOUNTS = (
-    "SELECT id AS user_id, discord_user_id, discord_username, discord_global_name, "
-    "discord_avatar, role, created_at, last_login_at FROM users"
+    "SELECT u.id AS user_id, u.discord_user_id, u.discord_username, u.discord_global_name, "
+    "u.discord_avatar, u.role, u.created_at, u.last_login_at, dl.minecraft_name "
+    "FROM users u LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id"
 )
-
-
-def _with_minecraft(rows) -> list[dict]:
-    """Accounts with the Minecraft name of their Discord link, if any.
-
-    Read-only view of the link: listing never expires graces or queues notices.
-    """
-    accounts = [_account_json(row) for row in rows]
-    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite. Its PR
-    # puts back the join: LEFT JOIN discord_links dl ON dl.discord_user_id = u.discord_user_id.
-    names = {}
-    ids = [a["discord_user_id"] for a in accounts]
-    if ids:
-        with sqlite_db.connect() as lite:
-            names = {
-                row["discord_user_id"]: row["minecraft_name"]
-                for row in lite.execute(
-                    "SELECT discord_user_id, minecraft_name FROM discord_links "
-                    "WHERE discord_user_id IN (SELECT value FROM json_each(?))",
-                    (json.dumps(ids),),
-                )
-            }
-    return [{**a, "minecraft_name": names.get(a["discord_user_id"])} for a in accounts]
 
 
 def list_staff() -> list[dict]:
     with database.connect() as conn:
         rows = conn.execute(
-            f"{_ACCOUNTS} WHERE role IN ('mod', 'admin', 'root') "
-            "ORDER BY CASE role WHEN 'root' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, "
-            "lower(COALESCE(discord_username, discord_global_name, '')), id"
+            f"{_ACCOUNTS} WHERE u.role IN ('mod', 'admin', 'root') "
+            "ORDER BY CASE u.role WHEN 'root' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, "
+            "lower(COALESCE(u.discord_username, u.discord_global_name, '')), u.id"
         ).fetchall()
-    return _with_minecraft(rows)
+    return [_account_json(row) for row in rows]
 
 
 def lookup(query: str) -> list[dict]:
@@ -190,10 +167,10 @@ def lookup(query: str) -> list[dict]:
         rows = conn.execute(
             f"""
             {_ACCOUNTS}
-            WHERE NOT placeholder AND (discord_user_id = %s OR lower(discord_username) = lower(%s)
-               OR lower(discord_global_name) = lower(%s))
-            ORDER BY id LIMIT %s
+            WHERE NOT u.placeholder AND (u.discord_user_id = %s OR lower(u.discord_username) = lower(%s)
+               OR lower(u.discord_global_name) = lower(%s))
+            ORDER BY u.id LIMIT %s
             """,
             (text, text, text, _LOOKUP_LIMIT),
         ).fetchall()
-    return _with_minecraft(rows)
+    return [_account_json(row) for row in rows]

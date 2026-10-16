@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any
 
-from .db import connect
+from src import database
+from src.skins.codes import _parse_iso, api_time
 from src.text_validation import (
     TextValidationError,
     assert_optional_display_name,
@@ -23,8 +23,12 @@ _STAFF_NAME_MAX = 32
 _MC_NAME_MAX = 16
 
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _enqueue(
@@ -42,28 +46,25 @@ def _enqueue(
     if not discord_id:
         raise ModerationError("discord_user_id is required for outbox")
 
-    body = json.dumps(payload if isinstance(payload, dict) else {})
-    created_at = _iso_now()
+    body = database.Jsonb(payload if isinstance(payload, dict) else {})
     uuid = (player_uuid or "").strip() or None
 
     def _insert(c) -> int:
-        cur = c.execute(
+        return int(c.execute(
             """
             INSERT INTO moderation_notifications (
                 type, discord_user_id, player_uuid, payload, created_at, delivered_at
-            ) VALUES (?, ?, ?, ?, ?, NULL)
+            ) VALUES (%s, %s, %s, %s, %s, NULL)
+            RETURNING id
             """,
-            (ntype, discord_id, uuid, body, created_at),
-        )
-        return int(cur.lastrowid)
+            (ntype, discord_id, uuid, body, _utcnow()),
+        ).fetchone()["id"])
 
     if conn is not None:
         return _insert(conn)
 
-    with connect() as c:
-        notice_id = _insert(c)
-        c.commit()
-        return notice_id
+    with database.connect() as c:
+        return _insert(c)
 
 
 def record_warning(
@@ -97,16 +98,16 @@ def record_warning(
         raise ModerationError(str(e)) from e
     discord_id = (discord_user_id or "").strip() or None
 
-    with connect() as conn:
-        cur = conn.execute(
+    with database.connect() as conn:
+        warning_id = int(conn.execute(
             """
             INSERT INTO player_warnings (
                 player_uuid, staff_uuid, staff_name, reason, created_at
-            ) VALUES (?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
             """,
-            (uuid, staff_id, staff, text, created_at),
-        )
-        warning_id = int(cur.lastrowid)
+            (uuid, staff_id, staff, text, _parse_iso(created_at)),
+        ).fetchone()["id"])
         mirrored = False
         notice_id = None
         if discord_id:
@@ -124,7 +125,6 @@ def record_warning(
                 conn=conn,
             )
             mirrored = True
-        conn.commit()
 
     return {
         "ok": True,
@@ -229,7 +229,7 @@ def enqueue_bird_mail(
 
 
 def list_undelivered_moderation() -> list[dict]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM moderation_notifications
@@ -238,23 +238,17 @@ def list_undelivered_moderation() -> list[dict]:
             """
         ).fetchall()
 
-    result = []
-    for row in rows:
-        try:
-            payload = json.loads(row["payload"])
-        except (json.JSONDecodeError, TypeError):
-            payload = {}
-        result.append(
-            {
-                "id": row["id"],
-                "type": row["type"],
-                "discord_user_id": row["discord_user_id"],
-                "player_uuid": row["player_uuid"],
-                "payload": payload,
-                "created_at": row["created_at"],
-            }
-        )
-    return result
+    return [
+        {
+            "id": row["id"],
+            "type": row["type"],
+            "discord_user_id": row["discord_user_id"],
+            "player_uuid": row["player_uuid"],
+            "payload": row["payload"],
+            "created_at": api_time(row["created_at"]),
+        }
+        for row in rows
+    ]
 
 
 def ack_moderation(ids: list[int]) -> dict:
@@ -262,40 +256,32 @@ def ack_moderation(ids: list[int]) -> dict:
     if not raw_ids:
         return {"acked": [], "delivered_at": None}
 
-    now = _iso_now()
-    acked: list[int] = []
-    with connect() as conn:
-        for notice_id in raw_ids:
-            row = conn.execute(
-                "SELECT id, delivered_at FROM moderation_notifications WHERE id = ?",
-                (notice_id,),
-            ).fetchone()
-            if row is None:
-                continue
-            if row["delivered_at"] is None:
-                conn.execute(
-                    "UPDATE moderation_notifications SET delivered_at = ? WHERE id = ?",
-                    (now, notice_id),
-                )
-            acked.append(notice_id)
-        conn.commit()
+    now = _utcnow()
+    with database.connect() as conn:
+        # Already delivered notices are acked again without moving their time.
+        conn.execute(
+            "UPDATE moderation_notifications SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",
+            (now, raw_ids),
+        )
+        known = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM moderation_notifications WHERE id = ANY(%s)", (raw_ids,))
+        }
+    acked = [notice_id for notice_id in raw_ids if notice_id in known]
 
-    return {"acked": acked, "delivered_at": now if acked else None}
+    return {"acked": acked, "delivered_at": api_time(now) if acked else None}
 
 
 def _self_test() -> None:
-    from .db import migrate
-
-    migrate()
+    """Runs against DATABASE_URL: python -m src.skins.moderation"""
     uuid = "00000000-0000-4000-8000-000000000107"
     discord_id = "999888777666555444"
 
-    with connect() as conn:
-        conn.execute("DELETE FROM player_warnings WHERE player_uuid = ?", (uuid,))
+    with database.connect() as conn:
+        conn.execute("DELETE FROM player_warnings WHERE player_uuid = %s", (uuid,))
         conn.execute(
-            "DELETE FROM moderation_notifications WHERE player_uuid = ?", (uuid,)
+            "DELETE FROM moderation_notifications WHERE player_uuid = %s", (uuid,)
         )
-        conn.commit()
 
     unlinked = record_warning(uuid, "test unlinked", staff_name="Tester")
     assert unlinked["ok"] and not unlinked["mirrored"]
