@@ -38,6 +38,8 @@ case "$cmd" in
 esac
 
 for arg in "$@"; do
+  # After `logs`, -f is --follow; elsewhere it could select a compose file.
+  [[ $cmd == logs && $arg == -f ]] && continue
   case "$arg" in
     -f|--file|--file=*|-H|--host|--host=*|--context|--context=*|--project-directory|--project-directory=*|--project-name|--project-name=*|--env-file|--env-file=*|--privileged|--privileged=*|-v|--volume|--volume=*|--mount|--mount=*)
       echo "argument not allowed: $arg" >&2

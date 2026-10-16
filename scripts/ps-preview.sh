@@ -2,7 +2,7 @@
 # Per-branch ProvinceSystem website previews at https://<slug>.tfminecraft.net.
 # Installed as root's /usr/local/sbin/ps-preview and run as tfmc (docker group), by the
 # preview key on psdeploy (through ps-preview-ssh), by admins with sudo -u tfmc, and by
-# ps-preview-reap.timer. Preview containers run as tfmc too, so tfmc owns every file.
+# ps-preview-reap.timer. Preview backends run as tfmc too, so tfmc owns every file.
 set -euo pipefail
 umask 077
 
