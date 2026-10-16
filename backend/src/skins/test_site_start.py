@@ -197,7 +197,9 @@ class SiteStartTest(_CodesDb):
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], _iso(created))
 
     def test_a_staff_reset_clears_the_clock(self) -> None:
-        self.add_code("skin", datetime.now(timezone.utc) - timedelta(days=2))
+        self.consume(self.add_code("skin", datetime.now(timezone.utc) - timedelta(days=2)))
+        with self.assertRaises(self.codes.SiteStartRefused):
+            self.codes.start_site_session(PLAYER, "main", "drink")
         self.codes.reset_cosmetic_mint_cooldowns(PLAYER, "staff")
         self.codes.start_site_session(PLAYER, "main", "drink")
 
