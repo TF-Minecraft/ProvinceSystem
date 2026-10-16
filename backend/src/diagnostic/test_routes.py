@@ -121,7 +121,7 @@ def test_speed_test_is_random_and_rate_limited(app):
 REPORT = {"findings": [{"level": "info", "title": "Built-in graphics"}, {"level": "fail", "title": "The resource pack download failed"}]}
 
 
-def test_player_sends_a_report_and_staff_read_it(app, database):
+def test_player_sends_a_report_and_staff_read_it(app, database, postgres):
     res = client(app).post("/diagnostic/reports", json={"report": REPORT, "minecraft_name": "Nijika_"}, headers={"CF-IPCountry": "PH"})
     code = res.json()["code"]
     assert len(code) == reports.CODE_LENGTH
@@ -134,7 +134,7 @@ def test_player_sends_a_report_and_staff_read_it(app, database):
     assert one["report"] == REPORT
 
 
-def test_signed_in_player_is_named_on_the_report(app, database):
+def test_signed_in_player_is_named_on_the_report(app, database, postgres):
     user_id, token = account(database, "player")
     with mock.patch.object(diagnostic_routes, "get_link_for_discord_id", return_value={"minecraft_name": "LinkedName"}):
         code = client(app, token).post("/diagnostic/reports", json={"report": REPORT, "minecraft_name": "Typed"}).json()["code"]
@@ -142,7 +142,7 @@ def test_signed_in_player_is_named_on_the_report(app, database):
     assert saved["user_id"] == user_id and saved["minecraft_name"] == "LinkedName"
 
 
-def test_reports_are_staff_only(app, database):
+def test_reports_are_staff_only(app, database, postgres):
     assert client(app).get("/diagnostic/reports").status_code == 401
     _, player = account(database, "player")
     assert client(app, player).get("/diagnostic/reports/ABCDEF").json() == {"detail": "forbidden"}

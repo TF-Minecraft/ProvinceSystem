@@ -4,6 +4,7 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta, timezone
 
+from src import database
 from src.skins.codes import hash_secret
 from src.skins.db import connect
 
@@ -92,5 +93,10 @@ def still_valid(conn, saved: dict) -> bool:
         "SELECT 1 FROM microsoft_link_states WHERE state_hash = ?", (saved["state_hash"],)
     ).fetchone() is None:
         return False
-    row = conn.execute("SELECT expires_at FROM user_sessions WHERE id = ?", (saved["session_id"],)).fetchone()
-    return row is not None and _parse_iso(row["expires_at"]) > _utcnow()
+    # PG-MIGRATION: until the Linking area converts, `conn` is SQLite and sessions are in
+    # Postgres, so the session is checked on its own connection. That reopens a narrow window
+    # between this check and the caller's commit (signing out in it no longer stops the link);
+    # the Linking PR reads the session on `conn` FOR SHARE, with the state row.
+    with database.connect() as pg:
+        row = pg.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (saved["session_id"],)).fetchone()
+    return row is not None and row["expires_at"] > _utcnow()

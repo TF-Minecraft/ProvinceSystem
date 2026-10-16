@@ -7,6 +7,7 @@ import pytest
 from fastapi import FastAPI
 
 from src.servers import control, host, inventory
+from src.auth import testing
 from src.auth.test_admin import account, client, audit_rows, ORIGIN
 
 
@@ -197,7 +198,7 @@ def test_socket_transport_and_invalid_message(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def app(database, monkeypatch):
+def app(database, postgres, monkeypatch):
     from src.api import admin_routes, auth_routes
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
@@ -234,14 +235,10 @@ def test_write_requires_admin_session_origin_reason_and_logs_actor(app, database
 def test_demoted_or_revoked_session_cannot_reach_helper(app, database, monkeypatch):
     monkeypatch.setattr(control, "request", lambda *_args, **_kwargs: pytest.fail("helper called"))
     user_id, token = account(database, "demoted", "admin")
-    with database.connect() as conn:
-        conn.execute("UPDATE users SET role='mod' WHERE id=?", (user_id,))
-        conn.commit()
+    testing.execute("UPDATE users SET role='mod' WHERE id=%s", (user_id,))
     body = {"id": "b" * 32, "reason": "testing role"}
     assert client(app, token).post("/admin/servers/dev/cancel", json=body, headers=ORIGIN).status_code == 403
-    with database.connect() as conn:
-        conn.execute("DELETE FROM user_sessions WHERE user_id=?", (user_id,))
-        conn.commit()
+    testing.execute("DELETE FROM user_sessions WHERE user_id=%s", (user_id,))
     assert client(app, token).post("/admin/servers/dev/cancel", json=body, headers=ORIGIN).status_code == 401
 
 
@@ -418,7 +415,7 @@ def test_emergency_flag_is_strict_audited_and_forwarded(app, database, monkeypat
     body = {"id": "c"*32, "reason": "emergency plugin fix", "emergency_override": True}
     assert client(app, admin).post("/admin/servers/main/start", json=body, headers=ORIGIN).status_code == 200
     assert calls[-1]["emergency_override"] is True and calls[-1]["backup_ref"] == ""
-    assert json.loads(audit_rows(database)[-1]["detail_json"])["emergency_override"] is True
+    assert audit_rows(database)[-1]["detail_json"]["emergency_override"] is True
     assert client(app, admin).post("/admin/servers/main/start", json={**body,"emergency_override":"false"}, headers=ORIGIN).status_code == 422
     assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 400
     assert len(calls) == 1
@@ -635,7 +632,7 @@ def test_test_build_choice_is_start_only_and_forwarded(app, database, monkeypatc
     body = {"id": "d" * 32, "reason": "replace test builds", "replace_test_builds": ["Core"]}
     assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 200
     assert calls[-1]["replace_test_builds"] == ["Core"]
-    assert json.loads(audit_rows(database)[-1]["detail_json"])["replace_test_builds"] == ["Core"]
+    assert audit_rows(database)[-1]["detail_json"]["replace_test_builds"] == ["Core"]
     assert client(app, admin).post("/admin/servers/dev/start", json={**body, "replace_test_builds": []}, headers=ORIGIN).status_code == 200
     assert "replace_test_builds" not in calls[-1]
     assert client(app, admin).post("/admin/servers/dev/cancel", json=body, headers=ORIGIN).status_code == 400

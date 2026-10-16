@@ -7,12 +7,12 @@ from fastapi.testclient import TestClient
 
 from src.api import auth_routes, precedent_routes, skins_routes
 from src.api.staff_access import staff_name
-from src.auth import roles
+from src.auth import roles, testing
 from src.auth.test_admin import ORIGIN, account, client
 
 
 @pytest.fixture
-def app(database, monkeypatch):
+def app(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -42,8 +42,7 @@ def link(db, discord_user_id, uuid="player-1", name="StaffMC"):
 
 
 def discord_id(db, user_id):
-    with db.connect() as conn:
-        return conn.execute("SELECT discord_user_id FROM users WHERE id = ?", (user_id,)).fetchone()[0]
+    return testing.value("SELECT discord_user_id FROM users WHERE id = %s", (user_id,))
 
 
 def test_moderators_have_both_tools():

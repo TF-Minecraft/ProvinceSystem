@@ -31,7 +31,7 @@ from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
 from src.servers import inventory as servers
 from src.servers import control as server_control
-from src.skins.db import connect
+from src import database
 from src.characters.creation_catalog import get_catalog
 from src.auth.users import session_user_in
 from src.scripts.util.dirs import validate_map
@@ -261,11 +261,12 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
     actor = None
     config = _config()
     token = request.cookies.get(session_cookie(config))
+    users.require_accounts()
     try:
-        # Recheck role and session under the same write lock as the audit entry.
-        with connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            actor = session_user_in(conn, token)
+        # Recheck role and session in the audit entry's transaction, holding both rows until it
+        # commits: a demotion or revocation waits for the entry, or lands first and is seen here.
+        with database.connect() as conn:
+            actor = session_user_in(conn, token, lock=True)
             if actor is None:
                 raise HTTPException(401, detail="not_signed_in")
             require_same_origin(request, config)
@@ -283,7 +284,6 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
             # Record the intent before crossing the process boundary. The host
             # persists the accepted job; the same id can safely be retried.
             audit.record(conn, actor=actor, action=action, outcome="requested", reason=reason, detail=detail)
-            conn.commit()
         result = server_control.request(operation, server=server,
                                         **{"plan_id" if operation == "start" else "job_id": body.id},
                                         # backup_ref is unused, but helpers before the AMP backup require the key.

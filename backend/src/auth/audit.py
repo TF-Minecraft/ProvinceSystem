@@ -1,14 +1,10 @@
 """Append-only staff audit log. Never store cookies, tokens or request bodies."""
 from __future__ import annotations
 
-import json
+import sqlite3
 from datetime import datetime, timezone
 
-from src.skins.db import connect
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+from src import database
 
 
 def display_name(user: dict | None) -> str | None:
@@ -31,15 +27,22 @@ def record(
 
     actor is a signed-in user row (with role), or None for operator commands.
     """
+    if isinstance(conn, sqlite3.Connection):
+        # PG-MIGRATION: until the LuckPerms area converts, luckperms/changes.py passes its
+        # SQLite connection. The audit log is in Postgres now, so this row commits on its
+        # own, just before the caller's.
+        with database.connect() as pg:
+            record(pg, actor=actor, action=action, outcome=outcome, target=target, reason=reason, detail=detail)
+        return
     conn.execute(
         """
         INSERT INTO admin_audit (
             created_at, actor_type, actor_user_id, actor_discord_id, actor_name, actor_role,
             action, outcome, target_user_id, target_discord_id, target_name, reason, detail_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            _now(),
+            datetime.now(timezone.utc),
             "user" if actor else "system",
             actor.get("user_id") if actor else None,
             actor.get("discord_user_id") if actor else None,
@@ -51,7 +54,7 @@ def record(
             target.get("discord_user_id") if target else None,
             display_name(target),
             reason,
-            json.dumps(detail or {}, sort_keys=True),
+            database.Jsonb(detail or {}),
         ),
     )
 
@@ -59,9 +62,8 @@ def record(
 def record_refusal(**kwargs) -> None:
     """Log a refused attempt in its own transaction.
 
-    Call only after the refused action's transaction has rolled back:
-    SQLite allows one writer, so this would otherwise wait on that lock.
+    Call only after the refused action's transaction has rolled back, so the
+    refusal is kept whatever that transaction did.
     """
-    with connect() as conn:
+    with database.connect() as conn:
         record(conn, **kwargs)
-        conn.commit()

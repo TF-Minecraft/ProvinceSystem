@@ -1,4 +1,3 @@
-import json
 import time
 
 import pytest
@@ -6,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api import admin_routes, auth_routes
-from src.auth import users
+from src.auth import testing, users
 from src.luckperms import changes, mirror, nodes, policy
 
 SITE = "https://www.tfminecraft.net"
@@ -68,7 +67,7 @@ def snapshot(**overrides):
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -97,8 +96,8 @@ def account(db, name, role="player", minecraft=None):
          "discord_avatar": None},
         guild_member=True,
     )
+    testing.set_role(discord_id, role)
     with db.connect() as conn:
-        conn.execute("UPDATE users SET role = ? WHERE discord_user_id = ?", (role, discord_id))
         if minecraft:
             conn.execute(
                 "INSERT INTO discord_links (player_uuid, discord_user_id, discord_username, minecraft_name, linked_at) "
@@ -137,8 +136,7 @@ def submit(app, token, target_type, target, ops, reason="Event reward"):
 
 
 def audit_rows(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute("SELECT * FROM admin_audit ORDER BY id")]
+    return testing.audit_rows()
 
 
 # --------------------
@@ -289,7 +287,7 @@ def test_admin_change_round_trip(app, bridge, staff, env):
     # And a snapshot built before the change cannot hide it again.
     assert bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=1500)).json()["stale"]
     rows = [r for r in audit_rows(env) if r["action"] == "luckperms.change"]
-    assert [(r["outcome"], json.loads(r["detail_json"]).get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
+    assert [(r["outcome"], r["detail_json"].get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
 
 
 @pytest.mark.parametrize("role,target,ops,status,code", [
@@ -388,9 +386,7 @@ def test_admins_cannot_touch_in_game_staff_even_unlinked(app, bridge, staff):
 
 def test_demotion_after_queueing_cancels_the_change(app, bridge, staff, env):
     change = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}]).json()
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'mod' WHERE discord_username = 'adam'")
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'mod' WHERE discord_username = 'adam'")
     assert changes.fetch_for_bridge() == []
     assert changes.get_change(change["id"])["error"] == "no_longer_allowed"
 
@@ -452,9 +448,7 @@ def test_timeouts_settle_without_the_bridge(app, bridge, staff, monkeypatch):
 
 def test_guard_follows_the_actors_current_role(app, bridge, staff, env):
     submit(app, staff["root"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}])
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'admin' WHERE discord_username = 'rory'")
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'admin' WHERE discord_username = 'rory'")
     sent = changes.fetch_for_bridge()
     assert len(sent) == 1 and "admin_groups" in sent[0]["guard"]
 

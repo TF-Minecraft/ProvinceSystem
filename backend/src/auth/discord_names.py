@@ -157,6 +157,7 @@ def store(discord_id: str, found: dict) -> None:
 
 def refresh_all(lookup: NameLookup) -> int:
     """Look up every linked player once; how many Discord answered for."""
+    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite.
     with connect() as conn:
         ids = [row["discord_user_id"] for row in conn.execute("SELECT discord_user_id FROM discord_links")]
     answered = 0

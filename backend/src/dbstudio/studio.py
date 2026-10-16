@@ -84,8 +84,12 @@ class Result:
 
 
 def sources() -> list[Source]:
+    # PG-MIGRATION: until the database studio area converts, "site" is province.db. Accounts and
+    # the audit log have moved to Postgres; their SQLite tables are stale leftovers. The studio's
+    # PR moves this source to Postgres under the province_studio role.
     found = [Source("site", "Site", "sqlite", True,
-                    "province.db: accounts, characters, wardrobes, chronicle and ledger, audit log")]
+                    "province.db: characters, wardrobes, skins, chronicle and ledger. Accounts and the "
+                    "audit log are in Postgres; their tables here are stale")]
     config = coreprotect.CoreProtectConfig.from_env()
     if config.path:
         label = config.label or config.server.title()
