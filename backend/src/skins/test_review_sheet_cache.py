@@ -51,9 +51,10 @@ def _sync_temp_db(root: Path, db_path: Path) -> object:
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
 
-    from src.skins import submissions
+    from src.skins import name_preview, review_sheet, storage, submissions, thumbnail
 
-    submissions.SKINS_DIR = root / "skins"
+    for module in (name_preview, review_sheet, storage, submissions, thumbnail):
+        module.SKINS_DIR = root / "skins"
     return db_mod
 
 
