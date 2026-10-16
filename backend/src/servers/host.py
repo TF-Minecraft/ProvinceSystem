@@ -155,6 +155,11 @@ class Amp:
                 except PermissionError:
                     # Sessions expire; log in again once.
                     del self.sessions[server]
+                except ControlError as exc:
+                    # Look the instance up again next time; never resend, as AMP may have acted.
+                    if exc.code == "amp_unavailable":
+                        self.sessions.pop(server, None)
+                    raise
             raise ControlError("amp_login_failed")
 
 
