@@ -312,7 +312,7 @@ class PrecedentRoutesTest(unittest.TestCase):
 
     # --- database errors ---
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": ""})
+    @mock.patch.dict("os.environ", {"DATABASE_URL": ""})
     def test_list_cases_without_database_says_not_set_up(self) -> None:
         res = self.client.get("/precedent/staff/cases", headers=_HEADERS)
         self.assertEqual(res.status_code, 503)

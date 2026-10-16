@@ -1,4 +1,4 @@
-"""Supabase Postgres storage for precedent cases (pgvector similarity search)."""
+"""Postgres storage for precedent cases (pgvector similarity search)."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ class PrecedentDBError(RuntimeError):
 
 
 class PrecedentNotConfiguredError(PrecedentDBError):
-    """Raised when this site has no precedent database (SUPABASE_DB_URL unset)."""
+    """Raised when this site has no precedent database (DATABASE_URL unset)."""
 
 
 @dataclass(frozen=True)
@@ -87,9 +87,9 @@ def _write_audit(
 
 
 def _dsn() -> str:
-    dsn = os.environ.get("SUPABASE_DB_URL", "").strip()
+    dsn = os.environ.get("DATABASE_URL", "").strip()
     if not dsn:
-        raise PrecedentNotConfiguredError("SUPABASE_DB_URL is not set")
+        raise PrecedentNotConfiguredError("DATABASE_URL is not set")
     return dsn
 
 
@@ -107,8 +107,8 @@ def migrate() -> None:
     global _MIGRATED
     if _MIGRATED:
         return
-    if not os.environ.get("SUPABASE_DB_URL", "").strip():
-        logger.warning("SUPABASE_DB_URL unset; precedent DB migration skipped")
+    if not os.environ.get("DATABASE_URL", "").strip():
+        logger.warning("DATABASE_URL unset; precedent DB migration skipped")
         return
     conn = _connect()
     try:

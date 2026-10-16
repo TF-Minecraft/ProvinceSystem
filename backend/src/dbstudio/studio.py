@@ -7,7 +7,7 @@ Three sources, each shown only when this site has it:
 - coreprotect: this site's CoreProtect SQLite, read through the guarded
   reader (one reader at a time, a short budget) and never written: the
   server writes it, and the site mounts it read-only.
-- supabase: the Postgres database holding Precedent and patch notes.
+- postgres: the site's Postgres database holding Precedent and patch notes.
 
 Reads use connections that cannot write (SQLite mode=ro with query_only,
 Postgres read-only transactions). Each request runs one statement, enforced by
@@ -91,9 +91,9 @@ def sources() -> list[Source]:
         label = config.label or config.server.title()
         found.append(Source("coreprotect", f"CoreProtect · {label}", "sqlite", False,
                             "Blocks, containers, chat, commands and sessions. Read-only."))
-    if os.getenv("SUPABASE_DB_URL", "").strip():
-        found.append(Source("supabase", "Precedent and patch notes", "postgres", True,
-                            "Supabase Postgres, public schema"))
+    if os.environ.get("DATABASE_URL", "").strip():
+        found.append(Source("postgres", "Precedent and patch notes", "postgres", True,
+                            "The site's Postgres, public schema"))
     return found
 
 
@@ -301,8 +301,8 @@ def _postgres(sql: str, *, write: bool = False) -> Result:
     started = time.monotonic()
     try:
         # UTF-8 so the text Postgres parses is the text _check() inspected.
-        conn = psycopg.connect(os.environ["SUPABASE_DB_URL"].strip(), connect_timeout=5, client_encoding="utf8")
-    except (KeyError, psycopg.OperationalError):
+        conn = psycopg.connect(os.environ.get("DATABASE_URL", "").strip(), connect_timeout=5, client_encoding="utf8")
+    except psycopg.OperationalError:
         raise StudioError("database_unavailable", 503) from None
     try:
         conn.read_only = not write

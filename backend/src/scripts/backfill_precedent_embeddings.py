@@ -45,9 +45,9 @@ BATCH_SLEEP_SEC = 3.0
 
 
 def _connect():
-    dsn = os.environ.get("SUPABASE_DB_URL", "").strip()
+    dsn = os.environ.get("DATABASE_URL", "").strip()
     if not dsn:
-        raise SystemExit("SUPABASE_DB_URL is not set")
+        raise SystemExit("DATABASE_URL is not set")
     conn = psycopg2.connect(dsn)
     register_vector(conn)
     return conn

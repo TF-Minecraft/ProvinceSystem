@@ -131,9 +131,9 @@ class BulletNotPending(RuntimeError):
 
 
 def _dsn() -> str:
-    dsn = os.environ.get("SUPABASE_DB_URL", "").strip()
+    dsn = os.environ.get("DATABASE_URL", "").strip()
     if not dsn:
-        raise PatchnotesDBError("SUPABASE_DB_URL is not set")
+        raise PatchnotesDBError("DATABASE_URL is not set")
     return dsn
 
 
@@ -237,8 +237,8 @@ def migrate() -> None:
     global _MIGRATED
     if _MIGRATED:
         return
-    if not os.environ.get("SUPABASE_DB_URL", "").strip():
-        logger.warning("SUPABASE_DB_URL unset; patch notes DB migration skipped")
+    if not os.environ.get("DATABASE_URL", "").strip():
+        logger.warning("DATABASE_URL unset; patch notes DB migration skipped")
         return
     conn = _connect()
     try:

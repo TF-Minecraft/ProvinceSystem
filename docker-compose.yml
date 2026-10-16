@@ -14,6 +14,29 @@ services:
       - ./backend/src/data:/app/src/data
     env_file:
       - backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    restart: always
+
+  # The site's Postgres (Precedent and patch notes). backend/.env sets
+  # DATABASE_URL=postgresql://provincesystem:<POSTGRES_PASSWORD>@db:5432/provincesystem;
+  # the password comes from the project's .env.
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: provincesystem
+      POSTGRES_DB: provincesystem
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "provincesystem", "-d", "provincesystem"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     security_opt:
       - no-new-privileges:true
     restart: always
@@ -39,3 +62,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: always
+
+volumes:
+  db:
