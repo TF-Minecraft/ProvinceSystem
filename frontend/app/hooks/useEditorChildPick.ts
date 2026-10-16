@@ -1,97 +1,52 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import type { MapId } from "@/app/components/map/types";
+import { buildTitleProvinceRegionIndex } from "@/app/hooks/regionPick";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
-import { buildTitlePickIndex, type TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
-import { fetchMapBlobUrl, revokeMapBlobUrl } from "@/lib/map/api";
+import type { TitleLayers } from "@/app/lib/titleProvinces";
+import type { EditorTier } from "@/lib/map/api";
+
+/** Province id -> the child title holding it, for editor child picking. */
+export type ChildPickIndex = Map<number, string>;
+
+function draftToLayer(draft: TitleDraft): Record<string, { provinces?: number[]; titles?: string[] }> {
+  const layer: Record<string, { provinces?: number[]; titles?: string[] }> = {};
+  for (const [id, entry] of Object.entries(draft)) {
+    layer[id] = { provinces: entry.provinces, titles: entry.titles };
+  }
+  return layer;
+}
+
+/**
+ * Child membership by province id, built from the child draft and the
+ * already-loaded title layers along the painter's chain — never through a
+ * display colour, so black or duplicate-coloured children stay pickable.
+ * The child tier's own layer comes from `childDraft` (the pick-id source),
+ * not the separately fetched copy in `titleLayers`. Null while a layer the
+ * chain needs has not loaded.
+ */
+export function buildChildPickIndex(
+  childTier: EditorTier | null,
+  childDraft: TitleDraft,
+  titleLayers: TitleLayers | null,
+): ChildPickIndex | null {
+  if (!childTier || !titleLayers) return null;
+
+  const layers: TitleLayers =
+    childTier === "county" ? titleLayers : { ...titleLayers, [childTier]: draftToLayer(childDraft) };
+
+  return buildTitleProvinceRegionIndex(childTier, childDraft, layers);
+}
 
 export function useEditorChildPick(
-  mapId: MapId,
-  sessionToken: string | null,
+  childTier: EditorTier | null,
   childDraft: TitleDraft,
-  pickMapdataPath: string,
-  enabled = true,
-): {
-  childPick: TitlePickIndex | null;
-  loading: boolean;
-  error: string | null;
-} {
-  const [imageData, setImageData] = useState<ImageData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || !sessionToken || !pickMapdataPath) {
-      setImageData(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    let cancelled = false;
-    let blobUrl: string | null = null;
-
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      setImageData(null);
-
-      try {
-        blobUrl = await fetchMapBlobUrl(`/${mapId}/mapdata/${pickMapdataPath}`, sessionToken);
-
-        if (cancelled) {
-          revokeMapBlobUrl(blobUrl);
-          return;
-        }
-
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = blobUrl;
-
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error(`Failed to load ${pickMapdataPath} pick map`));
-        });
-
-        if (cancelled) return;
-
-        const offscreen = document.createElement("canvas");
-        offscreen.width = img.naturalWidth;
-        offscreen.height = img.naturalHeight;
-        const ctx = offscreen.getContext("2d");
-        if (!ctx) {
-          throw new Error("Canvas not available");
-        }
-        ctx.drawImage(img, 0, 0);
-        const data = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
-
-        if (!cancelled) {
-          setImageData(data);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setImageData(null);
-          setLoading(false);
-          setError(err instanceof Error ? err.message : `Failed to load ${pickMapdataPath} pick map`);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-      revokeMapBlobUrl(blobUrl);
-    };
-  }, [mapId, sessionToken, pickMapdataPath, enabled]);
-
-  const childPick = useMemo(() => {
-    if (!imageData) return null;
-    return buildTitlePickIndex(childDraft, imageData);
-  }, [imageData, childDraft]);
-
-  return { childPick, loading, error };
+  titleLayers: TitleLayers | null,
+  ready: boolean,
+): ChildPickIndex | null {
+  return useMemo(
+    () => (ready ? buildChildPickIndex(childTier, childDraft, titleLayers) : null),
+    [ready, childTier, childDraft, titleLayers],
+  );
 }

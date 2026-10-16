@@ -12,7 +12,7 @@ import { useEditorPick } from "@/app/hooks/useEditorPick";
 import { useEditorProvinceIndex } from "@/app/hooks/useEditorProvinceIndex";
 import { buildProvincePixelIndex, type ProvinceIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import type { ProvinceRegionIndex } from "@/app/lib/map/editor/paintTitleLayers";
-import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
+import type { ChildPickIndex } from "@/app/hooks/useEditorChildPick";
 import { buildChildToParentId } from "@/app/lib/map/editor/childTitleAssignment";
 import { buildProvinceToCountyId } from "@/app/lib/map/editor/countyAssignment";
 import type { ChildTierEditorConfig } from "@/app/lib/map/editor/editorTierConfig";
@@ -84,7 +84,7 @@ type MapEditorCanvasProps = {
   provinceIndex?: ProvinceIndex | null;
   provinceIndexLoading?: boolean;
   provinceIndexError?: string | null;
-  childPick?: TitlePickIndex | null;
+  childPick?: ChildPickIndex | null;
   childPickLoading?: boolean;
   childPickError?: string | null;
   pickProvidedByParent?: boolean;
@@ -169,7 +169,7 @@ export default function MapEditorCanvas({
 
   const pick = useEditorPick({
     mapId,
-    enabled: editorPickMode && !loading && (countyMode ? index !== null : childPick !== null),
+    enabled: editorPickMode && !loading && index !== null && (countyMode || childPick !== null),
     tier,
     childTierConfig,
     index,
