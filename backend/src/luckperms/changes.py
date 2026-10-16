@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 import psycopg
 
 from src import database
-from src.auth import audit, roles
+from src.auth import audit, roles, users
 from src.auth.admin import AdminError, clean_reason
 from src.auth.players import canonical_uuid
 from src.auth.users import session_user_in
@@ -399,6 +399,10 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
             except database.UniqueViolation:
                 # Another change for this target committed after the check above.
                 raise _conflict("change_pending") from None
+            # A timeout settlement or unique-index wait may outlast the session.
+            session = conn.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (actor["session_id"],)).fetchone()
+            if session is None or session["expires_at"] <= users._utcnow():
+                raise AdminError(401, "not_signed_in", "denied")
             audit.record(conn, actor=actor, action=action, outcome="ok", reason=clean,
                          detail={**detail_target, "target_name": target_name, "change_id": change_id,
                                  "description": description})
@@ -547,13 +551,13 @@ def fetch_for_bridge() -> list[dict]:
     its result arrives: later changes are checked against the definitions it
     leaves behind.
     """
-    now = time.time()
-    stamp = mirror._stamp(now)
     with database.connect() as conn:
         # The upsert is the first statement, so lp_state is this transaction's first lock.
         mirror.record_poll(conn)
         _lock_actors(conn)
+        now = time.time()
         settle_timeouts(conn, now)
+        stamp = mirror._stamp()
         out = []
         # Until a definition change's result arrives, or a snapshot taken after it was
         # sent shows LuckPerms as it now is, nothing else is checked against old groups.

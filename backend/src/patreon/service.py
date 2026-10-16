@@ -36,8 +36,14 @@ class ServiceError(ValueError):
 def acquire_lease(name: str = "sync") -> str | None:
     """Take the lease if it is free or expired; the new owner, or None while another holds it."""
     owner = uuidlib.uuid4().hex
-    now = utcnow()
     with database.connect() as conn:
+        # Seed or lock the named row before reading the clock. The no-op conflict
+        # update also covers a concurrent release deleting it; no expired seed
+        # escapes this transaction. A waiting first acquisition gets its full TTL.
+        conn.execute(
+            "INSERT INTO patreon_leases (name, owner, expires_at) VALUES (%s, '', '1970-01-01T00:00:00Z') "
+            "ON CONFLICT (name) DO UPDATE SET name = excluded.name", (name,))
+        now = utcnow()
         # One upsert takes a free or expired lease, or leaves another holder's alone (no row back).
         row = conn.execute(
             "INSERT INTO patreon_leases (name, owner, expires_at) VALUES (%s, %s, %s) "
@@ -49,8 +55,10 @@ def acquire_lease(name: str = "sync") -> str | None:
 
 def renew_lease(name: str, owner: str):
     with database.connect() as conn:
+        conn.execute("SELECT name FROM patreon_leases WHERE name = %s FOR UPDATE", (name,))
+        now = utcnow()
         cur = conn.execute("UPDATE patreon_leases SET expires_at = %s WHERE name = %s AND owner = %s AND expires_at > %s",
-                           (utcnow() + timedelta(seconds=LEASE_SECONDS), name, owner, utcnow()))
+                           (now + timedelta(seconds=LEASE_SECONDS), name, owner, now))
         if cur.rowcount != 1:
             raise ServiceError("patreon_lease_lost")
 
@@ -178,14 +186,14 @@ def create_or_update_link(patreon_user_id: str, discord_user_id: str | None = No
     Optional conn participates in a caller transaction (no commit), which must hold
     PATREON_LOCK. force only bypasses cooldown, never another account's subject uniqueness.
     """
-    config, now = config or Config.from_env(), now or utcnow()
+    config = config or Config.from_env()
     if method not in {"oauth", "staff", "import", "auto_discord"}:
         raise ServiceError("invalid_link_method")
     discord, player = _clean_subjects(discord_user_id, player_uuid)
     if conn is not None:
-        return _link(conn, str(patreon_user_id), discord, player, method, force, config, now)
+        return _link(conn, str(patreon_user_id), discord, player, method, force, config, now or utcnow())
     with database.transaction(lock=PATREON_LOCK) as c:
-        return _link(c, str(patreon_user_id), discord, player, method, force, config, now)
+        return _link(c, str(patreon_user_id), discord, player, method, force, config, now or utcnow())
 
 
 def _store_member(conn, member: dict, now, config: Config):
@@ -385,11 +393,11 @@ def _run_fetch(*, config, client, member_id=None):
     try:
         # Fetch and validate everything before opening the write transaction.
         fetched = [client.member(member_id)] if member_id else client.members()
-        now = utcnow()
         with database.transaction(lock=PATREON_LOCK) as conn:
             # Held until commit: the lease cannot be taken over while these members are stored.
             lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'sync' FOR UPDATE").fetchone()
-            if not lease or lease["owner"] != owner or lease["expires_at"] <= utcnow():
+            now = utcnow()
+            if not lease or lease["owner"] != owner or lease["expires_at"] <= now:
                 raise ServiceError("patreon_lease_lost")
             for member in fetched:
                 _store_member(conn, member, now, config)

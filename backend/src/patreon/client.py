@@ -152,7 +152,7 @@ class PatreonClient:
         return {**row, "expires_at": iso(row["expires_at"])}
 
     def refresh_tokens(self, rejected_access: str | None = None) -> dict:
-        # Separate short lease serializes rotating refresh tokens across workers.
+        # Separate short lease serialises rotating refresh tokens across workers.
         from .service import acquire_lease, release_lease, alert
         owner = acquire_lease("token_refresh")
         if owner is None:
@@ -166,12 +166,14 @@ class PatreonClient:
             with database.connect() as conn:
                 # Held until commit, so the lease cannot pass to another worker mid-write.
                 lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'token_refresh' FOR UPDATE").fetchone()
-                if not lease or lease["owner"] != owner or lease["expires_at"] <= utcnow():
+                conn.execute("SELECT id FROM patreon_tokens WHERE id = 1 FOR UPDATE")
+                now = utcnow()
+                if not lease or lease["owner"] != owner or lease["expires_at"] <= now:
                     raise PatreonError("patreon_token_refresh_lease_lost")
                 # Compare-and-set: only the tokens this refresh started from are replaced.
                 conn.execute("UPDATE patreon_tokens SET access_token = %s, refresh_token = %s, expires_at = %s "
                              "WHERE id = 1 AND access_token = %s AND refresh_token = %s",
-                             (value["access_token"], value["refresh_token"], utcnow() + timedelta(seconds=int(value["expires_in"])), tokens["access_token"], tokens["refresh_token"]))
+                             (value["access_token"], value["refresh_token"], now + timedelta(seconds=int(value["expires_in"])), tokens["access_token"], tokens["refresh_token"]))
             return self._tokens()
         except PatreonError:
             with database.connect() as conn:

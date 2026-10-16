@@ -52,8 +52,6 @@ def start_link(*, discord_user_id=None, player_uuid=None, discord_username=None,
     if not client_id or any(ch.isspace() for ch in client_id):
         raise service.ServiceError("patreon_client_unconfigured")
     token = secrets.token_urlsafe(32)
-    now = utcnow()
-    expires = now + STATE_TTL
     target_kind = "discord" if discord else "minecraft"
     target_name = discord_username if discord else minecraft_name
     if not target_name:
@@ -62,7 +60,9 @@ def start_link(*, discord_user_id=None, player_uuid=None, discord_username=None,
     target_name = (target_name or "").replace("\x00", "").strip() or discord or player
     # A random state needs no lock: it cannot collide with another.
     with database.connect() as conn:
-        conn.execute("DELETE FROM patreon_oauth_states WHERE expires_at <= %s OR used_at IS NOT NULL", (now,))
+        conn.execute("DELETE FROM patreon_oauth_states WHERE expires_at <= %s OR used_at IS NOT NULL", (utcnow(),))
+        now = utcnow()
+        expires = now + STATE_TTL
         conn.execute("INSERT INTO patreon_oauth_states (state_hash, discord_user_id, player_uuid, target_kind, target_name, expires_at) "
                      "VALUES (%s, %s, %s, %s, %s, %s)",
                      (hashlib.sha256(token.encode("utf-8")).hexdigest(), discord, player, target_kind, target_name, expires))
@@ -94,8 +94,9 @@ def consume_state(token: str | None) -> dict | None:
     if not token or len(token) > 256:
         return None
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    now = utcnow()
     with database.connect() as conn:
+        conn.execute("SELECT state_hash FROM patreon_oauth_states WHERE state_hash = %s FOR UPDATE", (digest,))
+        now = utcnow()
         # Compare-and-set: one UPDATE checks and spends the state, so two callbacks cannot both get it.
         row = conn.execute(
             """
@@ -170,8 +171,8 @@ def _finish_callback(code: str | None, state: str | None, *, denied: bool) -> tu
         name = name.replace("\x00", "")  # Postgres text cannot hold NUL
         name = name if name.strip() else "Patreon account"
         with database.connect() as conn:
+            conn.execute("DELETE FROM patreon_pending_links WHERE expires_at <= %s OR used_at IS NOT NULL", (utcnow(),))
             now = utcnow()
-            conn.execute("DELETE FROM patreon_pending_links WHERE expires_at <= %s OR used_at IS NOT NULL", (now,))
             conn.execute("INSERT INTO patreon_pending_links (token_hash, patreon_user_id, patreon_name, discord_user_id, player_uuid, target_kind, target_name, expires_at) "
                          "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                          (hashlib.sha256(confirm.encode()).hexdigest(), user_id, name, subject["discord_user_id"], subject["player_uuid"], subject["target_kind"], subject["target_name"], now + CONFIRM_TTL))
@@ -185,8 +186,10 @@ def _pending(token: str, *, consume: bool = False) -> dict | None:
     if not token or len(token) > 256:
         return None
     digest = hashlib.sha256(token.encode()).hexdigest()
-    now = utcnow()
     with database.connect() as conn:
+        if consume:
+            conn.execute("SELECT token_hash FROM patreon_pending_links WHERE token_hash = %s FOR UPDATE", (digest,))
+        now = utcnow()
         if consume:
             # Compare-and-set: of two confirms (or a confirm and a cancel) only one gets the row.
             row = conn.execute("UPDATE patreon_pending_links SET used_at = %s "
@@ -228,6 +231,8 @@ def _confirm_link(token: str) -> tuple[str, str]:
     config = Config.from_env()
     user_id = subject["patreon_user_id"]
     with database.transaction(lock=service.PATREON_LOCK) as conn:
+        if subject["expires_at"] <= utcnow():
+            return "expired", ""
         result = service.create_or_update_link(user_id, discord_user_id=subject["discord_user_id"], player_uuid=subject["player_uuid"], method="oauth", config=config, conn=conn)
         if result != "ok":
             return (result if result in {"already_linked", "relink_cooldown"} else "error"), ""

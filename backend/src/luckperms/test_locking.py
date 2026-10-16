@@ -9,8 +9,10 @@ holder's result. The helpers are the accounts ones (src/auth/test_locking.py).
 """
 from datetime import timedelta
 
+import pytest
+
 from src import database
-from src.auth import testing
+from src.auth import admin, testing, users
 from src.auth.test_locking import ROW, Gate, Run, held, lock_wait, race
 from src.luckperms import changes, mirror
 from src.luckperms.test_luckperms import (  # noqa: F401
@@ -297,3 +299,80 @@ def test_two_snapshot_rows_for_one_player_keep_the_last_name(bridge):
     assert sorted(r["key"] for r in testing.rows("SELECT key FROM lp_user_nodes")) == ["a.b", "c.d"]
     assert testing.rows("SELECT weight FROM lp_groups") == [{"weight": 5}]
     assert testing.rows("SELECT groups_json FROM lp_tracks") == [{"groups_json": []}]
+
+
+@pytest.mark.parametrize("operation", ["demotion", "revocation"])
+def test_actual_staff_operation_finishes_before_a_waiting_change(app, bridge, staff, monkeypatch, operation):
+    adam = user_id("adam")
+    gate = Gate(monkeypatch, "ORDER BY id FOR UPDATE")
+    if operation == "demotion":
+        apply = lambda: admin.change_role(staff["root"], adam, "mod", "Staff test")
+    else:
+        apply = lambda: admin.revoke_sessions(staff["root"], adam, "Staff test")
+    one, two = race(gate, apply, lambda: changes.queue_change(staff["admin"], "user", ALICE, TIPS, "Event reward"), ROW)
+    assert one.error is None and one.value["ok"]
+    assert isinstance(two.error, admin.AdminError) and two.error.code == "not_signed_in"
+    assert testing.value("SELECT count(*) FROM lp_changes") == 0
+    assert [r["outcome"] for r in testing.audit_rows()] == ["ok"]
+
+
+@pytest.mark.parametrize("operation", ["demotion", "revocation"])
+def test_a_change_and_audit_commit_before_actual_staff_operation(app, bridge, staff, monkeypatch, operation):
+    adam = user_id("adam")
+    gate = Gate(monkeypatch, "INSERT INTO admin_audit")
+    if operation == "demotion":
+        apply = lambda: admin.change_role(staff["root"], adam, "mod", "Staff test")
+    else:
+        apply = lambda: admin.revoke_sessions(staff["root"], adam, "Staff test")
+    one, two = race(gate, lambda: changes.queue_change(staff["admin"], "user", ALICE, TIPS, "Event reward"), apply, ROW)
+    assert one.error is None and one.value["status"] == "pending"
+    assert two.error is None and two.value["ok"]
+    assert [r["action"] for r in testing.audit_rows()] == ["luckperms.change", "account.role.change" if operation == "demotion" else "account.sessions.revoke"]
+
+
+@pytest.mark.parametrize("locked_table", ["users", "user_sessions"])
+def test_a_change_refuses_a_session_expiring_during_either_lock_wait(app, bridge, staff, monkeypatch, locked_table):
+    adam = user_id("adam")
+    now = users._utcnow()
+    expires = now + timedelta(seconds=30)
+    testing.execute("UPDATE user_sessions SET expires_at = %s WHERE user_id = %s", (expires, adam))
+    monkeypatch.setattr(users, "_utcnow", lambda: now)
+    column = "id" if locked_table == "users" else "user_id"
+    with database.connect() as conn:
+        conn.execute(f"SELECT * FROM {locked_table} WHERE {column} = %s FOR UPDATE", (adam,))
+        run = Run(lambda: changes.queue_change(staff["admin"], "user", ALICE, TIPS, "Event reward"))
+        lock_wait(run, ROW)
+        now = expires
+    assert isinstance(run.join().error, admin.AdminError) and run.error.code == "not_signed_in"
+    assert testing.value("SELECT count(*) FROM lp_changes") == 0
+
+
+def test_a_poll_expires_a_change_after_waiting_for_its_actor(app, bridge, staff, monkeypatch):
+    change_id = submit(app, staff["admin"], "user", ALICE, TIPS).json()["id"]
+    now = changes.time.time()
+    monkeypatch.setattr(changes.time, "time", lambda: now)
+    with database.connect() as conn:
+        conn.execute("SELECT id FROM users WHERE id = %s FOR UPDATE", (user_id("adam"),))
+        run = Run(changes.fetch_for_bridge)
+        lock_wait(run, ROW)
+        now += changes.PENDING_TTL_SECONDS + 1
+    assert run.join().error is None and run.value == []
+    assert status(change_id) == "expired"
+
+
+def test_a_change_refuses_a_session_expiring_after_its_session_check(app, bridge, staff, monkeypatch):
+    overdue = submit(app, staff["root"], "user", BOB, TIPS).json()["id"]
+    testing.execute("UPDATE lp_changes SET created_at = %s WHERE id = %s",
+                    (mirror._stamp() - timedelta(seconds=changes.PENDING_TTL_SECONDS + 1), overdue))
+    now = users._utcnow()
+    expires = now + timedelta(seconds=30)
+    testing.execute("UPDATE user_sessions SET expires_at = %s WHERE user_id = %s", (expires, user_id("adam")))
+    monkeypatch.setattr(users, "_utcnow", lambda: now)
+    with database.connect() as conn:
+        conn.execute("SELECT id FROM lp_changes WHERE id = %s FOR UPDATE", (overdue,))
+        run = Run(lambda: changes.queue_change(staff["admin"], "user", ALICE, TIPS, "Event reward"))
+        lock_wait(run, ROW)
+        now = expires
+    assert isinstance(run.join().error, admin.AdminError) and run.error.code == "not_signed_in"
+    assert testing.value("SELECT count(*) FROM lp_changes WHERE target = %s", (ALICE,)) == 0
+    assert [(r["actor_name"], r["outcome"]) for r in testing.audit_rows()] == [("rory", "ok"), ("adam", "denied")]
