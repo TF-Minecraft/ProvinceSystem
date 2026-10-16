@@ -1,6 +1,7 @@
 import type { HoverOverlay, RegionRecord } from "../components/map/types";
 import type { PickSurface } from "../lib/map/pickSurface";
 import { provinceAt, type ProvinceRunIndex } from "../lib/map/editor/buildProvinceIndex";
+import type { TitleEntity, TitleLayers } from "../lib/titleProvinces";
 
 export type GetHoverRegion = (
   mapType: string,
@@ -122,7 +123,10 @@ export function resolveRegionAtPickPixel(
 /** Province id -> the region id in `regionData` that directly holds it. */
 export type ProvinceRegionIndex = Map<number, string>;
 
-function provinceIdsOf(region: RegionRecord[string], key: "provinces" | "occupied_held"): number[] {
+function provinceIdsOf(
+  region: { provinces?: unknown; occupied_held?: unknown } | undefined,
+  key: "provinces" | "occupied_held",
+): number[] {
   const values = region?.[key];
   if (!Array.isArray(values)) return [];
   return values.filter((id) => typeof id === "number" && Number.isInteger(id) && id > 0);
@@ -150,6 +154,58 @@ export function buildProvinceRegionIndex(
         if (discardedMask?.[provinceId] === 1) continue;
         index.set(provinceId, pickId);
       }
+    }
+  }
+  return index;
+}
+
+function titleIdsOf(entity: TitleEntity | undefined): string[] {
+  return Array.isArray(entity?.titles) ? entity.titles.filter((id) => typeof id === "string") : [];
+}
+
+/**
+ * Membership for the title tiers, following the backend painter's chain
+ * exactly: a province belongs to a duchy only through a county the duchy
+ * lists, to a kingdom only through such a duchy, to an empire only through
+ * such a kingdom. Direct `provinces` on an upper-tier entity and incomplete
+ * chains paint nothing backend-side, so they pick nothing here either —
+ * deliberately narrower than the label/geometry helpers in titleProvinces,
+ * which union direct provinces and fall back across tiers for placement.
+ *
+ * Returns null while a lower tier the chain needs has not loaded, so the
+ * caller can withhold picking instead of answering from half a chain.
+ */
+export function buildTitleProvinceRegionIndex(
+  mapType: string,
+  regionData: RegionRecord,
+  layers: TitleLayers | null,
+): ProvinceRegionIndex | null {
+  if (mapType === "county") return buildProvinceRegionIndex(regionData);
+  if (!layers) return null;
+
+  const countyProvinces = (countyId: string): number[] => provinceIdsOf(layers.county[countyId] ?? {}, "provinces");
+  const duchyProvinces = (duchyId: string): number[] =>
+    titleIdsOf(layers.duchy?.[duchyId]).flatMap((countyId) => countyProvinces(countyId));
+  const kingdomProvinces = (kingdomId: string): number[] =>
+    titleIdsOf(layers.kingdom?.[kingdomId]).flatMap((duchyId) => duchyProvinces(duchyId));
+
+  let resolve: ((entityId: string) => number[]) | null = null;
+  if (mapType === "duchy") {
+    if (!layers.duchy) return null;
+    resolve = duchyProvinces;
+  } else if (mapType === "kingdom") {
+    if (!layers.duchy || !layers.kingdom) return null;
+    resolve = kingdomProvinces;
+  } else if (mapType === "empire") {
+    if (!layers.duchy || !layers.kingdom || !layers.empire) return null;
+    resolve = (empireId) => titleIdsOf(layers.empire?.[empireId]).flatMap((kingdomId) => kingdomProvinces(kingdomId));
+  }
+  if (!resolve) return null;
+
+  const index: ProvinceRegionIndex = new Map();
+  for (const pickId of Object.keys(regionData)) {
+    for (const provinceId of resolve(pickId)) {
+      if (Number.isInteger(provinceId) && provinceId > 0) index.set(provinceId, pickId);
     }
   }
   return index;

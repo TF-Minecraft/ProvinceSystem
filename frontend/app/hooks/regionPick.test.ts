@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildProvinceRegionIndex, resolveRegionAtPickPixel, resolveRegionAtProvincePoint } from "./regionPick";
+import {
+  buildProvinceRegionIndex,
+  buildTitleProvinceRegionIndex,
+  resolveRegionAtPickPixel,
+  resolveRegionAtProvincePoint,
+} from "./regionPick";
+import type { TitleLayers } from "../lib/titleProvinces";
 import { pickSurfaceFromImageData, type PickSurface } from "../lib/map/pickSurface";
 import { buildProvinceRunIndex, type ProvinceRunIndex } from "../lib/map/editor/buildProvinceIndex";
 import type { RegionRecord } from "../components/map/types";
@@ -353,6 +359,56 @@ describe("resolveRegionAtProvincePoint", () => {
       data,
     );
     expect(picked?.pickId).toBe("Visible");
+  });
+
+  it("title tiers follow the painter's chain: county -> duchy -> kingdom -> empire", () => {
+    const layers: TitleLayers = {
+      county: {
+        CountyA: { provinces: [1, 2] },
+        CountyB: { provinces: [3] },
+        Orphan: { provinces: [4] },
+      },
+      duchy: {
+        DuchyA: { titles: ["CountyA", "CountyB"], provinces: [99] },
+        DuchyLonely: { titles: ["Orphan"] },
+      },
+      kingdom: {
+        KingdomA: { titles: ["DuchyA"] },
+      },
+      empire: {
+        EmpireA: { titles: ["KingdomA"] },
+      },
+    };
+    const empireData: RegionRecord = { EmpireA: { rgb: "1,1,1", name: "EmpireA" } };
+    const empire = buildTitleProvinceRegionIndex("empire", empireData, layers);
+    expect(empire?.get(1)).toBe("EmpireA");
+    expect(empire?.get(3)).toBe("EmpireA");
+    // Orphan's chain stops at a kingdom-less duchy: never reaches the empire.
+    expect(empire?.get(4)).toBeUndefined();
+    // Direct provinces on an upper tier are not painted by the backend.
+    expect(empire?.get(99)).toBeUndefined();
+
+    const duchyData: RegionRecord = {
+      DuchyA: { rgb: "2,2,2", name: "DuchyA" },
+      DuchyLonely: { rgb: "3,3,3", name: "DuchyLonely" },
+    };
+    const duchy = buildTitleProvinceRegionIndex("duchy", duchyData, layers);
+    expect(duchy?.get(2)).toBe("DuchyA");
+    expect(duchy?.get(4)).toBe("DuchyLonely");
+
+    const county = buildTitleProvinceRegionIndex(
+      "county",
+      { CountyA: { rgb: "4,4,4", name: "CountyA", provinces: [1, 2] } },
+      null,
+    );
+    expect(county?.get(1)).toBe("CountyA");
+  });
+
+  it("title membership withholds while a lower tier has not loaded", () => {
+    const data: RegionRecord = { DuchyA: { rgb: "2,2,2", name: "DuchyA" } };
+    expect(buildTitleProvinceRegionIndex("duchy", data, null)).toBeNull();
+    expect(buildTitleProvinceRegionIndex("duchy", data, { county: {} })).toBeNull();
+    expect(buildTitleProvinceRegionIndex("kingdom", data, { county: {}, duchy: {}, kingdom: {} })?.size).toBe(0);
   });
 
   it("an occupier wins the point over the legal owner", () => {

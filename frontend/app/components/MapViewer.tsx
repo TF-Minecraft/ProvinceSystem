@@ -31,14 +31,19 @@ import {
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
-import { buildProvinceRegionIndex, provinceHoverBlocksRegionPick, type ProvinceRegionIndex } from "../hooks/regionPick";
+import {
+  buildProvinceRegionIndex,
+  buildTitleProvinceRegionIndex,
+  provinceHoverBlocksRegionPick,
+  type ProvinceRegionIndex,
+} from "../hooks/regionPick";
 import { chronicleDiscardedProvinceMask } from "@/app/lib/map/chronicleWater";
 import { fetchCompiledProvinces } from "@/app/lib/map/compiledProvinces";
 import { fetchProvinceRunIndex } from "@/app/lib/map/provinceRuns";
 import type { ProvinceRunIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
-import { mapModeLabel } from "./map/mapModes";
+import { mapModeLabel, REGION_TILE_MODES } from "./map/mapModes";
 import MapShell from "./map/shell/MapShell";
 import { MapSkeleton } from "./shared/LoadingSkeleton";
 import MapPlaque from "./map/shell/MapPlaque";
@@ -519,11 +524,11 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const pickKey = JSON.stringify([mapId, mapType, day, authToken]);
   const [pickReadyFor, setPickReadyFor] = useState<string | null>(null);
 
-  // Live nation and trade pick provinces by id, not by colour: identity comes
-  // from membership over the run-index geometry, so a realm or guild coloured
-  // black (whose colour the pick-map painter drops entirely) picks like any
-  // other.
-  const provincePickActive = day === null && (mapType === "nation" || mapType === "trade");
+  // Live region modes pick provinces by id, not by colour: identity comes
+  // from membership over the run-index geometry, so a realm, guild or title
+  // coloured black (whose colour the pick-map painter drops entirely) picks
+  // like any other.
+  const provincePickActive = day === null && REGION_TILE_MODES.has(mapType);
 
   // Trade membership must drop the water and sea provinces its painter
   // refuses: their dominant guilds are compiled into the data but never
@@ -559,11 +564,17 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
 
   const provinceRegionIndex = useMemo(() => {
     if (!provincePickActive || !regionData) return null;
-    if (mapType !== "trade") return buildProvinceRegionIndex(regionData);
-    const loaded = tradeWaterMask?.key === `${mapId}\n${authToken ?? ""}` ? tradeWaterMask.mask : undefined;
-    if (loaded === undefined || loaded === null) return EMPTY_PROVINCE_REGION_INDEX;
-    return buildProvinceRegionIndex(regionData, loaded);
-  }, [provincePickActive, regionData, mapType, tradeWaterMask, mapId, authToken]);
+    if (mapType === "nation") return buildProvinceRegionIndex(regionData);
+    if (mapType === "trade") {
+      const loaded = tradeWaterMask?.key === `${mapId}\n${authToken ?? ""}` ? tradeWaterMask.mask : undefined;
+      if (loaded === undefined || loaded === null) return EMPTY_PROVINCE_REGION_INDEX;
+      return buildProvinceRegionIndex(regionData, loaded);
+    }
+    // Title tiers: membership follows the painter's county->duchy->kingdom
+    // chain over the title layers the label pass already loads. Until the
+    // lower tiers land, picking stays active-but-empty.
+    return buildTitleProvinceRegionIndex(mapType, regionData, titleLayers) ?? EMPTY_PROVINCE_REGION_INDEX;
+  }, [provincePickActive, regionData, mapType, tradeWaterMask, mapId, authToken, titleLayers]);
   const [provincePickFailedFor, setProvincePickFailedFor] = useState<string | null>(null);
   const [provincePickRetry, setProvincePickRetry] = useState(0);
 
