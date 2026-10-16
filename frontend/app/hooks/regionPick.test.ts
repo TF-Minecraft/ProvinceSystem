@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveRegionAtPickPixel } from "./regionPick";
+import { buildProvinceRegionIndex, resolveRegionAtPickPixel, resolveRegionAtProvincePoint } from "./regionPick";
 import { pickSurfaceFromImageData, type PickSurface } from "../lib/map/pickSurface";
+import { buildProvinceRunIndex, type ProvinceRunIndex } from "../lib/map/editor/buildProvinceIndex";
 import type { RegionRecord } from "../components/map/types";
 
 function mockSurface(
@@ -216,5 +217,146 @@ describe("resolveRegionAtPickPixel", () => {
       regionData,
     );
     expect(picked).toBeNull();
+  });
+});
+
+/** A run index over a province-id grid given row by row (0 = no province). */
+function mockRunIndex(rows: number[][]): ProvinceRunIndex {
+  const height = rows.length;
+  const width = rows[0]!.length;
+  const lengths: number[] = [];
+  const ids: number[] = [];
+  for (const row of rows) {
+    let current = row[0]!;
+    let length = 1;
+    for (let x = 1; x < row.length; x++) {
+      if (row[x] === current) {
+        length += 1;
+      } else {
+        lengths.push(length);
+        ids.push(current);
+        current = row[x]!;
+        length = 1;
+      }
+    }
+    lengths.push(length);
+    ids.push(current);
+  }
+  return buildProvinceRunIndex(width, height, Uint32Array.from(lengths), Uint16Array.from(ids));
+}
+
+const identityHover = (_mapType: string, _mapId: string, pickId: string) => ({
+  regionId: pickId,
+  imagePath: null,
+  region: { name: pickId },
+});
+
+describe("buildProvinceRegionIndex", () => {
+  it("assigns holdings, then lets occupation win regardless of record order", () => {
+    const data: RegionRecord = {
+      Occupier: { rgb: "9,9,9", name: "Occupier", occupied_held: [7] },
+      Owner: { rgb: "1,2,3", name: "Owner", provinces: [7, 8] },
+    };
+    const index = buildProvinceRegionIndex(data);
+    expect(index.get(7)).toBe("Occupier");
+    expect(index.get(8)).toBe("Owner");
+  });
+
+  it("ignores non-positive and non-integer province ids", () => {
+    const data: RegionRecord = {
+      Odd: { rgb: "1,2,3", name: "Odd", provinces: [0, -1, 1.5, 4] },
+    };
+    const index = buildProvinceRegionIndex(data);
+    expect([...index.entries()]).toEqual([[4, "Odd"]]);
+  });
+});
+
+describe("resolveRegionAtProvincePoint", () => {
+  it("picks a black realm by province id, with no colour involved", () => {
+    const data: RegionRecord = {
+      BlackRealm: { rgb: "0,0,0", name: "BlackRealm", provinces: [7] },
+    };
+    const runs = mockRunIndex([[7, 7, 0]]);
+    const picked = resolveRegionAtProvincePoint(
+      runs,
+      1,
+      0,
+      buildProvinceRegionIndex(data),
+      identityHover,
+      "nation",
+      "main",
+      data,
+    );
+    expect(picked?.pickId).toBe("BlackRealm");
+  });
+
+  it("distinguishes two regions that share one rgb", () => {
+    const data: RegionRecord = {
+      First: { rgb: "5,5,5", name: "First", provinces: [1] },
+      Second: { rgb: "5,5,5", name: "Second", provinces: [2] },
+    };
+    const runs = mockRunIndex([[1, 2]]);
+    const index = buildProvinceRegionIndex(data);
+    expect(resolveRegionAtProvincePoint(runs, 0, 0, index, identityHover, "nation", "main", data)?.pickId).toBe(
+      "First",
+    );
+    expect(resolveRegionAtProvincePoint(runs, 1, 0, index, identityHover, "nation", "main", data)?.pickId).toBe(
+      "Second",
+    );
+  });
+
+  it("bridges a small unheld gap but not open ground beyond the reach", () => {
+    const data: RegionRecord = {
+      Holder: { rgb: "1,2,3", name: "Holder", provinces: [3] },
+    };
+    const runs = mockRunIndex([[3, 0, 0, 0, 0, 0, 0, 0, 0]]);
+    const index = buildProvinceRegionIndex(data);
+    // Small surfaces get the minimum reach of 2 (see water-cutout reach).
+    expect(resolveRegionAtProvincePoint(runs, 2, 0, index, identityHover, "nation", "main", data)?.pickId).toBe(
+      "Holder",
+    );
+    expect(resolveRegionAtProvincePoint(runs, 8, 0, index, identityHover, "nation", "main", data)).toBeNull();
+    expect(resolveRegionAtProvincePoint(runs, 40, 0, index, identityHover, "nation", "main", data)).toBeNull();
+  });
+
+  it("falls through an invisible holder to the nearest visible region", () => {
+    const data: RegionRecord = {
+      Hidden: { rgb: "1,1,1", name: "Hidden", provinces: [1] },
+      Visible: { rgb: "2,2,2", name: "Visible", provinces: [2] },
+    };
+    const runs = mockRunIndex([[1, 2]]);
+    const picked = resolveRegionAtProvincePoint(
+      runs,
+      0,
+      0,
+      buildProvinceRegionIndex(data),
+      (_mapType, _mapId, pickId) =>
+        pickId === "Hidden"
+          ? { regionId: null, imagePath: null, region: null }
+          : { regionId: pickId, imagePath: null, region: { name: pickId } },
+      "nation",
+      "main",
+      data,
+    );
+    expect(picked?.pickId).toBe("Visible");
+  });
+
+  it("an occupier wins the point over the legal owner", () => {
+    const data: RegionRecord = {
+      Owner: { rgb: "1,2,3", name: "Owner", provinces: [7] },
+      Occupier: { rgb: "9,9,9", name: "Occupier", occupied_held: [7] },
+    };
+    const runs = mockRunIndex([[7]]);
+    const picked = resolveRegionAtProvincePoint(
+      runs,
+      0,
+      0,
+      buildProvinceRegionIndex(data),
+      identityHover,
+      "nation",
+      "main",
+      data,
+    );
+    expect(picked?.pickId).toBe("Occupier");
   });
 });

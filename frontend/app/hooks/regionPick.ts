@@ -1,5 +1,6 @@
 import type { HoverOverlay, RegionRecord } from "../components/map/types";
 import type { PickSurface } from "../lib/map/pickSurface";
+import { provinceAt, type ProvinceRunIndex } from "../lib/map/editor/buildProvinceIndex";
 
 export type GetHoverRegion = (
   mapType: string,
@@ -67,10 +68,10 @@ const NEARBY_OFFSETS: Array<readonly [number, number]> = (() => {
   return offsets.sort((a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1]) || a[1] - b[1] || a[0] - b[0]);
 })();
 
-/** The reach on the surface in hand: reduced pick maps hold fewer, fatter pixels. */
-function waterCutoutReach(surface: PickSurface): number {
-  if (surface.width <= 0) return 0;
-  return Math.max(2, Math.min(WATER_CUTOUT_REACH, Math.round(surface.width / 1000)));
+/** The reach at a geometry width: reduced pick maps hold fewer, fatter pixels. */
+function waterCutoutReachForWidth(width: number): number {
+  if (width <= 0) return 0;
+  return Math.max(2, Math.min(WATER_CUTOUT_REACH, Math.round(width / 1000)));
 }
 
 export function resolveRegionAtPickPixel(
@@ -109,7 +110,86 @@ export function resolveRegionAtPickPixel(
   // A miss off the map has no land to bridge from.
   if (!(x >= 0 && y >= 0 && x < surface.width && y < surface.height)) return null;
 
-  const reach = waterCutoutReach(surface);
+  const reach = waterCutoutReachForWidth(surface.width);
+  for (const [dx, dy] of NEARBY_OFFSETS) {
+    if (dx * dx + dy * dy > reach * reach) break;
+    const nearby = resolveAt(x + dx, y + dy);
+    if (nearby) return nearby;
+  }
+  return null;
+}
+
+/** Province id -> the region id in `regionData` that directly holds it. */
+export type ProvinceRegionIndex = Map<number, string>;
+
+function provinceIdsOf(region: RegionRecord[string], key: "provinces" | "occupied_held"): number[] {
+  const values = region?.[key];
+  if (!Array.isArray(values)) return [];
+  return values.filter((id) => typeof id === "number" && Number.isInteger(id) && id > 0);
+}
+
+/**
+ * Membership for province-ID picking, built from the mode's own region data
+ * so identity never passes through a display colour. Two passes: ordinary
+ * holdings first, then `occupied_held`, so an occupier wins its provinces
+ * over their legal owner exactly as the backend's occupation remap paints
+ * them — regardless of record order.
+ */
+export function buildProvinceRegionIndex(regionData: RegionRecord): ProvinceRegionIndex {
+  const index: ProvinceRegionIndex = new Map();
+  for (const key of ["provinces", "occupied_held"] as const) {
+    for (const [pickId, region] of Object.entries(regionData)) {
+      for (const provinceId of provinceIdsOf(region, key)) {
+        index.set(provinceId, pickId);
+      }
+    }
+  }
+  return index;
+}
+
+/**
+ * The region at a province-geometry pixel: the province under the point,
+ * resolved through membership and then the same visible-ancestor walk as a
+ * colour pick. An exact miss (ocean, an unheld province, an invisible
+ * holder) reaches nearby pixels under the same policy as
+ * `resolveRegionAtPickPixel`.
+ */
+export function resolveRegionAtProvincePoint(
+  runIndex: ProvinceRunIndex,
+  x: number,
+  y: number,
+  provinceRegionIndex: ProvinceRegionIndex,
+  getHoverRegion: GetHoverRegion,
+  mapType: string,
+  mapId: string,
+  regionData: RegionRecord | null,
+): RegionPickResult | null {
+  if (!regionData) return null;
+
+  /** Provinces and pick ids already resolved to nothing on this probe. */
+  const missedProvinces = new Set<number>();
+  const missedPickIds = new Set<string>();
+
+  const resolveAt = (px: number, py: number): RegionPickResult | null => {
+    const provinceId = provinceAt(runIndex, px, py);
+    if (provinceId <= 0 || missedProvinces.has(provinceId)) return null;
+    missedProvinces.add(provinceId);
+
+    const pickId = provinceRegionIndex.get(provinceId);
+    if (!pickId || missedPickIds.has(pickId)) return null;
+
+    const picked = resolveRegionById(pickId, getHoverRegion, mapType, mapId, regionData);
+    if (!picked) missedPickIds.add(pickId);
+    return picked;
+  };
+
+  const exact = resolveAt(x, y);
+  if (exact) return exact;
+
+  // A miss off the map has no land to bridge from.
+  if (!(x >= 0 && y >= 0 && x < runIndex.width && y < runIndex.height)) return null;
+
+  const reach = waterCutoutReachForWidth(runIndex.width);
   for (const [dx, dy] of NEARBY_OFFSETS) {
     if (dx * dx + dy * dy > reach * reach) break;
     const nearby = resolveAt(x + dx, y + dy);
