@@ -148,7 +148,7 @@ def test_coreprotect_queries_have_a_short_budget(app, env, coreprotect_db, monke
 
 def test_unknown_database(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
-    assert c.get("/admin/database/supabase/schema").status_code == 404
+    assert c.get("/admin/database/postgres/schema").status_code == 404
     assert query(c, "SELECT 1", "nope").status_code == 404
 
 
@@ -205,15 +205,15 @@ def test_postgres_reads_use_a_read_only_server_cursor_and_edits_a_pipeline(monke
     def connect(dsn, **_):
         connections.append(FakeConnection(log))
         return connections[-1]
-    monkeypatch.setenv("SUPABASE_DB_URL", "postgresql://example")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
     monkeypatch.setattr(studio.psycopg, "connect", connect)
-    result = studio.run("supabase", "SELECT name, token FROM precedent_cases")
+    result = studio.run("postgres", "SELECT name, token FROM precedent_cases")
     assert connections[0].read_only is True
     assert log == ["SET LOCAL statement_timeout = '10s'", "DECLARE studio: SELECT name, token FROM precedent_cases",
                    "ROLLBACK"]
     assert result.rows == [["case", studio.MASK]]
     log.clear()
-    studio.run("supabase", "UPDATE precedent_cases SET title = 'x'", write=True)
+    studio.run("postgres", "UPDATE precedent_cases SET title = 'x'", write=True)
     assert connections[1].read_only is False
     assert log == ["SET LOCAL statement_timeout = '10s'", "PIPELINE", "UPDATE precedent_cases SET title = 'x'", "COMMIT"]
 
@@ -226,7 +226,7 @@ REAL_POSTGRES = os.getenv("STUDIO_TEST_POSTGRES", "")
 def real_postgres(monkeypatch):
     if not REAL_POSTGRES:
         pytest.skip("STUDIO_TEST_POSTGRES is not set")
-    monkeypatch.setenv("SUPABASE_DB_URL", REAL_POSTGRES)
+    monkeypatch.setenv("DATABASE_URL", REAL_POSTGRES)
     with studio.psycopg.connect(REAL_POSTGRES, autocommit=True) as conn:
         conn.execute("DROP TABLE IF EXISTS studio_probe; CREATE TABLE studio_probe (id int, v text)")
         conn.execute("INSERT INTO studio_probe VALUES (1, 'orig')")
@@ -243,17 +243,17 @@ def test_real_postgres_refuses_hidden_statements(real_postgres, monkeypatch, wri
     monkeypatch.setattr(studio, "_check", lambda *_: None)
     sql = "SELECT 1 --\r; COMMIT; BEGIN READ WRITE; UPDATE studio_probe SET v = 'changed'; COMMIT"
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("supabase", sql, write=write)
+        studio.run("postgres", sql, write=write)
     assert "multiple commands" in refused.value.message
     assert real_postgres() == "orig"
 
 
 def test_real_postgres_reads_and_edits(real_postgres):
-    assert studio.run("supabase", "SELECT id, v FROM studio_probe").rows == [[1, "orig"]]
+    assert studio.run("postgres", "SELECT id, v FROM studio_probe").rows == [[1, "orig"]]
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("supabase", "WITH x AS (UPDATE studio_probe SET v = 'cte' RETURNING 1) SELECT * FROM x")
+        studio.run("postgres", "WITH x AS (UPDATE studio_probe SET v = 'cte' RETURNING 1) SELECT * FROM x")
     assert refused.value.code == "sql_error"
-    edited = studio.run("supabase", "UPDATE studio_probe SET v = 'edited' RETURNING id, v", write=True)
+    edited = studio.run("postgres", "UPDATE studio_probe SET v = 'edited' RETURNING id, v", write=True)
     assert edited.rows == [[1, "edited"]] and edited.changes == 1
     assert real_postgres() == "edited"
 
@@ -271,10 +271,10 @@ def test_real_postgres_reads_and_edits(real_postgres):
     ("/* hi */ begin", True, "not_allowed"),
 ])
 def test_postgres_statements_that_could_escape_are_refused_before_connecting(monkeypatch, sql, write, code):
-    monkeypatch.setenv("SUPABASE_DB_URL", "postgresql://example")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
     monkeypatch.setattr(studio.psycopg, "connect", lambda *a, **k: pytest.fail("connected"))
     with pytest.raises(studio.StudioError) as refused:
-        studio.run("supabase", sql, write=write)
+        studio.run("postgres", sql, write=write)
     assert refused.value.code == code
 
 
@@ -333,7 +333,7 @@ def test_schema_and_list_loads_are_audited(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
     assert c.get("/admin/database").status_code == 200
     assert c.get("/admin/database/site/schema").status_code == 200
-    assert c.get("/admin/database/supabase/schema").status_code == 404
+    assert c.get("/admin/database/postgres/schema").status_code == 404
     rows = [(r["action"], r["outcome"]) for r in audit_rows(env) if r["action"].startswith("database.")]
     assert rows == [("database.list", "ok"), ("database.schema", "ok"), ("database.schema", "failed")]
     # Only reads and edits count as queries.

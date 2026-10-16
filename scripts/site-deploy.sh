@@ -22,8 +22,8 @@ sha=$3
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || usage
 
 case "$site" in
-  www) target=main repo=/home/tfmc/ProvinceSystem data=/home/tfmc/provincesystem-data front=3000 back=8000 ;;
-  dev) target=dev repo=/home/tfmc/tfmc-staging data=/home/tfmc/provincesystem-dev-data front=13001 back=18001 ;;
+  www) target=main repo=/home/tfmc/ProvinceSystem data=/home/tfmc/provincesystem-data front=3000 back=8000 file=docker-compose.yml ;;
+  dev) target=dev repo=/home/tfmc/tfmc-staging data=/home/tfmc/provincesystem-dev-data front=13001 back=18001 file=docker-compose.staging.yml ;;
   *) usage ;;
 esac
 [[ $(id -un) == tfmc ]] || { echo "run as tfmc: sudo -u tfmc $0 deploy $site $sha" >&2; exit 2; }
@@ -36,6 +36,9 @@ flock 9
 
 log() { echo "$*" >&2; }
 compose() { /usr/local/sbin/ps-compose "$target" "$@"; }
+# The site's Postgres, when the checked-out compose file has one.
+has_db() { grep -q '^  db:$' "$repo/$file"; }
+start_db() { ! has_db || compose up -d --wait db >&2; }
 record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
 
 cd "$repo"
@@ -77,6 +80,16 @@ mv "$data/data/.deploy-backup.db" "$data/deploy-backups/province.db.before-deplo
 find "$data/deploy-backups" -maxdepth 1 -name 'province.db.before-deploy-*' -printf '%T@ %p\n' \
   | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
 
+if has_db; then
+  log "backing up the site's Postgres"
+  start_db
+  backup="$data/deploy-backups/postgres.before-deploy-${sha:0:7}-$(date -u +%Y%m%dT%H%M%SZ).dump"
+  compose exec -T db pg_dump -U provincesystem -d provincesystem --format=custom > "$backup.part"
+  mv "$backup.part" "$backup"
+  find "$data/deploy-backups" -maxdepth 1 -name 'postgres.before-deploy-*' -printf '%T@ %p\n' \
+    | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
+fi
+
 checkout() {
   if [[ $site == www ]]; then
     git reset -q --hard "$1" || return 1
@@ -99,6 +112,7 @@ healthy() {
 }
 
 rebuild() {
+  start_db || return 1
   ((${#services[@]} == 0)) || compose up -d --build --no-deps "${services[@]}" >&2
 }
 

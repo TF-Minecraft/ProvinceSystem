@@ -38,7 +38,7 @@ class MigrateTest(unittest.TestCase):
         mock_connect.assert_not_called()
         self.assertFalse(db._MIGRATED)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_migrate_creates_extension_and_table_once(self, mock_connect, mock_register) -> None:
@@ -59,7 +59,7 @@ class MigrateTest(unittest.TestCase):
 
 
 class InsertCaseTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_insert_case_returns_id(self, mock_connect, mock_register) -> None:
@@ -83,7 +83,7 @@ class InsertCaseTest(unittest.TestCase):
 
 
 class SearchSimilarTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_search_applies_relevance_cutoff(self, mock_connect, mock_register) -> None:
@@ -99,7 +99,7 @@ class SearchSimilarTest(unittest.TestCase):
         self.assertEqual(results, [{"id": "1", "distance": 0.2}])
         conn.close.assert_called_once()
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_search_players_soft_boost_lowers_and_forwards_names(
@@ -115,7 +115,7 @@ class SearchSimilarTest(unittest.TestCase):
         args = cursor.execute.call_args.args
         self.assertIn(["alice", "bob"], args[1])
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_search_no_players_degrades_to_pure_distance(self, mock_connect, mock_register) -> None:
@@ -129,7 +129,7 @@ class SearchSimilarTest(unittest.TestCase):
         args = cursor.execute.call_args.args
         self.assertIn([], args[1])
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_search_query_text_tokenized_for_lexical_boost(
@@ -157,7 +157,7 @@ class ListCasesTest(unittest.TestCase):
         result = db.list_cases(**kwargs)
         return result, cursor, conn
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_list_cases_orders_newest_first_without_embedding(
@@ -180,7 +180,7 @@ class ListCasesTest(unittest.TestCase):
         mock_connect.assert_called_once()
         conn.close.assert_called_once()
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_list_cases_needs_every_word_somewhere(self, mock_connect, mock_register) -> None:
@@ -194,7 +194,7 @@ class ListCasesTest(unittest.TestCase):
         self.assertEqual(("%xray%", "%Wren%", 25, 0), page_params)
         self.assertEqual(["%xray%", "%Wren%"], count_params)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_list_cases_matches_pattern_characters_literally(self, mock_connect, mock_register) -> None:
@@ -205,7 +205,7 @@ class ListCasesTest(unittest.TestCase):
 
 
 class KnownPlayersTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_known_players_once_each_in_newest_spelling(self, mock_connect, mock_register) -> None:
@@ -236,7 +236,7 @@ class UpdateCaseTest(unittest.TestCase):
             embedding=[0.5],
         )
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_update_case_found_persists_new_embedding(
@@ -270,7 +270,7 @@ class UpdateCaseTest(unittest.TestCase):
         self.assertIn([0.5], params)
         conn.close.assert_called_once()
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_update_case_not_found(self, mock_connect, mock_register) -> None:
@@ -295,7 +295,7 @@ class AuditTrailTest(unittest.TestCase):
     """The audit row is written inside the caller's transaction, so a case can
     never be changed without a record of the change."""
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_insert_records_create_with_actor(self, mock_connect, mock_register) -> None:
@@ -324,7 +324,7 @@ class AuditTrailTest(unittest.TestCase):
         self.assertEqual("uuid-1", params[4])
         self.assertIsNone(params[5])  # nothing existed before
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_update_records_before_and_after(self, mock_connect, mock_register) -> None:
@@ -366,7 +366,7 @@ class AuditTrailTest(unittest.TestCase):
         self.assertEqual("Old summary", params[5].adapted["summary"])
         self.assertEqual("New summary", params[6].adapted["summary"])
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_delete_keeps_a_copy_of_what_was_destroyed(
@@ -396,7 +396,7 @@ class AuditTrailTest(unittest.TestCase):
         self.assertEqual("2026-08-26T10:57:00+00:00", params[5].adapted["created_at"])
         self.assertIsNone(params[6])
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_delete_survives_a_row_without_created_at(
@@ -418,7 +418,7 @@ class AuditTrailTest(unittest.TestCase):
         self.assertTrue(db.delete_case("case-1", actor=db.AuditActor(source="web")))
         self.assertNotIn("created_at", _audit_calls(cursor)[0][1][5].adapted)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_no_audit_row_when_nothing_changed(self, mock_connect, mock_register) -> None:
@@ -429,7 +429,7 @@ class AuditTrailTest(unittest.TestCase):
         self.assertFalse(db.delete_case("missing", actor=db.AuditActor(source="web")))
         self.assertEqual([], _audit_calls(cursor))
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_bot_writes_are_marked_as_unverified_source(
@@ -462,7 +462,7 @@ class MigrateAuditTableTest(unittest.TestCase):
     def tearDown(self) -> None:
         db._MIGRATED = False
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_migrate_creates_audit_table_without_a_cascading_fk(
@@ -485,7 +485,7 @@ class MigrateAuditTableTest(unittest.TestCase):
 
 
 class DeleteCaseTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_delete_case_found(self, mock_connect, mock_register) -> None:
@@ -506,7 +506,7 @@ class DeleteCaseTest(unittest.TestCase):
         self.assertTrue(db.delete_case("some-id"))
         conn.close.assert_called_once()
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_delete_case_not_found(self, mock_connect, mock_register) -> None:
@@ -519,7 +519,7 @@ class DeleteCaseTest(unittest.TestCase):
 
 
 class GetCaseTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_get_case_found(self, mock_connect, mock_register) -> None:
@@ -530,7 +530,7 @@ class GetCaseTest(unittest.TestCase):
 
         self.assertEqual(db.get_case("1"), {"id": "1", "summary": "s"})
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_get_case_not_found(self, mock_connect, mock_register) -> None:
@@ -543,7 +543,7 @@ class GetCaseTest(unittest.TestCase):
 
 
 class PingDbTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("precedent.db.register_vector")
     @mock.patch("precedent.db.psycopg2.connect")
     def test_ping_db_runs_select_1(self, mock_connect, mock_register) -> None:

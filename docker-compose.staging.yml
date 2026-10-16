@@ -14,26 +14,33 @@ services:
       - SKINS_DEV=1
       - STAFF_KEY=dev-staff-key
       - PLUGIN_KEY=dev-plugin-key
-      # Patch notes need Postgres. Staging keeps its own, so nothing here reaches production.
-      - SUPABASE_DB_URL=postgresql://postgres:dev-patchnotes@patchnotes-db:5432/tfmc
+      # Precedent and patch notes. Staging keeps its own database, so nothing here reaches production.
+      - DATABASE_URL=postgresql://provincesystem:${POSTGRES_PASSWORD:-dev-postgres}@db:5432/provincesystem
     volumes:
       - ./backend/src/output:/app/src/output
       - ./backend/src/input:/app/src/input
       - ./backend/src/defines:/app/src/defines
       - ./backend/src/data:/app/src/data
     depends_on:
-      - patchnotes-db
+      db:
+        condition: service_healthy
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
 
-  patchnotes-db:
-    image: pgvector/pgvector:pg16
+  db:
+    image: pgvector/pgvector:pg17
     environment:
-      - POSTGRES_PASSWORD=dev-patchnotes
-      - POSTGRES_DB=tfmc
+      - POSTGRES_USER=provincesystem
+      - POSTGRES_DB=provincesystem
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dev-postgres}
     volumes:
-      - patchnotes-db:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "provincesystem", "-d", "provincesystem"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -56,4 +63,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  patchnotes-db:
+  db:

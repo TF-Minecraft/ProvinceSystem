@@ -91,7 +91,7 @@ class MigrateTest(unittest.TestCase):
         mock_connect.assert_not_called()
         self.assertFalse(db._MIGRATED)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_migrate_creates_table_once(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -113,7 +113,7 @@ class MigrateTest(unittest.TestCase):
 
 
 class AutoApproveTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.get_week_status", return_value={"postponed": False})
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_skips_rewritten_lines(self, mock_connect, _status) -> None:
@@ -127,7 +127,7 @@ class AutoApproveTest(unittest.TestCase):
 
 
 class PreviewTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_replace_preview_expires_in_one_hour(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -153,7 +153,7 @@ class PreviewTest(unittest.TestCase):
         self.assertEqual(params[0], "2026-W39")
         self.assertEqual(params[1].adapted, [{"id": "b1", "section": "new", "body": "Added a station"}])
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_load_preview_deletes_expired_rows(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -166,7 +166,7 @@ class PreviewTest(unittest.TestCase):
 
 
 class InsertBulletTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_insert_stores_a_pending_bullet(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -193,7 +193,7 @@ class InsertBulletTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             db.insert_bullet(section="secret", body="nope", week="2026-W39")
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.current_week", return_value="2026-W39")
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_sourced_insert_writes_the_bullet_once(self, mock_connect, _week) -> None:
@@ -223,7 +223,7 @@ class InsertBulletTest(unittest.TestCase):
         _bullet_sql, bullet_params = cursor.execute.call_args_list[1].args
         self.assertEqual(bullet_params, ("2026-W39", "new", "Gathering: Added a node"))
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_sourced_insert_skips_a_duplicate(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -241,7 +241,7 @@ class InsertBulletTest(unittest.TestCase):
 
 
 class ReviewTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_approve_updates_only_pending(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -256,7 +256,7 @@ class ReviewTest(unittest.TestCase):
         self.assertEqual(params, ("approved", None, "bullet-1"))
         self.assertEqual(cursor.execute.call_count, 1)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_deny_stores_the_reason(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -279,7 +279,7 @@ class ReviewTest(unittest.TestCase):
             db.deny_bullet("bullet-1", "   ")
         mock_connect.assert_not_called()
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_missing_bullet(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -289,7 +289,7 @@ class ReviewTest(unittest.TestCase):
         with self.assertRaises(db.BulletNotFound):
             db.approve_bullet("missing")
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_already_reviewed(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -302,7 +302,7 @@ class ReviewTest(unittest.TestCase):
 
 
 class ListTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_queue_is_pending_only(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -315,7 +315,7 @@ class ListTest(unittest.TestCase):
         self.assertIn("status = 'pending'", sql)
         self.assertEqual(params, ("2026-W39", "2026-W39"))
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_published_week_is_approved_only(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -329,7 +329,7 @@ class ListTest(unittest.TestCase):
         self.assertNotIn("deny_reason IS", sql)
         self.assertEqual(params, ("2026-W39",))
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_published_notes_are_one_approved_query(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -358,7 +358,7 @@ class ListTest(unittest.TestCase):
         self.assertEqual(bullet_params, (["2026-W39", "2026-W38"],))
         self.assertIn("status = 'approved'", bullet_sql)
 
-    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
     @mock.patch("patchnotes.db.psycopg2.connect")
     def test_published_weeks_newest_first(self, mock_connect) -> None:
         cursor = mock.MagicMock()
@@ -441,7 +441,7 @@ class JobStorageTest(unittest.TestCase):
         self.assertIn("ORDER BY created_at DESC", self.cursor.execute.call_args.args[0])
 
     def test_migration_adds_jobs_and_partial_unique_index(self) -> None:
-        with mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}), mock.patch.object(db, "_MIGRATED", False):
+        with mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}), mock.patch.object(db, "_MIGRATED", False):
             db.migrate()
         sql = " ".join(call.args[0] for call in self.cursor.execute.call_args_list)
         self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_jobs", sql)
