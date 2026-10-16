@@ -55,8 +55,8 @@ function setup(runsReady: boolean) {
     markers: [],
     labels: [],
   };
-  const hook = renderHook(() => useMapHover(props as never));
-  return { hook, setCursorTooltip };
+  const hook = renderHook((p: typeof props) => useMapHover(p as never), { initialProps: props });
+  return { hook, setCursorTooltip, props };
 }
 
 function moveTo(hook: ReturnType<typeof setup>["hook"], x: number) {
@@ -91,5 +91,23 @@ describe("useMapHover province-ID picking", () => {
     expect(setCursorTooltip).toHaveBeenLastCalledWith(null);
     expect(hook.result.current.isHoveringClickable).toBe(false);
     expect(hook.result.current.pickRegionAtEvent({ clientX: 0, clientY: 0 } as never)).toBeNull();
+  });
+
+  it("re-hovers a still pointer when membership changes under it", () => {
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    const { hook, setCursorTooltip, props } = setup(true);
+
+    moveTo(hook, 0);
+    expect(setCursorTooltip).toHaveBeenLastCalledWith(expect.objectContaining({ text: "BlackRealm" }));
+
+    // Ownership of province 7 changes (new region data, new index identity):
+    // the stationary pointer must show the new holder without another move.
+    act(() => {
+      hook.rerender({ ...props, provinceRegionIndex: new Map([[7, "Other"]]) });
+    });
+    expect(setCursorTooltip).toHaveBeenLastCalledWith(expect.objectContaining({ text: "Other" }));
   });
 });

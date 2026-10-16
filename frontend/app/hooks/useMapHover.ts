@@ -134,6 +134,7 @@ export function useMapHover(props: UseMapHoverProps) {
     markers,
     forts,
     provincePickReady,
+    provinceRegionIndex,
   } = props;
 
   const propsRef = useRef(props);
@@ -388,7 +389,7 @@ export function useMapHover(props: UseMapHoverProps) {
       clientX: pointer.clientX,
       clientY: pointer.clientY,
     } as React.MouseEvent<Element>);
-  }, [loading, provincePickReady, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
+  }, [loading, provincePickReady, provinceRegionIndex, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
   const onMouseMove = (event: React.MouseEvent<Element>) => {
     if (loading) return;
