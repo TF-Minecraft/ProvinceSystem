@@ -262,6 +262,20 @@ describe("buildProvinceRegionIndex", () => {
     expect(index.get(8)).toBe("Owner");
   });
 
+  it("drops mask-discarded provinces (trade's water and sea)", () => {
+    const data: RegionRecord = {
+      Guild: { rgb: "1,2,3", name: "Guild", provinces: [1, 2, 3] },
+    };
+    const mask = new Uint8Array(4);
+    mask[2] = 1;
+    const index = buildProvinceRegionIndex(data, mask);
+    expect(index.get(1)).toBe("Guild");
+    expect(index.get(2)).toBeUndefined();
+    expect(index.get(3)).toBe("Guild");
+    // No mask (nation) keeps water holdings.
+    expect(buildProvinceRegionIndex(data).get(2)).toBe("Guild");
+  });
+
   it("ignores non-positive and non-integer province ids", () => {
     const data: RegionRecord = {
       Odd: { rgb: "1,2,3", name: "Odd", provinces: [0, -1, 1.5, 4] },
