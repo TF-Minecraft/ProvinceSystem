@@ -158,7 +158,10 @@ async def send_report(request: Request, response: Response):
     if user is not None:
         link = get_link_for_discord_id(str(user.get("discord_user_id") or ""))
         name = str((link or {}).get("minecraft_name") or "").strip() or name
-    code = reports.save(report, minecraft_name=name or None, country=_country(request), user=user)
+    try:
+        code = reports.save(report, minecraft_name=name or None, country=_country(request), user=user)
+    except reports.BadReport:
+        raise HTTPException(400, detail="bad_report") from None
     return {"code": code}
 
 

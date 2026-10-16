@@ -6,10 +6,11 @@ still refuse a command when it runs.
 """
 from __future__ import annotations
 
-import json
 import time
 
-from src.skins.db import connect
+import psycopg
+
+from src import database
 
 from . import mirror, nodes
 
@@ -23,6 +24,8 @@ PERMISSION_MAX = 2048
 # TFMCWeb resends at least every ten minutes.
 FRESH_SECONDS = 30 * 60
 KIND_ORDER = {"rank": 0, "staff": 1, "step": 2}
+# The order store() writes a command's fields in; jsonb keeps its own order.
+COMMAND_FIELDS = ("plugin", "name", "aliases", "description", "usage", "permission", "shadowed", "access")
 
 
 class CommandsError(Exception):
@@ -88,20 +91,22 @@ def store(payload) -> dict:
         raise CommandsError("bad_commands")
     server = _text(payload.get("server"), 32, required=True)
     snapshot_hash = _text(payload.get("hash"), 128)
-    body = json.dumps({"groups": group_names, "plugins": plugin_rows, "commands": command_rows},
-                      separators=(",", ":"))
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO lp_commands (id, server, hash, generated_at, received_at, payload)
-            VALUES (1, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET server = excluded.server, hash = excluded.hash,
-                generated_at = excluded.generated_at, received_at = excluded.received_at,
-                payload = excluded.payload
-            """,
-            (server, snapshot_hash, generated_at, mirror._iso(), body),
-        )
-        conn.commit()
+    body = {"groups": group_names, "plugins": plugin_rows, "commands": command_rows}
+    try:
+        with database.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO lp_commands (id, server, hash, generated_at, received_at, payload)
+                VALUES (1, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET server = excluded.server, hash = excluded.hash,
+                    generated_at = excluded.generated_at, received_at = excluded.received_at,
+                    payload = excluded.payload
+                """,
+                (server, snapshot_hash, generated_at, mirror._stamp(), database.Jsonb(body)),
+            )
+    except psycopg.DataError:
+        # What Postgres cannot store: a NUL in a text, a time past bigint.
+        raise CommandsError("bad_commands") from None
     return {"ok": True, "commands": len(command_rows)}
 
 
@@ -120,7 +125,7 @@ def _kinds(tracks: list[dict]) -> dict[str, tuple[str, str]]:
 
 def view(viewer: dict) -> dict:
     now = int(time.time())
-    with connect() as conn:
+    with database.transaction(isolation="repeatable read", read_only=True) as conn:
         row = conn.execute(
             "SELECT server, generated_at, received_at, payload FROM lp_commands WHERE id = 1").fetchone()
         if row is None:
@@ -128,7 +133,7 @@ def view(viewer: dict) -> dict:
         groups = mirror.load_groups(conn)
         counts = mirror.group_counts(conn)
         tracks = mirror.load_tracks(conn)
-    data = json.loads(row["payload"])
+    data = row["payload"]
     kinds = _kinds(tracks)
     listed = []
     for index, name in enumerate(data["groups"]):
@@ -150,7 +155,7 @@ def view(viewer: dict) -> dict:
     for command in data["commands"]:
         access = command["access"]
         plugins[command["plugin"]]["commands"].append({
-            **{k: v for k, v in command.items() if k != "plugin"},
+            **{k: command[k] for k in COMMAND_FIELDS if k != "plugin"},
             "access": None if access is None else "".join(access[i] for i in order),
         })
     for plugin in plugins.values():
@@ -160,7 +165,7 @@ def view(viewer: dict) -> dict:
         "status": {
             "server": row["server"],
             "generated_at": row["generated_at"],
-            "received_at": row["received_at"],
+            "received_at": mirror._iso(row["received_at"]),
             "fresh": received is not None and received <= FRESH_SECONDS,
         },
         "groups": [group for _, group in listed],

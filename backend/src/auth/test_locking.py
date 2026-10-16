@@ -11,7 +11,6 @@ Where a path takes the X3 advisory lock first, races between two whole calls of 
 are serialised by X3, so tests that isolate a row-lock or constraint recipe hold
 the competing row by hand instead.
 """
-import sqlite3
 import threading
 import time
 from contextlib import contextmanager
@@ -258,12 +257,6 @@ def test_an_ordinary_session_read_takes_no_lock(env):
     with database.connect() as conn:
         assert users.session_user_in(conn, token)["role"] == "admin"
         assert testing.execute("UPDATE users SET role = 'mod' WHERE id = %s", (admin_id,)) == 1
-
-
-def test_a_lock_cannot_be_asked_of_the_sqlite_bridge(env):
-    _, token = account(env, "adam", "admin")
-    with pytest.raises(TypeError, match="Postgres"):
-        users.session_user_in(sqlite3.connect(":memory:"), token, lock=True)
 
 
 def test_a_server_action_and_a_demotion_never_cross(app, env, monkeypatch):  # noqa: F811

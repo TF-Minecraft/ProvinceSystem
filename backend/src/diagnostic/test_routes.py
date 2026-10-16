@@ -1,5 +1,6 @@
 """The /diagnostic page's checks and the reports players send to staff."""
 import hashlib
+import re
 from unittest import mock
 
 import pytest
@@ -156,7 +157,7 @@ def test_bad_reports_are_refused(app):
     assert c.post("/diagnostic/reports", json={"report": REPORT}, headers={"Sec-Fetch-Site": "cross-site"}).status_code == 403
 
 
-def test_reports_are_rate_limited(app):
+def test_reports_are_rate_limited(app, postgres):
     c = client(app)
     for _ in range(5):
         assert c.post("/diagnostic/reports", json={"report": REPORT}).status_code == 200
@@ -166,3 +167,23 @@ def test_reports_are_rate_limited(app):
 def test_summary_without_findings():
     assert reports.summarise({}) == ("ok", "No problems found")
     assert reports.summarise({"findings": [{"level": "info", "title": "Running on battery"}]}) == ("info", "Running on battery")
+
+
+def test_reports_postgres_cannot_store_are_refused(app, postgres):
+    c = client(app)
+    nan = c.post("/diagnostic/reports", content=b'{"report": {"findings": [], "fps": NaN}}',
+                 headers={"Content-Type": "application/json"})
+    nul = c.post("/diagnostic/reports", json={"report": {"findings": [{"level": "fail", "title": "a\x00b"}]}})
+    nul_key = c.post("/diagnostic/reports", json={"report": {"a\x00": 1}})
+    assert [r.status_code for r in (nan, nul, nul_key)] == [400, 400, 400]
+    assert nan.json() == {"detail": "bad_report"}
+
+
+def test_report_times_keep_their_form(app, database, postgres):
+    code = client(app).post("/diagnostic/reports", json={"report": REPORT}).json()["code"]
+    _, token = account(database, "mod", role="mod")
+    listed = client(app, token).get("/diagnostic/reports").json()["reports"][0]
+    # As stored before: datetime.isoformat() in UTC.
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{6})?\+00:00", listed["created_at"])
+    assert client(app, token).get(f"/diagnostic/reports/{code}").json()["created_at"] == listed["created_at"]
+    assert client(app, token).get("/diagnostic/reports/AB%00CD").status_code == 404

@@ -11,9 +11,13 @@ from src import database
 from src.auth import roles
 from src.auth.admin import AdminError
 from src.auth.players import canonical_uuid
-from src.skins.db import connect
 
 from . import changes, mirror, nodes, policy
+
+
+def _reading():
+    """A read-only transaction that sees one snapshot of the mirror throughout."""
+    return database.transaction(isolation="repeatable read", read_only=True)
 
 
 def _can_change(viewer: dict) -> bool:
@@ -54,12 +58,12 @@ def _rights(viewer: dict) -> dict:
 def overview(viewer: dict) -> dict:
     rules = policy.load()
     now = int(time.time())
-    with connect() as conn:
+    with _reading() as conn:
         groups = mirror.load_groups(conn)
         counts = mirror.group_counts(conn)
         tracks = mirror.load_tracks(conn)
         status = mirror.status(conn)
-        players = conn.execute("SELECT COUNT(*) FROM lp_users").fetchone()[0]
+        players = conn.execute("SELECT COUNT(*) AS n FROM lp_users").fetchone()["n"]
     return {
         "status": status,
         "players": players,
@@ -81,7 +85,7 @@ def group_detail(viewer: dict, name: str) -> dict:
         raise AdminError(400, "bad_group_name", "invalid")
     rules = policy.load()
     now = int(time.time())
-    with connect() as conn:
+    with _reading() as conn:
         groups = mirror.load_groups(conn)
         if name not in groups:
             raise AdminError(404, "group_missing", "not_found")
@@ -118,19 +122,13 @@ def _pending(target_type: str, target: str) -> dict | None:
 
 
 def _account(conn, uuid: str) -> dict | None:
-    row = conn.execute(
-        "SELECT discord_user_id, discord_username FROM discord_links WHERE lower(player_uuid) = ?",
-        (uuid,),
-    ).fetchone()
-    if row is None:
+    link = changes.discord_link(player_uuid=uuid)  # PG-MIGRATION: Linking (see changes.discord_link)
+    if link is None:
         return None
-    # PG-MIGRATION: until the LuckPerms area converts, `conn` is SQLite and users are in
-    # Postgres. Its PR puts back the join: LEFT JOIN users u ON u.discord_user_id =
-    # dl.discord_user_id AND NOT u.placeholder.
-    with database.connect() as pg:
-        user = pg.execute("SELECT id AS user_id, role FROM users WHERE discord_user_id = %s AND NOT placeholder",
-                          (row["discord_user_id"],)).fetchone()
-    return {**dict(row), **(user or {"user_id": None, "role": None})}
+    user = conn.execute("SELECT id AS user_id, role FROM users WHERE discord_user_id = %s AND NOT placeholder",
+                        (link["discord_user_id"],)).fetchone()
+    return {"discord_user_id": link["discord_user_id"], "discord_username": link["discord_username"],
+            **(user or {"user_id": None, "role": None})}
 
 
 def _track_moves(conn, uuid: str, tracks: list[dict], viewer: dict, allowed: bool, now: int) -> list[dict]:
@@ -168,7 +166,7 @@ def user_detail(viewer: dict, raw_uuid: str) -> dict:
         raise AdminError(400, "bad_uuid", "invalid")
     rules = policy.load()
     now = int(time.time())
-    with connect() as conn:
+    with _reading() as conn:
         row = mirror.user_row(conn, uuid)
         if row is None:
             raise AdminError(404, "player_not_found", "not_found")
@@ -230,7 +228,7 @@ def users(viewer: dict, q: str, group: str | None, page: int) -> dict:
     if group is not None and not nodes.GROUP_NAME.match(group):
         raise AdminError(400, "bad_group_name", "invalid")
     now = int(time.time())
-    with connect() as conn:
+    with _reading() as conn:
         try:
             listing = mirror.search_users(conn, q, group, page)
         except mirror.SnapshotError as exc:

@@ -18,8 +18,8 @@ from PIL import Image
 
 from src.coreprotect import sessions
 from src.coreprotect.reader import Budget, CoreProtectConfig, Reader, Unavailable
+from src import database
 from src.luckperms import mirror
-from src.skins.db import connect
 
 from .players import _ids, canonical_uuid
 
@@ -69,8 +69,7 @@ def rank(player_uuid: str) -> str | None:
     if key is None:
         return None
     try:
-        # PG-MIGRATION: until the LuckPerms area converts, its mirror is in SQLite.
-        with connect() as conn:
+        with database.transaction(isolation="repeatable read", read_only=True) as conn:
             if mirror.user_row(conn, key) is None:
                 return None
             groups = mirror.load_groups(conn)

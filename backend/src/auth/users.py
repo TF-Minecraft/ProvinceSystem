@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import secrets
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -248,13 +247,6 @@ def session_user_in(conn, token: str | None, *, lock: bool = False) -> dict | No
     """
     if not token or len(token) > _TOKEN_MAX:
         return None
-    if isinstance(conn, sqlite3.Connection):
-        # PG-MIGRATION: until the LuckPerms area converts, luckperms/changes.py passes its
-        # SQLite connection. Sessions are in Postgres now, so read them there; nothing holds
-        # them for the caller's write meanwhile, so a lock cannot be honoured.
-        if lock:
-            raise TypeError("session_user_in(lock=True) needs a Postgres connection")
-        return session_user(token)
     row = conn.execute(
         f"""
         SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,

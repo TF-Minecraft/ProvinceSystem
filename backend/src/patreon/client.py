@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
-from src.skins import db
+from src import database
 from .config import Config
 from .resolver import iso, parse, utcnow
 
@@ -137,17 +137,19 @@ class PatreonClient:
             raise PatreonError("patreon_bad_identity") from None
 
     def _tokens(self) -> dict:
-        with db.connect() as conn:
-            row = conn.execute("SELECT * FROM patreon_tokens WHERE id=1").fetchone()
-            if row:
-                return dict(row)
-            access = os.getenv("PATREON_CREATOR_ACCESS_TOKEN", "")
-            refresh = os.getenv("PATREON_CREATOR_REFRESH_TOKEN", "")
-            if not access or not refresh:
-                raise PatreonError("patreon_tokens_missing")
-            conn.execute("INSERT OR IGNORE INTO patreon_tokens VALUES (1, ?, ?, ?)",
-                         (access, refresh, iso(utcnow() + timedelta(days=1))))
-            return dict(conn.execute("SELECT * FROM patreon_tokens WHERE id=1").fetchone())
+        """The creator tokens, seeded from the environment once. expires_at is an ISO string."""
+        with database.connect() as conn:
+            row = conn.execute("SELECT * FROM patreon_tokens WHERE id = 1").fetchone()
+            if row is None:
+                access = os.getenv("PATREON_CREATOR_ACCESS_TOKEN", "")
+                refresh = os.getenv("PATREON_CREATOR_REFRESH_TOKEN", "")
+                if not access or not refresh:
+                    raise PatreonError("patreon_tokens_missing")
+                conn.execute("INSERT INTO patreon_tokens (id, access_token, refresh_token, expires_at) "
+                             "VALUES (1, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                             (access, refresh, utcnow() + timedelta(days=1)))
+                row = conn.execute("SELECT * FROM patreon_tokens WHERE id = 1").fetchone()
+        return {**row, "expires_at": iso(row["expires_at"])}
 
     def refresh_tokens(self, rejected_access: str | None = None) -> dict:
         # Separate short lease serializes rotating refresh tokens across workers.
@@ -159,17 +161,20 @@ class PatreonClient:
             tokens = self._tokens()
             if rejected_access and tokens["access_token"] != rejected_access:
                 return tokens
+            # The exchange is an HTTP call, so it runs before the transaction opens.
             value = self._token_exchange({"grant_type": "refresh_token", "refresh_token": tokens["refresh_token"]})
-            with db.connect() as conn:
-                conn.execute("BEGIN IMMEDIATE")
-                lease = conn.execute("SELECT * FROM patreon_leases WHERE name='token_refresh'").fetchone()
-                if not lease or lease["owner"] != owner or parse(lease["expires_at"]) <= utcnow():
+            with database.connect() as conn:
+                # Held until commit, so the lease cannot pass to another worker mid-write.
+                lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'token_refresh' FOR UPDATE").fetchone()
+                if not lease or lease["owner"] != owner or lease["expires_at"] <= utcnow():
                     raise PatreonError("patreon_token_refresh_lease_lost")
-                conn.execute("UPDATE patreon_tokens SET access_token=?, refresh_token=?, expires_at=? WHERE id=1 AND access_token=? AND refresh_token=?",
-                             (value["access_token"], value["refresh_token"], iso(utcnow() + timedelta(seconds=int(value["expires_in"]))), tokens["access_token"], tokens["refresh_token"]))
+                # Compare-and-set: only the tokens this refresh started from are replaced.
+                conn.execute("UPDATE patreon_tokens SET access_token = %s, refresh_token = %s, expires_at = %s "
+                             "WHERE id = 1 AND access_token = %s AND refresh_token = %s",
+                             (value["access_token"], value["refresh_token"], utcnow() + timedelta(seconds=int(value["expires_in"])), tokens["access_token"], tokens["refresh_token"]))
             return self._tokens()
         except PatreonError:
-            with db.connect() as conn:
+            with database.connect() as conn:
                 alert(conn, "token_refresh_failed", "Creator token refresh failed.")
             raise
         finally:

@@ -9,8 +9,9 @@ if str(BACKEND) not in sys.path:
 
 @pytest.fixture
 def database(tmp_path, monkeypatch):
+    """The SQLite file, which still holds discord_links; the Patreon tables are in Postgres."""
     from src.patreon import service
-    db = service.db
+    db = service.sqlite_db
     monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
     for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):

@@ -4,6 +4,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from src import database
 from src.api import admin_routes, auth_routes
 from src.auth import testing, users
 from src.luckperms import changes, mirror, nodes, policy
@@ -203,8 +204,8 @@ def test_snapshot_replaces_mirror_and_unchanged_checks_hash(bridge, env):
     # A delayed older snapshot cannot undo a newer one.
     late = bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(hash="old", revision=1001))
     assert late.json() == {"ok": True, "stale": True}
-    with env.connect() as conn:
-        assert [r["uuid"] for r in conn.execute("SELECT uuid FROM lp_users")] == [BOB]
+    assert [r["uuid"] for r in testing.rows("SELECT uuid FROM lp_users")] == [BOB]
+    with database.connect() as conn:
         assert mirror.status(conn)["applying"] is True
 
 
@@ -461,7 +462,8 @@ def test_unanswered_definition_change_holds_others_until_a_snapshot(app, bridge,
     monkeypatch.setattr(changes.time, "time", lambda: later)
     monkeypatch.setattr(mirror.time, "time", lambda: later)
     assert changes.fetch_for_bridge() == []  # unknown, and no snapshot since
-    monkeypatch.setattr(mirror, "_iso", lambda ts=None: changes._iso(later + 1))
+    stamp = mirror._stamp
+    monkeypatch.setattr(mirror, "_stamp", lambda ts=None: stamp(later + 1))
     bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=9000))
     assert [c["target"] for c in changes.fetch_for_bridge()] == [ALICE]
 
@@ -471,6 +473,18 @@ def test_a_bad_result_state_leaves_the_mirror_alone(app, bridge, staff, env):
     changes.fetch_for_bridge()
     wrong = {"uuid": BOB, "name": "Bob", "nodes": []}
     changes.record_results([{"id": change["id"], "ok": True, "revision": 7000, "state": wrong}])
-    with env.connect() as conn:
+    with database.connect() as conn:
         assert mirror.user_row(conn, ALICE) is not None
         assert conn.execute("SELECT hash FROM lp_state").fetchone()["hash"] is None
+
+
+def test_what_postgres_cannot_hold_is_refused_not_a_crash(app, bridge, staff):
+    admin = client(app, staff["admin"])
+    assert admin.get("/admin/luckperms/players", params={"q": "a\x00"}).json()["rows"] == []
+    reason = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}], reason="Event\x00 reward")
+    assert reason.status_code == 400 and reason.json()["detail"] == "reason_required"
+    target = submit(app, staff["admin"], "user", "1111\x00", [{"op": "add_node", "node": {"key": "tips.off"}}])
+    assert target.status_code == 400 and target.json()["detail"] == "bad_uuid"
+    refusals = [r for r in testing.audit_rows() if r["action"] == "luckperms.change"]
+    assert [(r["outcome"], r["reason"], r["detail_json"]["target"]) for r in refusals] == [
+        ("invalid", None, ALICE), ("invalid", "Event reward", "1111")]

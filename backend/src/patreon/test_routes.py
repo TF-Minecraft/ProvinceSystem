@@ -8,6 +8,8 @@ from src.api.prod_guard import assert_production_safe
 from src.patreon import service as s
 from src.patreon.test_service import CONFIG, member, player, sync, changes, ack
 
+pytestmark = pytest.mark.usefixtures("postgres")
+
 STAFF = {"X-Staff-Key": "staff-test"}
 PLUGIN = {"X-Plugin-Key": "plugin-test"}
 

@@ -1,5 +1,6 @@
 import pytest
 
+from src.auth import testing
 from src.luckperms import commands
 from src.luckperms.test_luckperms import PLUGIN, SECONDARY, app, bridge, client, env, staff  # noqa: F401
 
@@ -103,9 +104,7 @@ def test_groups_missing_from_the_mirror_still_show(app, staff, env):
 
 def test_old_lists_are_marked_stale(app, staff, env):
     assert client(app).put("/luckperms/plugin/commands", headers=PLUGIN, json=catalogue()).status_code == 200
-    with env.connect() as conn:
-        conn.execute("UPDATE lp_commands SET received_at = '2026-01-01T00:00:00Z'")
-        conn.commit()
+    testing.execute("UPDATE lp_commands SET received_at = '2026-01-01T00:00:00Z'")
     assert client(app, staff["mod"]).get("/admin/luckperms/commands").json()["status"]["fresh"] is False
 
 
