@@ -4,9 +4,8 @@ import { useCallback, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
-import type { ProvinceIndex } from "@/app/lib/map/editor/buildProvinceIndex";
-import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
-import { pickTitleIdAt } from "@/app/lib/map/editor/buildTitlePickIndex";
+import type { ChildPickIndex } from "@/app/hooks/useEditorChildPick";
+import { provinceAt, type ProvinceIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import { canSelectChild, getChildOwnerName } from "@/app/lib/map/editor/childTitleAssignment";
 import { canSelectProvince, getProvinceOwnerName } from "@/app/lib/map/editor/countyAssignment";
 import type { ChildTierEditorConfig } from "@/app/lib/map/editor/editorTierConfig";
@@ -20,7 +19,13 @@ type CursorTooltip = {
   text: string;
 } | null;
 
-function pickProvinceAt(index: ProvinceIndex, x: number, y: number): number | null {
+export function pickProvinceAt(index: ProvinceIndex, x: number, y: number): number | null {
+  // Runs answer directly; touching provinceMap on a runs-backed index would
+  // materialise the ~164MB flat map the runs artifact exists to avoid.
+  if (index.runs) {
+    const pid = provinceAt(index.runs, x, y);
+    return pid > 0 ? pid : null;
+  }
   if (x < 0 || y < 0 || x >= index.width || y >= index.height) {
     return null;
   }
@@ -28,8 +33,10 @@ function pickProvinceAt(index: ProvinceIndex, x: number, y: number): number | nu
   return pid >= 0 ? pid : null;
 }
 
-function pickChildAt(childPick: TitlePickIndex, x: number, y: number): string | null {
-  return pickTitleIdAt(childPick.imageData, x, y, childPick.rgbToTitleId);
+function pickChildAt(index: ProvinceIndex, childPick: ChildPickIndex, x: number, y: number): string | null {
+  const provinceId = pickProvinceAt(index, x, y);
+  if (provinceId === null) return null;
+  return childPick.get(provinceId) ?? null;
 }
 
 export function useEditorPick({
@@ -53,7 +60,7 @@ export function useEditorPick({
   tier: EditorTier;
   childTierConfig: ChildTierEditorConfig | null;
   index: ProvinceIndex | null;
-  childPick: TitlePickIndex | null;
+  childPick: ChildPickIndex | null;
   selectedId: string | null;
   provinceAssignment: Map<number, string>;
   childAssignment: Map<string, string>;
@@ -94,10 +101,10 @@ export function useEditorPick({
         };
       }
 
-      if (isChildTier && childPick) {
+      if (isChildTier && childPick && index) {
         return {
           provinceId: null,
-          childId: pickChildAt(childPick, coords.x, coords.y),
+          childId: pickChildAt(index, childPick, coords.x, coords.y),
         };
       }
 

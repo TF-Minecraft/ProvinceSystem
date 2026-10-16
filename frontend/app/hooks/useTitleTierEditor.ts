@@ -4,7 +4,7 @@ import { useCallback, useMemo } from "react";
 
 import type { MapId } from "@/app/components/map/types";
 import { useEditorChildLayer } from "@/app/hooks/useEditorChildLayer";
-import { useEditorChildPick } from "@/app/hooks/useEditorChildPick";
+import { useEditorChildPick, type ChildPickIndex } from "@/app/hooks/useEditorChildPick";
 import { useEditorTitleLayers } from "@/app/hooks/useEditorTitleLayers";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
 import { buildChildToParentId, canSelectChild } from "@/app/lib/map/editor/childTitleAssignment";
@@ -14,7 +14,6 @@ import {
   isChildTierEditor,
   type ChildTierEditorConfig,
 } from "@/app/lib/map/editor/editorTierConfig";
-import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
 import type { TitleLayers } from "@/app/lib/titleProvinces";
 import type { EditorTier } from "@/lib/map/api";
 
@@ -46,7 +45,7 @@ export function useTitleTierEditor({
 }): {
   config: ChildTierEditorConfig | null;
   childDraft: TitleDraft;
-  childPick: TitlePickIndex | null;
+  childPick: ChildPickIndex | null;
   titleLayers: TitleLayers;
   childLayerLoading: boolean;
   childPickLoading: boolean;
@@ -67,17 +66,13 @@ export function useTitleTierEditor({
   } = useEditorChildLayer(mapId, sessionToken, config?.childTier ?? null, enabled);
 
   const {
-    childPick,
-    loading: childPickLoading,
+    titleLayers,
+    loading: titleLayersLoading,
     error: childPickError,
-  } = useEditorChildPick(mapId, sessionToken, childDraft, config?.pickMapdataPath ?? "", enabled && !childLayerLoading);
+  } = useEditorTitleLayers(mapId, sessionToken, config?.layersNeeded ?? [], enabled);
 
-  const { titleLayers, loading: titleLayersLoading } = useEditorTitleLayers(
-    mapId,
-    sessionToken,
-    config?.layersNeeded ?? [],
-    enabled,
-  );
+  const childPickLoading = enabled && (childLayerLoading || titleLayersLoading);
+  const childPick = useEditorChildPick(config?.childTier ?? null, childDraft, titleLayers, !childPickLoading);
 
   const prerequisiteBanner = useMemo(() => {
     if (!config) return null;

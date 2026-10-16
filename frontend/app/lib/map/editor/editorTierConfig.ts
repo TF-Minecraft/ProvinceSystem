@@ -4,7 +4,6 @@ import type { EditorTier } from "@/lib/map/api";
 
 export type ChildTierEditorConfig = {
   childTier: EditorTier;
-  pickMapdataPath: string;
   childLabel: string;
   childLabelPlural: string;
   parentLabel: string;
@@ -23,7 +22,6 @@ export type ChildTierEditorConfig = {
 export const CHILD_TIER_EDITOR_CONFIG: Partial<Record<EditorTier, ChildTierEditorConfig>> = {
   duchy: {
     childTier: "county",
-    pickMapdataPath: "county",
     childLabel: "County",
     childLabelPlural: "counties",
     parentLabel: "duchy",
@@ -40,7 +38,6 @@ export const CHILD_TIER_EDITOR_CONFIG: Partial<Record<EditorTier, ChildTierEdito
   },
   kingdom: {
     childTier: "duchy",
-    pickMapdataPath: "duchy",
     childLabel: "Duchy",
     childLabelPlural: "duchies",
     parentLabel: "kingdom",
@@ -57,7 +54,6 @@ export const CHILD_TIER_EDITOR_CONFIG: Partial<Record<EditorTier, ChildTierEdito
   },
   empire: {
     childTier: "kingdom",
-    pickMapdataPath: "kingdom",
     childLabel: "Kingdom",
     childLabelPlural: "kingdoms",
     parentLabel: "empire",
