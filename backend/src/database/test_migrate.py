@@ -48,6 +48,33 @@ def test_an_applied_file_must_not_change(scratch_database, migrations):
         runner.migrate(scratch_database, directory=migrations)
 
 
+def test_an_applied_version_needs_its_file(scratch_database, migrations):
+    runner.migrate(scratch_database, directory=migrations)
+    (migrations / "0002_second.sql").unlink()
+    with pytest.raises(runner.MigrationError, match="no file: 0002"):
+        runner.migrate(scratch_database, directory=migrations)
+
+
+def test_a_new_file_must_be_numbered_above_the_applied_ones(scratch_database, migrations):
+    (migrations / "0002_second.sql").rename(migrations / "0003_second.sql")
+    runner.migrate(scratch_database, directory=migrations)
+    _write(migrations, "0002_late.sql", "CREATE TABLE late (id bigint);")
+    with pytest.raises(runner.MigrationError, match="0002_late is numbered below the newest applied one"):
+        runner.migrate(scratch_database, directory=migrations)
+    assert _rows(scratch_database, "SELECT to_regclass('late')") == [(None,)]
+
+
+def test_seed_rows_are_inserted_once(scratch_database, migrations, tmp_path_factory, monkeypatch):
+    seeds = tmp_path_factory.mktemp("seeds") / "seeds.sql"
+    seeds.write_text("INSERT INTO a (id, note) VALUES (2, 'seed') ON CONFLICT (id) DO NOTHING;", encoding="utf-8")
+    monkeypatch.setattr(runner, "SEEDS_PATH", seeds)
+    runner.migrate(scratch_database, directory=migrations)
+    assert _rows(scratch_database, "SELECT id FROM a ORDER BY id") == [(1,)]
+    runner.migrate(scratch_database, directory=migrations, seed=True)
+    runner.migrate(scratch_database, directory=migrations, seed=True)
+    assert _rows(scratch_database, "SELECT id, note FROM a ORDER BY id") == [(1, "100%"), (2, "seed")]
+
+
 @pytest.mark.parametrize("names", [["1_bad.sql"], ["0001_Upper.sql"], ["0001_a.sql", "0001_b.sql"]])
 def test_file_names_are_checked(tmp_path, names):
     for name in names:
@@ -89,4 +116,7 @@ def test_status_and_cli(scratch_database, migrations, monkeypatch, capsys):
 
 def test_real_migrations_apply_twice_cleanly(scratch_database):
     assert runner.migrate(scratch_database) == [m.version for m in runner.discover()]
-    assert runner.migrate(scratch_database) == []
+    assert _rows(scratch_database, "SELECT count(*) FROM patreon_sync_state") == [(0,)]
+    assert runner.migrate(scratch_database, seed=True) == []
+    assert runner.migrate(scratch_database, seed=True) == []
+    assert _rows(scratch_database, "SELECT id FROM patreon_sync_state") == [(1,)]

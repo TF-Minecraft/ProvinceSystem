@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
 
     # The site's Postgres; previews and local runs without one skip it.
     if os.environ.get("DATABASE_URL", "").strip():
-        migrate_postgres()
+        migrate_postgres(seed=True)
     from src.patreon.config import Config
     from src.patreon.service import sync_loop
 

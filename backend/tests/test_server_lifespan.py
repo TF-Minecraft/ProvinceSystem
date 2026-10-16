@@ -22,14 +22,14 @@ def test_startup_migrates_once_and_serves_ping(monkeypatch):
 
     with TestClient(app) as client:
         migrate.assert_called_once_with()
-        migrate_postgres.assert_called_once_with()
+        migrate_postgres.assert_called_once_with(seed=True)
         response = client.get("/ping")
         assert response.status_code == 200
         assert response.json() == {"ok": True}
         migrate.assert_called_once_with()
 
     migrate.assert_called_once_with()
-    migrate_postgres.assert_called_once_with()
+    migrate_postgres.assert_called_once_with(seed=True)
 
 
 def test_startup_without_database_url_skips_postgres(monkeypatch):

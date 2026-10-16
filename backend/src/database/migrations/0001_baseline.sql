@@ -7,6 +7,9 @@
 -- faction_key) and character_roster.created_at (RPCharacters' epoch-seconds string)
 -- stay text.
 --
+-- Rows the site needs at start (patreon_sync_state) are in ../seeds.sql, so
+-- the copy from SQLite starts from empty tables.
+--
 -- Collation: every text column is COLLATE "C", whatever the database default, so
 -- comparison and ORDER BY follow code-point order as SQLite's BINARY did, and lower()
 -- folds ASCII only, as SQLite's did.
@@ -498,8 +501,6 @@ CREATE TABLE patreon_sync_state (
     consecutive_failures bigint NOT NULL DEFAULT 0,
     brake_held boolean NOT NULL DEFAULT false
 );
-
-INSERT INTO patreon_sync_state (id) VALUES (1);
 
 CREATE TABLE patreon_applied (
     target text COLLATE "C" NOT NULL,
