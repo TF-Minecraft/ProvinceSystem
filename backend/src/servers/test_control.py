@@ -1106,11 +1106,10 @@ def test_socket_is_owner_only_unless_shared_with_a_group(tmp_path):
 
     path = tmp_path / "control.sock"
     path.touch(mode=0o644)
-    host.share_socket(path, "")
+    host.share_socket(path, host.socket_group(""))
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
-    group = grp.getgrgid(os.getgid()).gr_name
-    host.share_socket(path, group)
+    host.share_socket(path, host.socket_group(grp.getgrgid(os.getgid()).gr_name))
     assert stat.S_IMODE(path.stat().st_mode) == 0o660
     assert path.stat().st_gid == os.getgid()
-    with pytest.raises(KeyError):
-        host.share_socket(path, "no-such-group-for-tfmc")
+    with pytest.raises(SystemExit, match="does not exist"):
+        host.socket_group("no-such-group-for-tfmc")

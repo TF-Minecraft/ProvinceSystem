@@ -210,7 +210,21 @@ def _backend_root() -> Path:
 
 
 def _wardrobe_assets_dir() -> Path:
+    """Templates baked into the image."""
     return _backend_root() / "assets" / "wardrobe"
+
+
+def _wardrobe_synced_dir() -> Path:
+    """Plugin-synced templates, in the data mount so they outlive image rebuilds."""
+    return DATA_DIR / "plugin-assets" / "wardrobe"
+
+
+def _masked_template_path() -> Path | None:
+    for folder in (_wardrobe_synced_dir(), _wardrobe_assets_dir()):
+        path = folder / "masked.png"
+        if path.is_file():
+            return path
+    return None
 
 
 def store_masked_template(data: bytes) -> dict[str, Any]:
@@ -231,7 +245,7 @@ def store_masked_template(data: bytes) -> dict[str, Any]:
     except StorageError as e:
         raise WardrobeError(str(e), status_code=400) from e
 
-    out_dir = _wardrobe_assets_dir()
+    out_dir = _wardrobe_synced_dir()
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / "masked.png"
     tmp = out_dir / ".masked.png.tmp"
@@ -250,13 +264,13 @@ def store_masked_template(data: bytes) -> dict[str, Any]:
     return {
         "ok": True,
         "name": "masked",
-        "path": "assets/wardrobe/masked.png",
+        "path": "data/plugin-assets/wardrobe/masked.png",
     }
 
 
 def load_masked_template() -> bytes:
-    path = _wardrobe_assets_dir() / "masked.png"
-    if not path.is_file():
+    path = _masked_template_path()
+    if path is None:
         raise WardrobeError(
             "Masked template not synced - reload RPCharacters on the game server",
             status_code=400,
@@ -265,8 +279,8 @@ def load_masked_template() -> bytes:
 
 
 def resolve_masked_template_path() -> Path:
-    path = _wardrobe_assets_dir() / "masked.png"
-    if not path.is_file():
+    path = _masked_template_path()
+    if path is None:
         raise WardrobeError("Masked template missing", status_code=404)
     return path
 
