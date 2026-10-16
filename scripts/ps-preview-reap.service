@@ -1,0 +1,13 @@
+[Unit]
+Description=Stop expired ProvinceSystem website previews
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=tfmc
+Group=tfmc
+SupplementaryGroups=docker
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/usr/local/sbin/ps-preview reap

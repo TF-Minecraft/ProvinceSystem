@@ -13,7 +13,7 @@ import sys
 DOMAIN = "tfminecraft.net"
 MAX_LENGTH = 40
 # Hostnames with their own DNS records or tunnel rules; a preview there could never be reached.
-RESERVED = {"www", "dev", "api", "mail", "map", "admin", "staff", "play", "mc", "status", "preview", "t3"}
+RESERVED = {"www", "dev", "api", "mail", "map", "admin", "staff", "play", "mc", "status", "preview", "t3", "portainer"}
 VALID = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?")
 
 

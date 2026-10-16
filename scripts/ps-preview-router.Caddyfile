@@ -1,0 +1,26 @@
+{
+    admin off
+}
+
+:80 {
+    @preview header_regexp host Host ^([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)\.tfminecraft\.net$
+    handle @preview {
+        header X-Robots-Tag "noindex, nofollow"
+        handle_path /api/* {
+            reverse_proxy pv-{re.host.1}-backend:8000 {
+                header_up X-Forwarded-Proto https
+            }
+        }
+        handle {
+            reverse_proxy pv-{re.host.1}-frontend:3000 {
+                header_up X-Forwarded-Proto https
+            }
+        }
+    }
+    handle {
+        respond "Not found" 404
+    }
+    handle_errors 502 503 504 {
+        respond "This preview isn't running. It has probably expired; redeploy it from GitHub Actions." 503
+    }
+}

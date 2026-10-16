@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove untagged ProvinceSystem website builds and week-old build cache
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/usr/local/sbin/ps-image-prune
