@@ -8,6 +8,7 @@ import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 const mocks = vi.hoisted(() => ({
   hover: vi.fn(),
   grid: vi.fn(),
+  runs: vi.fn(),
   token: null as string | null,
   maps: [] as { id: string; display_name: string; public: boolean }[],
   mode: { loading: true, regionData: null as Record<string, unknown> | null },
@@ -22,6 +23,7 @@ vi.mock("@/app/lib/map/chronicleData", async (original) => ({
   ...(await original<typeof import("@/app/lib/map/chronicleData")>()),
   fetchProvinceIdGridQ4: mocks.grid,
 }));
+vi.mock("@/app/lib/map/provinceRuns", () => ({ fetchProvinceRunIndex: mocks.runs }));
 vi.mock("../hooks/useMapHover", () => ({
   useMapHover: (props: unknown) => {
     mocks.hover(props);
@@ -60,6 +62,8 @@ beforeEach(() => {
   mocks.mode = { loading: true, regionData: null };
   mocks.hover.mockClear();
   mocks.grid.mockReset();
+  mocks.runs.mockReset();
+  mocks.runs.mockImplementation(() => new Promise(() => {}));
   mocks.token = null;
   mocks.maps = [];
 });
@@ -92,13 +96,50 @@ describe("MapViewer terrain and picking readiness", () => {
     expect(screen.queryByTestId("terrain")).toBeNull();
   });
 
-  it("holds picking until the final image band is copied even if metadata is ready", async () => {
+  it("live nation picks from province runs and never downloads the nation pick image", async () => {
     mocks.mode = { loading: false, regionData: {} };
+    let finishRuns!: (index: unknown) => void;
+    mocks.runs.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishRuns = resolve;
+        }),
+    );
+    render(viewer());
+    // Hover is not held hostage while geometry loads; geographic picking
+    // reports not-ready instead.
+    expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
+    expect(mocks.hover.mock.lastCall?.[0].provincePickReady).toBe(false);
+    expect(mocks.hover.mock.lastCall?.[0].provinceRunIndexRef.current).toBeNull();
+    await act(async () => finishRuns({ width: 6400, height: 6400 }));
+    expect(mocks.hover.mock.lastCall?.[0].provincePickReady).toBe(true);
+    expect(mocks.hover.mock.lastCall?.[0].provinceRunIndexRef.current).toMatchObject({ width: 6400, height: 6400 });
+    const fetched = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+    expect(fetched.some((url) => url.includes("/mapdata/nation"))).toBe(false);
+  });
+
+  it("shows a retryable banner when province geometry fails to load", async () => {
+    mocks.mode = { loading: false, regionData: {} };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.runs.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ width: 6400, height: 6400 });
+    render(viewer());
+    const retry = await screen.findByRole("button", { name: "Retry" });
+    expect(screen.getByText(/Realm picking is unavailable/)).toBeTruthy();
+    expect(mocks.hover.mock.lastCall?.[0].provincePickReady).toBe(false);
+    await act(async () => fireEvent.click(retry));
+    expect(mocks.runs).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(/Realm picking is unavailable/)).toBeNull();
+    expect(mocks.hover.mock.lastCall?.[0].provincePickReady).toBe(true);
+  });
+
+  it("holds image picking until the final image band is copied even if metadata is ready", async () => {
+    mocks.mode = { loading: false, regionData: {} };
+    mocks.runs.mockResolvedValue({ width: 6400, height: 6400 });
     let finishFetch!: (response: Response) => void;
     vi.mocked(fetch).mockImplementation(
       (url) =>
         new Promise((resolve) => {
-          if (String(url).endsWith("/mapdata/nation")) finishFetch = resolve;
+          if (String(url).endsWith("/mapdata/county")) finishFetch = resolve;
         }),
     );
     const frames: FrameRequestCallback[] = [];
@@ -112,7 +153,14 @@ describe("MapViewer terrain and picking readiness", () => {
     const bitmap = { width: 512, height: 512, close: vi.fn() };
     vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(bitmap));
     render(viewer());
+    await act(async () => {});
+    fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Counties" }),
+    );
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
+    // The last mode's regions are gone, not merely gated.
+    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
     await act(async () => finishFetch(new Response()));
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
     // 64-row bands, each "taking" 5 ms against an 8 ms frame budget: the
@@ -125,13 +173,6 @@ describe("MapViewer terrain and picking readiness", () => {
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
     expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 512, height: 512 });
     expect(bitmap.close).toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
-    fireEvent.click(
-      within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Counties" }),
-    );
-    expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    // The last mode's regions are gone, not merely gated.
-    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
   });
 });
 

@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMapCoords, mapPixelToPickCanvas, type MapPickViewport } from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
-import { provinceHoverBlocksRegionPick, resolveRegionAtPickPixel, resolveRegionById } from "./regionPick";
+import {
+  provinceHoverBlocksRegionPick,
+  resolveRegionAtPickPixel,
+  resolveRegionAtProvincePoint,
+  resolveRegionById,
+  type ProvinceRegionIndex,
+  type RegionPickResult,
+} from "./regionPick";
+import type { ProvinceRunIndex } from "../lib/map/editor/buildProvinceIndex";
 import type { MapId, MapMode, MapObject, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
@@ -19,6 +27,16 @@ type UseMapHoverProps = {
   regionData: RegionRecord | null;
   /** The pick map; see `PickSurface`. */
   pickSurfaceRef: React.RefObject<PickSurface | null>;
+  /**
+   * Province-ID picking for modes migrated off the colour pick map: the
+   * run-index geometry plus the membership built from `regionData`. When
+   * `provinceRegionIndex` is present it owns region picking; a not-yet-loaded
+   * run index resolves to a miss rather than falling back to colours.
+   */
+  provinceRunIndexRef?: React.RefObject<ProvinceRunIndex | null>;
+  provinceRegionIndex?: ProvinceRegionIndex | null;
+  /** Flips when the run index becomes ready, so a still pointer re-hovers. */
+  provincePickReady?: boolean;
   viewportCoordsRef: React.MutableRefObject<MapPickViewport | null>;
   guildNameCacheRef: React.MutableRefObject<Record<string, string>> | null;
   sessionToken?: string | null;
@@ -79,9 +97,44 @@ function labelRegionAt(props: UseMapHoverProps, x: number, y: number, displaySca
   return pickRegionLabelAt(props.labels, x, y, displayScale);
 }
 
+/**
+ * The province-ID pick at a map point, where that picking is active.
+ * `undefined` = not active (use the colour pick map); null = active but a
+ * resolved miss — including geometry not loaded yet, which must not fall
+ * back to colours and resurrect the black-realm hole this replaces.
+ */
+function provincePickAt(props: UseMapHoverProps, x: number, y: number): RegionPickResult | null | undefined {
+  const regionIndex = props.provinceRegionIndex;
+  if (!regionIndex) return undefined;
+  const runs = props.provinceRunIndexRef?.current;
+  if (!runs || !props.regionData) return null;
+  const point = mapPixelToPickCanvas(x, y, props.viewportCoordsRef.current?.mapSize, runs);
+  if (!point) return null;
+  return resolveRegionAtProvincePoint(
+    runs,
+    point.x,
+    point.y,
+    regionIndex,
+    props.getHoverRegion,
+    props.mapType,
+    props.mapId,
+    props.regionData,
+  );
+}
+
 export function useMapHover(props: UseMapHoverProps) {
-  const { mapId, mapType, loading, regionData, setCursorTooltip, guildNameCacheRef, mapObjects, markers, forts } =
-    props;
+  const {
+    mapId,
+    mapType,
+    loading,
+    regionData,
+    setCursorTooltip,
+    guildNameCacheRef,
+    mapObjects,
+    markers,
+    forts,
+    provincePickReady,
+  } = props;
 
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -181,13 +234,23 @@ export function useMapHover(props: UseMapHoverProps) {
     if (markerHit) {
       // A pin sits inside a realm: keep that realm lit under the pointer, as
       // if the pin were not there.
-      const markerPickPixel = mapPixelToPickCanvas(
-        coords.x,
-        coords.y,
-        current.viewportCoordsRef.current?.mapSize,
-        surface,
-      );
-      if (markerPickPixel) {
+      const provincePicked = provincePickAt(current, coords.x, coords.y);
+      const markerPickPixel =
+        provincePicked === undefined
+          ? mapPixelToPickCanvas(coords.x, coords.y, current.viewportCoordsRef.current?.mapSize, surface)
+          : null;
+      if (provincePicked !== undefined) {
+        handleRegionHoverRef.current(
+          surface,
+          0,
+          0,
+          coords.screenX,
+          coords.screenY,
+          () => {},
+          undefined,
+          provincePicked,
+        );
+      } else if (markerPickPixel) {
         handleRegionHoverRef.current(
           surface,
           markerPickPixel.x,
@@ -264,6 +327,22 @@ export function useMapHover(props: UseMapHoverProps) {
           )
       : current.setCursorTooltip;
 
+    const provincePicked = provincePickAt(current, coords.x, coords.y);
+    if (provincePicked !== undefined) {
+      const clickable = handleRegionHoverRef.current(
+        surface,
+        0,
+        0,
+        coords.screenX,
+        coords.screenY,
+        setTooltip,
+        undefined,
+        provincePicked,
+      );
+      setIsHoveringClickable(clickable);
+      return;
+    }
+
     const pickPixel = mapPixelToPickCanvas(coords.x, coords.y, current.viewportCoordsRef.current?.mapSize, surface);
     if (!pickPixel) {
       current.setCursorTooltip(null);
@@ -309,7 +388,7 @@ export function useMapHover(props: UseMapHoverProps) {
       clientX: pointer.clientX,
       clientY: pointer.clientY,
     } as React.MouseEvent<Element>);
-  }, [loading, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
+  }, [loading, provincePickReady, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
   const onMouseMove = (event: React.MouseEvent<Element>) => {
     if (loading) return;
@@ -382,6 +461,9 @@ export function useMapHover(props: UseMapHoverProps) {
             ?.regionId ?? null
         );
       }
+
+      const provincePicked = provincePickAt(current, coords.x, coords.y);
+      if (provincePicked !== undefined) return provincePicked?.regionId ?? null;
 
       const pickPixel = mapPixelToPickCanvas(coords.x, coords.y, current.viewportCoordsRef.current?.mapSize, surface);
       if (!pickPixel) return null;

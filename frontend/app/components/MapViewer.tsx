@@ -31,7 +31,9 @@ import {
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
-import { provinceHoverBlocksRegionPick } from "../hooks/regionPick";
+import { buildProvinceRegionIndex, provinceHoverBlocksRegionPick } from "../hooks/regionPick";
+import { fetchProvinceRunIndex } from "@/app/lib/map/provinceRuns";
+import type { ProvinceRunIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
 import PaintToolbar from "./map/PaintToolbar";
 import { mapModeLabel } from "./map/mapModes";
@@ -81,7 +83,7 @@ import ChronicleProvincePaintLayer from "./chronicle/ChronicleProvincePaintLayer
 import { useChronicleProvincePaint } from "../hooks/useChronicleProvincePaint";
 import { usesChronicleProvincePaint } from "@/app/lib/map/chronicleDayModes";
 import { buildNationColorLut, paintChronicleFrameToImageData, type ProvinceIdGrid } from "@/app/lib/map/chroniclePaint";
-import { mapControlClass } from "./map/ui";
+import { mapControlClass, mapFrameClass } from "./map/ui";
 
 const actionLinkClass = `${mapControlClass} h-9 px-2.5 text-xs no-underline`;
 
@@ -211,6 +213,7 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
 
   const pickSurfaceRef = useRef<PickSurface | null>(null);
+  const provinceRunIndexRef = useRef<ProvinceRunIndex | null>(null);
   const viewportControlsRef = useRef<MapViewportControls | null>(null);
   const viewportCoordsRef = useRef<MapPickViewport | null>(null);
   const lastProvinceIdRef = useRef<number | null>(null);
@@ -511,6 +514,17 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const pickKey = JSON.stringify([mapId, mapType, day, authToken]);
   const [pickReadyFor, setPickReadyFor] = useState<string | null>(null);
 
+  // Live nation picks provinces by id, not by colour: identity comes from
+  // membership over the run-index geometry, so a realm coloured black (whose
+  // colour the pick-map painter drops entirely) picks like any other.
+  const provincePickActive = day === null && mapType === "nation";
+  const provinceRegionIndex = useMemo(
+    () => (provincePickActive && regionData ? buildProvinceRegionIndex(regionData) : null),
+    [provincePickActive, regionData],
+  );
+  const [provincePickFailedFor, setProvincePickFailedFor] = useState<string | null>(null);
+  const [provincePickRetry, setProvincePickRetry] = useState(0);
+
   // A new mode must not read the previous mode's pixels, nor a half-painted
   // image while the copy yields between bands.
   useEffect(() => {
@@ -519,17 +533,20 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     }
 
     setPickReadyFor(null);
+    setProvincePickFailedFor(null);
     // Nothing (a pin's realm lookup) may read the last mode's regions.
     pickSurfaceRef.current = null;
+    provinceRunIndexRef.current = null;
     let blobUrl: string | null = null;
     let cancelled = false;
+    let runsController: AbortController | null = null;
 
     const drawImage = async () => {
       // The raster modes (prosperity, terrain, ...) hover provinces from the
       // province grid and never pick a region, so their full-size image would
       // be downloaded and decoded only to sit unread. Plain has no pick map,
       // and with none ready, hover and clicks stay inert.
-      if (provinceHoverBlocksRegionPick(mapType) || mapType === "plain") return;
+      if (provinceHoverBlocksRegionPick(mapType) || mapType === "plain" || provincePickActive) return;
 
       // Phones get a half-size pick map: decoding the full one, with the map,
       // was enough for iOS Safari to run out of memory and reload the page
@@ -606,14 +623,40 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     setSelectedId(null);
     // `/mapdata/` is regenerated from today's data and has no per-day variant,
     // so a stored day must not download it — the effect below paints the pick
-    // canvas from that day's own ownership instead.
-    if (day === null) void drawImage();
+    // canvas from that day's own ownership instead. Live nation downloads no
+    // pick image at all: its geometry is the province run index.
+    if (provincePickActive) {
+      runsController = new AbortController();
+      fetchProvinceRunIndex(mapId, authToken, runsController.signal)
+        .then((index) => {
+          if (cancelled) return;
+          provinceRunIndexRef.current = index;
+          setPickReadyFor(pickKey);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.error("Failed to load province geometry:", err);
+          setProvincePickFailedFor(pickKey);
+        });
+    } else if (day === null) void drawImage();
 
     return () => {
       cancelled = true;
+      runsController?.abort();
       revokeMapBlobUrl(blobUrl);
     };
-  }, [mapId, mapType, accessChecked, gateReason, authToken, mapCanvasMounted, day, pickKey]);
+  }, [
+    mapId,
+    mapType,
+    accessChecked,
+    gateReason,
+    authToken,
+    mapCanvasMounted,
+    day,
+    pickKey,
+    provincePickActive,
+    provincePickRetry,
+  ]);
 
   /**
    * Chronicle mode's pick map.
@@ -659,9 +702,16 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   } = useMapHover({
     mapId,
     mapType,
-    loading: loading || (!provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
+    // Province-ID picking does not hold the whole hover path hostage while
+    // its geometry loads: markers and labels keep working, geographic picks
+    // resolve to misses until the run index lands (then a still pointer
+    // re-hovers via provincePickReady).
+    loading: loading || (!provincePickActive && !provinceHoverBlocksRegionPick(mapType) && pickReadyFor !== pickKey),
     regionData,
     pickSurfaceRef,
+    provinceRunIndexRef,
+    provinceRegionIndex,
+    provincePickReady: provincePickActive && pickReadyFor === pickKey,
     viewportCoordsRef,
     guildNameCacheRef,
     sessionToken: authToken,
@@ -1222,9 +1272,29 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     />
   ) : null;
 
+  const provincePickBanner =
+    provincePickActive && provincePickFailedFor === pickKey ? (
+      <div className={`${mapFrameClass} p-3`} role="alert">
+        <p className="text-sm leading-snug text-[var(--tfmc-cream)]">Realm picking is unavailable right now.</p>
+        <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+          The province geometry failed to load. The map, places and names still work.
+        </p>
+        <button
+          type="button"
+          className={`${actionLinkClass} mt-2`}
+          onClick={() => {
+            setProvincePickFailedFor(null);
+            setProvincePickRetry((n) => n + 1);
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    ) : null;
+
   return (
     <MapShell
-      banner={dayBar}
+      banner={dayBar ?? provincePickBanner}
       plaque={
         <MapPlaque
           docked={details !== null}
