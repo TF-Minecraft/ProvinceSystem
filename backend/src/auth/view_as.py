@@ -26,6 +26,7 @@ from .users import (
     _utcnow,
     api_time,
     drop_view_leftovers,
+    accounts_configured,
     session_user_in,
 )
 
@@ -221,7 +222,7 @@ def _players_for(discord_ids: list[str]) -> dict[str, str]:
 
 def end(token: str | None) -> None:
     """End the view this session token belongs to, if it is one."""
-    if not _valid(token):
+    if not _valid(token) or not accounts_configured():
         return
     with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
         _end_where(conn, "s.token_hash = %s", (hash_secret(token),))
@@ -232,7 +233,7 @@ def end_lapsed(staff_token: str | None) -> None:
 
     For when the browser has already dropped the view's cookie.
     """
-    if not _valid(staff_token):
+    if not _valid(staff_token) or not accounts_configured():
         return
     with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
         staff = session_user_in(conn, staff_token, lock=True)
@@ -273,8 +274,9 @@ def view_still_open(session_id: int):
     def check(conn) -> bool:
         if isinstance(conn, sqlite3.Connection):
             # PG-MIGRATION: until the Skins area converts, start_linked_profile_session passes its
-            # SQLite connection. Views are in Postgres now, so check there; nothing holds the view
-            # open for the caller's write meanwhile.
+            # SQLite connection. Views are in Postgres now, so check there. Nothing holds the view
+            # open for the caller's write meanwhile: a narrow window between this check and the
+            # caller's commit is open again until the Skins PR checks on its own connection.
             with database.connect() as pg:
                 return check(pg)
         return conn.execute(
@@ -288,7 +290,8 @@ def view_still_open(session_id: int):
 def refuses_write(cookie_tokens: list[str], bearer_token: str | None) -> bool:
     """A view's session cookie, or a Profile session opened during a view, sent with a write."""
     hashes = [hash_secret(token) for token in cookie_tokens if _valid(token)]
-    if hashes:
+    # Without an accounts database no view can exist.
+    if hashes and accounts_configured():
         with database.connect() as conn:
             if conn.execute(
                 "SELECT 1 FROM user_sessions WHERE token_hash = ANY(%s) AND acting_user_id IS NOT NULL", (hashes,)

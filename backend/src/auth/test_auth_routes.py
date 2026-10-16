@@ -174,6 +174,30 @@ def test_session_times_keep_the_api_form(api, monkeypatch, env):
     assert re.fullmatch(API_TIME, users.guild_state(user["session_id"])["guild_checked_at"])
 
 
+@pytest.fixture
+def no_accounts(env, monkeypatch):
+    """No accounts database: DATABASE_URL unset and no pool, as on a preview of the postgres branch."""
+    from src.database import connection
+
+    monkeypatch.setattr(connection, "_pool", None)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+
+def test_without_an_accounts_database_pages_work_signed_out_and_sign_in_is_503(api, no_accounts):
+    from src.auth import view_as
+
+    assert api.get("/account").status_code == 401
+    started = api.get("/auth/discord/start", follow_redirects=False)
+    assert (started.status_code, started.json()["detail"]) == (503, "accounts_unavailable")
+    assert users.session_user(None) is None and users.consume_state(None) is None
+    # A stale cookie gets a clear 503, never a 500; signing out still clears it.
+    api.cookies.set(SESSION, "stale-session-token", domain="testserver.local")
+    stale = api.get("/account")
+    assert (stale.status_code, stale.json()["detail"]) == (503, "accounts_unavailable")
+    assert api.post("/auth/logout", headers=ORIGIN).status_code == 200
+    assert view_as.refuses_write(["stale-session-token"], None) is False
+
+
 def test_second_sign_in_updates_user_not_duplicate(api, monkeypatch, env):
     sign_in(api, monkeypatch)
     stub = Stub()

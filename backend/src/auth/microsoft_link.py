@@ -94,8 +94,9 @@ def still_valid(conn, saved: dict) -> bool:
     ).fetchone() is None:
         return False
     # PG-MIGRATION: until the Linking area converts, `conn` is SQLite and sessions are in
-    # Postgres, so the session is checked on its own connection. The Linking PR reads it on
-    # `conn` FOR SHARE, with the state row.
+    # Postgres, so the session is checked on its own connection. That reopens a narrow window
+    # between this check and the caller's commit (signing out in it no longer stops the link);
+    # the Linking PR reads the session on `conn` FOR SHARE, with the state row.
     with database.connect() as pg:
         row = pg.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (saved["session_id"],)).fetchone()
     return row is not None and row["expires_at"] > _utcnow()

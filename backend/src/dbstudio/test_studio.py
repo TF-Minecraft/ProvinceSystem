@@ -302,10 +302,10 @@ def test_semicolons_inside_strings_and_comments_are_fine(sql):
 def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # noqa: F811
     c = client(app, account(env, "rory", "root")[1])
     for sql in (
-        # Sol: a stored trigger would forge audit rows when the site later updates users.
-        "CREATE TRIGGER forge AFTER UPDATE ON users BEGIN INSERT INTO admin_audit (created_at, actor_type, action, "
-        "outcome) VALUES ('x', 'system', 'forged', 'ok'); END",
-        "CREATE TEMP TRIGGER t AFTER UPDATE ON users BEGIN SELECT 1; END",
+        # Sol: a stored trigger would forge audit rows when the site later updates a link.
+        "CREATE TRIGGER forge AFTER UPDATE ON discord_links BEGIN INSERT INTO admin_audit (created_at, actor_type, "
+        "action, outcome) VALUES ('x', 'system', 'forged', 'ok'); END",
+        "CREATE TEMP TRIGGER t AFTER UPDATE ON discord_links BEGIN SELECT 1; END",
         "PRAGMA writable_schema = ON",
         "PRAGMA foreign_keys = OFF",
         "VACUUM INTO '/tmp/copy.db'",
@@ -317,7 +317,7 @@ def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # n
     with env.connect() as conn:
         assert conn.execute("SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'forge'").fetchone()[0] == 0
     # Schema pragmas that only describe still work in reads.
-    assert query(c, "PRAGMA table_info(users)").status_code == 200
+    assert query(c, "PRAGMA table_info(discord_links)").status_code == 200
 
 
 def test_edits_cannot_touch_the_autoincrement_counters(app, env):  # noqa: F811
@@ -336,7 +336,8 @@ def test_edits_cannot_index_the_audit_log(app, env):  # noqa: F811
     # Sol: an index whose expression overflows would make every later audit insert fail.
     refused = query(c, "CREATE INDEX block_audit ON admin_audit(abs(-9223372036854775808)) WHERE id > 0", write=True)
     assert refused.status_code == 403
-    assert query(c, "UPDATE users SET discord_global_name = 'Still logged'", write=True).status_code == 200
+    link(env, "RoryMC")
+    assert query(c, "UPDATE discord_links SET minecraft_name = 'Still logged'", write=True).status_code == 200
     assert [r["outcome"] for r in audit_rows(env) if r["action"] == "database.write"][-2:] == ["requested", "ok"]
 
 

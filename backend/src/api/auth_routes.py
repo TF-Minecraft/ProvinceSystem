@@ -173,6 +173,9 @@ def _patreon(user: dict) -> dict | None:
 @auth_router.get("/auth/discord/start")
 def discord_start(request: Request, return_to: str | None = None):
     config = _config()
+    # Without an accounts database (DATABASE_URL unset) sign-in answers 503 here, before
+    # anyone is sent to Discord or to the sign-in site.
+    users.require_accounts()
     if config.via_site:
         return _preview_start(request, config, return_to)
     state, url = users.start_sign_in(config, return_to)

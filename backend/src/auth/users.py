@@ -12,6 +12,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
+from fastapi import HTTPException
+
 from src import database
 from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
@@ -36,6 +38,27 @@ VIEW_PROFILE_PREFIX = "staff_view:"
 PLACEHOLDERS_LOCK = "auth:placeholders"
 
 
+class AccountsUnavailable(HTTPException):
+    """No accounts database: DATABASE_URL is unset (a local run without Postgres, or a preview
+    before previews get their own database). Signed-out pages still work; sign-in answers 503."""
+
+    def __init__(self):
+        super().__init__(503, detail="accounts_unavailable")
+
+
+def accounts_configured() -> bool:
+    try:
+        database.get_pool()
+    except database.NotConfiguredError:
+        return False
+    return True
+
+
+def require_accounts() -> None:
+    if not accounts_configured():
+        raise AccountsUnavailable()
+
+
 def drop_view_leftovers(conn) -> None:
     """Delete what views that no longer exist leave behind, however they ended: Profile
     sessions opened during them, and placeholder accounts made for them.
@@ -43,7 +66,9 @@ def drop_view_leftovers(conn) -> None:
     The caller's transaction must have opened with `database.transaction(lock=PLACEHOLDERS_LOCK)`.
     """
     # PG-MIGRATION: until the Skins area converts, Profile sessions and their codes are in
-    # SQLite. Its PR runs this on `conn` instead:
+    # SQLite. This commits its SQLite delete in the middle of the Postgres transaction (it stays
+    # if that transaction rolls back) and takes SQLite's write lock while holding Postgres locks.
+    # Accepted until then; the Skins PR runs this on `conn` instead:
     #   DELETE FROM sessions WHERE code_id IN (SELECT id FROM codes WHERE minted_via LIKE 'staff_view:%'
     #     AND CAST(substr(minted_via, length('staff_view:') + 1) AS bigint) NOT IN (SELECT id FROM user_sessions))
     views = [row["id"] for row in conn.execute("SELECT id FROM user_sessions WHERE acting_user_id IS NOT NULL")]
@@ -101,6 +126,7 @@ def clean_return_to(value: str | None) -> str:
 
 def start_sign_in(config: AuthConfig, return_to: str | None) -> tuple[str, str]:
     """Return (state, Discord authorise URL). The caller stores state in a cookie."""
+    require_accounts()
     state = secrets.token_urlsafe(32)
     now = _utcnow()
     with database.connect() as conn:
@@ -124,6 +150,7 @@ def consume_state(state: str | None) -> str | None:
     """Spend a state once; return its saved path, or None if unknown or expired."""
     if not state or len(state) > _TOKEN_MAX:
         return None
+    require_accounts()
     # One DELETE both reads and spends the state, so two callbacks cannot both get it.
     with database.connect() as conn:
         row = conn.execute(
@@ -147,6 +174,7 @@ def sign_in(
 
     A preview passes the membership check and role dev already holds for the user.
     """
+    require_accounts()
     token = secrets.token_urlsafe(32)
     now = _utcnow()
     with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
@@ -202,6 +230,11 @@ def sign_in(
 
 
 def session_user(token: str | None) -> dict | None:
+    """The signed-in user for a session token, or None. Without a token this never touches the
+    database, so signed-out pages work with no accounts database; with one it needs it (503)."""
+    if not token or len(token) > _TOKEN_MAX:
+        return None
+    require_accounts()
     with database.connect() as conn:
         return session_user_in(conn, token)
 
@@ -218,7 +251,9 @@ def session_user_in(conn, token: str | None, *, lock: bool = False) -> dict | No
     if isinstance(conn, sqlite3.Connection):
         # PG-MIGRATION: until the LuckPerms area converts, luckperms/changes.py passes its
         # SQLite connection. Sessions are in Postgres now, so read them there; nothing holds
-        # them for the caller's write meanwhile.
+        # them for the caller's write meanwhile, so a lock cannot be honoured.
+        if lock:
+            raise TypeError("session_user_in(lock=True) needs a Postgres connection")
         return session_user(token)
     row = conn.execute(
         f"""
@@ -246,6 +281,7 @@ def session_user_in(conn, token: str | None, *, lock: bool = False) -> dict | No
 
 def guild_state(session_id: int) -> dict | None:
     """The session's stored membership check, as another request may have just updated it."""
+    require_accounts()
     with database.connect() as conn:
         row = conn.execute(
             "SELECT guild_member, guild_checked_at FROM user_sessions WHERE id = %s", (session_id,)
@@ -255,6 +291,7 @@ def guild_state(session_id: int) -> dict | None:
 
 def record_guild_check(session_id: int, member: bool) -> str:
     """Store a membership check made after sign-in; returns its time."""
+    require_accounts()
     now = _utcnow()
     with database.connect() as conn:
         conn.execute(
@@ -275,7 +312,8 @@ def guild_check_fresh(user: dict) -> bool:
 
 
 def revoke_session(token: str | None) -> None:
-    if not token or len(token) > _TOKEN_MAX:
+    if not token or len(token) > _TOKEN_MAX or not accounts_configured():
+        # Without an accounts database there is no session to revoke; signing out still clears cookies.
         return
     with database.connect() as conn:
         conn.execute("DELETE FROM user_sessions WHERE token_hash = %s", (hash_secret(token),))
