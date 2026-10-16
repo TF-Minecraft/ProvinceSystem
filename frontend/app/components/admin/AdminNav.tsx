@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { getAdminMe } from "@/lib/admin/api";
 
 const LINKS = [
   { href: "/admin", label: "Accounts", key: "accounts" },
@@ -15,7 +17,11 @@ const LINKS = [
   { href: "/admin/codes", label: "Codes", key: "codes" },
   { href: "/admin/servers", label: "Servers", key: "servers" },
   { href: "/admin/diagnostics", label: "Diagnostics", key: "diagnostics" },
+  { href: "/admin/database", label: "Database", key: "database" },
 ] as const;
+
+// Tabs only some roles can use stay hidden from the rest.
+const CAPABILITY: Partial<Record<(typeof LINKS)[number]["key"], string>> = { database: "use_database" };
 
 export type AdminSection = (typeof LINKS)[number]["key"];
 
@@ -33,6 +39,17 @@ export function adminSection(pathname: string): AdminSection | null {
 export default function AdminNav() {
   const current = adminSection(usePathname() ?? "");
   const navRef = useRef<HTMLElement>(null);
+  const [capabilities, setCapabilities] = useState<string[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    getAdminMe()
+      .then((me) => live && setCapabilities(me.capabilities))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // On phones the tabs scroll sideways; keep the current one in view.
   useEffect(() => {
@@ -47,7 +64,7 @@ export default function AdminNav() {
       aria-label="Staff panel"
       className="-mb-px flex max-w-full select-none gap-4 overflow-x-auto [scrollbar-width:none] sm:gap-5"
     >
-      {LINKS.map((link) => (
+      {LINKS.filter((link) => !CAPABILITY[link.key] || capabilities.includes(CAPABILITY[link.key]!)).map((link) => (
         <Link
           key={link.key}
           href={link.href}

@@ -10,4 +10,6 @@ pyyaml
 httpx
 anthropic
 psycopg2-binary
+# The database studio's Postgres reads and edits: one statement per request, enforced by Postgres.
+psycopg[binary]
 pgvector
