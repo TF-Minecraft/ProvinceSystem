@@ -70,9 +70,11 @@ class CoreProtectConfig:
 class Unavailable(Exception):
     """CoreProtect could not be read: not_configured, missing, cannot_open, busy, timeout or error."""
 
-    def __init__(self, code: str):
+    def __init__(self, code: str, message: str = ""):
         super().__init__(code)
         self.code = code
+        # SQLite's own words, for the database studio.
+        self.message = message
 
 
 class Budget:
@@ -148,6 +150,32 @@ class Reader:
     def rows(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         return self._statement(sql, params)
 
+    def query(self, sql: str, limit: int) -> tuple[list[str], list[tuple], bool]:
+        """One statement from the database studio: at most `limit` rows, then the cursor closes.
+
+        Returns the column names, the rows and whether more rows were left unread.
+        """
+        if self._conn is None:
+            raise Unavailable("error")
+        left = self.budget.check()
+        try:
+            self._conn.execute(f"PRAGMA busy_timeout = {max(1, int(left * 1000))}")
+            self._conn.set_authorizer(_no_attach)
+            try:
+                cursor = self._conn.execute(sql)
+                try:
+                    columns = [d[0] for d in cursor.description or ()]
+                    rows = cursor.fetchmany(limit + 1) if cursor.description else []
+                finally:
+                    cursor.close()
+            finally:
+                self._conn.set_authorizer(None)
+        except sqlite3.OperationalError as exc:
+            raise Unavailable(_classify(exc), str(exc)) from None
+        except sqlite3.Error as exc:
+            raise Unavailable("error", str(exc)) from None
+        return columns, [tuple(row) for row in rows[:limit]], len(rows) > limit
+
     def _statement(self, sql: str, params: tuple) -> list[sqlite3.Row]:
         if self._conn is None:
             raise Unavailable("error")
@@ -163,6 +191,11 @@ class Reader:
             raise Unavailable(_classify(exc)) from None
         except sqlite3.DatabaseError:
             raise Unavailable("error") from None
+
+
+def _no_attach(action: int, *_) -> int:
+    # ATTACH would let a studio query open other database files on the host.
+    return sqlite3.SQLITE_DENY if action in (sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH) else sqlite3.SQLITE_OK
 
 
 def _classify(exc: sqlite3.OperationalError) -> str:

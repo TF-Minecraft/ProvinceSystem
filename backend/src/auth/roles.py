@@ -31,6 +31,8 @@ CAPABILITIES = {
     "inspect_codes": "mod",
     # Reports players send from the /diagnostic page.
     "view_diagnostics": "mod",
+    # Browse, query and edit the site's databases; every statement is audited.
+    "use_database": "root",
 }
 
 

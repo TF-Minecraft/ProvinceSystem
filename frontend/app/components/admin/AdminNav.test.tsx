@@ -3,6 +3,12 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import AdminNav, { adminSection } from "./AdminNav";
+import { getAdminMe, type AdminMe } from "../../../lib/admin/api";
+
+vi.mock("../../../lib/admin/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../lib/admin/api")>()),
+  getAdminMe: vi.fn(() => Promise.reject(new Error("signed out"))),
+}));
 
 const pathname = vi.hoisted(() => ({ current: "/admin" }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
@@ -22,6 +28,7 @@ it("puts each staff path under its tab, sub-pages included", () => {
   expect(adminSection("/admin/codes")).toBe("codes");
   expect(adminSection("/admin/servers")).toBe("servers");
   expect(adminSection("/admin/diagnostics")).toBe("diagnostics");
+  expect(adminSection("/admin/database/coreprotect")).toBe("database");
   expect(adminSection("/admin/railway")).toBe("accounts");
   expect(adminSection("/map")).toBeNull();
 });
@@ -40,4 +47,15 @@ it("places Commands after Ranks and marks it current", () => {
   const ranksIndex = links.findIndex((link) => link.textContent === "Ranks");
   expect(links[ranksIndex + 1].textContent).toBe("Commands");
   expect(links[ranksIndex + 1].getAttribute("aria-current")).toBe("page");
+});
+
+it("shows the Database tab only to roles that can use it", async () => {
+  pathname.current = "/admin";
+  render(<AdminNav />);
+  await Promise.resolve();
+  expect(screen.queryByRole("link", { name: "Database" })).toBeNull();
+  cleanup();
+  vi.mocked(getAdminMe).mockResolvedValueOnce({ capabilities: ["view_admin", "use_database"] } as AdminMe);
+  render(<AdminNav />);
+  expect((await screen.findByRole("link", { name: "Database" })).getAttribute("href")).toBe("/admin/database");
 });

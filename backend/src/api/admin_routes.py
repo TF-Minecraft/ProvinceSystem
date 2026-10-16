@@ -398,9 +398,11 @@ async def _validation_handler(request: Request, exc: RequestValidationError):
 
 def install(app: FastAPI) -> None:
     """Mount the staff routes and audit their malformed writes."""
+    from src.api.database_routes import database_router
     from src.api.luckperms_routes import plugin_router, staff_router
 
     app.include_router(admin_router)
+    app.include_router(database_router)
     app.include_router(staff_router)
     app.include_router(plugin_router)
     app.add_exception_handler(RequestValidationError, _validation_handler)
