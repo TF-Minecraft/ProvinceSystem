@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatBytes, getDatabases, type DatabaseInfo } from "@/lib/admin/database";
 import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import { badgeClass, errorClass, inputClass, mutedClass } from "../ui";
+import { RefreshIcon, SortMark } from "./icons";
 import { divideHairline, editBadge, hairline, readBadge } from "./studioStyles";
 
 type SortKey = "name" | "engine" | "tables" | "queries" | "size_bytes";
@@ -90,9 +91,7 @@ export default function DatabaseList() {
           title="Refresh"
           className={`grid h-9 w-9 shrink-0 place-items-center rounded-sm border ${hairline} text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)] disabled:opacity-50`}
         >
-          <span aria-hidden className={loading ? "motion-safe:animate-spin" : ""}>
-            ↻
-          </span>
+          <RefreshIcon className={`h-4 w-4 ${loading ? "motion-safe:animate-spin" : ""}`} />
         </button>
       </div>
 
@@ -113,9 +112,7 @@ export default function DatabaseList() {
                     className="inline-flex items-center gap-1 hover:text-[var(--tfmc-cream)]"
                   >
                     {label}
-                    <span aria-hidden className="text-[10px] opacity-70">
-                      {sort.key === key ? (sort.descending ? "▼" : "▲") : "↕"}
-                    </span>
+                    <SortMark direction={sort.key === key ? (sort.descending ? "desc" : "asc") : null} idle />
                   </button>
                 </th>
               ))}

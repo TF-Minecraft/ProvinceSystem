@@ -135,6 +135,24 @@ it("opens a table, sorts it on the server and pages through it", async () => {
   );
 });
 
+it("reuses one preview tab for single clicks and keeps a table open on double click", async () => {
+  vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
+  vi.mocked(browseTable).mockResolvedValue(result());
+  render(<DatabaseStudio id="site" />);
+  const tabNames = () => screen.getAllByRole("tab").map((t) => t.textContent);
+  fireEvent.click(await screen.findByRole("button", { name: "users" }));
+  fireEvent.click(screen.getByRole("button", { name: "recent" }));
+  await waitFor(() => expect(tabNames()).toEqual(["Query 1", "recent"]));
+  expect(screen.getByRole("tab", { name: "recent" }).querySelector(".italic")).toBeTruthy();
+  fireEvent.doubleClick(screen.getByRole("button", { name: "recent" }));
+  expect(screen.getByRole("tab", { name: "recent" }).querySelector(".italic")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "users" }));
+  await waitFor(() => expect(tabNames()).toEqual(["Query 1", "recent", "users"]));
+  // Sorting in a preview keeps it, so the next single click opens a new preview beside it.
+  fireEvent.click(await screen.findByRole("button", { name: /^role/ }));
+  await waitFor(() => expect(screen.getByRole("tab", { name: "users" }).querySelector(".italic")).toBeNull());
+});
+
 it("runs a read query with Ctrl + Enter and shows NULLs, blobs and errors", async () => {
   vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
   vi.mocked(runQuery)

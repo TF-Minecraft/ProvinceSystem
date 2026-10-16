@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { cellText, formatBytes, isBlob, toCsv, type Cell, type QueryResult } from "@/lib/admin/database";
+import { CloseIcon, SortMark } from "./icons";
 import { hairline, sunken, toolButton } from "./studioStyles";
 
 /** Sorting done by the server (a table browse) rather than on the rows in hand. */
@@ -85,9 +86,9 @@ export default function ResultGrid({ result, types, serverSort, firstRow = 1, fi
     );
   }
 
-  function arrow(index: number): string {
-    if (serverSort) return serverSort.order === result.columns[index] ? (serverSort.descending ? "▼" : "▲") : "";
-    return localSort?.index === index ? (localSort.descending ? "▼" : "▲") : "";
+  function direction(index: number): "asc" | "desc" | null {
+    if (serverSort) return serverSort.order === result.columns[index] ? (serverSort.descending ? "desc" : "asc") : null;
+    return localSort?.index === index ? (localSort.descending ? "desc" : "asc") : null;
   }
 
   async function copy(text: string, what: string) {
@@ -163,7 +164,9 @@ export default function ResultGrid({ result, types, serverSort, firstRow = 1, fi
                   <th
                     key={`${column}-${c}`}
                     scope="col"
-                    aria-sort={arrow(c) === "▲" ? "ascending" : arrow(c) === "▼" ? "descending" : undefined}
+                    aria-sort={
+                      direction(c) === "asc" ? "ascending" : direction(c) === "desc" ? "descending" : undefined
+                    }
                     className={`border-b border-r ${hairline} bg-[var(--tfmc-forest-deep)] p-0 text-left font-semibold`}
                   >
                     <button
@@ -173,9 +176,7 @@ export default function ResultGrid({ result, types, serverSort, firstRow = 1, fi
                     >
                       <span className="flex items-center gap-1 whitespace-nowrap">
                         {column}
-                        <span aria-hidden className="text-[9px] text-[var(--tfmc-accent)]">
-                          {arrow(c)}
-                        </span>
+                        <SortMark direction={direction(c)} />
                       </span>
                       {types?.[column] ? (
                         <span className="text-[10px] font-normal uppercase tracking-wide text-[var(--tfmc-mist)]">
@@ -234,7 +235,7 @@ export default function ResultGrid({ result, types, serverSort, firstRow = 1, fi
                 {copied === "cell" ? "Copied" : "Copy value"}
               </button>
               <button type="button" className={toolButton} onClick={() => setPicked(null)} aria-label="Close value">
-                ✕
+                <CloseIcon />
               </button>
             </span>
           </div>

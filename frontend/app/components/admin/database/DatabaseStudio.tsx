@@ -16,6 +16,17 @@ import {
 } from "@/lib/admin/database";
 import { StaffGateMessage, gateKind, type GateKind } from "../StaffGate";
 import { badgeClass, errorClass, mutedClass } from "../ui";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  PlayIcon,
+  PlusIcon,
+  QueryIcon,
+  RefreshIcon,
+  TableIcon,
+  ViewIcon,
+} from "./icons";
 import ResultGrid from "./ResultGrid";
 import SqlEditor, { type SqlEditorHandle } from "./SqlEditor";
 import {
@@ -32,7 +43,9 @@ import {
 
 type Outcome = { result?: QueryResult; error?: string; running?: boolean };
 type QueryTab = Outcome & { id: string; kind: "query"; title: string; sql: string; mode: "read" | "edit" };
-type TableTab = Outcome & { id: string; kind: "table"; title: string; browse: Browse };
+// A preview tab (italic) is reused by the next table opened with one click, as in VS Code;
+// a double click, or paging, sorting or filtering in it, keeps it.
+type TableTab = Outcome & { id: string; kind: "table"; title: string; browse: Browse; preview: boolean };
 type Tab = QueryTab | TableTab;
 
 const PAGE_SIZES = [50, 100, 250, 500];
@@ -154,8 +167,8 @@ export default function DatabaseStudio({ id }: { id: string }) {
     }
   }
 
-  async function load(tab: TableTab, browse: Browse) {
-    update(tab.id, { browse, running: true, error: undefined } as Partial<Tab>);
+  async function load(tab: TableTab, browse: Browse, keep = true) {
+    update(tab.id, { browse, running: true, error: undefined, ...(keep ? { preview: false } : {}) } as Partial<Tab>);
     try {
       update(tab.id, { result: await browseTable(id, browse), running: false });
     } catch (err) {
@@ -169,18 +182,23 @@ export default function DatabaseStudio({ id }: { id: string }) {
     else void execute(tab, false);
   }
 
-  function openTable(name: string) {
-    const existing = tabs.find((t) => t.kind === "table" && t.browse.table === name);
-    if (existing) return setActive(existing.id);
+  function openTable(name: string, keep = false) {
+    const existing = tabs.find((t): t is TableTab => t.kind === "table" && t.browse.table === name);
+    if (existing) {
+      if (keep && existing.preview) update(existing.id, { preview: false });
+      return setActive(existing.id);
+    }
     const tab: TableTab = {
       id: `t${tableIds.current++}`,
       kind: "table",
       title: name,
+      preview: !keep,
       browse: { table: name, offset: 0, limit: 100, order: null, descending: false, where: "" },
     };
-    setTabs((all) => [...all, tab]);
+    const reused = tabs.find((t) => t.kind === "table" && t.preview);
+    setTabs((all) => (reused ? all.map((t) => (t.id === reused.id ? tab : t)) : [...all, tab]));
     setActive(tab.id);
-    void load(tab, tab.browse);
+    void load(tab, tab.browse, false);
   }
 
   function addQuery(sql = "") {
@@ -221,9 +239,7 @@ export default function DatabaseStudio({ id }: { id: string }) {
         <Link href="/admin/database" className="text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]">
           Databases
         </Link>
-        <span aria-hidden className="text-[var(--tfmc-mist)]">
-          ›
-        </span>
+        <ChevronRightIcon className="h-3.5 w-3.5 text-[var(--tfmc-mist)]" />
         <span className="font-semibold text-[var(--tfmc-cream)]">{database?.name ?? id}</span>
         {database ? (
           <span className={`${badgeClass} ${database.writable ? editBadge : readBadge}`}>
@@ -256,12 +272,10 @@ export default function DatabaseStudio({ id }: { id: string }) {
               aria-label="Refresh tables"
               title="Refresh tables"
             >
-              <span aria-hidden className={refreshing ? "motion-safe:animate-spin" : ""}>
-                ↻
-              </span>
+              <RefreshIcon className={refreshing ? "h-3.5 w-3.5 motion-safe:animate-spin" : "h-3.5 w-3.5"} />
             </button>
             <button type="button" className={toolButton} onClick={() => addQuery()} title="New query">
-              + New
+              <PlusIcon /> New
             </button>
           </div>
           {schemaError ? <p className={`px-3 pb-2 ${errorClass}`}>{schemaError}</p> : null}
@@ -284,24 +298,26 @@ export default function DatabaseStudio({ id }: { id: string }) {
                           return next;
                         })
                       }
-                      className="grid h-7 w-7 shrink-0 place-items-center text-[10px] text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
+                      className="grid h-7 w-7 shrink-0 place-items-center text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
                     >
-                      <span aria-hidden className={`transition-transform ${expanded ? "rotate-90" : ""}`}>
-                        ▶
-                      </span>
+                      <ChevronRightIcon className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
                     </button>
                     <button
                       type="button"
                       onClick={() => openTable(table.name)}
+                      onDoubleClick={() => openTable(table.name, true)}
+                      title="Click to preview, double-click to keep open"
                       className={`flex min-w-0 flex-1 items-center gap-2 py-1 text-left ${
                         current?.kind === "table" && current.browse.table === table.name
                           ? "text-[var(--tfmc-accent)]"
                           : "text-[var(--tfmc-cream)]"
                       }`}
                     >
-                      <span aria-hidden className="text-[11px] text-[var(--tfmc-mist)]">
-                        {table.kind === "view" ? "◎" : "▦"}
-                      </span>
+                      {table.kind === "view" ? (
+                        <ViewIcon className="h-3.5 w-3.5 text-[var(--tfmc-mist)]" />
+                      ) : (
+                        <TableIcon className="h-3.5 w-3.5 text-[var(--tfmc-mist)]" />
+                      )}
                       <span className="truncate">{table.name}</span>
                     </button>
                     <span
@@ -361,14 +377,22 @@ export default function DatabaseStudio({ id }: { id: string }) {
                   role="tab"
                   aria-selected={tab.id === active}
                   onClick={() => setActive(tab.id)}
+                  onDoubleClick={() => tab.kind === "table" && tab.preview && update(tab.id, { preview: false })}
+                  title={tab.kind === "table" && tab.preview ? "Preview: double-click to keep open" : undefined}
                   className={`flex items-center gap-2 py-2 pl-3 pr-1 text-xs font-semibold ${
                     tab.id === active ? "shadow-[inset_0_2px_0_var(--tfmc-accent)]" : "hover:text-[var(--tfmc-cream)]"
                   }`}
                 >
-                  <span aria-hidden className="text-[11px] text-[var(--tfmc-mist)]">
-                    {tab.kind === "table" ? "▦" : "›_"}
+                  {tab.kind === "table" ? (
+                    <TableIcon className="h-3.5 w-3.5 text-[var(--tfmc-mist)]" />
+                  ) : (
+                    <QueryIcon className="h-3.5 w-3.5 text-[var(--tfmc-mist)]" />
+                  )}
+                  <span
+                    className={`max-w-[12rem] truncate ${tab.kind === "table" && tab.preview ? "pr-0.5 italic font-normal" : ""}`}
+                  >
+                    {tab.title}
                   </span>
-                  <span className="max-w-[12rem] truncate">{tab.title}</span>
                   {tab.running ? (
                     <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--tfmc-accent)]" />
                   ) : null}
@@ -377,18 +401,18 @@ export default function DatabaseStudio({ id }: { id: string }) {
                   type="button"
                   aria-label={`Close ${tab.title}`}
                   onClick={() => close(tab.id)}
-                  className="px-2 text-xs text-[var(--tfmc-mist)] opacity-60 hover:text-[var(--tfmc-cream)] hover:opacity-100"
+                  className="grid h-full place-items-center px-2 text-[var(--tfmc-mist)] opacity-60 hover:text-[var(--tfmc-cream)] hover:opacity-100"
                 >
-                  ✕
+                  <CloseIcon className="h-3 w-3" />
                 </button>
               </div>
             ))}
             <button
               type="button"
               onClick={() => addQuery()}
-              className="shrink-0 px-3 text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
+              className="flex shrink-0 items-center gap-1 px-3 text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
             >
-              + New
+              <PlusIcon className="h-3 w-3" /> New
             </button>
           </div>
 
@@ -436,7 +460,7 @@ export default function DatabaseStudio({ id }: { id: string }) {
                         disabled={!current.sql.trim() || current.running}
                         onClick={() => run(current)}
                       >
-                        <span aria-hidden>▶</span>{" "}
+                        <PlayIcon />
                         {current.running ? "Running…" : current.mode === "edit" ? "Run edit" : "Run"}
                       </button>
                     </div>
@@ -592,7 +616,7 @@ function TablePane({
             disabled={browse.offset === 0 || tab.running}
             onClick={() => onBrowse({ ...browse, offset: Math.max(0, browse.offset - browse.limit) })}
           >
-            ‹
+            <ChevronLeftIcon />
           </button>
           <span className="min-w-[7rem] text-center font-mono text-xs text-[var(--tfmc-stone)]">
             {rows ? `${(browse.offset + 1).toLocaleString()}–${(browse.offset + rows).toLocaleString()}` : "—"}
@@ -604,7 +628,7 @@ function TablePane({
             disabled={!more || tab.running}
             onClick={() => onBrowse({ ...browse, offset: browse.offset + browse.limit })}
           >
-            ›
+            <ChevronRightIcon />
           </button>
         </div>
         {tab.result?.sql ? (
