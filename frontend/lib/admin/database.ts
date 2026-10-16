@@ -73,9 +73,13 @@ export function cellText(cell: Cell): string {
   return String(cell);
 }
 
+/** Text a spreadsheet would run as a formula; players write some of it (chat, commands, names). */
+const FORMULA = /^[=+\-@\t\r]/;
+
 export function toCsv(columns: string[], rows: Cell[][]): string {
   const field = (text: string) => (/[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text);
-  return [columns, ...rows.map((row) => row.map(cellText))].map((line) => line.map(field).join(",")).join("\n");
+  const text = (cell: Cell) => (typeof cell === "string" && FORMULA.test(cell) ? `'${cell}` : cellText(cell));
+  return [columns, ...rows.map((row) => row.map(text))].map((line) => line.map(field).join(",")).join("\n");
 }
 
 export function formatBytes(bytes: number | null): string {

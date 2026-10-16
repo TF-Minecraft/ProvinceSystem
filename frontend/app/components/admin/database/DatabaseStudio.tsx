@@ -103,6 +103,7 @@ export default function DatabaseStudio({ id }: { id: string }) {
   const editor = useRef<SqlEditorHandle>(null);
   const counter = useRef(1);
   const tableIds = useRef(1);
+  const requests = useRef(new Map<string, number>());
 
   const loadSchema = useCallback(async () => {
     setRefreshing(true);
@@ -156,23 +157,33 @@ export default function DatabaseStudio({ id }: { id: string }) {
     );
   }, [tables, search]);
 
+  /** Numbers each request per tab, so a slow older response never replaces a newer one. */
+  function nextRequest(tabId: string): () => boolean {
+    const n = (requests.current.get(tabId) ?? 0) + 1;
+    requests.current.set(tabId, n);
+    return () => requests.current.get(tabId) === n;
+  }
+
   async function execute(tab: QueryTab, write: boolean) {
+    const latest = nextRequest(tab.id);
     update(tab.id, { running: true, error: undefined });
     try {
       const result = await runQuery(id, tab.sql, write);
-      update(tab.id, { result, running: false });
+      if (latest()) update(tab.id, { result, running: false });
       if (write) void loadSchema();
     } catch (err) {
-      update(tab.id, { error: message(err), running: false, result: undefined });
+      if (latest()) update(tab.id, { error: message(err), running: false, result: undefined });
     }
   }
 
   async function load(tab: TableTab, browse: Browse, keep = true) {
+    const latest = nextRequest(tab.id);
     update(tab.id, { browse, running: true, error: undefined, ...(keep ? { preview: false } : {}) } as Partial<Tab>);
     try {
-      update(tab.id, { result: await browseTable(id, browse), running: false });
+      const result = await browseTable(id, browse);
+      if (latest()) update(tab.id, { result, running: false });
     } catch (err) {
-      update(tab.id, { error: message(err), running: false });
+      if (latest()) update(tab.id, { error: message(err), running: false });
     }
   }
 
@@ -478,6 +489,7 @@ export default function DatabaseStudio({ id }: { id: string }) {
             </>
           ) : current?.kind === "table" ? (
             <TablePane
+              key={current.id}
               tab={current}
               types={types}
               onBrowse={(browse) => void load(current, browse)}

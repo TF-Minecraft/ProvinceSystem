@@ -153,6 +153,25 @@ it("reuses one preview tab for single clicks and keeps a table open on double cl
   await waitFor(() => expect(screen.getByRole("tab", { name: "users" }).querySelector(".italic")).toBeNull());
 });
 
+it("ignores a slow older browse response and keeps each table's filter to itself", async () => {
+  vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
+  const pending: ((r: QueryResult) => void)[] = [];
+  vi.mocked(browseTable).mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
+  render(<DatabaseStudio id="site" />);
+  fireEvent.doubleClick(await screen.findByRole("button", { name: "users" }));
+  pending.shift()!(result());
+  fireEvent.click(await screen.findByRole("button", { name: /^role/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^role/ }));
+  // The newer sort answers first; the older one arrives late and is dropped.
+  pending[1](result({ rows: [[9, "newest", null]] }));
+  pending[0](result({ rows: [[1, "stale", null]] }));
+  expect(await screen.findByText("newest")).toBeTruthy();
+  expect(screen.queryByText("stale")).toBeNull();
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter rows" }), { target: { value: "role = 'root'" } });
+  fireEvent.doubleClick(screen.getByRole("button", { name: "recent" }));
+  expect((screen.getByRole("textbox", { name: "Filter rows" }) as HTMLInputElement).value).toBe("");
+});
+
 it("runs a read query with Ctrl + Enter and shows NULLs, blobs and errors", async () => {
   vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
   vi.mocked(runQuery)
@@ -220,6 +239,10 @@ it("formats sizes, counts and CSV", () => {
   expect(formatCount(950)).toBe("950");
   expect(formatCount(12_400)).toBe("12k");
   expect(formatCount(3_100_000)).toBe("3.1M");
+  // Player-written text that a spreadsheet would run as a formula opens as plain text.
+  expect(toCsv(["chat"], [['=HYPERLINK("x")'], ["@SUM(1)"], [-5], ["-1"]])).toBe(
+    'chat\n"\'=HYPERLINK(""x"")"\n\'@SUM(1)\n-5\n\'-1',
+  );
   expect(
     toCsv(
       ["a", "b"],

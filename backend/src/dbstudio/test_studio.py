@@ -149,8 +149,9 @@ def test_unknown_database(app, env):  # noqa: F811
 
 
 class FakeCursor:
-    def __init__(self, log, rows):
-        self.log, self.rows, self.description, self.rowcount = log, rows, None, -1
+    def __init__(self, log, rows, name=None):
+        self.log, self.rows, self.description, self.rowcount, self.name = log, rows, None, -1, name
+        self.itersize = 2000
 
     def __enter__(self):
         return self
@@ -159,7 +160,7 @@ class FakeCursor:
         return False
 
     def execute(self, sql):
-        self.log.append(sql)
+        self.log.append(f"DECLARE {self.name}: {sql}" if self.name else sql)
         if sql.startswith("SELECT"):
             self.description = [("name",), ("token",)]
             self.rowcount = len(self.rows)
@@ -175,8 +176,8 @@ class FakeConnection:
     def set_session(self, **kwargs):
         self.session = kwargs
 
-    def cursor(self):
-        return FakeCursor(self.log, [("case", "secret")])
+    def cursor(self, name=None):
+        return FakeCursor(self.log, [("case", "secret")], name)
 
     def commit(self):
         self.log.append("COMMIT")
@@ -198,8 +199,60 @@ def test_postgres_reads_run_in_read_only_transactions(monkeypatch):
     monkeypatch.setattr(studio.psycopg2, "connect", connect)
     result = studio.run("supabase", "SELECT name, token FROM precedent_cases")
     assert connections[0].session == {"readonly": True, "autocommit": False}
-    assert log == ["SET LOCAL statement_timeout = '10s'", "SELECT name, token FROM precedent_cases", "ROLLBACK"]
+    assert log == ["SET LOCAL statement_timeout = '10s'", "DECLARE studio: SELECT name, token FROM precedent_cases",
+                   "ROLLBACK"]
     assert result.rows == [["case", studio.MASK]]
     studio.run("supabase", "UPDATE precedent_cases SET title = 'x'", write=True)
     assert connections[1].session == {"readonly": False, "autocommit": False} and log[-1] == "COMMIT"
 
+
+
+@pytest.mark.parametrize("sql,write,code", [
+    # Sol's escape: leaving the read-only transaction and committing a write.
+    ("COMMIT; BEGIN READ WRITE; UPDATE precedent_cases SET title = 'x'; COMMIT", False, "not_allowed"),
+    ("SELECT 1; COMMIT; UPDATE precedent_cases SET title = 'x'", False, "one_statement"),
+    ("SELECT E'\\\\'; COMMIT; SELECT '", False, "one_statement"),
+    ("SELECT E'\\''; COMMIT", False, "one_statement"),
+    ("SELECT 'a\\'; COMMIT; --'", False, "one_statement"),
+    ("UPDATE precedent_cases SET title = 'x'", False, "read_only"),
+    ("SET LOCAL default_transaction_read_only = off", True, "not_allowed"),
+    ("COMMIT", True, "not_allowed"),
+    ("/* hi */ begin", True, "not_allowed"),
+])
+def test_postgres_statements_that_could_escape_are_refused_before_connecting(monkeypatch, sql, write, code):
+    monkeypatch.setenv("SUPABASE_DB_URL", "postgresql://example")
+    monkeypatch.setattr(studio.psycopg2, "connect", lambda *a, **k: pytest.fail("connected"))
+    with pytest.raises(studio.StudioError) as refused:
+        studio.run("supabase", sql, write=write)
+    assert refused.value.code == code
+
+
+@pytest.mark.parametrize("sql", [
+    "SELECT 'a;b', \"c;d\" FROM t -- ;",
+    "SELECT $$a;b$$, $tag$ ; $tag$ /* /* ; */ ; */",
+    "WITH x AS (SELECT 1) SELECT * FROM x;",
+    "SELECT 1;;  ",
+])
+def test_semicolons_inside_strings_and_comments_are_fine(sql):
+    studio._check(sql, "postgres", False)
+
+
+def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # noqa: F811
+    c = client(app, account(env, "rory", "root")[1])
+    for sql in (
+        # Sol: a stored trigger would forge audit rows when the site later updates users.
+        "CREATE TRIGGER forge AFTER UPDATE ON users BEGIN INSERT INTO admin_audit (created_at, actor_type, action, "
+        "outcome) VALUES ('x', 'system', 'forged', 'ok'); END",
+        "CREATE TEMP TRIGGER t AFTER UPDATE ON users BEGIN SELECT 1; END",
+        "PRAGMA writable_schema = ON",
+        "PRAGMA foreign_keys = OFF",
+        "VACUUM INTO '/tmp/copy.db'",
+        "BEGIN",
+        "COMMIT",
+        "SAVEPOINT s",
+    ):
+        assert query(c, sql, write=True).status_code == 403, sql
+    with env.connect() as conn:
+        assert conn.execute("SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'forge'").fetchone()[0] == 0
+    # Schema pragmas that only describe still work in reads.
+    assert query(c, "PRAGMA table_info(users)").status_code == 200

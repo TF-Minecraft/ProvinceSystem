@@ -42,6 +42,14 @@ MASK = "••••••"
 SAFE_INTEGER = 2 ** 53 - 1
 # The audit log is append-only by trigger; this also stops dropping it or its triggers.
 PROTECTED = "admin_audit"
+# Statements the studio never runs. Transaction and session control would let a read
+# leave its read-only transaction or end an edit early; VACUUM INTO and COPY write files.
+REFUSED = {"BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SAVEPOINT", "RELEASE", "PREPARE",
+           "SET", "RESET", "DISCARD", "VACUUM", "ATTACH", "DETACH", "COPY"}
+# Postgres reads run through a server-side cursor, which only takes a query.
+POSTGRES_READS = {"SELECT", "WITH", "VALUES", "TABLE"}
+# SQLite pragmas a read may call with an argument; they only describe the schema.
+INFO_PRAGMAS = {"table_info", "table_xinfo", "index_list", "index_info", "index_xinfo", "foreign_key_list"}
 
 
 class StudioError(Exception):
@@ -120,12 +128,88 @@ def quote_name(name: str) -> str:
 
 
 # --------------------
+# Statement checks
+# --------------------
+
+def _code(sql: str, engine: str) -> str:
+    """The SQL with comments, strings and quoted names blanked, so only code is left to inspect."""
+    quotes = {"'": "'", '"': '"'} | ({"`": "`", "[": "]"} if engine == "sqlite" else {})
+    out: list[str] = []
+    i, n = 0, len(sql)
+    while i < n:
+        c = sql[i]
+        if sql.startswith("--", i):
+            j = sql.find("\n", i)
+            j = n if j < 0 else j
+        elif sql.startswith("/*", i):
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if engine == "postgres" and sql.startswith("/*", j):
+                    depth, j = depth + 1, j + 2
+                elif sql.startswith("*/", j):
+                    depth, j = depth - 1, j + 2
+                else:
+                    j += 1
+        elif c in quotes:
+            close = quotes[c]
+            # Postgres E'...' strings take backslash escapes.
+            escapes = (engine == "postgres" and c == "'" and i > 0 and sql[i - 1] in "eE"
+                       and (i < 2 or not (sql[i - 2].isalnum() or sql[i - 2] == "_")))
+            j = i + 1
+            while j < n:
+                if escapes and sql[j] == "\\":
+                    j += 2
+                elif sql[j] == close:
+                    if close != "]" and sql.startswith(close * 2, j):
+                        j += 2
+                    else:
+                        j += 1
+                        break
+                else:
+                    j += 1
+        elif (engine == "postgres" and c == "$" and not (i and (sql[i - 1].isalnum() or sql[i - 1] == "_"))
+              and (tag := re.match(r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$", sql[i:]))):
+            end = sql.find(tag[0], i + len(tag[0]))
+            j = n if end < 0 else end + len(tag[0])
+        else:
+            out.append(c)
+            i += 1
+            continue
+        out.append(" ")
+        i = j
+    return "".join(out)
+
+
+def _check(sql: str, engine: str, write: bool) -> None:
+    code = re.sub(r"[;\s]+$", "", _code(sql, engine))
+    words = re.findall(r"[A-Za-z_]+", code.upper())
+    if not words:
+        raise StudioError("empty_query")
+    first = words[0]
+    if engine == "sqlite" and first == "CREATE" and "TRIGGER" in words[1:4]:
+        raise StudioError("not_allowed", 403, "Triggers can’t be created from the studio.")
+    if first in REFUSED:
+        raise StudioError("not_allowed", 403, f"{first.title()} statements aren’t allowed in the studio.")
+    if ";" in code:
+        raise StudioError("one_statement", 400, "Run one statement at a time.")
+    if engine == "postgres" and not write and first not in POSTGRES_READS:
+        raise StudioError("read_only", 400, "Read mode runs queries (SELECT, WITH, VALUES, TABLE). "
+                                            "Switch to Edit to change data.")
+
+
+# --------------------
 # SQLite
 # --------------------
 
 def _authorizer(write: bool):
     def check(action: int, first, second, *_):
-        if action in (sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH):
+        if action in (sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH, sqlite3.SQLITE_TRANSACTION,
+                      sqlite3.SQLITE_SAVEPOINT, sqlite3.SQLITE_CREATE_TRIGGER, sqlite3.SQLITE_CREATE_TEMP_TRIGGER):
+            # A stored trigger would later run without this check, e.g. writing the audit log.
+            return sqlite3.SQLITE_DENY
+        if action == sqlite3.SQLITE_PRAGMA and (
+            first == "writable_schema" or (second is not None and first not in INFO_PRAGMAS)
+        ):
             return sqlite3.SQLITE_DENY
         if write and PROTECTED in (first, second) and action in (
             sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE, sqlite3.SQLITE_DROP_TABLE,
@@ -157,10 +241,13 @@ def _site(sql: str, *, write: bool = False) -> Result:
         rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
         changes = conn.total_changes if write else None
         cursor.close()
+        # The authorizer refuses transaction control, so lift it for the studio's own.
+        conn.set_authorizer(None)
         if write:
             conn.execute("COMMIT")
         return _result(columns, rows[:MAX_ROWS], len(rows) > MAX_ROWS, changes, started)
     except sqlite3.Error as exc:
+        conn.set_authorizer(None)
         if conn.in_transaction:
             conn.execute("ROLLBACK")
         raise _sqlite_error(exc) from None
@@ -207,15 +294,24 @@ def _postgres(sql: str, *, write: bool = False) -> Result:
         raise StudioError("database_unavailable", 503) from None
     try:
         conn.set_session(readonly=not write, autocommit=False)
-        with conn.cursor() as cursor:
-            cursor.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
-            cursor.execute(sql)
-            columns = [d[0] for d in cursor.description or ()]
-            rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
-            changes = cursor.rowcount if write else None
+        with conn.cursor() as setup:
+            setup.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
         if write:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                columns = [d[0] for d in cursor.description or ()]
+                rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
+                changes = cursor.rowcount
             conn.commit()
         else:
+            # A named cursor is DECLARE ... CURSOR FOR <query>: Postgres accepts one query
+            # and sends rows as they are fetched, so the row cap also caps memory.
+            with conn.cursor(name="studio") as cursor:
+                cursor.itersize = MAX_ROWS + 1
+                cursor.execute(sql)
+                rows = cursor.fetchmany(MAX_ROWS + 1)
+                columns = [d[0] for d in cursor.description or ()]
+                changes = None
             conn.rollback()
         return _result(columns, rows[:MAX_ROWS], len(rows) > MAX_ROWS, changes, started)
     except psycopg2.Error as exc:
@@ -242,6 +338,7 @@ def run(source_id: str, sql: str, *, write: bool = False) -> Result:
         raise StudioError("query_too_long")
     if write and not item.writable:
         raise StudioError("read_only_database", 403)
+    _check(sql, item.engine, write)
     if item.id == "site":
         return _site(sql, write=write)
     if item.id == "coreprotect":
