@@ -217,6 +217,12 @@ def ack_will_results(realm_id: str | None, results: Any) -> dict[str, Any]:
             """,
             (realm, sorted({r["character_id"] for r in rows.values() if r["realm_id"] == realm})),
         )
+        # Requests outlive roster rows. Lock them too, before following caller order.
+        conn.execute(
+            "SELECT 1 FROM will_requests WHERE realm_id = %s AND id = ANY(%s) "
+            "ORDER BY id FOR UPDATE",
+            (realm, ids),
+        )
         for raw in results:
             rid = str(raw.get("id") or "").strip()
             result = str(raw.get("result") or "").strip().lower()

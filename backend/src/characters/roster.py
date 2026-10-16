@@ -163,12 +163,17 @@ def get_max_alive(
     return catalog_default_max_alive(slot_limits)
 
 
-def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:
+def set_real_age(
+    player_uuid: str, eighteen: bool, *, conn: database.Connection | None = None,
+) -> dict[str, Any]:
     """Persist 18+ attestation (player-level, once)."""
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise RosterError("player_uuid is required")
-    with database.connect() as conn:
+    if conn is None:
+        with database.connect() as own:
+            return set_real_age(uuid, eighteen, conn=own)
+    else:
         conn.execute(
             """
             INSERT INTO character_player_meta (

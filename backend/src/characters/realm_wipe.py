@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from src import database
+from src.characters.wardrobe_assets import guarded
 
 logger = logging.getLogger("characters.realm_wipe")
 
@@ -45,6 +46,7 @@ _SLOTS_IN_REALM = """
 """
 
 
+@guarded
 def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
     """Delete this realm's character tables. Player rank/age meta is untouched."""
     from src.skins.codes import normalize_realm_id
@@ -54,6 +56,11 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
     relpaths: list[str] = []
 
     with database.connect() as conn:
+        conn.execute(
+            "SELECT 1 FROM character_roster WHERE realm_id = %s "
+            "ORDER BY character_id, player_uuid FOR UPDATE",
+            (realm,),
+        )
         for row in conn.execute(
             f"SELECT png_relpath FROM character_wardrobe_slots WHERE {_SLOTS_IN_REALM}",
             (realm, realm),
@@ -110,6 +117,7 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
     }
 
 
+@guarded
 def delete_characters_for_realm(
     realm_id: str | None,
     character_ids: list[str] | None,
@@ -131,6 +139,12 @@ def delete_characters_for_realm(
 
     relpaths: list[str] = []
     with database.connect() as conn:
+        # Lock the whole selection before chunking, in the ack batch's row order.
+        conn.execute(
+            "SELECT 1 FROM character_roster WHERE realm_id = %s AND character_id = ANY(%s) "
+            "ORDER BY character_id, player_uuid FOR UPDATE",
+            (realm, ids),
+        )
         for chunk in _chunks(ids, _ID_CHUNK):
             # Slots go before the roster rows that scope them to this realm.
             slots_where = f"character_id = ANY(%s) AND ({_SLOTS_IN_REALM})"

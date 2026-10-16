@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from src import database
+from src.characters.wardrobe_assets import guarded
 from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
@@ -518,7 +519,7 @@ def create_character(
                 return _row_to_dict(existing)
 
         if "eighteen" in body and isinstance(body.get("eighteen"), bool):
-            set_real_age(uuid, bool(body.get("eighteen")))
+            set_real_age(uuid, bool(body.get("eighteen")), conn=conn)
 
         moment = utcnow()
         held_until = moment + HOLD_FOR_UPLOADS if body.get("hold") is True else None
@@ -808,6 +809,7 @@ def release_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     return {"ok": True, "id": create_id}
 
 
+@guarded
 def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     """Cancel a pending web create: wardrobe, kit drafts, and create row."""
     from src.characters.pending_create import fetch_owned_pending_create
