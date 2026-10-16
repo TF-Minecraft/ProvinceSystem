@@ -786,8 +786,8 @@ def test_index_query_count_does_not_scale_with_day_count(client, monkeypatch):
     body = client.get("/main/chronicle/index").json()
 
     assert len(body["days"]) == 50
-    # One for every day row and its manifest, one for the newest wipe stamp.
-    assert len(calls) == 2
+    # The day rows, their manifests and the newest wipe stamp share one snapshot.
+    assert len(calls) == 1
 
 
 def test_index_shape_is_unchanged_with_many_days(client):
@@ -997,8 +997,7 @@ def test_stale_geometry_costs_no_extra_database_connections(client, monkeypatch)
 
     body = client.get("/main/chronicle/index").json()
 
-    # The same two as without any stale day: rows, then the wipe stamp.
-    assert len(calls) == 2
+    assert len(calls) == 1
     assert len(body["stale_geometry_days"]) == 5
 
 

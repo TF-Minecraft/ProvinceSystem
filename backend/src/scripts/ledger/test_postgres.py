@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import gzip
+import importlib
+import json
+import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -67,6 +72,7 @@ def test_json_columns_arrive_parsed_not_emptied(env: Path) -> None:
 
     row = store.read_faction_days(MAP, "2026-09-01", "2026-09-01", full=True)[0]
     assert row["wealth_breakdown"] == {"provinces": 800.0, "trade": 200.0}
+    assert type(row["wealth_breakdown"]["provinces"]) is float
     assert row["prestige_breakdown"] == {"wealth": 300.0, "war": 200.0}
     assert row["subjects"] == ["cale"]
     assert row["wars"] == wars
@@ -74,6 +80,77 @@ def test_json_columns_arrive_parsed_not_emptied(env: Path) -> None:
     assert day["complete"] is True
     assert list(day["global"]) == sorted(day["global"])
     assert day["global"]["faction_wealth"] == 1000.0
+
+
+def test_jsonb_floats_keep_their_type_below_1e16(env: Path) -> None:
+    """jsonb keeps `.0` on whole floats up to 1e15; Python writes 1e16 and up in
+    exponent form, which jsonb stores as an exact numeric and hands back as an
+    int. Accepted: no breakdown or global value comes near it, and the number is
+    the same."""
+    breakdown = {"a": 1.0, "b": 1000.0, "c": 123456789.0, "d": 1e15, "e": 1e16}
+    _promote("2026-09-01T12:00:00Z", [faction_payload(wealth_breakdown=breakdown)])
+
+    stored = store.read_faction_days(MAP, "2026-09-01", "2026-09-01", full=True)[0]["wealth_breakdown"]
+    assert stored == breakdown
+    assert {key: type(value) for key, value in stored.items()} == {
+        "a": float, "b": float, "c": float, "d": float, "e": int,
+    }
+
+
+def test_nul_characters_never_wedge_a_day(env: Path) -> None:
+    """Postgres refuses NUL in text and jsonb. Left in, one faction name would
+    roll back the day's index write on every promote and reindex, after the
+    upload had already answered 200."""
+    wars = [{"enemy": "br\x00an", "no\x00te": ["x\x00"]}]
+    snapshot = _promote(
+        "2026-09-01T12:00:00Z",
+        [faction_payload(name="Al\x00ba", wars=wars, wealth_breakdown={"Ba\x00nk": 5.0})],
+    )
+    assert "\x00" not in json.dumps(snapshot)
+
+    row = store.read_faction_days(MAP, "2026-09-01", "2026-09-01", full=True)[0]
+    assert row["name"] == "Alba"
+    assert row["wars"] == [{"enemy": "bran", "note": ["x"]}]
+    assert row["wealth_breakdown"] == {"Bank": 5.0}
+    assert store.list_registry(MAP)[0]["last_name"] == "Alba"
+    with gzip.open(store.daily_path(MAP, "2026-09-01"), "rt", encoding="utf-8") as handle:
+        assert "\\u0000" not in handle.read()
+
+
+def test_a_daily_file_with_nul_still_reindexes(env: Path) -> None:
+    """Daily files written before the scrub may hold NUL; reindex skips normalize_snapshot."""
+    snapshot = normalize_snapshot(snapshot_payload(), MAP)
+    snapshot["factions"][0]["name"] = "Al\x00ba"
+    snapshot["guilds"] = [
+        {**snapshot["guilds"][0], "name": "first"},
+        {**snapshot["guilds"][0], "id": snapshot["guilds"][0]["id"] + "\x00", "name": "second"},
+    ]
+    os.makedirs(store.daily_root(MAP), exist_ok=True)
+    with open(store.daily_path(MAP, snapshot["day"]), "wb") as handle:
+        handle.write(ingest._pack(snapshot))
+
+    assert ingest.reindex_day(MAP, snapshot["day"]) is not None
+    assert store.read_faction_days(MAP, snapshot["day"], snapshot["day"])[0]["name"] == "Alba"
+    with database.connect() as conn:
+        guilds = conn.execute("SELECT guild_id, name FROM map_ledger_guild_days").fetchall()
+    # The two ids are one after the scrub; the last wins, as for any repeated id.
+    assert guilds == [{"guild_id": "masons", "name": "second"}]
+
+
+def test_registry_order_breaks_first_day_ties_by_key(env: Path) -> None:
+    """A reused id first seen on the same day as its predecessor still sorts the same way."""
+    _promote(
+        "2026-09-01T12:00:00Z",
+        [faction_payload(founded_at=f"2026-0{month}-01T00:00:00Z") for month in (3, 1, 2)],
+    )
+    keys = [row["faction_key"] for row in store.list_registry(MAP)]
+    assert keys == sorted(keys)
+
+
+def test_the_global_block_is_sorted_at_every_depth() -> None:
+    """jsonb orders keys by length, then bytes; the ETag needs SQLite's sorted order."""
+    block = store._global_block({"zz": 1, "a": {"bb": [{"y": 1, "x": 2}], "c": 3}})
+    assert repr(block) == "{'a': {'bb': [{'x': 2, 'y': 1}], 'c': 3}, 'zz': 1}"
 
 
 def test_founded_at_and_the_faction_key_stay_byte_exact(env: Path) -> None:
@@ -177,37 +254,42 @@ def _in_thread(target, *args) -> tuple[threading.Thread, list]:
 def test_a_reader_never_sees_half_a_promotion(env: Path, monkeypatch) -> None:
     """All five writes are one transaction: a reader sees the old day or the new one."""
     _promote("2026-09-01T10:00:00Z", [faction_payload()])
+    alba = faction_key("alba", "2026-01-01T00:00:00Z")
+    # Alba leaves and Bran arrives, so the last write (mark_deleted) has work to do.
     snapshot = normalize_snapshot(
         snapshot_payload(
             captured_at="2026-09-01T11:00:00Z",
-            factions=[faction_payload(), faction_payload(id="bran", founded_at="2026-02-01T00:00:00Z")],
+            factions=[faction_payload(id="bran", founded_at="2026-02-01T00:00:00Z")],
         ),
         MAP,
     )
 
     inside, release = threading.Event(), threading.Event()
-    real_guilds = store.replace_day_guilds
+    real_mark_deleted = store.mark_deleted
 
     def paused(*args, **kwargs):
-        real_guilds(*args, **kwargs)
+        marked = real_mark_deleted(*args, **kwargs)
         inside.set()
         assert release.wait(WAIT)
+        return marked
 
-    monkeypatch.setattr(ingest, "replace_day_guilds", paused)
+    monkeypatch.setattr(ingest, "mark_deleted", paused)
     writer, outcome = _in_thread(ingest.index_snapshot, MAP, snapshot)
     assert inside.wait(WAIT)
 
-    # The day row and two faction rows are written but not committed.
+    # All five writes are done but not committed: the reader still sees the old day.
     assert store.get_day(MAP, "2026-09-01")["captured_at"] == "2026-09-01T10:00:00Z"
-    assert len(store.read_faction_days(MAP, "2026-09-01", "2026-09-01")) == 1
-    assert len(store.list_registry(MAP)) == 1
+    assert [row["faction_id"] for row in store.read_faction_days(MAP, "2026-09-01", "2026-09-01")] == ["alba"]
+    assert [(row["faction_key"], row["deleted_day"]) for row in store.list_registry(MAP)] == [(alba, None)]
 
     release.set()
     writer.join(WAIT)
     assert outcome == [None]
     assert store.get_day(MAP, "2026-09-01")["captured_at"] == "2026-09-01T11:00:00Z"
-    assert len(store.read_faction_days(MAP, "2026-09-01", "2026-09-01")) == 2
-    assert len(store.list_registry(MAP)) == 2
+    assert [row["faction_id"] for row in store.read_faction_days(MAP, "2026-09-01", "2026-09-01")] == ["bran"]
+    registry = {row["faction_key"]: row["deleted_day"] for row in store.list_registry(MAP)}
+    assert registry[alba] == "2026-09-01"
+    assert len(registry) == 2
 
 
 def test_a_read_view_keeps_one_snapshot_across_a_promotion(env: Path) -> None:
@@ -235,6 +317,22 @@ def test_a_read_view_is_read_only(env: Path) -> None:
         store.upsert_day(MAP, normalize_snapshot(snapshot_payload(), MAP), conn=conn)
 
 
+def _wait_for_advisory_waiter() -> None:
+    """Return once another backend is blocked on an advisory lock; fail after WAIT seconds."""
+    deadline = time.monotonic() + WAIT
+    while time.monotonic() < deadline:
+        with database.connect() as conn:
+            waiting = conn.execute(
+                "SELECT count(*) AS n FROM pg_stat_activity "
+                "WHERE datname = current_database() AND wait_event_type = 'Lock' "
+                "AND wait_event = 'advisory'"
+            ).fetchone()["n"]
+        if waiting:
+            return
+        time.sleep(0.02)
+    raise AssertionError("no backend waited on the advisory lock")
+
+
 def test_index_writes_for_one_map_take_turns(env: Path) -> None:
     """The advisory lock backs up the file lock: one index write per map at a time."""
     snapshot = normalize_snapshot(snapshot_payload(), MAP)
@@ -242,7 +340,7 @@ def test_index_writes_for_one_map_take_turns(env: Path) -> None:
     with database.connect() as holder:
         database.advisory_lock(holder, f"ledger:index:{MAP}")
         writer, outcome = _in_thread(ingest.index_snapshot, MAP, snapshot)
-        writer.join(0.5)
+        _wait_for_advisory_waiter()
         assert writer.is_alive()
         assert store.list_days(MAP) == []
 
@@ -259,3 +357,38 @@ def test_index_writes_for_other_maps_do_not_wait(env: Path) -> None:
         writer, outcome = _in_thread(ingest.index_snapshot, "other", snapshot)
         writer.join(WAIT)
         assert outcome == [None]
+
+
+# --- CLIs ---------------------------------------------------------------------
+
+
+CLIS = [
+    ("ledger wipe", "src.scripts.ledger.wipe"),
+    ("ledger reindex", "src.scripts.ledger.reindex"),
+    ("chronicle wipe", "src.scripts.chronicle.wipe"),
+]
+
+
+@pytest.mark.parametrize(("name", "module"), CLIS)
+def test_a_cli_dry_run_applies_no_migrations(env: Path, monkeypatch, name, module) -> None:
+    cli = importlib.import_module(module)
+    monkeypatch.setattr(cli, "migrate", lambda: pytest.fail(f"{name} --dry-run migrated"))
+    assert cli.main(["--map", MAP, "--dry-run"]) == 0
+
+
+@pytest.mark.parametrize(("name", "module"), CLIS)
+def test_a_cli_validates_the_map_before_touching_the_database(env: Path, monkeypatch, name, module) -> None:
+    cli = importlib.import_module(module)
+    monkeypatch.setattr(cli, "migrate", lambda: pytest.fail(f"{name} migrated for a bad map"))
+    with pytest.raises(SystemExit):
+        cli.main(["--map", "../etc"])
+
+
+@pytest.mark.parametrize(("name", "module"), CLIS)
+def test_a_cli_without_a_database_is_a_usage_error(monkeypatch, capsys, name, module) -> None:
+    cli = importlib.import_module(module)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with pytest.raises(SystemExit) as exit_info:
+        cli.main(["--map", MAP])
+    assert exit_info.value.code == 2
+    assert "DATABASE_URL is not set" in capsys.readouterr().err

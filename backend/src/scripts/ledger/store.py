@@ -131,19 +131,30 @@ def _iso(value):
     return value
 
 
+def _sorted_keys(value):
+    """`value` with every dict's keys sorted, at every depth."""
+    if isinstance(value, dict):
+        return {key: _sorted_keys(value[key]) for key in sorted(value)}
+    if isinstance(value, list):
+        return [_sorted_keys(item) for item in value]
+    return value
+
+
 def _global_block(value) -> dict:
-    """The stored global block as a dict, keys sorted.
+    """The stored global block as a dict, keys sorted at every depth.
 
     Promotion indexes the snapshot it read back from its packed file, which
     `ingest._pack` writes with sorted keys, so the JSON text SQLite kept had
-    them sorted. jsonb keeps keys in its own order; sorting them again keeps
-    the series ETag, which hashes the block's repr, byte-identical.
+    them sorted. jsonb keeps keys in its own order (by length, then bytes);
+    sorting them again keeps the series ETag, which hashes the block's repr,
+    byte-identical. The block is flat today; nested keys are sorted too, so a
+    nested field added later cannot change the tag.
     """
     if not isinstance(value, dict):
         # A block that is a list would reach callers as `["field"]` -> TypeError
         # on a read route; degrade to empty like the chronicle manifests.
         return {}
-    return dict(sorted(value.items()))
+    return _sorted_keys(value)
 
 
 def open_connection():
@@ -295,7 +306,7 @@ def _copy_rows(conn, table: str, columns: tuple[str, ...], rows: list[tuple]) ->
     if not rows:
         return
     names = ", ".join(_quote(column) for column in columns)
-    with conn.cursor().copy(f"COPY {table} ({names}) FROM STDIN") as copy:
+    with conn.cursor() as cursor, cursor.copy(f"COPY {table} ({names}) FROM STDIN") as copy:
         for row in rows:
             copy.write_row(row)
 
@@ -394,29 +405,30 @@ def touch_registry(
     ]
 
     def action(conn):
-        conn.cursor().executemany(
-            """
-            INSERT INTO map_ledger_factions AS f
-                (map_id, faction_key, faction_id, founded_at,
-                 first_seen_day, first_seen_at, last_seen_day, last_seen_at,
-                 last_name, last_rgb)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (map_id, faction_key) DO UPDATE SET
-                first_seen_day = LEAST(f.first_seen_day, excluded.first_seen_day),
-                first_seen_at = CASE
-                    WHEN excluded.first_seen_day < f.first_seen_day
-                    THEN excluded.first_seen_at ELSE f.first_seen_at END,
-                last_seen_day = GREATEST(f.last_seen_day, excluded.last_seen_day),
-                last_seen_at = CASE
-                    WHEN excluded.last_seen_day >= f.last_seen_day
-                    THEN excluded.last_seen_at ELSE f.last_seen_at END,
-                last_name = excluded.last_name,
-                last_rgb = excluded.last_rgb,
-                deleted_day = NULL,
-                deleted_at = NULL
-            """,
-            rows,
-        )
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO map_ledger_factions AS f
+                    (map_id, faction_key, faction_id, founded_at,
+                     first_seen_day, first_seen_at, last_seen_day, last_seen_at,
+                     last_name, last_rgb)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (map_id, faction_key) DO UPDATE SET
+                    first_seen_day = LEAST(f.first_seen_day, excluded.first_seen_day),
+                    first_seen_at = CASE
+                        WHEN excluded.first_seen_day < f.first_seen_day
+                        THEN excluded.first_seen_at ELSE f.first_seen_at END,
+                    last_seen_day = GREATEST(f.last_seen_day, excluded.last_seen_day),
+                    last_seen_at = CASE
+                        WHEN excluded.last_seen_day >= f.last_seen_day
+                        THEN excluded.last_seen_at ELSE f.last_seen_at END,
+                    last_name = excluded.last_name,
+                    last_rgb = excluded.last_rgb,
+                    deleted_day = NULL,
+                    deleted_at = NULL
+                """,
+                rows,
+            )
 
     _write(conn, action)
 
@@ -535,7 +547,8 @@ def list_registry(map_id: str, *, conn=None) -> list[dict]:
         lambda c: c.execute(
             f"SELECT {', '.join(_quote(col) for col in _REGISTRY_COLUMNS)} "
             "FROM map_ledger_factions WHERE map_id = %s "
-            "ORDER BY first_seen_day ASC, faction_id ASC",
+            # faction_key breaks ties between reused ids first seen the same day.
+            "ORDER BY first_seen_day ASC, faction_id ASC, faction_key ASC",
             (map_id,),
         ).fetchall(),
     )

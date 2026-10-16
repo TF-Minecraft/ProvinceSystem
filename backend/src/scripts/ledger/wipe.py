@@ -19,7 +19,7 @@ import sys
 import time
 
 from src import database
-from src.database.migrate import migrate
+from src.database.migrate import MigrationError, migrate
 
 from ..util.atomic import CrossDeviceError, rename_aside
 from ..util.dirs import validate_map
@@ -141,8 +141,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        migrate()
+        validate_map(args.map)
+        # A dry run changes nothing, including the schema.
+        if not args.dry_run:
+            migrate()
         return wipe_map(args.map, dry_run=args.dry_run)
+    except (database.NotConfiguredError, database.OperationalError, MigrationError) as exc:
+        parser.error(f"Database: {exc}")
+        return 2
     except MapLockBusy:
         parser.error(
             f"Another ledger wipe, ingest or reindex is running for "

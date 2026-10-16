@@ -518,7 +518,7 @@ def normalize_snapshot(payload, map_id: str) -> dict:
 
     global_block = _normalize_global(payload.get("global"))
 
-    return {
+    return scrub_snapshot({
         "schema_version": _as_int(payload.get("schema_version")) or 0,
         "ledger_schema_version": LEDGER_SCHEMA_VERSION,
         "map_id": map_id,
@@ -535,7 +535,41 @@ def normalize_snapshot(payload, map_id: str) -> dict:
         "global": global_block,
         "factions": factions,
         "guilds": guilds,
-    }
+    })
+
+
+def _strip_nul(value):
+    """`value` with every NUL removed from its strings and dict keys, recursively."""
+    if isinstance(value, str):
+        return value.replace("\x00", "") if "\x00" in value else value
+    if isinstance(value, dict):
+        return {_strip_nul(key): _strip_nul(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_strip_nul(item) for item in value]
+    return value
+
+
+def scrub_snapshot(snapshot: dict) -> dict:
+    """Drop NUL characters everywhere in a normalised snapshot. Returns a new dict.
+
+    Postgres text and jsonb refuse NUL, and the refusal rolls back the whole
+    index write. The upload has already answered 200 and the daily file is
+    written before the index, so a NUL in one faction name would fail that
+    day's every promote and reindex, silently. Run at the end of
+    `normalize_snapshot`, so the raw file, the daily file and the index agree,
+    and again by `ingest.index_snapshot` for daily files written before this.
+
+    Two guild ids that differed only by a NUL would now share a primary key;
+    the last one wins, as for any repeated id. `faction_key` was hashed from
+    the payload as sent, so factions keep their identity.
+    """
+    out = _strip_nul(snapshot)
+    for field, key in (("factions", "key"), ("guilds", "id")):
+        rows = out.get(field)
+        if isinstance(rows, list):
+            last = {row.get(key): row for row in rows if isinstance(row, dict)}
+            out[field] = [row for row in rows if isinstance(row, dict) and last.get(row.get(key)) is row]
+    return out
 
 
 def is_deletion_safe(complete: bool, factions: list[dict], global_block: dict) -> bool:

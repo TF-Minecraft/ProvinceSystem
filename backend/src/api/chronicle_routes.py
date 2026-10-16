@@ -25,6 +25,7 @@ from ..scripts.chronicle.store import (
     get_snapshot,
     is_valid_day,
     list_day_rows,
+    read_view,
     resolve_stored_file,
 )
 from ..scripts.loader.markers import (
@@ -240,7 +241,11 @@ def get_chronicle_index(
 
     # One query for both fields: `days` is the row order this returns, so the
     # response ordering is unchanged from the old list_days + per-day lookup.
-    day_rows = list_day_rows(map_id)
+    # One snapshot for the rows and the wipe stamp, so a wipe committing in
+    # between cannot report days that are gone alongside the wipe that took them.
+    with read_view() as conn:
+        day_rows = list_day_rows(map_id, conn=conn)
+        wiped_at = last_wiped_at(map_id, conn=conn)
     days = [day for day, _manifest, _geometry in day_rows]
     incomplete = _incomplete_days([(day, manifest) for day, manifest, _ in day_rows])
     live_geometry_version = _cached_geometry_version(map_id)
@@ -266,7 +271,7 @@ def get_chronicle_index(
             # and the viewer told users the first thing in both cases. This is
             # the unix stamp of the newest staff wipe of this map (null when it
             # has never been wiped), so the two can be told apart.
-            "last_wiped_at": last_wiped_at(map_id),
+            "last_wiped_at": wiped_at,
         },
         if_none_match=if_none_match,
     )

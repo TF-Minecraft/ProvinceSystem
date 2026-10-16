@@ -33,6 +33,7 @@ _COLUMNS = (
 
 _UNKNOWN_ACTOR = "unknown"
 
+
 @dataclass(frozen=True)
 class WipeRecord:
     id: int
@@ -122,17 +123,19 @@ def get_wipe(map_id: str, wipe_id: int) -> WipeRecord | None:
     return _row_to_record(row) if row is not None else None
 
 
-def last_wiped_at(map_id: str) -> int | None:
+def last_wiped_at(map_id: str, *, conn=None) -> int | None:
     """Newest wipe stamp for this map, or None if it has never been wiped.
 
     This is what lets a viewer tell "wiped" apart from "never captured": both
-    leave the chronicle index with `days: []`.
+    leave the chronicle index with `days: []`. Pass `conn` to read it in the
+    caller's snapshot.
     """
-    with database.connect() as conn:
-        row = conn.execute(
-            f"SELECT MAX(wiped_at) AS stamp FROM {_TABLE} WHERE map_id = %s",
-            (map_id,),
-        ).fetchone()
+    sql = f"SELECT MAX(wiped_at) AS stamp FROM {_TABLE} WHERE map_id = %s"
+    if conn is not None:
+        row = conn.execute(sql, (map_id,)).fetchone()
+    else:
+        with database.connect() as owned:
+            row = owned.execute(sql, (map_id,)).fetchone()
     if row is None or row["stamp"] is None:
         return None
     return int(row["stamp"])

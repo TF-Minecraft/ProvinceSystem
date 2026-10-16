@@ -13,7 +13,7 @@ from src import database
 
 from ..util.atomic import _day_lock, _write_atomic
 from ..util.maplock import map_lock
-from .schema import is_deletion_safe, json_safe, normalize_snapshot  # noqa: F401
+from .schema import is_deletion_safe, json_safe, normalize_snapshot, scrub_snapshot  # noqa: F401
 from .store import (
     daily_path,
     daily_root,
@@ -226,6 +226,8 @@ def index_snapshot(map_id: str, snapshot: dict) -> None:
     row this day owns, inside this transaction, so a separate delete only
     published a state where the day had vanished.
     """
+    # `reindex_day` reads daily files that may predate the scrub in normalize_snapshot.
+    snapshot = scrub_snapshot(snapshot)
     day = snapshot["day"]
     factions = snapshot.get("factions") or []
     guilds = snapshot.get("guilds") or []

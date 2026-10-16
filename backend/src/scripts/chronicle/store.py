@@ -215,7 +215,16 @@ def list_days(map_id: str) -> list[str]:
     return [row["day"] for row in rows]
 
 
-def list_day_rows(map_id: str) -> list[tuple[str, dict, str | None]]:
+def read_view():
+    """One read-only REPEATABLE READ transaction for a whole read route.
+
+    The index route reads the day rows and the newest wipe stamp; one snapshot
+    keeps a wipe committing between the two from showing days that are gone.
+    """
+    return database.transaction(isolation="repeatable read", read_only=True)
+
+
+def list_day_rows(map_id: str, *, conn=None) -> list[tuple[str, dict, str | None]]:
     """Every indexed day with its manifest and stored geometry version.
 
     Oldest first — one connection, one ordered SELECT. See list_day_manifests
@@ -226,15 +235,19 @@ def list_day_rows(map_id: str) -> list[tuple[str, dict, str | None]]:
     A manifest that is not an object (e.g. a list) degrades to {} rather than
     raising: an unreadable row must not take down the index for every other
     day. The geometry version is handed back exactly as stored — including None
-    — so callers can decide what "unknown" means.
+    — so callers can decide what "unknown" means. Pass `conn` to read in the
+    caller's snapshot.
     """
     validate_map(map_id)
-    with database.connect() as conn:
-        rows = conn.execute(
-            "SELECT day, manifest, geometry_version FROM map_chronicle_snapshots "
-            "WHERE map_id = %s ORDER BY day ASC",
-            (map_id,),
-        ).fetchall()
+    sql = (
+        "SELECT day, manifest, geometry_version FROM map_chronicle_snapshots "
+        "WHERE map_id = %s ORDER BY day ASC"
+    )
+    if conn is not None:
+        rows = conn.execute(sql, (map_id,)).fetchall()
+    else:
+        with database.connect() as owned:
+            rows = owned.execute(sql, (map_id,)).fetchall()
     return [
         (row["day"], _manifest(row["manifest"]), row["geometry_version"])
         for row in rows
