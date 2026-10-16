@@ -12,6 +12,7 @@ _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -150,6 +151,8 @@ class SecondaryPluginKeyTest(unittest.TestCase):
             self.assertEqual(res.status_code, 200, path)
             self.assertTrue(res.json()["ignored"], path)
 
+    # The drinks catalogue lives in Postgres.
+    @pytest.mark.usefixtures("postgres")
     def test_secondary_skins_and_drinks_catalog_pushes_are_ignored(self) -> None:
         from src.api.drinks_routes import drinks_router
         from src.api.skins_routes import skins_router

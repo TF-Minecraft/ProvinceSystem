@@ -219,12 +219,11 @@ def test_microsoft_link_end_to_end(api, monkeypatch, ms_env, caplog):
     account = api.get("/account").json()
     assert account["minecraft"]["minecraft_name"] == "SteveMC"
     assert len(seen) == 5
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
-        notice = conn.execute("SELECT type FROM plugin_notices WHERE player_uuid=?", (PLAYER,)).fetchone()
-        dump = "\n".join(str(tuple(r)) for r in conn.execute("SELECT * FROM discord_links"))
-    dump += "\n".join(str(r) for t in ("users", "user_sessions") for r in testing.rows(f"SELECT * FROM {t}"))
-    assert notice[0] == "link_success"
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 0
+    notice = testing.value("SELECT type FROM plugin_notices WHERE player_uuid=%s", (PLAYER,))
+    dump = "\n".join(str(r) for t in ("discord_links", "users", "user_sessions")
+                     for r in testing.rows(f"SELECT * FROM {t}"))
+    assert notice == "link_success"
     logs = "\n".join(r.getMessage() for r in caplog.records if r.name == "auth")
     for secret in (MS_CODE, MS_TOKEN, MC_TOKEN, "xsts-token", "xbl-token"):
         assert secret not in dump and secret not in logs
@@ -236,8 +235,7 @@ def test_microsoft_link_spends_outstanding_codes(api, monkeypatch, ms_env):
     use_chain(monkeypatch)
     state, _ = ms_start(api)
     ms_callback(api, state)
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM discord_link_codes WHERE used_at IS NULL").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM discord_link_codes WHERE used_at IS NULL") == 0
 
 
 def test_start_needs_configuration(api, monkeypatch, ms_env):
@@ -281,8 +279,7 @@ def test_new_attempt_replaces_older_one(api, monkeypatch, ms_env):
     api.cookies.set(MS_STATE, first, domain="testserver.local")
     assert outcome(ms_callback(api, first)) == "expired"
     assert seen == []
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 1
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 1
 
 
 def age_guild_check(database):
@@ -313,9 +310,7 @@ def test_expired_state_is_refused(api, monkeypatch, ms_env):
     sign_in(api, monkeypatch)
     seen = use_chain(monkeypatch)
     state, _ = ms_start(api)
-    with ms_env.connect() as conn:
-        conn.execute("UPDATE microsoft_link_states SET expires_at='2000-01-01T00:00:00Z'")
-        conn.commit()
+    testing.execute("UPDATE microsoft_link_states SET expires_at='2000-01-01T00:00:00Z'")
     assert outcome(ms_callback(api, state)) == "expired" and seen == []
 
 
@@ -336,8 +331,7 @@ def test_denied_consent_links_nothing(api, monkeypatch, ms_env):
     state, _ = ms_start(api)
     response = api.get("/auth/microsoft/callback", params={"state": state, "error": "access_denied"}, follow_redirects=False)
     assert outcome(response) == "denied" and seen == []
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 0
 
 
 def test_callback_rechecks_guild_freshness(api, monkeypatch, ms_env):
@@ -467,8 +461,7 @@ def test_unlink_during_the_chain_cancels_the_attempt(api, monkeypatch, ms_env, u
     api.cookies.set(MS_STATE, state, domain="testserver.local")
     assert outcome(ms_callback(api, state)) == "expired"
     assert discord_link.get_link_for_discord_id(DISCORD_ID) is None
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 0
 
 
 def test_finished_attempts_leave_no_state(api, monkeypatch, ms_env):
@@ -476,5 +469,4 @@ def test_finished_attempts_leave_no_state(api, monkeypatch, ms_env):
     use_chain(monkeypatch, {microsoft.MC_PROFILE_URL: lambda r: httpx.Response(404)})
     state, _ = ms_start(api)
     ms_callback(api, state)
-    with ms_env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM microsoft_link_states").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 0

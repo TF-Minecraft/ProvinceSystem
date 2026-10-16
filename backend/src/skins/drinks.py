@@ -760,6 +760,8 @@ def create_drink_submission(
             refused = lock_code_for_submission(conn, code_id, "drink_submissions")
             if refused == "revoked":
                 raise DrinkError("Code has been revoked")
+            if refused == "expired":
+                raise DrinkError("Code has expired")
             if refused is not None:
                 raise DrinkError("Code has already been used")
             now = _utcnow()

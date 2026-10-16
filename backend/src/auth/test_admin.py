@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from src import database
 from src.api import admin_routes, auth_routes
 from src.auth import admin, admin_cli, audit, roles, testing, users
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -173,10 +174,7 @@ def test_staff_list_and_lookup(app, env):
     account(env, "mona", "mod")
     account(env, "adam", "admin")
     pat_id, _ = account(env, "pat")
-    with env.connect() as conn:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, linked_at) "
-                     "VALUES ('u-pat', ?, 'PatMC', 'x')", (discord_id_of("pat"),))
-        conn.commit()
+    link("u-pat", discord_id_of("pat"), "PatMC")
     c = client(app, root)
     staff = c.get("/admin/staff").json()["staff"]
     assert [s["discord_username"] for s in staff] == ["rory", "adam", "mona"]

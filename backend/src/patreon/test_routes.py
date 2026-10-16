@@ -15,7 +15,7 @@ PLUGIN = {"X-Plugin-Key": "plugin-test"}
 
 
 @pytest.fixture
-def api(database, monkeypatch):
+def api(database, postgres, monkeypatch):
     monkeypatch.setenv("PATREON_ENABLED", "1")
     monkeypatch.setenv("PATREON_APPLY", "1")
     monkeypatch.setenv("STAFF_KEY", "staff-test")

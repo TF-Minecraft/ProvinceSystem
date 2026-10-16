@@ -8,6 +8,7 @@ from src import database
 from src.api import admin_routes, auth_routes
 from src.auth import testing, users
 from src.luckperms import changes, mirror, nodes, policy
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -98,12 +99,8 @@ def account(db, name, role="player", minecraft=None):
         guild_member=True,
     )
     testing.set_role(discord_id, role)
-    with db.connect() as conn:
-        if minecraft:
-            conn.execute(
-                "INSERT INTO discord_links (player_uuid, discord_user_id, discord_username, minecraft_name, linked_at) "
-                "VALUES (?, ?, ?, ?, ?)", (minecraft, discord_id, name, name, "2026-10-01T00:00:00Z"))
-        conn.commit()
+    if minecraft:
+        link(minecraft, discord_id, name, name, linked_at="2026-10-01T00:00:00Z")
     return token
 
 

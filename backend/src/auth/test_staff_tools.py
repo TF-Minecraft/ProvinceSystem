@@ -9,6 +9,7 @@ from src.api import auth_routes, precedent_routes, skins_routes
 from src.api.staff_access import staff_name
 from src.auth import roles, testing
 from src.auth.test_admin import ORIGIN, account, client
+from src.skins import testing as skins_testing
 
 
 @pytest.fixture
@@ -32,13 +33,7 @@ def app(database, postgres, monkeypatch):
 
 
 def link(db, discord_user_id, uuid="player-1", name="StaffMC"):
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (uuid, discord_user_id, name, "staffer", "2026-01-01T00:00:00Z"),
-        )
-        conn.commit()
+    skins_testing.link(uuid, discord_user_id, name, "staffer", linked_at="2026-01-01T00:00:00Z")
 
 
 def discord_id(db, user_id):
@@ -87,7 +82,7 @@ def test_logged_case_names_the_staff_member(app, database):
     assert (kwargs["actor"].source, kwargs["actor"].actor, kwargs["actor"].actor_uuid) == ("web", "StaffMC", "player-1")
 
 
-def test_unlinked_staff_are_named_by_discord(database):
+def test_unlinked_staff_are_named_by_discord(database, postgres):
     user_id, _ = account(database, "mod", role="mod")
     assert staff_name({"user_id": user_id, "discord_user_id": discord_id(database, user_id),
                        "discord_username": "mod"}) == ("mod", "")

@@ -8,6 +8,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.api.map_access import get_skin_session
 from src.api.staff_access import require_staff_account
@@ -574,7 +575,8 @@ async def post_submissions(
     request: Request,
     authorization: str | None = Header(default=None),
 ):
-    session = _skin_session_from_auth(authorization)
+    # Database work runs off the event loop: the submission may wait on its code's row lock.
+    session = await run_in_threadpool(_skin_session_from_auth, authorization)
     form = await request.form()
 
     kind = str(form.get("kind") or "")
@@ -701,7 +703,8 @@ async def post_submissions(
             ) from e
 
     try:
-        return create_submission(
+        return await run_in_threadpool(
+            create_submission,
             session,
             kind,
             display_name,

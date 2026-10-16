@@ -120,15 +120,17 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
 
     The code row stays locked FOR UPDATE until the insert commits, so a second
     submission, a revoke or a redeem of the same code waits and then sees it
-    used. Returns why the code cannot be used ("missing", "revoked", "used"), or
-    None. Expiry is not checked: an upload session may outlive its code by up to
-    SESSION_TTL_HOURS and still submit.
+    used. Returns why the code cannot be used ("missing", "revoked", "expired",
+    "used"), or None. Re-check expiry after acquiring the lock, even when the
+    upload session itself is still live.
     """
-    row = conn.execute("SELECT revoked FROM codes WHERE id = %s FOR UPDATE", (int(code_id),)).fetchone()
+    row = conn.execute("SELECT revoked, expires_at FROM codes WHERE id = %s FOR UPDATE", (int(code_id),)).fetchone()
     if row is None:
         return "missing"
     if row["revoked"]:
         return "revoked"
+    if row["expires_at"] < _utcnow():
+        return "expired"
     # A statement of its own, so it sees what the holder of the lock committed: a subquery in the
     # locking statement would keep that statement's older snapshot.
     if conn.execute(f"SELECT 1 FROM {consumed_by} WHERE code_id = %s LIMIT 1", (int(code_id),)).fetchone():

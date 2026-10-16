@@ -854,6 +854,8 @@ def create_submission(
             refused = lock_code_for_submission(conn, int(code_id), "submissions")
             if refused == "revoked":
                 raise SubmissionError("Code has been revoked")
+            if refused == "expired":
+                raise SubmissionError("Code has expired")
             if refused is not None:
                 raise SubmissionError("This code already has an active submission")
         try:

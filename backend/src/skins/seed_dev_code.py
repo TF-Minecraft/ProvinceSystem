@@ -12,6 +12,7 @@ if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
 from src import database
+from src.database.migrate import migrate
 from src.skins.codes import hash_secret
 
 DEV_CODE = "TEST-CODE-1"
@@ -20,6 +21,7 @@ DEV_UUID = "00000000-0000-0000-0000-000000000001"
 
 def main() -> None:
     """Writes to the Postgres in DATABASE_URL, migrated first."""
+    migrate(seed=True)
     now = datetime.now(timezone.utc).replace(microsecond=0)
     expires = now + timedelta(hours=48)
     code_hash = hash_secret(DEV_CODE)

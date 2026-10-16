@@ -15,7 +15,7 @@ import pytest
 from src import database
 from src.auth import microsoft_link, testing, users, view_as
 from src.auth.microsoft import MicrosoftConfig
-from src.auth.test_locking import ADVISORY, ROW, Gate, held, race
+from src.auth.test_locking import ADVISORY, ROW, Gate, Run, held, lock_wait
 from src.skins import codes, db, discord_link, drinks, submissions
 from src.skins.testing import link
 from src.wars import declare_codes
@@ -88,6 +88,22 @@ def notices(kind: str) -> int:
     return testing.value("SELECT COUNT(*) FROM plugin_notices WHERE type = %s", (kind,))
 
 
+def race(gate, first, second, kinds):
+    """Release and join both workers even when a missing lock makes the assertion fail."""
+    one = Run(first)
+    two = None
+    try:
+        assert gate.reached.wait(10), one.error
+        two = Run(second)
+        lock_wait(two, kinds)
+    finally:
+        gate.release.set()
+        one.join()
+        if two is not None:
+            two.join()
+    return one, two
+
+
 # --------------------
 # A: a submission locks its code
 # --------------------
@@ -123,6 +139,24 @@ def test_a_submission_waits_for_a_revoke_of_its_code(env):
     )
     assert isinstance(run.error, submissions.SubmissionError) and str(run.error) == "Code has been revoked"
     assert testing.value("SELECT COUNT(*) FROM submissions") == 0
+
+
+@pytest.mark.parametrize("scope", ["skin", "drink"])
+def test_a_submission_rechecks_expiry_after_its_code_lock_wait(env, scope):
+    drink_catalog()
+    session = session_for(scope)
+    submit = submit_drink(session, "Expired Brew") if scope == "drink" else submit_skin(session, "Expired Sword")
+    run = held(
+        lambda conn: conn.execute("UPDATE codes SET expires_at = now() - interval '1 second' WHERE id = %s",
+                                  (session["code_id"],)),
+        submit,
+        ROW,
+    )
+    error = drinks.DrinkError if scope == "drink" else submissions.SubmissionError
+    table = "drink_submissions" if scope == "drink" else "submissions"
+    assert isinstance(run.error, error) and str(run.error) == "Code has expired"
+    assert testing.value(f"SELECT COUNT(*) FROM {table}") == 0
+    assert testing.value("SELECT redeemed_at FROM codes WHERE id = %s", (session["code_id"],)) is None
 
 
 # --------------------
@@ -198,12 +232,39 @@ def test_a_link_code_is_spent_once(env, monkeypatch):
         gate,
         lambda: discord_link.complete_link(plaintext, "523456789012345678", "alex"),
         lambda: discord_link.complete_link(plaintext, "623456789012345678", "mallory"),
-        ROW,
+        ADVISORY,
     ))
     assert len(made) == 1 and [str(e) for e in errors] == ["Link code has already been used"]
     assert testing.rows("SELECT discord_user_id FROM discord_links WHERE player_uuid = %s", (OTHER_PLAYER,)) == [
         {"discord_user_id": made[0]["discord_user_id"]}]
     assert notices("link_success") == 1
+
+
+def test_two_sibling_link_codes_do_not_deadlock(env, monkeypatch):
+    first = discord_link.start_link(OTHER_PLAYER, "Alex")["code"]
+    second = discord_link.start_link(OTHER_PLAYER, "Alex")["code"]
+    gate = Gate(monkeypatch, "UPDATE discord_link_codes SET used_at")
+    made, errors = outcome(*race(
+        gate,
+        lambda: discord_link.complete_link(first, OTHER_DISCORD_ID, "alex"),
+        lambda: discord_link.complete_link(second, "623456789012345678", "mallory"),
+        ADVISORY,
+    ))
+    assert len(made) == 1
+    assert len(errors) == 1 and isinstance(errors[0], discord_link.LinkError)
+    assert notices("link_success") == 1
+
+
+def test_link_redemption_rechecks_a_code_spent_while_waiting(env):
+    plaintext = discord_link.start_link(OTHER_PLAYER, "Alex")["code"]
+    run = held(
+        lambda conn: conn.execute("UPDATE discord_link_codes SET used_at = now() WHERE code_hash = %s",
+                                  (codes.hash_secret(plaintext),)),
+        lambda: discord_link.complete_link(plaintext, OTHER_DISCORD_ID, "alex"),
+        ROW,
+    )
+    assert isinstance(run.error, discord_link.LinkError) and str(run.error) == "Link code has already been used"
+    assert notices("link_success") == 0
 
 
 def test_a_microsoft_state_is_spent_once(env, monkeypatch):
@@ -219,9 +280,18 @@ def test_two_grace_expiries_notice_once(env, monkeypatch):
     with database.connect() as conn:
         conn.execute("UPDATE discord_links SET grace_until = now() - interval '1 minute'")
     gate = Gate(monkeypatch, "DELETE FROM discord_links")
-    one, two = race(gate, discord_link.expire_due_graces, discord_link.expire_due_graces, ROW)
+    one, two = race(gate, discord_link.expire_due_graces, discord_link.expire_due_graces, ADVISORY)
     assert sorted([one.value, two.value]) == [0, 1]
     assert notices("grace_expired") == 1
+
+
+def test_a_grace_expiry_does_not_remove_a_rejoined_player(env):
+    testing.execute("UPDATE discord_links SET grace_until = now() - interval '1 minute'")
+    run = held(lambda conn: conn.execute("UPDATE discord_links SET grace_until = NULL"),
+               discord_link.expire_due_graces, ROW)
+    assert run.error is None and run.value == 0
+    assert notices("grace_expired") == 0
+    assert testing.value("SELECT COUNT(*) FROM discord_links") == 1
 
 
 def test_a_war_code_redeemed_meanwhile_is_not_revoked(env, monkeypatch):
@@ -365,6 +435,20 @@ def test_a_sign_out_waits_for_a_microsoft_link_being_written(env, monkeypatch):
     one, two = race(gate, link_profile(saved), lambda: users.revoke_session(user["token"]), ROW)
     assert one.error is None and two.error is None
     assert testing.value("SELECT COUNT(*) FROM discord_links WHERE player_uuid = %s", (OTHER_PLAYER,)) == 1
+
+
+@pytest.mark.parametrize("by_uuid", [False, True])
+def test_unlink_waits_for_a_microsoft_refresh_of_the_same_pair(env, monkeypatch, by_uuid):
+    link(OTHER_PLAYER, OTHER_DISCORD_ID, "Alex", "alex")
+    user = signed_in()
+    saved = microsoft_link.consume(microsoft_link.start(MICROSOFT, user)[0])
+    gate = Gate(monkeypatch, "FOR SHARE OF m, s")
+    unlink = lambda: (discord_link.unlink_by_uuid(OTHER_PLAYER) if by_uuid else
+                      discord_link.unlink_by_discord_id(OTHER_DISCORD_ID))
+    one, two = race(gate, link_profile(saved), unlink, ADVISORY)
+    assert one.error is None and two.error is None
+    assert testing.value("SELECT COUNT(*) FROM discord_links WHERE player_uuid = %s", (OTHER_PLAYER,)) == 0
+    assert testing.value("SELECT COUNT(*) FROM microsoft_link_states") == 0
 
 
 # --------------------

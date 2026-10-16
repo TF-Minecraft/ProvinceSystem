@@ -12,11 +12,8 @@ exists, roots can also give and take root in the staff panel.
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
 from src import database
-from src.skins import db
 
 from . import audit
 from .admin import REASON_MAX, REASON_MIN, AdminError, clean_reason, list_staff
@@ -63,9 +60,6 @@ def _set_root(discord_id: str, reason: str | None, *, grant: bool, demote_to: st
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m src.auth.admin_cli", description=__doc__.splitlines()[0])
     parser.add_argument("--database-url", help="the site's Postgres (default: DATABASE_URL)")
-    # PG-MIGRATION: until the Scripts area converts, Profile sessions and Discord links are
-    # still read from province.db (drop_view_leftovers, list-staff's Minecraft names).
-    parser.add_argument("--db", type=Path, help="database file (default: the site's province.db)")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("grant-root", "revoke-root"):
         cmd = sub.add_parser(name)
@@ -76,14 +70,6 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("list-staff")
     args = parser.parse_args(argv)
 
-    if args.db:
-        db.DB_PATH = args.db
-        db.DATA_DIR = args.db.parent
-        db.SKINS_DIR = db.DATA_DIR / "skins"
-        db.WARDROBE_DIR = db.DATA_DIR / "wardrobe"
-        db.DRINKS_DIR = db.DATA_DIR / "drinks"
-    print(f"Database: {db.DB_PATH}", file=sys.stderr)
-    db.migrate()
     if args.database_url:
         database.open_pool(args.database_url, min_size=0, max_size=1)
 

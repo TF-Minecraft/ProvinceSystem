@@ -7,12 +7,16 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from skins.size_limits import SizeLimitError, assert_3d_pair_budgets  # noqa: E402
-from skins.catalog import _normalize_entitlements  # noqa: E402
+from src.skins.size_limits import SizeLimitError, assert_3d_pair_budgets  # noqa: E402
+from src.skins.catalog import _normalize_entitlements  # noqa: E402
+from src.auth import testing  # noqa: E402
+from src.skins import codes  # noqa: E402
 
 
 class SizeLimitsTest(unittest.TestCase):
@@ -92,121 +96,73 @@ class EntitlementsTest(unittest.TestCase):
 
 
 
+@pytest.mark.usefixtures("postgres")
 class MintCooldownTest(unittest.TestCase):
     """TFMCWeb owns the shared cosmetic mint cooldown."""
 
-    def test_issue_skin_ignores_rank_disallow_meta(self) -> None:
-        from skins.codes import issue_code
+    def setUp(self) -> None:
+        patch = mock.patch("src.skins.discord_link.get_identity_status", return_value={"eligible": True})
+        patch.start()
+        self.addCleanup(patch.stop)
 
-        with mock.patch(
-            "skins.discord_link.get_identity_status",
-            return_value={"eligible": True},
-        ), mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            result = issue_code("player-1", "skin")
+    def mint(self, scope: str, created_at: str) -> None:
+        testing.execute(
+            "INSERT INTO codes (code_hash, player_uuid, scope, created_at, expires_at) "
+            "VALUES (%s, 'player-1', %s, %s, '2099-01-01T00:00:00Z')",
+            (f"hash-{scope}-{created_at}", scope, created_at),
+        )
+
+    def test_issue_skin_ignores_rank_disallow_meta(self) -> None:
+        result = codes.issue_code("player-1", "skin")
         self.assertEqual(result["scope"], "skin")
         self.assertIn("code", result)
+        self.assertEqual(testing.value("SELECT scope FROM codes WHERE code_plaintext = %s", (result["code"],)), "skin")
 
     def test_staff_scope_still_issues(self) -> None:
-        from skins.codes import issue_code
-
-        with mock.patch(
-            "skins.discord_link.get_identity_status",
-            return_value={"eligible": True},
-        ), mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            result = issue_code("player-1", "skin_staff")
+        result = codes.issue_code("player-1", "skin_staff")
         self.assertEqual(result["scope"], "skin_staff")
         self.assertIn("code", result)
 
     def test_issue_skin_ignores_days_gate(self) -> None:
-        from skins.codes import issue_code
-
-        with mock.patch(
-            "skins.discord_link.get_identity_status",
-            return_value={"eligible": True},
-        ), mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            result = issue_code("player-1", "skin")
+        self.mint("skin", "2026-01-15T12:00:00Z")
+        result = codes.issue_code("player-1", "skin")
         self.assertEqual(result["scope"], "skin")
-        self.assertIn("code", result)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 2)
 
     def test_issue_drink_scope(self) -> None:
-        from skins.codes import issue_code
-
-        with mock.patch(
-            "skins.discord_link.get_identity_status",
-            return_value={"eligible": True},
-        ), mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            result = issue_code("player-1", "drink")
+        result = codes.issue_code("player-1", "drink")
         self.assertEqual(result["scope"], "drink")
         self.assertIn("code", result)
 
     def test_cosmetic_mint_status_none(self) -> None:
-        from skins.codes import get_cosmetic_mint_status
-
-        with mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            conn.execute.return_value.fetchone.side_effect = [
-                {"reset_at": None},
-                {"last_at": None},
-            ]
-            out = get_cosmetic_mint_status("player-1")
+        out = codes.get_cosmetic_mint_status("player-1")
         self.assertIsNone(out["last_mint_at"])
         self.assertEqual(out["player_uuid"], "player-1")
 
     def test_cosmetic_mint_status_shared_max(self) -> None:
-        from skins.codes import get_cosmetic_mint_status
-
-        with mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            conn.execute.return_value.fetchone.side_effect = [
-                {"reset_at": None},
-                {"last_at": "2026-01-15T12:00:00Z"},
-            ]
-            out = get_cosmetic_mint_status("player-1")
+        self.mint("skin", "2026-01-10T08:00:00Z")
+        self.mint("drink", "2026-01-15T12:00:00Z")
+        self.mint("profile", "2026-01-20T12:00:00Z")
+        out = codes.get_cosmetic_mint_status("player-1")
         self.assertEqual(out["last_mint_at"], "2026-01-15T12:00:00Z")
-        sql = conn.execute.call_args_list[1][0][0]
-        self.assertIn("skin", sql.lower())
-        self.assertIn("drink", sql.lower())
 
     def test_cosmetic_mint_status_respects_reset(self) -> None:
-        from skins.codes import get_cosmetic_mint_status
-
-        with mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            conn.execute.return_value.fetchone.side_effect = [
-                {"reset_at": "2026-02-01T00:00:00Z"},
-                {"last_at": None},
-            ]
-            out = get_cosmetic_mint_status("player-1")
-        self.assertIsNone(out["last_mint_at"])
-        sql = conn.execute.call_args_list[1][0][0]
-        self.assertIn("created_at >", sql.lower())
+        self.mint("skin", "2026-01-15T12:00:00Z")
+        testing.execute("INSERT INTO cosmetic_mint_resets (player_uuid, reset_at) VALUES ('player-1', %s)",
+                        ("2026-02-01T00:00:00Z",))
+        self.assertIsNone(codes.get_cosmetic_mint_status("player-1")["last_mint_at"])
+        self.mint("drink", "2026-02-03T00:00:00Z")
+        self.assertEqual(codes.get_cosmetic_mint_status("PLAYER-1")["last_mint_at"], "2026-02-03T00:00:00Z")
 
     def test_reset_cosmetic_mint_cooldowns(self) -> None:
-        from skins.codes import reset_cosmetic_mint_cooldowns
-
-        with mock.patch("skins.codes.connect") as connect_mock:
-            conn = mock.MagicMock()
-            connect_mock.return_value.__enter__.return_value = conn
-            out = reset_cosmetic_mint_cooldowns("player-1", "staff-9")
+        self.mint("skin", "2026-01-15T12:00:00Z")
+        out = codes.reset_cosmetic_mint_cooldowns("player-1", "staff-9")
         self.assertTrue(out["ok"])
         self.assertEqual(out["player_uuid"], "player-1")
-        self.assertIn("reset_at", out)
-        args = conn.execute.call_args[0]
-        self.assertIn("cosmetic_mint_resets", args[0])
-        self.assertEqual(args[1][0], "player-1")
-        self.assertEqual(args[1][2], "staff-9")
-        conn.commit.assert_called_once()
+        self.assertRegex(out["reset_at"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+        self.assertEqual(testing.rows("SELECT player_uuid, staff_uuid FROM cosmetic_mint_resets"),
+                         [{"player_uuid": "player-1", "staff_uuid": "staff-9"}])
+        self.assertIsNone(codes.get_cosmetic_mint_status("player-1")["last_mint_at"])
 
 
 if __name__ == "__main__":
