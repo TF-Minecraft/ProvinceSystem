@@ -134,12 +134,20 @@ function provinceIdsOf(region: RegionRecord[string], key: "provinces" | "occupie
  * holdings first, then `occupied_held`, so an occupier wins its provinces
  * over their legal owner exactly as the backend's occupation remap paints
  * them — regardless of record order.
+ *
+ * `discardedMask` (province id -> 1) drops provinces the mode's painter
+ * refuses — trade's water and sea, whose dominant guilds are compiled into
+ * the data but never painted. Nation passes none: a realm may hold water.
  */
-export function buildProvinceRegionIndex(regionData: RegionRecord): ProvinceRegionIndex {
+export function buildProvinceRegionIndex(
+  regionData: RegionRecord,
+  discardedMask?: Uint8Array | null,
+): ProvinceRegionIndex {
   const index: ProvinceRegionIndex = new Map();
   for (const key of ["provinces", "occupied_held"] as const) {
     for (const [pickId, region] of Object.entries(regionData)) {
       for (const provinceId of provinceIdsOf(region, key)) {
+        if (discardedMask?.[provinceId] === 1) continue;
         index.set(provinceId, pickId);
       }
     }

@@ -31,7 +31,9 @@ import {
   type DrillLayer,
 } from "./map/drillUtils";
 import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
-import { buildProvinceRegionIndex, provinceHoverBlocksRegionPick } from "../hooks/regionPick";
+import { buildProvinceRegionIndex, provinceHoverBlocksRegionPick, type ProvinceRegionIndex } from "../hooks/regionPick";
+import { chronicleDiscardedProvinceMask } from "@/app/lib/map/chronicleWater";
+import { fetchCompiledProvinces } from "@/app/lib/map/compiledProvinces";
 import { fetchProvinceRunIndex } from "@/app/lib/map/provinceRuns";
 import type { ProvinceRunIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
@@ -86,6 +88,9 @@ import { buildNationColorLut, paintChronicleFrameToImageData, type ProvinceIdGri
 import { mapControlClass, mapFrameClass } from "./map/ui";
 
 const actionLinkClass = `${mapControlClass} h-9 px-2.5 text-xs no-underline`;
+
+/** Province-ID picking is active but its membership is not built yet. */
+const EMPTY_PROVINCE_REGION_INDEX: ProvinceRegionIndex = new Map();
 
 /**
  * The chronicle is the one feature nothing else on the map hints at, so it
@@ -514,14 +519,51 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   const pickKey = JSON.stringify([mapId, mapType, day, authToken]);
   const [pickReadyFor, setPickReadyFor] = useState<string | null>(null);
 
-  // Live nation picks provinces by id, not by colour: identity comes from
-  // membership over the run-index geometry, so a realm coloured black (whose
-  // colour the pick-map painter drops entirely) picks like any other.
-  const provincePickActive = day === null && mapType === "nation";
-  const provinceRegionIndex = useMemo(
-    () => (provincePickActive && regionData ? buildProvinceRegionIndex(regionData) : null),
-    [provincePickActive, regionData],
-  );
+  // Live nation and trade pick provinces by id, not by colour: identity comes
+  // from membership over the run-index geometry, so a realm or guild coloured
+  // black (whose colour the pick-map painter drops entirely) picks like any
+  // other.
+  const provincePickActive = day === null && (mapType === "nation" || mapType === "trade");
+
+  // Trade membership must drop the water and sea provinces its painter
+  // refuses: their dominant guilds are compiled into the data but never
+  // painted. The chronicle's discarded-terrain mask is that same rule over
+  // the same compiled payload; until it loads, trade membership stays empty
+  // (picking active but missing) rather than claiming the water.
+  const [tradeWaterMask, setTradeWaterMask] = useState<{ key: string; mask: Uint8Array | null } | null>(null);
+  const [tradeWaterFailedFor, setTradeWaterFailedFor] = useState<string | null>(null);
+  const [tradeWaterRetry, setTradeWaterRetry] = useState(0);
+  useEffect(() => {
+    if (!provincePickActive || mapType !== "trade" || !accessChecked || gateReason) return;
+    let cancelled = false;
+    const key = `${mapId}\n${authToken ?? ""}`;
+    setTradeWaterFailedFor(null);
+    void fetchCompiledProvinces(mapId, authToken)
+      .then((payload) => {
+        if (cancelled) return;
+        const mask = chronicleDiscardedProvinceMask(payload);
+        setTradeWaterMask({ key, mask });
+        // An unreadable payload is a failed load, not an empty mask: say so
+        // (with a retry) instead of silently withholding trade picking.
+        if (mask === null) setTradeWaterFailedFor(key);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load province terrains for trade picking:", err);
+        setTradeWaterFailedFor(key);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [provincePickActive, mapType, mapId, authToken, accessChecked, gateReason, tradeWaterRetry]);
+
+  const provinceRegionIndex = useMemo(() => {
+    if (!provincePickActive || !regionData) return null;
+    if (mapType !== "trade") return buildProvinceRegionIndex(regionData);
+    const loaded = tradeWaterMask?.key === `${mapId}\n${authToken ?? ""}` ? tradeWaterMask.mask : undefined;
+    if (loaded === undefined || loaded === null) return EMPTY_PROVINCE_REGION_INDEX;
+    return buildProvinceRegionIndex(regionData, loaded);
+  }, [provincePickActive, regionData, mapType, tradeWaterMask, mapId, authToken]);
   const [provincePickFailedFor, setProvincePickFailedFor] = useState<string | null>(null);
   const [provincePickRetry, setProvincePickRetry] = useState(0);
 
@@ -623,8 +665,8 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     setSelectedId(null);
     // `/mapdata/` is regenerated from today's data and has no per-day variant,
     // so a stored day must not download it — the effect below paints the pick
-    // canvas from that day's own ownership instead. Live nation downloads no
-    // pick image at all: its geometry is the province run index.
+    // canvas from that day's own ownership instead. Province-ID modes
+    // download no pick image at all: their geometry is the province run index.
     if (provincePickActive) {
       runsController = new AbortController();
       fetchProvinceRunIndex(mapId, authToken, runsController.signal)
@@ -1272,25 +1314,30 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     />
   ) : null;
 
-  const provincePickBanner =
-    provincePickActive && provincePickFailedFor === pickKey ? (
-      <div className={`${mapFrameClass} p-3`} role="alert">
-        <p className="text-sm leading-snug text-[var(--tfmc-cream)]">Realm picking is unavailable right now.</p>
-        <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-          The province geometry failed to load. The map, places and names still work.
-        </p>
-        <button
-          type="button"
-          className={`${actionLinkClass} mt-2`}
-          onClick={() => {
-            setProvincePickFailedFor(null);
-            setProvincePickRetry((n) => n + 1);
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    ) : null;
+  const provincePickFailed =
+    provincePickActive &&
+    (provincePickFailedFor === pickKey ||
+      (mapType === "trade" && tradeWaterFailedFor === `${mapId}\n${authToken ?? ""}`));
+  const provincePickBanner = provincePickFailed ? (
+    <div className={`${mapFrameClass} p-3`} role="alert">
+      <p className="text-sm leading-snug text-[var(--tfmc-cream)]">Picking is unavailable right now.</p>
+      <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+        The province geometry failed to load. The map, places and names still work.
+      </p>
+      <button
+        type="button"
+        className={`${actionLinkClass} mt-2`}
+        onClick={() => {
+          setProvincePickFailedFor(null);
+          setProvincePickRetry((n) => n + 1);
+          setTradeWaterFailedFor(null);
+          setTradeWaterRetry((n) => n + 1);
+        }}
+      >
+        Retry
+      </button>
+    </div>
+  ) : null;
 
   return (
     <MapShell
