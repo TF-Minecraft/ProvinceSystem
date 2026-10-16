@@ -1,6 +1,6 @@
 """Build a closed week's comparison on the host and send it to the API.
 
-patchnotes-watch.sh runs this every ten minutes. Nothing happens until a note
+tfmc-patchnotes-weekly.timer runs this every ten minutes. Nothing happens until a note
 week has closed (Friday 12:00 in PATCHNOTES_TZ) and the API has no facts for
 it yet. The week is the last AMP backup before that cutoff against the last
 backup before the previous Friday's cutoff. Plugin updates bring the subjects

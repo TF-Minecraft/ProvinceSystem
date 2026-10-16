@@ -120,6 +120,11 @@ summary=${summary//,/, }
 log "deploying ${sha:0:7} to $site ($summary)"
 if rebuild && healthy; then
   record "deployed ($summary)"
+  # The patch note jobs run a root-owned copy of this package against www's API.
+  if [[ $site == www ]] && grep -q '^backend/src/patchnotes/' <<< "$changed"; then
+    sudo -n /usr/local/sbin/tfmc-patchnotes-update "$sha" >&2 \
+      || log "patch note jobs were not updated; run: sudo tfmc-patchnotes-update $sha"
+  fi
   echo "deployed $site ${sha:0:7} ($summary)"
   exit 0
 fi
