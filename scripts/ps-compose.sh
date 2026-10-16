@@ -1,6 +1,7 @@
 #!/bin/bash
-# Limited docker compose for the ProvinceSystem main and dev sites.
-# Runs as tfmc (a docker-group user) via sudo. Ryan is not in the docker group.
+# Limited docker compose for the ProvinceSystem main and dev sites. Installed as root's
+# /usr/local/sbin/ps-compose and run as tfmc (docker group) through sudo, so people
+# without docker access can manage the two sites but not mount the host.
 set -euo pipefail
 
 usage() {

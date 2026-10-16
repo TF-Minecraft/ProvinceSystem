@@ -1,6 +1,8 @@
 #!/bin/bash
 # Per-branch ProvinceSystem website previews at https://<slug>.tfminecraft.net.
-# Runs as tfmc (docker group). Called by psdeploy (via ps-preview-ssh), ryan, and ps-preview-reap.timer.
+# Installed as root's /usr/local/sbin/ps-preview and run as tfmc (docker group), by the
+# preview key on psdeploy (through ps-preview-ssh), by admins with sudo -u tfmc, and by
+# ps-preview-reap.timer. Preview containers run as tfmc too, so tfmc owns every file.
 set -euo pipefail
 umask 077
 
@@ -14,7 +16,6 @@ DOMAIN=tfminecraft.net
 MAX_PREVIEWS=4
 TTL=5400
 IMAGE_PREFIX=ghcr.io/tf-minecraft/provincesystem-preview
-HELPER_IMAGE=alpine:3
 RESERVED=(www dev api mail map admin staff play mc status preview t3 portainer)
 MOUNTS=(data input defines output)
 
@@ -62,13 +63,8 @@ previews() {
   done
 }
 
-# The backend runs as root in its container, so some files under a preview dir are root-owned.
 remove_dir() {
-  local slug="$1"
-  [[ -e "$ROOT/$slug" ]] || return 0
-  rm -rf "${ROOT:?}/$slug" 2>/dev/null && return 0
-  docker image inspect "$HELPER_IMAGE" >/dev/null 2>&1 || low_prio docker pull -q "$HELPER_IMAGE" >/dev/null
-  docker run --rm --network none -v "$ROOT:/previews" "$HELPER_IMAGE" rm -rf "/previews/$slug"
+  rm -rf "${ROOT:?}/$1"
 }
 
 staging_backend() {
@@ -92,7 +88,7 @@ create_data() {
     case "$m" in
       # Copied separately below via sqlite's online backup; the other .db files are old backups.
       data) low_prio rsync -a --exclude='/*.db' --exclude='/*.db-*' --exclude='/maintenance-backups/' "$src/" "$tmp/$m/" ;;
-      # Regenerable tile/webp cache, written root-only by the dev backend.
+      # Regenerable tile/webp cache.
       output) low_prio rsync -a --exclude='/_derived/' "$src/" "$tmp/$m/" ;;
       *) low_prio rsync -a "$src/" "$tmp/$m/" ;;
     esac
@@ -109,8 +105,6 @@ DELETE FROM discord_oauth_states;
 DELETE FROM discord_link_codes;
 VACUUM;
 SQL
-  # Open up the copies so the container (root) and tfmc can both use them.
-  chmod -R u+rwX,go+rX "$tmp"/{data,input,defines,output}
   {
     echo "STAFF_KEY=$(openssl rand -hex 32)"
     echo "PLUGIN_KEY=$(openssl rand -hex 32)"
@@ -129,6 +123,8 @@ name: pv-$slug
 services:
   backend:
     image: $IMAGE_PREFIX-backend:$slug
+    user: "1001:1001"
+    init: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -151,6 +147,7 @@ services:
 
   frontend:
     image: $IMAGE_PREFIX-frontend:$slug
+    init: true
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
