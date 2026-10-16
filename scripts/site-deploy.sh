@@ -28,7 +28,8 @@ case "$site" in
 esac
 [[ $(id -un) == tfmc ]] || { echo "run as tfmc: sudo -u tfmc $0 deploy $site $sha" >&2; exit 2; }
 umask 022
-state=/home/tfmc
+export HOME=/home/tfmc
+state=$HOME
 
 exec 9> "$state/.site-deploy-$site.lock"
 flock 9
