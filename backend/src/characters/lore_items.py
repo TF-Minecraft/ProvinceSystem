@@ -924,7 +924,7 @@ def sanitize_kit_skin_stem(name: str | None) -> str:
 
 
 def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
-    """Write plugin-synced default kit PNG under assets/kit_skins/."""
+    """Write a plugin-synced default kit PNG under data/plugin-assets/kit_skins/."""
     import os
 
     stem = sanitize_kit_skin_stem(name)
