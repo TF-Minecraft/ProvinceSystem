@@ -129,7 +129,6 @@ export function useServerControls(onComplete: () => void) {
     action: "start" | Action,
     id: string,
     reason: string,
-    backupRef = "",
     override = false,
     replace: string[] = [],
   ) {
@@ -137,15 +136,7 @@ export function useServerControls(onComplete: () => void) {
     setError(null);
     try {
       const start = action === "start";
-      await serverAction(
-        server,
-        action,
-        id,
-        reason,
-        backupRef,
-        start && server === "main" && override,
-        start ? replace : [],
-      );
+      await serverAction(server, action, id, reason, start && server === "main" && override, start ? replace : []);
       setDialog(null);
       await refresh();
     } catch (err) {
@@ -252,6 +243,11 @@ export function ServerActions({ control, server }: { control: ServerControl; ser
           ) : null}
         </p>
         <Steps job={job} />
+        {job.phase === "countdown" && job.backup ? (
+          <p className="mt-2 text-xs text-[var(--tfmc-mist)]">
+            {job.backup.state === "done" ? "AMP backup done." : "AMP backup running. The restart waits for it."}
+          </p>
+        ) : null}
         {job.phase === "countdown" ? (
           <button
             type="button"
@@ -369,6 +365,13 @@ function Upgrade({ from, to }: { from: string | null; to: string }) {
       <span className="text-[var(--tfmc-mist)]">{from ?? "not running"}</span> → {to}
     </span>
   );
+}
+
+function backupNote(plan: ServerPlan, override: boolean): string {
+  const last = plan.last_backup_at ? formatLocal(new Date(plan.last_backup_at * 1000).toISOString()) : "not recorded";
+  if (!plan.backup) return `Last AMP backup: ${last}. No fresh backup is taken: this site has no AMP login set.`;
+  if (override) return `Skipping the countdown skips the fresh backup. Last AMP backup: ${last}.`;
+  return `AMP takes a fresh backup during the countdown, and the restart waits for it to finish. Last AMP backup: ${last}.`;
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
@@ -514,7 +517,6 @@ export function ControlDialog({ control }: { control: ServerControl }) {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   const [reason, setReason] = useState("");
-  const [backupRef, setBackupRef] = useState("");
   const [override, setOverride] = useState(false);
   const [replace, setReplace] = useState<string[]>([]);
   const [shown, setShown] = useState<Dialog | null>(null);
@@ -523,7 +525,6 @@ export function ControlDialog({ control }: { control: ServerControl }) {
   if (dialog !== shown) {
     setShown(dialog);
     setReason("");
-    setBackupRef("");
     setOverride(false);
     // Main should only run releases; Dev test builds are often someone's work in progress.
     setReplace(
@@ -564,8 +565,8 @@ export function ControlDialog({ control }: { control: ServerControl }) {
     body = <PlanBody plan={plan} now={now} override={override} replace={replace} onReplace={setReplace} />;
     confirm = main ? (override ? "Restart Main now" : "Start Main countdown") : "Restart Dev now";
     danger = main && override;
-    blocked ||= (main && backupRef.trim().length < 3) || now >= plan.expires_at;
-    submit = () => void control.act(server, "start", plan.id, reason, backupRef, override, replace);
+    blocked ||= now >= plan.expires_at;
+    submit = () => void control.act(server, "start", plan.id, reason, override, replace);
   } else {
     const { job, action } = dialog;
     title = {
@@ -611,22 +612,7 @@ export function ControlDialog({ control }: { control: ServerControl }) {
         {body}
 
         {dialog.kind === "plan" && main ? (
-          <Field
-            label="Backup for this restart"
-            hint={`Last AMP backup: ${
-              dialog.plan.last_backup_at
-                ? formatLocal(new Date(dialog.plan.last_backup_at * 1000).toISOString())
-                : "not recorded"
-            }. Make sure data and migration backups cover these changes.`}
-          >
-            <input
-              className={`${inputClass} mt-1.5 block w-full`}
-              value={backupRef}
-              maxLength={500}
-              onChange={(e) => setBackupRef(e.target.value)}
-              placeholder="Backup name or location"
-            />
-          </Field>
+          <p className={`mt-4 ${mutedClass}`}>{backupNote(dialog.plan, override)}</p>
         ) : null}
         <Field label="Reason" hint="Saved in the staff audit log.">
           <input

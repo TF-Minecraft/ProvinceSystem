@@ -113,8 +113,8 @@ def test_countdown_cancel_and_duplicate_start_are_safe(controller, monkeypatch):
         def start(self): pass
     monkeypatch.setattr(host.threading, "Thread", NoWorker)
     plan = controller.plan("main", "restart", [])
-    first = controller.start("main", plan["id"], "site-user:1", "test restart", "test backup")
-    assert controller.start("main", plan["id"], "site-user:1", "test restart", "test backup")["id"] == first["id"]
+    first = controller.start("main", plan["id"], "site-user:1", "test restart")
+    assert controller.start("main", plan["id"], "site-user:1", "test restart")["id"] == first["id"]
     with pytest.raises(control.ControlError, match="server_job_active"):
         controller.plan("dev", "restart", [])
     assert controller.cancel("main", first["id"])["phase"] == "cancelled"
@@ -238,7 +238,7 @@ def test_backport_is_skipped(controller):
     assert plan["changes"] == [] and plan["skipped"][0]["reason"] == "not_a_newer_version"
 
 
-def test_main_requires_dev_evidence_backup_and_feature_review(controller, tmp_path, monkeypatch):
+def test_main_requires_dev_evidence_and_feature_review(controller, tmp_path, monkeypatch):
     new = tmp_path / "new.jar"
     sha = jar(new, version="2.0.0")
     release = release_for(controller, sha, server="main")
@@ -247,8 +247,6 @@ def test_main_requires_dev_evidence_backup_and_feature_review(controller, tmp_pa
     monkeypatch.setattr(controller, "_dev_verified", lambda *_: True)
     controller.fetch = lambda release, target: target.write_bytes(new.read_bytes())
     plan = controller.plan("main", "latest", [release])
-    with pytest.raises(control.ControlError, match="backup_required"):
-        controller.start("main", plan["id"], "www:user:1", "update releases")
     job = ready_job(controller, controller._plan(plan["id"]))
     controller.run(controller._plan(plan["id"]))
     assert job["phase"] == "awaiting_review"
@@ -366,7 +364,7 @@ def test_instant_restarts_skip_warnings_but_save_verify_and_stop(controller, mon
         controller.fetch = lambda release, target: target.write_bytes(path.read_bytes())
         monkeypatch.setattr(controller, "_dev_verified", lambda *_: True)
     public = controller.plan(server, mode, releases)
-    result = controller.start(server, public["id"], "www:user:1", "emergency fix" if override else "Dev test", "test backup" if server == "main" else "", override)
+    result = controller.start(server, public["id"], "www:user:1", "emergency fix" if override else "Dev test", override)
     assert result["phase"] == "installing"
     assert result["deadline"] == result["accepted_at"]
     assert result["emergency_override"] is override
@@ -383,16 +381,13 @@ def test_instant_restarts_skip_warnings_but_save_verify_and_stop(controller, mon
 def test_main_default_still_has_five_minute_countdown(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
     plan = controller.plan("main", "restart", [])
-    result = controller.start("main", plan["id"], "www:user:1", "planned restart", "test backup")
+    result = controller.start("main", plan["id"], "www:user:1", "planned restart")
     assert result["phase"] == "countdown" and result["emergency_override"] is False
     assert result["deadline"] - result["accepted_at"] == 300
 
 
-def test_emergency_override_is_main_only_and_requires_a_backup(controller, monkeypatch):
+def test_emergency_override_is_main_only(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    plan = controller.plan("main", "restart", [])
-    with pytest.raises(control.ControlError, match="backup_required"):
-        controller.start("main", plan["id"], "www:user:1", "emergency fix", emergency_override=True)
     dev = controller.plan("dev", "restart", [])
     with pytest.raises(control.ControlError, match="bad_server_action"):
         controller.start("dev", dev["id"], "www:user:1", "Dev test", emergency_override=True)
@@ -402,9 +397,9 @@ def test_emergency_flag_is_strict_audited_and_forwarded(app, database, monkeypat
     calls=[]
     monkeypatch.setattr(control, "request", lambda op, **body: calls.append(body) or {"id": body["plan_id"]})
     _, admin = account(database, "instant-admin", "admin")
-    body = {"id": "c"*32, "reason": "emergency plugin fix", "backup_ref": "prepared backup", "emergency_override": True}
+    body = {"id": "c"*32, "reason": "emergency plugin fix", "emergency_override": True}
     assert client(app, admin).post("/admin/servers/main/start", json=body, headers=ORIGIN).status_code == 200
-    assert calls[-1]["emergency_override"] is True
+    assert calls[-1]["emergency_override"] is True and calls[-1]["backup_ref"] == ""
     assert json.loads(audit_rows(database)[-1]["detail_json"])["emergency_override"] is True
     assert client(app, admin).post("/admin/servers/main/start", json={**body,"emergency_override":"false"}, headers=ORIGIN).status_code == 422
     assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 400
@@ -633,12 +628,275 @@ def test_socket_test_build_list_is_optional_and_checked(controller, monkeypatch)
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
     plan = controller.plan("dev", "restart", [])
     body = {"operation": "start", "server": "dev", "plan_id": plan["id"], "actor": "www:user:1", "reason": "Dev test",
-            "backup_ref": "", "emergency_override": False}
+            "emergency_override": False}
     with pytest.raises(control.ControlError, match="bad_control_request"):
         controller.dispatch({**body, "replace_test_builds": "Core"})
     with pytest.raises(control.ControlError, match="bad_control_request"):
         controller.dispatch({**body, "operation": "cancel", "job_id": plan["id"], "replace_test_builds": []})
     assert controller.dispatch(body)["phase"] == "installing"
+
+
+def test_socket_still_accepts_backup_ref_from_older_websites(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    plan = controller.plan("main", "restart", [])
+    body = {"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+            "reason": "planned restart", "backup_ref": "AMP 16 Oct", "emergency_override": False}
+    assert controller.dispatch(body)["phase"] == "countdown"
+
+
+class FakeAmp:
+    def __init__(self, busy=2, listed=True):
+        self.calls, self.busy, self.listed = [], busy, listed
+        self.title = None
+
+    def call(self, server, method, **body):
+        self.calls.append((server, method, body))
+        if method == "LocalFileBackupPlugin/TakeBackup":
+            self.title = body["Title"]
+            return {"Id": "task-1", "Name": "Creating Backup"}
+        if method == "Core/GetTasks":
+            self.busy -= 1
+            return [{"Id": "task-1"}] if self.busy >= 0 else []
+        if method == "LocalFileBackupPlugin/GetBackups":
+            return [{"Id": "backup-1", "Name": self.title}] if self.listed else []
+        return None
+
+
+def amp_controller(controller, amp):
+    instance = host.Controller(controller.state, controller.roots, console=controller.console, amp=amp)
+    instance.commands = controller.commands
+    return instance
+
+
+def test_main_countdown_takes_an_amp_backup_and_waits_for_it(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    amp = FakeAmp()
+    controller = amp_controller(controller, amp)
+    public = controller.plan("main", "restart", [])
+    assert public["backup"] is True
+    job = controller.start("main", public["id"], "www:user:1", "planned restart")
+    assert job["backup"] == {"title": f"Before restart {public['id'][:8]}", "task": "task-1", "state": "running"}
+    taken = [body for _, method, body in amp.calls if method == "LocalFileBackupPlugin/TakeBackup"]
+    assert taken[0]["Description"] == "www:user:1: planned restart" and taken[0]["Sticky"] is False
+    monkeypatch.setattr(controller.cancelled, "wait", lambda delay: False)
+    controller.run(controller._plan(public["id"]), controller.jobs["main"])
+    job = controller.jobs["main"]
+    assert job["phase"] == "complete"
+    assert job["backup"]["state"] == "done" and job["backup"]["id"] == "backup-1"
+    commands = [c for _, c in controller.commands]
+    assert commands.index("broadcast &7Finishing a backup before the restart.") < commands.index("maintenance on")
+
+
+def test_failed_amp_backup_cancels_before_maintenance(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    controller = amp_controller(controller, FakeAmp(busy=0, listed=False))
+    public = controller.plan("main", "restart", [])
+    controller.start("main", public["id"], "www:user:1", "planned restart")
+    monkeypatch.setattr(controller.cancelled, "wait", lambda delay: False)
+    controller.run(controller._plan(public["id"]), controller.jobs["main"])
+    job = controller.jobs["main"]
+    assert job["phase"] == "failed" and job["error"] == "amp_backup_failed"
+    commands = [c for _, c in controller.commands]
+    assert "maintenance on" not in commands and commands[-1] == "broadcast &eThe server restart has been cancelled."
+
+
+def test_emergency_and_dev_restarts_take_no_amp_backup(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    amp = FakeAmp()
+    controller = amp_controller(controller, amp)
+    assert controller.plan("dev", "restart", [])["backup"] is False
+    public = controller.plan("main", "restart", [])
+    assert controller.start("main", public["id"], "www:user:1", "emergency fix", emergency_override=True)["backup"] is None
+    assert not any(method == "LocalFileBackupPlugin/TakeBackup" for _, method, _ in amp.calls)
+
+
+LOGIN = {"username": "TFWeb", "password": "secret-pass"}
+
+
+def test_console_uses_the_amp_api_with_the_websites_login(controller, monkeypatch):
+    sent = []
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: sent.append((self.username, server, method, body)))
+    monkeypatch.setattr(host.subprocess, "run", lambda *a, **k: pytest.fail("sudo wrapper used"))
+    instance = host.Controller(controller.state, controller.roots)
+    assert instance.amp("main") is None
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    assert plan["backup"] is True
+    assert sent == [("TFWeb", "main", "Core/SendConsoleMessage", {"message": "list"})]
+    first = instance.amp("main")
+    instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    assert instance.amp("main") is first  # the same login keeps its client and sessions
+    instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [],
+                       "amp": {**LOGIN, "password": "changed"}})
+    assert instance.amp("main") is not first and instance.amp("main").password == "changed"
+    assert instance.amp("dev") is None  # a login only counts for the server it was sent for
+
+
+@pytest.mark.parametrize("login", [{"username": "TFWeb"}, {"username": "", "password": "x"},
+                                   {"username": "TFWeb", "password": 5}, "TFWeb:secret", {**LOGIN, "extra": 1}])
+def test_malformed_logins_are_refused(controller, login):
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": [], "amp": login})
+
+
+def test_status_requests_cannot_carry_a_login(controller):
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({"operation": "status", "amp": LOGIN})
+
+
+def test_the_dev_site_cannot_replace_mains_login_and_jobs_keep_theirs(controller, monkeypatch):
+    # Sol: the Dev site's socket replaced the client Main's restart was using.
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: {"Id": "task-1"})
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    main = instance.amp("main")
+    with pytest.raises(control.ControlError, match="server_job_active"):
+        instance.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": [],
+                           "amp": {"username": "TFWeb", "password": "wrong"}})
+    assert instance.amp("main") is main and instance.amp("dev").password == "wrong"
+    # Even a new Main login waits until the running job is done.
+    with pytest.raises(control.ControlError, match="server_job_active"):
+        instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [],
+                           "amp": {"username": "TFWeb", "password": "newer"}})
+    assert instance.amp("main") is main
+
+
+def test_a_finished_restart_lets_go_of_its_login(controller, monkeypatch):
+    # Sol: reopening after review reused the restart's old, possibly stale, login.
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    logins = []
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: logins.append(self.password) or (
+        {"Id": "task-1"} if method == "LocalFileBackupPlugin/TakeBackup" else
+        [] if method == "Core/GetTasks" else
+        [{"Id": "b", "Name": f"Before restart {plan['id'][:8]}"}] if method == "LocalFileBackupPlugin/GetBackups" else None))
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    monkeypatch.setattr(instance.cancelled, "wait", lambda delay: False)
+    instance.run(instance._plan(plan["id"]), instance.jobs["main"])
+    assert instance._job_amp == {}
+    instance.use_login("main", {**LOGIN, "password": "fresh"})
+    assert instance.amp("main").password == "fresh"
+
+
+def test_a_failed_start_keeps_no_login(controller, monkeypatch):
+    def refuse(self, server, method, **body):
+        if method == "LocalFileBackupPlugin/TakeBackup":
+            raise control.ControlError("amp_action_failed")
+    monkeypatch.setattr(host.Amp, "call", refuse)
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    with pytest.raises(control.ControlError, match="amp_action_failed"):
+        instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                           "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    assert instance._job_amp == {}
+
+
+def test_a_cancel_during_the_backup_wait_stays_cancelled(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    amp = FakeAmp(busy=5, listed=False)
+    instance = amp_controller(controller, amp)
+    public = instance.plan("main", "restart", [])
+    instance.start("main", public["id"], "www:user:1", "planned restart")
+    calls = {"n": 0}
+    original = amp.call
+
+    def call(server, method, **body):
+        # Cancel lands between AMP calls; the backup lookup then fails.
+        if method == "Core/GetTasks":
+            calls["n"] += 1
+            if calls["n"] == 2:
+                instance.cancel("main", public["id"])
+        return original(server, method, **body)
+    monkeypatch.setattr(amp, "call", call)
+    monkeypatch.setattr(instance.cancelled, "wait", lambda delay: False)
+    instance.run(instance._plan(public["id"]), instance.jobs["main"])
+    assert instance.jobs["main"]["phase"] == "cancelled"
+    assert "maintenance on" not in [c for _, c in instance.commands]
+
+
+def test_the_login_is_never_written_to_the_state_files(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: {"Id": "task-1"})
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    stored = "".join(p.read_text(errors="replace") for p in controller.state.rglob("*.json"))
+    assert "secret-pass" not in stored and "TFWeb" not in stored
+
+
+def test_the_site_sends_its_amp_login_except_with_status(tmp_path, monkeypatch):
+    import socket as sockets
+    path = tmp_path / "control.sock"
+    received = []
+    server = sockets.socket(sockets.AF_UNIX, sockets.SOCK_STREAM)
+    server.bind(str(path))
+    server.listen()
+
+    def serve():
+        for _ in range(3):
+            conn, _ = server.accept()
+            with conn, conn.makefile("rb") as stream:
+                received.append(json.loads(stream.readline()))
+                conn.sendall(b'{"jobs": []}\n')
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    monkeypatch.setenv("SERVER_CONTROL_SOCKET", str(path))
+    monkeypatch.delenv("SERVER_CONTROL_AMP_USERNAME", raising=False)
+    control.request("plan", server="main")
+    monkeypatch.setenv("SERVER_CONTROL_AMP_USERNAME", "TFWeb")
+    monkeypatch.setenv("SERVER_CONTROL_AMP_PASSWORD", "secret-pass")
+    control.request("plan", server="main")
+    control.request("status")
+    thread.join(5)
+    server.close()
+    assert "amp" not in received[0]
+    assert received[1]["amp"] == LOGIN
+    assert "amp" not in received[2]
+
+
+def test_amp_logs_in_again_when_its_session_expires(monkeypatch):
+    posts = []
+
+    def post(base, method, **body):
+        posts.append((base, method))
+        if method == "Core/Login":
+            return {"success": True, "sessionID": f"s{len(posts)}"}
+        if method == "ADSModule/GetInstances":
+            return [{"AvailableInstances": [{"InstanceName": "TFMCMain01", "Port": 8081}]}]
+        if body["SESSIONID"] == "s3":
+            raise PermissionError(method)
+        return "ok"
+    monkeypatch.setattr(host.Amp, "_post", staticmethod(post))
+    amp = host.Amp("TFWeb", "secret", ads="http://ads")
+    assert amp.call("main", "Core/GetStatus") == "ok"
+    assert [m for _, m in posts].count("Core/Login") == 4
+    assert posts[-1] == ("http://127.0.0.1:8081", "Core/GetStatus")
+
+
+def test_amp_finds_the_instance_again_after_a_connection_failure(monkeypatch):
+    posts = []
+
+    def post(base, method, **body):
+        posts.append(method)
+        if method == "Core/Login":
+            return {"success": True, "sessionID": "s"}
+        if method == "ADSModule/GetInstances":
+            return [{"AvailableInstances": [{"InstanceName": "TFMCMain01", "Port": 8081}]}]
+        if posts.count("Core/GetStatus") == 1:
+            raise control.ControlError("amp_unavailable")
+        return "ok"
+    monkeypatch.setattr(host.Amp, "_post", staticmethod(post))
+    amp = host.Amp("TFWeb", "secret", ads="http://ads")
+    with pytest.raises(control.ControlError, match="amp_unavailable"):
+        amp.call("main", "Core/GetStatus")
+    assert posts.count("Core/GetStatus") == 1 and "main" not in amp.sessions
+    assert amp.call("main", "Core/GetStatus") == "ok"
+    assert posts.count("ADSModule/GetInstances") == 2
 
 
 def test_recheck_after_midnight_reads_the_rotated_startup_log(controller, tmp_path, monkeypatch):
