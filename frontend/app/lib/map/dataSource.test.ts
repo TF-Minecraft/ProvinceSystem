@@ -264,11 +264,12 @@ describe("filterMapModeRegions", () => {
       NO_RGB: { provinces: [1] },
       EMPTY: { rgb: "1,2,3", provinces: [] },
       NOT_ARRAY: { rgb: "1,2,3", provinces: "1" },
+      OCC_ONLY: { rgb: "4,5,6", provinces: [], occupied_held: [2] },
     };
 
-    expect(Object.keys(filterMapModeRegions(raw, "nation"))).toEqual(["OK"]);
+    expect(Object.keys(filterMapModeRegions(raw, "nation")).sort()).toEqual(["OCC_ONLY", "OK"]);
     // Non-nation modes keep everything with an rgb, geometry or not.
-    expect(Object.keys(filterMapModeRegions(raw, "trade")).sort()).toEqual(["EMPTY", "NOT_ARRAY", "OK"]);
+    expect(Object.keys(filterMapModeRegions(raw, "trade")).sort()).toEqual(["EMPTY", "NOT_ARRAY", "OCC_ONLY", "OK"]);
   });
 
   it("returns a null-prototype object", () => {

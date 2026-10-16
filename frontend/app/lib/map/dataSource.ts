@@ -197,9 +197,13 @@ export function filterMapModeRegions(raw: Record<string, any>, mapType: MapMode 
   for (const [id, region] of Object.entries(raw)) {
     // Always require RGB.
     if (typeof region?.rgb !== "string") continue;
-    // Only the nation map additionally demands geometry to paint.
+    // Only the nation map additionally demands geometry to paint. Occupied
+    // land counts: a realm holding nothing but occupation is still on the map.
     if (mapType === "nation") {
-      if (!Array.isArray(region.provinces) || region.provinces.length === 0) {
+      const holdsLand =
+        (Array.isArray(region.provinces) && region.provinces.length > 0) ||
+        (Array.isArray(region.occupied_held) && region.occupied_held.length > 0);
+      if (!holdsLand) {
         continue;
       }
     }

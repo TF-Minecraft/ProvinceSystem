@@ -46,6 +46,12 @@ const markers: MapMarkersResponse = {
 describe("chronicleRegionData", () => {
   it("keeps only realms with a colour and land, like the live map does", () => {
     expect(Object.keys(chronicleRegionData(nationFile)).sort()).toEqual(["suzerain", "vassal"]);
+    // Occupied land alone counts as land, matching the live filter.
+    const withOccupier: RegionRecord = {
+      ...nationFile,
+      occupier: { name: "Occupier", rgb: "7,8,9", provinces: [], occupied_held: [5] },
+    };
+    expect(Object.keys(chronicleRegionData(withOccupier)).sort()).toEqual(["occupier", "suzerain", "vassal"]);
     expect(chronicleRegionData(null)).toEqual({});
   });
 });

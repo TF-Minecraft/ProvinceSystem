@@ -224,7 +224,12 @@ export function chronicleRegionData(nationFile: RegionRecord | null): Record<str
   if (!nationFile) return out;
   for (const [id, region] of Object.entries(nationFile)) {
     if (typeof region?.rgb !== "string") continue;
-    if (!Array.isArray(region.provinces) || region.provinces.length === 0) {
+    // Same eligibility as the live filter in dataSource.ts: occupied land
+    // counts as geometry, so an occupation-only realm stays on the map.
+    const holdsLand =
+      (Array.isArray(region.provinces) && region.provinces.length > 0) ||
+      (Array.isArray(region.occupied_held) && region.occupied_held.length > 0);
+    if (!holdsLand) {
       continue;
     }
     out[id] = region;
