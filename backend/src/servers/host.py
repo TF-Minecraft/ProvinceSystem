@@ -166,8 +166,11 @@ class Amp:
 class Controller:
     def __init__(self, state: Path, roots: dict[str, tuple[Path, Path]], *, console=None, fetch=None, amp=None):
         self.state, self.roots = state, roots
-        # From the website's requests; kept in memory, never written to the state files.
-        self._amp_client, self._amp_login = amp, None
+        # AMP clients from the websites' logins, per server; kept in memory, never
+        # written to the state files. An accepted job keeps the client it started with.
+        self._default_amp = amp
+        self._amp_clients: dict[str, tuple[tuple[str, str], Amp]] = {}
+        self._job_amp: dict[str, Amp] = {}
         self.console = console or self._console
         self.fetch = fetch or download
         self.lock = threading.RLock()
@@ -200,20 +203,26 @@ class Controller:
         save_json(self.state / "jobs.json", self.jobs)
         self.status_json = json.dumps(list(self.jobs.values()))
 
-    def amp(self) -> Amp | None:
-        return self._amp_client
+    def amp(self, server: str) -> Amp | None:
+        job = self.jobs.get(server)
+        if job and job["phase"] in ACTIVE and job["id"] in self._job_amp:
+            return self._job_amp[job["id"]]
+        entry = self._amp_clients.get(server)
+        return entry[1] if entry else self._default_amp
 
-    def use_login(self, login) -> None:
-        """Take the AMP login a website sent with its request; a new one replaces the old."""
+    def use_login(self, server: str, login) -> None:
+        """Take the AMP login a website sent for one server it may control; a new one replaces the old."""
         if not (isinstance(login, dict) and set(login) == {"username", "password"}
                 and all(isinstance(v, str) and 0 < len(v) <= 200 for v in login.values())):
             raise ControlError("bad_control_request", 400)
         key = (login["username"], login["password"])
-        if key != self._amp_login:
-            self._amp_client, self._amp_login = Amp(*key), key
+        with self.lock:
+            entry = self._amp_clients.get(server)
+            if entry is None or entry[0] != key:
+                self._amp_clients[server] = key, Amp(*key)
 
     def _console(self, server: str, command: str):
-        if amp := self.amp():
+        if amp := self.amp(server):
             amp.call(server, "Core/SendConsoleMessage", message=command)
             return
         subprocess.run(["sudo", "-n", "-u", "amp", "/usr/local/sbin/tfmc-server-command",
@@ -222,7 +231,7 @@ class Controller:
 
     def _take_backup(self, server: str, job_id: str, actor: str, reason: str) -> dict:
         title = f"Before restart {job_id[:8]}"
-        task = self.amp().call(server, "LocalFileBackupPlugin/TakeBackup", Title=title,
+        task = self.amp(server).call(server, "LocalFileBackupPlugin/TakeBackup", Title=title,
                                Description=f"{actor}: {reason}"[:500], Sticky=False, Local=True, S3=False,
                                WasCreatedAutomatically=False, DirtyOnly=False, BackupWhileRunning=None)
         if not isinstance(task, dict) or not task.get("Id"):
@@ -234,11 +243,13 @@ class Controller:
         backup = job.get("backup")
         if not backup:
             return True
-        amp = self.amp()
+        amp = self.amp(server)
         if amp is None:
             raise ControlError("amp_unavailable")
         deadline, told = time.monotonic() + BACKUP_WAIT, False
         while any(task.get("Id") == backup["task"] for task in amp.call(server, "Core/GetTasks")):
+            if self.cancelled.is_set():
+                return False
             if not told:
                 self.console(server, "broadcast &7Finishing a backup before the restart.")
                 told = True
@@ -248,6 +259,8 @@ class Controller:
                 return False
         done = next((b for b in amp.call(server, "LocalFileBackupPlugin/GetBackups")
                      if b.get("Name") == backup["title"]), None)
+        if self.cancelled.is_set():
+            return False
         if not done:
             raise ControlError("amp_backup_failed")
         with self.lock:
@@ -375,7 +388,7 @@ class Controller:
                         "baseline": baseline, "changes": changes, "activation": activation, "skipped": skipped,
                         "boot_errors": self._boot_errors(logs, startup["log"]), "failed_at_startup": startup["failed"],
                         "last_backup_at": self._backup_time(server),
-                        "backup": server == "main" and self.amp() is not None}
+                        "backup": server == "main" and self.amp(server) is not None}
                 save_json(folder / "plan.json", plan)
                 return self._public_plan(plan)
             except BaseException:
@@ -488,7 +501,9 @@ class Controller:
             accepted_at = time.time()
             countdown = server == "main" and not emergency_override
             # The backup runs alongside the countdown; an emergency restart skips it.
-            backup = self._take_backup(server, plan_id, actor, reason) if countdown and self.amp() else None
+            if client := self.amp(server):
+                self._job_amp[plan_id] = client
+            backup = self._take_backup(server, plan_id, actor, reason) if countdown and client else None
             job = {"id": plan_id, "server": server, "phase": "countdown" if countdown else "installing",
                    "accepted_at": accepted_at, "deadline": accepted_at + (300 if countdown else 0),
                    "emergency_override": emergency_override,
@@ -581,6 +596,9 @@ class Controller:
                 self._reopen(plan, job)
         except Exception as exc:
             logging.exception("Server operation failed for %s", server)
+            with self.lock:
+                if job["phase"] == "cancelled":
+                    return  # Cancelled meanwhile; players were already told.
             if countdown and not job["maintenance_started"]:
                 # Players were warned; tell them the restart is off.
                 try:
@@ -748,8 +766,6 @@ class Controller:
     def dispatch(self, body: dict) -> dict:
         body = dict(body)
         login = body.pop("amp", None)
-        if login is not None:
-            self.use_login(login)
         operation = body.get("operation")
         allowed = {"status": {"operation"}, "plan": {"operation", "server", "mode", "releases"},
                    "start": {"operation", "server", "plan_id", "actor", "reason", "emergency_override"},
@@ -761,9 +777,14 @@ class Controller:
         if operation not in allowed or set(body) - optional != allowed[operation]:
             raise ControlError("bad_control_request", 400)
         if operation == "status":
+            if login is not None:
+                raise ControlError("bad_control_request", 400)
             return {"jobs": json.loads(self.status_json)}
         server = body["server"]
         self._paths(server)
+        if login is not None:
+            # The socket already checked that this website may control this server.
+            self.use_login(server, login)
         if operation == "plan":
             expected = body.get("expected")
             if "expected" in body and (not isinstance(expected, list) or len(expected) > 300):

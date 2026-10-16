@@ -286,7 +286,8 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
             conn.commit()
         result = server_control.request(operation, server=server,
                                         **{"plan_id" if operation == "start" else "job_id": body.id},
-                                        **({"emergency_override": body.emergency_override} if operation == "start" else {}),
+                                        # backup_ref is unused, but helpers before the AMP backup require the key.
+                                        **({"emergency_override": body.emergency_override, "backup_ref": ""} if operation == "start" else {}),
                                         # Sent only when used, so an older host helper still accepts plain starts.
                                         **({"replace_test_builds": body.replace_test_builds} if body.replace_test_builds else {}),
                                         actor=f"{urllib.parse.urlparse(config.site_url).hostname}:user:{actor['user_id']}", reason=reason)

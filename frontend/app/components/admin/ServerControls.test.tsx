@@ -75,7 +75,7 @@ it("reviews changes and skips, and requires a Main reason before starting", asyn
   expect((within(dialog).getByRole("checkbox", { name: /TLibs/ }) as HTMLInputElement).checked).toBe(true);
   const start = within(dialog).getByRole("button", { name: "Start Main countdown" }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
-  expect(within(dialog).getByText(/fresh backup during the countdown/)).toBeTruthy();
+  expect(within(dialog).getByText(/fresh backup during the countdown.*Last AMP backup: not recorded\./)).toBeTruthy();
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "publish tested cooking" } });
   expect(start.disabled).toBe(false);
   fireEvent.click(start);
