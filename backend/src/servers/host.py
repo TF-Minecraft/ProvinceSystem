@@ -503,7 +503,11 @@ class Controller:
             # The backup runs alongside the countdown; an emergency restart skips it.
             if client := self.amp(server):
                 self._job_amp[plan_id] = client
-            backup = self._take_backup(server, plan_id, actor, reason) if countdown and client else None
+            try:
+                backup = self._take_backup(server, plan_id, actor, reason) if countdown and client else None
+            except Exception:
+                self._job_amp.pop(plan_id, None)
+                raise
             job = {"id": plan_id, "server": server, "phase": "countdown" if countdown else "installing",
                    "accepted_at": accepted_at, "deadline": accepted_at + (300 if countdown else 0),
                    "emergency_override": emergency_override,
@@ -596,16 +600,20 @@ class Controller:
                 self._reopen(plan, job)
         except Exception as exc:
             logging.exception("Server operation failed for %s", server)
+            # One step under the lock, so a cancel can't land between the check and the failure.
             with self.lock:
                 if job["phase"] == "cancelled":
                     return  # Cancelled meanwhile; players were already told.
-            if countdown and not job["maintenance_started"]:
-                # Players were warned; tell them the restart is off.
-                try:
-                    self.console(server, "broadcast &eThe server restart has been cancelled.")
-                except Exception:
-                    logging.exception("Could not announce the failed countdown for %s", server)
-            self._event(job, "failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
+                if countdown and not job["maintenance_started"]:
+                    # Players were warned; tell them the restart is off.
+                    try:
+                        self.console(server, "broadcast &eThe server restart has been cancelled.")
+                    except Exception:
+                        logging.exception("Could not announce the failed countdown for %s", server)
+                self._event(job, "failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
+        finally:
+            # Later actions on this job, such as reopening, use their own request's login.
+            self._job_amp.pop(job["id"], None)
 
     @staticmethod
     def _wait(predicate, timeout: float, code: str):

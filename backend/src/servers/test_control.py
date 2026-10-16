@@ -763,6 +763,38 @@ def test_the_dev_site_cannot_replace_mains_login_and_jobs_keep_theirs(controller
     assert instance.amp("main") is main
 
 
+def test_a_finished_restart_lets_go_of_its_login(controller, monkeypatch):
+    # Sol: reopening after review reused the restart's old, possibly stale, login.
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    logins = []
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: logins.append(self.password) or (
+        {"Id": "task-1"} if method == "LocalFileBackupPlugin/TakeBackup" else
+        [] if method == "Core/GetTasks" else
+        [{"Id": "b", "Name": f"Before restart {plan['id'][:8]}"}] if method == "LocalFileBackupPlugin/GetBackups" else None))
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    monkeypatch.setattr(instance.cancelled, "wait", lambda delay: False)
+    instance.run(instance._plan(plan["id"]), instance.jobs["main"])
+    assert instance._job_amp == {}
+    instance.use_login("main", {**LOGIN, "password": "fresh"})
+    assert instance.amp("main").password == "fresh"
+
+
+def test_a_failed_start_keeps_no_login(controller, monkeypatch):
+    def refuse(self, server, method, **body):
+        if method == "LocalFileBackupPlugin/TakeBackup":
+            raise control.ControlError("amp_action_failed")
+    monkeypatch.setattr(host.Amp, "call", refuse)
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    with pytest.raises(control.ControlError, match="amp_action_failed"):
+        instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                           "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    assert instance._job_amp == {}
+
+
 def test_a_cancel_during_the_backup_wait_stays_cancelled(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
     amp = FakeAmp(busy=5, listed=False)
