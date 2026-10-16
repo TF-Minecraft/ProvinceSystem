@@ -27,6 +27,7 @@ from .users import (
     api_time,
     drop_view_leftovers,
     accounts_configured,
+    require_accounts,
     session_user_in,
 )
 
@@ -40,6 +41,7 @@ def start(token: str | None, player_uuid: str) -> dict:
     A player who has never signed in gets a placeholder account for the view
     (users.placeholder), deleted once its views end.
     """
+    require_accounts()
     actor = target = None
     key = canonical_uuid(player_uuid)
     try:
@@ -144,6 +146,9 @@ def stop(view_token: str | None, staff_token: str | None) -> dict:
     the admin who opened this view. The browser drops a view's cookie once it runs
     out, so without one this ends the admin's lapsed views instead.
     """
+    if not (_valid(view_token) or _valid(staff_token)):
+        return {"ended": False, "restored": False, "staff_expires_at": None, "player_uuid": None}
+    require_accounts()
     with database.transaction(lock=PLACEHOLDERS_LOCK) as conn:
         ended = _end_where(conn, "s.token_hash = %s", (hash_secret(view_token),)) if _valid(view_token) else []
         view = ended[0] if ended else None

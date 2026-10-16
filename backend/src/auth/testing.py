@@ -1,7 +1,12 @@
 """Test helpers for accounts, which live in Postgres. Tests using them take the `postgres` fixture."""
 from __future__ import annotations
 
+from contextlib import contextmanager
+
+import pytest
+
 from src import database
+from src.database import connection
 
 
 def rows(sql: str, params: tuple = ()) -> list[dict]:
@@ -36,3 +41,13 @@ def set_role(discord_id: str, role: str) -> int:
 
 def expire_views() -> None:
     execute("UPDATE user_sessions SET expires_at = '2000-01-01T00:00:00Z' WHERE acting_user_id IS NOT NULL")
+
+
+@contextmanager
+def no_accounts_database():
+    """Inside the block there is no accounts database: DATABASE_URL unset and no pool,
+    as on a preview of the postgres branch. The test database is back afterwards."""
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(connection, "_pool", None)
+        patch.delenv("DATABASE_URL", raising=False)
+        yield

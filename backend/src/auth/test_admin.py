@@ -398,3 +398,31 @@ def test_non_numeric_target_is_audited_without_an_id(app, env):
     assert client(app, root).post("/admin/accounts/abc/sessions/revoke", json={"reason": "abc"},
                                   headers=ORIGIN).status_code == 422
     assert audit_rows(env)[-1]["detail_json"]["target_user_id"] is None
+
+
+def test_staff_writes_without_an_accounts_database_are_503_and_change_nothing(app, env, monkeypatch):
+    from src.servers import control
+
+    monkeypatch.setattr(control, "request", lambda *a, **k: pytest.fail("server helper called"))
+    _, root = account(env, "rory", "root")
+    pat_id, _ = account(env, "pat")
+    c = client(app, root)
+    staff_only = client(app)
+    staff_only.cookies.set("__Host-tfmc_staff_session", root, domain="testserver.local")
+    with testing.no_accounts_database():
+        responses = {
+            "role": change(app, root, pat_id, "mod"),
+            "revoke": c.post(f"/admin/accounts/{pat_id}/sessions/revoke", json={"reason": "Shared login"},
+                             headers=ORIGIN),
+            "server": c.post("/admin/servers/dev/cancel", json={"id": "d" * 32, "reason": "scheduled restart"},
+                             headers=ORIGIN),
+            "view-as": c.post("/admin/players/0f6c5a52-3b7e-4c39-9d1d-2a8f0e7b9c11/view-as", headers=ORIGIN),
+            # The view cookie has lapsed; only the admin's own session is left to restore.
+            "account": staff_only.get("/account"),
+            "stop": staff_only.post("/auth/view-as/stop", headers=ORIGIN),
+        }
+    assert {name: (r.status_code, r.json()["detail"]) for name, r in responses.items()} == {
+        name: (503, "accounts_unavailable") for name in responses}
+    assert role_of(env, pat_id) == "player" and sessions_of(env, pat_id) == 1
+    assert audit_rows(env) == []
+    assert users.session_user(root)["role"] == "root"

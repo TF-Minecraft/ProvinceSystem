@@ -15,7 +15,7 @@ from src.skins import db as sqlite_db
 from src.skins.codes import hash_secret
 
 from . import audit, roles
-from .users import _TOKEN_MAX, PLACEHOLDERS_LOCK, api_time, drop_view_leftovers, session_user_in
+from .users import _TOKEN_MAX, PLACEHOLDERS_LOCK, api_time, drop_view_leftovers, require_accounts, session_user_in
 
 # A user's own sessions and the views they have open as players.
 _REVOKE = "DELETE FROM user_sessions WHERE user_id = %s OR acting_user_id = %s"
@@ -83,6 +83,7 @@ def _lock_accounts(conn, token: str | None, target_id: int) -> None:
 
 def _staff_write(token: str, action: str, target_id: int, reason: str | None, apply) -> dict:
     """Run apply(conn, actor, target, reason) under the shared staff checks."""
+    require_accounts()
     actor = target = None
     clean = None
     try:

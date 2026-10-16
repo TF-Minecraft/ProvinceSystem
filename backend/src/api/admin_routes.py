@@ -261,6 +261,7 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
     actor = None
     config = _config()
     token = request.cookies.get(session_cookie(config))
+    users.require_accounts()
     try:
         # Recheck role and session in the audit entry's transaction, holding both rows until it
         # commits: a demotion or revocation waits for the entry, or lands first and is seen here.

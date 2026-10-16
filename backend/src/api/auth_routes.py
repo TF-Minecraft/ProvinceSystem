@@ -339,6 +339,8 @@ def preview_callback(
     config = _config()
     if not config.via_site:
         raise HTTPException(404, detail="Not Found")
+    # Before the ticket is spent with dev: without an accounts database there is nowhere to sign in.
+    users.require_accounts()
     cookie_state = request.cookies.get(state_cookie(config)) or ""
     status, token = "expired", None
     if (

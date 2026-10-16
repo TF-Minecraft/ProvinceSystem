@@ -191,6 +191,17 @@ def test_preview_callback_reports_a_refused_ticket(preview, monkeypatch):
     assert SESSION not in response.cookies
 
 
+def test_preview_callback_without_an_accounts_database_keeps_the_ticket(preview, monkeypatch):
+    monkeypatch.setattr(preview_sign_in, "fetch_player", lambda *a: pytest.fail("ticket spent"))
+    preview.cookies.set(STATE, "s" * 43, domain="my-branch.tfminecraft.net")
+    with testing.no_accounts_database():
+        response = preview.get(f"/auth/preview/callback?ticket={'t' * 43}&state={'s' * 43}", follow_redirects=False)
+        started = preview.get("/auth/discord/start", follow_redirects=False)
+    assert (response.status_code, response.json()["detail"]) == (503, "accounts_unavailable")
+    assert SESSION not in response.cookies
+    assert (started.status_code, started.json()["detail"]) == (503, "accounts_unavailable")
+
+
 def test_preview_has_no_discord_callback(preview):
     assert preview.get("/auth/discord/callback?code=x&state=y").status_code == 404
 
