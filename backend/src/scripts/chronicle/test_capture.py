@@ -19,7 +19,7 @@ if str(_BACKEND_ROOT) not in sys.path:
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 from src.scripts.chronicle import capture as capture_mod  # noqa: E402
 from src.scripts.chronicle import store  # noqa: E402
 from src.scripts.util import dirs  # noqa: E402
@@ -28,15 +28,8 @@ MAP = "testmap"
 
 
 @pytest.fixture()
-def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Redirect input/defines/output and the SQLite db into tmp_path."""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    with skins_db.connect() as conn:
-        conn.executescript(skins_db.SCHEMA_PATH.read_text(encoding="utf-8"))
-
+def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, postgres):
+    """Redirect input/defines/output into tmp_path; the index is the test Postgres."""
     monkeypatch.setattr(dirs, "INPUT_DIR", str(tmp_path / "input"))
     monkeypatch.setattr(dirs, "DEFINES_DIR", str(tmp_path / "defines"))
     # store binds OUTPUT_DIR by value at import time.
@@ -291,6 +284,21 @@ def test_days_referencing_only_looks_forward(env: Path) -> None:
 
 
 # --- regression: a transient bad source must not block its own retry ---
+
+
+def test_a_later_manifest_that_is_not_an_object_blocks_the_overwrite(env: Path) -> None:
+    """It cannot be shown not to point back here, so it counts as a dependant."""
+    _write_source(env, "nation", {"a": 1})
+    capture_mod.capture_snapshot(MAP, day="2026-01-01")
+    store.upsert_snapshot(MAP, "2026-01-02", "main", 0, 0, None, {"files": {}})
+    with database.connect() as conn:
+        conn.execute(
+            "UPDATE map_chronicle_snapshots SET manifest = %s WHERE map_id = %s AND day = %s",
+            (database.Jsonb([1, 2, 3]), MAP, "2026-01-02"),
+        )
+
+    assert store.days_referencing(MAP, "2026-01-01") == ["2026-01-02"]
+    assert store.get_snapshot(MAP, "2026-01-02")["manifest"] == {}
 
 
 def test_capture_if_due_retries_a_day_whose_source_was_torn(env: Path, monkeypatch) -> None:
@@ -707,11 +715,11 @@ def test_a_capture_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -
     result = wiped[0]
     # The wiped day went to the archive *and* to the backup: fully archived.
     assert result.day_count == 1
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         archived = [
             row["day"]
             for row in conn.execute(
-                "SELECT day FROM map_chronicle_snapshots_archive WHERE map_id = ?",
+                "SELECT day FROM map_chronicle_snapshots_archive WHERE map_id = %s",
                 (MAP,),
             ).fetchall()
         ]

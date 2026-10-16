@@ -14,7 +14,8 @@ import sys
 import time
 from dataclasses import dataclass
 
-from src.skins.db import connect, migrate
+from src import database
+from src.database.migrate import migrate
 
 from ..util.atomic import CrossDeviceError, rename_aside
 from ..util.dirs import validate_map
@@ -36,7 +37,7 @@ _COLUMNS = (
 
 def _row_count(conn, map_name: str) -> int:
     row = conn.execute(
-        f"SELECT COUNT(*) AS n FROM {_LIVE_TABLE} WHERE map_id = ?", (map_name,)
+        f"SELECT COUNT(*) AS n FROM {_LIVE_TABLE} WHERE map_id = %s", (map_name,)
     ).fetchone()
     return int(row["n"] if row is not None else 0)
 
@@ -45,10 +46,10 @@ def _free_archived_at(conn, map_name: str, archived_at: int) -> int:
     """Advance to a second this map has no archive rows for.
 
     The archive is keyed `(map_id, day, archived_at)`, so two wipes within the
-    same second would make `INSERT OR REPLACE` overwrite the first run's rows.
+    same second would make the archive upsert overwrite the first run's rows.
     """
     while conn.execute(
-        f"SELECT 1 FROM {_ARCHIVE_TABLE} WHERE map_id = ? AND archived_at = ? LIMIT 1",
+        f"SELECT 1 FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = %s LIMIT 1",
         (map_name, archived_at),
     ).fetchone():
         archived_at += 1
@@ -62,28 +63,21 @@ def _archive_rows(map_name: str, archived_at: int) -> int:
     ordering note in `wipe_map`.
     """
     columns = ", ".join(_COLUMNS)
-    conn = connect()
-    try:
-        with conn:
-            moved = _row_count(conn, map_name)
-            if moved:
-                conn.execute(
-                    f"INSERT OR REPLACE INTO {_ARCHIVE_TABLE} ({columns}, archived_at) "
-                    f"SELECT {columns}, ? FROM {_LIVE_TABLE} WHERE map_id = ?",
-                    (archived_at, map_name),
-                )
-        return moved
-    finally:
-        conn.close()
+    updates = ", ".join(
+        f"{column} = excluded.{column}" for column in _COLUMNS if column not in ("map_id", "day")
+    )
+    with database.connect() as conn:
+        return conn.execute(
+            f"INSERT INTO {_ARCHIVE_TABLE} ({columns}, archived_at) "
+            f"SELECT {columns}, %s FROM {_LIVE_TABLE} WHERE map_id = %s "
+            f"ON CONFLICT (map_id, day, archived_at) DO UPDATE SET {updates}",
+            (archived_at, map_name),
+        ).rowcount
 
 
 def _delete_rows(map_name: str) -> None:
-    conn = connect()
-    try:
-        with conn:
-            conn.execute(f"DELETE FROM {_LIVE_TABLE} WHERE map_id = ?", (map_name,))
-    finally:
-        conn.close()
+    with database.connect() as conn:
+        conn.execute(f"DELETE FROM {_LIVE_TABLE} WHERE map_id = %s", (map_name,))
 
 
 def _unique_backup_path(root: str, archived_at: int) -> str:
@@ -123,16 +117,12 @@ def _wipe_state(map_name: str) -> tuple[str, bool, int, int]:
     an HTTP caller can reuse the whole flow without argparse or stdout.
     """
     validate_map(map_name)
-    migrate()
 
     root = chronicle_root(map_name)
     has_dir = os.path.isdir(root)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         rows = _row_count(conn, map_name)
         archived_at = _free_archived_at(conn, map_name, int(time.time()))
-    finally:
-        conn.close()
     return root, has_dir, rows, archived_at
 
 
@@ -243,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        migrate()
         return wipe_map(args.map, dry_run=args.dry_run)
     except MapLockBusy:
         parser.error(

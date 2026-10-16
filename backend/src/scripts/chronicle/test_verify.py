@@ -17,7 +17,7 @@ if str(_BACKEND_ROOT) not in sys.path:
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 from src.scripts.chronicle import capture as capture_mod  # noqa: E402
 from src.scripts.chronicle import store, verify  # noqa: E402
 from src.scripts.util import dirs  # noqa: E402
@@ -26,15 +26,8 @@ MAP = "testmap"
 
 
 @pytest.fixture()
-def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, postgres):
     """Same isolation as test_capture: nothing touches the real output/db."""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    with skins_db.connect() as conn:
-        conn.executescript(skins_db.SCHEMA_PATH.read_text(encoding="utf-8"))
-
     monkeypatch.setattr(dirs, "INPUT_DIR", str(tmp_path / "input"))
     monkeypatch.setattr(dirs, "DEFINES_DIR", str(tmp_path / "defines"))
     monkeypatch.setattr(store, "OUTPUT_DIR", str(tmp_path / "output"))

@@ -1,4 +1,4 @@
-"""Canonical daily selection and the SQLite rows it produces."""
+"""Canonical daily selection and the index rows it produces."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import gzip
 import json
 from pathlib import Path
 
+from src import database
 from src.scripts.ledger import ingest, store
 from src.scripts.ledger.schema import normalize_snapshot
 
@@ -221,23 +222,20 @@ def test_a_new_snapshot_still_wins_after_a_memoised_scan(env: Path) -> None:
     ingest.clear_scan_cache()
 
 
-def test_index_snapshot_uses_one_connection_for_all_five_writes(env: Path) -> None:
+def test_index_snapshot_uses_one_connection_for_all_five_writes(env: Path, monkeypatch) -> None:
     """Split across five transactions, a reader between them saw the new day
     row against the previous promotion's faction rows."""
     snapshot = _post(captured_at=f"{DAY}T10:00:00Z", complete=True)
 
     opened = 0
-    original = store.connect
+    original = database.connect
 
-    def counting_connect():
+    def counting_connect(*args, **kwargs):
         nonlocal opened
         opened += 1
-        return original()
+        return original(*args, **kwargs)
 
-    store.connect = counting_connect
-    try:
-        ingest.index_snapshot(MAP, snapshot)
-    finally:
-        store.connect = original
+    monkeypatch.setattr(database, "connect", counting_connect)
+    ingest.index_snapshot(MAP, snapshot)
 
     assert opened == 1

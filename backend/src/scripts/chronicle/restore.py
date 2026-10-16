@@ -15,7 +15,7 @@ import os
 import shutil
 from dataclasses import dataclass
 
-from src.skins.db import connect, migrate
+from src import database
 
 from ..util.dirs import validate_map
 from ..util.maplock import map_lock
@@ -92,14 +92,11 @@ def validate_backup_path(map_id: str, backup_path: str) -> str:
 
 def live_day_count(map_id: str) -> int:
     validate_map(map_id)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         row = conn.execute(
-            f"SELECT COUNT(*) AS n FROM {_LIVE_TABLE} WHERE map_id = ?",
+            f"SELECT COUNT(*) AS n FROM {_LIVE_TABLE} WHERE map_id = %s",
             (map_id,),
         ).fetchone()
-    finally:
-        conn.close()
     return int(row["n"] if row is not None else 0)
 
 
@@ -120,49 +117,34 @@ def has_live_data(map_id: str) -> bool:
 
 
 def _archived_days(map_id: str, archived_at: int) -> list[str]:
-    conn = connect()
-    try:
+    with database.connect() as conn:
         rows = conn.execute(
-            f"SELECT day FROM {_ARCHIVE_TABLE} WHERE map_id = ? AND archived_at = ? "
+            f"SELECT day FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = %s "
             "ORDER BY day ASC",
             (map_id, int(archived_at)),
         ).fetchall()
-    finally:
-        conn.close()
     return [str(row["day"]) for row in rows]
 
 
 def _reinsert_rows(map_id: str, archived_at: int, exclude: set[str]) -> int:
     """Copy archived index rows back into the live table. Idempotent.
 
-    `INSERT OR IGNORE` rather than REPLACE: a day that is live right now (either
-    because a retry already restored it, or because a merge is happening around
-    live data) keeps whatever is on disk for it. `exclude` drops the days whose
-    directories were *not* moved back, so a row never ends up describing bytes
-    that are not the ones it was captured from.
+    `ON CONFLICT DO NOTHING` rather than an upsert: a day that is live right now
+    (either because a retry already restored it, or because a merge is
+    happening around live data) keeps whatever is on disk for it. `exclude`
+    drops the days whose directories were *not* moved back, so a row never ends
+    up describing bytes that are not the ones it was captured from.
     """
     columns = ", ".join(_COLUMNS)
-    conn = connect()
-    try:
-        with conn:
-            rows = conn.execute(
-                f"SELECT {columns} FROM {_ARCHIVE_TABLE} "
-                "WHERE map_id = ? AND archived_at = ? ORDER BY day ASC",
-                (map_id, int(archived_at)),
-            ).fetchall()
-            inserted = 0
-            for row in rows:
-                if str(row["day"]) in exclude:
-                    continue
-                cursor = conn.execute(
-                    f"INSERT OR IGNORE INTO {_LIVE_TABLE} ({columns}) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    tuple(row[name] for name in _COLUMNS),
-                )
-                inserted += cursor.rowcount or 0
-        return inserted
-    finally:
-        conn.close()
+    with database.connect() as conn:
+        return conn.execute(
+            f"INSERT INTO {_LIVE_TABLE} ({columns}) "
+            f"SELECT {columns} FROM {_ARCHIVE_TABLE} "
+            "WHERE map_id = %s AND archived_at = %s AND day <> ALL(%s::text[]) "
+            "ORDER BY day ASC "
+            "ON CONFLICT (map_id, day) DO NOTHING",
+            (map_id, int(archived_at), sorted(exclude)),
+        ).rowcount
 
 
 def restore_wipe(
@@ -194,7 +176,6 @@ def restore_wipe(
     overwrites live snapshot bytes.
     """
     validate_map(map_id)
-    migrate()
 
     # Held for the whole restore, across processes: the directory moves and the
     # row re-insert are separate steps, and `capture_if_due` runs from every

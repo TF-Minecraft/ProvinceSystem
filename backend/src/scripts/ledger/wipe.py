@@ -18,7 +18,8 @@ import os
 import sys
 import time
 
-from src.skins.db import connect, migrate
+from src import database
+from src.database.migrate import migrate
 
 from ..util.atomic import CrossDeviceError, rename_aside
 from ..util.dirs import validate_map
@@ -37,7 +38,7 @@ def _row_counts(conn, map_name: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     for table in _TABLES:
         row = conn.execute(
-            f"SELECT COUNT(*) AS n FROM {table} WHERE map_id = ?", (map_name,)
+            f"SELECT COUNT(*) AS n FROM {table} WHERE map_id = %s", (map_name,)
         ).fetchone()
         counts[table] = int(row["n"] if row is not None else 0)
     return counts
@@ -60,7 +61,6 @@ def _unique_backup_path(root: str, stamp: int) -> str:
 
 def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
     validate_map(map_name)
-    migrate()
     # `promote_day` runs as a BackgroundTask on every upload and only takes the
     # per-(map, day) lock, so without this a promote landing between the move
     # below and the DELETE loop re-creates `daily/{day}.json.gz` in a fresh root
@@ -73,11 +73,8 @@ def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
 def _wipe_locked(map_name: str, *, dry_run: bool) -> int:
     root = ledger_root(map_name)
     has_dir = os.path.isdir(root)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         counts = _row_counts(conn, map_name)
-    finally:
-        conn.close()
     total = sum(counts.values())
 
     if not has_dir and not total:
@@ -112,16 +109,12 @@ def _wipe_locked(map_name: str, *, dry_run: bool) -> int:
     # said: the two disagree whenever anything changed in between, and the
     # printed number is the only record the operator gets.
     deleted = 0
-    conn = connect()
-    try:
-        with conn:
-            for table in _TABLES:
-                cursor = conn.execute(
-                    f"DELETE FROM {table} WHERE map_id = ?", (map_name,)
-                )
-                deleted += cursor.rowcount or 0
-    finally:
-        conn.close()
+    with database.connect() as conn:
+        for table in _TABLES:
+            cursor = conn.execute(
+                f"DELETE FROM {table} WHERE map_id = %s", (map_name,)
+            )
+            deleted += cursor.rowcount or 0
     print(f"Deleted {deleted} index row(s) for map '{map_name}'.")
 
     return 0
@@ -148,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        migrate()
         return wipe_map(args.map, dry_run=args.dry_run)
     except MapLockBusy:
         parser.error(

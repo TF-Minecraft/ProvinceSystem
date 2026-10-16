@@ -1,16 +1,15 @@
-"""Chronicle storage layout + SQLite index for daily map snapshots."""
+"""Chronicle storage layout + Postgres index for daily map snapshots."""
 
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import re
 from datetime import datetime, timezone
 
 from src.api.map_registry import get_map_entry
 from src.skins.codes import CodeError, normalize_realm_id
-from src.skins.db import connect
+from src import database
 
 from ..util.dirs import OUTPUT_DIR, defines_file, validate_map
 
@@ -125,25 +124,26 @@ def realm_for_map(map_name: str) -> str:
         return _DEFAULT_REALM_ID
 
 
+def _manifest(value) -> dict:
+    """The stored manifest, or {} when it is not an object.
+
+    `manifest` is jsonb, so it arrives parsed. A row whose manifest is a list
+    (or a bare string/number) would otherwise reach callers as
+    `manifest["files"]` -> AttributeError, i.e. a 500 on a read route.
+    """
+    return value if isinstance(value, dict) else {}
+
+
 def _snapshot_row(conn, map_id: str, day: str) -> dict | None:
     """Read one indexed snapshot on a caller-owned connection."""
     row = conn.execute(
         "SELECT map_id, day, realm_id, captured_at, bytes, "
         "geometry_version, manifest FROM map_chronicle_snapshots "
-        "WHERE map_id = ? AND day = ?",
+        "WHERE map_id = %s AND day = %s",
         (map_id, day),
     ).fetchone()
     if row is None:
         return None
-    try:
-        manifest = json.loads(row["manifest"])
-    except (TypeError, ValueError):
-        manifest = {}
-    if not isinstance(manifest, dict):
-        # A row whose manifest parses to a list (or a bare string/number) would
-        # otherwise reach callers as `manifest["files"]` -> AttributeError, i.e.
-        # a 500 on a read route. Same degrade-to-empty rule as list_day_rows.
-        manifest = {}
     return {
         "map_id": row["map_id"],
         "day": row["day"],
@@ -151,7 +151,7 @@ def _snapshot_row(conn, map_id: str, day: str) -> dict | None:
         "captured_at": row["captured_at"],
         "bytes": row["bytes"],
         "geometry_version": row["geometry_version"],
-        "manifest": manifest,
+        "manifest": _manifest(row["manifest"]),
     }
 
 
@@ -167,118 +167,92 @@ def upsert_snapshot(
     validate_map(map_id)
     if not is_valid_day(day):
         raise ValueError("Invalid chronicle day")
-    conn = connect()
-    try:
-        with conn:
-            conn.execute(
-                """
-                INSERT INTO map_chronicle_snapshots
-                    (map_id, day, realm_id, captured_at, bytes,
-                     geometry_version, manifest)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(map_id, day) DO UPDATE SET
-                    realm_id = excluded.realm_id,
-                    captured_at = excluded.captured_at,
-                    bytes = excluded.bytes,
-                    geometry_version = excluded.geometry_version,
-                    manifest = excluded.manifest
-                """,
-                (
-                    map_id,
-                    day,
-                    realm_id,
-                    int(captured_at),
-                    int(byte_count),
-                    geometry_version,
-                    json.dumps(manifest, ensure_ascii=False),
-                ),
-            )
-    finally:
-        conn.close()
+    with database.connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO map_chronicle_snapshots
+                (map_id, day, realm_id, captured_at, bytes,
+                 geometry_version, manifest)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (map_id, day) DO UPDATE SET
+                realm_id = excluded.realm_id,
+                captured_at = excluded.captured_at,
+                bytes = excluded.bytes,
+                geometry_version = excluded.geometry_version,
+                manifest = excluded.manifest
+            """,
+            (
+                map_id,
+                day,
+                realm_id,
+                int(captured_at),
+                int(byte_count),
+                geometry_version,
+                database.Jsonb(manifest),
+            ),
+        )
 
 
 def latest_day(map_id: str) -> str | None:
     validate_map(map_id)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT day FROM map_chronicle_snapshots WHERE map_id = ? "
+            "SELECT day FROM map_chronicle_snapshots WHERE map_id = %s "
             "ORDER BY day DESC LIMIT 1",
             (map_id,),
         ).fetchone()
-        return row["day"] if row else None
-    finally:
-        conn.close()
+    return row["day"] if row else None
 
 
 def list_days(map_id: str) -> list[str]:
     validate_map(map_id)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         rows = conn.execute(
-            "SELECT day FROM map_chronicle_snapshots WHERE map_id = ? "
+            "SELECT day FROM map_chronicle_snapshots WHERE map_id = %s "
             "ORDER BY day ASC",
             (map_id,),
         ).fetchall()
-        return [row["day"] for row in rows]
-    finally:
-        conn.close()
+    return [row["day"] for row in rows]
 
 
 def list_day_rows(map_id: str) -> list[tuple[str, dict, str | None]]:
     """Every indexed day with its manifest and stored geometry version.
 
-    Oldest first — one connect, one ordered SELECT. See list_day_manifests for
-    why the index route must not go back to the database per day; the stored
-    `geometry_version` rides along in the same row so the index can compare it
-    against the live geometry without a second pass.
+    Oldest first — one connection, one ordered SELECT. See list_day_manifests
+    for why the index route must not go back to the database per day; the
+    stored `geometry_version` rides along in the same row so the index can
+    compare it against the live geometry without a second pass.
 
-    A manifest that will not parse (or parses to something that is not an
-    object, e.g. a list) degrades to {} rather than raising: an unreadable row
-    must not take down the index for every other day. The geometry version is
-    handed back exactly as stored — including None and including a non-string
-    from a bad row — so callers can decide what "unknown" means.
+    A manifest that is not an object (e.g. a list) degrades to {} rather than
+    raising: an unreadable row must not take down the index for every other
+    day. The geometry version is handed back exactly as stored — including None
+    — so callers can decide what "unknown" means.
     """
     validate_map(map_id)
-    conn = connect()
-    try:
+    with database.connect() as conn:
         rows = conn.execute(
             "SELECT day, manifest, geometry_version FROM map_chronicle_snapshots "
-            "WHERE map_id = ? ORDER BY day ASC",
+            "WHERE map_id = %s ORDER BY day ASC",
             (map_id,),
         ).fetchall()
-    finally:
-        conn.close()
-
-    out: list[tuple[str, dict, str | None]] = []
-    for row in rows:
-        try:
-            manifest = json.loads(row["manifest"])
-        except (TypeError, ValueError):
-            manifest = {}
-        out.append(
-            (
-                row["day"],
-                manifest if isinstance(manifest, dict) else {},
-                row["geometry_version"],
-            )
-        )
-    return out
+    return [
+        (row["day"], _manifest(row["manifest"]), row["geometry_version"])
+        for row in rows
+    ]
 
 
 def list_day_manifests(map_id: str) -> list[tuple[str, dict]]:
-    """Every indexed day with its manifest, oldest first — one query, one connect.
+    """Every indexed day with its manifest, oldest first — one query, one connection.
 
     The index route needs a field out of each day's manifest, which it used to
-    get with a get_snapshot per day. Each of those is a fresh sqlite3.connect
-    plus its PRAGMA, so the cost scaled with the length of history: two years of
-    captures meant 730 connections per index request, all of it on one thread
-    before the ETag was even computed. The rows already arrive in one ordered
-    SELECT for list_days, so the manifest can ride along in the same one.
+    get with a get_snapshot per day, each on its own connection, so the cost
+    scaled with the length of history: two years of captures meant 730
+    connections per index request, all of it on one thread before the ETag was
+    even computed. The rows already arrive in one ordered SELECT for list_days,
+    so the manifest can ride along in the same one.
 
-    A manifest that will not parse (or parses to something that is not an
-    object) degrades to {} rather than raising: an unreadable row must not take
-    down the index for every other day.
+    A manifest that is not an object degrades to {} rather than raising: an
+    unreadable row must not take down the index for every other day.
     """
     return [(day, manifest) for day, manifest, _ in list_day_rows(map_id)]
 
@@ -287,11 +261,8 @@ def get_snapshot(map_id: str, day: str) -> dict | None:
     validate_map(map_id)
     if not is_valid_day(day):
         return None
-    conn = connect()
-    try:
+    with database.connect() as conn:
         return _snapshot_row(conn, map_id, day)
-    finally:
-        conn.close()
 
 
 def previous_snapshot(map_id: str, day: str) -> dict | None:
@@ -299,16 +270,13 @@ def previous_snapshot(map_id: str, day: str) -> dict | None:
     validate_map(map_id)
     if not is_valid_day(day):
         raise ValueError("Invalid chronicle day")
-    conn = connect()
-    try:
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT day FROM map_chronicle_snapshots "
-            "WHERE map_id = ? AND day < ? ORDER BY day DESC LIMIT 1",
+            "WHERE map_id = %s AND day < %s ORDER BY day DESC LIMIT 1",
             (map_id, day),
         ).fetchone()
         return _snapshot_row(conn, map_id, row["day"]) if row else None
-    finally:
-        conn.close()
 
 
 def days_referencing(map_id: str, day: str) -> list[str]:
@@ -323,27 +291,23 @@ def days_referencing(map_id: str, day: str) -> list[str]:
     validate_map(map_id)
     if not is_valid_day(day):
         raise ValueError("Invalid chronicle day")
-    conn = connect()
-    try:
+    with database.connect() as conn:
         rows = conn.execute(
             "SELECT day, manifest FROM map_chronicle_snapshots "
-            "WHERE map_id = ? AND day > ? ORDER BY day ASC",
+            "WHERE map_id = %s AND day > %s ORDER BY day ASC",
             (map_id, day),
         ).fetchall()
-    finally:
-        conn.close()
 
     referencing: list[str] = []
     for row in rows:
-        try:
-            manifest = json.loads(row["manifest"])
-        except (TypeError, ValueError):
-            # An unreadable manifest cannot be shown to point here, but it also
-            # cannot be shown not to — treat it as a blocker, not as absent.
+        manifest = row["manifest"]
+        if not isinstance(manifest, dict):
+            # A manifest that is not an object cannot be shown to point here,
+            # but it also cannot be shown not to — treat it as a blocker.
             referencing.append(row["day"])
             continue
         files = manifest.get("files") or {}
-        if any(
+        if not isinstance(files, dict) or any(
             isinstance(entry, dict) and entry.get("same_as") == day
             for entry in files.values()
         ):
@@ -357,8 +321,7 @@ def resolve_stored_file(map_name: str, day: str, name: str) -> str | None:
     if name not in CHRONICLE_FILES or not is_valid_day(day):
         return None
 
-    conn = connect()
-    try:
+    with database.connect() as conn:
         seen: set[str] = set()
         current = day
         for _ in range(_MAX_SAME_AS_HOPS):
@@ -383,5 +346,3 @@ def resolve_stored_file(map_name: str, day: str, name: str) -> str | None:
             path = stored_file_path(map_name, current, name)
             return path if os.path.exists(path) else None
         return None
-    finally:
-        conn.close()

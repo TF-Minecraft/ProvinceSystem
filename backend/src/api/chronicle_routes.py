@@ -165,7 +165,7 @@ def _incomplete_days(day_manifests: list[tuple[str, dict]]) -> list[dict]:
 
     Takes the rows the caller already fetched rather than looking each day up
     again: the manifest lives in the index row, and a get_snapshot per day was a
-    fresh SQLite connect per day of history on every index request.
+    database connection per day of history on every index request.
     """
     out: list[dict] = []
     for day, manifest in day_manifests:
@@ -225,8 +225,8 @@ def get_chronicle_index(
     cached, since a stale copy silently hides newly captured days. The ETag
     still turns an unchanged index into a bodiless 304.
 
-    Declared `def`, not `async def`: every line below is blocking - SQLite and a
-    file stat - and an `async def` handler runs on the event loop itself, so one
+    Declared `def`, not `async def`: every line below is blocking - database
+    reads and a file stat - and an `async def` handler runs on the event loop itself, so one
     slow index request stalls every other connection on the box. Starlette runs
     a sync handler in its threadpool instead.
     """
@@ -394,7 +394,7 @@ def get_chronicle_markers(
     That is accepted — snapshotting images is out of scope.
 
     Sync body, so `def` rather than `async def` - see get_chronicle_index. This
-    is the heaviest of the three: three SQLite connects, two gunzip+parse passes
+    is the heaviest of the three: three database reads, two gunzip+parse passes
     and the centroid load, which a timelapse build issues once per day.
     """
     entry = ensure_map_access(map_name, authorization)

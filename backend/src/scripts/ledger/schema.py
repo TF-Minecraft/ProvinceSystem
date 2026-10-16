@@ -50,8 +50,8 @@ MAX_NESTING_DEPTH = 32
 MIN_CAPTURED_AT = datetime(2020, 1, 1, tzinfo=timezone.utc)
 MAX_CAPTURED_AT_SKEW_SECONDS = 24 * 60 * 60
 
-# SQLite stores integers as signed 64-bit; anything outside this raises
-# OverflowError deep inside `index_snapshot`, which the background promotion
+# The index's integer columns are bigint; anything outside this range fails
+# deep inside `index_snapshot`, which the background promotion
 # swallows *after* the POST answered 200 — leaving the day permanently and
 # silently unindexed. Out-of-range values are dropped here instead, exactly as
 # non-finite floats are.

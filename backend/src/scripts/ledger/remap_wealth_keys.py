@@ -12,8 +12,6 @@ import argparse
 import os
 import sys
 
-from src.skins.db import migrate
-
 from ..util.atomic import _write_atomic
 from ..util.dirs import validate_map
 from ..util.maplock import MapLockBusy, map_lock
@@ -39,7 +37,6 @@ def _daily_days(map_name: str) -> list[str]:
 
 def remap_map(map_name: str, *, dry_run: bool = False) -> int:
     validate_map(map_name)
-    migrate()
 
     days = _daily_days(map_name)
     if not days:
