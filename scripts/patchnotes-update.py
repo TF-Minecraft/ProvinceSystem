@@ -22,6 +22,7 @@ import signal
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -73,8 +74,13 @@ def check_commit(commit: str):
 
 def check_pinned(commit: str):
     for name, path in PINNED.items():
-        data = get(f"https://raw.githubusercontent.com/{REPO}/{commit}/{name}")
-        if not path.is_file() or path.read_bytes() != data:
+        try:
+            data = get(f"https://raw.githubusercontent.com/{REPO}/{commit}/{name}")
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            data = None
+        if data is None or not path.is_file() or path.read_bytes() != data:
             raise Refused(f"{name} changed; install {commit[:7]} by hand as root.")
 
 
@@ -143,10 +149,11 @@ def worker_state() -> tuple[str, str]:
 
 def worker_up() -> bool:
     """Restart the worker; it must stay active with one process for STABLE seconds."""
-    subprocess.run(["systemctl", "restart", WORKER], timeout=60, check=False)
+    subprocess.run(["systemctl", "restart", WORKER], timeout=120, check=False)
     first = None
-    for _ in range(STABLE // 2):
-        time.sleep(2)
+    for poll in range(STABLE // 2 + 1):
+        if poll:
+            time.sleep(2)
         state, pid = worker_state()
         if state != "active" or pid in ("", "0") or first not in (None, pid):
             return False
@@ -168,19 +175,29 @@ def log(line: str):
         handle.write(time.strftime("%Y-%m-%dT%H:%M:%SZ ", time.gmtime()) + f"uid={os.getenv('SUDO_UID', '0')} {line}\n")
 
 
+def checked_up() -> bool:
+    try:
+        return worker_up()
+    except BaseException:  # A systemctl timeout counts as a failed start.
+        return False
+
+
 def switch(commit: str, previous: str) -> str:
     point_at(commit)
-    if worker_up():
+    if checked_up():
         prune()
         return f"Installed {commit[:7]} (was {previous[:7] or 'nothing'}). The rewrite worker is running."
-    if previous:
-        point_at(previous)
-        state = "the previous copy is running again" if worker_up() else "the previous copy did not start either; check journalctl"
-    else:
-        CURRENT.unlink()
-        subprocess.run(["systemctl", "stop", WORKER], timeout=60, check=False)
-        state = "there was no previous copy, so the worker is stopped"
-    shutil.rmtree(ROOT / commit, ignore_errors=True)
+    try:
+        if previous:
+            point_at(previous)
+            state = "the previous copy is running again" if checked_up() else "the previous copy did not start either; check journalctl"
+        else:
+            # Stop first, so Restart=always never loops on a missing copy.
+            subprocess.run(["systemctl", "stop", WORKER], timeout=120, check=False)
+            CURRENT.unlink(missing_ok=True)
+            state = "there was no previous copy, so the worker is stopped"
+    finally:
+        shutil.rmtree(ROOT / commit, ignore_errors=True)
     raise Refused(f"The rewrite worker did not stay up on {commit[:7]}, and {state}.")
 
 

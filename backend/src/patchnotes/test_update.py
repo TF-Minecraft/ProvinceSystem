@@ -41,9 +41,13 @@ def host(tmp_path, monkeypatch):
         return files
 
     state = SimpleNamespace(commits={OLD: tree("old"), NEW: tree("new")}, on_main={OLD, NEW}, build=True,
-                            extra=[], up={OLD: True, NEW: True}, flaky=set(), pid=100, calls=[])
+                            extra=[], up={OLD: True, NEW: True}, flaky=set(), pid=100, calls=[], hang=set())
 
     def get(url):
+        if "/scripts/" in url:
+            commit, name = url.split(f"{updater.REPO}/", 1)[1].split("/", 1)
+            if name not in state.commits[commit]:
+                raise updater.urllib.error.HTTPError(url, 404, "Not Found", {}, None)
         if url.endswith("/branches/main"):
             return json.dumps({"commit": {"sha": "d" * 40}}).encode()
         if "/compare/" in url:
@@ -62,6 +66,10 @@ def host(tmp_path, monkeypatch):
     def run(args, **_):
         state.calls.append(args[:2])
         running = updater.installed_commit() if updater.CURRENT.is_symlink() else ""
+        if args[:2] == ["systemctl", "restart"]:
+            state.pid += 1
+            if running in state.hang:
+                raise updater.subprocess.TimeoutExpired(args, 120)
         if args[:2] == ["systemctl", "show"]:
             if running in state.flaky:
                 state.pid += 1  # A crash loop: active, but a new process each time.
@@ -103,7 +111,8 @@ def test_same_commit_is_left_alone(host):
     assert restarts(host) == 1
 
 
-@pytest.mark.parametrize("problem", ["off_main", "no_build", "broken", "missing", "subfolder", "data_file", "pinned"])
+@pytest.mark.parametrize("problem", ["off_main", "no_build", "broken", "missing", "subfolder", "data_file", "pinned",
+                                     "pinned_absent", "pinned_not_installed"])
 def test_refuses_before_touching_the_install(host, problem):
     updater.main([OLD])
     new = host.commits[NEW]
@@ -119,8 +128,12 @@ def test_refuses_before_touching_the_install(host, problem):
         host.extra.append({"name": "rules", "type": "dir"})
     elif problem == "data_file":
         new["rules.yml"] = b"a: 1\n"
-    else:
+    elif problem == "pinned":
         new["scripts/tfmc-patchnotes-watch.service"] = b"changed"
+    elif problem == "pinned_absent":
+        del new["scripts/tfmc-patchnotes-watch.service"]
+    else:
+        updater.PINNED["scripts/tfmc-patchnotes-weekly.timer"].unlink()
     assert updater.main([NEW]) == 1
     assert updater.installed_commit() == OLD
     assert not (host.root / NEW).exists()
@@ -128,13 +141,15 @@ def test_refuses_before_touching_the_install(host, problem):
     assert "refused" in updater.LOG.read_text()
 
 
-@pytest.mark.parametrize("failure", ["down", "crash_loop"])
+@pytest.mark.parametrize("failure", ["down", "crash_loop", "restart_hangs"])
 def test_worker_that_will_not_stay_up_is_rolled_back(host, failure, capsys):
     updater.main([OLD])
     if failure == "down":
         host.up[NEW] = False
-    else:
+    elif failure == "crash_loop":
         host.flaky.add(NEW)
+    else:
+        host.hang.add(NEW)
     assert updater.main([NEW]) == 1
     assert updater.installed_commit() == OLD
     assert tag(host) == "TAG = 'old'\n"
@@ -146,6 +161,7 @@ def test_first_install_that_fails_stops_the_worker(host, capsys):
     host.up[OLD] = False
     assert updater.main([OLD]) == 1
     assert not updater.CURRENT.is_symlink()
+    assert not (host.root / OLD).exists()
     assert ["systemctl", "stop"] in host.calls
     assert "worker is stopped" in capsys.readouterr().err
 
