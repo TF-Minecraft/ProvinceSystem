@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import sqlite3
@@ -176,13 +177,13 @@ class FakeCursor:
 class FakeConnection:
     def __init__(self, log):
         self.log, self.read_only = log, None
-        self.pgconn = SimpleNamespace(prepare=self.prepare)
 
-    def prepare(self, name, sql):
-        self.log.append(f"PARSE {sql.decode()}")
-        return SimpleNamespace(status=studio.pq.ExecStatus.COMMAND_OK, error_message=b"")
+    @contextlib.contextmanager
+    def pipeline(self):
+        self.log.append("PIPELINE")
+        yield
 
-    def execute(self, sql):
+    def execute(self, sql, prepare=None):
         return FakeCursor(self.log, [("case", "secret")]).execute(sql)
 
     def cursor(self, name=None):
@@ -198,7 +199,7 @@ class FakeConnection:
         pass
 
 
-def test_postgres_reads_use_a_read_only_server_cursor_and_edits_are_parsed_first(monkeypatch):
+def test_postgres_reads_use_a_read_only_server_cursor_and_edits_a_pipeline(monkeypatch):
     log, connections = [], []
 
     def connect(dsn, **_):
@@ -214,8 +215,7 @@ def test_postgres_reads_use_a_read_only_server_cursor_and_edits_are_parsed_first
     log.clear()
     studio.run("supabase", "UPDATE precedent_cases SET title = 'x'", write=True)
     assert connections[1].read_only is False
-    assert log == ["SET LOCAL statement_timeout = '10s'", "PARSE UPDATE precedent_cases SET title = 'x'",
-                   "UPDATE precedent_cases SET title = 'x'", "COMMIT"]
+    assert log == ["SET LOCAL statement_timeout = '10s'", "PIPELINE", "UPDATE precedent_cases SET title = 'x'", "COMMIT"]
 
 
 # Set STUDIO_TEST_POSTGRES to a throwaway database (it creates and drops a table) to run these.
@@ -307,6 +307,17 @@ def test_sqlite_edits_cannot_plant_triggers_or_unlock_the_schema(app, env):  # n
         assert conn.execute("SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'forge'").fetchone()[0] == 0
     # Schema pragmas that only describe still work in reads.
     assert query(c, "PRAGMA table_info(users)").status_code == 200
+
+
+def test_edits_cannot_touch_the_autoincrement_counters(app, env):  # noqa: F811
+    c = client(app, account(env, "rory", "root")[1])
+    # Sol: a maxed-out counter makes every later audit insert fail.
+    refused = query(c, "UPDATE sqlite_sequence SET seq = 9223372036854775807 WHERE name = 'admin_audit'", write=True)
+    assert refused.status_code == 403
+    assert query(c, "SELECT name FROM sqlite_sequence WHERE name = 'admin_audit'").status_code == 200
+    # Ordinary autoincrement inserts still update the counter.
+    assert query(c, "CREATE TABLE studio_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, v TEXT)", write=True).status_code == 200
+    assert query(c, "INSERT INTO studio_tmp (v) VALUES ('a')", write=True).json()["changes"] == 1
 
 
 def test_edits_cannot_index_the_audit_log(app, env):  # noqa: F811

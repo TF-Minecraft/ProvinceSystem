@@ -28,7 +28,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 import psycopg
-from psycopg import pq
 
 from src.coreprotect import reader as coreprotect
 from src.skins import db as site_db
@@ -216,6 +215,11 @@ def _authorizer(write: bool):
             first == "writable_schema" or (second is not None and first not in INFO_PRAGMAS)
         ):
             return sqlite3.SQLITE_DENY
+        if write and first == "sqlite_sequence" and action in (
+            sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE,
+        ):
+            # A maxed-out counter would make every later audit insert fail.
+            return sqlite3.SQLITE_DENY
         if write and PROTECTED in (first, second) and action in (
             sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE, sqlite3.SQLITE_DELETE, sqlite3.SQLITE_DROP_TABLE,
             sqlite3.SQLITE_ALTER_TABLE, sqlite3.SQLITE_DROP_TRIGGER, sqlite3.SQLITE_CREATE_TRIGGER,
@@ -296,20 +300,18 @@ def _coreprotect(sql: str) -> Result:
 def _postgres(sql: str, *, write: bool = False) -> Result:
     started = time.monotonic()
     try:
-        conn = psycopg.connect(os.environ["SUPABASE_DB_URL"].strip(), connect_timeout=5)
+        # UTF-8 so the text Postgres parses is the text _check() inspected.
+        conn = psycopg.connect(os.environ["SUPABASE_DB_URL"].strip(), connect_timeout=5, client_encoding="utf8")
     except (KeyError, psycopg.OperationalError):
         raise StudioError("database_unavailable", 503) from None
     try:
         conn.read_only = not write
         conn.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
         if write:
-            # Postgres parses the text as one unnamed statement first, refusing several
-            # commands, and then runs exactly that statement.
-            parsed = conn.pgconn.prepare(b"", sql.encode())
-            if parsed.status != pq.ExecStatus.COMMAND_OK:
-                message = (parsed.error_message or b"").decode("utf-8", "replace")
-                raise StudioError("sql_error", 400, re.sub(r"^ERROR:\s*", "", message.strip()))
-            cursor = conn.execute(sql)
+            # Pipeline mode sends the edit through the extended protocol as one unnamed
+            # statement, so Postgres refuses several commands and keeps no prepared statement.
+            with conn.pipeline():
+                cursor = conn.execute(sql, prepare=False)
             columns = [d.name for d in cursor.description or ()]
             rows = cursor.fetchmany(MAX_ROWS + 1) if cursor.description else []
             changes = cursor.rowcount
