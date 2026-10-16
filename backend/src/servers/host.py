@@ -2,12 +2,14 @@
 
 The Unix socket only accepts plans, countdowns, cancellation and reopening.
 Console input and paths are fixed here, never supplied by website callers.
-With an AMP login file the helper uses the AMP API for console input and a
-fresh backup during Main's countdown; without it, console input goes through
-the root-owned sudo wrapper.
+With an AMP login file the helper does everything through the AMP API: console
+input, a fresh backup during Main's countdown, and plugin and log files, which it
+reads from a private mirror under its state directory. Without the file it uses
+the root-owned sudo wrapper and the bind-mounted instance folders.
 """
 from __future__ import annotations
 
+import base64
 import fcntl
 import hashlib
 import json
@@ -37,6 +39,7 @@ SHA = re.compile(r"^[0-9a-f]{64}$")
 AMP_LOGIN = Path(os.getenv("SERVER_CONTROL_AMP_LOGIN", "/etc/tfmc-server-control/amp-login.json"))
 AMP_ADS = os.getenv("SERVER_CONTROL_AMP_URL", "http://127.0.0.1:8080")
 BACKUP_WAIT = 1200
+CHUNK = 4 << 20
 
 
 def numeric_version(value: str) -> tuple[int, ...] | None:
@@ -85,6 +88,21 @@ def digest(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             sha.update(chunk)
     return sha.hexdigest()
+
+
+def amp_time(value: str) -> float:
+    """AMP's UTC timestamps carry seven fractional digits, which fromisoformat rejects."""
+    match = re.match(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?", value or "")
+    if not match:
+        raise ControlError("amp_unavailable")
+    whole = datetime.fromisoformat(match[1]).replace(tzinfo=timezone.utc).timestamp()
+    return whole + float("0." + (match[2] or "0"))
+
+
+def write_new(path: Path, data: bytes):
+    temporary = path.with_name(".sync-" + path.name)
+    temporary.write_bytes(data)
+    temporary.replace(path)
 
 
 def download(release: dict, target: Path):
@@ -170,6 +188,7 @@ class Controller:
         self._amp_client, self._amp_key = amp, None
         self.console = console or self._console
         self.fetch = fetch or download
+        self._md5: dict[Path, str] = {}
         self.lock = threading.RLock()
         self.cancelled = threading.Event()
         self.worker = None
@@ -260,13 +279,122 @@ class Controller:
             self._save()
         return True
 
-    def _paths(self, server: str) -> tuple[Path, Path]:
+    def _paths(self, server: str, *, jars: bool = True, logs: bool = True) -> tuple[Path, Path]:
         if server not in INSTANCES:
             raise ControlError("bad_server", 400)
-        plugins, logs = self.roots[server]
-        if not plugins.is_dir() or not logs.is_dir():
+        if amp := self.amp():
+            return self._mirror(amp, server, jars, logs)
+        plugins, log_dir = self.roots[server]
+        if not plugins.is_dir() or not log_dir.is_dir():
             raise ControlError("server_files_unavailable", 503)
-        return plugins, logs
+        return plugins, log_dir
+
+    # The mirror holds copies of the files the checks read: plugin jars, the
+    # Maintenance config and recent logs. Its latest.log keeps one inode while
+    # the server's file only grows, so a new log still looks like a new file.
+
+    def _mirror(self, amp: Amp, server: str, jars: bool, logs: bool) -> tuple[Path, Path]:
+        root = self.state / "mirror" / server
+        plugins, log_dir = root / "plugins", root / "logs"
+        for folder in (plugins / "update", plugins / "Maintenance", log_dir):
+            folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+        config = "plugins/Maintenance/config.yml"
+        if not self._amp_size(amp, server, config):
+            raise ControlError("maintenance_unavailable")
+        (plugins / "Maintenance" / "config.yml").write_bytes(self._amp_read(amp, server, config))
+        if jars:
+            self._mirror_jars(amp, server, "plugins", plugins)
+            self._mirror_jars(amp, server, "plugins/update", plugins / "update")
+        if logs:
+            self._mirror_logs(amp, server, log_dir)
+        return plugins, log_dir
+
+    @staticmethod
+    def _amp_listing(amp: Amp, server: str, folder: str) -> dict[str, dict]:
+        result = amp.call(server, "FileManagerPlugin/GetDirectoryListing", Dir=folder)
+        # A missing folder, such as plugins/update, is not a list.
+        return {e["Filename"]: e for e in result if not e.get("IsDirectory")} if isinstance(result, list) else {}
+
+    def _amp_size(self, amp: Amp, server: str, path: str) -> int | None:
+        folder, _, name = path.rpartition("/")
+        entry = self._amp_listing(amp, server, folder).get(name)
+        return None if entry is None else entry["SizeBytes"]
+
+    @staticmethod
+    def _amp_read(amp: Amp, server: str, path: str, start: int = 0, end: int | None = None) -> bytes:
+        data = bytearray()
+        while end is None or start + len(data) < end:
+            length = CHUNK if end is None else min(CHUNK, end - start - len(data))
+            chunk = amp.call(server, "FileManagerPlugin/GetFileChunk", Filename=path, Position=start + len(data), Length=length)
+            piece = base64.b64decode(chunk["Base64Data"]) if isinstance(chunk, dict) and chunk.get("Base64Data") else b""
+            data += piece
+            if len(piece) < length:
+                break
+        if end is not None and start + len(data) != end:
+            raise ControlError("plugins_changed")
+        return bytes(data)
+
+    @staticmethod
+    def _amp_md5(amp: Amp, server: str, path: str) -> str:
+        return amp.call(server, "FileManagerPlugin/CalculateFileMD5Sum", FilePath=path)["Result"]
+
+    def _mirror_jars(self, amp: Amp, server: str, remote: str, local: Path):
+        entries = {name: e for name, e in self._amp_listing(amp, server, remote).items() if name.endswith(".jar")}
+        for path in local.glob("*.jar"):
+            if path.name not in entries:
+                path.unlink()
+                self._md5.pop(path, None)
+        for name, entry in entries.items():
+            path = local / name
+            md5 = self._amp_md5(amp, server, f"{remote}/{name}")
+            if path.exists() and path not in self._md5:
+                self._md5[path] = hashlib.md5(path.read_bytes()).hexdigest()
+            if self._md5.get(path) != md5:
+                data = self._amp_read(amp, server, f"{remote}/{name}", 0, entry["SizeBytes"])
+                if hashlib.md5(data).hexdigest() != md5:
+                    raise ControlError("plugins_changed")
+                write_new(path, data)
+                self._md5[path] = md5
+            # AMP reports no change time, so the modified time stands in for it.
+            changed = amp_time(entry["Modified"])
+            os.utime(path, (changed, changed))
+
+    def _mirror_logs(self, amp: Amp, server: str, folder: Path):
+        entries = self._amp_listing(amp, server, "logs")
+        rotated = sorted(((m[1], int(m[2]), name) for name in entries if (m := inventory._ROTATED.match(name))), reverse=True)
+        keep = {name for *_, name in rotated[:inventory.MAX_LOGS]}
+        for path in folder.iterdir():
+            if path.name != "latest.log" and path.name not in keep:
+                path.unlink()
+        for name in keep:
+            path = folder / name
+            if not path.exists() or path.stat().st_size != entries[name]["SizeBytes"]:
+                write_new(path, self._amp_read(amp, server, f"logs/{name}", 0, entries[name]["SizeBytes"]))
+            os.utime(path, (amp_time(entries[name]["Modified"]),) * 2)
+        path, latest = folder / "latest.log", entries.get("latest.log")
+        if latest is None:
+            path.unlink(missing_ok=True)
+            return
+        size = latest["SizeBytes"]
+        have = path.stat().st_size if path.exists() else None
+        same = False
+        if have is not None and have <= size:
+            head = min(have, 4096)
+            with path.open("rb") as handle:
+                same = self._amp_read(amp, server, "logs/latest.log", 0, head) == handle.read(head)
+        if same:
+            if size > have:
+                with path.open("ab") as handle:
+                    handle.write(self._amp_read(amp, server, "logs/latest.log", have, size))
+        else:
+            write_new(path, self._amp_read(amp, server, "logs/latest.log", 0, size))
+        os.utime(path, (amp_time(latest["Modified"]),) * 2)
+
+    def _changed_at(self, server: str, file: str) -> float:
+        if self.amp():
+            return (self._paths(server, logs=False)[0] / file).stat().st_mtime
+        path = self.roots[server][0] / file
+        return max(path.stat().st_mtime, path.stat().st_ctime)
 
     def snapshot(self, server: str) -> list[dict]:
         plugins, _ = self._paths(server)
@@ -290,7 +418,7 @@ class Controller:
         return result
 
     def _maintenance(self, server: str) -> bool:
-        plugins, _ = self._paths(server)
+        plugins, _ = self._paths(server, jars=False, logs=False)
         text = (plugins / "Maintenance" / "config.yml").read_text()
         match = re.search(r"^maintenance-enabled:\s*(true|false)\s*$", text, re.MULTILINE)
         if not match:
@@ -393,6 +521,12 @@ class Controller:
                 "backup": plan.get("backup", False)}
 
     def _backup_time(self, server: str) -> float | None:
+        if amp := self.amp():
+            try:
+                return max((amp_time(b["Timestamp"]) for b in amp.call(server, "LocalFileBackupPlugin/GetBackups")
+                            if b.get("StoredLocally")), default=None)
+            except ControlError:
+                return None
         root = self.roots[server][0].parents[1] / "Backups"
         try:
             return max((p.stat().st_mtime for p in root.glob("*.zip") if p.is_file()), default=None)
@@ -422,8 +556,7 @@ class Controller:
                         if boot.timestamp() > written_at:
                             boot -= timedelta(days=1)
                         boot_time = boot.timestamp()
-                        path = self.roots["dev"][0] / jar["file"]
-                        return max(path.stat().st_mtime, path.stat().st_ctime) <= boot_time
+                        return self._changed_at("dev", jar["file"]) <= boot_time
         return False
 
     @staticmethod
@@ -574,12 +707,12 @@ class Controller:
             self._save_game(server)
             self._unchanged(plan)
             self._install(plan)
-            _, logs = self._paths(server)
-            before = self._boot(logs)
+            before = self._boot(self._paths(server, jars=False)[1])
             self._event(job, "restarting")
             self.console(server, "stop")
             self._event(job, "checking")
-            self._wait(lambda: self._boot(logs) != before and self._startup_ok(plan), 600, "startup_check_failed")
+            self._wait(lambda: self._boot(self._paths(server, jars=False)[1]) != before and self._startup_ok(plan),
+                       600, "startup_check_failed")
             if server == "main" and (plan["changes"] or plan["activation"]):
                 self._event(job, "awaiting_review")
             else:
@@ -604,13 +737,14 @@ class Controller:
         raise ControlError(code)
 
     def _save_game(self, server: str):
-        _, logs = self._paths(server)
+        _, logs = self._paths(server, jars=False)
         path = logs / "latest.log"
         offset = path.stat().st_size
         inode = path.stat().st_ino
         self.console(server, "save-all flush")
 
         def saved():
+            self._paths(server, jars=False)
             if path.stat().st_ino != inode or path.stat().st_size < offset:
                 raise ControlError("unexpected_restart")
             with path.open() as handle:
@@ -619,6 +753,8 @@ class Controller:
         self._wait(saved, 60, "save_failed")
 
     def _install(self, plan: dict):
+        if amp := self.amp():
+            return self._install_amp(amp, plan)
         plugins, _ = self._paths(plan["server"])
         backup = self.state / plan["id"] / "backup"
         backup.mkdir(exist_ok=True, mode=0o700)
@@ -653,6 +789,7 @@ class Controller:
                 if old != target:
                     old.unlink()
         except Exception:
+            (plugins / (".control-" + plan["id"])).unlink(missing_ok=True)
             # Restore displaced jars if any swap fails. Each restore
             # also uses a fresh inode; Java's existing open jars are preserved.
             for change in reversed(swapped):
@@ -670,6 +807,74 @@ class Controller:
             raise
         with open_directory(plugins) as fd:
             os.fsync(fd)
+
+    def _install_amp(self, amp: Amp, plan: dict):
+        server = plan["server"]
+        plugins, _ = self._paths(server, logs=False)
+        backup = self.state / plan["id"] / "backup"
+        backup.mkdir(exist_ok=True, mode=0o700)
+        expected = {jar["file"]: jar["sha256"] for jar in plan["baseline"]}
+        for change in plan["changes"]:
+            old = plugins / change["old_file"]
+            if digest(old) != expected[old.name]:
+                raise ControlError("plugins_changed")
+            shutil.copy2(old, backup / old.name)
+            with (backup / old.name).open("rb") as handle:
+                os.fsync(handle.fileno())
+            if digest(backup / old.name) != expected[old.name]:
+                raise ControlError("backup_failed")
+        with open_directory(backup) as fd:
+            os.fsync(fd)
+        # A renamed upload is a new inode; Java keeps the old jar open until stop,
+        # and TrashFile moves that old jar into the instance's .trash folder.
+        swapped = []
+        try:
+            for change in plan["changes"]:
+                data = (self.state / plan["id"] / change["asset"]).read_bytes()
+                if hashlib.sha256(data).hexdigest() != change["sha256"]:
+                    raise ControlError("release_checksum_failed")
+                saved = (backup / change["old_file"]).read_bytes()
+                if self._amp_md5(amp, server, f"plugins/{change['old_file']}") != hashlib.md5(saved).hexdigest():
+                    raise ControlError("plugins_changed")
+                temporary = f"plugins/.control-{plan['id']}"
+                self._amp_upload(amp, server, temporary, data)
+                swapped.append(change)
+                if change["old_file"] == change["asset"]:
+                    amp.call(server, "FileManagerPlugin/TrashFile", Filename=f"plugins/{change['old_file']}")
+                    amp.call(server, "FileManagerPlugin/RenameFile", Filename=temporary, NewFilename=change["asset"])
+                else:
+                    amp.call(server, "FileManagerPlugin/RenameFile", Filename=temporary, NewFilename=change["asset"])
+                    amp.call(server, "FileManagerPlugin/TrashFile", Filename=f"plugins/{change['old_file']}")
+        except Exception:
+            for change in reversed(swapped):
+                try:
+                    self._amp_restore(amp, server, plan["id"], change, backup / change["old_file"])
+                except Exception:
+                    logging.exception("Could not restore %s on %s", change["old_file"], server)
+            raise
+
+    def _amp_upload(self, amp: Amp, server: str, path: str, data: bytes):
+        if self._amp_size(amp, server, path) is not None:
+            amp.call(server, "FileManagerPlugin/TrashFile", Filename=path)
+        for offset in range(0, max(len(data), 1), CHUNK):
+            amp.call(server, "FileManagerPlugin/WriteFileChunk", Filename=path, Offset=offset,
+                     Data=base64.b64encode(data[offset:offset + CHUNK]).decode(), FinalChunk=offset + CHUNK >= len(data))
+        if self._amp_md5(amp, server, path) != hashlib.md5(data).hexdigest():
+            amp.call(server, "FileManagerPlugin/TrashFile", Filename=path)
+            raise ControlError("release_checksum_failed")
+
+    def _amp_restore(self, amp: Amp, server: str, plan_id: str, change: dict, saved: Path):
+        names = self._amp_listing(amp, server, "plugins")
+        if f".control-{plan_id}" in names:
+            amp.call(server, "FileManagerPlugin/TrashFile", Filename=f"plugins/.control-{plan_id}")
+        original = hashlib.md5(saved.read_bytes()).hexdigest()
+        asset, old = change["asset"], change["old_file"]
+        if asset in names and (asset != old or self._amp_md5(amp, server, f"plugins/{asset}") != original):
+            amp.call(server, "FileManagerPlugin/TrashFile", Filename=f"plugins/{asset}")
+            names.pop(asset)
+        if old not in names:
+            self._amp_upload(amp, server, f"plugins/.restore-{plan_id}", saved.read_bytes())
+            amp.call(server, "FileManagerPlugin/RenameFile", Filename=f"plugins/.restore-{plan_id}", NewFilename=old)
 
     @staticmethod
     def _boot(logs: Path):

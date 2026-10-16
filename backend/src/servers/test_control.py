@@ -1,5 +1,7 @@
+import base64
 import hashlib
 import json
+from datetime import datetime, timezone
 import threading
 import zipfile
 
@@ -23,8 +25,69 @@ def startup(logs, version="1.0.0", error=False):
                                     + "[06:00:03 INFO]: Done (1.0s)!\n")
 
 
+class FakeAmp:
+    """Serves each server's test folder the way AMP's file manager serves its Minecraft folder."""
+
+    def __init__(self, root, busy=2, listed=True):
+        self.root, self.calls, self.busy, self.listed, self.title = root, [], busy, listed, None
+
+    def call(self, server, method, **body):
+        self.calls.append((server, method, body))
+        base = self.root / server
+        if method == "FileManagerPlugin/GetDirectoryListing":
+            folder = base / body["Dir"]
+            if not folder.is_dir():
+                return {"Status": False}
+            return [{"Filename": p.name, "IsDirectory": p.is_dir(), "SizeBytes": 0 if p.is_dir() else p.stat().st_size,
+                     "Modified": datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f0Z")}
+                    for p in folder.iterdir()]
+        if method == "FileManagerPlugin/CalculateFileMD5Sum":
+            return {"Result": hashlib.md5((base / body["FilePath"]).read_bytes()).hexdigest()}
+        if method == "FileManagerPlugin/GetFileChunk":
+            with (base / body["Filename"]).open("rb") as handle:
+                handle.seek(body["Position"])
+                data = handle.read(body["Length"])
+            return {"Base64Data": base64.b64encode(data).decode(), "BytesLength": len(data)}
+        if method == "FileManagerPlugin/WriteFileChunk":
+            path = base / body["Filename"]
+            with path.open("r+b" if body["Offset"] else "wb") as handle:
+                handle.seek(body["Offset"])
+                handle.write(base64.b64decode(body["Data"]))
+            return {"Status": True}
+        if method == "FileManagerPlugin/RenameFile":
+            source = base / body["Filename"]
+            if (source.parent / body["NewFilename"]).exists():
+                raise control.ControlError("amp_action_failed")
+            source.rename(source.parent / body["NewFilename"])
+            return {"Status": True}
+        if method == "FileManagerPlugin/TrashFile":
+            source = base / body["Filename"]
+            trash = base / ".trash" / source.parent.relative_to(base)
+            trash.mkdir(parents=True, exist_ok=True)
+            target, n = trash / source.name, 0
+            while target.exists():
+                target, n = trash / f"{source.name}.{n}", n + 1
+            source.rename(target)
+            return {"Status": True}
+        if method == "LocalFileBackupPlugin/TakeBackup":
+            self.title = body["Title"]
+            return {"Id": "task-1", "Name": "Creating Backup"}
+        if method == "Core/GetTasks":
+            self.busy -= 1
+            return [{"Id": "task-1"}] if self.busy >= 0 else []
+        if method == "LocalFileBackupPlugin/GetBackups":
+            return [{"Id": "backup-1", "Name": self.title, "Timestamp": "2026-10-16T06:02:00.0000000Z",
+                     "StoredLocally": True}] if self.listed and self.title else []
+        return None
+
+
+@pytest.fixture(params=["local", "amp"])
+def files_mode(request):
+    return request.param
+
+
 @pytest.fixture
-def controller(tmp_path, monkeypatch):
+def controller(tmp_path, monkeypatch, files_mode):
     monkeypatch.setattr(host, "scheduled_restart", lambda *_: False)
     roots = {}
     commands = []
@@ -52,8 +115,11 @@ def controller(tmp_path, monkeypatch):
             jars = inventory.read_jars(plugins)
             startup(logs, jars[0].version)
 
-    instance = host.Controller(tmp_path / "state", roots, console=console)
+    # In amp mode every file read and write goes through the fake AMP file manager.
+    amp = FakeAmp(tmp_path, busy=0) if files_mode == "amp" else None
+    instance = host.Controller(tmp_path / "state", roots, console=console, amp=amp)
     instance.commands = commands
+    instance.files_mode = files_mode
     return instance
 
 
@@ -157,6 +223,8 @@ def test_pending_update_and_symlink_refused(controller, tmp_path):
     with pytest.raises(control.ControlError):
         controller.plan("dev", "restart", [])
     (plugins / "update" / "core-2.0.0.jar").unlink()
+    if controller.files_mode == "amp":
+        return  # AMP's file manager decides what a link is; the mirror only holds plain files.
     (plugins / "link.jar").symlink_to(tmp_path / "outside")
     with pytest.raises(control.ControlError, match="unsafe_plugin_file"):
         controller.plan("dev", "restart", [])
@@ -279,16 +347,25 @@ def test_partial_install_restores_every_old_file(controller, tmp_path, monkeypat
     controller.fetch = lambda r, p: p.write_bytes((new_core if r["repo"] == "Core" else new_other).read_bytes())
     public = controller.plan("dev", "latest", releases)
     plan = controller._plan(public["id"])
-    original = shutil.copyfile
-    def copy(source, target, *args, **kwargs):
-        if target.name.startswith(".control-") and source.name == "other-2.0.0.jar":
-            target.write_bytes(b"corrupted")
-            return target
-        return original(source, target, *args, **kwargs)
-    monkeypatch.setattr(host.shutil, "copyfile", copy)
+    if controller.files_mode == "amp":
+        amp, write = controller._amp_client, controller._amp_client.call
+        def call(server, method, **body):
+            if method == "FileManagerPlugin/WriteFileChunk" and base64.b64decode(body["Data"]) == new_other.read_bytes():
+                body = {**body, "Data": base64.b64encode(b"corrupted").decode()}
+            return write(server, method, **body)
+        monkeypatch.setattr(amp, "call", call)
+    else:
+        original = shutil.copyfile
+        def copy(source, target, *args, **kwargs):
+            if target.name.startswith(".control-") and source.name == "other-2.0.0.jar":
+                target.write_bytes(b"corrupted")
+                return target
+            return original(source, target, *args, **kwargs)
+        monkeypatch.setattr(host.shutil, "copyfile", copy)
     with pytest.raises(control.ControlError, match="release_checksum_failed"):
         controller._install(plan)
     assert controller.snapshot("dev") == plan["baseline"]
+    assert sorted(p.name for p in plugins.iterdir() if p.is_file()) == ["core-1.0.0.jar", "other-1.0.0.jar"]
 
 
 def test_resolve_does_not_issue_commands_and_other_server_remains_usable(controller):
@@ -438,11 +515,20 @@ def test_dev_bytes_replaced_after_midnight_boot_are_not_verified(controller, mon
     os.utime(log, (stamp, stamp))
     jar_path = plugins / "core-1.0.0.jar"
     jar_time = datetime.fromisoformat(after).timestamp()
-    original = host.Path.stat
-    monkeypatch.setattr(host.Path, "stat", lambda path, *args, **kwargs: SimpleNamespace(st_mtime=jar_time, st_ctime=jar_time) if path == jar_path else original(path, *args, **kwargs))
+    if controller.files_mode == "amp":
+        # AMP reports only the modified time, which the mirror copies.
+        def set_jar_time(value):
+            os.utime(jar_path, (value, value))
+    else:
+        original = host.Path.stat
+        monkeypatch.setattr(host.Path, "stat", lambda path, *args, **kwargs: SimpleNamespace(st_mtime=jar_time, st_ctime=jar_time) if path == jar_path else original(path, *args, **kwargs))
+        def set_jar_time(value):
+            nonlocal jar_time
+            jar_time = value
+    set_jar_time(jar_time)
     monkeypatch.setattr(controller, "snapshot", lambda *_: [{"file": jar_path.name, "name": "Core", "version": "1.0.0", "sha256": "known"}])
     assert not controller._dev_verified({"sha256": "known"})
-    jar_time = datetime.fromisoformat(after).timestamp() - 180
+    set_jar_time(datetime.fromisoformat(after).timestamp() - 180)
     assert controller._dev_verified({"sha256": "known"})
 
 
@@ -644,34 +730,16 @@ def test_socket_still_accepts_backup_ref_from_older_websites(controller, monkeyp
     assert controller.dispatch(body)["phase"] == "countdown"
 
 
-class FakeAmp:
-    def __init__(self, busy=2, listed=True):
-        self.calls, self.busy, self.listed = [], busy, listed
-        self.title = None
-
-    def call(self, server, method, **body):
-        self.calls.append((server, method, body))
-        if method == "LocalFileBackupPlugin/TakeBackup":
-            self.title = body["Title"]
-            return {"Id": "task-1", "Name": "Creating Backup"}
-        if method == "Core/GetTasks":
-            self.busy -= 1
-            return [{"Id": "task-1"}] if self.busy >= 0 else []
-        if method == "LocalFileBackupPlugin/GetBackups":
-            return [{"Id": "backup-1", "Name": self.title}] if self.listed else []
-        return None
-
-
-def amp_controller(controller, amp):
+def amp_controller(controller, **options):
+    amp = FakeAmp(controller.roots["main"][0].parents[1], **options)
     instance = host.Controller(controller.state, controller.roots, console=controller.console, amp=amp)
     instance.commands = controller.commands
-    return instance
+    return instance, amp
 
 
 def test_main_countdown_takes_an_amp_backup_and_waits_for_it(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    amp = FakeAmp()
-    controller = amp_controller(controller, amp)
+    controller, amp = amp_controller(controller)
     public = controller.plan("main", "restart", [])
     assert public["backup"] is True
     job = controller.start("main", public["id"], "www:user:1", "planned restart")
@@ -689,7 +757,7 @@ def test_main_countdown_takes_an_amp_backup_and_waits_for_it(controller, monkeyp
 
 def test_failed_amp_backup_cancels_before_maintenance(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    controller = amp_controller(controller, FakeAmp(busy=0, listed=False))
+    controller, _ = amp_controller(controller, busy=0, listed=False)
     public = controller.plan("main", "restart", [])
     controller.start("main", public["id"], "www:user:1", "planned restart")
     monkeypatch.setattr(controller.cancelled, "wait", lambda delay: False)
@@ -702,8 +770,7 @@ def test_failed_amp_backup_cancels_before_maintenance(controller, monkeypatch):
 
 def test_emergency_and_dev_restarts_take_no_amp_backup(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    amp = FakeAmp()
-    controller = amp_controller(controller, amp)
+    controller, amp = amp_controller(controller)
     assert controller.plan("dev", "restart", [])["backup"] is False
     public = controller.plan("main", "restart", [])
     assert controller.start("main", public["id"], "www:user:1", "emergency fix", emergency_override=True)["backup"] is None
@@ -711,15 +778,21 @@ def test_emergency_and_dev_restarts_take_no_amp_backup(controller, monkeypatch):
 
 
 def test_console_uses_the_amp_api_when_a_login_file_exists(controller, tmp_path, monkeypatch):
+    files = FakeAmp(tmp_path)
     sent = []
-    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: sent.append((self.username, server, method, body)))
+
+    def call(self, server, method, **body):
+        if method == "Core/SendConsoleMessage":
+            sent.append((self.username, server, body))
+        return files.call(server, method, **body)
+    monkeypatch.setattr(host.Amp, "call", call)
     monkeypatch.setattr(host.subprocess, "run", lambda *a, **k: pytest.fail("sudo wrapper used"))
     instance = host.Controller(controller.state, controller.roots)
     instance.amp_login = tmp_path / "amp-login.json"
     assert instance.amp() is None
     instance.amp_login.write_text(json.dumps({"username": "TFWeb", "password": "secret"}))
     instance.console("main", "list")
-    assert sent == [("TFWeb", "main", "Core/SendConsoleMessage", {"message": "list"})]
+    assert sent == [("TFWeb", "main", {"message": "list"})]
     assert instance.plan("main", "restart", [])["backup"] is True
 
 
@@ -943,7 +1016,7 @@ def test_snapshot_hashes_each_jar_once(controller, monkeypatch):
     monkeypatch.setattr(inventory, "_describe", describe)
     monkeypatch.setattr(host, "digest", lambda *_: pytest.fail("snapshot hashed the jar twice"))
     [copy] = controller.snapshot("dev")
-    assert calls == [controller.roots["dev"][0] / "core-1.0.0.jar"]
+    assert [path.name for path in calls] == ["core-1.0.0.jar"]
     assert copy["name"] == "Core" and len(copy["sha256"]) == 64
 
 
