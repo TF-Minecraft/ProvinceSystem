@@ -22,13 +22,16 @@ export function provinceIdRunsPath(mapId: MapId): string {
  */
 const indexCache = new Map<string, Promise<ProvinceRunIndex>>();
 
-async function loadProvinceRunIndex(
-  mapId: MapId,
-  sessionToken: string | null | undefined,
-  signal: AbortSignal | undefined,
-): Promise<ProvinceRunIndex> {
+function abortError(): Error {
+  if (typeof DOMException !== "undefined") return new DOMException("Aborted", "AbortError");
+  const error = new Error("Aborted");
+  error.name = "AbortError";
+  return error;
+}
+
+async function loadProvinceRunIndex(mapId: MapId, sessionToken: string | null | undefined): Promise<ProvinceRunIndex> {
   const path = provinceIdRunsPath(mapId);
-  const res = await fetchMapApi(path, { sessionToken, signal });
+  const res = await fetchMapApi(path, { sessionToken });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     const detail =
@@ -44,19 +47,42 @@ async function loadProvinceRunIndex(
   return buildProvinceRunIndex(decoded.width, decoded.height, decoded.runLengths, decoded.runIds, decoded.bbox);
 }
 
+/**
+ * The shared load outlives any one caller: it runs without a caller's abort
+ * signal, and a caller's signal only detaches that caller. Aborting one
+ * consumer must not reject concurrent consumers or the retry that replaces
+ * it (a remount under React strict effects aborts and re-asks at once).
+ */
 export function fetchProvinceRunIndex(
   mapId: MapId,
   sessionToken?: string | null,
   signal?: AbortSignal,
 ): Promise<ProvinceRunIndex> {
-  const key = `${mapId}\n${sessionToken ?? ""}`;
-  const cached = indexCache.get(key);
-  if (cached) return cached;
+  if (signal?.aborted) return Promise.reject(abortError());
 
-  const pending = loadProvinceRunIndex(mapId, sessionToken, signal);
-  indexCache.set(key, pending);
-  pending.catch(() => {
-    if (indexCache.get(key) === pending) indexCache.delete(key);
+  const key = `${mapId}\n${sessionToken ?? ""}`;
+  let shared = indexCache.get(key);
+  if (!shared) {
+    shared = loadProvinceRunIndex(mapId, sessionToken);
+    indexCache.set(key, shared);
+    shared.catch(() => {
+      if (indexCache.get(key) === shared) indexCache.delete(key);
+    });
+  }
+  if (!signal) return shared;
+
+  return new Promise<ProvinceRunIndex>((resolve, reject) => {
+    const onAbort = () => reject(abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+    shared.then(
+      (index) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(index);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
   });
-  return pending;
 }

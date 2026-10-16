@@ -112,4 +112,60 @@ describe("fetchProvinceRunIndex", () => {
     respondWith(gzipSync(Buffer.from("not runs at all")));
     await expect(fetchProvinceRunIndex("runs-corrupt")).rejects.toThrow();
   });
+
+  /** A fetch that stays in flight until the test releases it. */
+  function pendingFetch(): (body: Buffer) => void {
+    let release: (res: unknown) => void = () => {};
+    vi.mocked(fetchMapApi).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }) as never,
+    );
+    return (body: Buffer) =>
+      release({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+        json: async () => ({}),
+      });
+  }
+
+  it("aborting one caller does not reject a concurrent caller on the shared load", async () => {
+    const release = pendingFetch();
+    const controller = new AbortController();
+    const aborted = fetchProvinceRunIndex("runs-concurrent", null, controller.signal);
+    const survivor = fetchProvinceRunIndex("runs-concurrent");
+
+    controller.abort();
+    await expect(aborted).rejects.toMatchObject({ name: "AbortError" });
+
+    release(gzipSync(validRunsPayload()));
+    const index = await survivor;
+    expect(provinceAt(index, 0, 0)).toBe(1);
+    expect(vi.mocked(fetchMapApi)).toHaveBeenCalledTimes(1);
+  });
+
+  it("a retry immediately after an abort joins the same shared load", async () => {
+    const release = pendingFetch();
+    const controller = new AbortController();
+    const first = fetchProvinceRunIndex("runs-retry", null, controller.signal);
+    controller.abort();
+    await expect(first).rejects.toMatchObject({ name: "AbortError" });
+
+    const retry = fetchProvinceRunIndex("runs-retry");
+    release(gzipSync(validRunsPayload()));
+    expect(provinceAt(await retry, 3, 0)).toBe(2);
+    expect(vi.mocked(fetchMapApi)).toHaveBeenCalledTimes(1);
+  });
+
+  it("an already-aborted signal rejects without starting a load", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(fetchProvinceRunIndex("runs-preaborted", null, controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(vi.mocked(fetchMapApi)).not.toHaveBeenCalled();
+  });
 });
