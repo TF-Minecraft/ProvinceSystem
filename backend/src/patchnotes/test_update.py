@@ -41,7 +41,7 @@ def host(tmp_path, monkeypatch):
         return files
 
     state = SimpleNamespace(commits={OLD: tree("old"), NEW: tree("new")}, on_main={OLD, NEW}, build=True,
-                            extra=[], up={OLD: True, NEW: True}, flaky=set(), pid=100, calls=[], hang=set())
+                            extra=[], up={OLD: True, NEW: True}, flaky=set(), pid=100, calls=[], hang=set(), stop_hangs=False)
 
     def get(url):
         if "/scripts/" in url:
@@ -70,6 +70,8 @@ def host(tmp_path, monkeypatch):
             state.pid += 1
             if running in state.hang:
                 raise updater.subprocess.TimeoutExpired(args, 120)
+        if args[:2] == ["systemctl", "stop"] and state.stop_hangs:
+            raise updater.subprocess.TimeoutExpired(args, 120)
         if args[:2] == ["systemctl", "show"]:
             if running in state.flaky:
                 state.pid += 1  # A crash loop: active, but a new process each time.
@@ -190,3 +192,27 @@ def test_needs_root_and_a_full_commit(host, monkeypatch):
     monkeypatch.setattr(updater.os, "geteuid", lambda: 1000)
     with pytest.raises(SystemExit):
         updater.main([OLD])
+
+
+def test_first_install_with_a_hanging_stop_still_drops_the_link(host):
+    host.up[OLD] = False
+    host.stop_hangs = True
+    assert updater.main([OLD]) == 1
+    assert not updater.CURRENT.is_symlink()
+    assert not (host.root / OLD).exists()
+
+
+def test_failed_rollback_keeps_the_copy_current_points_at(host, monkeypatch):
+    updater.main([OLD])
+    host.up[NEW] = False
+    point_at = updater.point_at
+
+    def fail_on_rollback(commit):
+        if commit == OLD:
+            raise OSError("disk full")
+        point_at(commit)
+
+    monkeypatch.setattr(updater, "point_at", fail_on_rollback)
+    assert updater.main([NEW]) == 1
+    assert updater.installed_commit() == NEW
+    assert (host.root / NEW / "patchnotes").is_dir()

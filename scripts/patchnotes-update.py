@@ -193,11 +193,15 @@ def switch(commit: str, previous: str) -> str:
             state = "the previous copy is running again" if checked_up() else "the previous copy did not start either; check journalctl"
         else:
             # Stop first, so Restart=always never loops on a missing copy.
-            subprocess.run(["systemctl", "stop", WORKER], timeout=120, check=False)
-            CURRENT.unlink(missing_ok=True)
+            try:
+                subprocess.run(["systemctl", "stop", WORKER], timeout=120, check=False)
+            finally:
+                CURRENT.unlink(missing_ok=True)
             state = "there was no previous copy, so the worker is stopped"
     finally:
-        shutil.rmtree(ROOT / commit, ignore_errors=True)
+        # Never delete the copy `current` still points at.
+        if not (CURRENT.is_symlink() and installed_commit() == commit):
+            shutil.rmtree(ROOT / commit, ignore_errors=True)
     raise Refused(f"The rewrite worker did not stay up on {commit[:7]}, and {state}.")
 
 
