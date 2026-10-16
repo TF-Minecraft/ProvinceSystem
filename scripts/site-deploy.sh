@@ -1,11 +1,11 @@
 #!/bin/bash
 # Deploy a commit on main to www.tfminecraft.net or dev.tfminecraft.net.
 #
-# Installed on the TF server as ryan's ~/bin/site-deploy (copy it there after
-# changing it; never run it from a checkout it updates). The Deploy workflow's
-# key may run only this script:
-#   restrict,command="/home/ryan/bin/site-deploy" ssh-ed25519 ... github-site-deploy
-# By hand: site-deploy deploy <www|dev> <sha>
+# Installed on the TF server as root's /usr/local/sbin/site-deploy and run as
+# tfmc, which owns both checkouts. The Deploy workflow's key logs in as
+# psdeploy, pinned to site-deploy-ssh, which runs this through sudo:
+#   restrict,command="/usr/local/sbin/site-deploy-ssh" ssh-ed25519 ... github-site-deploy
+# By hand: sudo -u tfmc site-deploy deploy <www|dev> <sha>
 #
 # Exit codes: 0 deployed or already deployed, 2 bad request, 4 commit not on
 # main, 5 site did not come up and the previous code was put back, 1 other.
@@ -16,24 +16,26 @@ usage() {
   exit 2
 }
 
-read -r -a args <<< "${SSH_ORIGINAL_COMMAND:-$*}"
-[[ ${#args[@]} -eq 3 && ${args[0]} == deploy ]] || usage
-site=${args[1]}
-sha=${args[2]}
+[[ $# -eq 3 && $1 == deploy ]] || usage
+site=$2
+sha=$3
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || usage
 
 case "$site" in
-  www) target=main repo=$HOME/work/provincesystem data=$HOME/work/provincesystem-data front=3000 back=8000 ;;
-  dev) target=dev repo=$HOME/work/provincesystem-dev data=$HOME/work/provincesystem-dev-data front=13001 back=18001 ;;
+  www) target=main repo=/home/tfmc/ProvinceSystem data=/home/tfmc/provincesystem-data front=3000 back=8000 ;;
+  dev) target=dev repo=/home/tfmc/tfmc-staging data=/home/tfmc/provincesystem-dev-data front=13001 back=18001 ;;
   *) usage ;;
 esac
+[[ $(id -un) == tfmc ]] || { echo "run as tfmc: sudo -u tfmc $0 deploy $site $sha" >&2; exit 2; }
+umask 022
+state=/home/tfmc
 
-exec 9> "$HOME/.site-deploy-$site.lock"
+exec 9> "$state/.site-deploy-$site.lock"
 flock 9
 
 log() { echo "$*" >&2; }
-compose() { sudo -n -u tfmc /usr/local/sbin/ps-compose "$target" "$@"; }
-record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$HOME/site-deploy.log"; }
+compose() { /usr/local/sbin/ps-compose "$target" "$@"; }
+record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
 
 cd "$repo"
 git fetch -q origin
@@ -58,8 +60,8 @@ services=()
 grep -qE '^(frontend|shared)/|^docker-compose' <<< "$changed" && services+=(frontend)
 grep -qE '^(backend|shared|frontend/lib/skins)/|^docker-compose' <<< "$changed" && services+=(backend)
 
-# A consistent copy needs SQLite's backup API inside the container; the ~/work
-# mounts don't pass file locks through.
+# SQLite's backup API inside the container keeps the copy consistent while the
+# site writes.
 log "backing up province.db"
 compose exec -T backend python3 - <<'PYTHON'
 import sqlite3
@@ -81,16 +83,6 @@ checkout() {
     # Keeps dev's local edits; refuses if they would be overwritten.
     git checkout -q --detach "$1" || return 1
   fi
-  # Git writes new files here as 660, which the containers cannot read.
-  git diff --name-only -z "$old" "$sha" | while IFS= read -r -d '' file; do
-    [[ -e $file ]] || continue
-    chmod a+r "$file"
-    dir=$(dirname "$file")
-    while [[ $dir != . ]]; do
-      chmod a+rx "$dir"
-      dir=$(dirname "$dir")
-    done
-  done
 }
 
 healthy() {

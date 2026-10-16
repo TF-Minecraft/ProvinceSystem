@@ -58,7 +58,7 @@ jobs:
           echo "Deploying ${sha::7} ($(git log -1 --format=%s "$sha")) to $SITE"
       - name: Deploy
         env:
-          SSH_USER: ryan
+          SSH_USER: psdeploy
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
           SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
