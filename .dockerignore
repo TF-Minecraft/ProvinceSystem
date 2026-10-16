@@ -10,8 +10,10 @@
 frontend/dist
 frontend/build
 *.md
-.env
-.env.*
+# At any depth: backend/.env holds the site's secrets and must not be baked into an image.
+**/.env
+**/.env.*
+!**/.env.example
 
 # Generated map output and the local SQLite DB. `backend/Dockerfile` does
 # `COPY backend/ .`, so without these a build bakes whatever happens to be in

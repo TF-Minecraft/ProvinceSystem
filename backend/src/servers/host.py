@@ -10,6 +10,7 @@ wrapper.
 from __future__ import annotations
 
 import fcntl
+import grp
 import hashlib
 import json
 import logging
@@ -856,6 +857,15 @@ class Server(socketserver.ThreadingUnixStreamServer):
     allowed_servers = {"main", "dev"}
 
 
+def share_socket(path: Path, group: str):
+    """Owner-only, or also the group the website backends run in when they are not root."""
+    if group:
+        os.chown(path, -1, grp.getgrnam(group).gr_gid)
+        path.chmod(0o660)
+    else:
+        path.chmod(0o600)
+
+
 def main():
     os.umask(0o077)
     root = Path(os.environ["SERVER_CONTROL_HOME"])
@@ -877,7 +887,7 @@ def main():
             path.unlink(missing_ok=True)
             server = Server(str(path), Handler)
             server.controller, server.allowed_servers = controller, allowed
-            path.chmod(0o600)
+            share_socket(path, os.getenv("SERVER_CONTROL_SOCKET_GROUP", ""))
             servers.append(server)
             threading.Thread(target=server.serve_forever, daemon=True).start()
         try:

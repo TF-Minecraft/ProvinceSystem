@@ -8,10 +8,13 @@ RequiresMountsFor=/home/amp/.ampdata/instances
 Type=simple
 User=tfmc-server-control
 Group=tfmc-server-control
+# The website backends run as tfmc with this group, so the sockets are shared with it.
+SupplementaryGroups=tfmc-control
 WorkingDirectory=/usr/local/lib/tfmc-server-control/backend
 Environment=SERVER_CONTROL_HOME=/var/lib/tfmc-server-control
 Environment=SERVER_CONTROL_SOCKET_DIR=/run/tfmc-server-control
 Environment=SERVER_CONTROL_LOG_TIMEZONE=Etc/UTC
+Environment=SERVER_CONTROL_SOCKET_GROUP=tfmc-control
 Environment=PYTHONNOUSERSITE=1
 ExecStartPre=/usr/bin/install -d -m 0755 /run/tfmc-server-control/www /run/tfmc-server-control/dev
 ExecStart=/usr/bin/python3 -B -m src.servers.host
