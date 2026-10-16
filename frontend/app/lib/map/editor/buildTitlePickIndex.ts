@@ -30,6 +30,11 @@ export function pickTitleIdAt(
     return null;
   }
   const offset = (y * width + x) * 4;
+  // Transparent is no title, whatever colour it carries: reading the RGB
+  // alone would claim every empty pixel for a black-coloured title.
+  if (data[offset + 3] === 0) {
+    return null;
+  }
   const rgb = `${data[offset]!},${data[offset + 1]!},${data[offset + 2]!}`;
   return rgbToTitleId[rgb] ?? null;
 }
