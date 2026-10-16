@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # The renderer's packages, Chromium and system libraries change rarely. Install
 # them before copying code so code changes do not trigger downloads and reinstalls.
 # --ignore-scripts skips the postinstall build until its sources are available.
+# Browsers outside /root, so the backend can run as a non-root user.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 WORKDIR /app/render
 COPY backend/render/package.json backend/render/package-lock.json ./
 RUN npm ci --ignore-scripts \

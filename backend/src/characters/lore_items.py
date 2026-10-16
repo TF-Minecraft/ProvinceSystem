@@ -869,7 +869,15 @@ def _backend_root():
 
 
 def _kit_skins_dir():
+    """Default kit PNGs baked into the image."""
     return _backend_root() / "assets" / "kit_skins"
+
+
+def _kit_skins_synced_dir():
+    """Plugin-synced kit PNGs, in the data mount so they outlive image rebuilds."""
+    from src.skins.db import DATA_DIR
+
+    return DATA_DIR / "plugin-assets" / "kit_skins"
 
 
 def _kit_skins_search_dirs() -> list:
@@ -881,7 +889,7 @@ def _kit_skins_search_dirs() -> list:
     env = (os.environ.get("KIT_SKINS_DIR") or "").strip()
     if env:
         dirs.append(Path(env))
-    # ProvinceSystem/backend/assets/kit_skins (plugin sync target)
+    dirs.append(_kit_skins_synced_dir())
     dirs.append(_kit_skins_dir())
     # Workspace fallback: sibling RPCharacters checkout's bundled assets (local only)
     tfmc_root = _backend_root().parent.parent
@@ -916,7 +924,7 @@ def sanitize_kit_skin_stem(name: str | None) -> str:
 
 
 def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
-    """Write plugin-synced default kit PNG under assets/kit_skins/."""
+    """Write a plugin-synced default kit PNG under data/plugin-assets/kit_skins/."""
     import os
 
     stem = sanitize_kit_skin_stem(name)
@@ -929,7 +937,7 @@ def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
     if not data.startswith(PNG_MAGIC):
         raise LoreItemError("body must be a PNG", status_code=400)
 
-    out_dir = _kit_skins_dir()
+    out_dir = _kit_skins_synced_dir()
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / f"{stem}.png"
     tmp = out_dir / f".{stem}.png.tmp"
@@ -943,7 +951,7 @@ def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
         except OSError:
             pass
         raise LoreItemError(f"could not write kit skin: {e}", status_code=500) from e
-    return {"ok": True, "name": stem, "path": f"assets/kit_skins/{stem}.png"}
+    return {"ok": True, "name": stem, "path": f"data/plugin-assets/kit_skins/{stem}.png"}
 
 
 def resolve_default_kit_texture(kit_key: str, variant: str | None = None):

@@ -10,6 +10,7 @@ wrapper.
 from __future__ import annotations
 
 import fcntl
+import grp
 import hashlib
 import json
 import logging
@@ -856,8 +857,28 @@ class Server(socketserver.ThreadingUnixStreamServer):
     allowed_servers = {"main", "dev"}
 
 
+def socket_group(name: str) -> int | None:
+    """The group the website backends run in, checked before any socket is bound."""
+    if not name:
+        return None
+    try:
+        return grp.getgrnam(name).gr_gid
+    except KeyError:
+        raise SystemExit(f"SERVER_CONTROL_SOCKET_GROUP names a group that does not exist: {name}") from None
+
+
+def share_socket(path: Path, gid: int | None):
+    """Owner-only, or also the website backends' group when they are not root."""
+    if gid is not None:
+        os.chown(path, -1, gid)
+        path.chmod(0o660)
+    else:
+        path.chmod(0o600)
+
+
 def main():
     os.umask(0o077)
+    gid = socket_group(os.getenv("SERVER_CONTROL_SOCKET_GROUP", ""))
     root = Path(os.environ["SERVER_CONTROL_HOME"])
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Includes separate invocations and sockets; only one deployment owner.
@@ -877,7 +898,7 @@ def main():
             path.unlink(missing_ok=True)
             server = Server(str(path), Handler)
             server.controller, server.allowed_servers = controller, allowed
-            path.chmod(0o600)
+            share_socket(path, gid)
             servers.append(server)
             threading.Thread(target=server.serve_forever, daemon=True).start()
         try:
