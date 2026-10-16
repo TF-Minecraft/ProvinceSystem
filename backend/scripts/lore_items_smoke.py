@@ -353,6 +353,8 @@ def main() -> None:
 
     # Pending create UUID is a valid customise target before server ack
     create_id = f"create_{suffix}"
+    # PG-MIGRATION: Scripts. character_creates is in Postgres; the smoke scripts still seed and
+    # read province.db, and the character routes they call need DATABASE_URL.
     with connect() as conn:
         conn.execute(
             """

@@ -416,11 +416,10 @@ def profile(config: CoreProtectConfig, text: str) -> dict:
 
 def character_picture(text: str, realm: str, character_id: str, kind: str) -> bytes:
     key = _require(text)
-    # PG-MIGRATION: until the Characters area converts, character_roster is in SQLite.
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT player_uuid FROM character_roster "
-            "WHERE lower(player_uuid) = ? AND realm_id = ? AND character_id = ?",
+            "WHERE lower(player_uuid) = %s AND realm_id = %s AND character_id = %s",
             (key, realm, character_id),
         ).fetchone()
     if row is None:

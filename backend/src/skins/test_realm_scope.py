@@ -347,7 +347,7 @@ class RealmScopeTest(unittest.TestCase):
         from src.characters.lore_items import list_pending_for_plugin
         from src.skins.db import connect
 
-        with connect() as conn:
+        with database.connect() as conn:
             for cid, realm in (("char-main", "main"), ("char-dev", "dev")):
                 conn.execute(
                     """
@@ -356,13 +356,12 @@ class RealmScopeTest(unittest.TestCase):
                         lore_json, state, ready_at, updated_at, realm_id
                     )
                     VALUES (
-                        'p-lore', ?, 'starter', 'Sword', '[]',
-                        'ready', '2020-01-02T00:00:00Z', '2020-01-02T00:00:00Z', ?
+                        'p-lore', %s, 'starter', 'Sword', '[]',
+                        'ready', '2020-01-02T00:00:00Z', '2020-01-02T00:00:00Z', %s
                     )
                     """,
                     (cid, realm),
                 )
-            conn.commit()
 
         main = list_pending_for_plugin("main")
         dev = list_pending_for_plugin("dev")
@@ -378,11 +377,11 @@ class RealmScopeTest(unittest.TestCase):
             [{"id": "c1", "name": "SharedName", "status": "ALIVE"}],
             realm_id="main",
         )
-        with connect() as conn:
+        with database.connect() as conn:
             main_clash = conn.execute(
                 """
                 SELECT 1 FROM character_roster
-                WHERE realm_id = ? AND LOWER(name) = LOWER(?)
+                WHERE realm_id = %s AND LOWER(name) = LOWER(%s)
                 LIMIT 1
                 """,
                 ("main", "SharedName"),
@@ -390,7 +389,7 @@ class RealmScopeTest(unittest.TestCase):
             tut_clash = conn.execute(
                 """
                 SELECT 1 FROM character_roster
-                WHERE realm_id = ? AND LOWER(name) = LOWER(?)
+                WHERE realm_id = %s AND LOWER(name) = LOWER(%s)
                 LIMIT 1
                 """,
                 ("tutorial", "SharedName"),

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from typing import Any
 
+from src import database
+from src.characters.times import api_time, utcnow
 from src.name_colours import MAX_NAME_COLOURS, effective_colour_cap
 
 # Mirrors submissions.ALLOWED_KINDS; keep in sync for the staff redeem UI.
@@ -31,10 +32,6 @@ DEFAULT_SKIN_TOKEN_COOLDOWN_DAYS = -1
 
 class RpcPlayerMetaError(ValueError):
     """Invalid rpc_player_meta payload."""
-
-
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _normalize_realm(realm_id: str | None) -> str:
@@ -146,13 +143,11 @@ def get_rpc_player_meta(
     player_uuid: str,
     realm_id: str | None = None,
 ) -> dict[str, Any] | None:
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip().lower()
     if not uuid:
         return None
     realm = _normalize_realm(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT player_uuid, realm_id, name_colour_stops, allow_drink_texture,
@@ -160,7 +155,7 @@ def get_rpc_player_meta(
                    skin_token_cooldown_days, skin_kinds_json,
                    allow_armor_3d_helmet, permission_flags_json, updated_at
             FROM rpc_player_meta
-            WHERE LOWER(player_uuid) = ? AND realm_id = ?
+            WHERE LOWER(player_uuid) = %s AND realm_id = %s
             """,
             (uuid, realm),
         ).fetchone()
@@ -244,7 +239,8 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     except (TypeError, ValueError, KeyError):
         allow_helmet = False
     try:
-        flags = _normalize_permission_flags(row["permission_flags_json"])
+        # Sorted as they were stored before jsonb, which keeps keys in its own order.
+        flags = dict(sorted(_normalize_permission_flags(row["permission_flags_json"]).items()))
     except (RpcPlayerMetaError, KeyError, TypeError):
         flags = {}
     realm = "main"
@@ -267,15 +263,13 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         "skin_kinds": kinds,
         "allow_armor_3d_helmet": allow_helmet,
         "permission_flags": flags,
-        "updated_at": str(row["updated_at"] or ""),
+        "updated_at": api_time(row["updated_at"]) or "",
         "meta_synced": True,
     }
 
 
 def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
     """Upsert TFMCWeb-resolved web entitlements for a player."""
-    from src.skins.db import connect
-
     if not isinstance(raw, dict):
         raise RpcPlayerMetaError("body must be a JSON object")
     uuid = str(raw.get("player_uuid") or "").strip().lower()
@@ -311,11 +305,9 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
         raw.get("allow_armor_3d_helmet", False), "allow_armor_3d_helmet"
     )
     flags = _normalize_permission_flags(raw.get("permission_flags"))
-    kinds_json = json.dumps(kinds, separators=(",", ":"))
-    flags_json = json.dumps(flags, separators=(",", ":"), sort_keys=True)
-    updated_at = _iso_now()
+    updated_at = utcnow()
 
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             INSERT INTO rpc_player_meta (
@@ -324,8 +316,8 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 max_3d_pair_bytes, skin_token_cooldown_days, skin_kinds_json,
                 allow_armor_3d_helmet, permission_flags_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(player_uuid, realm_id) DO UPDATE SET
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (player_uuid, realm_id) DO UPDATE SET
                 name_colour_stops = excluded.name_colour_stops,
                 allow_drink_texture = excluded.allow_drink_texture,
                 allow_drink_message = excluded.allow_drink_message,
@@ -342,19 +334,18 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 uuid,
                 realm,
                 stops,
-                1 if allow_texture else 0,
-                1 if allow_message else 0,
+                allow_texture,
+                allow_message,
                 max_alive,
                 wardrobe_slots,
                 pair,
                 cooldown,
-                kinds_json,
-                1 if allow_helmet else 0,
-                flags_json,
+                database.Jsonb(kinds),
+                allow_helmet,
+                database.Jsonb(flags),
                 updated_at,
             ),
         )
-        conn.commit()
 
     return {
         "ok": True,
@@ -370,7 +361,7 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
         "skin_kinds": kinds,
         "allow_armor_3d_helmet": allow_helmet,
         "permission_flags": flags,
-        "updated_at": updated_at,
+        "updated_at": api_time(updated_at),
         "meta_synced": True,
     }
 

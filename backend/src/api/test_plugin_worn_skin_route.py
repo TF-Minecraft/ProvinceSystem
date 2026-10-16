@@ -9,6 +9,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
@@ -66,16 +72,15 @@ class PluginWornSkinTest(unittest.TestCase):
         for p in self._patches:
             p.start()
 
-        with self.db.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, updated_at, wardrobe_active_slot
-                ) VALUES (?, 'main', ?, 'Test', 'ALIVE', ?, 'extra_1')
+                ) VALUES (%s, 'main', %s, 'Test', 'ALIVE', %s, 'extra_1')
                 """,
                 (PLAYER, CHAR_ID, NOW),
             )
-            conn.commit()
 
         app = FastAPI()
         app.include_router(characters_router)
@@ -95,23 +100,22 @@ class PluginWornSkinTest(unittest.TestCase):
         path = self.root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b"png")
-        with self.db.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_wardrobe_slots (
                     player_uuid, character_id, slot, png_relpath, texture_value, texture_signature,
                     apply_pending, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, true, %s)
                 """,
                 (PLAYER, CHAR_ID, slot, rel, value, signature, NOW),
             )
-            conn.commit()
         return path
 
     def state(self) -> tuple:
-        with self.db.connect() as conn:
-            roster = [tuple(r) for r in conn.execute("SELECT * FROM character_roster ORDER BY character_id")]
-            slots = [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots ORDER BY slot")]
+        with database.connect() as conn:
+            roster = [tuple(r.values()) for r in conn.execute("SELECT * FROM character_roster ORDER BY character_id")]
+            slots = [tuple(r.values()) for r in conn.execute("SELECT * FROM character_wardrobe_slots ORDER BY slot")]
         files = sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*.png"))
         return roster, slots, files
 
@@ -168,10 +172,10 @@ class PluginWornSkinTest(unittest.TestCase):
         self.assertEqual(res.json(), {"character_id": CHAR_ID, "value": None, "signature": None})
 
     def _active(self) -> str | None:
-        with self.db.connect() as conn:
+        with database.connect() as conn:
             return conn.execute(
-                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = ?", (CHAR_ID,)
-            ).fetchone()[0]
+                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = %s", (CHAR_ID,)
+            ).fetchone()["wardrobe_active_slot"]
 
 
 if __name__ == "__main__":

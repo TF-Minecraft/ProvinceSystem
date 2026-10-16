@@ -9,6 +9,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
@@ -68,26 +72,24 @@ class CreateHoldTests(unittest.TestCase):
         self.assertEqual(self._pending_names(), ["Plain", "Held", "Truthy"])
 
     def test_a_hold_nobody_releases_lapses(self) -> None:
-        from src.skins.db import connect
+        from src.database import connect
 
         held = self._create("Abandoned", hold=True)
         self.assertEqual(self._pending_names(), [])
         with connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET held_until = '2020-01-01T00:00:00Z' WHERE id = ?",
+                "UPDATE character_creates SET held_until = '2020-01-01T00:00:00Z' WHERE id = %s",
                 (held,),
             )
-            conn.commit()
         self.assertEqual(self._pending_names(), ["Abandoned"])
 
     def test_only_pending_creates_can_be_released(self) -> None:
         from src.characters.creates import CreateError, release_create
-        from src.skins.db import connect
+        from src.database import connect
 
         held = self._create("Applied", hold=True)
         with connect() as conn:
-            conn.execute("UPDATE character_creates SET status = 'applied' WHERE id = ?", (held,))
-            conn.commit()
+            conn.execute("UPDATE character_creates SET status = 'applied' WHERE id = %s", (held,))
         with self.assertRaises(CreateError):
             release_create(PLAYER, held)
 

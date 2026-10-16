@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
 from typing import Any
 
+from src import database
 from src.characters.estates import (
     death_fields,
     parse_estate,
@@ -13,30 +12,26 @@ from src.characters.estates import (
     store_will,
     will_fields,
 )
+from src.characters.times import api_time, utcnow
 
 
 class RosterError(ValueError):
     """Invalid roster payload."""
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def count_alive(player_uuid: str, realm_id: str | None = None) -> int:
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         return 0
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT COUNT(*) AS n FROM character_roster
-            WHERE player_uuid = ?
-              AND realm_id = ?
+            WHERE player_uuid = %s
+              AND realm_id = %s
               AND LOWER(status) = 'alive'
             """,
             (uuid, realm),
@@ -61,8 +56,6 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
 
 def get_player_meta(player_uuid: str) -> dict[str, Any]:
     """Return stored meta flags for a player (defaults if no row)."""
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     empty = {
         "max_alive_characters": None,
@@ -77,7 +70,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
     }
     if not uuid:
         return empty
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT max_alive_characters, eighteen, real_age_set,
@@ -86,7 +79,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
                    kit_cooldown_seconds_remaining, kit_cooldown_hours,
                    kit_cooldowns_json
             FROM character_player_meta
-            WHERE player_uuid = ?
+            WHERE player_uuid = %s
             """,
             (uuid,),
         ).fetchone()
@@ -140,18 +133,8 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
             kit_cooldown_hours = max(0, int(row["kit_cooldown_hours"]))
         except (TypeError, ValueError):
             kit_cooldown_hours = None
-    kit_cooldowns: dict[str, Any] = {}
-    try:
-        raw_cd = row["kit_cooldowns_json"]
-    except (KeyError, IndexError):
-        raw_cd = None
-    if raw_cd:
-        try:
-            parsed = json.loads(raw_cd)
-            if isinstance(parsed, dict):
-                kit_cooldowns = parsed
-        except (TypeError, json.JSONDecodeError):
-            kit_cooldowns = {}
+    raw_cd = row["kit_cooldowns_json"]
+    kit_cooldowns: dict[str, Any] = raw_cd if isinstance(raw_cd, dict) else {}
     return {
         "max_alive_characters": max_alive,
         "eighteen": eighteen,
@@ -182,28 +165,23 @@ def get_max_alive(
 
 def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:
     """Persist 18+ attestation (player-level, once)."""
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise RosterError("player_uuid is required")
-    now = _iso_now()
-    eighteen_int = 1 if eighteen else 0
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             INSERT INTO character_player_meta (
                 player_uuid, max_alive_characters, eighteen, real_age_set, updated_at
             )
-            VALUES (?, NULL, ?, 1, ?)
-            ON CONFLICT(player_uuid) DO UPDATE SET
+            VALUES (%s, NULL, %s, true, %s)
+            ON CONFLICT (player_uuid) DO UPDATE SET
                 eighteen = excluded.eighteen,
-                real_age_set = 1,
+                real_age_set = true,
                 updated_at = excluded.updated_at
             """,
-            (uuid, eighteen_int, now),
+            (uuid, bool(eighteen), utcnow()),
         )
-        conn.commit()
     return {
         "player_uuid": uuid,
         "eighteen": eighteen,
@@ -211,18 +189,24 @@ def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:
     }
 
 
+_SHEET_TEXT_KEYS = (
+    "race_name",
+    "class_name",
+    "age",
+    "birthday",
+    "gender",
+    "description",
+    "background",
+)
+# The order _sheet_from_character builds a sheet in. jsonb keeps object keys in its
+# own order, so list_roster puts them back in this one.
+_SHEET_KEYS = (*_SHEET_TEXT_KEYS, "attributes", "traits", "experience_modifiers", "clues")
+
+
 def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
     """Pull optional identity-sheet fields from a roster character object."""
     sheet: dict[str, Any] = {}
-    for key in (
-        "race_name",
-        "class_name",
-        "age",
-        "birthday",
-        "gender",
-        "description",
-        "background",
-    ):
+    for key in _SHEET_TEXT_KEYS:
         if key not in raw:
             continue
         val = raw.get(key)
@@ -315,20 +299,19 @@ def list_roster(
     realm_id: str | None = None,
 ) -> list[dict[str, Any]]:
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         return []
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
                    kit_status, kit_statuses_json, sheet_json, realm_id,
                    died_at, death_id, will_heir_id, will_heir_name, will_revision
             FROM character_roster
-            WHERE player_uuid = ? AND realm_id = ?
+            WHERE player_uuid = %s AND realm_id = %s
             ORDER BY created_at ASC, character_id ASC
             """,
             (uuid, realm),
@@ -342,10 +325,10 @@ def list_roster(
             "race": row["race"],
             "class": row["class"],
             "created_at": row["created_at"],
-            "updated_at": row["updated_at"],
+            "updated_at": api_time(row["updated_at"]),
             "realm_id": realm,
             "source": "roster",
-            "died_at": row["died_at"],
+            "died_at": api_time(row["died_at"]),
             "death_id": row["death_id"],
         }
         if str(row["status"] or "").upper() == "ALIVE":
@@ -357,34 +340,20 @@ def list_roster(
         kit_status = row["kit_status"]
         if kit_status is not None and str(kit_status).strip():
             item["kit_status"] = str(kit_status).strip().lower()
-        try:
-            raw_statuses = row["kit_statuses_json"]
-        except (KeyError, IndexError):
-            raw_statuses = None
-        if raw_statuses:
-            try:
-                parsed = json.loads(raw_statuses)
-                if isinstance(parsed, dict) and parsed:
-                    item["kit_statuses"] = {
-                        str(k).strip().lower(): str(v).strip().lower()
-                        for k, v in parsed.items()
-                        if k is not None and str(k).strip()
-                    }
-            except (TypeError, json.JSONDecodeError):
-                pass
-        try:
-            raw_sheet = row["sheet_json"]
-        except (KeyError, IndexError):
-            raw_sheet = None
-        if raw_sheet:
-            try:
-                parsed_sheet = json.loads(raw_sheet)
-                if isinstance(parsed_sheet, dict) and parsed_sheet:
-                    for k, v in parsed_sheet.items():
-                        if k and v is not None and k not in item:
-                            item[str(k)] = v
-            except (TypeError, json.JSONDecodeError):
-                pass
+        statuses = row["kit_statuses_json"]
+        if isinstance(statuses, dict) and statuses:
+            item["kit_statuses"] = {
+                str(k).strip().lower(): str(v).strip().lower()
+                for k, v in statuses.items()
+                if k is not None and str(k).strip()
+            }
+        sheet = row["sheet_json"]
+        if isinstance(sheet, dict):
+            ordered = [k for k in _SHEET_KEYS if k in sheet] + [k for k in sheet if k not in _SHEET_KEYS]
+            for k in ordered:
+                v = sheet[k]
+                if k and v is not None and k not in item:
+                    item[str(k)] = v
         out.append(item)
     return out
 
@@ -403,8 +372,12 @@ def replace_roster(
     kit_cooldowns: dict | None = None,
     realm_id: str | None = None,
 ) -> dict[str, Any]:
+    """Replace one player's roster in one realm with RPCharacters' push.
+
+    Pushes for one player and realm run one after the other (an advisory lock), so a
+    push never keeps a character that the push committed after it dropped.
+    """
     from src.skins.codes import CodeError, normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -483,13 +456,10 @@ def replace_roster(
         if next_kit_hours < 0:
             raise RosterError("kit_cooldown_hours must be >= 0")
 
-    next_kit_cooldowns_json: str | None = None
-    if kit_cooldowns is not None:
-        if not isinstance(kit_cooldowns, dict):
-            raise RosterError("kit_cooldowns must be an object")
-        next_kit_cooldowns_json = json.dumps(kit_cooldowns, separators=(",", ":"))
+    if kit_cooldowns is not None and not isinstance(kit_cooldowns, dict):
+        raise RosterError("kit_cooldowns must be an object")
 
-    now = _iso_now()
+    now = utcnow()
     normalized: list[tuple] = []
     seen: set[str] = set()
     deaths: list[tuple] = []
@@ -526,7 +496,7 @@ def replace_roster(
                 if k is not None and str(k).strip() and v is not None
             }
             if cleaned:
-                kit_statuses_json = json.dumps(cleaned, separators=(",", ":"))
+                kit_statuses_json = database.Jsonb(cleaned)
                 if kit_status is None and "starter" in cleaned:
                     kit_status = cleaned["starter"]
         if "died_at" in raw or "death_id" in raw:
@@ -542,9 +512,7 @@ def replace_roster(
             if estate is not None:
                 estates.append((cid, estate))
         sheet = _sheet_from_character(raw)
-        sheet_json = (
-            json.dumps(sheet, separators=(",", ":")) if sheet is not None else None
-        )
+        sheet_json = database.Jsonb(sheet) if sheet is not None else None
         normalized.append(
             (
                 uuid,
@@ -562,41 +530,43 @@ def replace_roster(
             )
         )
 
-    with connect() as conn:
+    # Rows in character id order, as ack_will_results locks them.
+    normalized.sort(key=lambda row: row[2])
+    with database.transaction(lock=f"characters:roster:{realm}:{uuid}") as conn:
         # Upsert so website-owned columns (wardrobe_active_slot) survive a push.
-        placeholders = ", ".join("?" for _ in seen)
         conn.execute(
-            "DELETE FROM character_roster WHERE player_uuid = ? AND realm_id = ?"
-            + (f" AND character_id NOT IN ({placeholders})" if seen else ""),
-            (uuid, realm, *seen),
+            "DELETE FROM character_roster WHERE player_uuid = %s AND realm_id = %s"
+            " AND NOT (character_id = ANY(%s))",
+            (uuid, realm, sorted(seen)),
         )
-        conn.executemany(
-            """
-            INSERT INTO character_roster (
-                player_uuid, realm_id, character_id, name, status, race, class,
-                created_at, kit_status, kit_statuses_json, sheet_json, updated_at
+        with conn.cursor() as cur:
+            cur.executemany(
+                """
+                INSERT INTO character_roster (
+                    player_uuid, realm_id, character_id, name, status, race, class,
+                    created_at, kit_status, kit_statuses_json, sheet_json, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (player_uuid, realm_id, character_id) DO UPDATE SET
+                    name = excluded.name,
+                    status = excluded.status,
+                    race = excluded.race,
+                    class = excluded.class,
+                    created_at = excluded.created_at,
+                    kit_status = excluded.kit_status,
+                    kit_statuses_json = excluded.kit_statuses_json,
+                    sheet_json = excluded.sheet_json,
+                    updated_at = excluded.updated_at
+                """,
+                normalized,
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(player_uuid, realm_id, character_id) DO UPDATE SET
-                name = excluded.name,
-                status = excluded.status,
-                race = excluded.race,
-                class = excluded.class,
-                created_at = excluded.created_at,
-                kit_status = excluded.kit_status,
-                kit_statuses_json = excluded.kit_statuses_json,
-                sheet_json = excluded.sheet_json,
-                updated_at = excluded.updated_at
-            """,
-            normalized,
-        )
-        conn.executemany(
-            """
-            UPDATE character_roster SET died_at = ?, death_id = ?
-            WHERE player_uuid = ? AND realm_id = ? AND character_id = ?
-            """,
-            deaths,
-        )
+            cur.executemany(
+                """
+                UPDATE character_roster SET died_at = %s, death_id = %s
+                WHERE player_uuid = %s AND realm_id = %s AND character_id = %s
+                """,
+                deaths,
+            )
         for cid, will in wills:
             store_will(conn, uuid, realm, cid, will)
         for cid, estate in estates:
@@ -610,60 +580,9 @@ def replace_roster(
             or next_wardrobe_slots is not None
             or next_kit_seconds is not None
             or next_kit_hours is not None
-            or next_kit_cooldowns_json is not None
+            or kit_cooldowns is not None
         ):
-            existing = conn.execute(
-                "SELECT * FROM character_player_meta WHERE player_uuid = ?",
-                (uuid,),
-            ).fetchone()
-            next_max = max_alive
-            next_eighteen = None if eighteen is None else (1 if eighteen else 0)
-            next_real = None if real_age_set is None else (1 if real_age_set else 0)
-            stored_epoch = next_account_epoch
-            stored_stops = next_colour_stops
-            stored_wardrobe = next_wardrobe_slots
-            stored_kit_seconds = next_kit_seconds
-            stored_kit_hours = next_kit_hours
-            stored_kit_cooldowns = next_kit_cooldowns_json
-            if existing is not None:
-                if next_max is None:
-                    next_max = existing["max_alive_characters"]
-                if next_eighteen is None:
-                    next_eighteen = existing["eighteen"]
-                if next_real is None:
-                    next_real = int(existing["real_age_set"] or 0)
-                if stored_epoch is None:
-                    stored_epoch = existing["account_created_at_epoch"]
-                if stored_stops is None:
-                    try:
-                        stored_stops = existing["name_colour_stops"]
-                    except (KeyError, IndexError):
-                        stored_stops = None
-                if stored_wardrobe is None:
-                    try:
-                        stored_wardrobe = existing["wardrobe_skin_slots"]
-                    except (KeyError, IndexError):
-                        stored_wardrobe = None
-                if stored_kit_seconds is None:
-                    try:
-                        stored_kit_seconds = existing[
-                            "kit_cooldown_seconds_remaining"
-                        ]
-                    except (KeyError, IndexError):
-                        stored_kit_seconds = None
-                if stored_kit_hours is None:
-                    try:
-                        stored_kit_hours = existing["kit_cooldown_hours"]
-                    except (KeyError, IndexError):
-                        stored_kit_hours = None
-                if stored_kit_cooldowns is None:
-                    try:
-                        stored_kit_cooldowns = existing["kit_cooldowns_json"]
-                    except (KeyError, IndexError):
-                        stored_kit_cooldowns = None
-            else:
-                if next_real is None:
-                    next_real = 0
+            # One upsert: a value the push leaves out keeps the stored one.
             conn.execute(
                 """
                 INSERT INTO character_player_meta (
@@ -673,35 +592,44 @@ def replace_roster(
                     kit_cooldown_seconds_remaining, kit_cooldown_hours,
                     kit_cooldowns_json, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(player_uuid) DO UPDATE SET
-                    max_alive_characters = excluded.max_alive_characters,
-                    eighteen = excluded.eighteen,
-                    real_age_set = excluded.real_age_set,
-                    account_created_at_epoch = excluded.account_created_at_epoch,
-                    name_colour_stops = excluded.name_colour_stops,
-                    wardrobe_skin_slots = excluded.wardrobe_skin_slots,
-                    kit_cooldown_seconds_remaining =
-                        excluded.kit_cooldown_seconds_remaining,
-                    kit_cooldown_hours = excluded.kit_cooldown_hours,
-                    kit_cooldowns_json = excluded.kit_cooldowns_json,
+                VALUES (
+                    %(uuid)s, %(max_alive)s, %(eighteen)s, COALESCE(%(real)s, false),
+                    %(epoch)s, %(stops)s, %(wardrobe)s, %(kit_seconds)s, %(kit_hours)s,
+                    %(kit_cooldowns)s, %(now)s
+                )
+                ON CONFLICT (player_uuid) DO UPDATE SET
+                    max_alive_characters = COALESCE(
+                        %(max_alive)s, character_player_meta.max_alive_characters),
+                    eighteen = COALESCE(%(eighteen)s, character_player_meta.eighteen),
+                    real_age_set = COALESCE(%(real)s, character_player_meta.real_age_set),
+                    account_created_at_epoch = COALESCE(
+                        %(epoch)s, character_player_meta.account_created_at_epoch),
+                    name_colour_stops = COALESCE(
+                        %(stops)s, character_player_meta.name_colour_stops),
+                    wardrobe_skin_slots = COALESCE(
+                        %(wardrobe)s, character_player_meta.wardrobe_skin_slots),
+                    kit_cooldown_seconds_remaining = COALESCE(
+                        %(kit_seconds)s, character_player_meta.kit_cooldown_seconds_remaining),
+                    kit_cooldown_hours = COALESCE(
+                        %(kit_hours)s, character_player_meta.kit_cooldown_hours),
+                    kit_cooldowns_json = COALESCE(
+                        %(kit_cooldowns)s, character_player_meta.kit_cooldowns_json),
                     updated_at = excluded.updated_at
                 """,
-                (
-                    uuid,
-                    next_max,
-                    next_eighteen,
-                    next_real,
-                    stored_epoch,
-                    stored_stops,
-                    stored_wardrobe,
-                    stored_kit_seconds,
-                    stored_kit_hours,
-                    stored_kit_cooldowns,
-                    now,
-                ),
+                {
+                    "uuid": uuid,
+                    "max_alive": max_alive,
+                    "eighteen": eighteen,
+                    "real": real_age_set,
+                    "epoch": next_account_epoch,
+                    "stops": next_colour_stops,
+                    "wardrobe": next_wardrobe_slots,
+                    "kit_seconds": next_kit_seconds,
+                    "kit_hours": next_kit_hours,
+                    "kit_cooldowns": None if kit_cooldowns is None else database.Jsonb(kit_cooldowns),
+                    "now": now,
+                },
             )
-        conn.commit()
 
     out: dict[str, Any] = {
         "ok": True,

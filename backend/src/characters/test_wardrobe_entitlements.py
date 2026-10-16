@@ -8,6 +8,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -58,12 +64,12 @@ class WardrobeEntitlementsTest(unittest.TestCase):
             }
         )
 
-        with db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_player_meta (
                     player_uuid, wardrobe_skin_slots, updated_at
-                ) VALUES (?, 1, ?)
+                ) VALUES (%s, 1, %s)
                 """,
                 (PLAYER, NOW),
             )
@@ -71,7 +77,7 @@ class WardrobeEntitlementsTest(unittest.TestCase):
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, updated_at
-                ) VALUES (?, 'main', ?, 'Test', 'ALIVE', ?)
+                ) VALUES (%s, 'main', %s, 'Test', 'ALIVE', %s)
                 """,
                 (PLAYER, CHAR_ID, NOW),
             )
@@ -79,11 +85,10 @@ class WardrobeEntitlementsTest(unittest.TestCase):
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{}', 'pending', ?, 'main')
+                ) VALUES (%s, %s, '{}', 'pending', %s, 'main')
                 """,
                 (CREATE_ID, PLAYER, NOW),
             )
-            conn.commit()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod

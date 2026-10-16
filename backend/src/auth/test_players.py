@@ -4,6 +4,7 @@ import re
 import pytest
 from fastapi import FastAPI
 
+from src import database
 from src.api import admin_routes, auth_routes
 from src.auth import players, testing
 from src.skins import testing as skins_testing
@@ -41,12 +42,10 @@ def link(db, player_uuid, discord_id, mc_name, discord_name):
 
 
 def character(db, player_uuid, name, realm="main", status="alive", character_id=None):
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO character_roster (player_uuid, realm_id, character_id, name, status, race, class, "
-            "updated_at) VALUES (?, ?, ?, ?, ?, 'human', 'smith', '2026-09-21T10:00:00Z')",
-            (player_uuid, realm, character_id or f"c-{name}", name, status))
-        conn.commit()
+    testing.execute(
+        "INSERT INTO character_roster (player_uuid, realm_id, character_id, name, status, race, class, "
+        "updated_at) VALUES (%s, %s, %s, %s, %s, 'human', 'smith', '2026-09-21T10:00:00Z')",
+        (player_uuid, realm, character_id or f"c-{name}", name, status))
 
 
 @pytest.fixture
@@ -214,6 +213,7 @@ def test_profile(app, env, world):
     assert body["discord"]["discord_username"] == "hazelstone"
     assert body["account"] is None
     assert body["characters"][0]["name"] == "Hazel Stonebrook"
+    assert body["characters"][0]["updated_at"] == "2026-09-21T10:00:00Z"
     assert body["coreprotect"]["status"] == "available"
 
 
@@ -256,21 +256,20 @@ def test_character_pictures_require_staff_and_read_the_requested_realm(app, env,
     monkeypatch.setattr(wardrobe, "swappable_slot_count", lambda *args, **kwargs: 2)
     cid = "c-Hazel Stonebrook"
     character(env, HAZEL, "Tutorial Hazel", realm="tutorial", character_id=cid)
-    with env.connect() as conn:
-        conn.execute("UPDATE character_roster SET status = ? WHERE player_uuid = ? AND character_id = ?",
+    with database.connect() as conn:
+        conn.execute("UPDATE character_roster SET status = %s WHERE player_uuid = %s AND character_id = %s",
                      (status, HAZEL, cid))
         conn.execute("UPDATE character_roster SET wardrobe_active_slot = CASE realm_id "
-                     "WHEN 'tutorial' THEN 'extra_1' ELSE 'base' END WHERE player_uuid = ?", (HAZEL,))
+                     "WHEN 'tutorial' THEN 'extra_1' ELSE 'base' END WHERE player_uuid = %s", (HAZEL,))
         for slot, colour in [("base", (10, 20, 30, 255)), ("extra_1", (40, 50, 60, 255))]:
             rel = f"wardrobe/{HAZEL}/{cid}/{slot}.png"
             path = env.DATA_DIR / rel
             path.parent.mkdir(parents=True, exist_ok=True)
             Image.new("RGBA", (64, 64), colour).save(path)
             conn.execute("INSERT INTO character_wardrobe_slots "
-                         "(player_uuid, character_id, slot, png_relpath, updated_at) VALUES (?, ?, ?, ?, 'now')",
+                         "(player_uuid, character_id, slot, png_relpath, updated_at) VALUES (%s, %s, %s, %s, now())",
                          (HAZEL, cid, slot, rel))
-        conn.commit()
-        before = [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots")]
+    before = testing.rows("SELECT * FROM character_wardrobe_slots ORDER BY slot")
     path = f"/admin/players/{HAZEL}/characters/{cid}/{kind}"
     assert client(app).get(path).status_code == 401
     assert client(app, staff(env, "player")).get(path).status_code == 403
@@ -287,10 +286,9 @@ def test_character_pictures_require_staff_and_read_the_requested_realm(app, env,
     assert c.get(path.replace(HAZEL, LINKED_ONLY)).status_code == 404
     assert c.get(path.replace(HAZEL, "not-a-uuid")).status_code == 400
     assert c.get(path.replace(cid, "missing")).status_code == 404
-    with env.connect() as conn:
-        assert [tuple(r) for r in conn.execute("SELECT * FROM character_wardrobe_slots")] == before
-        assert conn.execute("SELECT wardrobe_active_slot FROM character_roster "
-                            "WHERE realm_id = 'tutorial' AND character_id = ?", (cid,)).fetchone()[0] == "extra_1"
+    assert testing.rows("SELECT * FROM character_wardrobe_slots ORDER BY slot") == before
+    assert testing.value("SELECT wardrobe_active_slot FROM character_roster "
+                         "WHERE realm_id = 'tutorial' AND character_id = %s", (cid,)) == "extra_1"
     if status != "ALIVE":
         with pytest.raises(wardrobe.WardrobeError, match="Character is not alive") as error:
             wardrobe.get_wardrobe(HAZEL, cid)

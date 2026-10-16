@@ -8,6 +8,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _BACKEND_SRC = _BACKEND_ROOT / "src"
 if str(_BACKEND_ROOT) not in sys.path:
@@ -234,9 +240,9 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         from src.characters.lore_items import customise_lore_item
 
         lore_code_id = ensure_lore_upload_code(self.PLAYER, "main")
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
-                "DELETE FROM lore_item_customisations WHERE character_id = ?",
+                "DELETE FROM lore_item_customisations WHERE character_id = %s",
                 (self.CHAR_ID,),
             )
             conn.commit()

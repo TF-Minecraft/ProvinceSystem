@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.skins.db import connect
+from src import database
 
 
 class PendingCreateError(ValueError):
@@ -23,13 +23,13 @@ def fetch_owned_pending_create(
     cid = (create_id or "").strip()
     if not uuid or not cid:
         return None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, player_uuid, status, character_id, realm_id,
                    wardrobe_active_slot
             FROM character_creates
-            WHERE id = ? AND player_uuid = ?
+            WHERE id = %s AND player_uuid = %s
               AND LOWER(COALESCE(status, '')) = 'pending'
             """,
             (cid, uuid),
@@ -54,12 +54,12 @@ def resolve_player_character(
     if not uuid or not cid:
         raise PendingCreateError("character_id is required", status_code=400)
 
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT player_uuid, character_id, wardrobe_active_slot, realm_id, status
             FROM character_roster
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (uuid, cid),
         ).fetchone()

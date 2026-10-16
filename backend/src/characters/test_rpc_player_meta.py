@@ -10,6 +10,8 @@ from unittest import mock
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -93,6 +95,19 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(row["skin_kinds"], ["armor_set", "handheld"])
         self.assertTrue(row["allow_drink_message"])
         self.assertTrue(row["meta_synced"])
+        # Times keep the API form; flags come back sorted, as they were stored before jsonb.
+        self.assertRegex(out["updated_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertEqual(row["updated_at"], out["updated_at"])
+
+    def test_permission_flags_keep_their_sorted_order(self) -> None:
+        import json
+
+        from characters.rpc_player_meta import get_rpc_player_meta, upsert_rpc_player_meta
+
+        flags = {"tfmc.map.staff": True, "a.b": False, "rulequiz.completed": True}
+        upsert_rpc_player_meta({"player_uuid": "player-2", "permission_flags": flags})
+        row = get_rpc_player_meta("player-2")
+        self.assertEqual(json.dumps(row["permission_flags"]), json.dumps(flags, sort_keys=True))
 
     def test_realm_scoped_get_upsert(self) -> None:
         from characters.rpc_player_meta import (

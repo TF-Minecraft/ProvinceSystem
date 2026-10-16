@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import json
 import re
 import uuid as uuid_lib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from src import database
 from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
 )
+from src.characters.times import api_time, utcnow
 from src.characters.creation_rules import is_character_name, traits_error
 from src.characters.roster import (
     count_alive,
@@ -44,14 +45,6 @@ class CreateError(ValueError):
 # upload. Long enough to sign and upload every wardrobe skin; a hold the browser
 # never releases (closed tab, lost connection) lapses on its own.
 HOLD_FOR_UPLOADS = timedelta(minutes=10)
-
-
-def _iso(moment: datetime) -> str:
-    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _iso_now() -> str:
-    return _iso(datetime.now(timezone.utc))
 
 
 def _as_dict(raw: Any, field: str) -> dict[str, Any]:
@@ -170,18 +163,17 @@ def _validate_and_normalize(
         )
 
     from src.skins.codes import CodeError, normalize_realm_id
-    from src.skins.db import connect
 
     try:
         realm = normalize_realm_id(realm_id)
     except CodeError as e:
         raise CreateError(str(e)) from e
 
-    with connect() as conn:
+    with database.connect() as conn:
         roster_clash = conn.execute(
             """
             SELECT 1 FROM character_roster
-            WHERE realm_id = ? AND LOWER(name) = LOWER(?)
+            WHERE realm_id = %s AND LOWER(name) = LOWER(%s)
             LIMIT 1
             """,
             (realm, name),
@@ -191,14 +183,13 @@ def _validate_and_normalize(
         pending_rows = conn.execute(
             """
             SELECT payload FROM character_creates
-            WHERE realm_id = ? AND status = 'pending'
+            WHERE realm_id = %s AND status = 'pending'
             """,
             (realm,),
         ).fetchall()
     for prow in pending_rows:
-        try:
-            pending_payload = json.loads(prow["payload"] or "{}")
-        except (TypeError, json.JSONDecodeError):
+        pending_payload = prow["payload"]
+        if not isinstance(pending_payload, dict):
             continue
         pending_name = str(pending_payload.get("name") or "").strip()
         if pending_name and pending_name.lower() == name.lower():
@@ -453,13 +444,11 @@ def account_age_seconds(meta: dict[str, Any]) -> int:
 
 def count_pending(player_uuid: str, realm_id: str) -> int:
     """Creates still waiting for RPCharacters; each holds a slot until applied or rejected."""
-    from src.skins.db import connect
-
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT COUNT(*) AS n FROM character_creates
-            WHERE player_uuid = ? AND realm_id = ? AND status = 'pending'
+            WHERE player_uuid = %s AND realm_id = %s AND status = 'pending'
             """,
             (player_uuid, realm_id),
         ).fetchone()
@@ -467,10 +456,8 @@ def count_pending(player_uuid: str, realm_id: str) -> int:
 
 
 def _row_to_dict(row) -> dict[str, Any]:
-    payload = {}
-    try:
-        payload = json.loads(row["payload"] or "{}")
-    except json.JSONDecodeError:
+    payload = row["payload"]
+    if not isinstance(payload, dict):
         payload = {}
     realm = "main"
     try:
@@ -486,8 +473,8 @@ def _row_to_dict(row) -> dict[str, Any]:
         "status": row["status"],
         "character_id": row["character_id"],
         "error": row["error"],
-        "created_at": row["created_at"],
-        "applied_at": row["applied_at"],
+        "created_at": api_time(row["created_at"]),
+        "applied_at": api_time(row["applied_at"]),
         "realm_id": realm,
         "payload": payload,
     }
@@ -500,7 +487,6 @@ def create_character(
     realm_id: str | None = None,
 ) -> dict[str, Any]:
     from src.skins.codes import CodeError, normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -519,12 +505,12 @@ def create_character(
         raise CreateError(str(e)) from e
 
     client_request_id = normalized.get("client_request_id")
-    with connect() as conn:
+    with database.connect() as conn:
         if client_request_id:
             existing = conn.execute(
                 """
                 SELECT * FROM character_creates
-                WHERE player_uuid = ? AND client_request_id = ?
+                WHERE player_uuid = %s AND client_request_id = %s
                 """,
                 (uuid, client_request_id),
             ).fetchone()
@@ -534,42 +520,55 @@ def create_character(
         if "eighteen" in body and isinstance(body.get("eighteen"), bool):
             set_real_age(uuid, bool(body.get("eighteen")))
 
-        create_id = str(uuid_lib.uuid4())
-        moment = datetime.now(timezone.utc)
-        held_until = _iso(moment + HOLD_FOR_UPLOADS) if body.get("hold") is True else None
-        payload = json.dumps(normalized, separators=(",", ":"))
-        conn.execute(
+        moment = utcnow()
+        held_until = moment + HOLD_FOR_UPLOADS if body.get("hold") is True else None
+        # A retry racing the first request finds its row through the unique index.
+        row = conn.execute(
             """
             INSERT INTO character_creates (
                 id, player_uuid, client_request_id, payload, status,
                 character_id, error, created_at, applied_at, realm_id, held_until
             )
-            VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL, ?, ?)
+            VALUES (%s, %s, %s, %s, 'pending', NULL, NULL, %s, NULL, %s, %s)
+            ON CONFLICT (player_uuid, client_request_id)
+                WHERE client_request_id IS NOT NULL AND TRIM(client_request_id) != ''
+                DO NOTHING
+            RETURNING *
             """,
-            (create_id, uuid, client_request_id, payload, _iso(moment), realm, held_until),
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT * FROM character_creates WHERE id = ?",
-            (create_id,),
+            (
+                str(uuid_lib.uuid4()),
+                uuid,
+                client_request_id,
+                database.Jsonb(normalized),
+                moment,
+                realm,
+                held_until,
+            ),
         ).fetchone()
+        if row is None:
+            row = conn.execute(
+                """
+                SELECT * FROM character_creates
+                WHERE player_uuid = %s AND client_request_id = %s
+                """,
+                (uuid, client_request_id),
+            ).fetchone()
     return _row_to_dict(row)
 
 
 def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM character_creates
-            WHERE status = 'pending' AND realm_id = ?
-              AND (held_until IS NULL OR held_until <= ?)
+            WHERE status = 'pending' AND realm_id = %s
+              AND (held_until IS NULL OR held_until <= %s)
             ORDER BY created_at ASC
             """,
-            (realm, _iso_now()),
+            (realm, utcnow()),
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
 
@@ -615,18 +614,17 @@ def list_for_player(
     from src.characters.rpc_player_meta import resolve_web_entitlements
     from src.characters.wills import will_requests_for
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     realm = normalize_realm_id(realm_id)
     roster = list_roster(uuid, realm)
     meta = get_player_meta(uuid)
     entitlements = resolve_web_entitlements(uuid, realm_id=realm)
-    with connect() as conn:
+    with database.connect() as conn:
         pending_rows = conn.execute(
             """
             SELECT * FROM character_creates
-            WHERE player_uuid = ? AND status = 'pending' AND realm_id = ?
+            WHERE player_uuid = %s AND status = 'pending' AND realm_id = %s
             ORDER BY created_at ASC
             """,
             (uuid, realm),
@@ -635,9 +633,9 @@ def list_for_player(
         rejected_rows = conn.execute(
             """
             SELECT * FROM character_creates
-            WHERE player_uuid = ?
+            WHERE player_uuid = %s
               AND status = 'rejected'
-              AND realm_id = ?
+              AND realm_id = %s
             ORDER BY COALESCE(applied_at, created_at) DESC
             LIMIT 20
             """,
@@ -731,19 +729,18 @@ def list_for_player(
 
 
 def mark_applied_results(results: list) -> dict[str, Any]:
-    from src.skins.db import connect
     from src.characters.lore_items import remount_character_id
     from src.characters.wardrobe import flush_pending_wardrobe
 
     if not isinstance(results, list):
         raise CreateError("results must be a list")
 
-    now = _iso_now()
+    now = utcnow()
     applied: list[str] = []
     rejected: list[str] = []
     remounts: list[tuple[str, str, str]] = []
 
-    with connect() as conn:
+    with database.connect() as conn:
         for i, raw in enumerate(results):
             if not isinstance(raw, dict):
                 raise CreateError(f"results[{i}] must be an object")
@@ -755,47 +752,39 @@ def mark_applied_results(results: list) -> dict[str, Any]:
                 character_id = str(raw.get("character_id") or cid).strip()
                 owner = conn.execute(
                     """
-                    SELECT player_uuid FROM character_creates
-                    WHERE id = ? AND status = 'pending'
-                    """,
-                    (cid,),
-                ).fetchone()
-                cur = conn.execute(
-                    """
                     UPDATE character_creates
                     SET status = 'applied',
-                        character_id = ?,
+                        character_id = %s,
                         error = NULL,
-                        applied_at = ?
-                    WHERE id = ? AND status = 'pending'
+                        applied_at = %s
+                    WHERE id = %s AND status = 'pending'
+                    RETURNING player_uuid
                     """,
                     (character_id, now, cid),
-                )
-                if cur.rowcount:
+                ).fetchone()
+                if owner is not None:
                     applied.append(cid)
-                    if owner is not None:
-                        remounts.append(
-                            (
-                                str(owner["player_uuid"] or "").strip(),
-                                cid,
-                                character_id,
-                            )
+                    remounts.append(
+                        (
+                            str(owner["player_uuid"] or "").strip(),
+                            cid,
+                            character_id,
                         )
+                    )
             else:
                 error = str(raw.get("error") or "rejected").strip()
                 cur = conn.execute(
                     """
                     UPDATE character_creates
                     SET status = 'rejected',
-                        error = ?,
-                        applied_at = ?
-                    WHERE id = ? AND status = 'pending'
+                        error = %s,
+                        applied_at = %s
+                    WHERE id = %s AND status = 'pending'
                     """,
                     (error, now, cid),
                 )
                 if cur.rowcount:
                     rejected.append(cid)
-        conn.commit()
 
     for player_uuid, create_id, character_id in remounts:
         remount_character_id(player_uuid, create_id, character_id)
@@ -806,17 +795,14 @@ def mark_applied_results(results: list) -> dict[str, Any]:
 
 def release_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     """Let RPCharacters apply a held create now that its skins are uploaded."""
-    from src.skins.db import connect
-
-    with connect() as conn:
+    with database.connect() as conn:
         released = conn.execute(
             """
             UPDATE character_creates SET held_until = NULL
-            WHERE id = ? AND player_uuid = ? AND status = 'pending'
+            WHERE id = %s AND player_uuid = %s AND status = 'pending'
             """,
             ((create_id or "").strip(), (player_uuid or "").strip()),
         ).rowcount
-        conn.commit()
     if not released:
         raise CreateError("Create not found", status_code=404)
     return {"ok": True, "id": create_id}
@@ -826,7 +812,6 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     """Cancel a pending web create: wardrobe, kit drafts, and create row."""
     from src.characters.pending_create import fetch_owned_pending_create
     from src.characters.wardrobe import delete_all_pending_create_wardrobe
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     cid = (create_id or "").strip()
@@ -834,10 +819,10 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         raise CreateError("Create not found", status_code=404)
 
     if fetch_owned_pending_create(uuid, cid) is None:
-        with connect() as conn:
+        with database.connect() as conn:
             row = conn.execute(
                 """
-                SELECT player_uuid, status FROM character_creates WHERE id = ?
+                SELECT player_uuid, status FROM character_creates WHERE id = %s
                 """,
                 (cid,),
             ).fetchone()
@@ -850,12 +835,12 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
 
     delete_all_pending_create_wardrobe(cid)
 
-    with connect() as conn:
+    with database.connect() as conn:
         pending_sub_rows = conn.execute(
             """
             SELECT DISTINCT submission_id
             FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
               AND submission_id IS NOT NULL
               AND TRIM(submission_id) != ''
               AND LOWER(COALESCE(state, '')) = 'pending_skin'
@@ -870,18 +855,17 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         conn.execute(
             """
             DELETE FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (uuid, cid),
         )
         cur = conn.execute(
             """
             DELETE FROM character_creates
-            WHERE id = ? AND player_uuid = ? AND status = 'pending'
+            WHERE id = %s AND player_uuid = %s AND status = 'pending'
             """,
             (cid, uuid),
         )
-        conn.commit()
         if cur.rowcount == 0:
             raise CreateError("Create not found", status_code=404)
 
