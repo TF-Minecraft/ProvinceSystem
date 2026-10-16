@@ -266,7 +266,7 @@ def test_two_confirmations_link_once(monkeypatch):
     pending_link("confirm-token")
     gate = Gate(monkeypatch, "UPDATE patreon_pending_links SET used_at")
     confirm = lambda: linking.confirm_link("confirm-token")  # noqa: E731
-    one, two = race(gate, confirm, confirm, ROW)
+    one, two = race(gate, confirm, confirm, ADVISORY)
     assert (one.value, two.value) == ({"status": "ok", "tier": "noble"}, {"status": "expired", "tier": ""})
     assert [c["dm"] for c in changes()] == ["link_success"]
 

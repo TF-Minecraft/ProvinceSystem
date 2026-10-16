@@ -376,3 +376,18 @@ def test_a_change_refuses_a_session_expiring_after_its_session_check(app, bridge
     assert isinstance(run.join().error, admin.AdminError) and run.error.code == "not_signed_in"
     assert testing.value("SELECT count(*) FROM lp_changes WHERE target = %s", (ALICE,)) == 0
     assert [(r["actor_name"], r["outcome"]) for r in testing.audit_rows()] == [("rory", "ok"), ("adam", "denied")]
+
+
+def test_a_change_refuses_expiry_during_its_audit_write(app, bridge, staff, monkeypatch):
+    now = users._utcnow()
+    expires = now + timedelta(seconds=1)
+    testing.execute("UPDATE user_sessions SET expires_at = %s WHERE user_id = %s", (expires, user_id("adam")))
+    monkeypatch.setattr(users, "_utcnow", lambda: now)
+    with database.connect() as conn:
+        conn.execute("LOCK TABLE admin_audit IN SHARE MODE")
+        run = Run(lambda: changes.queue_change(staff["admin"], "user", ALICE, TIPS, "Event reward"))
+        lock_wait(run, {"relation"})
+        now = expires
+    assert isinstance(run.join().error, admin.AdminError) and run.error.code == "not_signed_in"
+    assert testing.value("SELECT count(*) FROM lp_changes") == 0
+    assert [(r["actor_name"], r["outcome"]) for r in testing.audit_rows()] == [("adam", "denied")]

@@ -237,7 +237,7 @@ def test_confirmation_expiring_while_waiting_for_the_patreon_lock_cannot_link(cl
     run = wait_then_advance(clock, "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (s.PATREON_LOCK,),
                             lambda: linking.confirm_link("confirm-token"), expires, ADVISORY)
     assert run.error is None and run.value == {"status": "expired", "tier": ""}
-    assert testing.value("SELECT used_at IS NOT NULL FROM patreon_pending_links")
+    assert testing.value("SELECT used_at FROM patreon_pending_links") is None
     assert testing.value("SELECT count(*) FROM patreon_links") == 0
 
 

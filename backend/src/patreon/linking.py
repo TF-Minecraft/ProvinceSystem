@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import secrets
+from contextlib import nullcontext
 from datetime import timedelta
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
@@ -95,6 +96,7 @@ def consume_state(token: str | None) -> dict | None:
         return None
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
     with database.connect() as conn:
+        conn.execute("LOCK TABLE patreon_oauth_states IN ROW EXCLUSIVE MODE")
         conn.execute("SELECT state_hash FROM patreon_oauth_states WHERE state_hash = %s FOR UPDATE", (digest,))
         now = utcnow()
         # Compare-and-set: one UPDATE checks and spends the state, so two callbacks cannot both get it.
@@ -181,13 +183,14 @@ def _finish_callback(code: str | None, state: str | None, *, denied: bool) -> tu
         client.close()
 
 
-def _pending(token: str, *, consume: bool = False) -> dict | None:
+def _pending(token: str, *, consume: bool = False, conn=None) -> dict | None:
     """The live confirmation for a token. `consume` spends it: only one caller gets it back."""
     if not token or len(token) > 256:
         return None
     digest = hashlib.sha256(token.encode()).hexdigest()
-    with database.connect() as conn:
+    with (database.connect() if conn is None else nullcontext(conn)) as conn:
         if consume:
+            conn.execute("LOCK TABLE patreon_pending_links IN ROW EXCLUSIVE MODE")
             conn.execute("SELECT token_hash FROM patreon_pending_links WHERE token_hash = %s FOR UPDATE", (digest,))
         now = utcnow()
         if consume:
@@ -225,20 +228,33 @@ def confirm_link(token: str) -> dict:
 
 
 def _confirm_link(token: str) -> tuple[str, str]:
-    subject = _pending(token, consume=True)
-    if subject is None:
-        return "expired", ""
-    config = Config.from_env()
-    user_id = subject["patreon_user_id"]
+    failure = reply = None
     with database.transaction(lock=service.PATREON_LOCK) as conn:
-        if subject["expires_at"] <= utcnow():
+        subject = _pending(token, consume=True, conn=conn)
+        if subject is None:
             return "expired", ""
-        result = service.create_or_update_link(user_id, discord_user_id=subject["discord_user_id"], player_uuid=subject["player_uuid"], method="oauth", config=config, conn=conn)
-        if result != "ok":
-            return (result if result in {"already_linked", "relink_cooldown"} else "error"), ""
-        known = conn.execute("SELECT 1 FROM patreon_members WHERE patreon_user_id = %s", (user_id,)).fetchone()
-        if known:
-            return _tier_status(service.recompute_link(user_id, config=config, conn=conn, link_success=True), config)
+        user_id = subject["patreon_user_id"]
+        try:
+            # Keep the spend on an ordinary error, as before. Expiry instead
+            # rolls back this whole transaction: token, link and outboxes.
+            with conn.transaction():
+                config = Config.from_env()
+                result = service.create_or_update_link(user_id, discord_user_id=subject["discord_user_id"], player_uuid=subject["player_uuid"], method="oauth", config=config, conn=conn)
+                if result != "ok":
+                    reply = (result if result in {"already_linked", "relink_cooldown"} else "error"), ""
+                else:
+                    known = conn.execute("SELECT 1 FROM patreon_members WHERE patreon_user_id = %s", (user_id,)).fetchone()
+                    if known:
+                        reply = _tier_status(service.recompute_link(user_id, config=config, conn=conn, link_success=True), config)
+        except Exception as exc:
+            failure = exc
+        if subject["expires_at"] <= utcnow():
+            conn.rollback()
+            return "expired", ""
+    if failure is not None:
+        raise failure
+    if reply is not None:
+        return reply
     # An unknown patron: fetch them with no transaction open, then recompute.
     client = build_client(config)
     try:

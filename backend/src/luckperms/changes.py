@@ -399,13 +399,13 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
             except database.UniqueViolation:
                 # Another change for this target committed after the check above.
                 raise _conflict("change_pending") from None
-            # A timeout settlement or unique-index wait may outlast the session.
-            session = conn.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (actor["session_id"],)).fetchone()
-            if session is None or session["expires_at"] <= users._utcnow():
-                raise AdminError(401, "not_signed_in", "denied")
             audit.record(conn, actor=actor, action=action, outcome="ok", reason=clean,
                          detail={**detail_target, "target_name": target_name, "change_id": change_id,
                                  "description": description})
+            # All mutation waits, including the audit insert, precede this check.
+            session = conn.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (actor["session_id"],)).fetchone()
+            if session is None or session["expires_at"] <= users._utcnow():
+                raise AdminError(401, "not_signed_in", "denied")
     except AdminError as exc:
         if actor is not None:
             audit.record_refusal(actor=actor, action=action, outcome=exc.outcome, reason=clean,
@@ -511,17 +511,17 @@ def settle_timeouts(conn, now: float | None = None) -> None:
     Each UPDATE keeps the status in its WHERE, so a change settled meanwhile is left alone,
     and locks its rows in id order.
     """
-    now = time.time() if now is None else now
     for status, column, wait, outcome, error in (
             ("sent", "sent_at", RESULT_WAIT_SECONDS, "unknown", "no_result"),
             ("pending", "created_at", PENDING_TTL_SECONDS, "expired", "expired")):
+        checked_at = time.time() if now is None else now
         conn.execute(
             f"""
             UPDATE lp_changes SET status = %s, finished_at = %s, error = %s
             WHERE id IN (SELECT id FROM lp_changes WHERE status = %s AND {column} < %s ORDER BY id FOR UPDATE)
               AND status = %s
             """,
-            (outcome, mirror._stamp(now), error, status, _before(now, wait), status))
+            (outcome, mirror._stamp(checked_at), error, status, _before(checked_at, wait), status))
 
 
 def _before(now: float, seconds: int) -> datetime:
@@ -555,9 +555,7 @@ def fetch_for_bridge() -> list[dict]:
         # The upsert is the first statement, so lp_state is this transaction's first lock.
         mirror.record_poll(conn)
         _lock_actors(conn)
-        now = time.time()
-        settle_timeouts(conn, now)
-        stamp = mirror._stamp()
+        settle_timeouts(conn)
         out = []
         # Until a definition change's result arrives, or a snapshot taken after it was
         # sent shows LuckPerms as it now is, nothing else is checked against old groups.
@@ -569,10 +567,19 @@ def fetch_for_bridge() -> list[dict]:
                   SELECT 1 FROM lp_state s WHERE s.id = 1 AND s.checked_at > c.sent_at)))
             """).fetchone()
         rows = [] if read_only() or definition_sent else conn.execute(
-            "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id").fetchall()
+            "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id FOR UPDATE").fetchall()
         for row in rows:
             if len(out) >= FETCH_LIMIT:
                 break
+            # Settlement or collecting these row locks may have waited past a
+            # different pending change's TTL. No row/table write lock is left
+            # to acquire before handing this locked row out.
+            now = time.time()
+            stamp = mirror._stamp(now)
+            if row["created_at"] < _before(now, PENDING_TTL_SECONDS):
+                conn.execute("UPDATE lp_changes SET status = 'expired', finished_at = %s, error = 'expired' "
+                             "WHERE id = %s AND status = 'pending'", (stamp, row["id"]))
+                continue
             definition = row["target_type"] != "user"
             if definition and out:
                 break

@@ -55,6 +55,7 @@ def acquire_lease(name: str = "sync") -> str | None:
 
 def renew_lease(name: str, owner: str):
     with database.connect() as conn:
+        conn.execute("LOCK TABLE patreon_leases IN ROW EXCLUSIVE MODE")
         conn.execute("SELECT name FROM patreon_leases WHERE name = %s FOR UPDATE", (name,))
         now = utcnow()
         cur = conn.execute("UPDATE patreon_leases SET expires_at = %s WHERE name = %s AND owner = %s AND expires_at > %s",
@@ -416,6 +417,10 @@ def _run_fetch(*, config, client, member_id=None):
             _compute(conn, config, now, brake_check=True)
             if not member_id:
                 conn.execute("UPDATE patreon_sync_state SET last_sync_at = %s, last_sync_ok = true, consecutive_failures = 0 WHERE id = 1", (now,))
+            # Member, link, outbox and sync-state writes may all wait. The held
+            # lease row cannot change owner; its deadline must still be live.
+            if lease["owner"] != owner or lease["expires_at"] <= utcnow():
+                raise ServiceError("patreon_lease_lost")
         return {"ok": True, "members": len(fetched), "brake_held": health(config)["brake_held"]}
     except Exception:
         # No raw exception strings: HTTP bodies and parse failures may contain PII.

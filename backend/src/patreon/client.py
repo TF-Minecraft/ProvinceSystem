@@ -166,6 +166,7 @@ class PatreonClient:
             with database.connect() as conn:
                 # Held until commit, so the lease cannot pass to another worker mid-write.
                 lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'token_refresh' FOR UPDATE").fetchone()
+                conn.execute("LOCK TABLE patreon_tokens IN ROW EXCLUSIVE MODE")
                 conn.execute("SELECT id FROM patreon_tokens WHERE id = 1 FOR UPDATE")
                 now = utcnow()
                 if not lease or lease["owner"] != owner or lease["expires_at"] <= now:
