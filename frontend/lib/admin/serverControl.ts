@@ -21,6 +21,8 @@ export type ServerPlan = {
   activation: Activation[];
   skipped: { repo: string; reason: string }[];
   last_backup_at: number | null;
+  /** The helper takes a fresh AMP backup during Main's countdown. */
+  backup?: boolean;
 };
 export type ServerJob = {
   id: string;
@@ -39,6 +41,7 @@ export type ServerJob = {
   deadline: number;
   maintenance_started: boolean;
   emergency_override?: boolean;
+  backup?: { title: string; state: "running" | "done" } | null;
   error: string | null;
   changes: ReleaseChange[];
   activation: Activation[];
@@ -58,13 +61,12 @@ export function serverAction(
   action: "start" | "cancel" | "reopen" | "resolve",
   id: string,
   reason: string,
-  backup_ref = "",
   emergency_override = false,
   replace_test_builds: string[] = [],
 ): Promise<ServerJob> {
   return adminRequest(`/admin/servers/${server}/${action}`, {
     method: "POST",
-    body: JSON.stringify({ id, reason, backup_ref, emergency_override, replace_test_builds }),
+    body: JSON.stringify({ id, reason, emergency_override, replace_test_builds }),
   });
 }
 
@@ -90,6 +92,10 @@ export const CONTROL_MESSAGES: Record<string, string> = {
   cannot_cancel: "The restart has passed the countdown and can no longer be cancelled.",
   reason_required: "Give a reason of at least 3 characters.",
   scheduled_restart_conflict: "This would overlap AMP’s scheduled restart. Try outside the scheduled restart window.",
-  backup_required: "Record the backup prepared for this Main restart.",
+  amp_unavailable: "AMP did not answer. Check the server in the AMP panel.",
+  amp_login_failed: "The control helper could not sign in to AMP.",
+  amp_action_failed: "AMP refused the request. Check the server in the AMP panel.",
+  amp_backup_failed: "AMP’s backup failed, so the restart was called off. Nothing was installed.",
+  amp_backup_timeout: "AMP’s backup took over 20 minutes, so the restart was called off. Nothing was installed.",
   server_not_allowed: "This website can only control Dev.",
 };
