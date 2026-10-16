@@ -710,17 +710,71 @@ def test_emergency_and_dev_restarts_take_no_amp_backup(controller, monkeypatch):
     assert not any(method == "LocalFileBackupPlugin/TakeBackup" for _, method, _ in amp.calls)
 
 
-def test_console_uses_the_amp_api_when_a_login_file_exists(controller, tmp_path, monkeypatch):
+LOGIN = {"username": "TFWeb", "password": "secret-pass"}
+
+
+def test_console_uses_the_amp_api_with_the_websites_login(controller, monkeypatch):
     sent = []
     monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: sent.append((self.username, server, method, body)))
     monkeypatch.setattr(host.subprocess, "run", lambda *a, **k: pytest.fail("sudo wrapper used"))
     instance = host.Controller(controller.state, controller.roots)
-    instance.amp_login = tmp_path / "amp-login.json"
     assert instance.amp() is None
-    instance.amp_login.write_text(json.dumps({"username": "TFWeb", "password": "secret"}))
-    instance.console("main", "list")
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    assert plan["backup"] is True
     assert sent == [("TFWeb", "main", "Core/SendConsoleMessage", {"message": "list"})]
-    assert instance.plan("main", "restart", [])["backup"] is True
+    first = instance.amp()
+    instance.dispatch({"operation": "status", "amp": LOGIN})
+    assert instance.amp() is first  # the same login keeps its client and sessions
+    instance.dispatch({"operation": "status", "amp": {**LOGIN, "password": "changed"}})
+    assert instance.amp() is not first and instance.amp().password == "changed"
+
+
+@pytest.mark.parametrize("login", [{"username": "TFWeb"}, {"username": "", "password": "x"},
+                                   {"username": "TFWeb", "password": 5}, "TFWeb:secret", {**LOGIN, "extra": 1}])
+def test_malformed_logins_are_refused(controller, login):
+    with pytest.raises(control.ControlError, match="bad_control_request"):
+        controller.dispatch({"operation": "status", "amp": login})
+
+
+def test_the_login_is_never_written_to_the_state_files(controller, monkeypatch):
+    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
+    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: {"Id": "task-1"})
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
+                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+    stored = "".join(p.read_text(errors="replace") for p in controller.state.rglob("*.json"))
+    assert "secret-pass" not in stored and "TFWeb" not in stored
+
+
+def test_the_site_sends_its_amp_login_except_with_status(tmp_path, monkeypatch):
+    import socket as sockets
+    path = tmp_path / "control.sock"
+    received = []
+    server = sockets.socket(sockets.AF_UNIX, sockets.SOCK_STREAM)
+    server.bind(str(path))
+    server.listen()
+
+    def serve():
+        for _ in range(3):
+            conn, _ = server.accept()
+            with conn, conn.makefile("rb") as stream:
+                received.append(json.loads(stream.readline()))
+                conn.sendall(b'{"jobs": []}\n')
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    monkeypatch.setenv("SERVER_CONTROL_SOCKET", str(path))
+    monkeypatch.delenv("SERVER_CONTROL_AMP_USERNAME", raising=False)
+    control.request("plan", server="main")
+    monkeypatch.setenv("SERVER_CONTROL_AMP_USERNAME", "TFWeb")
+    monkeypatch.setenv("SERVER_CONTROL_AMP_PASSWORD", "secret-pass")
+    control.request("plan", server="main")
+    control.request("status")
+    thread.join(5)
+    server.close()
+    assert "amp" not in received[0]
+    assert received[1]["amp"] == LOGIN
+    assert "amp" not in received[2]
 
 
 def test_amp_logs_in_again_when_its_session_expires(monkeypatch):

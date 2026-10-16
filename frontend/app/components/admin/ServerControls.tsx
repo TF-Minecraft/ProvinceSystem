@@ -369,7 +369,7 @@ function Upgrade({ from, to }: { from: string | null; to: string }) {
 
 function backupNote(plan: ServerPlan, override: boolean): string {
   const last = plan.last_backup_at ? formatLocal(new Date(plan.last_backup_at * 1000).toISOString()) : "not recorded";
-  if (!plan.backup) return `Last AMP backup: ${last}. No fresh backup is taken: the control helper has no AMP login.`;
+  if (!plan.backup) return `Last AMP backup: ${last}. No fresh backup is taken: this site has no AMP login set.`;
   if (override) return `Skipping the countdown skips the fresh backup. Last AMP backup: ${last}.`;
   return "AMP takes a fresh backup during the countdown, and the restart waits for it to finish.";
 }

@@ -2,9 +2,10 @@
 
 The Unix socket only accepts plans, countdowns, cancellation and reopening.
 Console input and paths are fixed here, never supplied by website callers.
-With an AMP login file the helper uses the AMP API for console input and a
-fresh backup during Main's countdown; without it, console input goes through
-the root-owned sudo wrapper.
+When the website sends an AMP login with its requests, the helper uses the AMP
+API for console input and a fresh backup during Main's countdown. The login is
+kept in memory only. Without it, console input goes through the root-owned sudo
+wrapper.
 """
 from __future__ import annotations
 
@@ -34,7 +35,6 @@ INSTANCES = {"main": "TFMCMain01", "dev": "TFMCDev01"}
 ID = re.compile(r"^[0-9a-f]{32}$")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,150}$")
 SHA = re.compile(r"^[0-9a-f]{64}$")
-AMP_LOGIN = Path(os.getenv("SERVER_CONTROL_AMP_LOGIN", "/etc/tfmc-server-control/amp-login.json"))
 AMP_ADS = os.getenv("SERVER_CONTROL_AMP_URL", "http://127.0.0.1:8080")
 BACKUP_WAIT = 1200
 
@@ -166,8 +166,8 @@ class Amp:
 class Controller:
     def __init__(self, state: Path, roots: dict[str, tuple[Path, Path]], *, console=None, fetch=None, amp=None):
         self.state, self.roots = state, roots
-        self.amp_login = None if amp is not None else AMP_LOGIN
-        self._amp_client, self._amp_key = amp, None
+        # From the website's requests; kept in memory, never written to the state files.
+        self._amp_client, self._amp_login = amp, None
         self.console = console or self._console
         self.fetch = fetch or download
         self.lock = threading.RLock()
@@ -201,21 +201,16 @@ class Controller:
         self.status_json = json.dumps(list(self.jobs.values()))
 
     def amp(self) -> Amp | None:
-        # The login file can appear or change while the helper runs.
-        if self.amp_login is None:
-            return self._amp_client
-        try:
-            key = self.amp_login.stat()
-            key = key.st_mtime_ns, key.st_size
-            if key != self._amp_key:
-                login = json.loads(self.amp_login.read_text())
-                self._amp_client, self._amp_key = Amp(login["username"], login["password"]), key
-        except FileNotFoundError:
-            self._amp_client, self._amp_key = None, None
-        except (OSError, ValueError, KeyError, TypeError):
-            logging.exception("Cannot read the AMP login file")
-            self._amp_client, self._amp_key = None, None
         return self._amp_client
+
+    def use_login(self, login) -> None:
+        """Take the AMP login a website sent with its request; a new one replaces the old."""
+        if not (isinstance(login, dict) and set(login) == {"username", "password"}
+                and all(isinstance(v, str) and 0 < len(v) <= 200 for v in login.values())):
+            raise ControlError("bad_control_request", 400)
+        key = (login["username"], login["password"])
+        if key != self._amp_login:
+            self._amp_client, self._amp_login = Amp(*key), key
 
     def _console(self, server: str, command: str):
         if amp := self.amp():
@@ -751,6 +746,10 @@ class Controller:
             return dict(job)
 
     def dispatch(self, body: dict) -> dict:
+        body = dict(body)
+        login = body.pop("amp", None)
+        if login is not None:
+            self.use_login(login)
         operation = body.get("operation")
         allowed = {"status": {"operation"}, "plan": {"operation", "server", "mode", "releases"},
                    "start": {"operation", "server", "plan_id", "actor", "reason", "emergency_override"},
