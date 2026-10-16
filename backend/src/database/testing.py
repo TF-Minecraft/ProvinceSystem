@@ -5,7 +5,7 @@ superuser (the reset skips the admin_audit TRUNCATE trigger). The session
 creates its own database, applies the migrations once and points the pool at
 it. A test opts in by taking the `postgres` fixture, or a whole module with
 `pytestmark = pytest.mark.usefixtures("postgres")`; each such test starts with
-every table empty apart from the rows the migrations seed, and identities reset.
+every table empty apart from the seed rows, and identities reset.
 
 Without TEST_DATABASE_URL these tests skip, except under CI, where they fail.
 """
@@ -72,25 +72,57 @@ def _copy_out(conn: psycopg.Connection, table: str) -> bytes:
 
 
 class Reset:
-    """Empties every table and puts back the rows the migrations seeded."""
+    """Empties the tables a test touched and puts back the seed rows.
+
+    One query finds the tables with rows or a used identity sequence (a
+    rolled-back insert still advances it); one TRUNCATE empties them and
+    restarts their identities. Seeded tables are always reloaded.
+    """
 
     def __init__(self, url: str):
         self.url = url
         with psycopg.connect(url, autocommit=True) as conn:
             self.tables = tables(conn)
             self.seeds = {t: data for t in self.tables if (data := _copy_out(conn, t))}
+            sequences = dict(conn.cursor(row_factory=tuple_row).execute(
+                "SELECT c.table_name, pg_get_serial_sequence(quote_ident(c.table_name), c.column_name) "
+                "FROM information_schema.columns c "
+                "WHERE c.table_schema = 'public' AND c.is_identity = 'YES'").fetchall())
+        checks = []
+        for table in self.tables:
+            used = sql.SQL("EXISTS (SELECT 1 FROM {})").format(sql.Identifier(table))
+            if table in sequences:
+                used = sql.SQL("{} OR (SELECT is_called FROM {})").format(
+                    used, sql.SQL(sequences[table]))
+            checks.append(sql.SQL("SELECT {} AS t WHERE {}").format(sql.Literal(table), used))
+        self._dirty = sql.SQL(" UNION ALL ").join(checks)
+        self._conn: psycopg.Connection | None = None
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def __call__(self) -> None:
-        with psycopg.connect(self.url) as conn:
+        if self._conn is None or self._conn.closed:
+            self._conn = psycopg.connect(self.url)
+        conn = self._conn
+        with conn.transaction():
+            dirty = {row[0] for row in conn.cursor(row_factory=tuple_row).execute(self._dirty)}
+            dirty |= set(self.seeds)
             # replica skips the admin_audit TRUNCATE trigger; a test that kept a connection
             # busy fails here instead of hanging.
             conn.execute("SET LOCAL session_replication_role = replica")
             conn.execute("SET LOCAL lock_timeout = '10s'")
             conn.execute(sql.SQL("TRUNCATE {} RESTART IDENTITY CASCADE").format(
-                sql.SQL(", ").join(sql.Identifier(t) for t in self.tables)))
+                sql.SQL(", ").join(sql.Identifier(t) for t in sorted(dirty))))
             for table, data in self.seeds.items():
                 with conn.cursor().copy(sql.SQL("COPY {} FROM STDIN").format(sql.Identifier(table))) as copy:
                     copy.write(data)
+
+
+def _open_test_pool(url: str):
+    return connection.open_pool(url, min_size=0, max_size=4)
 
 
 @pytest.fixture(scope="session")
@@ -99,10 +131,13 @@ def postgres_session() -> Iterator[Reset]:
     name = _database_name()
     url = create_database(name)
     try:
-        migrate(url)
+        migrate(url, seed=True)
         reset = Reset(url)
-        connection.open_pool(url, min_size=0, max_size=4)
-        yield reset
+        reset.pool = _open_test_pool(url)
+        try:
+            yield reset
+        finally:
+            reset.close()
     finally:
         connection.close_pool()
         drop_database(name)
@@ -112,6 +147,8 @@ def postgres_session() -> Iterator[Reset]:
 def postgres(postgres_session: Reset, monkeypatch) -> str:
     """A freshly emptied test database; DATABASE_URL and the pool point at it. Returns its URL."""
     monkeypatch.setenv("DATABASE_URL", postgres_session.url)
+    if connection._pool is not postgres_session.pool:  # a test closed or replaced it
+        postgres_session.pool = _open_test_pool(postgres_session.url)
     postgres_session()
     return postgres_session.url
 
