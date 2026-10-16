@@ -65,12 +65,15 @@ jobs:
           SITE: ${{ steps.target.outputs.site }}
           SHA: ${{ steps.target.outputs.sha }}
         run: |
+          # Without pipefail the pipeline reports tee's status, so a failed deploy looked green.
+          set -o pipefail
           status=0
           .github/scripts/server_ssh.sh deploy "$SITE" "$SHA" | tee result.txt || status=$?
           case "$status" in
             0) ;;
             4) echo "::error::${SHA::7} is not on main." ;;
             5) echo "::error::$SITE did not come up on ${SHA::7}; the server put the previous code back and kept a database backup." ;;
+            *) echo "::error::Deploying ${SHA::7} to $SITE failed (exit $status); see the log above." ;;
           esac
           { echo "### Deploy $SITE ${SHA::7}"; echo; tail -1 result.txt; } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
