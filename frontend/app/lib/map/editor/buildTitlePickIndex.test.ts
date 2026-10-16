@@ -44,10 +44,11 @@ describe("buildTitlePickIndex", () => {
   });
 
   it("pickTitleIdAt treats transparent pixels as no title, even for a black title", () => {
-    const imageData = makeImageData(3, 1, [
+    const imageData = makeImageData(4, 1, [
       [0, 0, 0, 0],
       [58, 132, 60, 0],
       [0, 0, 0, 255],
+      [58, 132, 60, 128],
     ]);
     const rgbToTitleId = {
       "58,132,60": "TITLE_1",
@@ -56,5 +57,7 @@ describe("buildTitlePickIndex", () => {
     expect(pickTitleIdAt(imageData, 0, 0, rgbToTitleId)).toBeNull();
     expect(pickTitleIdAt(imageData, 1, 0, rgbToTitleId)).toBeNull();
     expect(pickTitleIdAt(imageData, 2, 0, rgbToTitleId)).toBe("BLACK_TITLE");
+    // Only fully transparent is empty; partial alpha keeps matching on RGB.
+    expect(pickTitleIdAt(imageData, 3, 0, rgbToTitleId)).toBe("TITLE_1");
   });
 });
