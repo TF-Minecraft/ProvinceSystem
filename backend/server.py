@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -52,6 +53,12 @@ async def lifespan(app: FastAPI):
     from src.skins.db import migrate
 
     migrate()
+    from src.database import close_pool
+    from src.database.migrate import migrate as migrate_postgres
+
+    # The site's Postgres; previews and local runs without one skip it.
+    if os.environ.get("DATABASE_URL", "").strip():
+        migrate_postgres(seed=True)
     from src.patreon.config import Config
     from src.patreon.service import sync_loop
 
@@ -71,6 +78,7 @@ async def lifespan(app: FastAPI):
         if names_task is not None:
             names_stop.set()
             await names_task
+        close_pool()
 
 
 app = FastAPI(lifespan=lifespan)
