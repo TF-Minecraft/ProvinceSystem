@@ -161,6 +161,19 @@ def test_a_sync_stores_nothing_once_its_lease_is_taken_over():
     assert testing.rows("SELECT * FROM patreon_members") == before
 
 
+def test_a_sync_rechecks_lease_expiry_after_waiting_for_the_patreon_lock(monkeypatch):
+    sync([member()])
+    before = testing.rows("SELECT * FROM patreon_members")
+    now = utcnow()
+    monkeypatch.setattr(s, "utcnow", lambda: now)
+    with database.transaction(lock=s.PATREON_LOCK):
+        run = Run(lambda: s.sync_now(config=CONFIG, client=FakeClient([member(tier="ascended")])))
+        lock_wait(run, ADVISORY)
+        now += timedelta(seconds=s.LEASE_SECONDS + 1)
+    assert run.join().error is None and run.value == {"ok": False, "detail": "patreon_sync_failed"}
+    assert testing.rows("SELECT * FROM patreon_members") == before
+
+
 @pytest.fixture
 def creator_tokens(monkeypatch):
     for key, value in {"PATREON_CREATOR_ACCESS_TOKEN": "seed-access", "PATREON_CREATOR_REFRESH_TOKEN": "seed-refresh",
@@ -192,12 +205,18 @@ def test_a_token_refresh_waits_for_a_lease_takeover(creator_tokens):
 
 def test_a_token_refresh_never_overwrites_tokens_rotated_meanwhile(creator_tokens):
     """Compare-and-set: tokens rotated since the refresh read them stay."""
-    def handler(request):
-        testing.execute("UPDATE patreon_tokens SET access_token = 'other-access', refresh_token = 'other-refresh'")
-        return httpx.Response(200, json={"access_token": "stale", "refresh_token": "stale-refresh", "expires_in": 3600})
-    client = _refresher(handler)
-    client._tokens()
-    assert client.refresh_tokens()["refresh_token"] == "other-refresh"
+    def refresh(reached, holding):
+        def handler(request):
+            assert open_transactions() == []
+            reached.set()
+            assert holding.wait(10)
+            return httpx.Response(200, json={"access_token": "stale", "refresh_token": "stale-refresh", "expires_in": 3600})
+        client = _refresher(handler)
+        client._tokens()
+        return client.refresh_tokens()
+
+    run = _hold_during(refresh, "UPDATE patreon_tokens SET access_token = 'other-access', refresh_token = 'other-refresh'", ())
+    assert run.error is None and run.value["refresh_token"] == "other-refresh"
     assert testing.value("SELECT refresh_token FROM patreon_tokens") == "other-refresh"
 
 

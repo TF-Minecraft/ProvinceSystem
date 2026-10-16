@@ -118,6 +118,37 @@ def test_a_demotion_landing_first_cancels_the_change(app, bridge, staff):
     assert status(change["id"]) == "failed"
 
 
+def test_current_actor_itself_waits_for_a_demotion(app, bridge, staff):
+    change = submit(app, staff["admin"], "user", ALICE, TIPS).json()
+    row = testing.rows("SELECT * FROM lp_changes WHERE id = %s", (change["id"],))[0]
+
+    def recheck():
+        with database.connect() as conn:
+            mirror.lock_state(conn)
+            return changes._current_actor(conn, row)
+
+    run = held(lambda conn: conn.execute("UPDATE users SET role = 'mod' WHERE id = %s", (user_id("adam"),)),
+               recheck, ROW)
+    assert run.error is None and run.value is None
+
+
+def test_a_poll_locks_actors_before_timing_out_changes(app, bridge, staff):
+    overdue = submit(app, staff["admin"], "user", ALICE, TIPS).json()["id"]
+    live = submit(app, staff["admin"], "user", BOB, TIPS).json()["id"]
+    testing.execute("UPDATE lp_changes SET created_at = %s WHERE id = %s",
+                    (mirror._stamp() - timedelta(seconds=changes.PENDING_TTL_SECONDS + 60), overdue))
+    with database.connect() as conn:
+        conn.execute("UPDATE users SET role = 'mod' WHERE id = %s", (user_id("adam"),))
+        poll = Run(changes.fetch_for_bridge)
+        lock_wait(poll, ROW)
+        # While waiting for the actor, the poll must hold no change row. Reversing
+        # this order creates a cycle with an account transaction settling a change.
+        conn.execute("SET LOCAL lock_timeout = '250ms'")
+        conn.execute("UPDATE lp_changes SET status = 'expired' WHERE id = %s", (overdue,))
+    assert poll.join().error is None and poll.value == []
+    assert status(live) == "failed"
+
+
 def test_a_demotion_waits_for_a_change_being_handed_out(app, bridge, staff, monkeypatch):
     submit(app, staff["admin"], "user", ALICE, TIPS)
     adam = user_id("adam")

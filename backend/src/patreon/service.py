@@ -89,7 +89,7 @@ def _members(conn) -> dict[str, dict]:
 def _discord_links(*, discord_user_id=None, player_uuid=None, minecraft_name=None) -> list[dict]:
     """Discord links matching any of the given values: their discord_user_id and player_uuid."""
     # PG-MIGRATION: Linking. discord_links is still in SQLite, so it is read on its own
-    # connection, outside the patreon lock (as before, Linking never took it). The Linking
+    # connection (Linking does not take the patreon lock). The Linking
     # PR reads it on the caller's connection.
     where, params = [], []
     for column, value in (("discord_user_id", discord_user_id), ("player_uuid", player_uuid)):
@@ -389,7 +389,7 @@ def _run_fetch(*, config, client, member_id=None):
         with database.transaction(lock=PATREON_LOCK) as conn:
             # Held until commit: the lease cannot be taken over while these members are stored.
             lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'sync' FOR UPDATE").fetchone()
-            if not lease or lease["owner"] != owner or lease["expires_at"] <= now:
+            if not lease or lease["owner"] != owner or lease["expires_at"] <= utcnow():
                 raise ServiceError("patreon_lease_lost")
             for member in fetched:
                 _store_member(conn, member, now, config)

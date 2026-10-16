@@ -44,12 +44,19 @@ def summarise(report: dict) -> tuple[str, str]:
 
 def _storable(report: dict) -> None:
     try:
-        text = json.dumps(report, allow_nan=False)
-    except ValueError:
+        json.dumps(report, allow_nan=False, ensure_ascii=False).encode("utf-8")
+    except (ValueError, UnicodeEncodeError):
         raise BadReport("bad_report") from None
-    # json.dumps escapes every NUL, in keys and values alike.
-    if "\\u0000" in text:
-        raise BadReport("bad_report")
+    pending = [report]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, str) and "\x00" in value:
+            raise BadReport("bad_report")
+        if isinstance(value, dict):
+            pending.extend(value)
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
 
 
 def save(report: dict, *, minecraft_name: str | None, country: str | None, user: dict | None) -> str:

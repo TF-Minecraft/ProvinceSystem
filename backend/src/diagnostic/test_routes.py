@@ -187,3 +187,24 @@ def test_report_times_keep_their_form(app, database, postgres):
     assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{6})?\+00:00", listed["created_at"])
     assert client(app, token).get(f"/diagnostic/reports/{code}").json()["created_at"] == listed["created_at"]
     assert client(app, token).get("/diagnostic/reports/AB%00CD").status_code == 404
+
+
+def test_report_text_can_contain_a_literal_unicode_escape(app, postgres):
+    report = {"findings": [], "example": r"\u0000", "nested": [{"text": r"\\u0000"}]}
+    response = client(app).post("/diagnostic/reports", json={"report": report})
+    assert response.status_code == 200
+    assert reports.get(response.json()["code"])["report"] == report
+
+
+def test_two_reports_retry_a_colliding_code(postgres, monkeypatch):
+    from src.auth.test_locking import ROW, Gate, race
+
+    letters = iter("A" * 12 + "B" * 6)
+    monkeypatch.setattr(reports.secrets, "choice", lambda alphabet: next(letters))
+    gate = Gate(monkeypatch, "INSERT INTO diagnostic_reports")
+    one, two = race(gate, lambda: reports.save(REPORT, minecraft_name=None, country=None, user=None),
+                    lambda: reports.save({}, minecraft_name=None, country=None, user=None), ROW)
+    assert one.error is None and two.error is None
+    assert (one.value, two.value) == ("AAAAAA", "BBBBBB")
+    assert reports.get(one.value)["report"] == REPORT
+    assert reports.get(two.value)["report"] == {}

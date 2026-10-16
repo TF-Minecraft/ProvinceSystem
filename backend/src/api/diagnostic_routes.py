@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
 
 from src.api.auth_routes import session_cookie
 from src.api.request_body import read_json_body
@@ -154,12 +155,12 @@ async def send_report(request: Request, response: Response):
     name = str(body.get("minecraft_name") or "").strip()
     if name and not _MINECRAFT_NAME.fullmatch(name):
         raise HTTPException(400, detail="bad_minecraft_name")
-    user = _signed_in_user(request)
+    user = await run_in_threadpool(_signed_in_user, request)
     if user is not None:
-        link = get_link_for_discord_id(str(user.get("discord_user_id") or ""))
+        link = await run_in_threadpool(get_link_for_discord_id, str(user.get("discord_user_id") or ""))
         name = str((link or {}).get("minecraft_name") or "").strip() or name
     try:
-        code = reports.save(report, minecraft_name=name or None, country=_country(request), user=user)
+        code = await run_in_threadpool(reports.save, report, minecraft_name=name or None, country=_country(request), user=user)
     except reports.BadReport:
         raise HTTPException(400, detail="bad_report") from None
     return {"code": code}
