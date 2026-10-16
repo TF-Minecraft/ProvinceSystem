@@ -392,3 +392,24 @@ def test_a_cli_without_a_database_is_a_usage_error(monkeypatch, capsys, name, mo
         cli.main(["--map", MAP])
     assert exit_info.value.code == 2
     assert "DATABASE_URL is not set" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("module", ["src.scripts.ledger.wipe", "src.scripts.chronicle.wipe"])
+def test_a_wipe_dry_run_without_tables_is_a_usage_error(
+    env: Path, scratch_database, monkeypatch, capsys, module,
+) -> None:
+    cli = importlib.import_module(module)
+    monkeypatch.setenv("DATABASE_URL", scratch_database)
+    monkeypatch.setattr(cli, "migrate", lambda: pytest.fail("a dry run migrated the database"))
+    database.open_pool(scratch_database, min_size=0, max_size=2)
+    try:
+        with pytest.raises(SystemExit) as exit_info:
+            cli.main(["--map", MAP, "--dry-run"])
+        assert exit_info.value.code == 2
+        assert "Database:" in capsys.readouterr().err
+        with database.connect() as conn:
+            assert conn.execute(
+                "SELECT count(*) AS n FROM information_schema.tables WHERE table_schema = 'public'"
+            ).fetchone()["n"] == 0
+    finally:
+        database.close_pool()

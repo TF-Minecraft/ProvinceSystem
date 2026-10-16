@@ -146,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.dry_run:
             migrate()
         return wipe_map(args.map, dry_run=args.dry_run)
-    except (database.NotConfiguredError, database.OperationalError, MigrationError) as exc:
+    except (database.NotConfiguredError, database.DatabaseError, MigrationError) as exc:
         parser.error(f"Database: {exc}")
         return 2
     except MapLockBusy:
