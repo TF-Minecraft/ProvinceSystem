@@ -29,7 +29,7 @@ from pathlib import Path
 
 import psycopg
 
-from .connection import database_url, session_options
+from .connection import database_url
 
 MIGRATIONS_DIR = Path(__file__).resolve().with_name("migrations")
 SEEDS_PATH = Path(__file__).resolve().with_name("seeds.sql")
