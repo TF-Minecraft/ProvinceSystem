@@ -185,47 +185,52 @@ describe("MapViewer terrain and picking readiness", () => {
     expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.get(1)).toBe("GuildA");
   });
 
-  it("holds image picking until the final image band is copied even if metadata is ready", async () => {
-    mocks.mode = { loading: false, regionData: {} };
+  it("county picks by province id without downloading the county pick image", async () => {
+    mocks.mode = {
+      loading: false,
+      regionData: { CountyA: { rgb: "1,2,3", name: "CountyA", provinces: [5, 6] } },
+    };
     mocks.runs.mockResolvedValue({ width: 6400, height: 6400 });
-    let finishFetch!: (response: Response) => void;
-    vi.mocked(fetch).mockImplementation(
-      (url) =>
-        new Promise((resolve) => {
-          if (String(url).endsWith("/mapdata/county")) finishFetch = resolve;
-        }),
-    );
-    const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      frames.push(callback);
-      return frames.length;
-    });
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
-    let clock = 0;
-    vi.spyOn(performance, "now").mockImplementation(() => (clock += 5));
-    const bitmap = { width: 512, height: 512, close: vi.fn() };
-    vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(bitmap));
     render(viewer());
     await act(async () => {});
     fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
     fireEvent.click(
       within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Counties" }),
     );
-    expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    // The last mode's regions are gone, not merely gated.
-    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toBeNull();
-    await act(async () => finishFetch(new Response()));
-    expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    // 64-row bands, each "taking" 5 ms against an 8 ms frame budget: the
-    // 512-row map is read over four frames and only then can be picked.
-    for (let frame = 0; frame < 3; frame++) {
-      await act(async () => frames.shift()!(frame * 16));
-      expect(mocks.hover.mock.lastCall?.[0].loading).toBe(true);
-    }
-    await act(async () => frames.shift()!(48));
+    await act(async () => {});
     expect(mocks.hover.mock.lastCall?.[0].loading).toBe(false);
-    expect(mocks.hover.mock.lastCall?.[0].pickSurfaceRef.current).toMatchObject({ width: 512, height: 512 });
-    expect(bitmap.close).toHaveBeenCalled();
+    expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.get(5)).toBe("CountyA");
+    const fetched = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+    expect(fetched.some((url) => url.includes("/mapdata/county"))).toBe(false);
+  });
+
+  it("duchy membership follows county titles once the county tier loads", async () => {
+    mocks.mode = {
+      loading: false,
+      regionData: { DuchyA: { rgb: "1,2,3", name: "DuchyA", titles: ["CountyA"] } },
+    };
+    mocks.runs.mockResolvedValue({ width: 6400, height: 6400 });
+    let finishCounty!: (response: Response) => void;
+    vi.mocked(fetch).mockImplementation(
+      (url) =>
+        new Promise((resolve) => {
+          if (String(url).endsWith("/data/county")) finishCounty = resolve;
+        }),
+    );
+    render(viewer());
+    await act(async () => {});
+    fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Duchies" }),
+    );
+    // The county tier has not landed: membership is active-empty.
+    expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.size).toBe(0);
+    await act(async () =>
+      finishCounty(new Response(JSON.stringify({ CountyA: { rgb: "9,9,9", provinces: [5, 6] } }), { status: 200 })),
+    );
+    expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.get(6)).toBe("DuchyA");
+    const fetched = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+    expect(fetched.some((url) => url.includes("/mapdata/duchy"))).toBe(false);
   });
 });
 
