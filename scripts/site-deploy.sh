@@ -84,7 +84,11 @@ if has_db; then
   log "backing up the site's Postgres"
   start_db
   backup="$data/deploy-backups/postgres.before-deploy-${sha:0:7}-$(date -u +%Y%m%dT%H%M%SZ).dump"
-  compose exec -T db pg_dump -U provincesystem -d provincesystem --format=custom > "$backup.part"
+  if ! compose exec -T db pg_dump -U provincesystem -d provincesystem --format=custom > "$backup.part"; then
+    rm -f "$backup.part"
+    log "could not back up the site's Postgres; nothing was changed"
+    exit 1
+  fi
   mv "$backup.part" "$backup"
   find "$data/deploy-backups" -maxdepth 1 -name 'postgres.before-deploy-*' -printf '%T@ %p\n' \
     | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
