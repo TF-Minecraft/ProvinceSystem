@@ -40,7 +40,7 @@ from src.api.http_headers import make_etag  # noqa: E402
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.ledger import ingest, store  # noqa: E402
 from src.scripts.ledger.schema import faction_key, normalize_snapshot  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 
 TEST_REGISTRY = """
 maps:
@@ -130,23 +130,14 @@ def _payload(day: str, *, complete: bool = True, factions=None, server_day: int 
 
 
 @pytest.fixture
-def ledger_env(tmp_path, monkeypatch):
+def ledger_env(tmp_path, monkeypatch, postgres):
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))
     clear_map_registry_cache()
 
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
-    monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
-    monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
-
     monkeypatch.setattr(store, "OUTPUT_DIR", str(tmp_path / "output"))
 
-    skins_db.migrate()
     try:
         yield tmp_path
     finally:
@@ -718,24 +709,25 @@ def test_a_full_read_inside_the_cap_still_works(client):
 
 
 def test_series_opens_one_connection_per_request(client, monkeypatch):
-    """Seven `sqlite3.connect` + PRAGMA per request, for one response."""
+    """Seven connections per request, for one response."""
     _store_day("main", "2026-01-01")
     _store_day("main", "2026-01-02")
 
-    connects = 0
-    real_connect = store.connect
+    pool = database.get_pool()
+    real_borrow = pool.connection
+    borrows = 0
 
-    def _counting_connect(*args, **kwargs):
-        nonlocal connects
-        connects += 1
-        return real_connect(*args, **kwargs)
+    def _counting_borrow(*args, **kwargs):
+        nonlocal borrows
+        borrows += 1
+        return real_borrow(*args, **kwargs)
 
-    monkeypatch.setattr(store, "connect", _counting_connect)
+    monkeypatch.setattr(pool, "connection", _counting_borrow)
 
     res = client.get("/main/ledger/series?fields=full")
 
     assert res.status_code == 200
-    assert connects == 1
+    assert borrows == 1
 
 
 def test_store_reads_still_open_their_own_connection_by_default(client):

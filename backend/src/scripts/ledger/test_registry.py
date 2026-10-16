@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 
 from src.scripts.ledger import ingest, store, wipe
@@ -128,26 +127,12 @@ def test_wipe_clears_every_ledger_table(env: Path) -> None:
 
 
 def test_deletion_survives_more_than_999_present_factions(env: Path) -> None:
-    """SQLite's default SQLITE_MAX_VARIABLE_NUMBER is 999 before 3.32.
+    """The present keys go in as one array parameter, whatever their number.
 
-    An inlined `NOT IN (?, …)` over `MAX_FACTIONS` present keys raised there,
-    `_run_promote_ledger_day` swallowed it, and the day never indexed — on
-    exactly the busy servers the 2000 cap was sized for. This build's SQLite is
-    newer and would not reproduce it on its own, so every connection here is
-    pinned back to the old 999 ceiling.
+    SQLite once refused an inlined `NOT IN (?, …)` past 999 variables, and the
+    day never indexed on exactly the busy servers the 2000 cap was sized for.
     """
-    original_connect = store.connect
-
-    def old_sqlite_connect():
-        conn = original_connect()
-        conn.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 999)
-        return conn
-
-    store.connect = old_sqlite_connect
-    try:
-        _crowded_deletion()
-    finally:
-        store.connect = original_connect
+    _crowded_deletion()
 
 
 def _crowded_deletion() -> None:

@@ -21,6 +21,9 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
+from src.scripts.ledger import store  # noqa: E402
+from src.scripts.ledger.conftest import snapshot_payload  # noqa: E402
+from src.scripts.ledger.schema import normalize_snapshot  # noqa: E402
 from src.scripts.tools import generate_spoof_ledger as spoof  # noqa: E402
 
 TEST_REGISTRY = """
@@ -86,12 +89,6 @@ def test_empty_staff_map_is_allowed(registry, parser, monkeypatch):
     spoof.guard_target_map(parser, "dev", force=False)
 
 
-def test_no_database_yet_does_not_demand_force(registry, parser, monkeypatch):
-    """No database file is not "has history"; seeding a fresh map is one command."""
-    _no_existing_days(monkeypatch, None)
-    spoof.guard_target_map(parser, "dev", force=False)
-
-
 def test_an_unreadable_index_is_refused_not_waved_through(registry, parser, monkeypatch):
     """Failing open here means overwriting a season the script could not see."""
 
@@ -126,20 +123,24 @@ def test_force_allows_an_unregistered_map(registry, parser, monkeypatch):
     spoof.guard_target_map(parser, "unknownmap", force=True)
 
 
-def test_existing_ledger_days_is_none_without_a_database(tmp_path, monkeypatch):
-    """The "no DB file" answer is the only one that may skip the --force gate."""
-    from src.skins import db as skins_db
+def test_existing_ledger_days_reads_the_index(postgres):
+    assert spoof.existing_ledger_days("dev") == []
 
-    monkeypatch.setattr(skins_db, "DB_PATH", tmp_path / "does-not-exist.db")
-    assert spoof.existing_ledger_days("dev") is None
+    store.upsert_day("dev", normalize_snapshot(snapshot_payload(map_id="dev"), "dev"))
+    assert spoof.existing_ledger_days("dev") == ["2026-09-01"]
+    assert spoof.existing_ledger_days("main") == []
 
 
-def test_existing_ledger_days_raises_when_the_index_cannot_be_read(tmp_path, monkeypatch):
-    from src.skins import db as skins_db
+def test_existing_ledger_days_raises_without_a_database(monkeypatch):
+    """No DATABASE_URL is not "no history": the guard cannot see the season."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
 
-    broken = tmp_path / "province.db"
-    broken.write_bytes(b"this is not a sqlite database")
-    monkeypatch.setattr(skins_db, "DB_PATH", broken)
+    with pytest.raises(spoof.LedgerIndexUnreadable):
+        spoof.existing_ledger_days("dev")
+
+
+def test_existing_ledger_days_raises_when_the_index_cannot_be_read(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://nobody@127.0.0.1:1/missing?connect_timeout=1")
 
     with pytest.raises(spoof.LedgerIndexUnreadable):
         spoof.existing_ledger_days("dev")

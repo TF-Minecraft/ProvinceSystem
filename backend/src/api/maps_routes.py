@@ -24,8 +24,10 @@ def _with_chronicle_day_flag(public: dict) -> dict:
     return out
 
 
+# `def`, not `async def`: archived chapters read the chronicle index from
+# Postgres, which must not block the event loop.
 @maps_router.get("/maps/accessible")
-async def get_accessible_maps(
+def get_accessible_maps(
     authorization: str | None = Header(default=None),
 ):
     return add_revalidate(JSONResponse({

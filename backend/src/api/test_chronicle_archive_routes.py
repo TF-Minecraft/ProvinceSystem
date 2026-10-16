@@ -56,7 +56,7 @@ STAFF_AUTH = {"Authorization": f"Bearer {STAFF_TOKEN}"}
 
 
 @pytest.fixture
-def archive_http_env(tmp_path, monkeypatch):
+def archive_http_env(tmp_path, monkeypatch, postgres):
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))

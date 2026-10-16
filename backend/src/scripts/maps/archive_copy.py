@@ -15,9 +15,8 @@ from dataclasses import dataclass
 import yaml
 
 from src.api.map_registry import _registry_path, clear_map_registry_cache
-from src.skins.db import connect, migrate
+from src import database
 
-from ..chronicle import store as chronicle_store
 from ..ledger.ingest import reindex_day
 from ..ledger.store import daily_root, is_valid_day as is_ledger_day, ledger_lock_path
 from ..util.atomic import rename_aside
@@ -107,44 +106,26 @@ def _source_present(source_id: str) -> bool:
     )
 
 
-def _delete_chronicle_rows(map_id: str) -> None:
-    conn = connect()
-    try:
-        with conn:
-            conn.execute(
-                "DELETE FROM map_chronicle_snapshots WHERE map_id = ?", (map_id,)
-            )
-    finally:
-        conn.close()
-
-
 def _clone_chronicle_rows(source_id: str, dest_id: str) -> list[str]:
-    days = chronicle_store.list_days(source_id)
-    _delete_chronicle_rows(dest_id)
-    for day in days:
-        snap = chronicle_store.get_snapshot(source_id, day)
-        if snap is None:
-            continue
-        chronicle_store.upsert_snapshot(
-            dest_id,
-            day,
-            dest_id,
-            snap["captured_at"],
-            snap["bytes"],
-            snap["geometry_version"],
-            snap["manifest"],
+    """Replace dest's chronicle index rows with source's, in one transaction."""
+    with database.connect() as conn:
+        conn.execute(
+            "DELETE FROM map_chronicle_snapshots WHERE map_id = %s", (dest_id,)
         )
-    return days
+        rows = conn.execute(
+            "INSERT INTO map_chronicle_snapshots "
+            "(map_id, day, realm_id, captured_at, bytes, geometry_version, manifest) "
+            "SELECT %s, day, %s, captured_at, bytes, geometry_version, manifest "
+            "FROM map_chronicle_snapshots WHERE map_id = %s RETURNING day",
+            (dest_id, dest_id, source_id),
+        ).fetchall()
+    return sorted(row["day"] for row in rows)
 
 
 def _delete_ledger_rows(map_id: str) -> None:
-    conn = connect()
-    try:
-        with conn:
-            for table in _LEDGER_TABLES:
-                conn.execute(f"DELETE FROM {table} WHERE map_id = ?", (map_id,))
-    finally:
-        conn.close()
+    with database.connect() as conn:
+        for table in _LEDGER_TABLES:
+            conn.execute(f"DELETE FROM {table} WHERE map_id = %s", (map_id,))
 
 
 def _reindex_copied_ledger(dest_id: str) -> None:
@@ -238,7 +219,6 @@ def archive_map(
             f"No input/ or defines/ tree for source '{source}'",
         )
 
-    migrate()
     stamp = int(time.time())
     with map_lock(archive_lock_path(dest), blocking=False):
         _replace_tree(

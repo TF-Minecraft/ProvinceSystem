@@ -4,7 +4,7 @@
 `src/scripts/ledger/__init__.py` for why the two names exist side by side.
 
 Everything here is a plain `def`, not `async def`: every body is synchronous
-SQLite plus JSON encoding, so FastAPI runs it in the threadpool instead of
+database reads plus JSON encoding, so FastAPI runs it in the threadpool instead of
 blocking the event loop (same reasoning as `chronicle_routes.get_chronicle_index`).
 
 Shapes are frozen against `frontend/app/lib/map/ledgerData.ts`. The series
@@ -438,7 +438,11 @@ def get_ledger_index(
     """
     map_id = ensure_map_access(map_name, authorization).id
 
-    day_rows = store.list_days(map_id)
+    # One snapshot for the three reads, so the days and the registry agree.
+    with store.read_view() as conn:
+        day_rows = store.list_days(map_id, conn=conn)
+        latest_complete = store.latest_complete_day(map_id, conn=conn)
+        registry_rows = store.list_registry(map_id, conn=conn)
     days = [row["day"] for row in day_rows]
     server_days = [row["server_day"] for row in day_rows if row["server_day"] is not None]
 
@@ -446,7 +450,7 @@ def get_ledger_index(
         "days": days,
         "first": days[0] if days else None,
         "last": days[-1] if days else None,
-        "latest_complete_day": store.latest_complete_day(map_id),
+        "latest_complete_day": latest_complete,
         # A day is incomplete when its canonical snapshot never reported
         # `complete: true`. Absence on such a day is not deletion, and a client
         # must not read a dip in faction_count there as factions disbanding.
@@ -472,7 +476,7 @@ def get_ledger_index(
                 "deleted_day": row["deleted_day"],
                 "deleted_at": row["deleted_at"],
             }
-            for row in store.list_registry(map_id)
+            for row in registry_rows
         ],
     }
     return conditional_json_response(payload, if_none_match=if_none_match)
@@ -504,12 +508,11 @@ def get_ledger_series(
 
     requested_keys = _parse_faction_keys(factions)
 
-    # One connection for the whole request, passed through every store call
-    # below. Each of them used to open its own (plus its PRAGMA), which was
-    # seven connects for one response; sharing one also makes the day axis and
-    # the faction rows a single consistent view of the database.
-    conn = store.open_connection()
-    try:
+    # One connection and one snapshot for the whole request, passed through
+    # every store call below. Each of them used to open its own, which was
+    # seven connects for one response; sharing one also makes the day axis, the
+    # ETag inputs and the faction rows a single consistent view of the database.
+    with store.read_view() as conn:
         all_days = [row["day"] for row in store.list_days(map_id, conn=conn)]
         range_start, range_end, truncated = _resolve_range(all_days, start, end)
 
@@ -569,8 +572,6 @@ def get_ledger_series(
             map_id, range_start, range_end, keys, full=full, conn=conn
         )
         grouped = _group_by_key(rows)
-    finally:
-        conn.close()
 
     payload = {
         "days": days,
@@ -611,28 +612,38 @@ def get_ledger_faction(
     """
     map_id = ensure_map_access(map_name, authorization).id
 
-    all_days = [row["day"] for row in store.list_days(map_id)]
-    range_start, range_end, _ = _resolve_range(all_days, start, end)
+    # One snapshot for every read below; see get_ledger_series.
+    with store.read_view() as conn:
+        all_days = [row["day"] for row in store.list_days(map_id, conn=conn)]
+        range_start, range_end, _ = _resolve_range(all_days, start, end)
 
-    registry = {row["faction_key"]: row for row in store.list_registry(map_id)}
-    if key not in registry and all_days:
-        # An indexed-row probe, not a range read: this only distinguishes
-        # "unknown key" from "known key with nothing in the requested window",
-        # and reading `all_days[0]..all_days[-1]` to answer it materialised the
-        # faction's entire history, sidestepping MAX_RANGE_DAYS on a route that
-        # otherwise enforces it.
-        if not store.faction_has_any_row(map_id, key):
-            return add_no_cache(JSONResponse({"error": "Faction not found"}, 404))
+        registry = {
+            row["faction_key"]: row for row in store.list_registry(map_id, conn=conn)
+        }
+        if key not in registry and all_days:
+            # An indexed-row probe, not a range read: this only distinguishes
+            # "unknown key" from "known key with nothing in the requested
+            # window", and reading `all_days[0]..all_days[-1]` to answer it
+            # materialised the faction's entire history, sidestepping
+            # MAX_RANGE_DAYS on a route that otherwise enforces it.
+            if not store.faction_has_any_row(map_id, key, conn=conn):
+                return add_no_cache(JSONResponse({"error": "Faction not found"}, 404))
 
-    day_rows = store.read_global_days(map_id, range_start, range_end) if all_days else []
+        day_rows = (
+            store.read_global_days(map_id, range_start, range_end, conn=conn)
+            if all_days
+            else []
+        )
+        rows = (
+            store.read_faction_days(
+                map_id, range_start, range_end, [key], full=True, conn=conn
+            )
+            if all_days
+            else []
+        )
     days, index = _day_axis(day_rows)
     size = len(days)
 
-    rows = (
-        store.read_faction_days(map_id, range_start, range_end, [key], full=True)
-        if all_days
-        else []
-    )
     block = _faction_block(rows, index, size, full=True, registry=registry, key=key)
 
     overlord: list = [None] * size

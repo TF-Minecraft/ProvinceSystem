@@ -14,22 +14,15 @@ if str(_BACKEND_ROOT) not in sys.path:
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+from src import database  # noqa: E402
 from src.scripts.ledger import store  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
 
 MAP = "testmap"
 
 
 @pytest.fixture()
-def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect output/ and the SQLite db into tmp_path."""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    with skins_db.connect() as conn:
-        conn.executescript(skins_db.SCHEMA_PATH.read_text(encoding="utf-8"))
-
+def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, postgres) -> Path:
+    """Redirect output/ into tmp_path; the index is the emptied test Postgres."""
     # store binds OUTPUT_DIR by value at import time.
     monkeypatch.setattr(store, "OUTPUT_DIR", str(tmp_path / "output"))
     return tmp_path
@@ -124,16 +117,13 @@ def _guild_day_rows(map_id: str, start: str, end: str) -> list[dict]:
     instead of resurrecting an unused public function.
     """
     columns = ("day", *store.GUILD_DAY_COLUMNS)
-    conn = store.connect()
-    try:
+    with database.connect() as conn:
         rows = conn.execute(
             f"SELECT {', '.join(store._quote(c) for c in columns)} "
-            "FROM map_ledger_guild_days WHERE map_id = ? AND day >= ? AND day <= ? "
+            "FROM map_ledger_guild_days WHERE map_id = %s AND day >= %s AND day <= %s "
             "ORDER BY guild_id ASC, day ASC",
             (map_id, start, end),
         ).fetchall()
-    finally:
-        conn.close()
     return [{column: row[column] for column in columns} for row in rows]
 
 

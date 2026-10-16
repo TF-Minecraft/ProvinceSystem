@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -23,29 +24,18 @@ if str(_BACKEND_SRC) not in sys.path:
 os.environ.setdefault("SKINS_DEV", "1")
 
 from src.scripts.chronicle import audit  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 
 MAP = "main"
 
 
 @pytest.fixture
-def db_env(tmp_path, monkeypatch):
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
-    monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
-    monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
+def db_env(tmp_path, monkeypatch, postgres):
     return tmp_path
 
 
 class _ExecuteSpyConnection:
-    """Forwards everything to a real connection, logging `execute()` SQL.
-
-    `sqlite3.Connection` doesn't allow assigning over `.execute` on an
-    instance, so this wraps one instead of monkeypatching it directly.
-    """
+    """Forwards everything to a real connection, logging `execute()` SQL."""
 
     def __init__(self, conn, calls: list[str]):
         self._conn = conn
@@ -58,22 +48,17 @@ class _ExecuteSpyConnection:
     def __getattr__(self, name):
         return getattr(self._conn, name)
 
-    def __enter__(self):
-        self._conn.__enter__()
-        return self
-
-    def __exit__(self, *exc_info):
-        return self._conn.__exit__(*exc_info)
-
 
 def test_list_wipes_and_get_wipe_do_not_select_star(db_env, monkeypatch):
     calls: list[str] = []
-    real_connect = skins_db.connect
+    real_connect = database.connect
 
-    def spying_connect():
-        return _ExecuteSpyConnection(real_connect(), calls)
+    @contextmanager
+    def spying_connect(*args, **kwargs):
+        with real_connect(*args, **kwargs) as conn:
+            yield _ExecuteSpyConnection(conn, calls)
 
-    monkeypatch.setattr(audit, "connect", spying_connect)
+    monkeypatch.setattr(database, "connect", spying_connect)
 
     wipe_id = audit.record_wipe(
         MAP,

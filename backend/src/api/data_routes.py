@@ -24,13 +24,10 @@ from .editor_validation import (
 )
 from ..scripts.chronicle.chapter_identity import write_chapter_identity
 from ..scripts.util.dirs import input_file, defines_file, validate_map
-# Imported at module scope on purpose, unlike capture_if_due below. A lazy
-# `from ... import` inside the handler re-runs the import machinery per request,
-# and src/skins/test_drinks.py permanently aliases sys.modules["src.skins.db"];
-# a lazy bind after those tests have run would hand the ledger a *different*
-# module object with an unpatched DB_PATH, silently reading and writing the
-# wrong database while reporting success. These modules import nothing that
-# imports this one, so there is no cycle to dodge.
+# Imported at module scope on purpose, unlike capture_if_due below: a lazy
+# `from ... import` inside the handler re-runs the import machinery per request.
+# These modules import nothing that imports this one, so there is no cycle to
+# dodge.
 from ..scripts.ledger import ingest as ledger_ingest
 from ..scripts.ledger.schema import (
     LEDGER_UPLOAD_MODE,

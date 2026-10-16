@@ -120,7 +120,7 @@ def _snapshot(**overrides) -> dict:
 
 
 @pytest.fixture
-def upload_env(tmp_path, monkeypatch):
+def upload_env(tmp_path, monkeypatch, postgres):
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))

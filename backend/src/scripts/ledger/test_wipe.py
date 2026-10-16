@@ -210,7 +210,7 @@ def test_wipe_reports_the_rows_it_actually_deleted(env: Path, capsys) -> None:
     with store.open_connection() as conn:
         expected = sum(
             conn.execute(
-                f"SELECT COUNT(*) AS n FROM {table} WHERE map_id = ?", (MAP,)
+                f"SELECT COUNT(*) AS n FROM {table} WHERE map_id = %s", (MAP,)
             ).fetchone()["n"]
             for table in wipe._TABLES
         )

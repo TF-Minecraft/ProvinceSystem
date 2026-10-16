@@ -24,20 +24,12 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from src.scripts.chronicle import store, wipe  # noqa: E402
 from src.scripts.util import atomic, maplock  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 
 
 @pytest.fixture
-def chronicle_env(tmp_path, monkeypatch):
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
-    monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
-    monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
+def chronicle_env(tmp_path, monkeypatch, postgres):
     monkeypatch.setattr(store, "OUTPUT_DIR", str(tmp_path / "output"))
-    skins_db.migrate()
     return tmp_path
 
 
@@ -58,19 +50,19 @@ def _capture_day(map_name: str, day: str) -> None:
 
 
 def _live_rows(map_name: str) -> list[str]:
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
-            "SELECT day FROM map_chronicle_snapshots WHERE map_id = ? ORDER BY day",
+            "SELECT day FROM map_chronicle_snapshots WHERE map_id = %s ORDER BY day",
             (map_name,),
         ).fetchall()
     return [row["day"] for row in rows]
 
 
 def _archive_rows(map_name: str) -> list[str]:
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             "SELECT day, archived_at FROM map_chronicle_snapshots_archive "
-            "WHERE map_id = ? ORDER BY day",
+            "WHERE map_id = %s ORDER BY day",
             (map_name,),
         ).fetchall()
     return [row["day"] for row in rows]
@@ -167,10 +159,10 @@ def test_two_wipes_in_one_second_do_not_nest_or_overwrite(chronicle_env, monkeyp
         assert not os.path.isdir(os.path.join(path, "chronicle"))
 
     # Both runs' index rows survived; the second did not REPLACE the first.
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         stamps = conn.execute(
             "SELECT archived_at FROM map_chronicle_snapshots_archive "
-            "WHERE map_id = ? AND day = ?",
+            "WHERE map_id = %s AND day = %s",
             ("dev", "2026-01-01"),
         ).fetchall()
     assert len({row["archived_at"] for row in stamps}) == 2

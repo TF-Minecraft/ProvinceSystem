@@ -25,6 +25,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.chronicle import store  # noqa: E402
+from src import database  # noqa: E402
 from src.skins import db as skins_db  # noqa: E402
 from server import app  # noqa: E402
 
@@ -43,12 +44,14 @@ maps:
 
 
 @pytest.fixture
-def chronicle_env(tmp_path, monkeypatch):
-    """Point the chronicle at a throwaway output dir and SQLite file.
+def chronicle_env(tmp_path, monkeypatch, postgres):
+    """Point the chronicle at a throwaway output dir and the test Postgres.
 
     Everything the routes touch — day folders and the index table — has to live
-    under tmp_path; the real src/output and src/data/province.db must never be
-    written by a test run.
+    under tmp_path or in the emptied test database; the real src/output must
+    never be written by a test run. The app's start-up still migrates the
+    SQLite file of the areas not yet on Postgres, so that goes under tmp_path
+    too.
     """
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
@@ -66,7 +69,6 @@ def chronicle_env(tmp_path, monkeypatch):
     output_dir = tmp_path / "output"
     monkeypatch.setattr(store, "OUTPUT_DIR", str(output_dir))
 
-    skins_db.migrate()
     try:
         yield tmp_path
     finally:
@@ -749,34 +751,42 @@ def test_markers_route_map_id_comes_from_the_registry_not_the_file(client):
 
 
 # ---------------------------------------------------------------------------
-# Regression: the index must not open a SQLite connection per day of history
+# Regression: the index must not open a connection per day of history
 # ---------------------------------------------------------------------------
 
 
-def test_index_query_count_does_not_scale_with_day_count(client, monkeypatch):
-    """One connect for fifty days, not fifty.
+def _count_borrows(monkeypatch) -> list[int]:
+    """Count connections borrowed from the pool, however the code reaches it."""
+    pool = database.get_pool()
+    real = pool.connection
+    calls: list[int] = []
 
-    The index used to call get_snapshot per day to read its manifest, and every
-    get_snapshot is a fresh sqlite3.connect plus its PRAGMA. On a real map that
-    is one connection per day of history on the event loop before the ETag is
-    even computed, so the constant matters, not just the wall clock.
+    def counting(*args, **kwargs):
+        calls.append(1)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(pool, "connection", counting)
+    return calls
+
+
+def test_index_query_count_does_not_scale_with_day_count(client, monkeypatch):
+    """One connection for fifty days, not fifty.
+
+    The index used to call get_snapshot per day to read its manifest, each on
+    its own connection. On a real map that is one connection per day of
+    history before the ETag is even computed, so the constant matters, not
+    just the wall clock.
     """
     start = date(2026, 2, 1)
     for index in range(50):
         _write_day("main", (start + timedelta(days=index)).isoformat(), "nation", {"a": index})
 
-    real_connect = store.connect
-    calls = []
-
-    def counting_connect(*args, **kwargs):
-        calls.append(1)
-        return real_connect(*args, **kwargs)
-
-    monkeypatch.setattr(store, "connect", counting_connect)
+    calls = _count_borrows(monkeypatch)
 
     body = client.get("/main/chronicle/index").json()
 
     assert len(body["days"]) == 50
+    # The day rows, their manifests and the newest wipe stamp share one snapshot.
     assert len(calls) == 1
 
 
@@ -816,19 +826,20 @@ def test_index_shape_is_unchanged_with_many_days(client):
     assert body["incomplete_day_count"] == 2
 
 
-def test_index_survives_an_unparsable_manifest(client):
-    """A torn manifest row degrades to "complete", never to a 500."""
+def _set_manifest(day: str, manifest) -> None:
+    """Overwrite one stored manifest with any JSON value, bypassing the store."""
+    with database.connect() as conn:
+        conn.execute(
+            "UPDATE map_chronicle_snapshots SET manifest = %s "
+            "WHERE map_id = %s AND day = %s",
+            (database.Jsonb(manifest), "main", day),
+        )
+
+
+def test_index_survives_a_manifest_that_is_not_an_object(client):
+    """A manifest that is a bare string degrades to "complete", never to a 500."""
     _write_day("main", "2026-04-01", "nation", {"a": 1})
-    conn = store.connect()
-    try:
-        with conn:
-            conn.execute(
-                "UPDATE map_chronicle_snapshots SET manifest = ? "
-                "WHERE map_id = ? AND day = ?",
-                ("{not json", "main", "2026-04-01"),
-            )
-    finally:
-        conn.close()
+    _set_manifest("2026-04-01", "{not json")
 
     res = client.get("/main/chronicle/index")
     assert res.status_code == 200
@@ -982,14 +993,7 @@ def test_stale_geometry_costs_no_extra_database_connections(client, monkeypatch)
             geometry_version="old-sha" if index % 2 else "live-sha",
         )
 
-    real_connect = store.connect
-    calls = []
-
-    def counting_connect(*args, **kwargs):
-        calls.append(1)
-        return real_connect(*args, **kwargs)
-
-    monkeypatch.setattr(store, "connect", counting_connect)
+    calls = _count_borrows(monkeypatch)
 
     body = client.get("/main/chronicle/index").json()
 
@@ -997,22 +1001,13 @@ def test_stale_geometry_costs_no_extra_database_connections(client, monkeypatch)
     assert len(body["stale_geometry_days"]) == 5
 
 
-def test_index_with_an_unparsable_manifest_still_reports_stale_geometry(
+def test_index_with_a_list_manifest_still_reports_stale_geometry(
     client, monkeypatch
 ):
-    """A torn manifest must not cost the day its geometry warning, or 500."""
+    """A manifest that is not an object must not cost the day its geometry warning, or 500."""
     _pin_live_geometry(monkeypatch, "live-sha")
     _write_day("main", "2026-09-01", "nation", {"a": 1}, geometry_version="old-sha")
-    conn = store.connect()
-    try:
-        with conn:
-            conn.execute(
-                "UPDATE map_chronicle_snapshots SET manifest = ? "
-                "WHERE map_id = ? AND day = ?",
-                ("[1, 2, 3]", "main", "2026-09-01"),
-            )
-    finally:
-        conn.close()
+    _set_manifest("2026-09-01", [1, 2, 3])
 
     res = client.get("/main/chronicle/index")
     assert res.status_code == 200
@@ -1023,16 +1018,7 @@ def test_index_with_an_unparsable_manifest_still_reports_stale_geometry(
 def test_snapshot_row_degrades_a_list_manifest_instead_of_raising(client):
     """_snapshot_row used to hand a list straight through to `.get` -> 500."""
     _write_day("main", "2026-10-01", "nation", {"a": 1})
-    conn = store.connect()
-    try:
-        with conn:
-            conn.execute(
-                "UPDATE map_chronicle_snapshots SET manifest = ? "
-                "WHERE map_id = ? AND day = ?",
-                ("[1, 2, 3]", "main", "2026-10-01"),
-            )
-    finally:
-        conn.close()
+    _set_manifest("2026-10-01", [1, 2, 3])
 
     assert store.get_snapshot("main", "2026-10-01")["manifest"] == {}
     # The read route resolves through the manifest, so it must 404, not 500.
