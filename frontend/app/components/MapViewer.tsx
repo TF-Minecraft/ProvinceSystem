@@ -33,6 +33,7 @@ import {
 import MapAccessGate, { type MapAccessGateReason } from "./map/MapAccessGate";
 import { buildProvinceRegionIndex, provinceHoverBlocksRegionPick, type ProvinceRegionIndex } from "../hooks/regionPick";
 import { chronicleDiscardedProvinceMask } from "@/app/lib/map/chronicleWater";
+import { fetchCompiledProvinces } from "@/app/lib/map/compiledProvinces";
 import { fetchProvinceRunIndex } from "@/app/lib/map/provinceRuns";
 import type { ProvinceRunIndex } from "@/app/lib/map/editor/buildProvinceIndex";
 import MapCanvas, { type MapFocus, type MapViewportControls } from "./map/MapCanvas";
@@ -530,23 +531,31 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
   // the same compiled payload; until it loads, trade membership stays empty
   // (picking active but missing) rather than claiming the water.
   const [tradeWaterMask, setTradeWaterMask] = useState<{ key: string; mask: Uint8Array | null } | null>(null);
+  const [tradeWaterFailedFor, setTradeWaterFailedFor] = useState<string | null>(null);
+  const [tradeWaterRetry, setTradeWaterRetry] = useState(0);
   useEffect(() => {
     if (!provincePickActive || mapType !== "trade" || !accessChecked || gateReason) return;
     let cancelled = false;
     const key = `${mapId}\n${authToken ?? ""}`;
-    void fetchMapJson(`/${mapId}/compiled_data/provinces`, { sessionToken: authToken })
+    setTradeWaterFailedFor(null);
+    void fetchCompiledProvinces(mapId, authToken)
       .then((payload) => {
         if (cancelled) return;
-        setTradeWaterMask({ key, mask: chronicleDiscardedProvinceMask(payload) });
+        const mask = chronicleDiscardedProvinceMask(payload);
+        setTradeWaterMask({ key, mask });
+        // An unreadable payload is a failed load, not an empty mask: say so
+        // (with a retry) instead of silently withholding trade picking.
+        if (mask === null) setTradeWaterFailedFor(key);
       })
       .catch((err) => {
         if (cancelled) return;
         console.error("Failed to load province terrains for trade picking:", err);
+        setTradeWaterFailedFor(key);
       });
     return () => {
       cancelled = true;
     };
-  }, [provincePickActive, mapType, mapId, authToken, accessChecked, gateReason]);
+  }, [provincePickActive, mapType, mapId, authToken, accessChecked, gateReason, tradeWaterRetry]);
 
   const provinceRegionIndex = useMemo(() => {
     if (!provincePickActive || !regionData) return null;
@@ -1305,25 +1314,30 @@ const MapViewer = ({ mapId, day = null, dayBar, dayActions }: MapViewerProps) =>
     />
   ) : null;
 
-  const provincePickBanner =
-    provincePickActive && provincePickFailedFor === pickKey ? (
-      <div className={`${mapFrameClass} p-3`} role="alert">
-        <p className="text-sm leading-snug text-[var(--tfmc-cream)]">Picking is unavailable right now.</p>
-        <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-          The province geometry failed to load. The map, places and names still work.
-        </p>
-        <button
-          type="button"
-          className={`${actionLinkClass} mt-2`}
-          onClick={() => {
-            setProvincePickFailedFor(null);
-            setProvincePickRetry((n) => n + 1);
-          }}
-        >
-          Retry
-        </button>
-      </div>
-    ) : null;
+  const provincePickFailed =
+    provincePickActive &&
+    (provincePickFailedFor === pickKey ||
+      (mapType === "trade" && tradeWaterFailedFor === `${mapId}\n${authToken ?? ""}`));
+  const provincePickBanner = provincePickFailed ? (
+    <div className={`${mapFrameClass} p-3`} role="alert">
+      <p className="text-sm leading-snug text-[var(--tfmc-cream)]">Picking is unavailable right now.</p>
+      <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+        The province geometry failed to load. The map, places and names still work.
+      </p>
+      <button
+        type="button"
+        className={`${actionLinkClass} mt-2`}
+        onClick={() => {
+          setProvincePickFailedFor(null);
+          setProvincePickRetry((n) => n + 1);
+          setTradeWaterFailedFor(null);
+          setTradeWaterRetry((n) => n + 1);
+        }}
+      >
+        Retry
+      </button>
+    </div>
+  ) : null;
 
   return (
     <MapShell

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 import type { MapId } from "../components/map/types";
 import { fetchMapJson } from "@/lib/map/api";
+import { fetchCompiledProvinces } from "../lib/map/compiledProvinces";
 import { fetchChronicleDayFile } from "../lib/map/chronicleData";
 import { buildProvinceCountyNames, type CountyNameEntry } from "../lib/map/provinceCounty";
 
@@ -159,9 +160,7 @@ export function useProvinceHover({
       return;
     }
     liveCompiledPendingRef.current = mapId;
-    void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
-      sessionToken,
-    })
+    void fetchCompiledProvinces(mapId, sessionToken)
       .then((all) => {
         liveCompiledRef.current = { key: mapId, byId: all ?? {} };
         onDataReadyRef.current?.();
@@ -281,9 +280,7 @@ export function useProvinceHover({
       const names = countyCacheRef.current?.key === mapId ? countyCacheRef.current.names : null;
       if (compiled?.key !== mapId && liveCompiledPendingRef.current !== mapId) {
         liveCompiledPendingRef.current = mapId;
-        void fetchMapJson<Record<number, any>>(`/${mapId}/compiled_data/provinces`, {
-          sessionToken,
-        })
+        void fetchCompiledProvinces(mapId, sessionToken)
           .then((all) => {
             liveCompiledRef.current = { key: mapId, byId: all ?? {} };
           })

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   hover: vi.fn(),
   grid: vi.fn(),
   runs: vi.fn(),
+  compiled: vi.fn(),
   token: null as string | null,
   maps: [] as { id: string; display_name: string; public: boolean }[],
   mode: { loading: true, regionData: null as Record<string, unknown> | null },
@@ -24,6 +25,7 @@ vi.mock("@/app/lib/map/chronicleData", async (original) => ({
   fetchProvinceIdGridQ4: mocks.grid,
 }));
 vi.mock("@/app/lib/map/provinceRuns", () => ({ fetchProvinceRunIndex: mocks.runs }));
+vi.mock("@/app/lib/map/compiledProvinces", () => ({ fetchCompiledProvinces: mocks.compiled }));
 vi.mock("../hooks/useMapHover", () => ({
   useMapHover: (props: unknown) => {
     mocks.hover(props);
@@ -64,6 +66,8 @@ beforeEach(() => {
   mocks.grid.mockReset();
   mocks.runs.mockReset();
   mocks.runs.mockImplementation(() => new Promise(() => {}));
+  mocks.compiled.mockReset();
+  mocks.compiled.mockImplementation(() => new Promise(() => {}));
   mocks.token = null;
   mocks.maps = [];
 });
@@ -139,11 +143,11 @@ describe("MapViewer terrain and picking readiness", () => {
     };
     mocks.runs.mockResolvedValue({ width: 6400, height: 6400 });
     mocks.grid.mockImplementation(() => new Promise(() => {}));
-    let finishCompiled!: (response: Response) => void;
-    vi.mocked(fetch).mockImplementation(
-      (url) =>
+    let finishCompiled!: (payload: unknown) => void;
+    mocks.compiled.mockImplementation(
+      () =>
         new Promise((resolve) => {
-          if (String(url).includes("/compiled_data/provinces")) finishCompiled = resolve;
+          finishCompiled = resolve;
         }),
     );
     render(viewer());
@@ -153,16 +157,32 @@ describe("MapViewer terrain and picking readiness", () => {
     // Geometry is ready but terrains are not: membership is active-empty, so
     // trade picking misses rather than claiming the water.
     expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.size).toBe(0);
-    await act(async () =>
-      finishCompiled(
-        new Response(JSON.stringify({ 1: { terrain: "plains" }, 2: { terrain: "sea" } }), { status: 200 }),
-      ),
-    );
+    await act(async () => finishCompiled({ 1: { terrain: "plains" }, 2: { terrain: "sea" } }));
     const index = mocks.hover.mock.lastCall?.[0].provinceRegionIndex;
     expect(index.get(1)).toBe("GuildA");
     expect(index.get(2)).toBeUndefined();
     const fetched = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
     expect(fetched.some((url) => url.includes("/mapdata/trade"))).toBe(false);
+  });
+
+  it("shows the retryable banner when trade terrains fail to load", async () => {
+    mocks.mode = {
+      loading: false,
+      regionData: { GuildA: { rgb: "1,2,3", name: "GuildA", provinces: [1] } },
+    };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.runs.mockResolvedValue({ width: 6400, height: 6400 });
+    mocks.grid.mockImplementation(() => new Promise(() => {}));
+    mocks.compiled.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ 1: { terrain: "plains" } });
+    render(viewer());
+    await act(async () => {});
+    fireEvent.click(screen.getAllByRole("button", { name: "Layers" })[0]);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Map layers" })).getByRole("button", { name: "Trade" }));
+    const retry = await screen.findByRole("button", { name: "Retry" });
+    expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.size).toBe(0);
+    await act(async () => fireEvent.click(retry));
+    expect(screen.queryByText(/Picking is unavailable/)).toBeNull();
+    expect(mocks.hover.mock.lastCall?.[0].provinceRegionIndex.get(1)).toBe("GuildA");
   });
 
   it("holds image picking until the final image band is copied even if metadata is ready", async () => {
