@@ -57,7 +57,6 @@ class ServerPlanBody(BaseModel):
 
 class ServerJobBody(ReasonBody):
     id: str = Field(..., pattern=r"^[0-9a-f]{32}$")
-    backup_ref: str = Field("", max_length=500)
     emergency_override: StrictBool = False
     replace_test_builds: list[str] = Field(default_factory=list, max_length=100)
 
@@ -287,7 +286,7 @@ def _server_write(request: Request, server: str, operation: str, body: ServerJob
             conn.commit()
         result = server_control.request(operation, server=server,
                                         **{"plan_id" if operation == "start" else "job_id": body.id},
-                                        **({"backup_ref": body.backup_ref, "emergency_override": body.emergency_override} if operation == "start" else {}),
+                                        **({"emergency_override": body.emergency_override} if operation == "start" else {}),
                                         # Sent only when used, so an older host helper still accepts plain starts.
                                         **({"replace_test_builds": body.replace_test_builds} if body.replace_test_builds else {}),
                                         actor=f"{urllib.parse.urlparse(config.site_url).hostname}:user:{actor['user_id']}", reason=reason)

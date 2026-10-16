@@ -43,6 +43,7 @@ const plan: ServerPlan = {
   activation: [],
   skipped: [{ repo: "Gathering", reason: "not_verified_on_dev" }],
   last_backup_at: null,
+  backup: true,
 };
 const job: ServerJob = {
   id: plan.id,
@@ -62,7 +63,7 @@ it("shows setup status and does not expose actions without a connection", async 
   expect(screen.queryByRole("button", { name: "Restart Main" })).toBeNull();
 });
 
-it("reviews changes and skips, and requires a Main reason and backup before starting", async () => {
+it("reviews changes and skips, and requires a Main reason before starting", async () => {
   vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["main", "dev"] });
   vi.mocked(planServer).mockResolvedValue(plan);
   vi.mocked(serverAction).mockResolvedValue(job);
@@ -74,23 +75,12 @@ it("reviews changes and skips, and requires a Main reason and backup before star
   expect((within(dialog).getByRole("checkbox", { name: /TLibs/ }) as HTMLInputElement).checked).toBe(true);
   const start = within(dialog).getByRole("button", { name: "Start Main countdown" }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
+  expect(within(dialog).getByText(/fresh backup during the countdown/)).toBeTruthy();
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "publish tested cooking" } });
-  expect(start.disabled).toBe(true);
-  fireEvent.change(within(dialog).getByLabelText(/Backup for this restart/), {
-    target: { value: "AMP 2026-10-12 plus province DB" },
-  });
   expect(start.disabled).toBe(false);
   fireEvent.click(start);
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith(
-      "main",
-      "start",
-      plan.id,
-      "publish tested cooking",
-      "AMP 2026-10-12 plus province DB",
-      false,
-      ["TLibs"],
-    ),
+    expect(serverAction).toHaveBeenCalledWith("main", "start", plan.id, "publish tested cooking", false, ["TLibs"]),
   );
 });
 
@@ -113,7 +103,7 @@ it("asks for a cancellation reason before issuing the action", async () => {
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Players need more time" } });
   fireEvent.click(button);
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", "", false, []),
+    expect(serverAction).toHaveBeenCalledWith("main", "cancel", job.id, "Players need more time", false, []),
   );
 });
 
@@ -137,14 +127,13 @@ it("Main release upgrades require a feature review before reopening", async () =
       "reopen",
       job.id,
       "Verified recipes and persisted character data",
-      "",
       false,
       [],
     ),
   );
 });
 
-it("Dev confirms an instant restart without an override or backup field", async () => {
+it("Dev confirms an instant restart without an override or backup note", async () => {
   vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["dev"] });
   vi.mocked(planServer).mockResolvedValue({ ...plan, server: "dev", mode: "restart" });
   vi.mocked(serverAction).mockResolvedValue({ ...job, server: "dev", phase: "installing" });
@@ -153,11 +142,11 @@ it("Dev confirms an instant restart without an override or backup field", async 
   const dialog = await screen.findByRole("dialog", { name: "Restart Dev?" });
   expect(within(dialog).getByText(/Dev restarts as soon as you confirm/)).toBeTruthy();
   expect(within(dialog).queryByRole("checkbox", { name: /Emergency/ })).toBeNull();
-  expect(within(dialog).queryByLabelText(/Backup for this restart/)).toBeNull();
+  expect(within(dialog).queryByText(/AMP backup/)).toBeNull();
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Dev test restart" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Restart Dev now" }));
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Dev test restart", "", false, []),
+    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Dev test restart", false, []),
   );
 });
 
@@ -173,21 +162,11 @@ it("Main emergency override is unchecked by default and is explicit in the actio
   fireEvent.click(override);
   const start = within(dialog).getByRole("button", { name: "Restart Main now" }) as HTMLButtonElement;
   expect(start.disabled).toBe(true);
+  expect(within(dialog).getByText(/skips the fresh backup/)).toBeTruthy();
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Emergency rollback fix" } });
-  fireEvent.change(within(dialog).getByLabelText(/Backup for this restart/), {
-    target: { value: "Emergency recovery backup" },
-  });
   fireEvent.click(start);
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith(
-      "main",
-      "start",
-      plan.id,
-      "Emergency rollback fix",
-      "Emergency recovery backup",
-      true,
-      ["TLibs"],
-    ),
+    expect(serverAction).toHaveBeenCalledWith("main", "start", plan.id, "Emergency rollback fix", true, ["TLibs"]),
   );
 });
 
@@ -221,6 +200,24 @@ it("Dev keeps test builds unless staff choose to replace them", async () => {
   fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "Back to releases" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Restart Dev now" }));
   await waitFor(() =>
-    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Back to releases", "", false, ["TLibs"]),
+    expect(serverAction).toHaveBeenCalledWith("dev", "start", plan.id, "Back to releases", false, ["TLibs"]),
   );
+});
+
+it("says when the control helper cannot take a fresh backup", async () => {
+  vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["main", "dev"] });
+  vi.mocked(planServer).mockResolvedValue({ ...plan, backup: false, last_backup_at: null });
+  render(<ServerControls onComplete={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Update and restart Main" }));
+  const dialog = await screen.findByRole("dialog", { name: /Main\?$/ });
+  expect(within(dialog).getByText(/not recorded\. No fresh backup is taken/)).toBeTruthy();
+});
+
+it("shows the countdown's AMP backup progress", async () => {
+  vi.mocked(getControl).mockResolvedValue({
+    status: "available",
+    jobs: [{ ...job, backup: { title: "Before restart aaaaaaaa", state: "running" } }],
+  });
+  render(<ServerControls onComplete={vi.fn()} />);
+  await screen.findByText("AMP backup running. The restart waits for it.");
 });
