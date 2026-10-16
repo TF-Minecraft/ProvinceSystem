@@ -533,6 +533,12 @@ def replace_roster(
     # Rows in character id order, as ack_will_results locks them.
     normalized.sort(key=lambda row: row[2])
     with database.transaction(lock=f"characters:roster:{realm}:{uuid}") as conn:
+        # Deletions must take the same row order as will acknowledgements too.
+        conn.execute(
+            "SELECT 1 FROM character_roster WHERE player_uuid = %s AND realm_id = %s "
+            "ORDER BY character_id FOR UPDATE",
+            (uuid, realm),
+        )
         # Upsert so website-owned columns (wardrobe_active_slot) survive a push.
         conn.execute(
             "DELETE FROM character_roster WHERE player_uuid = %s AND realm_id = %s"

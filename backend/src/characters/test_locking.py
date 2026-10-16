@@ -97,6 +97,22 @@ def test_two_acks_of_one_request_apply_it_once(monkeypatch):
     ) == [{"will_heir_id": "brena", "will_revision": 1}]
 
 
+def test_a_roster_deletion_and_a_will_ack_batch_lock_characters_in_the_same_order(monkeypatch):
+    replace_roster(OWNER, [char("aldric", "Aldric", will_revision=0),
+                           char("brena", "Brena", will_revision=0)])
+    ids = [wills.create_will_request(OWNER, "main", cid, None, 0)["id"]
+           for cid in ("aldric", "brena")]
+    gate = Gate(monkeypatch, "DELETE FROM character_roster WHERE player_uuid")
+    push = lambda: replace_roster(OWNER, [char("aldric", "Aldric", will_revision=0)])  # noqa: E731
+    ack = lambda: wills.ack_will_results(  # noqa: E731
+        "main", [{"id": rid, "result": "applied", "will_revision": 1} for rid in ids])
+    one, two = race(gate, push, ack, ROW)
+    assert one.error is None and two.error is None
+    assert two.value["acked"] == ids
+    assert roster_ids() == ["aldric"]
+    assert testing.value("SELECT will_revision FROM character_roster") == 1
+
+
 def test_an_older_will_never_lands_over_a_newer_one():
     """store_will checks the revision in its UPDATE's WHERE, which Postgres checks again on the
     row the holder changed."""
