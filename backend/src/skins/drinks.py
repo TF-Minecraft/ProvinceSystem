@@ -19,7 +19,7 @@ from src.text_validation import TextValidationError, assert_display_name, assert
 from src import database
 
 from . import db
-from .codes import _parse_iso, api_time, lock_code_for_submission, mark_code_consumed
+from .codes import CodeError, _parse_iso, api_time, lock_code_for_submission, mark_code_consumed
 from .discord_link import get_identity_status
 from .naming import SlugError, build_submission_id_for_realm, slugify_display_name
 
@@ -814,7 +814,10 @@ def create_drink_submission(
                 raise DrinkError(
                     "You already have an active drink with this name or id"
                 ) from e
-            mark_code_consumed(conn, code_id)
+            try:
+                mark_code_consumed(conn, code_id)
+            except CodeError as exc:
+                raise DrinkError(str(exc)) from exc
     except Exception:
         if sub_dir.exists():
             shutil.rmtree(sub_dir, ignore_errors=True)

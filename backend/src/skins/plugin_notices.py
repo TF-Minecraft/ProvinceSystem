@@ -69,6 +69,20 @@ def enqueue_link_success(
     )
 
 
+def _legacy_payload(notice_type: str, payload: dict) -> dict:
+    # JSONB does not preserve insertion order. These are the outbox producers'
+    # legacy wire schemas; none currently contains a nested object.
+    keys = {
+        "link_success": ("discord_username",),
+        "guild_left_grace": ("discord_user_id", "grace_until", "left_guild_at"),
+        "guild_rejoined": ("discord_user_id",),
+        "grace_expired": ("discord_user_id", "grace_until"),
+    }.get(notice_type, ())
+    ordered = {key: payload[key] for key in keys if key in payload}
+    ordered.update(payload)
+    return ordered
+
+
 def list_undelivered_plugin_notices() -> list[dict]:
     # Expire guild-leave graces so plugins learn via grace_expired notices.
     from .discord_link import expire_due_graces
@@ -89,7 +103,7 @@ def list_undelivered_plugin_notices() -> list[dict]:
             "id": row["id"],
             "type": row["type"],
             "player_uuid": row["player_uuid"],
-            "payload": row["payload"],
+            "payload": _legacy_payload(row["type"], row["payload"]),
             "created_at": api_time(row["created_at"]),
         }
         for row in rows

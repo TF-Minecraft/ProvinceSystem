@@ -464,7 +464,7 @@ def test_ending_a_view_waits_for_its_profile_session_and_removes_it(env, monkeyp
     testing.set_role("823456789012345678", "admin")
     view_token = view_as.start(token, PLAYER)["token"]
     view = users.session_user(view_token)
-    gate = Gate(monkeypatch, "acting_user_id IS NOT NULL AND expires_at > %s FOR SHARE")
+    gate = Gate(monkeypatch, "acting_user_id IS NOT NULL FOR SHARE")
     opening, ending = race(
         gate,
         lambda: codes.start_linked_profile_session(PLAYER, minted_via=view_as.profile_minted_via(view),

@@ -10,7 +10,7 @@ from pathlib import Path
 from src import database
 
 from .db import SKINS_DIR, connect as sqlite_connect
-from .codes import SCOPE_LORE_UPLOAD, api_time, lock_code_for_submission, mark_code_consumed
+from .codes import CodeError, SCOPE_LORE_UPLOAD, api_time, lock_code_for_submission, mark_code_consumed
 from .discord_link import get_link_for_uuid
 from .naming import (
     ARMOR_METALS,
@@ -914,7 +914,10 @@ def create_submission(
                 "Choose a different item name, or ask staff to delete the old one."
             ) from e
         if source_norm != "lore":
-            mark_code_consumed(conn, code_id)
+            try:
+                mark_code_consumed(conn, code_id)
+            except CodeError as exc:
+                raise SubmissionError(str(exc)) from exc
 
     try:
         write_submission_files(

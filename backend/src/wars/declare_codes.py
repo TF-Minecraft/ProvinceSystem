@@ -246,11 +246,12 @@ def redeem(
     attacker = _normalize_faction_id(attacker_faction_id, "attacker_faction_id")
     defender = _normalize_faction_id(defender_faction_id, "defender_faction_id")
     realm = normalize_realm_id(realm_id)
-    now = _utcnow()
-    redeemed_at = _iso(now)
     code_hash = hash_secret(plaintext)
 
     with database.connect() as conn:
+        conn.execute("SELECT id FROM war_declare_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
+        now = _utcnow()
+        redeemed_at = _iso(now)
         # Spent by the update itself, which re-checks every rule: of two redeems, or a
         # redeem and a revoke, only one wins.
         row = conn.execute(
@@ -268,6 +269,8 @@ def redeem(
         if row is None:
             _load_usable(conn, code_hash, attacker, defender, realm)
             raise WarDeclareCodeError("This code has already been used")
+        if row["expires_at"] < _utcnow():
+            raise WarDeclareCodeError("This code has expired")
 
     return {
         "ok": True,

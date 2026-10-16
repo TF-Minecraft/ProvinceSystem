@@ -7,6 +7,7 @@ keys in the same order.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import FastAPI
@@ -112,6 +113,49 @@ def test_plugin_notices(api):
     }]})
     acked = api.post("/skins/plugin/notices/ack", json={"ids": [1, 1, 99]}, headers=PLUGIN).json()
     assert acked["acked"] == [1, 1] and acked["delivered_at"].endswith("Z") and len(acked["delivered_at"]) == 20
+
+
+@pytest.mark.parametrize("kind,payload", [
+    ("guild_left_grace", {"discord_user_id": "323456789012345678", "grace_until": "2099-03-08T10:00:00Z",
+                          "left_guild_at": "2026-03-01T10:00:00Z"}),
+    ("grace_expired", {"discord_user_id": "323456789012345678", "grace_until": "2026-03-01T10:00:00Z"}),
+    ("guild_rejoined", {"discord_user_id": "323456789012345678"}),
+])
+def test_known_plugin_notice_payload_bytes(api, kind, payload):
+    from src import database
+    testing.execute("INSERT INTO plugin_notices (type, player_uuid, payload, created_at) "
+                    "VALUES (%s, %s, %s, '2026-03-01T10:00:00Z')", (kind, PLAYER, database.Jsonb(payload)))
+    assert api.get("/skins/plugin/notices", headers=PLUGIN).content == body({"notices": [{
+        "id": 1, "type": kind, "player_uuid": PLAYER, "payload": payload, "created_at": "2026-03-01T10:00:00Z",
+    }]})
+
+
+def test_link_completion_and_single_use_bytes(api, monkeypatch):
+    from src.skins import discord_link
+    monkeypatch.setattr(discord_link, "_utcnow", lambda: datetime(2099, 3, 1, 10, tzinfo=timezone.utc))
+    issued = discord_link.start_link(PLAYER, "Steve")
+    request = {"code": issued["code"], "discord_user_id": "323456789012345678", "discord_username": "steve"}
+    response = api.post("/skins/discord/link/complete", json=request, headers=STAFF)
+    assert response.content == body({"player_uuid": PLAYER, "discord_user_id": "323456789012345678",
+                                     "discord_username": "steve", "minecraft_name": "Steve",
+                                     "linked_at": "2099-03-01T10:00:00Z"})
+    again = api.post("/skins/discord/link/complete", json=request, headers=STAFF)
+    assert again.status_code == 400
+    assert again.content == body({"detail": "Link code has already been used"})
+
+
+def test_war_redemption_and_single_use_bytes(api, monkeypatch):
+    from src.wars import declare_codes
+    monkeypatch.setattr(declare_codes, "_utcnow", lambda: datetime(2099, 3, 1, 10, tzinfo=timezone.utc))
+    issued = declare_codes.mint("attack", "defend", "war")
+    request = {"code": issued["code"], "attacker_faction_id": "attack", "defender_faction_id": "defend",
+               "realm_id": "main", "war_id": "war-1"}
+    response = api.post("/wars/declare-codes/redeem", json=request, headers=PLUGIN)
+    assert response.content == body({"ok": True, "id": issued["id"], "goal": "war", "realm_id": "main",
+                                     "redeemed_at": "2099-03-01T10:00:00Z", "war_id": "war-1"})
+    again = api.post("/wars/declare-codes/redeem", json=request, headers=PLUGIN)
+    assert again.status_code == 400
+    assert again.content == body({"detail": "This code has already been used"})
 
 
 def test_approved_skins_for_the_plugin(api):

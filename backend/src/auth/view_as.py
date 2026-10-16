@@ -255,11 +255,12 @@ def view_still_open(session_id: int):
     view waits for it or is seen by it.
     """
     def check(conn) -> bool:
-        return conn.execute(
-            "SELECT 1 FROM user_sessions WHERE id = %s AND acting_user_id IS NOT NULL AND expires_at > %s "
+        row = conn.execute(
+            "SELECT expires_at FROM user_sessions WHERE id = %s AND acting_user_id IS NOT NULL "
             "FOR SHARE",
-            (session_id, _utcnow()),
-        ).fetchone() is not None
+            (session_id,),
+        ).fetchone()
+        return row is not None and row["expires_at"] > _utcnow()
     return check
 
 

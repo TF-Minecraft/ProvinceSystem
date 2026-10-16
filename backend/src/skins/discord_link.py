@@ -327,12 +327,13 @@ def complete_link(
         raise LinkError("Invalid link code")
 
     with _link_write(discord_id, candidate["player_uuid"]) as conn:
+        conn.execute("SELECT id FROM discord_link_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
         now = _utcnow()
         row = conn.execute(
             """
             UPDATE discord_link_codes SET used_at = %s
             WHERE code_hash = %s AND used_at IS NULL AND expires_at >= %s
-            RETURNING player_uuid, minecraft_name
+            RETURNING player_uuid, minecraft_name, expires_at
             """,
             (now, code_hash, now),
         ).fetchone()
@@ -341,7 +342,12 @@ def complete_link(
                 "SELECT used_at, expires_at FROM discord_link_codes WHERE code_hash = %s", (code_hash,)
             ).fetchone(), now)
             raise LinkError("Link code has already been used")
-        return _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now, "code")
+        result = _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now, "code")
+        # Binding may wait on a link or sibling code after the original code lock.
+        # Keep all spends and the outbox insert in the rollback on expiry.
+        if row["expires_at"] < _utcnow():
+            raise LinkError("Link code has expired")
+        return result
 
 
 def link_verified_profile(
@@ -372,7 +378,10 @@ def link_verified_profile(
     with _link_write(discord_id, uuid) as conn:
         if still_allowed is not None and not still_allowed(conn):
             raise LinkError("This link attempt is no longer valid")
-        return _bind(conn, uuid, name, discord_id, username, _utcnow(), "microsoft")
+        result = _bind(conn, uuid, name, discord_id, username, _utcnow(), "microsoft")
+        if still_allowed is not None and not still_allowed(conn):
+            raise LinkError("This link attempt is no longer valid")
+        return result
 
 
 def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, username: str | None, now: datetime,
@@ -506,13 +515,13 @@ def record_guild_left(discord_user_id: str) -> dict:
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    now = _utcnow()
     with database.connect() as conn:
         # Locked so two leave events start one grace and queue one notice.
         row = conn.execute(
             "SELECT * FROM discord_links WHERE discord_user_id = %s FOR UPDATE",
             (discord_id,),
         ).fetchone()
+        now = _utcnow()
         if row is None:
             raise LinkError("No Minecraft link for this Discord account")
 
@@ -540,7 +549,7 @@ def record_guild_left(discord_user_id: str) -> dict:
             },
             conn=conn,
         )
-    return _status_from_row(refreshed, now=now)
+    return _status_from_row(refreshed)
 
 
 def record_guild_joined(discord_user_id: str) -> dict:
@@ -549,7 +558,6 @@ def record_guild_joined(discord_user_id: str) -> dict:
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    now = _utcnow()
     with database.connect() as conn:
         # Locked so two join events queue one rejoin notice.
         row = conn.execute(
@@ -575,7 +583,7 @@ def record_guild_joined(discord_user_id: str) -> dict:
                 {"discord_user_id": discord_id},
                 conn=conn,
             )
-    return _status_from_row(refreshed, now=now)
+    return _status_from_row(refreshed)
 
 
 def _cancel_microsoft_attempts(conn, discord_id: str) -> None:

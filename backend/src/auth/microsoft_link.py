@@ -64,10 +64,14 @@ def consume(state: str | None) -> dict | None:
             """
             UPDATE microsoft_link_states SET used_at = %s
             WHERE state_hash = %s AND used_at IS NULL AND expires_at > %s
-            RETURNING session_id, user_id, code_verifier
+            RETURNING session_id, user_id, code_verifier, expires_at
             """,
             (now, digest, now),
         ).fetchone()
+        if row is not None and row["expires_at"] <= _utcnow():
+            # An UPDATE can itself wait on a table lock after the row lock.
+            conn.rollback()
+            return None
     if row is None:
         return None
     return {

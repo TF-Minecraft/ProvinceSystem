@@ -139,8 +139,18 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
 
 
 def mark_code_consumed(conn, code_id: int) -> None:
-    """Mark a skin or drink code used by the submission inserted in this transaction."""
-    conn.execute("UPDATE codes SET redeemed_at = %s WHERE id = %s", (_utcnow(), int(code_id)))
+    """Spend the held code, rechecking expiry after the submission's other writes."""
+    row = conn.execute("UPDATE codes SET redeemed_at = %s WHERE id = %s RETURNING expires_at",
+                       (_utcnow(), int(code_id))).fetchone()
+    require_code_unexpired(row["expires_at"])
+
+
+def require_code_unexpired(expires_at: datetime) -> datetime:
+    """Check a held code's deadline after waits; raising rolls back the whole write."""
+    now = _utcnow()
+    if expires_at < now:
+        raise CodeError("Code has expired")
+    return now
 
 
 def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
@@ -183,7 +193,7 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
     return int(row["id"])
 
 
-def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
+def _prepare_skin_drink_redeem(conn, code_id: int, expires_at: datetime) -> datetime:
     """Replace sessions and clear redemption time for a code with no submission.
 
     Skin and drink codes remain reusable until a submission consumes them;
@@ -195,6 +205,9 @@ def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
         "UPDATE codes SET redeemed_at = NULL WHERE id = %s",
         (code_id,),
     )
+    # Deleting an old bearer can wait even though the code is already held.
+    # Refusal rolls that deletion and the redemption reset back together.
+    return require_code_unexpired(expires_at)
 
 
 # A code Profile started for a skin or drink, rather than one made with /token create.
@@ -420,6 +433,7 @@ def revoke_code(plaintext: str) -> dict:
             "UPDATE codes SET revoked = true WHERE id = %s",
             (row["id"],),
         )
+        require_code_unexpired(row["expires_at"])
 
     return {"ok": True, "code": code}
 
@@ -556,7 +570,7 @@ def redeem_code(plaintext: str) -> dict:
                 raise CodeError("This code is for drinks, not skins")
             raise CodeError("This code is for profile login, not skins")
 
-        _prepare_skin_drink_redeem(conn, row["id"])
+        now = _prepare_skin_drink_redeem(conn, row["id"], row["expires_at"])
 
         session_token = secrets.token_urlsafe(32)
         session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
@@ -574,6 +588,8 @@ def redeem_code(plaintext: str) -> dict:
                 now,
             ),
         )
+
+        require_code_unexpired(row["expires_at"])
 
     return _skin_session_payload(row, session_token, session_expires_at)
 
@@ -651,6 +667,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
                 now,
             ),
         )
+        require_code_unexpired(row["expires_at"])
 
     return {
         "session_token": session_token,
@@ -765,6 +782,8 @@ def start_linked_profile_session(
             """,
             (hash_secret(session_token), code_id, uuid, as_time(session_expires_at), now),
         )
+        if still_allowed is not None and not still_allowed(conn):
+            raise CodeError("session_ended")
 
     return {
         "session_token": session_token,
@@ -806,7 +825,7 @@ def redeem_drink_code(plaintext: str) -> dict:
         if row["expires_at"] < now:
             raise CodeError("Code has expired")
 
-        _prepare_skin_drink_redeem(conn, row["id"])
+        now = _prepare_skin_drink_redeem(conn, row["id"], row["expires_at"])
 
         session_token = secrets.token_urlsafe(32)
         session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
@@ -824,6 +843,8 @@ def redeem_drink_code(plaintext: str) -> dict:
                 now,
             ),
         )
+
+        require_code_unexpired(row["expires_at"])
 
     return _drink_session_payload(row, session_token, session_expires_at)
 
@@ -984,16 +1005,23 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
                     MINTED_VIA_SITE,
                 ),
             ).fetchone()
-        session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
-        _prepare_skin_drink_redeem(conn, row["id"])
-        conn.execute(
-            """
-            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (hash_secret(session_token), row["id"], row["player_uuid"],
-             _parse_iso(session_expires_at), now),
-        )
+        try:
+            with conn.transaction():
+                now = _prepare_skin_drink_redeem(conn, row["id"], row["expires_at"])
+                session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
+                conn.execute(
+                    """
+                    INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (hash_secret(session_token), row["id"], row["player_uuid"],
+                     _parse_iso(session_expires_at), now),
+                )
+                require_code_unexpired(row["expires_at"])
+        except CodeError as exc:
+            # Restore old sessions before computing the existing 409 response.
+            until = _cooldown_until(conn, uuid, days, _utcnow())
+            raise SiteStartRefused("cooldown", until) from exc
 
     if scope == "drink":
         return _drink_session_payload(row, session_token, session_expires_at)
