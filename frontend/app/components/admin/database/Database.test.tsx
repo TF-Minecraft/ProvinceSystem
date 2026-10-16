@@ -172,6 +172,19 @@ it("ignores a slow older browse response and keeps each table's filter to itself
   expect((screen.getByRole("textbox", { name: "Filter rows" }) as HTMLInputElement).value).toBe("");
 });
 
+it("shows no loading marks for a quick load and a quiet note for a slow one", async () => {
+  vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
+  let finish: (r: QueryResult) => void = () => {};
+  vi.mocked(browseTable).mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+  render(<DatabaseStudio id="site" />);
+  fireEvent.click(await screen.findByRole("button", { name: "users" }));
+  expect(screen.queryByText("Running…")).toBeNull();
+  expect(await screen.findByText("Running…", undefined, { timeout: 1000 })).toBeTruthy();
+  finish(result());
+  expect(await screen.findByText("root")).toBeTruthy();
+  expect(screen.queryByText("Running…")).toBeNull();
+});
+
 it("runs a read query with Ctrl + Enter and shows NULLs, blobs and errors", async () => {
   vi.mocked(getSchema).mockResolvedValue({ tables, database: site });
   vi.mocked(runQuery)

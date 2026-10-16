@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { AccountApiError } from "@/lib/account/api";
 import {
@@ -404,9 +412,6 @@ export default function DatabaseStudio({ id }: { id: string }) {
                   >
                     {tab.title}
                   </span>
-                  {tab.running ? (
-                    <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--tfmc-accent)]" />
-                  ) : null}
                 </button>
                 <button
                   type="button"
@@ -564,9 +569,39 @@ function TabResult({
     );
   if (tab.result)
     return (
-      <ResultGrid result={tab.result} types={types} fileName={fileName} serverSort={serverSort} firstRow={firstRow} />
+      // While a new page or sort loads, the current rows stay, dimmed only if it takes a moment.
+      <div
+        className={`relative flex min-h-0 flex-1 flex-col transition-opacity ${tab.running ? "opacity-60 delay-300" : ""}`}
+      >
+        {tab.running ? (
+          <Delayed>
+            <div
+              className="absolute inset-x-0 top-0 z-20 h-0.5 animate-pulse bg-[var(--tfmc-accent)]"
+              role="progressbar"
+              aria-label="Loading"
+            />
+          </Delayed>
+        ) : null}
+        <ResultGrid result={tab.result} types={types} fileName={fileName} serverSort={serverSort} firstRow={firstRow} />
+      </div>
     );
-  return <p className={`p-4 ${mutedClass}`}>{tab.running ? "Running…" : "Run a query to see its results here."}</p>;
+  if (tab.running)
+    return (
+      <Delayed>
+        <p className={`p-4 ${mutedClass}`}>Running…</p>
+      </Delayed>
+    );
+  return <p className={`p-4 ${mutedClass}`}>Run a query to see its results here.</p>;
+}
+
+/** Shows its children only once a load has taken long enough to notice, so quick ones don't flicker. */
+function Delayed({ children, ms = 300 }: { children: ReactNode; ms?: number }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShown(true), ms);
+    return () => window.clearTimeout(timer);
+  }, [ms]);
+  return shown ? <>{children}</> : null;
 }
 
 function TablePane({
@@ -649,14 +684,13 @@ function TablePane({
           </button>
         ) : null}
       </div>
-      {tab.result?.sql ? (
-        <p
-          className={`truncate border-b ${hairline} px-3 py-1.5 font-mono text-[11px] text-[var(--tfmc-mist)]`}
-          title={tab.result.sql}
-        >
-          {tab.result.sql}
-        </p>
-      ) : null}
+      {/* Kept while loading, so the grid below doesn't jump. */}
+      <p
+        className={`h-[1.875rem] truncate border-b ${hairline} px-3 py-1.5 font-mono text-[11px] text-[var(--tfmc-mist)]`}
+        title={tab.result?.sql}
+      >
+        {tab.result?.sql ?? ""}
+      </p>
       <TabResult
         tab={tab}
         types={types}
