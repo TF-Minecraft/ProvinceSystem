@@ -204,13 +204,13 @@ it("Dev keeps test builds unless staff choose to replace them", async () => {
   );
 });
 
-it("says when the control helper cannot take a fresh backup", async () => {
+it("says when the control helper will not take a fresh backup", async () => {
   vi.mocked(getControl).mockResolvedValue({ status: "available", jobs: [], allowed_servers: ["main", "dev"] });
   vi.mocked(planServer).mockResolvedValue({ ...plan, backup: false, last_backup_at: null });
   render(<ServerControls onComplete={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "Update and restart Main" }));
   const dialog = await screen.findByRole("dialog", { name: /Main\?$/ });
-  expect(within(dialog).getByText(/not recorded\. No fresh backup is taken/)).toBeTruthy();
+  expect(within(dialog).getByText(/not recorded\. The control helper will not take a fresh backup/)).toBeTruthy();
 });
 
 it("shows the countdown's AMP backup progress", async () => {

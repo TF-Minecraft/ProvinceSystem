@@ -1,10 +1,19 @@
+import importlib.util
 import json
 import signal
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from src.servers.test_service_account import load_script
+
+def load_script(name):
+    path = Path(__file__).resolve().parents[3] / "scripts" / name
+    spec = importlib.util.spec_from_file_location(name.replace("-", "_"), path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 
 updater = load_script("server-control-update.py")
 OLD, NEW = "a" * 40, "b" * 40
@@ -32,7 +41,6 @@ def host(tmp_path, monkeypatch):
     def tree(tag):
         files = {f"backend/src/servers/{m}": f"# {tag} {m}\n".encode() for m in updater.MODULES}
         files.update({name: b"pinned " + name.encode() for name in pinned})
-        files.update({name: b"installer " + name.encode() for name in updater.INSTALLER})
         return files
 
     state = SimpleNamespace(commits={OLD: tree("old"), NEW: tree("new")}, on_main={OLD, NEW}, build=True,
@@ -101,20 +109,16 @@ def test_update_replaces_modules_restarts_and_keeps_a_backup(host):
     assert "Installed bbbbbbb" in updater.LOG.read_text()
 
 
-@pytest.mark.parametrize("problem", ["not_on_main", "no_build", "unit", "wrapper", "updater", "installer",
-                                     "syntax", "busy", "busy_stopped"])
+@pytest.mark.parametrize("problem", ["not_on_main", "no_build", "unit", "updater", "syntax", "busy", "busy_stopped"])
 def test_refusals_leave_the_installation_alone(host, problem):
     updater.main([OLD])
     if problem == "not_on_main":
         host.on_main.discard(NEW)
     elif problem == "no_build":
         host.build = False
-    elif problem in {"unit", "wrapper", "updater"}:
-        name = {"unit": "scripts/tfmc-server-control.service", "wrapper": "scripts/server-control-command.py",
-                "updater": "scripts/server-control-update.py"}[problem]
+    elif problem in {"unit", "updater"}:
+        name = {"unit": "scripts/tfmc-server-control.service", "updater": "scripts/server-control-update.py"}[problem]
         host.commits[NEW][name] = b"changed"
-    elif problem == "installer":
-        host.commits[NEW]["scripts/server-control-install.py"] = b"changed installer"
     elif problem == "syntax":
         host.commits[NEW]["backend/src/servers/host.py"] = b"def broken(:\n"
     elif problem == "busy":

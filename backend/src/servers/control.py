@@ -17,19 +17,10 @@ class ControlError(Exception):
         self.code, self.status = code, status
 
 
-def _amp_login() -> dict | None:
-    """The AMP account the helper should act as, from this site's environment."""
-    username = os.getenv("SERVER_CONTROL_AMP_USERNAME", "").strip()
-    password = os.getenv("SERVER_CONTROL_AMP_PASSWORD", "")
-    return {"username": username, "password": password} if username and password else None
-
-
 def request(operation: str, **body) -> dict:
     path = os.getenv("SERVER_CONTROL_SOCKET", "").strip()
     if not path:
         raise ControlError("control_not_configured", 503)
-    if operation != "status" and (login := _amp_login()):
-        body["amp"] = login
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
             # Writes can wait behind a plan's downloads for the helper's lock, and a

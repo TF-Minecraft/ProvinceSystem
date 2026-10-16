@@ -2,10 +2,9 @@
 
 The Unix socket only accepts plans, countdowns, cancellation and reopening.
 Console input and paths are fixed here, never supplied by website callers.
-When the website sends an AMP login with its requests, the helper uses the AMP
-API for console input and a fresh backup during Main's countdown. The login is
-kept in memory only. Without it, console input goes through the root-owned sudo
-wrapper.
+The helper sends console input and takes Main's countdown backup through the AMP
+API, using its own login from the systemd credential `amp-login`. Without that
+credential it still answers status requests, but every console call fails.
 """
 from __future__ import annotations
 
@@ -18,7 +17,6 @@ import os
 import re
 import shutil
 import socketserver
-import subprocess
 import threading
 import time
 import urllib.parse
@@ -106,7 +104,7 @@ def download(release: dict, target: Path):
 
 
 class Amp:
-    """AMP API client for the service account named in the AMP login file."""
+    """AMP API client for the service account named in the helper's credential."""
 
     def __init__(self, username: str, password: str, ads: str = AMP_ADS):
         self.username, self.password, self.ads = username, password, ads
@@ -167,11 +165,7 @@ class Amp:
 class Controller:
     def __init__(self, state: Path, roots: dict[str, tuple[Path, Path]], *, console=None, fetch=None, amp=None):
         self.state, self.roots = state, roots
-        # AMP clients from the websites' logins, per server; kept in memory, never
-        # written to the state files. An accepted job keeps the client it started with.
-        self._default_amp = amp
-        self._amp_clients: dict[str, tuple[tuple[str, str], Amp]] = {}
-        self._job_amp: dict[str, Amp] = {}
+        self.amp = amp
         self.console = console or self._console
         self.fetch = fetch or download
         self.lock = threading.RLock()
@@ -204,35 +198,17 @@ class Controller:
         save_json(self.state / "jobs.json", self.jobs)
         self.status_json = json.dumps(list(self.jobs.values()))
 
-    def amp(self, server: str) -> Amp | None:
-        job = self.jobs.get(server)
-        if job and job["phase"] in ACTIVE and job["id"] in self._job_amp:
-            return self._job_amp[job["id"]]
-        entry = self._amp_clients.get(server)
-        return entry[1] if entry else self._default_amp
-
-    def use_login(self, server: str, login) -> None:
-        """Take the AMP login a website sent for one server it may control; a new one replaces the old."""
-        if not (isinstance(login, dict) and set(login) == {"username", "password"}
-                and all(isinstance(v, str) and 0 < len(v) <= 200 for v in login.values())):
-            raise ControlError("bad_control_request", 400)
-        key = (login["username"], login["password"])
-        with self.lock:
-            entry = self._amp_clients.get(server)
-            if entry is None or entry[0] != key:
-                self._amp_clients[server] = key, Amp(*key)
+    def _client(self) -> Amp:
+        if self.amp is None:
+            raise ControlError("amp_not_configured", 503)
+        return self.amp
 
     def _console(self, server: str, command: str):
-        if amp := self.amp(server):
-            amp.call(server, "Core/SendConsoleMessage", message=command)
-            return
-        subprocess.run(["sudo", "-n", "-u", "amp", "/usr/local/sbin/tfmc-server-command",
-                        server, command], check=True, timeout=25,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self._client().call(server, "Core/SendConsoleMessage", message=command)
 
     def _take_backup(self, server: str, job_id: str, actor: str, reason: str) -> dict:
         title = f"Before restart {job_id[:8]}"
-        task = self.amp(server).call(server, "LocalFileBackupPlugin/TakeBackup", Title=title,
+        task = self._client().call(server, "LocalFileBackupPlugin/TakeBackup", Title=title,
                                Description=f"{actor}: {reason}"[:500], Sticky=False, Local=True, S3=False,
                                WasCreatedAutomatically=False, DirtyOnly=False, BackupWhileRunning=None)
         if not isinstance(task, dict) or not task.get("Id"):
@@ -244,9 +220,7 @@ class Controller:
         backup = job.get("backup")
         if not backup:
             return True
-        amp = self.amp(server)
-        if amp is None:
-            raise ControlError("amp_unavailable")
+        amp = self._client()
         deadline, told = time.monotonic() + BACKUP_WAIT, False
         while any(task.get("Id") == backup["task"] for task in amp.call(server, "Core/GetTasks")):
             if self.cancelled.is_set():
@@ -389,7 +363,7 @@ class Controller:
                         "baseline": baseline, "changes": changes, "activation": activation, "skipped": skipped,
                         "boot_errors": self._boot_errors(logs, startup["log"]), "failed_at_startup": startup["failed"],
                         "last_backup_at": self._backup_time(server),
-                        "backup": server == "main" and self.amp(server) is not None}
+                        "backup": server == "main"}
                 save_json(folder / "plan.json", plan)
                 return self._public_plan(plan)
             except BaseException:
@@ -502,13 +476,7 @@ class Controller:
             accepted_at = time.time()
             countdown = server == "main" and not emergency_override
             # The backup runs alongside the countdown; an emergency restart skips it.
-            if client := self.amp(server):
-                self._job_amp[plan_id] = client
-            try:
-                backup = self._take_backup(server, plan_id, actor, reason) if countdown and client else None
-            except Exception:
-                self._job_amp.pop(plan_id, None)
-                raise
+            backup = self._take_backup(server, plan_id, actor, reason) if countdown else None
             job = {"id": plan_id, "server": server, "phase": "countdown" if countdown else "installing",
                    "accepted_at": accepted_at, "deadline": accepted_at + (300 if countdown else 0),
                    "emergency_override": emergency_override,
@@ -612,9 +580,6 @@ class Controller:
                     except Exception:
                         logging.exception("Could not announce the failed countdown for %s", server)
                 self._event(job, "failed", error=exc.code if isinstance(exc, ControlError) else "server_operation_failed")
-        finally:
-            # Later actions on this job, such as reopening, use their own request's login.
-            self._job_amp.pop(job["id"], None)
 
     @staticmethod
     def _wait(predicate, timeout: float, code: str):
@@ -774,7 +739,8 @@ class Controller:
 
     def dispatch(self, body: dict) -> dict:
         body = dict(body)
-        login = body.pop("amp", None)
+        # Older websites still send their own AMP login; the helper uses its credential.
+        body.pop("amp", None)
         operation = body.get("operation")
         allowed = {"status": {"operation"}, "plan": {"operation", "server", "mode", "releases"},
                    "start": {"operation", "server", "plan_id", "actor", "reason", "emergency_override"},
@@ -786,14 +752,9 @@ class Controller:
         if operation not in allowed or set(body) - optional != allowed[operation]:
             raise ControlError("bad_control_request", 400)
         if operation == "status":
-            if login is not None:
-                raise ControlError("bad_control_request", 400)
             return {"jobs": json.loads(self.status_json)}
         server = body["server"]
         self._paths(server)
-        if login is not None:
-            # The socket already checked that this website may control this server.
-            self.use_login(server, login)
         if operation == "plan":
             expected = body.get("expected")
             if "expected" in body and (not isinstance(expected, list) or len(expected) > 300):
@@ -876,6 +837,23 @@ def share_socket(path: Path, gid: int | None):
         path.chmod(0o600)
 
 
+def amp_login(directory: str | None) -> Amp | None:
+    """The helper's AMP client from its systemd credential, or None when there is none."""
+    path = Path(directory) / "amp-login" if directory else None
+    # The unit supplies an empty credential when the login file is missing.
+    if path is None or not path.is_file() or not path.stat().st_size:
+        logging.warning("No amp-login credential: console input and backups are unavailable.")
+        return None
+    try:
+        login = json.loads(path.read_text())
+    except (OSError, ValueError):
+        login = None
+    if not (isinstance(login, dict) and set(login) == {"username", "password"}
+            and all(isinstance(v, str) and 0 < len(v) <= 200 for v in login.values())):
+        raise SystemExit("The amp-login credential must be JSON with only a username and a password.")
+    return Amp(login["username"], login["password"])
+
+
 def main():
     os.umask(0o077)
     gid = socket_group(os.getenv("SERVER_CONTROL_SOCKET_GROUP", ""))
@@ -889,7 +867,7 @@ def main():
         roots = {key: (instances / instance / "Minecraft/plugins",
                        instances / instance / "Minecraft/logs")
                  for key, instance in INSTANCES.items()}
-        controller = Controller(root / "state", roots)
+        controller = Controller(root / "state", roots, amp=amp_login(os.getenv("CREDENTIALS_DIRECTORY")))
         servers = []
         for site, allowed in (("www", {"main", "dev"}), ("dev", {"dev"})):
             run = sockets / site
