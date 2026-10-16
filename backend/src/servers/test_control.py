@@ -23,6 +23,24 @@ def startup(logs, version="1.0.0", error=False):
                                     + "[06:00:03 INFO]: Done (1.0s)!\n")
 
 
+class FakeAmp:
+    def __init__(self, busy=2, listed=True):
+        self.calls, self.busy, self.listed = [], busy, listed
+        self.title = None
+
+    def call(self, server, method, **body):
+        self.calls.append((server, method, body))
+        if method == "LocalFileBackupPlugin/TakeBackup":
+            self.title = body["Title"]
+            return {"Id": "task-1", "Name": "Creating Backup"}
+        if method == "Core/GetTasks":
+            self.busy -= 1
+            return [{"Id": "task-1"}] if self.busy >= 0 else []
+        if method == "LocalFileBackupPlugin/GetBackups":
+            return [{"Id": "backup-1", "Name": self.title}] if self.listed else []
+        return None
+
+
 @pytest.fixture
 def controller(tmp_path, monkeypatch):
     monkeypatch.setattr(host, "scheduled_restart", lambda *_: False)
@@ -52,7 +70,7 @@ def controller(tmp_path, monkeypatch):
             jars = inventory.read_jars(plugins)
             startup(logs, jars[0].version)
 
-    instance = host.Controller(tmp_path / "state", roots, console=console)
+    instance = host.Controller(tmp_path / "state", roots, console=console, amp=FakeAmp(busy=0))
     instance.commands = commands
     return instance
 
@@ -644,24 +662,6 @@ def test_socket_still_accepts_backup_ref_from_older_websites(controller, monkeyp
     assert controller.dispatch(body)["phase"] == "countdown"
 
 
-class FakeAmp:
-    def __init__(self, busy=2, listed=True):
-        self.calls, self.busy, self.listed = [], busy, listed
-        self.title = None
-
-    def call(self, server, method, **body):
-        self.calls.append((server, method, body))
-        if method == "LocalFileBackupPlugin/TakeBackup":
-            self.title = body["Title"]
-            return {"Id": "task-1", "Name": "Creating Backup"}
-        if method == "Core/GetTasks":
-            self.busy -= 1
-            return [{"Id": "task-1"}] if self.busy >= 0 else []
-        if method == "LocalFileBackupPlugin/GetBackups":
-            return [{"Id": "backup-1", "Name": self.title}] if self.listed else []
-        return None
-
-
 def amp_controller(controller, amp):
     instance = host.Controller(controller.state, controller.roots, console=controller.console, amp=amp)
     instance.commands = controller.commands
@@ -713,86 +713,57 @@ def test_emergency_and_dev_restarts_take_no_amp_backup(controller, monkeypatch):
 LOGIN = {"username": "TFWeb", "password": "secret-pass"}
 
 
-def test_console_uses_the_amp_api_with_the_websites_login(controller, monkeypatch):
+def test_console_uses_the_helpers_own_login_and_ignores_a_sent_one(controller, monkeypatch):
     sent = []
-    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: sent.append((self.username, server, method, body)))
-    monkeypatch.setattr(host.subprocess, "run", lambda *a, **k: pytest.fail("sudo wrapper used"))
-    instance = host.Controller(controller.state, controller.roots)
-    assert instance.amp("main") is None
-    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: sent.append((self.password, server, method, body)))
+    instance = host.Controller(controller.state, controller.roots, amp=host.Amp(**LOGIN))
+    # Older websites still send their login; the helper drops it, status included.
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [],
+                              "amp": {"username": "TFWeb", "password": "old"}})
     assert plan["backup"] is True
-    assert sent == [("TFWeb", "main", "Core/SendConsoleMessage", {"message": "list"})]
-    first = instance.amp("main")
-    instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
-    assert instance.amp("main") is first  # the same login keeps its client and sessions
-    instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [],
-                       "amp": {**LOGIN, "password": "changed"}})
-    assert instance.amp("main") is not first and instance.amp("main").password == "changed"
-    assert instance.amp("dev") is None  # a login only counts for the server it was sent for
+    assert sent == [("secret-pass", "main", "Core/SendConsoleMessage", {"message": "list"})]
+    assert instance.dispatch({"operation": "status", "amp": LOGIN}) == {"jobs": []}
 
 
-@pytest.mark.parametrize("login", [{"username": "TFWeb"}, {"username": "", "password": "x"},
-                                   {"username": "TFWeb", "password": 5}, "TFWeb:secret", {**LOGIN, "extra": 1}])
-def test_malformed_logins_are_refused(controller, login):
-    with pytest.raises(control.ControlError, match="bad_control_request"):
-        controller.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": [], "amp": login})
-
-
-def test_status_requests_cannot_carry_a_login(controller):
-    with pytest.raises(control.ControlError, match="bad_control_request"):
-        controller.dispatch({"operation": "status", "amp": LOGIN})
-
-
-def test_the_dev_site_cannot_replace_mains_login_and_jobs_keep_theirs(controller, monkeypatch):
-    # Sol: the Dev site's socket replaced the client Main's restart was using.
+def test_without_a_login_console_and_backups_fail(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: {"Id": "task-1"})
+    instance = host.Controller(controller.state, controller.roots)
+    assert not hasattr(host, "subprocess")  # no sudo fallback
+    assert instance.dispatch({"operation": "status"}) == {"jobs": []}
+    with pytest.raises(control.ControlError, match="amp_not_configured") as error:
+        instance.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": []})
+    assert error.value.status == 503
+    # With console input but no AMP login, Main's countdown cannot take its backup.
     instance = host.Controller(controller.state, controller.roots, console=controller.console)
-    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
-    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
-                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
-    main = instance.amp("main")
-    with pytest.raises(control.ControlError, match="server_job_active"):
-        instance.dispatch({"operation": "plan", "server": "dev", "mode": "restart", "releases": [],
-                           "amp": {"username": "TFWeb", "password": "wrong"}})
-    assert instance.amp("main") is main and instance.amp("dev").password == "wrong"
-    # Even a new Main login waits until the running job is done.
-    with pytest.raises(control.ControlError, match="server_job_active"):
-        instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [],
-                           "amp": {"username": "TFWeb", "password": "newer"}})
-    assert instance.amp("main") is main
+    plan = instance.plan("main", "restart", [])
+    with pytest.raises(control.ControlError, match="amp_not_configured"):
+        instance.start("main", plan["id"], "www:user:1", "planned restart")
+    assert "main" not in instance.jobs
+    with pytest.raises(control.ControlError, match="amp_not_configured"):
+        instance._await_backup("main", {"backup": {"title": "Before restart", "task": "task-1"}})
 
 
-def test_a_finished_restart_lets_go_of_its_login(controller, monkeypatch):
-    # Sol: reopening after review reused the restart's old, possibly stale, login.
-    monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    logins = []
-    monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: logins.append(self.password) or (
-        {"Id": "task-1"} if method == "LocalFileBackupPlugin/TakeBackup" else
-        [] if method == "Core/GetTasks" else
-        [{"Id": "b", "Name": f"Before restart {plan['id'][:8]}"}] if method == "LocalFileBackupPlugin/GetBackups" else None))
-    instance = host.Controller(controller.state, controller.roots, console=controller.console)
-    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
-    instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
-                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
-    monkeypatch.setattr(instance.cancelled, "wait", lambda delay: False)
-    instance.run(instance._plan(plan["id"]), instance.jobs["main"])
-    assert instance._job_amp == {}
-    instance.use_login("main", {**LOGIN, "password": "fresh"})
-    assert instance.amp("main").password == "fresh"
+def test_the_credential_gives_the_helper_its_login(tmp_path):
+    (tmp_path / "amp-login").write_text(json.dumps(LOGIN))
+    amp = host.amp_login(str(tmp_path))
+    assert (amp.username, amp.password) == ("TFWeb", "secret-pass")
 
 
-def test_a_failed_start_keeps_no_login(controller, monkeypatch):
-    def refuse(self, server, method, **body):
-        if method == "LocalFileBackupPlugin/TakeBackup":
-            raise control.ControlError("amp_action_failed")
-    monkeypatch.setattr(host.Amp, "call", refuse)
-    instance = host.Controller(controller.state, controller.roots, console=controller.console)
-    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
-    with pytest.raises(control.ControlError, match="amp_action_failed"):
-        instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
-                           "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
-    assert instance._job_amp == {}
+def test_a_missing_credential_leaves_the_helper_without_a_login(tmp_path):
+    assert host.amp_login(None) is None
+    assert host.amp_login(str(tmp_path)) is None
+    (tmp_path / "amp-login").write_text("")  # the unit's fallback
+    assert host.amp_login(str(tmp_path)) is None
+
+
+@pytest.mark.parametrize("content", ["\n", "not json", json.dumps("TFWeb:secret"), json.dumps({"username": "TFWeb"}),
+                                     json.dumps({"username": "", "password": "x"}),
+                                     json.dumps({"username": "TFWeb", "password": 5}), json.dumps({**LOGIN, "extra": 1})])
+def test_a_malformed_credential_stops_the_helper(tmp_path, content):
+    (tmp_path / "amp-login").write_text(content)
+    with pytest.raises(SystemExit, match="amp-login credential") as error:
+        host.amp_login(str(tmp_path))
+    assert "secret" not in str(error.value)
 
 
 def test_a_cancel_during_the_backup_wait_stays_cancelled(controller, monkeypatch):
@@ -820,16 +791,16 @@ def test_a_cancel_during_the_backup_wait_stays_cancelled(controller, monkeypatch
 
 def test_the_login_is_never_written_to_the_state_files(controller, monkeypatch):
     monkeypatch.setattr(host.threading.Thread, "start", lambda _: None)
-    instance = host.Controller(controller.state, controller.roots, console=controller.console)
+    instance = host.Controller(controller.state, controller.roots, amp=host.Amp(**LOGIN))
     monkeypatch.setattr(host.Amp, "call", lambda self, server, method, **body: {"Id": "task-1"})
-    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": [], "amp": LOGIN})
+    plan = instance.dispatch({"operation": "plan", "server": "main", "mode": "restart", "releases": []})
     instance.dispatch({"operation": "start", "server": "main", "plan_id": plan["id"], "actor": "www:user:1",
-                       "reason": "planned restart", "emergency_override": False, "amp": LOGIN})
+                       "reason": "planned restart", "emergency_override": False})
     stored = "".join(p.read_text(errors="replace") for p in controller.state.rglob("*.json"))
     assert "secret-pass" not in stored and "TFWeb" not in stored
 
 
-def test_the_site_sends_its_amp_login_except_with_status(tmp_path, monkeypatch):
+def test_the_site_sends_no_amp_login(tmp_path, monkeypatch):
     import socket as sockets
     path = tmp_path / "control.sock"
     received = []
@@ -838,7 +809,7 @@ def test_the_site_sends_its_amp_login_except_with_status(tmp_path, monkeypatch):
     server.listen()
 
     def serve():
-        for _ in range(3):
+        for _ in range(2):
             conn, _ = server.accept()
             with conn, conn.makefile("rb") as stream:
                 received.append(json.loads(stream.readline()))
@@ -846,17 +817,11 @@ def test_the_site_sends_its_amp_login_except_with_status(tmp_path, monkeypatch):
     thread = threading.Thread(target=serve, daemon=True)
     thread.start()
     monkeypatch.setenv("SERVER_CONTROL_SOCKET", str(path))
-    monkeypatch.delenv("SERVER_CONTROL_AMP_USERNAME", raising=False)
-    control.request("plan", server="main")
-    monkeypatch.setenv("SERVER_CONTROL_AMP_USERNAME", "TFWeb")
-    monkeypatch.setenv("SERVER_CONTROL_AMP_PASSWORD", "secret-pass")
     control.request("plan", server="main")
     control.request("status")
     thread.join(5)
     server.close()
-    assert "amp" not in received[0]
-    assert received[1]["amp"] == LOGIN
-    assert "amp" not in received[2]
+    assert received == [{"operation": "plan", "server": "main"}, {"operation": "status"}]
 
 
 def test_amp_logs_in_again_when_its_session_expires(monkeypatch):

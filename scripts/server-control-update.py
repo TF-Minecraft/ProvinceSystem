@@ -4,8 +4,8 @@
 The host administrator installs this file once as root, and sudoers lets the
 deployment account run it. It only replaces the modules that run as the
 unprivileged service account and never imports or runs code from the commit
-as root. It refuses commits that change the service unit, the console
-wrapper, the installer or this updater; those still need the administrator.
+as root. It refuses commits that change the service unit or this updater;
+those still need the administrator.
 
     tfmc-server-control-update <40-character commit on main>
 """
@@ -39,10 +39,7 @@ SOCKETS = {Path("/run/tfmc-server-control/www/control.sock"): ["dev", "main"],
 MODULES = ("__init__.py", "control.py", "host.py", "inventory.py")
 # Installed by the administrator; a commit that changes them needs root.
 PINNED = {"scripts/tfmc-server-control.service": Path("/etc/systemd/system/tfmc-server-control.service"),
-          "scripts/server-control-command.py": Path("/usr/local/sbin/tfmc-server-command"),
           "scripts/server-control-update.py": Path("/usr/local/sbin/tfmc-server-control-update")}
-# Run from a package by the administrator; compared with the installed commit.
-INSTALLER = ("scripts/server-control-install.py", "scripts/install-server-control.sh")
 ACTIVE = {"countdown", "installing", "restarting", "checking", "reopening"}
 COMMIT = re.compile(r"[0-9a-f]{40}")
 
@@ -93,10 +90,6 @@ def check_scope(files: dict[str, bytes], commit: str):
     for name, path in PINNED.items():
         if sha256(files[name]) != sha256(path.read_bytes()):
             raise Refused(f"{name} changed; the administrator must install {commit[:7]}.")
-    if RECORD.exists():
-        previous = json.loads(RECORD.read_text())["commit"]
-        if fetch(previous, INSTALLER) != {name: files[name] for name in INSTALLER}:
-            raise Refused(f"The installer changed since {previous[:7]}; the administrator must install {commit[:7]}.")
     for module, data in modules_of(files).items():
         try:
             # Compile only; nothing from the commit is imported or run as root.
@@ -200,7 +193,7 @@ def log(line: str):
 
 def update(commit: str) -> str:
     check_commit(commit)
-    files = fetch(commit, [f"backend/src/servers/{m}" for m in MODULES] + list(PINNED) + list(INSTALLER))
+    files = fetch(commit, [f"backend/src/servers/{m}" for m in MODULES] + list(PINNED))
     check_scope(files, commit)
     previous = json.loads(RECORD.read_text())["commit"] if RECORD.exists() else "unknown"
     if installed() == modules_of(files):

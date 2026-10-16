@@ -94,6 +94,7 @@ export const CONTROL_MESSAGES: Record<string, string> = {
   scheduled_restart_conflict: "This would overlap AMP’s scheduled restart. Try outside the scheduled restart window.",
   amp_unavailable: "AMP did not answer. Check the server in the AMP panel.",
   amp_login_failed: "The control helper could not sign in to AMP.",
+  amp_not_configured: "The control helper has no AMP login. The host administrator needs to install it.",
   amp_action_failed: "AMP refused the request. Check the server in the AMP panel.",
   amp_backup_failed: "AMP’s backup failed, so the restart was called off. Nothing was installed.",
   amp_backup_timeout: "AMP’s backup took over 20 minutes, so the restart was called off. Nothing was installed.",

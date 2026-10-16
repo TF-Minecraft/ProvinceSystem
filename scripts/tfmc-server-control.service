@@ -16,6 +16,11 @@ Environment=SERVER_CONTROL_SOCKET_DIR=/run/tfmc-server-control
 Environment=SERVER_CONTROL_LOG_TIMEZONE=Etc/UTC
 Environment=SERVER_CONTROL_SOCKET_GROUP=tfmc-control
 Environment=PYTHONNOUSERSITE=1
+# The AMP login for console input and backups: root-owned JSON {"username", "password"}.
+# Without the file the credential is empty: the helper starts, but console input fails.
+LoadCredential=amp-login:/etc/tfmc/server-control-amp-login
+SetCredential=amp-login:
+NoNewPrivileges=true
 ExecStartPre=/usr/bin/install -d -m 0755 /run/tfmc-server-control/www /run/tfmc-server-control/dev
 ExecStart=/usr/bin/python3 -B -m src.servers.host
 StateDirectory=tfmc-server-control
