@@ -86,7 +86,7 @@ create_data() {
     [[ -n "$src" && -d "$src" ]] || die "dev backend has no host mount for /app/src/$m"
     case "$m" in
       # Only assets; PostgreSQL and retained rollback copies are cloned separately.
-      data) low_prio rsync -a --exclude='*.db' --exclude='*.db-*' --exclude='/migration-rollback/' --exclude='/deploy-backups/' --exclude='/.postgres-authority.json' --exclude='/maintenance-backups/' "$src/" "$tmp/$m/" ;;
+      data) low_prio rsync -a --exclude='*.db' --exclude='*.db-*' --exclude='/migration-rollback/' --exclude='/deploy-backups/' --exclude='/.postgres-*' --exclude='/.province.rollback.part' --exclude='/maintenance-backups/' "$src/" "$tmp/$m/" ;;
       # Regenerable tile/webp cache.
       output) low_prio rsync -a --exclude='/_derived/' "$src/" "$tmp/$m/" ;;
       *) low_prio rsync -a "$src/" "$tmp/$m/" ;;

@@ -64,3 +64,9 @@ CLAUDE.md
 
 # Vanilla Minecraft names, built from Mojang's client jar (backend/scripts/build_minecraft_names.py).
 backend/src/coreprotect/data/
+
+# Private native deployment state and retained offline recovery material.
+backend/src/data/.postgres-*
+backend/src/data/.province.rollback.part
+backend/src/data/migration-rollback/
+backend/src/data/postgres-migrations/

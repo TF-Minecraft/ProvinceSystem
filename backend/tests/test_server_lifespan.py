@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock
 
+from src.skins.db import DATA_DIR
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -23,14 +25,14 @@ def test_startup_migrates_once_and_serves_ping(monkeypatch):
 
     with TestClient(app) as client:
         migrate.assert_called_once_with()
-        migrate_postgres.assert_called_once_with(seed=True)
+        migrate_postgres.assert_called_once_with(seed=True, retained_directory=DATA_DIR / "postgres-migrations")
         response = client.get("/ping")
         assert response.status_code == 200
         assert response.json() == {"ok": True}
         migrate.assert_called_once_with()
 
     migrate.assert_called_once_with()
-    migrate_postgres.assert_called_once_with(seed=True)
+    migrate_postgres.assert_called_once_with(seed=True, retained_directory=DATA_DIR / "postgres-migrations")
 
 
 def test_startup_without_database_url_refuses_to_serve(monkeypatch):
@@ -45,4 +47,4 @@ def test_startup_without_database_url_refuses_to_serve(monkeypatch):
             pytest.fail("Startup accepted a missing database")
 
     directories.assert_called_once_with()
-    migrate_postgres.assert_called_once_with(seed=True)
+    migrate_postgres.assert_called_once_with(seed=True, retained_directory=DATA_DIR / "postgres-migrations")

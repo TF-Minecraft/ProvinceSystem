@@ -48,5 +48,11 @@ for arg in "$@"; do
   esac
 done
 
+# Managed by site-deploy; bind each service to its immutable reviewed revision.
+image_site=$target
+[[ $target != main ]] || image_site=www
+image_overlay="/home/tfmc/.site-images-$image_site.json"
+[[ ! -f $image_overlay ]] || files+=(-f "$image_overlay")
+
 cd "$dir"
 exec docker compose --project-directory "$dir" "${files[@]}" "$cmd" "$@"

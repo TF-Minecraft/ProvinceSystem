@@ -28,11 +28,44 @@ native_commit() { git cat-file -e "$1:backend/src/database/operations.py" 2>/dev
 checkout() {
   if [[ $site == www ]]; then git reset -q --hard "$1"; else git checkout -q --detach "$1"; fi
 }
+select_images() {
+  python3 - "$state/.site-images-$site.json" "$site" "$1" <<'PYTHON'
+import json, os, pathlib, sys
+path = pathlib.Path(sys.argv[1]); temporary = path.with_suffix('.part')
+services = {name: {'image': f'tfmc-site-{sys.argv[2]}-{name}:{sys.argv[3]}',
+                   'build': {'labels': {'net.tfminecraft.site': sys.argv[2],
+                                        'org.opencontainers.image.revision': sys.argv[3]}}}
+            for name in ('backend', 'frontend')}
+with temporary.open('w') as handle:
+    os.fchmod(handle.fileno(), 0o600)
+    json.dump({'services': services}, handle)
+    handle.flush(); os.fsync(handle.fileno())
+os.replace(temporary, path)
+fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+try: os.fsync(fd)
+finally: os.close(fd)
+PYTHON
+}
+images_match() {
+  local service expected container actual
+  for service in backend frontend; do
+    expected=$(docker image inspect --format '{{.Id}}' "tfmc-site-$site-$service:$1") || return 1
+    container=$(compose ps -q "$service") || return 1
+    [[ -n $expected && -n $container ]] || return 1
+    actual=$(docker inspect --format '{{.Image}}' "$container") || return 1
+    if [[ $actual != "$expected" ]]; then
+      log "$service is not running revision $1"; return 1
+    fi
+  done
+}
 healthy() {
   local deadline=$((SECONDS + 180))
   while ((SECONDS < deadline)); do
     if curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$front/" \
-      && curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$back/maps/accessible"; then return 0; fi
+      && curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$back/maps/accessible"; then
+      images_match "$1"
+      return $?
+    fi
     sleep 5
   done
   return 1
@@ -103,10 +136,11 @@ else
   old=$checkedout
   save_deployed "$old"
 fi
-if [[ $old == "$sha" && $checkedout == "$sha" ]] && authority_matches && healthy; then
+if [[ $old == "$sha" && $checkedout == "$sha" ]] && authority_matches && healthy "$sha"; then
   echo 'already deployed'; exit 0
 fi
 if [[ $site == dev && $sha != "$old" ]] && git merge-base --is-ancestor "$sha" "$old"; then
+  if ! healthy "$old"; then log 'the newer deployed revision is unhealthy'; exit 1; fi
   echo 'a newer revision is already deployed'; exit 0
 fi
 if [[ $site == www ]] && ! git diff --quiet HEAD --; then log "$site has uncommitted changes; nothing changed"; exit 1; fi
@@ -117,11 +151,7 @@ current_native=false
 target_native=false
 if native_commit "$sha"; then target_native=true; fi
 changed=$(git diff --name-only "$old" "$sha")
-services=()
-grep -qE '^(frontend|shared)/|^docker-compose' <<< "$changed" && services+=(frontend)
-grep -qE '^(backend|shared|frontend/lib/skins)/|^docker-compose' <<< "$changed" && services+=(backend)
-summary='no rebuild'
-((${#services[@]} == 0)) || summary=$(IFS=,; echo "${services[*]}")
+summary='backend,frontend'
 stopped=false
 export_failed=false
 
@@ -130,6 +160,7 @@ deploy_target() {
     # Ensure the current native tooling is available, even after an interrupted
     # build. Never check out or start legacy code until its export succeeds.
     native_commit "$checkedout" || return 1
+    select_images "$checkedout" || return 1
     compose build backend >&2 || return 1
     compose stop backend >&2 || return 1
     stopped=true
@@ -137,8 +168,9 @@ deploy_target() {
     if ! database rollback; then export_failed=true; return 1; fi
   fi
   checkout "$sha" || return 1
+  select_images "$sha" || return 1
   # Build before taking the site offline for the forward transition.
-  if ((${#services[@]})); then compose build "${services[@]}" >&2 || return 1; fi
+  compose build backend frontend >&2 || return 1
   if ! $stopped; then
     compose stop backend >&2 || return 1
     stopped=true
@@ -148,8 +180,8 @@ deploy_target() {
     database prepare || return 1
     database studio || return 1
   fi
-  compose up -d --no-build --no-deps backend "${services[@]}" >&2 || return 1
-  healthy
+  compose up -d --no-build --no-deps backend frontend >&2 || return 1
+  healthy "$sha"
 }
 
 log "deploying ${sha:0:7} to $site ($summary)"
@@ -170,16 +202,20 @@ compose stop backend >&2 || { record 'failed: cannot stop backend'; exit 5; }
 if $export_failed; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
 if ! $was_native && [[ -f "$data/data/.postgres-authority.json" ]]; then
   # Includes writes accepted during the health-check window. Never start stale SQLite.
+  current=$(git rev-parse HEAD)
+  if ! native_commit "$current" || ! select_images "$current" || ! compose build backend >&2; then
+    record 'failed: reverse export image; backend kept stopped'; exit 5
+  fi
   if ! database rollback; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
 fi
 if ! checkout "$old"; then record 'failed: rollback checkout; backend kept stopped'; exit 5; fi
-if ((${#services[@]})); then
-  if ! compose build "${services[@]}" >&2; then record 'failed: rollback build; backend kept stopped'; exit 5; fi
+if ! select_images "$old" || ! compose build backend frontend >&2; then
+  record 'failed: rollback build; backend kept stopped'; exit 5
 fi
 if $was_native; then
   if ! database prepare || ! database studio; then record 'failed: rollback database; backend kept stopped'; exit 5; fi
 fi
-if compose up -d --no-build --no-deps backend "${services[@]}" >&2 && healthy; then
+if compose up -d --no-build --no-deps backend frontend >&2 && healthy "$old"; then
   save_deployed "$old"
   record "rolled back ($summary)"
   log "back on ${old:0:7}; backups retained"

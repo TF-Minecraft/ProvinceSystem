@@ -50,13 +50,13 @@ logging.getLogger("uvicorn.access").addFilter(_OAuthQueryFilter())
 # --------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from src.skins.db import ensure_directories
+    from src.skins.db import DATA_DIR, ensure_directories
 
     ensure_directories()
     from src.database import close_pool
     from src.database.migrate import migrate as migrate_postgres
 
-    migrate_postgres(seed=True)
+    migrate_postgres(seed=True, retained_directory=DATA_DIR / "postgres-migrations")
     from src.patreon.config import Config
     from src.patreon.service import sync_loop
 

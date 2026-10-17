@@ -3,7 +3,7 @@ name: Deploy
 # main goes live on dev.tfminecraft.net once its Build run passes.
 # www.tfminecraft.net deploys only from Run workflow, for the latest main or a
 # chosen commit on main (an older one rolls www back). The server backs up the
-# database, rebuilds only what changed and rolls the code back if the site
+# database, builds revision-tagged images and rolls the code back if the site
 # does not come up.
 
 on:
