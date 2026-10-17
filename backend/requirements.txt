@@ -9,8 +9,6 @@ python-dotenv
 pyyaml
 httpx
 anthropic
-psycopg2-binary
-# Site data on Postgres (src/database) and the database studio's Postgres reads and edits.
+# Site data, Precedent and patch notes on Postgres (src/database), and the database studio.
 psycopg[binary]==3.3.6
 psycopg-pool==3.3.3
-pgvector

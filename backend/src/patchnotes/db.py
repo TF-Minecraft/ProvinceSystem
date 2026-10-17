@@ -11,12 +11,17 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-import psycopg2
-import psycopg2.extras
+from psycopg import Cursor
+from psycopg.types.string import TextLoader
+
+from src import database
+from src.database import Jsonb
 
 from .revise import rewrite
 
@@ -130,18 +135,30 @@ class BulletNotPending(RuntimeError):
         super().__init__(f"Bullet is {status}")
 
 
-def _dsn() -> str:
-    dsn = os.environ.get("DATABASE_URL", "").strip()
-    if not dsn:
-        raise PatchnotesDBError("DATABASE_URL is not set")
-    return dsn
-
-
-def _connect():
+@contextmanager
+def _connect() -> Iterator[database.Connection]:
+    """One transaction on a pooled site connection."""
     try:
-        return psycopg2.connect(_dsn())
-    except psycopg2.OperationalError as e:
+        # Checked on every call, as before the pool: the pool keeps its first URL.
+        database.database_url()
+    except database.NotConfiguredError as e:
+        raise PatchnotesDBError("DATABASE_URL is not set") from e
+    connected = False
+    try:
+        with database.connect() as conn:
+            connected = True
+            yield conn
+    except database.OperationalError as e:
+        if connected:
+            raise
         raise PatchnotesDBError(f"Could not connect to patch notes DB: {e}") from e
+
+
+def _cursor(conn: database.Connection) -> Cursor:
+    """A dict-row cursor that reads uuid columns as str, as callers and job line lists expect."""
+    cur = conn.cursor()
+    cur.adapters.register_loader("uuid", TextLoader)
+    return cur
 
 
 def parse_week(value: str) -> str:
@@ -240,191 +257,187 @@ def migrate() -> None:
     if not os.environ.get("DATABASE_URL", "").strip():
         logger.warning("DATABASE_URL unset; patch notes DB migration skipped")
         return
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_bullets (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    week TEXT NOT NULL,
-                    section TEXT NOT NULL,
-                    body TEXT NOT NULL,
-                    status TEXT NOT NULL DEFAULT 'pending',
-                    deny_reason TEXT,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    reviewed_at TIMESTAMPTZ,
-                    CONSTRAINT patchnote_bullets_section_chk
-                        CHECK (section IN ('new', 'fixed', 'adjusted', 'technical')),
-                    CONSTRAINT patchnote_bullets_status_chk
-                        CHECK (status IN ('pending', 'approved', 'denied')),
-                    CONSTRAINT patchnote_bullets_deny_reason_chk
-                        CHECK (
-                            (
-                                status = 'denied'
-                                AND deny_reason IS NOT NULL
-                                AND length(btrim(deny_reason)) > 0
-                            )
-                            OR (status <> 'denied' AND deny_reason IS NULL)
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_bullets (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                week TEXT NOT NULL,
+                section TEXT NOT NULL,
+                body TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                deny_reason TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                reviewed_at TIMESTAMPTZ,
+                CONSTRAINT patchnote_bullets_section_chk
+                    CHECK (section IN ('new', 'fixed', 'adjusted', 'technical')),
+                CONSTRAINT patchnote_bullets_status_chk
+                    CHECK (status IN ('pending', 'approved', 'denied')),
+                CONSTRAINT patchnote_bullets_deny_reason_chk
+                    CHECK (
+                        (
+                            status = 'denied'
+                            AND deny_reason IS NOT NULL
+                            AND length(btrim(deny_reason)) > 0
                         )
-                )
-                """
+                        OR (status <> 'denied' AND deny_reason IS NULL)
+                    )
             )
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS patchnote_bullets_pending_idx
-                    ON patchnote_bullets (created_at, id)
-                    WHERE status = 'pending'
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS patchnote_bullets_pending_idx
+                ON patchnote_bullets (created_at, id)
+                WHERE status = 'pending'
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS patchnote_bullets_week_status_idx
+                ON patchnote_bullets (week, status, created_at, id)
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_sources (
+                source_key TEXT PRIMARY KEY,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS patchnote_bullets_week_status_idx
-                    ON patchnote_bullets (week, status, created_at, id)
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_previews (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                week TEXT NOT NULL,
+                bullets JSONB NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                expires_at TIMESTAMPTZ NOT NULL
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_sources (
-                    source_key TEXT PRIMARY KEY,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_folders (
+                name TEXT PRIMARY KEY,
+                origin TEXT NOT NULL,
+                repo TEXT,
+                status TEXT NOT NULL,
+                dangerous BOOLEAN NOT NULL DEFAULT FALSE,
+                reject_reason TEXT,
+                rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+                unclassified JSONB NOT NULL DEFAULT '[]'::jsonb,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                verified_at TIMESTAMPTZ,
+                CONSTRAINT patchnote_folders_origin_chk
+                    CHECK (origin IN ('repo', 'content', 'added')),
+                CONSTRAINT patchnote_folders_status_chk
+                    CHECK (status IN ('pending', 'active', 'rejected'))
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_previews (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    week TEXT NOT NULL,
-                    bullets JSONB NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    expires_at TIMESTAMPTZ NOT NULL
-                )
-                """
+            """
+        )
+        cur.execute(
+            """
+            ALTER TABLE patchnote_bullets
+                ADD COLUMN IF NOT EXISTS supersedes UUID,
+                ADD COLUMN IF NOT EXISTS revision_note TEXT,
+                ADD COLUMN IF NOT EXISTS carried_from TEXT,
+                ADD COLUMN IF NOT EXISTS carried_status TEXT,
+                ADD COLUMN IF NOT EXISTS topic TEXT,
+                ADD COLUMN IF NOT EXISTS highlight BOOLEAN NOT NULL DEFAULT FALSE
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_week_status (
+                week TEXT PRIMARY KEY,
+                postponed BOOLEAN NOT NULL DEFAULT FALSE,
+                deferred_to TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_folders (
-                    name TEXT PRIMARY KEY,
-                    origin TEXT NOT NULL,
-                    repo TEXT,
-                    status TEXT NOT NULL,
-                    dangerous BOOLEAN NOT NULL DEFAULT FALSE,
-                    reject_reason TEXT,
-                    rules JSONB NOT NULL DEFAULT '[]'::jsonb,
-                    unclassified JSONB NOT NULL DEFAULT '[]'::jsonb,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    verified_at TIMESTAMPTZ,
-                    CONSTRAINT patchnote_folders_origin_chk
-                        CHECK (origin IN ('repo', 'content', 'added')),
-                    CONSTRAINT patchnote_folders_status_chk
-                        CHECK (status IN ('pending', 'active', 'rejected'))
-                )
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_jobs (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                week TEXT NOT NULL,
+                kind TEXT NOT NULL CHECK (kind IN ('feedback', 'sort')),
+                feedback TEXT,
+                status TEXT NOT NULL DEFAULT 'queued'
+                    CHECK (status IN ('queued', 'running', 'done', 'failed')),
+                error TEXT,
+                changed INT,
+                line_ids JSONB,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                claimed_at TIMESTAMPTZ,
+                finished_at TIMESTAMPTZ
             )
-            cur.execute(
-                """
-                ALTER TABLE patchnote_bullets
-                    ADD COLUMN IF NOT EXISTS supersedes UUID,
-                    ADD COLUMN IF NOT EXISTS revision_note TEXT,
-                    ADD COLUMN IF NOT EXISTS carried_from TEXT,
-                    ADD COLUMN IF NOT EXISTS carried_status TEXT,
-                    ADD COLUMN IF NOT EXISTS topic TEXT,
-                    ADD COLUMN IF NOT EXISTS highlight BOOLEAN NOT NULL DEFAULT FALSE
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS patchnote_jobs_week_created_idx
+                ON patchnote_jobs (week, created_at)
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
+                folder_name TEXT NOT NULL,
+                week TEXT NOT NULL,
+                repo TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                PRIMARY KEY (folder_name, week)
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_week_status (
-                    week TEXT PRIMARY KEY,
-                    postponed BOOLEAN NOT NULL DEFAULT FALSE,
-                    deferred_to TEXT,
-                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
+            """
+        )
+        # The weekly Discord post has its own job slot beside the line jobs.
+        cur.execute("ALTER TABLE patchnote_jobs DROP CONSTRAINT IF EXISTS patchnote_jobs_kind_check")
+        cur.execute(
+            """
+            ALTER TABLE patchnote_jobs ADD CONSTRAINT patchnote_jobs_kind_check
+                CHECK (kind IN ('feedback', 'sort', 'compose'))
+            """
+        )
+        cur.execute("DROP INDEX IF EXISTS patchnote_jobs_active_week_idx")
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_kind_idx
+                ON patchnote_jobs (week, (kind = 'compose'))
+                WHERE status IN ('queued', 'running')
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_week_facts (
+                week TEXT PRIMARY KEY,
+                facts JSONB NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_jobs (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    week TEXT NOT NULL,
-                    kind TEXT NOT NULL CHECK (kind IN ('feedback', 'sort')),
-                    feedback TEXT,
-                    status TEXT NOT NULL DEFAULT 'queued'
-                        CHECK (status IN ('queued', 'running', 'done', 'failed')),
-                    error TEXT,
-                    changed INT,
-                    line_ids JSONB,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    claimed_at TIMESTAMPTZ,
-                    finished_at TIMESTAMPTZ
-                )
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_posts (
+                week TEXT PRIMARY KEY,
+                messages JSONB NOT NULL,
+                source TEXT NOT NULL CHECK (source IN ('writer', 'fallback')),
+                status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved')),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS patchnote_jobs_week_created_idx
-                    ON patchnote_jobs (week, created_at)
-                """
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS patchnote_week_meta (
+                week TEXT PRIMARY KEY,
+                act TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_sync_tasks (
-                    folder_name TEXT NOT NULL,
-                    week TEXT NOT NULL,
-                    repo TEXT NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    PRIMARY KEY (folder_name, week)
-                )
-                """
-            )
-            # The weekly Discord post has its own job slot beside the line jobs.
-            cur.execute("ALTER TABLE patchnote_jobs DROP CONSTRAINT IF EXISTS patchnote_jobs_kind_check")
-            cur.execute(
-                """
-                ALTER TABLE patchnote_jobs ADD CONSTRAINT patchnote_jobs_kind_check
-                    CHECK (kind IN ('feedback', 'sort', 'compose'))
-                """
-            )
-            cur.execute("DROP INDEX IF EXISTS patchnote_jobs_active_week_idx")
-            cur.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_kind_idx
-                    ON patchnote_jobs (week, (kind = 'compose'))
-                    WHERE status IN ('queued', 'running')
-                """
-            )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_week_facts (
-                    week TEXT PRIMARY KEY,
-                    facts JSONB NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
-            )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_posts (
-                    week TEXT PRIMARY KEY,
-                    messages JSONB NOT NULL,
-                    source TEXT NOT NULL CHECK (source IN ('writer', 'fallback')),
-                    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved')),
-                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
-            )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS patchnote_week_meta (
-                    week TEXT PRIMARY KEY,
-                    act TEXT,
-                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
-            )
-    finally:
-        conn.close()
+            """
+        )
     _MIGRATED = True
     logger.info("Patch notes DB migrated")
 
@@ -442,24 +455,20 @@ def insert_sourced_bullet(*, section: str, body: str, source_key: str) -> dict[s
         raise ValueError("section must be new, fixed, adjusted, or technical")
     text = _clean_body(body)
     week_key = current_week()
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_sources (source_key)
-                VALUES (%s)
-                ON CONFLICT (source_key) DO NOTHING
-                RETURNING source_key
-                """,
-                (key,),
-            )
-            if cur.fetchone() is None:
-                return None
-            cur.execute(_INSERT_BULLET, (week_key, section, text))
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_sources (source_key)
+            VALUES (%s)
+            ON CONFLICT (source_key) DO NOTHING
+            RETURNING source_key
+            """,
+            (key,),
+        )
+        if cur.fetchone() is None:
+            return None
+        cur.execute(_INSERT_BULLET, (week_key, section, text))
+        return dict(cur.fetchone())
 
 
 def insert_bullet(*, section: str, body: str, week: str | None = None) -> dict[str, Any]:
@@ -468,37 +477,25 @@ def insert_bullet(*, section: str, body: str, week: str | None = None) -> dict[s
         raise ValueError("section must be new, fixed, adjusted, or technical")
     text = _clean_body(body)
     week_key = parse_week(week) if week else current_week()
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(_INSERT_BULLET, (week_key, section, text))
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(_INSERT_BULLET, (week_key, section, text))
+        return dict(cur.fetchone())
 
 
 def list_pending(week: str | None = None) -> list[dict[str, Any]]:
     """Pending bullets, oldest first. Optional week narrows the queue."""
     week_key = parse_week(week) if week else None
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(_LIST_PENDING, (week_key, week_key))
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(_LIST_PENDING, (week_key, week_key))
+        return [dict(row) for row in cur.fetchall()]
 
 
 def list_approved(week: str) -> list[dict[str, Any]]:
     """Approved bullets for one week, in section order then creation order."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(_LIST_APPROVED, (week_key,))
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(_LIST_APPROVED, (week_key,))
+        return [dict(row) for row in cur.fetchall()]
 
 
 def list_published_notes(
@@ -514,36 +511,31 @@ def list_published_notes(
     if limit < 1:
         raise ValueError("limit must be at least 1")
     before_key = parse_week(before) if before else None
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT week
-                FROM patchnote_bullets
-                WHERE status = 'approved'
-                  AND (%s::text IS NULL OR week < %s)
-                  AND NOT EXISTS (
-                      SELECT 1 FROM patchnote_week_status
-                      WHERE patchnote_week_status.week = patchnote_bullets.week
-                        AND patchnote_week_status.postponed
-                  )
-                GROUP BY week
-                ORDER BY week DESC
-                LIMIT %s
-                """,
-                (before_key, before_key, limit + 1),
-            )
-            keys = [row[0] for row in cur.fetchall()]
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT week
+            FROM patchnote_bullets
+            WHERE status = 'approved'
+              AND (%s::text IS NULL OR week < %s)
+              AND NOT EXISTS (
+                  SELECT 1 FROM patchnote_week_status
+                  WHERE patchnote_week_status.week = patchnote_bullets.week
+                    AND patchnote_week_status.postponed
+              )
+            GROUP BY week
+            ORDER BY week DESC
+            LIMIT %s
+            """,
+            (before_key, before_key, limit + 1),
+        )
+        keys = [row["week"] for row in cur.fetchall()]
         has_more = len(keys) > limit
         keys = keys[:limit]
         if not keys:
             return [], False
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(_LIST_PUBLISHED_FOR_WEEKS, (keys,))
-            rows = [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+        cur.execute(_LIST_PUBLISHED_FOR_WEEKS, (keys,))
+        rows = [dict(row) for row in cur.fetchall()]
     grouped: list[dict[str, Any]] = []
     for row in rows:
         if not grouped or grouped[-1]["week"] != row["week"]:
@@ -554,46 +546,38 @@ def list_published_notes(
 
 def list_published_weeks() -> list[str]:
     """ISO week keys that have at least one approved bullet, newest first."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT week
-                FROM patchnote_bullets
-                WHERE status = 'approved'
-                  AND NOT EXISTS (
-                      SELECT 1 FROM patchnote_week_status
-                      WHERE patchnote_week_status.week = patchnote_bullets.week
-                        AND patchnote_week_status.postponed
-                  )
-                GROUP BY week
-                ORDER BY week DESC
-                """
-            )
-            return [row[0] for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT week
+            FROM patchnote_bullets
+            WHERE status = 'approved'
+              AND NOT EXISTS (
+                  SELECT 1 FROM patchnote_week_status
+                  WHERE patchnote_week_status.week = patchnote_bullets.week
+                    AND patchnote_week_status.postponed
+              )
+            GROUP BY week
+            ORDER BY week DESC
+            """
+        )
+        return [row["week"] for row in cur.fetchall()]
 
 
 def _review(bullet_id: str, *, status: str, deny_reason: str | None) -> dict[str, Any]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(_REVIEW_BULLET, (status, deny_reason, bullet_id))
-            row = cur.fetchone()
-            if row is not None:
-                return dict(row)
-            cur.execute(
-                "SELECT status FROM patchnote_bullets WHERE id = %s",
-                (bullet_id,),
-            )
-            existing = cur.fetchone()
-            if existing is None:
-                raise BulletNotFound(bullet_id)
-            raise BulletNotPending(str(existing["status"]))
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(_REVIEW_BULLET, (status, deny_reason, bullet_id))
+        row = cur.fetchone()
+        if row is not None:
+            return dict(row)
+        cur.execute(
+            "SELECT status FROM patchnote_bullets WHERE id = %s",
+            (bullet_id,),
+        )
+        existing = cur.fetchone()
+        if existing is None:
+            raise BulletNotFound(bullet_id)
+        raise BulletNotPending(str(existing["status"]))
 
 
 def approve_bullet(bullet_id: str) -> dict[str, Any]:
@@ -628,41 +612,33 @@ def replace_preview(*, week: str, bullets: list[dict[str, Any]]) -> dict[str, An
         if bullet.get("highlight") is True:
             item["highlight"] = True
         stored.append(item)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("DELETE FROM patchnote_previews")
-            cur.execute(
-                """
-                INSERT INTO patchnote_previews (week, bullets, expires_at)
-                VALUES (%s, %s, now() + interval '1 hour')
-                RETURNING id, week, bullets, created_at, expires_at
-                """,
-                (week_key, psycopg2.extras.Json(stored)),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("DELETE FROM patchnote_previews")
+        cur.execute(
+            """
+            INSERT INTO patchnote_previews (week, bullets, expires_at)
+            VALUES (%s, %s, now() + interval '1 hour')
+            RETURNING id, week, bullets, created_at, expires_at
+            """,
+            (week_key, Jsonb(stored)),
+        )
+        return dict(cur.fetchone())
 
 
 def load_preview() -> dict[str, Any] | None:
     """The current test note, after deleting any that have expired."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("DELETE FROM patchnote_previews WHERE expires_at <= now()")
-            cur.execute(
-                """
-                SELECT id, week, bullets, created_at, expires_at
-                FROM patchnote_previews
-                ORDER BY expires_at DESC
-                LIMIT 1
-                """
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("DELETE FROM patchnote_previews WHERE expires_at <= now()")
+        cur.execute(
+            """
+            SELECT id, week, bullets, created_at, expires_at
+            FROM patchnote_previews
+            ORDER BY expires_at DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 _FOLDER_COLUMNS = (
@@ -671,33 +647,25 @@ _FOLDER_COLUMNS = (
 
 
 def list_folders() -> list[dict[str, Any]]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                SELECT {_FOLDER_COLUMNS}
-                FROM patchnote_folders
-                ORDER BY origin, name
-                """
-            )
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            SELECT {_FOLDER_COLUMNS}
+            FROM patchnote_folders
+            ORDER BY origin, name
+            """
+        )
+        return [dict(row) for row in cur.fetchall()]
 
 
 def get_folder(name: str) -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
-                (name,),
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
+            (name,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def ensure_folder(
@@ -711,29 +679,25 @@ def ensure_folder(
     """Insert a watched folder if it is missing. An existing row is left as staff set it."""
     if origin not in {"repo", "content", "added"}:
         raise ValueError("origin is invalid")
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                INSERT INTO patchnote_folders
-                    (name, origin, repo, status, dangerous, rules)
-                VALUES (%s, %s, %s, 'pending', %s, %s)
-                ON CONFLICT (name) DO NOTHING
-                RETURNING {_FOLDER_COLUMNS}
-                """,
-                (name, origin, repo, dangerous, psycopg2.extras.Json(rules or [])),
-            )
-            row = cur.fetchone()
-            if row is not None:
-                return dict(row)
-            cur.execute(
-                f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
-                (name,),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            INSERT INTO patchnote_folders
+                (name, origin, repo, status, dangerous, rules)
+            VALUES (%s, %s, %s, 'pending', %s, %s)
+            ON CONFLICT (name) DO NOTHING
+            RETURNING {_FOLDER_COLUMNS}
+            """,
+            (name, origin, repo, dangerous, Jsonb(rules or [])),
+        )
+        row = cur.fetchone()
+        if row is not None:
+            return dict(row)
+        cur.execute(
+            f"SELECT {_FOLDER_COLUMNS} FROM patchnote_folders WHERE name = %s",
+            (name,),
+        )
+        return dict(cur.fetchone())
 
 
 def request_added_folder(name: str) -> dict[str, Any]:
@@ -750,12 +714,8 @@ def remove_added_folder(name: str) -> None:
         raise BulletNotFound(name)
     if row["origin"] != "added":
         raise ValueError("GitHub plugins and content packs stay on the list")
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute("DELETE FROM patchnote_folders WHERE name = %s AND origin = 'added'", (name,))
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("DELETE FROM patchnote_folders WHERE name = %s AND origin = 'added'", (name,))
 
 
 def observe_folder(
@@ -770,36 +730,32 @@ def observe_folder(
     """Record what the host watcher found. Rules already stored are kept when omitted."""
     if status not in {"pending", "active", "rejected"}:
         raise ValueError("status is invalid")
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                UPDATE patchnote_folders
-                SET status = %s,
-                    reject_reason = %s,
-                    unclassified = %s,
-                    rules = COALESCE(%s, rules),
-                    dangerous = COALESCE(%s, dangerous),
-                    verified_at = now()
-                WHERE name = %s
-                RETURNING {_FOLDER_COLUMNS}
-                """,
-                (
-                    status,
-                    reject_reason,
-                    psycopg2.extras.Json(unclassified),
-                    psycopg2.extras.Json(rules) if rules is not None else None,
-                    dangerous,
-                    name,
-                ),
-            )
-            row = cur.fetchone()
-            if row is None:
-                raise BulletNotFound(name)
-            return dict(row)
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            UPDATE patchnote_folders
+            SET status = %s,
+                reject_reason = %s,
+                unclassified = %s,
+                rules = COALESCE(%s, rules),
+                dangerous = COALESCE(%s, dangerous),
+                verified_at = now()
+            WHERE name = %s
+            RETURNING {_FOLDER_COLUMNS}
+            """,
+            (
+                status,
+                reject_reason,
+                Jsonb(unclassified),
+                Jsonb(rules) if rules is not None else None,
+                dangerous,
+                name,
+            ),
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise BulletNotFound(name)
+        return dict(row)
 
 
 def add_folder_rule(name: str, pattern: str) -> dict[str, Any]:
@@ -823,40 +779,32 @@ def add_folder_rule(name: str, pattern: str) -> dict[str, Any]:
 def queue_sync_task(*, folder_name: str, repo: str, week: str) -> bool:
     """One GitHub update task per repo plugin per week. True when this call created it."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_sync_tasks (folder_name, week, repo)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (folder_name, week) DO NOTHING
-                RETURNING folder_name
-                """,
-                (folder_name, week_key, repo),
-            )
-            return cur.fetchone() is not None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_sync_tasks (folder_name, week, repo)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (folder_name, week) DO NOTHING
+            RETURNING folder_name
+            """,
+            (folder_name, week_key, repo),
+        )
+        return cur.fetchone() is not None
 
 
 def list_sync_tasks(week: str) -> list[str]:
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT folder_name
-                FROM patchnote_sync_tasks
-                WHERE week = %s
-                ORDER BY folder_name
-                """,
-                (week_key,),
-            )
-            return [row[0] for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT folder_name
+            FROM patchnote_sync_tasks
+            WHERE week = %s
+            ORDER BY folder_name
+            """,
+            (week_key,),
+        )
+        return [row["folder_name"] for row in cur.fetchall()]
 
 
 def _week_status_row(week: str, row: dict[str, Any] | None) -> dict[str, Any]:
@@ -872,19 +820,15 @@ def _week_status_row(week: str, row: dict[str, Any] | None) -> dict[str, Any]:
 
 def get_bullet(bullet_id: str) -> dict[str, Any]:
     """One bullet, including a denied or approved row."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s",
-                (bullet_id,),
-            )
-            row = cur.fetchone()
-            if row is None:
-                raise BulletNotFound(bullet_id)
-            return dict(row)
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s",
+            (bullet_id,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise BulletNotFound(bullet_id)
+        return dict(row)
 
 
 def _revision_depth(cur, bullet_id: str) -> int:
@@ -915,43 +859,35 @@ def revise_denied_bullet(denied: dict[str, Any], reason: str) -> dict[str, Any] 
     note = _clean_reason(reason)
     week_key = parse_week(str(denied.get("week") or ""))
     bullet_id = str(denied["id"])
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            if _revision_depth(cur, bullet_id) >= _MAX_REVISIONS:
-                return None
-            cur.execute(
-                f"""
-                INSERT INTO patchnote_bullets
-                    (week, section, body, status, supersedes, revision_note)
-                VALUES (%s, %s, %s, 'pending', %s, %s)
-                RETURNING {_BULLET_COLUMNS}
-                """,
-                (week_key, section, text, bullet_id, note),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        if _revision_depth(cur, bullet_id) >= _MAX_REVISIONS:
+            return None
+        cur.execute(
+            f"""
+            INSERT INTO patchnote_bullets
+                (week, section, body, status, supersedes, revision_note)
+            VALUES (%s, %s, %s, 'pending', %s, %s)
+            RETURNING {_BULLET_COLUMNS}
+            """,
+            (week_key, section, text, bullet_id, note),
+        )
+        return dict(cur.fetchone())
 
 
 def list_open_bullets(week: str) -> list[dict[str, Any]]:
     """Pending and approved lines that make up the current note."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                SELECT {_BULLET_COLUMNS}
-                FROM patchnote_bullets
-                WHERE week = %s AND status IN ('pending', 'approved')
-                ORDER BY created_at ASC, id ASC
-                """,
-                (week_key,),
-            )
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            SELECT {_BULLET_COLUMNS}
+            FROM patchnote_bullets
+            WHERE week = %s AND status IN ('pending', 'approved')
+            ORDER BY created_at ASC, id ASC
+            """,
+            (week_key,),
+        )
+        return [dict(row) for row in cur.fetchall()]
 
 
 def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dict[str, Any]:
@@ -967,189 +903,169 @@ def apply_feedback(week: str, feedback: str, edits: list[dict[str, Any]]) -> dic
     if len(note) > MAX_REASON_LEN:
         note = note[: MAX_REASON_LEN - 1].rstrip() + "…"
     changed = 0
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            for edit in edits:
-                action = str(edit.get("action") or "")
-                if action == "add":
-                    cur.execute(
-                        f"""
-                        INSERT INTO patchnote_bullets
-                            (week, section, body, status, revision_note, topic, highlight)
-                        VALUES (%s, %s, %s, 'pending', %s, %s, %s)
-                        """,
-                        (
-                            week_key,
-                            edit["section"],
-                            edit["body"],
-                            note,
-                            _topic_or_none(edit.get("topic")),
-                            bool(edit.get("highlight")),
-                        ),
-                    )
-                    changed += 1
-                    continue
-                bullet_id = str(edit.get("id") or "")
-                if action == "rewrite" and bullet_id:
-                    cur.execute(
-                        """
-                        UPDATE patchnote_bullets
-                        SET section = %s,
-                            body = %s,
-                            revision_note = %s,
-                            topic = %s,
-                            highlight = %s
-                        WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
-                        """,
-                        (
-                            edit["section"],
-                            edit["body"],
-                            note,
-                            _topic_or_none(edit.get("topic")),
-                            bool(edit.get("highlight")),
-                            bullet_id,
-                            week_key,
-                        ),
-                    )
-                    changed += int(cur.rowcount)
-                    continue
-                if action != "drop" or not bullet_id:
-                    continue
+    with _connect() as conn, _cursor(conn) as cur:
+        for edit in edits:
+            action = str(edit.get("action") or "")
+            if action == "add":
+                cur.execute(
+                    f"""
+                    INSERT INTO patchnote_bullets
+                        (week, section, body, status, revision_note, topic, highlight)
+                    VALUES (%s, %s, %s, 'pending', %s, %s, %s)
+                    """,
+                    (
+                        week_key,
+                        edit["section"],
+                        edit["body"],
+                        note,
+                        _topic_or_none(edit.get("topic")),
+                        bool(edit.get("highlight")),
+                    ),
+                )
+                changed += 1
+                continue
+            bullet_id = str(edit.get("id") or "")
+            if action == "rewrite" and bullet_id:
                 cur.execute(
                     """
                     UPDATE patchnote_bullets
-                    SET status = 'denied',
-                        deny_reason = %s,
-                        reviewed_at = now()
+                    SET section = %s,
+                        body = %s,
+                        revision_note = %s,
+                        topic = %s,
+                        highlight = %s
                     WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
                     """,
-                    (note, bullet_id, week_key),
+                    (
+                        edit["section"],
+                        edit["body"],
+                        note,
+                        _topic_or_none(edit.get("topic")),
+                        bool(edit.get("highlight")),
+                        bullet_id,
+                        week_key,
+                    ),
                 )
                 changed += int(cur.rowcount)
+                continue
+            if action != "drop" or not bullet_id:
+                continue
             cur.execute(
-                f"""
-                SELECT {_BULLET_COLUMNS}
-                FROM patchnote_bullets
-                WHERE week = %s AND status IN ('pending', 'approved')
-                ORDER BY created_at ASC, id ASC
+                """
+                UPDATE patchnote_bullets
+                SET status = 'denied',
+                    deny_reason = %s,
+                    reviewed_at = now()
+                WHERE id = %s AND week = %s AND status IN ('pending', 'approved')
                 """,
-                (week_key,),
+                (note, bullet_id, week_key),
             )
-            bullets = [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+            changed += int(cur.rowcount)
+        cur.execute(
+            f"""
+            SELECT {_BULLET_COLUMNS}
+            FROM patchnote_bullets
+            WHERE week = %s AND status IN ('pending', 'approved')
+            ORDER BY created_at ASC, id ASC
+            """,
+            (week_key,),
+        )
+        bullets = [dict(row) for row in cur.fetchall()]
     return {"changed": changed, "bullets": bullets}
 
 
 def reset_week(week: str) -> dict[str, Any]:
     """Drop deny edits and put the original notes back. Generated lines stay."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                "DELETE FROM patchnote_bullets WHERE week = %s AND supersedes IS NOT NULL",
-                (week_key,),
-            )
-            removed = int(cur.rowcount)
-            cur.execute(
-                """
-                UPDATE patchnote_bullets
-                SET status = 'pending',
-                    deny_reason = NULL,
-                    reviewed_at = NULL,
-                    revision_note = NULL
-                WHERE week = %s AND status = 'denied'
-                """,
-                (week_key,),
-            )
-            restored = int(cur.rowcount)
-            cur.execute("DELETE FROM patchnote_previews WHERE week = %s", (week_key,))
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            "DELETE FROM patchnote_bullets WHERE week = %s AND supersedes IS NOT NULL",
+            (week_key,),
+        )
+        removed = int(cur.rowcount)
+        cur.execute(
+            """
+            UPDATE patchnote_bullets
+            SET status = 'pending',
+                deny_reason = NULL,
+                reviewed_at = NULL,
+                revision_note = NULL
+            WHERE week = %s AND status = 'denied'
+            """,
+            (week_key,),
+        )
+        restored = int(cur.rowcount)
+        cur.execute("DELETE FROM patchnote_previews WHERE week = %s", (week_key,))
     return {"week": week_key, "removed": removed, "restored": restored}
 
 
 def get_week_status(week: str) -> dict[str, Any]:
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT postponed, deferred_to
-                FROM patchnote_week_status
-                WHERE week = %s
-                """,
-                (week_key,),
-            )
-            return _week_status_row(week_key, cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT postponed, deferred_to
+            FROM patchnote_week_status
+            WHERE week = %s
+            """,
+            (week_key,),
+        )
+        return _week_status_row(week_key, cur.fetchone())
 
 
 def postpone_week(week: str) -> dict[str, Any]:
     """Hold a week. The public page hides it until the hold is undone or deferred."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_week_status (week, postponed)
-                VALUES (%s, TRUE)
-                ON CONFLICT (week) DO UPDATE
-                    SET postponed = TRUE, updated_at = now()
-                RETURNING postponed, deferred_to
-                """,
-                (week_key,),
-            )
-            return _week_status_row(week_key, cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_week_status (week, postponed)
+            VALUES (%s, TRUE)
+            ON CONFLICT (week) DO UPDATE
+                SET postponed = TRUE, updated_at = now()
+            RETURNING postponed, deferred_to
+            """,
+            (week_key,),
+        )
+        return _week_status_row(week_key, cur.fetchone())
 
 
 def undo_postpone(week: str) -> dict[str, Any]:
     """Clear a hold and bring deferred lines back onto this week."""
     week_key = parse_week(week)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT deferred_to FROM patchnote_week_status WHERE week = %s",
-                (week_key,),
-            )
-            row = cur.fetchone()
-            if row is not None and row.get("deferred_to"):
-                cur.execute(
-                    """
-                    UPDATE patchnote_bullets
-                    SET week = %s,
-                        status = COALESCE(carried_status, 'pending'),
-                        reviewed_at = CASE
-                            WHEN carried_status = 'approved' THEN now()
-                            ELSE NULL
-                        END,
-                        carried_from = NULL,
-                        carried_status = NULL
-                    WHERE carried_from = %s
-                    """,
-                    (week_key, week_key),
-                )
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            "SELECT deferred_to FROM patchnote_week_status WHERE week = %s",
+            (week_key,),
+        )
+        row = cur.fetchone()
+        if row is not None and row.get("deferred_to"):
             cur.execute(
                 """
-                INSERT INTO patchnote_week_status (week, postponed, deferred_to)
-                VALUES (%s, FALSE, NULL)
-                ON CONFLICT (week) DO UPDATE
-                    SET postponed = FALSE, deferred_to = NULL, updated_at = now()
-                RETURNING postponed, deferred_to
+                UPDATE patchnote_bullets
+                SET week = %s,
+                    status = COALESCE(carried_status, 'pending'),
+                    reviewed_at = CASE
+                        WHEN carried_status = 'approved' THEN now()
+                        ELSE NULL
+                    END,
+                    carried_from = NULL,
+                    carried_status = NULL
+                WHERE carried_from = %s
                 """,
-                (week_key,),
+                (week_key, week_key),
             )
-            return _week_status_row(week_key, cur.fetchone())
-    finally:
-        conn.close()
+        cur.execute(
+            """
+            INSERT INTO patchnote_week_status (week, postponed, deferred_to)
+            VALUES (%s, FALSE, NULL)
+            ON CONFLICT (week) DO UPDATE
+                SET postponed = FALSE, deferred_to = NULL, updated_at = now()
+            RETURNING postponed, deferred_to
+            """,
+            (week_key,),
+        )
+        return _week_status_row(week_key, cur.fetchone())
 
 
 def defer_postponed_week(week: str) -> dict[str, Any]:
@@ -1161,34 +1077,30 @@ def defer_postponed_week(week: str) -> dict[str, Any]:
     if status["deferred_to"]:
         return status
     destination = next_week(week_key)
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                UPDATE patchnote_bullets
-                SET week = %s,
-                    carried_from = week,
-                    carried_status = status,
-                    status = 'pending',
-                    deny_reason = NULL,
-                    reviewed_at = NULL
-                WHERE week = %s AND status IN ('pending', 'approved')
-                """,
-                (destination, week_key),
-            )
-            cur.execute(
-                """
-                UPDATE patchnote_week_status
-                SET deferred_to = %s, updated_at = now()
-                WHERE week = %s
-                RETURNING postponed, deferred_to
-                """,
-                (destination, week_key),
-            )
-            return _week_status_row(week_key, cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            UPDATE patchnote_bullets
+            SET week = %s,
+                carried_from = week,
+                carried_status = status,
+                status = 'pending',
+                deny_reason = NULL,
+                reviewed_at = NULL
+            WHERE week = %s AND status IN ('pending', 'approved')
+            """,
+            (destination, week_key),
+        )
+        cur.execute(
+            """
+            UPDATE patchnote_week_status
+            SET deferred_to = %s, updated_at = now()
+            WHERE week = %s
+            RETURNING postponed, deferred_to
+            """,
+            (destination, week_key),
+        )
+        return _week_status_row(week_key, cur.fetchone())
 
 
 def approve_pending_week(week: str) -> int:
@@ -1196,20 +1108,16 @@ def approve_pending_week(week: str) -> int:
     week_key = parse_week(week)
     if get_week_status(week_key)["postponed"]:
         raise WeekPostponed(week_key)
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE patchnote_bullets
-                SET status = 'approved', deny_reason = NULL, reviewed_at = now()
-                WHERE week = %s AND status = 'pending' AND supersedes IS NULL
-                """,
-                (week_key,),
-            )
-            return int(cur.rowcount)
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            UPDATE patchnote_bullets
+            SET status = 'approved', deny_reason = NULL, reviewed_at = now()
+            WHERE week = %s AND status = 'pending' AND supersedes IS NULL
+            """,
+            (week_key,),
+        )
+        return int(cur.rowcount)
 
 
 class JobActive(RuntimeError):
@@ -1255,96 +1163,80 @@ def create_job(week: str, kind: str, feedback: str | None = None) -> dict[str, A
     week_key = parse_week(week)
     if kind not in {*LINE_JOB_KINDS, *POST_JOB_KINDS}:
         raise ValueError("Invalid job kind")
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            _expire_jobs(cur)
-            cur.execute(
-                f"""
-                INSERT INTO patchnote_jobs (week, kind, feedback)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (week, (kind = 'compose')) WHERE status IN ('queued', 'running') DO NOTHING
-                RETURNING {_JOB_COLUMNS}
-                """,
-                (week_key, kind, feedback),
-            )
-            row = cur.fetchone()
-        if row is None:
-            raise JobActive(week_key)
-        return dict(row)
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        _expire_jobs(cur)
+        cur.execute(
+            f"""
+            INSERT INTO patchnote_jobs (week, kind, feedback)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (week, (kind = 'compose')) WHERE status IN ('queued', 'running') DO NOTHING
+            RETURNING {_JOB_COLUMNS}
+            """,
+            (week_key, kind, feedback),
+        )
+        row = cur.fetchone()
+    if row is None:
+        raise JobActive(week_key)
+    return dict(row)
 
 
 def claim_job() -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            _expire_jobs(cur)
-            cur.execute(
-                f"""
-                SELECT {_JOB_COLUMNS} FROM patchnote_jobs
-                WHERE status = 'queued' ORDER BY created_at ASC, id ASC
-                LIMIT 1 FOR UPDATE SKIP LOCKED
-                """
-            )
-            row = cur.fetchone()
-            if row is None:
-                return None
-            cur.execute(
-                """
-                SELECT id FROM patchnote_bullets
-                WHERE week = %s AND status IN ('pending', 'approved')
-                ORDER BY created_at ASC, id ASC
-                """,
-                (row["week"],),
-            )
-            line_ids = [str(line["id"]) for line in cur.fetchall()]
-            cur.execute(
-                f"""
-                UPDATE patchnote_jobs SET status = 'running', claimed_at = now(), line_ids = %s
-                WHERE id = %s RETURNING {_JOB_COLUMNS}
-                """,
-                (psycopg2.extras.Json(line_ids), str(row["id"])),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        _expire_jobs(cur)
+        cur.execute(
+            f"""
+            SELECT {_JOB_COLUMNS} FROM patchnote_jobs
+            WHERE status = 'queued' ORDER BY created_at ASC, id ASC
+            LIMIT 1 FOR UPDATE SKIP LOCKED
+            """
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        cur.execute(
+            """
+            SELECT id FROM patchnote_bullets
+            WHERE week = %s AND status IN ('pending', 'approved')
+            ORDER BY created_at ASC, id ASC
+            """,
+            (row["week"],),
+        )
+        line_ids = [str(line["id"]) for line in cur.fetchall()]
+        cur.execute(
+            f"""
+            UPDATE patchnote_jobs SET status = 'running', claimed_at = now(), line_ids = %s
+            WHERE id = %s RETURNING {_JOB_COLUMNS}
+            """,
+            (Jsonb(line_ids), str(row["id"])),
+        )
+        return dict(cur.fetchone())
 
 
 def finish_job(job_id: str, *, changed: int | None = None, error: str | None = None) -> dict[str, Any]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                UPDATE patchnote_jobs
-                SET status = %s, changed = %s, error = %s, finished_at = now()
-                WHERE id = %s AND status = 'running' RETURNING {_JOB_COLUMNS}
-                """,
-                ("failed" if error is not None else "done", changed,
-                 error[:300] if error is not None else None, job_id),
-            )
-            row = cur.fetchone()
-            if row is None:
-                raise JobNotRunning(job_id)
-            return dict(row)
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            UPDATE patchnote_jobs
+            SET status = %s, changed = %s, error = %s, finished_at = now()
+            WHERE id = %s AND status = 'running' RETURNING {_JOB_COLUMNS}
+            """,
+            ("failed" if error is not None else "done", changed,
+             error[:300] if error is not None else None, job_id),
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise JobNotRunning(job_id)
+        return dict(row)
 
 
 def _read_job(where: str, params: tuple) -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            _expire_jobs(cur)
-            cur.execute(
-                f"SELECT {_JOB_COLUMNS} FROM patchnote_jobs {where}", params,
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        _expire_jobs(cur)
+        cur.execute(
+            f"SELECT {_JOB_COLUMNS} FROM patchnote_jobs {where}", params,
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def get_job(job_id: str) -> dict[str, Any] | None:
@@ -1360,37 +1252,33 @@ def latest_job(week: str, kinds: tuple[str, ...] = LINE_JOB_KINDS) -> dict[str, 
 
 
 def _edit_bullet(bullet_id: str, fields: dict[str, Any], *, denied: bool = False) -> dict[str, Any]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s FOR UPDATE",
+            (bullet_id,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise BulletNotFound(bullet_id)
+        if (row["status"] == "denied") != denied:
+            raise BulletNotOpen("Bullet is not denied" if denied else "Bullet is not open")
+        if denied:
+            # A denial that was rewritten already has its replacement in the note.
             cur.execute(
-                f"SELECT {_BULLET_COLUMNS} FROM patchnote_bullets WHERE id = %s FOR UPDATE",
+                """SELECT 1 FROM patchnote_bullets
+                WHERE supersedes = %s AND status IN ('pending', 'approved') LIMIT 1""",
                 (bullet_id,),
             )
-            row = cur.fetchone()
-            if row is None:
-                raise BulletNotFound(bullet_id)
-            if (row["status"] == "denied") != denied:
-                raise BulletNotOpen("Bullet is not denied" if denied else "Bullet is not open")
-            if denied:
-                # A denial that was rewritten already has its replacement in the note.
-                cur.execute(
-                    """SELECT 1 FROM patchnote_bullets
-                    WHERE supersedes = %s AND status IN ('pending', 'approved') LIMIT 1""",
-                    (bullet_id,),
-                )
-                if cur.fetchone() is not None:
-                    raise BulletNotOpen("A rewrite of this line is already in the note")
-            if not fields:
-                return dict(row)
-            assignments = ", ".join(f"{key} = %s" for key in fields)
-            cur.execute(
-                f"UPDATE patchnote_bullets SET {assignments} WHERE id = %s RETURNING {_BULLET_COLUMNS}",
-                (*fields.values(), bullet_id),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+            if cur.fetchone() is not None:
+                raise BulletNotOpen("A rewrite of this line is already in the note")
+        if not fields:
+            return dict(row)
+        assignments = ", ".join(f"{key} = %s" for key in fields)
+        cur.execute(
+            f"UPDATE patchnote_bullets SET {assignments} WHERE id = %s RETURNING {_BULLET_COLUMNS}",
+            (*fields.values(), bullet_id),
+        )
+        return dict(cur.fetchone())
 
 
 def update_bullet(bullet_id: str, fields: dict[str, Any]) -> dict[str, Any]:
@@ -1420,172 +1308,136 @@ def restore_bullet(bullet_id: str) -> dict[str, Any]:
 
 
 def list_denied(week: str) -> list[dict[str, Any]]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
-                WHERE week = %s AND status = 'denied' ORDER BY created_at ASC, id ASC""",
-                (parse_week(week),),
-            )
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
+            WHERE week = %s AND status = 'denied' ORDER BY created_at ASC, id ASC""",
+            (parse_week(week),),
+        )
+        return [dict(row) for row in cur.fetchall()]
 
 
 def list_review_weeks() -> list[dict[str, Any]]:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                WITH counts AS (
-                    SELECT week,
-                        count(*) FILTER (WHERE status = 'pending') AS pending,
-                        count(*) FILTER (WHERE status = 'approved') AS approved,
-                        count(*) FILTER (WHERE status = 'denied') AS denied
-                    FROM patchnote_bullets GROUP BY week
-                )
-                SELECT counts.*, COALESCE(state.postponed, FALSE) AS postponed
-                FROM counts LEFT JOIN patchnote_week_status state USING (week)
-                WHERE pending > 0 OR week IN (SELECT week FROM counts ORDER BY week DESC LIMIT 4)
-                ORDER BY week DESC
-                """
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            WITH counts AS (
+                SELECT week,
+                    count(*) FILTER (WHERE status = 'pending') AS pending,
+                    count(*) FILTER (WHERE status = 'approved') AS approved,
+                    count(*) FILTER (WHERE status = 'denied') AS denied
+                FROM patchnote_bullets GROUP BY week
             )
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+            SELECT counts.*, COALESCE(state.postponed, FALSE) AS postponed
+            FROM counts LEFT JOIN patchnote_week_status state USING (week)
+            WHERE pending > 0 OR week IN (SELECT week FROM counts ORDER BY week DESC LIMIT 4)
+            ORDER BY week DESC
+            """
+        )
+        return [dict(row) for row in cur.fetchall()]
 
 
 def apply_sort(week: str, edits: list[dict[str, Any]]) -> dict[str, Any]:
     week_key = parse_week(week)
-    conn = _connect()
     changed = 0
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """SELECT id FROM patchnote_bullets
+            WHERE week = %s AND status IN ('pending', 'approved') AND highlight
+            FOR UPDATE""", (week_key,),
+        )
+        edited_ids = {str(edit["id"]) for edit in edits}
+        retained = [str(row["id"]) for row in cur.fetchall() if str(row["id"]) not in edited_ids]
+        cur.execute(
+            """UPDATE patchnote_bullets SET highlight = FALSE
+            WHERE week = %s AND status IN ('pending', 'approved')""", (week_key,),
+        )
+        # Omitted no-op edits keep their existing highlights.
+        if retained:
             cur.execute(
-                """SELECT id FROM patchnote_bullets
-                WHERE week = %s AND status IN ('pending', 'approved') AND highlight
-                FOR UPDATE""", (week_key,),
+                "UPDATE patchnote_bullets SET highlight = TRUE WHERE id = ANY(%s::uuid[])",
+                (retained,),
             )
-            edited_ids = {str(edit["id"]) for edit in edits}
-            retained = [str(row["id"]) for row in cur.fetchall() if str(row["id"]) not in edited_ids]
+        for edit in edits:
             cur.execute(
-                """UPDATE patchnote_bullets SET highlight = FALSE
-                WHERE week = %s AND status IN ('pending', 'approved')""", (week_key,),
+                """UPDATE patchnote_bullets SET section = %s, topic = %s, highlight = %s
+                WHERE id = %s AND week = %s AND status IN ('pending', 'approved')""",
+                (edit["section"], _topic_or_none(edit.get("topic")), bool(edit.get("highlight")),
+                 edit["id"], week_key),
             )
-            # Omitted no-op edits keep their existing highlights.
-            if retained:
-                cur.execute(
-                    "UPDATE patchnote_bullets SET highlight = TRUE WHERE id = ANY(%s::uuid[])",
-                    (retained,),
-                )
-            for edit in edits:
-                cur.execute(
-                    """UPDATE patchnote_bullets SET section = %s, topic = %s, highlight = %s
-                    WHERE id = %s AND week = %s AND status IN ('pending', 'approved')""",
-                    (edit["section"], _topic_or_none(edit.get("topic")), bool(edit.get("highlight")),
-                     edit["id"], week_key),
-                )
-                changed += int(cur.rowcount)
-            cur.execute(
-                f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
-                WHERE week = %s AND status IN ('pending', 'approved') ORDER BY created_at ASC, id ASC""",
-                (week_key,),
-            )
-            bullets = [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+            changed += int(cur.rowcount)
+        cur.execute(
+            f"""SELECT {_BULLET_COLUMNS} FROM patchnote_bullets
+            WHERE week = %s AND status IN ('pending', 'approved') ORDER BY created_at ASC, id ASC""",
+            (week_key,),
+        )
+        bullets = [dict(row) for row in cur.fetchall()]
     return {"changed": changed, "bullets": bullets}
 
 
 def save_facts(week: str, facts: dict[str, Any]) -> None:
     """Store a closed week's comparison. A later run replaces it."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_week_facts (week, facts) VALUES (%s, %s)
-                ON CONFLICT (week) DO UPDATE SET facts = EXCLUDED.facts, created_at = now()
-                """,
-                (parse_week(week), psycopg2.extras.Json(facts)),
-            )
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_week_facts (week, facts) VALUES (%s, %s)
+            ON CONFLICT (week) DO UPDATE SET facts = EXCLUDED.facts, created_at = now()
+            """,
+            (parse_week(week), Jsonb(facts)),
+        )
 
 
 def get_facts(week: str) -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT week, facts, created_at FROM patchnote_week_facts WHERE week = %s",
-                (parse_week(week),),
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            "SELECT week, facts, created_at FROM patchnote_week_facts WHERE week = %s",
+            (parse_week(week),),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def save_post(week: str, messages: list[str], source: str) -> dict[str, Any]:
     """Store the week's Discord post as a draft. A rewrite needs approving again."""
     if source not in {"writer", "fallback"}:
         raise ValueError("Invalid post source")
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_posts (week, messages, source, status) VALUES (%s, %s, %s, 'draft')
-                ON CONFLICT (week) DO UPDATE SET messages = EXCLUDED.messages, source = EXCLUDED.source,
-                    status = 'draft', updated_at = now()
-                RETURNING week, messages, source, status, updated_at
-                """,
-                (parse_week(week), psycopg2.extras.Json(messages), source),
-            )
-            return dict(cur.fetchone())
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_posts (week, messages, source, status) VALUES (%s, %s, %s, 'draft')
+            ON CONFLICT (week) DO UPDATE SET messages = EXCLUDED.messages, source = EXCLUDED.source,
+                status = 'draft', updated_at = now()
+            RETURNING week, messages, source, status, updated_at
+            """,
+            (parse_week(week), Jsonb(messages), source),
+        )
+        return dict(cur.fetchone())
 
 
 def get_post(week: str) -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT week, messages, source, status, updated_at FROM patchnote_posts WHERE week = %s",
-                (parse_week(week),),
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            "SELECT week, messages, source, status, updated_at FROM patchnote_posts WHERE week = %s",
+            (parse_week(week),),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def approve_post(week: str) -> bool:
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                "UPDATE patchnote_posts SET status = 'approved', updated_at = now() WHERE week = %s",
-                (parse_week(week),),
-            )
-            return cur.rowcount > 0
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            "UPDATE patchnote_posts SET status = 'approved', updated_at = now() WHERE week = %s",
+            (parse_week(week),),
+        )
+        return cur.rowcount > 0
 
 
 def get_act(week: str) -> str | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute("SELECT act FROM patchnote_week_meta WHERE week = %s", (parse_week(week),))
-            row = cur.fetchone()
-            return row[0] if row and row[0] else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("SELECT act FROM patchnote_week_meta WHERE week = %s", (parse_week(week),))
+        row = cur.fetchone()
+        return row["act"] if row and row["act"] else None
 
 
 def set_act(week: str, act: str | None) -> None:
@@ -1593,18 +1445,14 @@ def set_act(week: str, act: str | None) -> None:
     text = (act or "").strip() or None
     if text is not None and len(text) > 60:
         raise ValueError("act is too long (max 60 chars)")
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO patchnote_week_meta (week, act) VALUES (%s, %s)
-                ON CONFLICT (week) DO UPDATE SET act = EXCLUDED.act, updated_at = now()
-                """,
-                (parse_week(week), text),
-            )
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO patchnote_week_meta (week, act) VALUES (%s, %s)
+            ON CONFLICT (week) DO UPDATE SET act = EXCLUDED.act, updated_at = now()
+            """,
+            (parse_week(week), text),
+        )
 
 
 def patch_label(week: str) -> str:

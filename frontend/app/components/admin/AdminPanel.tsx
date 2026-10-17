@@ -98,6 +98,7 @@ export default function AdminPanel() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Discord username, display name or ID"
+            aria-describedby="admin-lookup-hint"
             autoComplete="off"
             spellCheck={false}
             className={`${inputClass} min-w-0 flex-1`}
@@ -106,6 +107,9 @@ export default function AdminPanel() {
             {searching ? "Searching…" : "Find"}
           </button>
         </form>
+        <p id="admin-lookup-hint" className="mt-2 text-xs text-[var(--tfmc-stone)]">
+          Part of a name is enough.
+        </p>
         {searchError ? (
           <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
             {searchError}

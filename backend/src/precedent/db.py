@@ -5,13 +5,16 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-import psycopg2
-import psycopg2.extras
-from pgvector.psycopg2 import register_vector
-from psycopg2.extras import Json
+from psycopg import Cursor
+from psycopg.types.string import TextLoader
+
+from src import database
+from src.database import Jsonb
 
 logger = logging.getLogger("precedent.db")
 
@@ -83,27 +86,49 @@ def _write_audit(
             actor.source,
             actor.actor,
             actor.actor_uuid,
-            Json(before) if before is not None else None,
-            Json(after) if after is not None else None,
+            Jsonb(before) if before is not None else None,
+            Jsonb(after) if after is not None else None,
         ),
     )
 
 
-def _dsn() -> str:
-    dsn = os.environ.get("DATABASE_URL", "").strip()
-    if not dsn:
-        raise PrecedentNotConfiguredError("DATABASE_URL is not set")
-    return dsn
+@contextmanager
+def _connect() -> Iterator[database.Connection]:
+    """One transaction on a pooled site connection.
 
-
-def _connect(*, vectors: bool = True):
+    Embeddings go in as pgvector text (see `vector_literal`); nothing reads a
+    vector back, so no vector adapter is needed.
+    """
     try:
-        conn = psycopg2.connect(_dsn())
-    except psycopg2.OperationalError as e:
+        # Checked on every call, as before the pool: the pool keeps its first URL.
+        database.database_url()
+    except database.NotConfiguredError as e:
+        raise PrecedentNotConfiguredError("DATABASE_URL is not set") from e
+    connected = False
+    try:
+        with database.connect() as conn:
+            connected = True
+            yield conn
+    except database.OperationalError as e:
+        if connected:
+            raise
         raise PrecedentDBError(f"Could not connect to precedent DB: {e}") from e
-    if vectors:
-        register_vector(conn)
-    return conn
+
+
+def vector_literal(embedding: list[float]) -> str:
+    """`[0.1,0.2,...]`, the text form of a pgvector `vector`.
+
+    psycopg cannot send a list that mixes ints and floats, which a JSON
+    embedding can (`0` for a zero component), so vectors travel as text.
+    """
+    return "[" + ",".join(str(float(value)) for value in embedding) + "]"
+
+
+def _cursor(conn: database.Connection) -> Cursor:
+    """A dict-row cursor that reads uuid columns as str, as callers and audit snapshots expect."""
+    cur = conn.cursor()
+    cur.adapters.register_loader("uuid", TextLoader)
+    return cur
 
 
 def migrate() -> None:
@@ -114,58 +139,54 @@ def migrate() -> None:
     if not os.environ.get("DATABASE_URL", "").strip():
         logger.warning("DATABASE_URL unset; precedent DB migration skipped")
         return
-    conn = _connect(vectors=False)
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute("SELECT pg_advisory_xact_lock(hashtext('precedent:migrate'))")
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS precedent_cases (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    logged_by TEXT COLLATE "C" NOT NULL,
-                    players TEXT[] NOT NULL DEFAULT '{}',
-                    summary TEXT COLLATE "C" NOT NULL,
-                    rule TEXT COLLATE "C" NOT NULL DEFAULT '',
-                    ruling TEXT COLLATE "C" NOT NULL DEFAULT '',
-                    punishment TEXT COLLATE "C" NOT NULL DEFAULT '',
-                    embedding VECTOR(1024) NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('precedent:migrate'))")
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS precedent_cases (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                logged_by TEXT COLLATE "C" NOT NULL,
+                players TEXT[] NOT NULL DEFAULT '{}',
+                summary TEXT COLLATE "C" NOT NULL,
+                rule TEXT COLLATE "C" NOT NULL DEFAULT '',
+                ruling TEXT COLLATE "C" NOT NULL DEFAULT '',
+                punishment TEXT COLLATE "C" NOT NULL DEFAULT '',
+                embedding VECTOR(1024) NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute("ALTER TABLE precedent_cases ADD COLUMN IF NOT EXISTS participants "
-                        "JSONB NOT NULL DEFAULT '[]'::jsonb")
-            cur.execute("CREATE INDEX IF NOT EXISTS precedent_cases_participants_idx "
-                        "ON precedent_cases USING gin (participants jsonb_path_ops)")
-            # No foreign key to precedent_cases on purpose: deleting a case must
-            # never remove the record that it was deleted, which is the entry
-            # this table exists to keep.
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS precedent_audit (
-                    id BIGSERIAL PRIMARY KEY,
-                    case_id UUID,
-                    action TEXT COLLATE "C" NOT NULL,
-                    source TEXT COLLATE "C" NOT NULL,
-                    actor TEXT COLLATE "C" NOT NULL DEFAULT '',
-                    actor_uuid TEXT COLLATE "C" NOT NULL DEFAULT '',
-                    before JSONB,
-                    after JSONB,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-                """
+            """
+        )
+        cur.execute("ALTER TABLE precedent_cases ADD COLUMN IF NOT EXISTS participants "
+                    "JSONB NOT NULL DEFAULT '[]'::jsonb")
+        cur.execute("CREATE INDEX IF NOT EXISTS precedent_cases_participants_idx "
+                    "ON precedent_cases USING gin (participants jsonb_path_ops)")
+        # No foreign key to precedent_cases on purpose: deleting a case must
+        # never remove the record that it was deleted, which is the entry
+        # this table exists to keep.
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS precedent_audit (
+                id BIGSERIAL PRIMARY KEY,
+                case_id UUID,
+                action TEXT COLLATE "C" NOT NULL,
+                source TEXT COLLATE "C" NOT NULL,
+                actor TEXT COLLATE "C" NOT NULL DEFAULT '',
+                actor_uuid TEXT COLLATE "C" NOT NULL DEFAULT '',
+                before JSONB,
+                after JSONB,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS precedent_audit_created_idx "
-                "ON precedent_audit (created_at DESC)"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS precedent_audit_case_idx "
-                "ON precedent_audit (case_id)"
-            )
-    finally:
-        conn.close()
+            """
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS precedent_audit_created_idx "
+            "ON precedent_audit (created_at DESC)"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS precedent_audit_case_idx "
+            "ON precedent_audit (case_id)"
+        )
     _MIGRATED = True
     logger.info("Precedent DB migrated")
 
@@ -182,38 +203,34 @@ def insert_case(
     actor: AuditActor | None = None,
     participants: list[dict] | None = None,
 ) -> str:
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO precedent_cases
-                    (logged_by, players, summary, rule, ruling, punishment, embedding, participants)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (logged_by, players, summary, rule, ruling, punishment, embedding, Json(participants or [])),
-            )
-            row = cur.fetchone()
-            case_id = str(row[0])
-            _write_audit(
-                cur,
-                case_id=case_id,
-                action="create",
-                actor=actor,
-                after={
-                    "logged_by": logged_by,
-                    "players": list(players),
-                    "summary": summary,
-                    "rule": rule,
-                    "ruling": ruling,
-                    "punishment": punishment,
-                    **({"participants": participants} if participants else {}),
-                },
-            )
-            return case_id
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO precedent_cases
+                (logged_by, players, summary, rule, ruling, punishment, embedding, participants)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding), Jsonb(participants or [])),
+        )
+        row = cur.fetchone()
+        case_id = str(row["id"])
+        _write_audit(
+            cur,
+            case_id=case_id,
+            action="create",
+            actor=actor,
+            after={
+                "logged_by": logged_by,
+                "players": list(players),
+                "summary": summary,
+                "rule": rule,
+                "ruling": ruling,
+                "punishment": punishment,
+                **({"participants": participants} if participants else {}),
+            },
+        )
+        return case_id
 
 
 # Nearest-K search always returns rows, however far away they are, so an
@@ -256,44 +273,41 @@ def search_similar(
 
     An empty/typo'd `players` or `query_text` degrades to pure distance order.
     """
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            lowered = [p.strip().lower() for p in (players or []) if p.strip()]
-            words = [w for w in re.findall(r"\w+", query_text or "") if len(w) > 2]
-            cur.execute(
-                """
-                SELECT id, logged_by, players, summary, rule, ruling, punishment, participants,
-                       created_at, embedding <=> %s::vector AS distance
-                FROM precedent_cases
-                WHERE embedding <=> %s::vector < %s
-                ORDER BY
-                    (EXISTS (
-                        SELECT 1 FROM unnest(players) AS p WHERE lower(p) = ANY(%s::text[])
-                    )) DESC,
-                    (EXISTS (
-                        SELECT 1 FROM unnest(%s::text[]) AS w
-                        WHERE to_tsvector(
-                                  'english',
-                                  summary || ' ' || rule || ' ' || ruling || ' ' || punishment
-                              ) @@ plainto_tsquery('english', w)
-                    )) DESC,
-                    embedding <=> %s::vector
-                LIMIT %s
-                """,
-                (
-                    embedding,
-                    embedding,
-                    MAX_RELEVANT_DISTANCE,
-                    lowered,
-                    words,
-                    embedding,
-                    limit,
-                ),
-            )
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        lowered = [p.strip().lower() for p in (players or []) if p.strip()]
+        words = [w for w in re.findall(r"\w+", query_text or "") if len(w) > 2]
+        vector = vector_literal(embedding)
+        cur.execute(
+            """
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants,
+                   created_at, embedding <=> %s::vector AS distance
+            FROM precedent_cases
+            WHERE embedding <=> %s::vector < %s
+            ORDER BY
+                (EXISTS (
+                    SELECT 1 FROM unnest(players) AS p WHERE lower(p) = ANY(%s::text[])
+                )) DESC,
+                (EXISTS (
+                    SELECT 1 FROM unnest(%s::text[]) AS w
+                    WHERE to_tsvector(
+                              'english',
+                              summary || ' ' || rule || ' ' || ruling || ' ' || punishment
+                          ) @@ plainto_tsquery('english', w)
+                )) DESC,
+                embedding <=> %s::vector
+            LIMIT %s
+            """,
+            (
+                vector,
+                vector,
+                MAX_RELEVANT_DISTANCE,
+                lowered,
+                words,
+                vector,
+                limit,
+            ),
+        )
+        return [dict(row) for row in cur.fetchall()]
 
 
 # Every field a staff member might filter on, as one string. Players are
@@ -322,46 +336,38 @@ def list_cases(limit: int = 500, offset: int = 0, query: str = "") -> tuple[list
     """
     terms = [_like_term(t) for t in query.split()]
     where = " AND ".join([f"{_CASE_HAYSTACK} ILIKE %s"] * len(terms)) or "TRUE"
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
-                FROM precedent_cases
-                WHERE {where}
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-                """,
-                (*terms, limit, offset),
-            )
-            rows = [dict(row) for row in cur.fetchall()]
-            cur.execute(f"SELECT count(*) AS total FROM precedent_cases WHERE {where}", terms)
-            row = cur.fetchone()
-            return rows, int(row["total"]) if row else 0
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            f"""
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
+            FROM precedent_cases
+            WHERE {where}
+            ORDER BY created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            (*terms, limit, offset),
+        )
+        rows = [dict(row) for row in cur.fetchall()]
+        cur.execute(f"SELECT count(*) AS total FROM precedent_cases WHERE {where}", terms)
+        row = cur.fetchone()
+        return rows, int(row["total"]) if row else 0
 
 
 def known_players() -> list[str]:
     """Every player name in the corpus, once each ignoring case, in its newest spelling."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT DISTINCT ON (lower(name)) name
-                FROM (
-                    SELECT btrim(p) AS name, created_at
-                    FROM precedent_cases, unnest(players) AS p
-                ) named
-                WHERE name <> ''
-                ORDER BY lower(name), created_at DESC
-                """
-            )
-            return [row[0] for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT ON (lower(name)) name
+            FROM (
+                SELECT btrim(p) AS name, created_at
+                FROM precedent_cases, unnest(players) AS p
+            ) named
+            WHERE name <> ''
+            ORDER BY lower(name), created_at DESC
+            """
+        )
+        return [row["name"] for row in cur.fetchall()]
 
 
 def update_case(
@@ -388,57 +394,53 @@ def update_case(
     search_similar matches on, so persisting edited text against a stale vector
     would leave the row unfindable by the wording it now contains.
     """
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            # Lock and snapshot the row first: the audit trail needs the state
-            # being replaced, and FOR UPDATE stops a concurrent edit landing
-            # between the read and the write.
-            cur.execute(
-                """
-                SELECT logged_by, players, summary, rule, ruling, punishment, participants
-                FROM precedent_cases WHERE id = %s FOR UPDATE
-                """,
-                (case_id,),
-            )
-            before = _snapshot(cur.fetchone())
-            if before is None:
-                return False
+    with _connect() as conn, _cursor(conn) as cur:
+        # Lock and snapshot the row first: the audit trail needs the state
+        # being replaced, and FOR UPDATE stops a concurrent edit landing
+        # between the read and the write.
+        cur.execute(
+            """
+            SELECT logged_by, players, summary, rule, ruling, punishment, participants
+            FROM precedent_cases WHERE id = %s FOR UPDATE
+            """,
+            (case_id,),
+        )
+        before = _snapshot(cur.fetchone())
+        if before is None:
+            return False
 
-            after = {
-                "logged_by": logged_by,
-                "players": list(players),
-                "summary": summary,
-                "rule": rule,
-                "ruling": ruling,
-                "punishment": punishment,
-            }
-            identities = before.get("participants", []) if participants is None else participants
-            if identities:
-                after["participants"] = identities
-            cur.execute(
-                """
-                UPDATE precedent_cases
-                SET logged_by = %s, players = %s, summary = %s, rule = %s,
-                    ruling = %s, punishment = %s, embedding = %s, participants = %s
-                WHERE id = %s
-                RETURNING id
-                """,
-                (logged_by, players, summary, rule, ruling, punishment, embedding, Json(identities), case_id),
-            )
-            if cur.fetchone() is None:
-                return False
-            _write_audit(
-                cur,
-                case_id=case_id,
-                action=audit_action,
-                actor=actor,
-                before=before,
-                after=after,
-            )
-            return True
-    finally:
-        conn.close()
+        after = {
+            "logged_by": logged_by,
+            "players": list(players),
+            "summary": summary,
+            "rule": rule,
+            "ruling": ruling,
+            "punishment": punishment,
+        }
+        identities = before.get("participants", []) if participants is None else participants
+        if identities:
+            after["participants"] = identities
+        cur.execute(
+            """
+            UPDATE precedent_cases
+            SET logged_by = %s, players = %s, summary = %s, rule = %s,
+                ruling = %s, punishment = %s, embedding = %s, participants = %s
+            WHERE id = %s
+            RETURNING id
+            """,
+            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding), Jsonb(identities), case_id),
+        )
+        if cur.fetchone() is None:
+            return False
+        _write_audit(
+            cur,
+            case_id=case_id,
+            action=audit_action,
+            actor=actor,
+            before=before,
+            after=after,
+        )
+        return True
 
 
 def delete_case(case_id: str, actor: AuditActor | None = None) -> bool:
@@ -448,38 +450,34 @@ def delete_case(case_id: str, actor: AuditActor | None = None) -> bool:
     entry keeps a full copy of what was destroyed -- the only remaining record
     of it once the case row is gone.
     """
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                DELETE FROM precedent_cases WHERE id = %s
-                RETURNING logged_by, players, summary, rule, ruling, punishment, participants,
-                          created_at
-                """,
-                (case_id,),
-            )
-            row = cur.fetchone()
-            before = _snapshot(row)
-            if before is None:
-                return False
-            # Only deletes carry created_at: without it a restored case would be
-            # stamped with the restore date, losing the original ordering. Never
-            # let a missing timestamp turn a delete into an error -- restore
-            # falls back to now() for that case.
-            created = row.get("created_at")
-            if created is not None:
-                before["created_at"] = created.isoformat()
-            _write_audit(
-                cur,
-                case_id=case_id,
-                action="delete",
-                actor=actor,
-                before=before,
-            )
-            return True
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            DELETE FROM precedent_cases WHERE id = %s
+            RETURNING logged_by, players, summary, rule, ruling, punishment, participants,
+                      created_at
+            """,
+            (case_id,),
+        )
+        row = cur.fetchone()
+        before = _snapshot(row)
+        if before is None:
+            return False
+        # Only deletes carry created_at: without it a restored case would be
+        # stamped with the restore date, losing the original ordering. Never
+        # let a missing timestamp turn a delete into an error -- restore
+        # falls back to now() for that case.
+        created = row.get("created_at")
+        if created is not None:
+            before["created_at"] = created.isoformat()
+        _write_audit(
+            cur,
+            case_id=case_id,
+            action="delete",
+            actor=actor,
+            before=before,
+        )
+        return True
 
 
 def list_deleted_cases(since: str | None = None) -> list[dict[str, Any]]:
@@ -489,26 +487,22 @@ def list_deleted_cases(since: str | None = None) -> list[dict[str, Any]]:
     Rows whose id has since been re-created are skipped so a restore cannot
     clobber a live case.
     """
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT a.id AS audit_id, a.case_id, a.actor, a.source,
-                       a.created_at AS deleted_at, a.before
-                FROM precedent_audit a
-                WHERE a.action = 'delete'
-                  AND (%s IS NULL OR a.created_at >= %s::timestamptz)
-                  AND NOT EXISTS (
-                      SELECT 1 FROM precedent_cases c WHERE c.id = a.case_id
-                  )
-                ORDER BY a.id DESC
-                """,
-                (since, since),
-            )
-            return [dict(r) for r in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT a.id AS audit_id, a.case_id, a.actor, a.source,
+                   a.created_at AS deleted_at, a.before
+            FROM precedent_audit a
+            WHERE a.action = 'delete'
+              AND (%s::timestamptz IS NULL OR a.created_at >= %s::timestamptz)
+              AND NOT EXISTS (
+                  SELECT 1 FROM precedent_cases c WHERE c.id = a.case_id
+              )
+            ORDER BY a.id DESC
+            """,
+            (since, since),
+        )
+        return [dict(r) for r in cur.fetchall()]
 
 
 def list_audit_entries(
@@ -517,24 +511,20 @@ def list_audit_entries(
     limit: int = 20,
 ) -> list[dict[str, Any]]:
     """Recent audit entries, newest first. Backend/tooling only, never exposed."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT id, case_id, action, source, actor, actor_uuid,
-                       before, after, created_at
-                FROM precedent_audit
-                WHERE (%s IS NULL OR case_id = %s::uuid)
-                  AND (%s IS NULL OR action = %s)
-                ORDER BY id DESC
-                LIMIT %s
-                """,
-                (case_id, case_id, action, action, limit),
-            )
-            return [dict(r) for r in cur.fetchall()]
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT id, case_id, action, source, actor, actor_uuid,
+                   before, after, created_at
+            FROM precedent_audit
+            WHERE (%s::uuid IS NULL OR case_id = %s::uuid)
+              AND (%s::text IS NULL OR action = %s)
+            ORDER BY id DESC
+            LIMIT %s
+            """,
+            (case_id, case_id, action, action, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
 
 
 def restore_case(
@@ -549,44 +539,40 @@ def restore_case(
     Keeps the original id and created_at so links and ordering survive. Returns
     False if a case with that id already exists, rather than overwriting it.
     """
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO precedent_cases
-                    (id, logged_by, players, summary, rule, ruling, punishment,
-                     embedding, created_at, participants)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
-                        COALESCE(%s::timestamptz, now()), %s)
-                ON CONFLICT (id) DO NOTHING
-                RETURNING id
-                """,
-                (
-                    case_id,
-                    snapshot.get("logged_by", ""),
-                    list(snapshot.get("players") or []),
-                    snapshot.get("summary", ""),
-                    snapshot.get("rule", ""),
-                    snapshot.get("ruling", ""),
-                    snapshot.get("punishment", ""),
-                    embedding,
-                    snapshot.get("created_at"),
-                    Json(snapshot.get("participants") or []),
-                ),
-            )
-            if cur.fetchone() is None:
-                return False
-            _write_audit(
-                cur,
-                case_id=case_id,
-                action="restore",
-                actor=actor,
-                after=_snapshot_from_dict(snapshot),
-            )
-            return True
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            INSERT INTO precedent_cases
+                (id, logged_by, players, summary, rule, ruling, punishment,
+                 embedding, created_at, participants)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                    COALESCE(%s::timestamptz, now()), %s)
+            ON CONFLICT (id) DO NOTHING
+            RETURNING id
+            """,
+            (
+                case_id,
+                snapshot.get("logged_by", ""),
+                list(snapshot.get("players") or []),
+                snapshot.get("summary", ""),
+                snapshot.get("rule", ""),
+                snapshot.get("ruling", ""),
+                snapshot.get("punishment", ""),
+                vector_literal(embedding),
+                snapshot.get("created_at"),
+                Jsonb(snapshot.get("participants") or []),
+            ),
+        )
+        if cur.fetchone() is None:
+            return False
+        _write_audit(
+            cur,
+            case_id=case_id,
+            action="restore",
+            actor=actor,
+            after=_snapshot_from_dict(snapshot),
+        )
+        return True
 
 
 def _snapshot_from_dict(snapshot: dict[str, Any]) -> dict[str, Any]:
@@ -600,27 +586,19 @@ def _snapshot_from_dict(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_case(case_id: str) -> dict[str, Any] | None:
-    conn = _connect()
-    try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
-                FROM precedent_cases WHERE id = %s
-                """,
-                (case_id,),
-            )
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute(
+            """
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
+            FROM precedent_cases WHERE id = %s
+            """,
+            (case_id,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def ping_db() -> None:
     """Cheap reachability check: connect and run SELECT 1. No embedding/Claude cost."""
-    conn = _connect()
-    try:
-        with conn, conn.cursor() as cur:
-            cur.execute("SELECT 1")
-    finally:
-        conn.close()
+    with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("SELECT 1")

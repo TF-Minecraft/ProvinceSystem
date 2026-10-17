@@ -10,7 +10,6 @@ import json
 import re
 import urllib.parse
 import psycopg
-import psycopg2
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -179,7 +178,7 @@ def _case_history(request, response, **params):
         return person_cases.history(CoreProtectConfig.from_env(), **params)
     except players.PlayerError as exc:
         raise HTTPException(exc.status, detail=exc.code) from None
-    except (PrecedentDBError, psycopg.Error, psycopg2.Error):
+    except (PrecedentDBError, psycopg.Error):
         raise HTTPException(503, detail="Case history is unavailable. Try again shortly.") from None
 
 

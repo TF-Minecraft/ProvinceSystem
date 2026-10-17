@@ -6,11 +6,12 @@ import logging
 import time
 from collections import defaultdict
 
-import psycopg2
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field, field_validator, model_validator
 from uuid import UUID
+from psycopg.errors import InvalidTextRepresentation
 
+from src import database
 from src.api.staff_access import require_staff_account, staff_name
 from src.precedent.db import (
     MAX_RELEVANT_DISTANCE,
@@ -56,7 +57,7 @@ def _client_detail(e: Exception) -> str:
     """Generic, non-leaky detail for the caller. Full exception is logged server-side."""
     if isinstance(e, PrecedentNotConfiguredError):
         return "Precedent isn't set up on this site."
-    if isinstance(e, PrecedentDBError):
+    if isinstance(e, (PrecedentDBError, database.Error)):
         return "Precedent database is unavailable. Check server logs."
     if isinstance(e, EmbeddingError):
         return "Embedding service is unavailable. Check server logs."
@@ -301,9 +302,9 @@ def staff_update_case(
             participants=([p.model_dump(mode="json", exclude_none=True) for p in body.participants]
                           if body.participants is not None else None),
         )
-    except psycopg2.Error:
+    except InvalidTextRepresentation:
         raise HTTPException(status_code=400, detail="Invalid case id")
-    except (PrecedentDBError, EmbeddingError) as e:
+    except (PrecedentDBError, EmbeddingError, database.Error) as e:
         logger.exception("staff_update_case failed")
         raise _unavailable(e) from e
     if not updated:
@@ -321,9 +322,9 @@ def staff_get_case(
     try:
         migrate()
         case = get_case(case_id)
-    except psycopg2.Error:
+    except InvalidTextRepresentation:
         raise HTTPException(status_code=400, detail="Invalid case id")
-    except PrecedentDBError as e:
+    except (PrecedentDBError, database.Error) as e:
         logger.exception("staff_get_case failed")
         raise _unavailable(e) from e
     if case is None:
@@ -341,9 +342,9 @@ def staff_delete_case(
     try:
         migrate()
         deleted = delete_case(case_id, actor=_audit_actor(user, ""))
-    except psycopg2.Error:
+    except InvalidTextRepresentation:
         raise HTTPException(status_code=400, detail="Invalid case id")
-    except PrecedentDBError as e:
+    except (PrecedentDBError, database.Error) as e:
         logger.exception("staff_delete_case failed")
         raise _unavailable(e) from e
     if not deleted:

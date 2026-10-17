@@ -14,7 +14,6 @@ Only the `embedding` column is written. Case text is never modified.
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 import time
 from pathlib import Path
@@ -29,10 +28,8 @@ from dotenv import load_dotenv
 
 load_dotenv(_BACKEND_ROOT / ".env")
 
-import psycopg2
-import psycopg2.extras
-from pgvector.psycopg2 import register_vector
-
+from src import database
+from src.precedent.db import vector_literal
 from src.precedent.embeddings import EmbeddingError, embed_batch
 
 # Voyage accepts large batches; 100 keeps requests well inside its limits.
@@ -42,15 +39,6 @@ BATCH = 100
 RETRIES = 5
 RETRY_SLEEP_SEC = 30.0
 BATCH_SLEEP_SEC = 3.0
-
-
-def _connect():
-    dsn = os.environ.get("DATABASE_URL", "").strip()
-    if not dsn:
-        raise SystemExit("DATABASE_URL is not set")
-    conn = psycopg2.connect(dsn)
-    register_vector(conn)
-    return conn
 
 
 def _embed_with_retry(texts: list[str]) -> list[list[float]]:
@@ -74,42 +62,39 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    conn = _connect()
     try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, summary FROM precedent_cases ORDER BY created_at")
-            rows = [dict(r) for r in cur.fetchall()]
+        with database.connect() as conn:
+            rows = conn.execute("SELECT id, summary FROM precedent_cases ORDER BY created_at").fetchall()
+    except database.NotConfiguredError:
+        raise SystemExit("DATABASE_URL is not set")
 
-        total = len(rows)
-        print(f"{total} cases to re-embed" + (" (dry run)" if args.dry_run else ""))
-        if not total:
-            return
+    total = len(rows)
+    print(f"{total} cases to re-embed" + (" (dry run)" if args.dry_run else ""))
+    if not total:
+        return
 
-        done = 0
-        for start in range(0, total, BATCH):
-            chunk = rows[start : start + BATCH]
-            vectors = _embed_with_retry([r["summary"] for r in chunk])
-            if len(vectors) != len(chunk):
-                raise SystemExit(
-                    f"Voyage returned {len(vectors)} vectors for {len(chunk)} inputs; aborting"
+    done = 0
+    for start in range(0, total, BATCH):
+        chunk = rows[start : start + BATCH]
+        vectors = _embed_with_retry([r["summary"] for r in chunk])
+        if len(vectors) != len(chunk):
+            raise SystemExit(
+                f"Voyage returned {len(vectors)} vectors for {len(chunk)} inputs; aborting"
+            )
+
+        if not args.dry_run:
+            with database.connect() as conn:
+                conn.cursor().executemany(
+                    "UPDATE precedent_cases SET embedding = %s WHERE id = %s",
+                    [(vector_literal(v), r["id"]) for v, r in zip(vectors, chunk)],
                 )
 
-            if not args.dry_run:
-                with conn, conn.cursor() as cur:
-                    psycopg2.extras.execute_batch(
-                        cur,
-                        "UPDATE precedent_cases SET embedding = %s WHERE id = %s",
-                        [(v, r["id"]) for v, r in zip(vectors, chunk)],
-                    )
+        done += len(chunk)
+        print(f"  {done}/{total}")
+        if start + BATCH < total:
+            time.sleep(BATCH_SLEEP_SEC)
 
-            done += len(chunk)
-            print(f"  {done}/{total}")
-            if start + BATCH < total:
-                time.sleep(BATCH_SLEEP_SEC)
-
-        print("done" + (" (nothing written)" if args.dry_run else ""))
-    finally:
-        conn.close()
+    print("done" + (" (nothing written)" if args.dry_run else ""))
 
 
 if __name__ == "__main__":

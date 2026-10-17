@@ -200,6 +200,14 @@ def test_case_history_needs_staff_and_valid_ids(app, env):
     assert client(app, staff(env)).get("/admin/players/not-a-uuid/cases").status_code == 400
 
 
+@pytest.mark.parametrize("error", [db.PrecedentDBError("private details"), database.OperationalError("private details")])
+def test_history_storage_errors_return_safe_unavailable_response(app, env, error):
+    with patch.object(cases, "history", side_effect=error):
+        response = client(app, staff(env)).get(f"/admin/discord/{DISCORD}/cases")
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Case history is unavailable. Try again shortly."}
+
+
 def test_missing_name_history_is_explicit(app, env, monkeypatch):
     monkeypatch.delenv("COREPROTECT_DB", raising=False)
     links.link(PLAYER, DISCORD, "StoredName")
