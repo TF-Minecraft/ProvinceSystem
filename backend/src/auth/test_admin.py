@@ -153,8 +153,51 @@ def test_staff_list_and_lookup(app, env):
     assert staff[0]["last_login_at"] == users._iso(users._parse_iso(staff[0]["last_login_at"]))
     found = c.get("/admin/accounts/lookup", params={"q": "@PAT"}).json()["accounts"]
     assert [(a["user_id"], a["minecraft_name"], a["role"]) for a in found] == [(pat_id, "PatMC", "player")]
-    assert c.get("/admin/accounts/lookup", params={"q": "pa"}).json()["accounts"] == []
+    partial = c.get("/admin/accounts/lookup", params={"q": "pa"}).json()["accounts"]
+    assert [a["user_id"] for a in partial] == [pat_id]
     assert c.get("/admin/accounts/lookup", params={"q": "x" * 100}).json()["accounts"] == []
+
+
+@pytest.mark.parametrize("query", ["  @PAT  ", "@ATt", "SON", "aT sM", "sMiTh"])
+def test_lookup_matches_parts_of_discord_names(app, env, query):
+    _, root = account(env, "rory", "root")
+    target_id, _ = account(env, "patterson")
+    testing.execute("UPDATE users SET discord_global_name = 'Pat Smith' WHERE id = %s", (target_id,))
+    account(env, "unrelated")
+
+    response = client(app, root).get("/admin/accounts/lookup", params={"q": query})
+    assert response.status_code == 200
+    assert [a["user_id"] for a in response.json()["accounts"]] == [target_id]
+
+
+@pytest.mark.parametrize("query", ["_", "%", "\\"])
+def test_lookup_treats_pattern_characters_literally(app, env, query):
+    _, root = account(env, "rory", "root")
+    target_id, _ = account(env, "target")
+    testing.execute("UPDATE users SET discord_global_name = %s WHERE id = %s", (f"Name{query}Here", target_id))
+    account(env, "unrelated")
+
+    found = client(app, root).get("/admin/accounts/lookup", params={"q": query}).json()["accounts"]
+    assert [a["user_id"] for a in found] == [target_id]
+
+
+def test_lookup_keeps_exact_matches_ahead_of_partial_matches(app, env):
+    _, root = account(env, "rory", "root")
+    partial_ids = [account(env, f"patterson{i}")[0] for i in range(6)]
+    username_id, _ = account(env, "pat")
+    display_id, _ = account(env, "another")
+    testing.execute("UPDATE users SET discord_global_name = 'Pat' WHERE id = %s", (display_id,))
+    hidden_id, _ = account(env, "pat_placeholder")
+    testing.execute("UPDATE users SET placeholder = TRUE WHERE id = %s", (hidden_id,))
+    c = client(app, root)
+
+    found = c.get("/admin/accounts/lookup", params={"q": "pat"}).json()["accounts"]
+    assert [a["user_id"] for a in found] == [username_id, display_id, *partial_ids[:3]]
+    found = c.get("/admin/accounts/lookup", params={"q": discord_id_of("pat")}).json()["accounts"]
+    assert [a["user_id"] for a in found] == [username_id]
+    assert c.get("/admin/accounts/lookup", params={"q": discord_id_of("pat")[:-1]}).json()["accounts"] == []
+    for query in ("", "   ", "@", "unknown", "holder", discord_id_of("pat_placeholder"), "' OR 1=1 --"):
+        assert c.get("/admin/accounts/lookup", params={"q": query}).json()["accounts"] == []
 
 
 # --------------------
