@@ -7,6 +7,7 @@ from typing import Any
 
 from src import database
 from src.characters.wardrobe_assets import guarded
+from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
 
 logger = logging.getLogger("characters.realm_wipe")
 
@@ -61,6 +62,7 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
             "ORDER BY character_id, player_uuid FOR UPDATE",
             (realm,),
         )
+        locked_lore = key_params(lock_rows(conn, "realm_id = %s", (realm,)))
         for row in conn.execute(
             f"SELECT png_relpath FROM character_wardrobe_slots WHERE {_SLOTS_IN_REALM}",
             (realm, realm),
@@ -89,8 +91,8 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
             (realm,),
         ).rowcount
         deleted["lore_item_customisations"] = conn.execute(
-            "DELETE FROM lore_item_customisations WHERE realm_id = %s",
-            (realm,),
+            f"DELETE FROM lore_item_customisations WHERE realm_id = %s AND {LOCKED_KEYS}",
+            (realm, *locked_lore),
         ).rowcount
         deleted["character_roster"] = conn.execute(
             "DELETE FROM character_roster WHERE realm_id = %s",
@@ -145,6 +147,9 @@ def delete_characters_for_realm(
             "ORDER BY character_id, player_uuid FOR UPDATE",
             (realm, ids),
         )
+        locked_lore = key_params(lock_rows(
+            conn, "realm_id = %s AND character_id = ANY(%s)", (realm, ids),
+        ))
         for chunk in _chunks(ids, _ID_CHUNK):
             # Slots go before the roster rows that scope them to this realm.
             slots_where = f"character_id = ANY(%s) AND ({_SLOTS_IN_REALM})"
@@ -165,8 +170,8 @@ def delete_characters_for_realm(
             deleted["lore_item_customisations"] += _rows(
                 conn.execute(
                     "DELETE FROM lore_item_customisations "
-                    "WHERE realm_id = %s AND character_id = ANY(%s)",
-                    (realm, chunk),
+                    f"WHERE realm_id = %s AND character_id = ANY(%s) AND {LOCKED_KEYS}",
+                    (realm, chunk, *locked_lore),
                 )
             )
             deleted["character_roster"] += _rows(

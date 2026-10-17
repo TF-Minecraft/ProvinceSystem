@@ -9,6 +9,7 @@ from typing import Any
 
 from src import database
 from src.characters.wardrobe_assets import guarded
+from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
 from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
@@ -500,9 +501,35 @@ def create_character(
     except CodeError as e:
         raise CreateError(str(e)) from e
 
+    client_request_id = body.get("client_request_id")
+    if client_request_id is not None:
+        client_request_id = str(client_request_id).strip() or None
+
+    def existing_request():
+        if client_request_id:
+            with database.connect() as conn:
+                row = conn.execute(
+                    "SELECT * FROM character_creates "
+                    "WHERE player_uuid = %s AND client_request_id = %s",
+                    (uuid, client_request_id),
+                ).fetchone()
+            if row is not None:
+                return _row_to_dict(row)
+        return None
+
+    # A completed retry must not revalidate against its own pending name/slot.
+    existing = existing_request()
+    if existing is not None:
+        return existing
     try:
         normalized = _validate_and_normalize(uuid, body, realm_id=realm)
-    except CreationCatalogError as e:
+    except (CreateError, CreationCatalogError) as e:
+        # The first call may have committed between the lookup and validation.
+        existing = existing_request()
+        if existing is not None:
+            return existing
+        if isinstance(e, CreateError):
+            raise
         raise CreateError(str(e)) from e
 
     client_request_id = normalized.get("client_request_id")
@@ -735,6 +762,9 @@ def mark_applied_results(results: list) -> dict[str, Any]:
 
     if not isinstance(results, list):
         raise CreateError("results must be a list")
+    for i, raw in enumerate(results):
+        if not isinstance(raw, dict):
+            raise CreateError(f"results[{i}] must be an object")
 
     now = utcnow()
     applied: list[str] = []
@@ -742,11 +772,16 @@ def mark_applied_results(results: list) -> dict[str, Any]:
     remounts: list[tuple[str, str, str]] = []
 
     with database.connect() as conn:
-        for i, raw in enumerate(results):
-            if not isinstance(raw, dict):
-                raise CreateError(f"results[{i}] must be an object")
+        # Lock the entire batch before following caller order. Absent ids stay
+        # absent for this acknowledgement, even if a create arrives meanwhile.
+        ids = [str(raw.get("id") or "").strip() for raw in results]
+        locked_ids = {r["id"] for r in conn.execute(
+            "SELECT id FROM character_creates WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+            (ids,),
+        )}
+        for raw in results:
             cid = str(raw.get("id") or "").strip()
-            if not cid:
+            if not cid or cid not in locked_ids:
                 continue
             ok = bool(raw.get("ok"))
             if ok:
@@ -838,6 +873,9 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     delete_all_pending_create_wardrobe(cid)
 
     with database.connect() as conn:
+        locked = key_params(lock_rows(
+            conn, "player_uuid = %s AND character_id = %s", (uuid, cid),
+        ))
         pending_sub_rows = conn.execute(
             """
             SELECT DISTINCT submission_id
@@ -855,11 +893,12 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
             if row["submission_id"] is not None and str(row["submission_id"]).strip()
         ]
         conn.execute(
-            """
+            f"""
             DELETE FROM lore_item_customisations
             WHERE player_uuid = %s AND character_id = %s
+              AND {LOCKED_KEYS}
             """,
-            (uuid, cid),
+            (uuid, cid, *locked),
         )
         cur = conn.execute(
             """

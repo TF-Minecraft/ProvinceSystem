@@ -580,7 +580,8 @@ def replace_roster(
             )
         for cid, will in wills:
             store_will(conn, uuid, realm, cid, will)
-        for cid, estate in estates:
+        # Even an ownership-refused upsert locks the conflicting estate row.
+        for cid, estate in sorted(estates, key=lambda item: item[1]["death_id"]):
             store_estate(conn, uuid, realm, cid, estate)
         if (
             max_alive is not None

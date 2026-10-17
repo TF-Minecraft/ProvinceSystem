@@ -8,6 +8,7 @@ from typing import Any
 
 from src import database
 from src.characters.times import api_time
+from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
 from src.skins.submissions import (
     MAX_DISPLAY_NAME,
     SubmissionError,
@@ -172,15 +173,14 @@ def remount_character_id(
 
     remounted = 0
     now = _iso_now()
-    with database.connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT kit_key FROM lore_item_customisations
-            WHERE player_uuid = %s AND character_id = %s
-            """,
-            (uuid, from_id),
-        ).fetchall()
+    # Inserts and key moves share this owner lock, including absent destinations.
+    # A remount cannot discover a new target row after taking its ordered row locks.
+    with database.transaction(lock=f"characters:lore:{uuid}") as conn:
+        rows = lock_rows(conn, "player_uuid = %s AND character_id = ANY(%s)",
+                         (uuid, [from_id, to_id]))
         for row in rows:
+            if row["character_id"] != from_id:
+                continue
             kit_key = str(row["kit_key"] or "").strip()
             if not kit_key:
                 continue
@@ -193,13 +193,29 @@ def remount_character_id(
             )
             cur = conn.execute(
                 """
-                UPDATE lore_item_customisations
-                SET character_id = %s, updated_at = %s
+                INSERT INTO lore_item_customisations (
+                    player_uuid, character_id, kit_key, kit_id, name_colours,
+                    name_styles, display_name, lore_json, existing_skin_id,
+                    submission_id, state, skin_slug, ready_at, applied_at,
+                    deny_reason, updated_at, realm_id
+                )
+                SELECT player_uuid, %s, kit_key, kit_id, name_colours,
+                       name_styles, display_name, lore_json, existing_skin_id,
+                       submission_id, state, skin_slug, ready_at, applied_at,
+                       deny_reason, %s, realm_id
+                FROM lore_item_customisations
                 WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
                 """,
                 (to_id, now, uuid, from_id, kit_key),
             )
             remounted += int(cur.rowcount or 0)
+            # Keep row keys immutable: a waiting ordered FOR UPDATE must skip
+            # the removed source, rather than lock its new key out of order.
+            conn.execute(
+                "DELETE FROM lore_item_customisations "
+                "WHERE player_uuid = %s AND character_id = %s AND kit_key = %s",
+                (uuid, from_id, kit_key),
+            )
     return remounted
 
 
@@ -1389,7 +1405,7 @@ def customise_lore_item(
             next_state = STATE_READY
             next_ready_at = now
 
-    with database.connect() as conn:
+    with database.transaction(lock=f"characters:lore:{player_uuid}") as conn:
         conn.execute(
             """
             INSERT INTO lore_item_customisations (
@@ -1538,24 +1554,32 @@ def clear_customisations_for_kit(
     keys = _kit_editable_keys(kit)
     deleted = 0
     with database.connect() as conn:
+        locked = key_params(lock_rows(
+            conn,
+            "player_uuid = %s AND character_id = %s AND "
+            "(LOWER(COALESCE(kit_id, '')) = %s OR LOWER(kit_key) = ANY(%s))",
+            (uuid, cid, kit, sorted(keys or [])),
+        ))
         cur = conn.execute(
-            """
+            f"""
             DELETE FROM lore_item_customisations
             WHERE player_uuid = %s AND character_id = %s
               AND LOWER(COALESCE(kit_id, '')) = %s
+              AND {LOCKED_KEYS}
             """,
-            (uuid, cid, kit),
+            (uuid, cid, kit, *locked),
         )
         deleted += int(cur.rowcount or 0)
 
         if keys:
             cur = conn.execute(
-                """
+                f"""
                 DELETE FROM lore_item_customisations
                 WHERE player_uuid = %s AND character_id = %s
                   AND LOWER(COALESCE(kit_key, '')) = ANY(%s)
+                  AND {LOCKED_KEYS}
                 """,
-                (uuid, cid, sorted(keys)),
+                (uuid, cid, sorted(keys), *locked),
             )
             deleted += int(cur.rowcount or 0)
 
@@ -1576,9 +1600,10 @@ def promote_ready_for_submissions(submission_ids: list[str]) -> int:
     now = _iso_now()
     promoted = 0
     with database.connect() as conn:
+        locked = key_params(lock_rows(conn, "submission_id = ANY(%s)", (ids,)))
         for sid in ids:
             cur = conn.execute(
-                """
+                f"""
                 UPDATE lore_item_customisations
                 SET skin_slug = %s,
                     state = CASE
@@ -1588,8 +1613,9 @@ def promote_ready_for_submissions(submission_ids: list[str]) -> int:
                     ready_at = COALESCE(ready_at, %s),
                     updated_at = %s
                 WHERE submission_id = %s
+                  AND {LOCKED_KEYS}
                 """,
-                (sid, STATE_READY, now, now, sid),
+                (sid, STATE_READY, now, now, sid, *locked),
             )
             promoted += int(cur.rowcount or 0)
     return promoted
@@ -1608,8 +1634,9 @@ def clear_pending_submission(
     now = _iso_now()
     reason_s = (reason or "").strip() or None
     with database.connect() as conn:
+        locked = key_params(lock_rows(conn, "submission_id = %s", (sid,)))
         cur = conn.execute(
-            """
+            f"""
             UPDATE lore_item_customisations
             SET state = %s,
                 deny_reason = %s,
@@ -1619,8 +1646,9 @@ def clear_pending_submission(
                 updated_at = %s
             WHERE submission_id = %s
               AND LOWER(COALESCE(state, '')) = %s
+              AND {LOCKED_KEYS}
             """,
-            (STATE_DENIED, reason_s, now, sid, STATE_PENDING_SKIN),
+            (STATE_DENIED, reason_s, now, sid, STATE_PENDING_SKIN, *locked),
         )
         cleared = int(cur.rowcount or 0)
     return cleared
@@ -1684,33 +1712,46 @@ def mark_lore_items_applied(results: list) -> dict[str, Any]:
     """Ack plugin apply results → state=applied."""
     if not isinstance(results, list):
         raise LoreItemError("results must be a list")
+    for i, raw in enumerate(results):
+        if not isinstance(raw, dict):
+            raise LoreItemError(f"results[{i}] must be an object")
+        if not str(raw.get("character_id") or "").strip() or not str(raw.get("kit_key") or "").strip():
+            raise LoreItemError(f"results[{i}] requires character_id and kit_key")
     now = _iso_now()
     ok_n = 0
     fail_n = 0
     with database.connect() as conn:
-        for i, raw in enumerate(results):
-            if not isinstance(raw, dict):
-                raise LoreItemError(f"results[{i}] must be an object")
+        selectors = [(str(raw.get("player_uuid") or "").strip(),
+                      str(raw.get("character_id") or "").strip(),
+                      str(raw.get("kit_key") or "").strip())
+                     for raw in results if bool(raw.get("ok"))]
+        # Missing player_uuid means every matching owner, so lock the union of
+        # all selectors once in full primary-key order, including non-ready rows.
+        locked = key_params(lock_rows(
+            conn,
+            "EXISTS (SELECT 1 FROM unnest(%s::text[], %s::text[], %s::text[]) "
+            "AS wanted(owner, cid, kit) WHERE character_id = wanted.cid "
+            "AND kit_key = wanted.kit AND (wanted.owner = '' OR player_uuid = wanted.owner))",
+            tuple([s[i] for s in selectors] for i in range(3)),
+        ))
+        for raw in results:
             cid = str(raw.get("character_id") or "").strip()
             kit_key = str(raw.get("kit_key") or "").strip()
             player_uuid = str(raw.get("player_uuid") or "").strip()
             ok = bool(raw.get("ok"))
-            if not cid or not kit_key:
-                raise LoreItemError(
-                    f"results[{i}] requires character_id and kit_key"
-                )
             if not ok:
                 fail_n += 1
                 continue
             if player_uuid:
                 cur = conn.execute(
-                    """
+                    f"""
                     UPDATE lore_item_customisations
                     SET state = %s, applied_at = %s, updated_at = %s
                     WHERE player_uuid = %s
                       AND character_id = %s
                       AND kit_key = %s
                       AND LOWER(COALESCE(state, '')) = %s
+                      AND {LOCKED_KEYS}
                     """,
                     (
                         STATE_APPLIED,
@@ -1720,18 +1761,20 @@ def mark_lore_items_applied(results: list) -> dict[str, Any]:
                         cid,
                         kit_key,
                         STATE_READY,
+                        *locked,
                     ),
                 )
             else:
                 cur = conn.execute(
-                    """
+                    f"""
                     UPDATE lore_item_customisations
                     SET state = %s, applied_at = %s, updated_at = %s
                     WHERE character_id = %s
                       AND kit_key = %s
                       AND LOWER(COALESCE(state, '')) = %s
+                      AND {LOCKED_KEYS}
                     """,
-                    (STATE_APPLIED, now, now, cid, kit_key, STATE_READY),
+                    (STATE_APPLIED, now, now, cid, kit_key, STATE_READY, *locked),
                 )
             if cur.rowcount:
                 ok_n += 1

@@ -208,15 +208,15 @@ def ack_will_results(realm_id: str | None, results: Any) -> dict[str, Any]:
             r["id"]: r
             for r in conn.execute("SELECT * FROM will_requests WHERE id = ANY(%s)", (ids,))
         }
-        conn.execute(
+        locked_roster = {(r["player_uuid"], r["character_id"]) for r in conn.execute(
             """
-            SELECT 1 FROM character_roster
+            SELECT player_uuid, character_id FROM character_roster
             WHERE realm_id = %s AND character_id = ANY(%s)
             ORDER BY character_id, player_uuid
             FOR UPDATE
             """,
             (realm, sorted({r["character_id"] for r in rows.values() if r["realm_id"] == realm})),
-        )
+        )}
         # Requests outlive roster rows. Lock them too, before following caller order.
         conn.execute(
             "SELECT 1 FROM will_requests WHERE realm_id = %s AND id = ANY(%s) "
@@ -256,6 +256,9 @@ def ack_will_results(realm_id: str | None, results: Any) -> dict[str, Any]:
                 and isinstance(revision, int)
                 and not isinstance(revision, bool)
                 and revision == row["base_revision"] + 1
+                # Retained requests may have no roster row. Never reach back
+                # from a request lock into a roster row recreated after selection.
+                and (row["account_uuid"], row["character_id"]) in locked_roster
             ):
                 heir = row["heir_character_id"]
                 name = str(raw.get("heir_name") or "").strip()[:64] or _heir_name(conn, realm, heir)
