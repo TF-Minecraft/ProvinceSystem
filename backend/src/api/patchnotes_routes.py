@@ -13,10 +13,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-import psycopg2
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src import database
 from src.api.map_access import require_site_staff
 from src.patchnotes.compose import (
     POST_SCHEMA,
@@ -703,7 +703,7 @@ def staff_approve_bullet(bullet_id: str):
         row = approve_bullet(bullet_id)
     except (BulletNotFound, BulletNotPending, ValueError) as e:
         raise _review_http(e) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_approve_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)
@@ -717,12 +717,12 @@ def staff_deny_bullet(bullet_id: str, body: DenyBulletBody):
         row = deny_bullet(bullet_id, body.reason)
     except (BulletNotFound, BulletNotPending, ValueError) as e:
         raise _review_http(e) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_deny_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     try:
         revision = revise_denied_bullet(row, body.reason)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error, ValueError):
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error, ValueError):
         logger.exception("staff_deny_bullet rewrite failed")
         revision = None
     payload = _serialize(row, public=False)
@@ -738,7 +738,7 @@ def staff_get_bullet(bullet_id: str):
         row = get_bullet(bullet_id)
     except BulletNotFound as e:
         raise _review_http(e) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_get_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)
@@ -758,7 +758,7 @@ def staff_week_status(week: str):
     try:
         migrate()
         row = get_week_status(week_key)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_status failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _week_payload(row)
@@ -770,7 +770,7 @@ def staff_postpone_week(week: str):
     try:
         migrate()
         row = postpone_week(week_key)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_postpone_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _week_payload(row)
@@ -782,7 +782,7 @@ def staff_undo_postpone(week: str):
     try:
         migrate()
         row = undo_postpone(week_key)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_undo_postpone failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _week_payload(row)
@@ -796,7 +796,7 @@ def staff_defer_week(week: str):
         row = defer_postponed_week(week_key)
     except WeekNotPostponed as e:
         raise HTTPException(status_code=409, detail="Week is not postponed") from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_defer_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _week_payload(row)
@@ -811,7 +811,7 @@ def staff_auto_approve_week(week: str):
         approved = approve_pending_week(week_key)
     except WeekPostponed as e:
         raise HTTPException(status_code=409, detail="Week is postponed") from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_auto_approve_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"week": week_key, "approved": approved}
@@ -843,7 +843,7 @@ def _queue_job(week: str, kind: str, feedback: str | None = None):
         row = create_job(week_key, kind, feedback)
     except JobActive as e:
         raise HTTPException(status_code=409, detail="A rewrite is already running for this week.") from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("queue_job failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"job": _job_payload(row)}
@@ -864,7 +864,7 @@ def staff_review_weeks():
     try:
         migrate()
         return {"current": current_week(), "weeks": list_review_weeks()}
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_review_weeks failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -880,7 +880,7 @@ def staff_week_review(week: str):
         job = latest_job(week_key)
         payload["job"] = _job_payload(job) if job else None
         return payload
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_review failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -911,7 +911,7 @@ def staff_get_job(job_id: str):
         if row["status"] == "done":
             payload["bullets"] = [_serialize(line, public=False) for line in list_open_bullets(row["week"])]
         return payload
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_get_job failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -932,7 +932,7 @@ def staff_claim_job():
         else:
             prompt, schema = sort_prompt(lines), SORT_SCHEMA
         return {"job": _job_payload(job), "prompt": prompt, "schema": schema}
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_claim_job failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -972,7 +972,7 @@ def staff_job_result(job_id: str, body: JobResultBody):
         return {"job": _job_payload(row)}
     except JobNotRunning as e:
         raise HTTPException(status_code=409, detail="Job is not running") from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_job_result failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -1004,7 +1004,7 @@ def _change_bullet(bullet_id: str, change, *args):
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("change_bullet failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return _serialize(row, public=False)
@@ -1041,7 +1041,7 @@ def staff_reset_week(week: str):
         result = reset_week(week_key)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_reset_week failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return result
@@ -1144,7 +1144,7 @@ def staff_week_facts(week: str, body: FactsBody):
             job = create_job(week_key, "compose")
         except JobActive:
             job = None
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_facts failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"week": week_key, "job": _job_payload(job) if job else None}
@@ -1156,7 +1156,7 @@ def staff_get_week_facts(week: str):
     try:
         migrate()
         stored = get_facts(week_key)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_get_week_facts failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     if stored is None:
@@ -1178,7 +1178,7 @@ def staff_week_post(week: str):
         if post is None and job is None:
             raise HTTPException(status_code=404, detail="No weekly comparison for this week yet.")
         return _post_payload(week_key, post, job)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_post failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
 
@@ -1194,7 +1194,7 @@ def staff_week_post_feedback(week: str, body: FeedbackBody):
         if get_post(week_key) is None:
             raise HTTPException(status_code=409, detail="This week has no post to rewrite yet.")
         job = _start_post_job(week_key, body.feedback)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_post_feedback failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"job": _job_payload(job)}
@@ -1211,7 +1211,7 @@ def staff_week_post_compose(week: str):
         if get_facts(week_key) is None:
             raise HTTPException(status_code=404, detail="No weekly comparison for this week yet.")
         job = _start_post_job(week_key, None)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_post_compose failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"job": _job_payload(job)}
@@ -1223,7 +1223,7 @@ def staff_week_post_approve(week: str):
     try:
         migrate()
         approved = approve_post(week_key)
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_post_approve failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
     return {"week": week_key, "approved": approved}
@@ -1239,6 +1239,6 @@ def staff_week_meta(week: str, body: ActBody):
         return {"week": week_key, "act": get_act(week_key), "label": patch_label(week_key)}
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
-    except (PatchnotesDBError, PatchnotesConfigError, psycopg2.Error) as e:
+    except (PatchnotesDBError, PatchnotesConfigError, database.Error) as e:
         logger.exception("staff_week_meta failed")
         raise HTTPException(status_code=502, detail=_client_detail(e)) from e
