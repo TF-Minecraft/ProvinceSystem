@@ -24,7 +24,6 @@ class BirdMailModerationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
 
         import src.skins.db as db_mod
 
@@ -45,9 +44,7 @@ class BirdMailModerationTest(unittest.TestCase):
         self._db_mod.DATA_DIR = self._orig_data
         self._db_mod.SKINS_DIR = self._orig_skins
         self._db_mod.WARDROBE_DIR = self._orig_wardrobe
-        import gc
 
-        gc.collect()
         try:
             self.tmp.cleanup()
         except PermissionError:

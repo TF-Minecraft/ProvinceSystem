@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import importlib
 import os
 import sys
@@ -27,11 +26,9 @@ PNG = b"\x89PNG\r\n\x1a\n-not-a-real-png"
 
 
 class _CharacterDbFixture:
-    """Temp-dir sqlite plus wardrobe files, shared by the wipe test cases."""
+    """Temporary wardrobe files shared by the wipe test cases."""
 
     def setUp(self) -> None:
-        # connect() leaves connections for the GC, which keeps the db file open on
-        # Windows until it runs.
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         root = Path(self.tmp.name)
         self.root = root
@@ -71,7 +68,6 @@ class _CharacterDbFixture:
         db_mod.WARDROBE_DIR = self._orig_wardrobe
         self._wardrobe_mod.DATA_DIR = self._orig_w_data
         self._wardrobe_mod.WARDROBE_DIR = self._orig_w_dir
-        gc.collect()
         self.tmp.cleanup()
 
     # -- fixtures ---------------------------------------------------------

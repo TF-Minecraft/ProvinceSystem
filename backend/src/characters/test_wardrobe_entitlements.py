@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import sys
 import tempfile
 import unittest
@@ -100,7 +99,6 @@ class WardrobeEntitlementsTest(unittest.TestCase):
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.WARDROBE_DIR = self._orig_wardrobe
-        gc.collect()
         self.tmp.cleanup()
 
     def test_live_wardrobe_uses_rpc_slots_not_roster_meta(self) -> None:
