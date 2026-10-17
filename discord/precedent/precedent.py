@@ -1,23 +1,14 @@
-"""
-Precedent — ProvinceSystem staff precedent lookup (Red V3).
-
-AMP / Red deploy:
-  1. Copy `precedent/` into `cogs/CogManager/cogs/` (next to skinsreview).
-  2. Copy `config.example.yml` → `config.yml` and fill api_base_url, staff_key.
-     Optional env vars override yaml if set.
-  3. `[p]pipinstall PyYAML` once if needed, then `[p]load` / `[p]reload precedent`.
-  4. `[p]slash enable precedent` then `[p]slash sync` (prefix is often `!`).
-  5. Staff: `/case-log` (modal) to record a case. Staff + Helper: `/precedent <case info>`
-     to search similar past cases. `/precedent-ping` checks connectivity.
-"""
+"""Discord case logs and precedent lookup for ProvinceSystem."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Optional
+from uuid import UUID
 
 import aiohttp
 import discord
@@ -113,13 +104,33 @@ class CaseLogModal(discord.ui.Modal, title="Log a precedent case"):
         placeholder="e.g. 3-day ban, warning, none",
     )
 
-    def __init__(self, cog: "Precedent"):
+    def __init__(self, cog: "Precedent", user: Optional[discord.User] = None):
         super().__init__()
         self.cog = cog
+        self.selected_user = user
+        if user is not None:
+            self.remove_item(self.players)
+            self.title = f"Case: {user.display_name}"[:45]
+            # Leave room for the verified identifiers in the stored ruling.
+            self.ruling.max_length = 300
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        players = [p.strip() for p in str(self.players.value).split(",") if p.strip()]
+        if not self.cog.member_is_staff(interaction):
+            await interaction.followup.send("You need the Staff role to log a case.", ephemeral=True)
+            return
+        ruling = str(self.ruling.value).strip()
+        if self.selected_user is not None:
+            try:
+                identity = await self.cog.linked_identity(self.selected_user)
+            except ValueError as error:
+                await interaction.followup.send(str(error), ephemeral=True)
+                return
+            name = identity.get("minecraft_name") or identity["player_uuid"]
+            players = [name]
+            ruling += f"\n\nLinked account: {name}\nMinecraft UUID: {identity['player_uuid']}\nDiscord ID: {self.selected_user.id}"
+        else:
+            players = [p.strip() for p in str(self.players.value).split(",") if p.strip()]
         status, text, data = await self.cog.api_post(
             "/precedent/staff/log",
             {
@@ -127,7 +138,7 @@ class CaseLogModal(discord.ui.Modal, title="Log a precedent case"):
                 "players": players,
                 "summary": str(self.summary.value).strip(),
                 "rule": str(self.rule.value).strip(),
-                "ruling": str(self.ruling.value).strip(),
+                "ruling": ruling,
                 "punishment": str(self.punishment.value).strip(),
             },
         )
@@ -229,6 +240,27 @@ class Precedent(commands.Cog):
                     data = None
                 return resp.status, text, data
 
+    async def linked_identity(self, user: discord.User) -> dict:
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
+                async with session.get(
+                    f"{self.api_base_url}/skins/discord/identity/{user.id}", headers=self.staff_headers()
+                ) as response:
+                    data = await response.json()
+                    if response.status != 200 or not isinstance(data, dict) or data.get("discord_user_id") != str(user.id):
+                        raise ValueError("Account lookup is unavailable. Try again shortly.")
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+            raise ValueError("Account lookup is unavailable. Try again shortly.") from None
+        if data.get("linked") is False:
+            raise ValueError("This Discord account has no Minecraft link. Link at https://tfminecraft.net/profile or use /linkdiscord in-game. Use /case-log without user to record unlinked players manually.")
+        try:
+            player_uuid = str(UUID(data["player_uuid"]))
+        except (KeyError, ValueError, TypeError, AttributeError):
+            raise ValueError("Account lookup returned an invalid identity. Ask staff to check the API.") from None
+        if data.get("linked") is not True:
+            raise ValueError("Account lookup returned an invalid identity. Ask staff to check the API.")
+        return {**data, "player_uuid": player_uuid}
+
     # Empirical calibration from real precedent_cases embeddings: cosine distance
     # rarely exceeds ~0.65 even for unrelated cases (general-purpose text
     # embeddings compress everything into a narrow band). A flat (1-distance)
@@ -321,14 +353,15 @@ class Precedent(commands.Cog):
         name="case-log",
         description="Log a moderation case for future precedent search (Staff only).",
     )
+    @app_commands.describe(user="Select a Discord user to resolve their Minecraft account automatically")
     @app_commands.check(lambda i: i.client.get_cog("Precedent").member_is_staff(i))
     @app_commands.guild_only()
-    async def case_log(self, interaction: discord.Interaction):
+    async def case_log(self, interaction: discord.Interaction, user: Optional[discord.User] = None):
         cfg_err = self._require_api_config()
         if cfg_err:
             await interaction.response.send_message(cfg_err, ephemeral=True)
             return
-        await interaction.response.send_modal(CaseLogModal(self))
+        await interaction.response.send_modal(CaseLogModal(self, user))
 
     @app_commands.command(
         name="precedent",

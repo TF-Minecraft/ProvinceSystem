@@ -5,7 +5,7 @@ import logging
 import time
 from collections import defaultdict
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Path, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -36,6 +36,7 @@ from src.skins.codes import (
 from src.skins.discord_link import (
     LinkError,
     complete_link,
+    get_bot_identity,
     get_identity_status,
     remember_discord_nicknames,
     remember_discord_usernames,
@@ -460,6 +461,15 @@ def post_discord_guild_joined(
         return record_guild_joined(body.discord_user_id)
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/discord/identity/{discord_user_id}")
+def get_discord_identity(
+    discord_user_id: str = Path(pattern=r"^[0-9]{15,20}$"),
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return get_bot_identity(discord_user_id)
 
 
 @skins_router.get("/discord/status/{player_uuid}")

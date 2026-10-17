@@ -1,12 +1,4 @@
-"""
-MinecraftBan — ban/warn DMs + TFMCWeb moderation outbox (Red V3).
-
-AMP / Red deploy:
-  1. Copy `minecraftban/` into `cogs/CogManager/cogs/`.
-  2. Copy `config.example.yml` → `config.yml` and fill api_base_url, staff_key,
-     banned_role_id. Optional env vars override yaml if set.
-  3. `[p]pipinstall PyYAML` once if needed, then `[p]load` / `[p]reload minecraftban`.
-"""
+"""Discord moderation notifications using verified Minecraft account links."""
 
 from __future__ import annotations
 
@@ -17,6 +9,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Optional
+from uuid import UUID
 
 import aiohttp
 import discord
@@ -184,7 +177,7 @@ class MinecraftBan(commands.Cog):
     async def _api_get(self, path: str) -> tuple[int, Optional[Any]]:
         url = f"{self.api_base_url}{path}"
         headers = {"X-Staff-Key": self.staff_key, "Accept": "application/json"}
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
             async with session.get(url, headers=headers) as resp:
                 text = await resp.text()
                 data = None
@@ -380,6 +373,7 @@ class MinecraftBan(commands.Cog):
         dm_status: str,
         issuer: str,
         role_status: str,
+        player_uuid: Optional[str] = None,
     ) -> None:
         log_embed = discord.Embed(
             title="TFMC Ban Log",
@@ -389,6 +383,8 @@ class MinecraftBan(commands.Cog):
         )
         log_embed.add_field(name="Minecraft Username", value=username, inline=False)
         log_embed.add_field(name="Discord User", value=user.mention, inline=False)
+        if player_uuid is not None:
+            log_embed.add_field(name="Minecraft UUID", value=player_uuid or "Unlinked (manual name)", inline=False)
         log_embed.add_field(name="Reason", value=reason, inline=False)
         log_embed.add_field(name="Duration", value=duration, inline=False)
         log_embed.add_field(name="DM Status", value=dm_status, inline=False)
@@ -404,6 +400,7 @@ class MinecraftBan(commands.Cog):
         reason: str,
         dm_status: str,
         issuer: str,
+        player_uuid: Optional[str] = None,
     ) -> None:
         log_embed = discord.Embed(
             title="TFMC Warning Log",
@@ -413,6 +410,8 @@ class MinecraftBan(commands.Cog):
         )
         log_embed.add_field(name="Minecraft Username", value=username, inline=False)
         log_embed.add_field(name="Discord User", value=user.mention, inline=False)
+        if player_uuid is not None:
+            log_embed.add_field(name="Minecraft UUID", value=player_uuid or "Unlinked (manual name)", inline=False)
         log_embed.add_field(name="Reason", value=reason, inline=False)
         log_embed.add_field(name="DM Status", value=dm_status, inline=False)
         log_embed.add_field(name="Issuer", value=issuer, inline=False)
@@ -513,12 +512,70 @@ class MinecraftBan(commands.Cog):
             return False
         return cog.member_is_staff_or_helper(interaction)
 
+    async def linked_identity(self, user: discord.User) -> dict:
+        if not self.api_base_url or not self.staff_key:
+            raise ValueError("Account lookup is not configured. Staff must set api_base_url and staff_key.")
+        try:
+            status, data = await self._api_get(f"/skins/discord/identity/{user.id}")
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            raise ValueError("Account lookup is unavailable. Try again shortly.") from None
+        if status != 200 or not isinstance(data, dict) or data.get("discord_user_id") != str(user.id):
+            raise ValueError("Account lookup is unavailable. Try again shortly.")
+        if data.get("linked") is False:
+            return data
+        try:
+            player_uuid = str(UUID(data["player_uuid"]))
+        except (KeyError, ValueError, TypeError, AttributeError):
+            raise ValueError("Account lookup returned an invalid identity. Ask staff to check the API.") from None
+        if data.get("linked") is not True:
+            raise ValueError("Account lookup returned an invalid identity. Ask staff to check the API.")
+        return {**data, "player_uuid": player_uuid}
+
+    async def notification_identity(self, interaction, user, username) -> Optional[dict]:
+        try:
+            identity = await self.linked_identity(user)
+            if identity["linked"]:
+                name = identity.get("minecraft_name") or identity["player_uuid"]
+                if username and username.strip().casefold() != name.casefold():
+                    raise ValueError("That name does not match the linked Minecraft account. Omit username to use the verified link.")
+                return {**identity, "minecraft_name": name}
+            if not username:
+                raise ValueError("This Discord account has no Minecraft link. They can link at https://tfminecraft.net/profile or use /linkdiscord in-game. For an unlinked account, staff can supply username explicitly.")
+            name = username.strip()
+            if not re.fullmatch(r"[A-Za-z0-9_]{1,16}", name):
+                raise ValueError("Enter a valid Minecraft username (1–16 letters, digits or underscores).")
+            return {**identity, "minecraft_name": name}
+        except ValueError as error:
+            await interaction.followup.send(str(error), ephemeral=True)
+            return None
+
+    @app_commands.command(name="minecraftwho", description="Look up a Discord user's linked Minecraft account.")
+    @app_commands.describe(user="The Discord user to look up")
+    @app_commands.check(has_staff_or_helper)
+    @app_commands.guild_only()
+    async def minecraftwho(self, interaction: discord.Interaction, user: discord.User):
+        await interaction.response.defer(ephemeral=True)
+        try:
+            identity = await self.linked_identity(user)
+        except ValueError as error:
+            await interaction.followup.send(str(error), ephemeral=True)
+            return
+        if not identity["linked"]:
+            await interaction.followup.send("This Discord account has no Minecraft link. Link at https://tfminecraft.net/profile or use /linkdiscord in-game.", ephemeral=True)
+            return
+        embed = discord.Embed(title="Linked Minecraft account", color=discord.Color.blue())
+        embed.add_field(name="Discord User", value=user.mention, inline=False)
+        embed.add_field(name="Minecraft Username", value=identity.get("minecraft_name") or "Unknown", inline=False)
+        embed.add_field(name="Minecraft UUID", value=identity["player_uuid"], inline=False)
+        embed.set_footer(text="Latest server-recorded name" if identity.get("name_source") == "coreprotect" else "Name recorded when linked")
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
     @app_commands.command(
         name="minecraftban", description="Notify a user of a Minecraft server ban via DM."
     )
     @app_commands.describe(
         user="The Discord user to notify",
-        username="The Minecraft username that was banned",
+        username="Optional fallback for an unlinked account; linked accounts are resolved automatically",
         reason="The reason for the ban",
         duration="The duration of the ban (e.g., '7 days', 'permanent')",
     )
@@ -529,10 +586,15 @@ class MinecraftBan(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        username: str,
         reason: str,
         duration: str,
+        username: Optional[str] = None,
     ):
+        await interaction.response.defer(ephemeral=True)
+        identity = await self.notification_identity(interaction, user, username)
+        if identity is None:
+            return
+        username = identity["minecraft_name"]
         try:
             preview_embed = discord.Embed(
                 title="TFMC Ban Notification Preview",
@@ -541,10 +603,11 @@ class MinecraftBan(commands.Cog):
                 timestamp=discord.utils.utcnow(),
             )
             preview_embed.add_field(name="Minecraft Username", value=username, inline=False)
+            preview_embed.add_field(name="Minecraft UUID", value=identity["player_uuid"] or "Unlinked (manual name)", inline=False)
             preview_embed.add_field(name="Reason", value=reason, inline=False)
             preview_embed.add_field(name="Duration", value=duration, inline=False)
             preview_embed.set_footer(text="This preview is only visible to you.")
-            await interaction.response.send_message(embed=preview_embed, ephemeral=True)
+            await interaction.followup.send(embed=preview_embed, ephemeral=True)
 
             dm_status = await self._send_ban_dm(user, username, reason, duration)
             role_status = await self._set_banned_role(
@@ -559,6 +622,7 @@ class MinecraftBan(commands.Cog):
                 dm_status,
                 interaction.user.mention,
                 role_status,
+                player_uuid=identity["player_uuid"] or "",
             )
         except Exception as e:
             logger.error("Error in /minecraftban: %s", e, exc_info=True)
@@ -570,7 +634,7 @@ class MinecraftBan(commands.Cog):
     )
     @app_commands.describe(
         user="The Discord user to notify",
-        username="The Minecraft username that was warned",
+        username="Optional fallback for an unlinked account; linked accounts are resolved automatically",
         reason="The reason for the warning",
     )
     @app_commands.check(has_staff_or_helper)
@@ -580,9 +644,14 @@ class MinecraftBan(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        username: str,
         reason: str,
+        username: Optional[str] = None,
     ):
+        await interaction.response.defer(ephemeral=True)
+        identity = await self.notification_identity(interaction, user, username)
+        if identity is None:
+            return
+        username = identity["minecraft_name"]
         try:
             preview_embed = discord.Embed(
                 title="Minecraft Warning Notification Preview",
@@ -591,9 +660,10 @@ class MinecraftBan(commands.Cog):
                 timestamp=discord.utils.utcnow(),
             )
             preview_embed.add_field(name="Minecraft Username", value=username, inline=False)
+            preview_embed.add_field(name="Minecraft UUID", value=identity["player_uuid"] or "Unlinked (manual name)", inline=False)
             preview_embed.add_field(name="Reason", value=reason, inline=False)
             preview_embed.set_footer(text="This preview is only visible to you.")
-            await interaction.response.send_message(embed=preview_embed, ephemeral=True)
+            await interaction.followup.send(embed=preview_embed, ephemeral=True)
 
             dm_status = await self._send_warn_dm(user, username, reason)
             await self._send_warn_log(
@@ -603,12 +673,13 @@ class MinecraftBan(commands.Cog):
                 reason,
                 dm_status,
                 interaction.user.mention,
+                player_uuid=identity["player_uuid"] or "",
             )
             await self._log_precedent(
                 logged_by=getattr(interaction.user, "display_name", str(interaction.user)),
                 players=[username],
                 summary=reason,
-                ruling="Warning issued via Discord",
+                ruling=f"Warning issued via Discord\nMinecraft UUID: {identity['player_uuid'] or 'unlinked'}\nDiscord ID: {user.id}",
                 punishment="Warning",
             )
         except Exception as e:
@@ -688,6 +759,10 @@ class MinecraftBan(commands.Cog):
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ):
         await self._slash_error(interaction, error, "/minecraftnotify")
+
+    @minecraftwho.error
+    async def minecraftwho_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        await self._slash_error(interaction, error, "/minecraftwho")
 
     async def _slash_error(
         self,

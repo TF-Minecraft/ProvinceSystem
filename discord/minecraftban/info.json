@@ -1,7 +1,7 @@
 {
     "author": ["TFMC"],
     "bot_version": [3, 5, 0],
-    "description": "Notify users of Minecraft bans/warnings via DM; poll TFMCWeb moderation outbox for auto mirror + Banned role.",
+    "description": "Resolve linked Minecraft UUIDs for Discord ban/warn notifications and staff lookup; mirror TFMCWeb moderation notices.",
     "hidden": true,
     "install_msg": "MinecraftBan installed. Copy config.example.yml to config.yml (api_base_url, staff_key, banned_role_id); then reload.",
     "name": "MinecraftBan",

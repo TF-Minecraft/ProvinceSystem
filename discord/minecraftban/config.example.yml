@@ -4,7 +4,7 @@
 # Same machine as AMP + ProvinceSystem stack (recommended):
 #   api_base_url: "http://127.0.0.1:8000"
 #   staff_key: "dev-staff-key"
-# Staging clone on alternate ports: see ProvinceSystem/STAGING.md (18001).
+# See TF-Minecraft/Docs: projects/ProvinceSystem/docs/integrations/discord-bot.md.
 
 api_base_url: "http://127.0.0.1:8000"
 staff_key: "dev-staff-key"

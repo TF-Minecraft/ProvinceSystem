@@ -13,6 +13,7 @@ Pipfile.lock
 __pycache__/
 *.py[cod]
 .venv/
+.venv-bot/
 venv/
 
 # IDE files
@@ -62,6 +63,7 @@ backend/src/data/diagnostic/
 .claude/
 backend/src/defines/*/derived_sources.json
 CLAUDE.md
+/discord/*/config.yml
 
 # Vanilla Minecraft names, built from Mojang's client jar (backend/scripts/build_minecraft_names.py).
 backend/src/coreprotect/data/

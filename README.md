@@ -14,6 +14,7 @@ It connects the Minecraft world with a browser experience: players can explore t
 - **Custom skin submissions** — submit supported cosmetic skins through an in-game-code-linked workflow.
 - **Drink design** — create BreweryX recipes and submit custom drinks for staff review.
 - **Accounts and staff tools** — sign in with Discord, manage linked accounts and supporter status, and use role-controlled player, activity, rail, and permission panels.
+- **Discord moderation** — select linked Discord accounts for warnings, ban notifications, and case logs, with Minecraft UUIDs in staff records.
 - **Player knowledge hub** — browse the wiki's guides to crafting, professions, equipment, economy, and other server features.
 
 ## Connected to the server
@@ -57,6 +58,10 @@ CI uploads `test-results/frontend.xml` and `test-results/backend.xml`, then buil
 the Next.js frontend. No coverage threshold is enforced. The suites exercise
 website components, application logic, and APIs in isolation; they do not run a
 live Minecraft server, companion plugins, or real external-service flows.
+
+The Discord cog suite uses Python 3.11 and `discord/requirements-test.txt`:
+`python -m pytest -q discord/test_identity_commands.py`. It exercises Red command
+definitions, Discord modals and local HTTP lookups without signing into Discord.
 
 ## License
 

@@ -1,0 +1,5 @@
+# Match the Red and discord.py versions installed on TFMCDiscordBot01.
+Red-DiscordBot==3.5.24
+discord.py==2.7.1
+PyYAML==6.0.3
+pytest==9.1.1
