@@ -61,3 +61,13 @@ def test_studio_requires_a_separate_login_on_the_same_database(monkeypatch):
     monkeypatch.setenv("DATABASE_STUDIO_URL", "postgresql://owner:x@db:5432/provincesystem")
     with pytest.raises(operations.OperationError, match="separate"):
         operations.studio(url)
+
+
+def test_prepare_refuses_a_revision_older_than_the_database(tmp_path, scratch_database):
+    url = scratch_database
+    migrate.migrate(url)
+    _mark(tmp_path, url)
+    with psycopg.connect(url) as conn:
+        conn.execute("INSERT INTO schema_migrations (version, name, checksum) VALUES ('9999', 'future', 'x')")
+    with pytest.raises(operations.OperationError, match="9999.*fix forward"):
+        operations.prepare(tmp_path, url)

@@ -104,6 +104,7 @@ if tool=='ps-compose':
   command=args[-1]
   assert command in ('prepare','studio') and marker.exists()
   if command=='studio' and os.environ.get('FAIL_STUDIO') and head==new: sys.exit(1)
+  if command=='prepare' and os.environ.get('DATABASE_NEWER') and head==old: sys.exit(1)
  sys.exit(0)
 raise SystemExit('unexpected host command')
 """
@@ -186,6 +187,14 @@ def test_failed_migration_step_returns_to_the_last_healthy_revision(host):
     assert operations(root) == [(NEW, "prepare"), (NEW, "studio"), (OLD, "prepare"), (OLD, "studio")]
     assert (OLD, ["up", "-d", "--no-build", "--no-deps", "backend", "frontend"]) in commands(trace)
     assert "rolled back" in (root / "site-deploy.log").read_text()
+
+
+def test_rollback_stops_when_the_database_is_newer_than_the_old_revision(host):
+    root, data, run = host
+    result, trace = run(FAIL_HEALTH="1", DATABASE_NEWER="1")
+    assert result.returncode == 5
+    assert not any(head == OLD and args[:2] == ["up", "-d"] for head, args in commands(trace))
+    assert "failed: rollback database; backend kept stopped" in (root / "site-deploy.log").read_text()
 
 
 def test_interrupted_checkout_resumes_instead_of_claiming_success(host):

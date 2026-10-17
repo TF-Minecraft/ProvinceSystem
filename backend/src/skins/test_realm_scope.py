@@ -274,7 +274,7 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in main], ["drink-main"])
         self.assertEqual([r["id"] for r in tut], ["drink-tut"])
 
-    def test_rpc_player_meta_isolated_by_realm(self) -> None:
+    def test_web_entitlements_isolated_by_realm(self) -> None:
         from src.characters.web_entitlements import (
             get_web_entitlements,
             resolve_web_entitlements,

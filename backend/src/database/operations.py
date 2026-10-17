@@ -2,8 +2,10 @@
 
 `prepare` applies pending migrations to the site's Postgres. The authority marker
 written when the site moved off SQLite must name this database, so a deploy never
-migrates a database it was not pointed at. `studio` provisions the Database
-studio's restricted login.
+migrates a database it was not pointed at. Migrations only go forward: a revision
+that lacks a migration the database already has is refused, since its code
+expects the older schema. `studio` provisions the Database studio's restricted
+login.
 """
 from __future__ import annotations
 
@@ -17,7 +19,7 @@ from pathlib import Path
 import psycopg
 
 from .connection import database_url
-from .migrate import migrate
+from .migrate import discover, migrate
 from .studio_role import provision
 
 
@@ -47,6 +49,10 @@ def prepare(data: Path, url: str) -> None:
     if not marker.exists():
         raise OperationError("no Postgres authority marker; this site never moved off SQLite")
     _checked_authority(marker, url)
+    newer = sorted(set(_identity(url)["history"]) - {m.version for m in discover()})
+    if newer:
+        raise OperationError(
+            f"the database has migration {', '.join(newer)}, which this revision predates; deploy a fix forward")
     migrate(url, seed=False, retained_directory=data / "postgres-migrations")
 
 
@@ -76,6 +82,9 @@ def main() -> int:
             studio(url)
         else:
             prepare(args.data, url)
+    except OperationError as exc:
+        print(f"Database {args.command} failed: {exc}; backend must stay stopped", file=sys.stderr)
+        return 1
     except Exception as exc:
         # URLs, passwords and row values never reach Actions or deploy logs.
         print(f"Database {args.command} failed ({type(exc).__name__}); backend must stay stopped", file=sys.stderr)

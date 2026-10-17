@@ -25,14 +25,17 @@ def test_0002_keeps_account_data_and_clears_spent_plaintext(scratch_database, mo
                      "('b', NULL, NULL, false, 0, NULL, NULL, NULL, now())")
         conn.execute("INSERT INTO rpc_player_meta (player_uuid, realm_id, skin_kinds_json, permission_flags_json, updated_at) "
                      "VALUES ('a', 'main', '[\"book\"]', '{\"tfmc.map.staff\": true}', now())")
-        for code_id, extra in enumerate(["open", "revoked", "expired", "redeemed", "used"], start=1):
+        for code_id, extra in enumerate(["open", "revoked", "expired", "redeemed", "used", "drunk"], start=1):
             conn.execute(
                 "INSERT INTO codes (id, code_hash, code_plaintext, player_uuid, scope, created_at, expires_at, "
-                "redeemed_at, revoked) VALUES (%s, %s, %s, 'a', 'skin', now(), now() + %s::interval, %s, %s)",
-                (code_id, extra, extra, "-1 hour" if extra == "expired" else "1 hour",
+                "redeemed_at, revoked) VALUES (%s, %s, %s, 'a', %s, now(), now() + %s::interval, %s, %s)",
+                (code_id, extra, extra, "profile" if extra == "redeemed" else "drink" if extra == "drunk" else "skin",
+                 "-1 hour" if extra == "expired" else "1 hour",
                  datetime.now(timezone.utc) if extra == "redeemed" else None, extra == "revoked"))
         conn.execute("INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, status, dir_path, "
                      "created_at) VALUES ('s', 'a', 5, 'book', 'b', 'B', 'pending', 'd', now())")
+        conn.execute("INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, recipe_json, status, "
+                     "new_texture, dir_path, created_at) VALUES ('d', 'a', 6, 'w', 'W', '{}', 'pending', false, 'd', now())")
     migrate.migrate(url)
     with psycopg.connect(url, row_factory=dict_row) as conn:
         accounts = conn.execute("SELECT * FROM character_account_meta ORDER BY player_uuid").fetchall()

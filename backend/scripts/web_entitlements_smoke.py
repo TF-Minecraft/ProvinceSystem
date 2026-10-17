@@ -1,6 +1,6 @@
 """Smoke: PUT rpc-player-meta + GET /characters/player-meta.
 
-Run from backend/ with TEST_DATABASE_URL: python scripts/rpc_player_meta_smoke.py
+Run from backend/ with TEST_DATABASE_URL: python scripts/web_entitlements_smoke.py
 """
 
 from __future__ import annotations

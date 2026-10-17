@@ -22,11 +22,12 @@ ALTER TABLE character_account_meta ALTER COLUMN account_created_at TYPE timestam
     USING CASE WHEN account_created_at > 0 THEN to_timestamp(account_created_at) END;
 
 -- Only the staff list of open codes shows a plaintext, so a code that is
--- revoked, expired, redeemed or used by a submission no longer needs one.
+-- revoked, expired, used by a submission or (for a profile code) redeemed no
+-- longer needs one.
 UPDATE codes c SET code_plaintext = NULL
 WHERE code_plaintext IS NOT NULL
   AND (revoked
        OR expires_at < now()
-       OR redeemed_at IS NOT NULL
+       OR (scope = 'profile' AND redeemed_at IS NOT NULL)
        OR EXISTS (SELECT 1 FROM submissions s WHERE s.code_id = c.id)
        OR EXISTS (SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id));
