@@ -112,12 +112,12 @@ def race(gate, first, second, kinds):
 def test_a_skin_code_is_consumed_by_one_submission(env, monkeypatch):
     """Two uploads on one code session: the second waits on the code row, then sees it used."""
     session = session_for("skin")
-    gate = Gate(monkeypatch, "INSERT INTO submissions")
+    gate = Gate(monkeypatch, "INSERT INTO skin_submissions")
     one, two = race(gate, submit_skin(session, "Test Sword"), submit_skin(session, "Other Blade"), ROW)
     made, errors = outcome(one, two)
     assert len(made) == 1 and [str(e) for e in errors] == ["This code already has an active submission"]
-    assert testing.value("SELECT COUNT(*) FROM submissions") == 1
-    assert testing.value("SELECT redeemed_at IS NOT NULL FROM codes WHERE id = %s", (session["code_id"],))
+    assert testing.value("SELECT COUNT(*) FROM skin_submissions") == 1
+    assert testing.value("SELECT redeemed_at IS NOT NULL FROM login_codes WHERE id = %s", (session["code_id"],))
 
 
 def test_a_drink_code_is_consumed_by_one_submission(env, monkeypatch):
@@ -134,12 +134,12 @@ def test_a_submission_waits_for_a_revoke_of_its_code(env):
     """The code row is locked before it is checked, so a revoke landing meanwhile refuses the upload."""
     session = session_for("skin")
     run = held(
-        lambda conn: conn.execute("UPDATE codes SET revoked = true WHERE id = %s", (session["code_id"],)),
+        lambda conn: conn.execute("UPDATE login_codes SET revoked = true WHERE id = %s", (session["code_id"],)),
         submit_skin(session, "Test Sword"),
         ROW,
     )
     assert isinstance(run.error, submissions.SubmissionError) and str(run.error) == "Code has been revoked"
-    assert testing.value("SELECT COUNT(*) FROM submissions") == 0
+    assert testing.value("SELECT COUNT(*) FROM skin_submissions") == 0
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])
@@ -148,16 +148,16 @@ def test_a_submission_rechecks_expiry_after_its_code_lock_wait(env, scope):
     session = session_for(scope)
     submit = submit_drink(session, "Expired Brew") if scope == "drink" else submit_skin(session, "Expired Sword")
     run = held(
-        lambda conn: conn.execute("UPDATE codes SET expires_at = now() - interval '1 second' WHERE id = %s",
+        lambda conn: conn.execute("UPDATE login_codes SET expires_at = now() - interval '1 second' WHERE id = %s",
                                   (session["code_id"],)),
         submit,
         ROW,
     )
     error = drinks.DrinkError if scope == "drink" else submissions.SubmissionError
-    table = "drink_submissions" if scope == "drink" else "submissions"
+    table = "drink_submissions" if scope == "drink" else "skin_submissions"
     assert isinstance(run.error, error) and str(run.error) == "Code has expired"
     assert testing.value(f"SELECT COUNT(*) FROM {table}") == 0
-    assert testing.value("SELECT redeemed_at FROM codes WHERE id = %s", (session["code_id"],)) is None
+    assert testing.value("SELECT redeemed_at FROM login_codes WHERE id = %s", (session["code_id"],)) is None
 
 
 # --------------------
@@ -169,20 +169,20 @@ def test_a_site_start_waits_for_a_tfmcweb_mint(env):
     def mint(conn):
         database.advisory_lock(conn, codes.cosmetic_mint_lock(PLAYER.upper()))
         conn.execute(
-            "INSERT INTO codes (code_hash, player_uuid, scope, created_at, expires_at) "
+            "INSERT INTO login_codes (code_hash, player_uuid, scope, created_at, expires_at) "
             "VALUES ('tfmcweb', %s, 'drink', now(), now() + interval '2 days')", (PLAYER,))
 
     run = held(mint, lambda: codes.start_site_session(PLAYER, "main", "skin"), ADVISORY)
     assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
-    assert testing.value("SELECT COUNT(*) FROM codes WHERE scope = 'skin'") == 0
+    assert testing.value("SELECT COUNT(*) FROM login_codes WHERE scope = 'skin'") == 0
 
 
 def test_two_site_starts_mint_one_code(env, monkeypatch):
-    gate = Gate(monkeypatch, "INSERT INTO codes")
+    gate = Gate(monkeypatch, "INSERT INTO login_codes")
     start = lambda: codes.start_site_session(PLAYER, "main", "skin")  # noqa: E731
     one, two = race(gate, start, start, ADVISORY)
     assert one.error is None and two.error is None
-    assert testing.value("SELECT COUNT(*) FROM codes") == 1
+    assert testing.value("SELECT COUNT(*) FROM login_codes") == 1
 
 
 def test_every_mint_path_takes_the_cosmetic_mint_lock(env):
@@ -204,13 +204,13 @@ def test_two_first_kit_uploads_share_one_code(env):
     identity = codes.hash_secret(f"lore-upload:{PLAYER}")
     run = held(
         lambda conn: conn.execute(
-            "INSERT INTO codes (id, code_hash, player_uuid, scope, created_at, expires_at) "
+            "INSERT INTO login_codes (id, code_hash, player_uuid, scope, created_at, expires_at) "
             "VALUES (77, %s, %s, 'lore_upload', now(), now() + interval '1 day')", (identity, PLAYER.upper())),
         lambda: codes.ensure_lore_upload_code(PLAYER, "main"),
         ROW,
     )
     assert run.error is None and run.value == 77
-    assert testing.value("SELECT COUNT(*) FROM codes") == 1
+    assert testing.value("SELECT COUNT(*) FROM login_codes") == 1
 
 
 # --------------------
@@ -219,11 +219,11 @@ def test_two_first_kit_uploads_share_one_code(env):
 
 def test_a_profile_code_is_redeemed_once(env, monkeypatch):
     plaintext = codes.issue_code(PLAYER, "profile")["code"]
-    gate = Gate(monkeypatch, "UPDATE codes SET redeemed_at")
+    gate = Gate(monkeypatch, "UPDATE login_codes SET redeemed_at")
     redeem = lambda: codes.redeem_profile_code(plaintext)  # noqa: E731
     made, errors = outcome(*race(gate, redeem, redeem, ROW))
     assert len(made) == 1 and [str(e) for e in errors] == ["Code has already been redeemed"]
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 1
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 1
 
 
 def test_a_link_code_is_spent_once(env, monkeypatch):
@@ -297,17 +297,17 @@ def test_a_grace_expiry_does_not_remove_a_rejoined_player(env):
 
 def test_a_war_code_redeemed_meanwhile_is_not_revoked(env, monkeypatch):
     minted = declare_codes.mint("attackers", "defenders", "war")
-    gate = Gate(monkeypatch, "UPDATE war_declare_codes")
+    gate = Gate(monkeypatch, "UPDATE war_declaration_codes")
     one, two = race(gate, lambda: declare_codes.redeem(minted["code"], "attackers", "defenders", war_id="9"),
                     lambda: declare_codes.revoke(minted["id"]), ROW)
     assert one.error is None
     assert isinstance(two.error, declare_codes.WarDeclareCodeError) and str(two.error) == "This code has already been used"
-    assert testing.value("SELECT revoked FROM war_declare_codes") is False
+    assert testing.value("SELECT revoked FROM war_declaration_codes") is False
 
 
 def test_a_war_code_is_redeemed_once(env, monkeypatch):
     minted = declare_codes.mint("attackers", "defenders", "war")
-    gate = Gate(monkeypatch, "UPDATE war_declare_codes")
+    gate = Gate(monkeypatch, "UPDATE war_declaration_codes")
     redeem = lambda: declare_codes.redeem(minted["code"], "attackers", "defenders")  # noqa: E731
     made, errors = outcome(*race(gate, redeem, redeem, ROW))
     assert len(made) == 1 and [str(e) for e in errors] == ["This code has already been used"]
@@ -320,12 +320,12 @@ def test_a_denial_never_undoes_an_approval(env, monkeypatch):
                     lambda: submissions.deny_submission(created["id"], "Not today"), ROW)
     assert one.error is None
     assert str(two.error) == "Only pending submissions can be denied"
-    assert testing.value("SELECT status FROM submissions") == "approved"
+    assert testing.value("SELECT status FROM skin_submissions") == "approved"
 
 
 def test_two_releases_of_a_shared_drink_texture_both_count(env, monkeypatch):
     with database.connect() as conn:
-        conn.execute("INSERT INTO drink_textures (id, owner_uuid, cmd, png_path, refcount, created_at) "
+        conn.execute("INSERT INTO drink_textures (id, owner_uuid, custom_model_data, png_path, refcount, created_at) "
                      "VALUES ('tex_1', %s, 7, 'textures/tex_1.png', 2, now())", (PLAYER,))
     gate = Gate(monkeypatch, "UPDATE drink_textures")
     release = lambda: drinks._release_texture("tex_1")  # noqa: E731
@@ -467,7 +467,7 @@ def test_ending_a_view_waits_for_its_profile_session_and_removes_it(env, monkeyp
     gate = Gate(monkeypatch, "acting_user_id IS NOT NULL FOR SHARE")
     opening, ending = race(
         gate,
-        lambda: codes.start_linked_profile_session(PLAYER, minted_via=view_as.profile_minted_via(view),
+        lambda: codes.start_linked_profile_session(PLAYER, view_session_id=view_as.profile_view_session(view),
                                                    expires_at=view["expires_at"],
                                                    still_allowed=view_as.view_still_open(view["session_id"])),
         lambda: view_as.end(view_token),
@@ -475,7 +475,7 @@ def test_ending_a_view_waits_for_its_profile_session_and_removes_it(env, monkeyp
     )
     assert opening.error is None and ending.error is None
     assert codes.get_session(opening.value["session_token"]) is None
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0
 
 
 def test_a_profile_session_is_refused_once_its_view_ended(env):
@@ -487,7 +487,7 @@ def test_a_profile_session_is_refused_once_its_view_ended(env):
     view_as.end(view_token)
     with pytest.raises(codes.CodeError, match="session_ended"):
         codes.start_linked_profile_session(PLAYER, still_allowed=view_as.view_still_open(view["session_id"]))
-    assert testing.value("SELECT COUNT(*) FROM codes") == 0
+    assert testing.value("SELECT COUNT(*) FROM login_codes") == 0
 
 
 def test_times_leave_in_the_api_form(env):
@@ -556,51 +556,51 @@ def test_round1_microsoft_consume_rechecks_expiry_after_wait(env, monkeypatch):
 def test_round1_redemption_rechecks_expiry_after_wait(env, monkeypatch, scope):
     issued = codes.issue_code(PLAYER, scope)
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
-    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    testing.execute("UPDATE login_codes SET expires_at = %s", (expiry,))
     redeem = {"profile": lambda: codes.redeem_profile_code(issued["code"], remember_me=True),
               "skin": lambda: codes.redeem_code(issued["code"]),
               "drink": lambda: codes.redeem_drink_code(issued["code"])}[scope]
     run = after_expiry_wait(monkeypatch, codes, expiry,
-                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"), redeem)
+                            lambda conn: conn.execute("SELECT * FROM login_codes FOR UPDATE"), redeem)
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
-    assert testing.value("SELECT redeemed_at FROM codes") is None
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0
+    assert testing.value("SELECT redeemed_at FROM login_codes") is None
 
 
 def test_round1_revocation_rechecks_expiry_after_wait(env, monkeypatch):
     issued = codes.issue_code(PLAYER, "skin")
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
-    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    testing.execute("UPDATE login_codes SET expires_at = %s", (expiry,))
     run = after_expiry_wait(monkeypatch, codes, expiry,
-                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"),
+                            lambda conn: conn.execute("SELECT * FROM login_codes FOR UPDATE"),
                             lambda: codes.revoke_code(issued["code"]))
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
-    assert testing.value("SELECT revoked FROM codes") is False
+    assert testing.value("SELECT revoked FROM login_codes") is False
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])
 def test_round1_site_reuse_rechecks_expiry_after_wait(env, monkeypatch, scope):
     codes.issue_code(PLAYER, scope)
-    old_id = testing.value("SELECT id FROM codes")
+    old_id = testing.value("SELECT id FROM login_codes")
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
-    testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
+    testing.execute("UPDATE login_codes SET expires_at = %s", (expiry,))
     run = after_expiry_wait(monkeypatch, codes, expiry,
-                            lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"),
+                            lambda conn: conn.execute("SELECT * FROM login_codes FOR UPDATE"),
                             lambda: codes.start_site_session(PLAYER, "main", scope))
     # Expired unused codes no longer reserve cooldown (main #261). Recheck
     # after the wait, then mint a fresh code instead of reusing the expired one.
     assert run.error is None
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 1
-    assert testing.value("SELECT code_id FROM sessions") != old_id
-    assert testing.value("SELECT redeemed_at FROM codes WHERE id=%s", (old_id,)) is None
-    assert testing.value("SELECT created_at FROM codes WHERE id<>%s", (old_id,)) > expiry
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 1
+    assert testing.value("SELECT code_id FROM code_sessions") != old_id
+    assert testing.value("SELECT redeemed_at FROM login_codes WHERE id=%s", (old_id,)) is None
+    assert testing.value("SELECT created_at FROM login_codes WHERE id<>%s", (old_id,)) > expiry
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])
 @pytest.mark.parametrize("change", ["revoked", "consumed"])
 def test_round1_site_reuse_revalidates_selected_code(env, monkeypatch, scope, change):
     codes.issue_code(PLAYER, scope)
-    code_id = testing.value("SELECT id FROM codes")
+    code_id = testing.value("SELECT id FROM login_codes")
     selected, release = threading.Event(), threading.Event()
     original = codes._open_code
 
@@ -616,26 +616,26 @@ def test_round1_site_reuse_revalidates_selected_code(env, monkeypatch, scope, ch
         assert selected.wait(10), run.error
         with database.connect() as conn:
             if change == "revoked":
-                conn.execute("UPDATE codes SET revoked = true WHERE id = %s", (code_id,))
+                conn.execute("UPDATE login_codes SET revoked = true WHERE id = %s", (code_id,))
             else:
                 if scope == "skin":
-                    conn.execute("INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, "
+                    conn.execute("INSERT INTO skin_submissions (id, player_uuid, code_id, kind, slug, display_name, "
                                  "status, dir_path, created_at) VALUES ('used', %s, %s, 'handheld', 'used', 'Used', "
                                  "'pending', 'skins/used', now())", (PLAYER, code_id))
                 else:
                     conn.execute("INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, "
-                                 "recipe_json, status, dir_path, created_at) VALUES ('used', %s, %s, 'used', 'Used', "
+                                 "recipe, status, dir_path, created_at) VALUES ('used', %s, %s, 'used', 'Used', "
                                  "'{}', 'pending', 'drinks/used', now())", (PLAYER, code_id))
-                conn.execute("UPDATE codes SET redeemed_at = now() WHERE id = %s", (code_id,))
+                conn.execute("UPDATE login_codes SET redeemed_at = now() WHERE id = %s", (code_id,))
             release.set()
             lock_wait(run, ROW)
     finally:
         release.set()
         run.join()
     assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0
     if change == "consumed":
-        assert testing.value("SELECT redeemed_at FROM codes") is not None
+        assert testing.value("SELECT redeemed_at FROM login_codes") is not None
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])
@@ -643,11 +643,11 @@ def test_round1_site_reuse_and_redemption_share_lock_order(env, monkeypatch, sco
     issued = codes.issue_code(PLAYER, scope)
     redeem = codes.redeem_drink_code if scope == "drink" else codes.redeem_code
     initial = redeem(issued["code"])
-    gate = Gate(monkeypatch, "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE")
+    gate = Gate(monkeypatch, "SELECT * FROM login_codes WHERE code_hash = %s FOR UPDATE")
     redemption, site = race(gate, lambda: redeem(issued["code"]),
                             lambda: codes.start_site_session(PLAYER, "main", scope), ROW)
     assert redemption.error is None and site.error is None
     assert codes.get_session(initial["session_token"]) is None
     assert codes.get_session(redemption.value["session_token"]) is None
     assert codes.get_session(site.value["session_token"]) is not None
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 1
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 1

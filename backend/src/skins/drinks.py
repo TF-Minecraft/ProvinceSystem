@@ -594,7 +594,7 @@ def _validate_png(data: bytes) -> None:
 
 
 def _public_row(row) -> dict[str, Any]:
-    recipe = row.get("recipe_json")
+    recipe = row.get("recipe")
     if not isinstance(recipe, dict):
         recipe = {}
     # JSONB loses object order; _validate_recipe writes these fields in this order.
@@ -750,7 +750,7 @@ def create_drink_submission(
                 raise DrinkError("existing_texture_id not found")
             if str(tex["owner_uuid"]).lower() != player_uuid.lower():
                 raise DrinkError("existing_texture_id is not owned by you")
-            if tex["cmd"] is None:
+            if tex["custom_model_data"] is None:
                 raise DrinkError(
                     "existing_texture_id is not applied yet (no custom model data)"
                 )
@@ -779,7 +779,7 @@ def create_drink_submission(
                 conn.execute(
                     """
                     INSERT INTO drink_textures (
-                        id, owner_uuid, cmd, ia_item_id, png_path, refcount, created_at
+                        id, owner_uuid, custom_model_data, ia_item_id, png_path, refcount, created_at
                     ) VALUES (%s, %s, NULL, NULL, %s, 1, %s)
                     """,
                     (texture_id, player_uuid.lower(), png_rel, now),
@@ -788,7 +788,7 @@ def create_drink_submission(
                 """
                 UPDATE drink_textures
                 SET refcount = refcount + 1
-                WHERE id = %s AND cmd IS NOT NULL
+                WHERE id = %s AND custom_model_data IS NOT NULL
                 RETURNING id
                 """,
                 (existing_id,),
@@ -799,7 +799,7 @@ def create_drink_submission(
                     row = conn.execute(
                         """
                         INSERT INTO drink_submissions (
-                            id, player_uuid, code_id, slug, display_name, recipe_json,
+                            id, player_uuid, code_id, slug, display_name, recipe,
                             status, deny_reason, texture_id, new_texture, dir_path,
                             discord_user_id, created_at, reviewed_at, applied_at, realm_id
                         ) VALUES (%s, %s, %s, %s, %s, %s, 'pending', NULL, %s, %s, %s, %s, %s, NULL, NULL, %s)
@@ -967,10 +967,10 @@ def approve_drink_submission(submission_id: str) -> dict[str, Any]:
             next_status = "pending_pack"
         elif texture_id:
             tex = conn.execute(
-                "SELECT cmd FROM drink_textures WHERE id = %s",
+                "SELECT custom_model_data FROM drink_textures WHERE id = %s",
                 (texture_id,),
             ).fetchone()
-            if tex is None or tex["cmd"] is None:
+            if tex is None or tex["custom_model_data"] is None:
                 next_status = "pending_pack"
 
         row = conn.execute(
@@ -1030,7 +1030,7 @@ def _release_texture(texture_id: str | None, *, was_new: bool = False) -> dict[s
         if tex["refcount"] <= 0:
             conn.execute("DELETE FROM drink_textures WHERE id = %s", (texture_id,))
     ia_item_id = tex["ia_item_id"]
-    cmd = tex["cmd"]
+    cmd = tex["custom_model_data"]
     new_count = int(tex["refcount"])
     if new_count <= 0:
         png = db.DRINKS_DIR / str(tex["png_path"])
@@ -1107,10 +1107,10 @@ def list_player_textures(player_uuid: str) -> list[dict[str, Any]]:
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT id, cmd, ia_item_id, png_path, refcount, created_at
+            SELECT id, custom_model_data, ia_item_id, png_path, refcount, created_at
             FROM drink_textures
             WHERE LOWER(owner_uuid) = %s
-              AND cmd IS NOT NULL
+              AND custom_model_data IS NOT NULL
             ORDER BY created_at DESC
             """,
             (uuid,),
@@ -1118,7 +1118,7 @@ def list_player_textures(player_uuid: str) -> list[dict[str, Any]]:
     return [
         {
             "id": row["id"],
-            "cmd": row["cmd"],
+            "cmd": row["custom_model_data"],
             "ia_item_id": row["ia_item_id"],
             "refcount": row["refcount"],
             "created_at": api_time(row["created_at"]),
@@ -1226,7 +1226,7 @@ def revoke_drink_submission(submission_id: str) -> dict[str, Any]:
 def _texture_public(row) -> dict[str, Any]:
     return {
         "id": row["id"],
-        "cmd": row["cmd"],
+        "cmd": row["custom_model_data"],
         "ia_item_id": row["ia_item_id"],
         "png_path": row["png_path"],
         "refcount": row["refcount"],
@@ -1303,18 +1303,18 @@ def assign_drink_texture_cmd(
         row = conn.execute(
             """
             UPDATE drink_textures
-            SET cmd = %s, ia_item_id = %s
-            WHERE id = %s AND (cmd IS NULL OR cmd = %s)
+            SET custom_model_data = %s, ia_item_id = %s
+            WHERE id = %s AND (custom_model_data IS NULL OR custom_model_data = %s)
             RETURNING *
             """,
             (cmd_int, ia_id, tid, cmd_int),
         ).fetchone()
         if row is None:
-            existing = conn.execute("SELECT cmd FROM drink_textures WHERE id = %s", (tid,)).fetchone()
+            existing = conn.execute("SELECT custom_model_data FROM drink_textures WHERE id = %s", (tid,)).fetchone()
             if existing is None:
                 raise DrinkError("Texture not found")
             raise DrinkError(
-                f"Texture already has cmd {existing['cmd']}; cannot set {cmd_int}"
+                f"Texture already has cmd {existing['custom_model_data']}; cannot set {cmd_int}"
             )
     return _texture_public(row)
 

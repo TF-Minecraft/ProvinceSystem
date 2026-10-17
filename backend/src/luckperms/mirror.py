@@ -146,7 +146,7 @@ def _write_snapshot(conn, groups, tracks, users) -> None:
           ((g["name"], g["display_name"], g["weight"]) for g in _last_wins([g for g, _ in groups], "name")))
     _copy(conn, "lp_group_nodes", "group_name, key, value, contexts, expiry",
           (_node_row(g["name"], n) for g, group_nodes in groups for n in group_nodes))
-    _copy(conn, "lp_tracks", "name, groups_json",
+    _copy(conn, "lp_tracks", "name, group_names",
           ((t["name"], json.dumps(t["groups"])) for t in _last_wins(tracks, "name")))
     _copy(conn, "lp_users", "uuid, name",
           ((u["uuid"], u["name"]) for u in _last_wins([u for u, _ in users], "uuid")))
@@ -183,7 +183,7 @@ def replace_snapshot(payload) -> dict:
             _write_snapshot(conn, groups, tracks, users)
             conn.execute(
                 """
-                UPDATE lp_state SET server = %s, hash = %s, generated_at = %s, revision = %s,
+                UPDATE lp_state SET server = %s, hash = %s, generated_at = to_timestamp(%s), revision = %s,
                     received_at = %s, checked_at = %s
                 WHERE id = 1
                 """,
@@ -311,8 +311,8 @@ def load_groups(conn) -> dict[str, dict]:
 
 
 def load_tracks(conn) -> list[dict]:
-    return [{"name": row["name"], "groups": row["groups_json"]}
-            for row in conn.execute("SELECT name, groups_json FROM lp_tracks ORDER BY name")]
+    return [{"name": row["name"], "groups": row["group_names"]}
+            for row in conn.execute("SELECT name, group_names FROM lp_tracks ORDER BY name")]
 
 
 def user_nodes(conn, uuid: str) -> list[dict]:

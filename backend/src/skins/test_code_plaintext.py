@@ -16,14 +16,14 @@ NOW = datetime.now(timezone.utc)
 
 def _code(plaintext: str, scope: str, *, expires: timedelta = timedelta(hours=1)) -> int:
     return testing.value(
-        "INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id, created_at, expires_at) "
+        "INSERT INTO login_codes (code_hash, code_plaintext, player_uuid, scope, realm_id, created_at, expires_at) "
         "VALUES (%s, %s, 'player', %s, 'main', %s, %s) RETURNING id",
         (codes.hash_secret(plaintext), plaintext, scope, NOW, NOW + expires),
     )
 
 
 def _plaintext(code_id: int) -> str | None:
-    return testing.value("SELECT code_plaintext FROM codes WHERE id = %s", (code_id,))
+    return testing.value("SELECT code_plaintext FROM login_codes WHERE id = %s", (code_id,))
 
 
 def test_redeeming_a_profile_code_clears_its_plaintext():
@@ -55,6 +55,15 @@ def test_starting_a_skin_session_keeps_the_plaintext_until_the_code_is_used():
 def test_sweep_clears_only_expired_codes():
     live = _code("LIVE0001", "profile")
     expired = _code("OLD00001", "profile", expires=-timedelta(minutes=1))
-    assert sweep() == {"expired_code_plaintext": 1}
+    assert sweep()["expired_code_plaintext"] == 1
     assert (_plaintext(live), _plaintext(expired)) == ("LIVE0001", None)
-    assert sweep() == {"expired_code_plaintext": 0}
+    assert sweep()["expired_code_plaintext"] == 0
+
+
+def test_sweep_deletes_only_expired_code_sessions():
+    code_id = _code("SESSION1", "skin")
+    for token, ttl in (("live", timedelta(hours=1)), ("old", -timedelta(minutes=1))):
+        testing.execute("INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
+                        "VALUES (%s, %s, 'player', %s, %s)", (token, code_id, NOW + ttl, NOW))
+    assert sweep()["expired_code_sessions"] == 1
+    assert [r["token_hash"] for r in testing.rows("SELECT token_hash FROM code_sessions")] == ["live"]

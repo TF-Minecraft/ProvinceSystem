@@ -33,10 +33,10 @@ def test_seed_rows():
 
 def test_identity_columns_take_explicit_ids():
     with database.connect() as conn:
-        conn.execute("INSERT INTO codes (id, code_hash, player_uuid, created_at, expires_at) "
+        conn.execute("INSERT INTO login_codes (id, code_hash, player_uuid, created_at, expires_at) "
                      "VALUES (41, 'h1', 'p', now(), now())")
-        conn.execute("SELECT setval(pg_get_serial_sequence('codes', 'id'), 41)")
-        row = conn.execute("INSERT INTO codes (code_hash, player_uuid, created_at, expires_at) "
+        conn.execute("SELECT setval(pg_get_serial_sequence('login_codes', 'id'), 41)")
+        row = conn.execute("INSERT INTO login_codes (code_hash, player_uuid, created_at, expires_at) "
                            "VALUES ('h2', 'p', now(), now()) RETURNING id, revoked, scope").fetchone()
     assert row == {"id": 42, "revoked": False, "scope": "skin"}
 
@@ -44,13 +44,13 @@ def test_identity_columns_take_explicit_ids():
 def test_foreign_keys_are_enforced():
     with pytest.raises(database.ForeignKeyViolation):
         with database.connect() as conn:
-            conn.execute("INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
+            conn.execute("INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
                          "VALUES ('t', 99, 'p', now(), now())")
 
 
 def _audit(conn):
     return conn.execute(
-        "INSERT INTO admin_audit (created_at, actor_type, action, outcome, detail_json) "
+        "INSERT INTO admin_audit (created_at, actor_type, action, outcome, detail) "
         "VALUES (now(), 'system', 'test', 'ok', %s) RETURNING id", (database.Jsonb({"database": "site"}),)
     ).fetchone()["id"]
 
@@ -69,8 +69,8 @@ def test_admin_audit_is_append_only(statement):
         with database.connect() as conn:
             conn.execute(statement)
     with database.connect() as conn:
-        rows = conn.execute("SELECT id, reason, detail_json FROM admin_audit").fetchall()
-    assert rows == [{"id": audit_id, "reason": None, "detail_json": {"database": "site"}}]
+        rows = conn.execute("SELECT id, reason, detail FROM admin_audit").fetchall()
+    assert rows == [{"id": audit_id, "reason": None, "detail": {"database": "site"}}]
 
 
 def test_reset_empties_tables_and_restores_seeds(postgres_session):

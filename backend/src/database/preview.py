@@ -117,12 +117,12 @@ def scrub(url: str, slug: str) -> None:
     with psycopg.connect(url) as conn:
         name, _, _ = _checked(conn, slug)
     with psycopg.connect(make_conninfo(url, dbname=name)) as conn:
-        for table in ("sessions", "user_sessions", "discord_oauth_states", "discord_link_codes",
+        for table in ("code_sessions", "user_sessions", "discord_oauth_states", "discord_link_codes",
                       "preview_sign_in_tickets", "microsoft_link_states", "patreon_tokens",
                       "patreon_oauth_states", "patreon_pending_links"):
             conn.execute(sql.SQL("DELETE FROM public.{}").format(sql.Identifier(table)))
-        conn.execute("UPDATE public.codes SET revoked=true, code_plaintext=NULL")
-        conn.execute("UPDATE public.war_declare_codes SET revoked=true")
+        conn.execute("UPDATE public.login_codes SET revoked=true, code_plaintext=NULL")
+        conn.execute("UPDATE public.war_declaration_codes SET revoked=true")
 
 
 def refresh(url: str, slug: str, credentials: dict) -> None:

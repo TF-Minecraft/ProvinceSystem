@@ -78,7 +78,7 @@ class WardrobeEntitlementsTest(unittest.TestCase):
             )
             conn.execute(
                 """
-                INSERT INTO character_creates (
+                INSERT INTO character_creation_requests (
                     id, player_uuid, payload, status, created_at, realm_id
                 ) VALUES (%s, %s, '{}', 'pending', %s, 'main')
                 """,

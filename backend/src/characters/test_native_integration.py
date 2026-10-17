@@ -25,12 +25,12 @@ def native_only(tmp_path, monkeypatch, postgres):
 def skin(sid="skin", *, status="pending", owner=OWNER, staff=False, category=None, name="Sword"):
     with database.connect() as conn:
         code = conn.execute(
-            "INSERT INTO codes (code_hash, player_uuid, created_at, expires_at, redeemed_at) "
+            "INSERT INTO login_codes (code_hash, player_uuid, created_at, expires_at, redeemed_at) "
             "VALUES (%s, %s, %s, '2099-01-01', %s) RETURNING id",
             (sid, owner, NOW, NOW),
         ).fetchone()["id"]
         conn.execute(
-            "INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, status, "
+            "INSERT INTO skin_submissions (id, player_uuid, code_id, kind, slug, display_name, status, "
             "dir_path, created_at, staff, category, base_set) "
             "VALUES (%s, %s, %s, 'handheld', %s, %s, %s, %s, %s, %s, %s, 'knife_skin')",
             (sid, owner, code, sid, name, status, sid, NOW, staff, category),
@@ -44,7 +44,7 @@ def skin(sid="skin", *, status="pending", owner=OWNER, staff=False, category=Non
 
 def lore(cid="a"):
     testing.execute(
-        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore_json, "
+        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore, "
         "submission_id, state, ready_at, updated_at, name_colours, name_styles, deny_reason) "
         "VALUES (%s, %s, 'sword', 'Sword', '[\"A blade.\"]', 'skin', 'pending_skin', %s, %s, "
         "'[\"#123456\"]', '[\"bold\"]', 'old reason')", (OWNER, cid, NOW, NOW),
@@ -56,7 +56,7 @@ def test_native_lore_status_and_draft_keep_api_values_with_pool_size_one(status)
     if status is not None:
         skin(status=status)
         if status == "denied":
-            testing.execute("UPDATE submissions SET deny_reason = 'new reason'")
+            testing.execute("UPDATE skin_submissions SET deny_reason = 'new reason'")
     lore()
     assert lore_items.claim_status(OWNER, "a") == {
         "pending_skin": status in ("pending", None), "pending_pack": status in ("approved", "denied"),
@@ -102,25 +102,25 @@ def test_native_orphan_rollback_releases_code_atomically_with_pool_size_one(fail
     if failure:
         testing.execute("CREATE FUNCTION fail_orphan_code_release() RETURNS trigger LANGUAGE plpgsql AS $$ "
                         "BEGIN RAISE EXCEPTION 'code release failed'; END $$")
-        trigger = ("CREATE CONSTRAINT TRIGGER fail_orphan_code_release AFTER UPDATE ON codes "
+        trigger = ("CREATE CONSTRAINT TRIGGER fail_orphan_code_release AFTER UPDATE ON login_codes "
                    "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW") if failure == "commit" else (
-                   "CREATE TRIGGER fail_orphan_code_release BEFORE UPDATE ON codes FOR EACH ROW")
+                   "CREATE TRIGGER fail_orphan_code_release BEFORE UPDATE ON login_codes FOR EACH ROW")
         testing.execute(trigger + " EXECUTE FUNCTION fail_orphan_code_release()")
     try:
         if failure:
             with pytest.raises(RaiseException, match="code release failed"):
                 submissions.rollback_pending_submission_if_unreferenced("skin", player_uuid=OWNER)
-            assert testing.value("SELECT count(*) FROM submissions") == 1
-            assert testing.value("SELECT redeemed_at IS NOT NULL FROM codes WHERE id = %s", (code,)) is True
+            assert testing.value("SELECT count(*) FROM skin_submissions") == 1
+            assert testing.value("SELECT redeemed_at IS NOT NULL FROM login_codes WHERE id = %s", (code,)) is True
             assert png.read_bytes() == b"original-png"
         else:
             assert submissions.rollback_pending_submission_if_unreferenced("skin", player_uuid=OWNER) is True
-            assert testing.value("SELECT count(*) FROM submissions") == 0
-            assert testing.value("SELECT redeemed_at FROM codes WHERE id = %s", (code,)) is None
+            assert testing.value("SELECT count(*) FROM skin_submissions") == 0
+            assert testing.value("SELECT redeemed_at FROM login_codes WHERE id = %s", (code,)) is None
             assert not png.exists()
     finally:
         if failure:
-            testing.execute("DROP TRIGGER fail_orphan_code_release ON codes")
+            testing.execute("DROP TRIGGER fail_orphan_code_release ON login_codes")
             testing.execute("DROP FUNCTION fail_orphan_code_release()")
 
 
@@ -130,6 +130,6 @@ def test_native_orphan_rollback_retains_every_remaining_lore_reference():
     lore("b")
     testing.execute("DELETE FROM lore_item_customisations WHERE character_id = 'a'")
     assert submissions.rollback_pending_submission_if_unreferenced("skin", player_uuid=OWNER) is False
-    assert png.is_file() and testing.value("SELECT redeemed_at IS NOT NULL FROM codes WHERE id = %s", (code,))
+    assert png.is_file() and testing.value("SELECT redeemed_at IS NOT NULL FROM login_codes WHERE id = %s", (code,))
     testing.execute("DELETE FROM lore_item_customisations")
     assert submissions.rollback_pending_submission_if_unreferenced("skin", player_uuid=OWNER) is True

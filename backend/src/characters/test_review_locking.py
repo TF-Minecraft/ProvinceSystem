@@ -45,7 +45,7 @@ def test_validated_create_with_attestation_uses_a_single_connection(postgres, mo
 def test_failed_create_rolls_back_its_attestation(postgres, monkeypatch):
     body = valid_create()
     set_real_age("owner", False)
-    testing.execute("INSERT INTO character_creates (id, player_uuid, payload, status, created_at) "
+    testing.execute("INSERT INTO character_creation_requests (id, player_uuid, payload, status, created_at) "
                     "VALUES ('collision', 'other', '{\"name\":\"Other\"}', 'pending', now())")
     monkeypatch.setattr(creates.uuid_lib, "uuid4", lambda: "collision")
     monkeypatch.setattr(database.connection, "POOL_TIMEOUT_SECONDS", .25)
@@ -53,7 +53,7 @@ def test_failed_create_rolls_back_its_attestation(postgres, monkeypatch):
     with pytest.raises(psycopg.errors.UniqueViolation):
         creates.create_character("owner", body)
     assert testing.value("SELECT is_adult FROM character_account_meta") is False
-    assert testing.value("SELECT count(*) FROM character_creates") == 1
+    assert testing.value("SELECT count(*) FROM character_creation_requests") == 1
 
 
 def requests_for_two_owners():

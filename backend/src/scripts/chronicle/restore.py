@@ -119,7 +119,7 @@ def has_live_data(map_id: str) -> bool:
 def _archived_days(map_id: str, archived_at: int) -> list[str]:
     with database.connect() as conn:
         rows = conn.execute(
-            f"SELECT day FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = %s "
+            f"SELECT day FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = to_timestamp(%s) "
             "ORDER BY day ASC",
             (map_id, int(archived_at)),
         ).fetchall()
@@ -140,7 +140,7 @@ def _reinsert_rows(map_id: str, archived_at: int, exclude: set[str]) -> int:
         return conn.execute(
             f"INSERT INTO {_LIVE_TABLE} ({columns}) "
             f"SELECT {columns} FROM {_ARCHIVE_TABLE} "
-            "WHERE map_id = %s AND archived_at = %s AND day <> ALL(%s::text[]) "
+            "WHERE map_id = %s AND archived_at = to_timestamp(%s) AND day <> ALL(%s::text[]) "
             "ORDER BY day ASC "
             "ON CONFLICT (map_id, day) DO NOTHING",
             (map_id, int(archived_at), sorted(exclude)),

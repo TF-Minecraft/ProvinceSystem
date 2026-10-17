@@ -585,7 +585,7 @@ def build_review_sheet(submission_id: str) -> bytes | None:
     """
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
     if row is None:
@@ -619,7 +619,7 @@ def write_review_sheet(submission_id: str) -> Path:
     """Compose and write review_sheet.png under the submission directory."""
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
     if row is None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from datetime import datetime, timezone
 from typing import Any
 
 from src import database
@@ -52,6 +54,23 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
     except (TypeError, ValueError):
         hard_cap = 10
     return max(1, min(default_max, hard_cap))
+
+
+_LAST_SECOND = 253402300799  # 9999-12-31T23:59:59Z
+
+
+def _created_time(raw: Any) -> datetime | None:
+    """RPCharacters sends a character's creation time as epoch seconds in a string."""
+    text = str(raw).strip() if raw is not None else ""
+    # Python's datetime, which reads the column back, stops at the year 9999.
+    if not re.fullmatch(r"[0-9]{1,12}", text) or not 0 < int(text) <= _LAST_SECOND:
+        return None
+    return datetime.fromtimestamp(int(text), timezone.utc)
+
+
+def _epoch_text(value: datetime | None) -> str | None:
+    """The creation time in the epoch-seconds text the website has always received."""
+    return str(int(value.timestamp())) if value is not None else None
 
 
 def get_player_meta(player_uuid: str) -> dict[str, Any]:
@@ -249,7 +268,7 @@ def list_roster(
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
-                   kit_status, kit_statuses_json, sheet_json, realm_id,
+                   kit_status, kit_statuses, sheet, realm_id,
                    died_at, death_id, will_heir_id, will_heir_name, will_revision
             FROM character_roster
             WHERE player_uuid = %s AND realm_id = %s
@@ -265,7 +284,7 @@ def list_roster(
             "status": row["status"],
             "race": row["race"],
             "class": row["class"],
-            "created_at": row["created_at"],
+            "created_at": _epoch_text(row["created_at"]),
             "updated_at": api_time(row["updated_at"]),
             "realm_id": realm,
             "source": "roster",
@@ -281,14 +300,14 @@ def list_roster(
         kit_status = row["kit_status"]
         if kit_status is not None and str(kit_status).strip():
             item["kit_status"] = str(kit_status).strip().lower()
-        statuses = row["kit_statuses_json"]
+        statuses = row["kit_statuses"]
         if isinstance(statuses, dict) and statuses:
             item["kit_statuses"] = {
                 str(k).strip().lower(): str(v).strip().lower()
                 for k, v in statuses.items()
                 if k is not None and str(k).strip()
             }
-        sheet = row["sheet_json"]
+        sheet = row["sheet"]
         if isinstance(sheet, dict):
             ordered = [k for k in _SHEET_KEYS if k in sheet] + [k for k in sheet if k not in _SHEET_KEYS]
             for k in ordered:
@@ -432,7 +451,7 @@ def replace_roster(
                 status,
                 str(race).strip() if race is not None else None,
                 str(klass).strip() if klass is not None else None,
-                str(created_at).strip() if created_at is not None else None,
+                _created_time(created_at),
                 kit_status,
                 kit_statuses_json,
                 sheet_json,
@@ -460,7 +479,7 @@ def replace_roster(
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, race, class,
-                    created_at, kit_status, kit_statuses_json, sheet_json, updated_at
+                    created_at, kit_status, kit_statuses, sheet, updated_at
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (player_uuid, realm_id, character_id) DO UPDATE SET
@@ -470,8 +489,8 @@ def replace_roster(
                     class = excluded.class,
                     created_at = excluded.created_at,
                     kit_status = excluded.kit_status,
-                    kit_statuses_json = excluded.kit_statuses_json,
-                    sheet_json = excluded.sheet_json,
+                    kit_statuses = excluded.kit_statuses,
+                    sheet = excluded.sheet,
                     updated_at = excluded.updated_at
                 """,
                 normalized,

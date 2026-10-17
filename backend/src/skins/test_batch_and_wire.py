@@ -61,7 +61,7 @@ def items(scope, count=3):
 @pytest.mark.parametrize("phase", ["update", "lock"])
 def test_apply_batches_wait_without_deadlocking(api, monkeypatch, scope, reverse, phase):
     ids = items(scope)
-    table = "drink_submissions" if scope == "drink" else "submissions"
+    table = "drink_submissions" if scope == "drink" else "skin_submissions"
     route = "drinks" if scope == "drink" else "skins"
     gate = Gate(monkeypatch, f"UPDATE {table}" if phase == "update" else f"SELECT id FROM {table}")
     post = lambda batch: api.post(f"/{route}/plugin/applied", json={"submission_ids": batch}, headers=PLUGIN)
@@ -80,7 +80,7 @@ def test_apply_batches_wait_without_deadlocking(api, monkeypatch, scope, reverse
 @pytest.mark.parametrize("scope", ["skin", "drink"])
 def test_apply_keeps_input_order_duplicates_blanks_and_state_guards(api, scope):
     ids = items(scope, 4)
-    table = "drink_submissions" if scope == "drink" else "submissions"
+    table = "drink_submissions" if scope == "drink" else "skin_submissions"
     testing.execute(f"UPDATE {table} SET status = 'pending' WHERE id = %s", (ids[2],))
     testing.execute(f"UPDATE {table} SET status = 'applied', applied_at = now() WHERE id = %s", (ids[3],))
     before = testing.value(f"SELECT applied_at FROM {table} WHERE id = %s", (ids[3],))
@@ -137,7 +137,7 @@ def test_name_batch_duplicates_and_invalid_items_keep_original_order(api, overwr
 @pytest.mark.parametrize("kind", ["plugin", "moderation"])
 @pytest.mark.parametrize("phase", ["update", "lock"])
 def test_ack_batches_keep_duplicate_order_and_first_delivery_time(api, monkeypatch, kind, phase):
-    table = "plugin_notices" if kind == "plugin" else "moderation_notifications"
+    table = "plugin_notices" if kind == "plugin" else "player_notifications"
     for i in range(3):
         columns, values, params = ("", "", ()) if kind == "plugin" else (
             ", discord_user_id", ", %s", (DISCORD_ID,))
@@ -210,7 +210,7 @@ def test_real_armour_maps_plugin_bytes(api, monkeypatch, staff):
         (tier, part) for tier in tiers for part in ("helmet", "chestplate", "leggings", "boots", "layer_1", "layer_2"))}
     session = session_for("skin")
     if staff:
-        testing.execute("UPDATE codes SET scope = 'skin_staff' WHERE id = %s", (session["code_id"],))
+        testing.execute("UPDATE login_codes SET scope = 'skin_staff' WHERE id = %s", (session["code_id"],))
         session["scope"], session["staff"] = "skin_staff", True
     made = submissions.create_submission(session, "armor_set", "Wire Armour", files, tiers=tiers,
         tier_aliases={"mage_iron": "Mage", "light_iron": "Light"},

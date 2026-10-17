@@ -32,7 +32,7 @@ def race(gate, first, second, kinds):
 
 def seed_creates():
     for cid in ("b", "a"):
-        testing.execute("INSERT INTO character_creates (id, player_uuid, payload, status, created_at) "
+        testing.execute("INSERT INTO character_creation_requests (id, player_uuid, payload, status, created_at) "
                         "VALUES (%s, 'owner', '{}', 'pending', now())", (cid,))
 
 
@@ -40,7 +40,7 @@ def seed_creates():
 def test_reversed_create_ack_batches_lock_all_ids_before_processing(monkeypatch, ok):
     seed_creates()
     batch = [{"id": cid, "ok": ok, "character_id": cid, "error": "refused"} for cid in ("b", "a", "b")]
-    gate = Gate(monkeypatch, "UPDATE character_creates")
+    gate = Gate(monkeypatch, "UPDATE character_creation_requests")
     one, two = race(gate, lambda: creates.mark_applied_results(batch),
                     lambda: creates.mark_applied_results(batch[:2][::-1] + batch[2:]), ROW)
     assert one.error is None and two.error is None
@@ -51,7 +51,7 @@ def test_reversed_create_ack_batches_lock_all_ids_before_processing(monkeypatch,
 
 
 def test_create_ack_does_not_reach_an_id_inserted_after_lock_selection(monkeypatch):
-    gate = Gate(monkeypatch, "SELECT id FROM character_creates WHERE id = ANY")
+    gate = Gate(monkeypatch, "SELECT id FROM character_creation_requests WHERE id = ANY")
     run = Run(lambda: creates.mark_applied_results([{"id": "a", "ok": False}]))
     try:
         assert gate.reached.wait(10), run.error
@@ -61,13 +61,13 @@ def test_create_ack_does_not_reach_an_id_inserted_after_lock_selection(monkeypat
         run.join()
     assert run.error is None
     assert run.value == {"ok": True, "applied": [], "rejected": []}
-    assert testing.value("SELECT status FROM character_creates WHERE id = 'a'") == "pending"
+    assert testing.value("SELECT status FROM character_creation_requests WHERE id = 'a'") == "pending"
 
 
 def seed_lore(owner, cid, key, *, submission=None, state="ready"):
     testing.execute(
         "INSERT INTO lore_item_customisations "
-        "(player_uuid, character_id, kit_key, display_name, lore_json, state, submission_id, kit_id, updated_at) "
+        "(player_uuid, character_id, kit_key, display_name, lore, state, submission_id, kit_id, updated_at) "
         "VALUES (%s, %s, %s, 'Sword', '[]', %s, %s, 'starter', now())",
         (owner, cid, key, state, submission),
     )
@@ -157,14 +157,14 @@ def test_real_create_retry_precedes_state_dependent_validation(postgres, monkeyp
     monkeypatch.setattr(database.connection, "POOL_TIMEOUT_SECONDS", .25)
     database.open_pool(postgres, min_size=0, max_size=1)
     creates.create_character("owner", body)
-    testing.execute("UPDATE character_creates SET status = %s", (status,))
-    original = testing.rows("SELECT * FROM character_creates")[0]
+    testing.execute("UPDATE character_creation_requests SET status = %s", (status,))
+    original = testing.rows("SELECT * FROM character_creation_requests")[0]
     set_real_age("owner", False)
     # Changing catalogue/roster state must not alter the stored response.
     replace_roster("owner", [{"id": "live", "name": "Aldric", "status": "ALIVE"}])
     retried = creates.create_character("owner", body)
     assert retried == creates._row_to_dict(original)
-    assert testing.value("SELECT count(*) FROM character_creates") == 1
+    assert testing.value("SELECT count(*) FROM character_creation_requests") == 1
     assert testing.value("SELECT is_adult FROM character_account_meta") is False
 
 
@@ -189,7 +189,7 @@ def test_create_retry_catches_a_first_request_committing_during_validation(monke
         release.set()
         retry.join()
     assert retry.error is None and retry.value == first
-    assert testing.value("SELECT count(*) FROM character_creates") == 1
+    assert testing.value("SELECT count(*) FROM character_creation_requests") == 1
 
 
 def test_create_request_lookup_keeps_owner_and_input_guards():
@@ -363,7 +363,7 @@ def test_lore_remount_preserves_source_fields_and_transaction(fail):
     seed_lore("owner", "live", "sword")
     testing.execute("UPDATE lore_item_customisations SET realm_id = 'dev', kit_id = 'custom', "
                     "name_colours = '[\"#123456\"]', name_styles = '[\"bold\"]', "
-                    "lore_json = '[\"A blade.\"]', existing_skin_id = 'old', skin_slug = 'skin', "
+                    "lore = '[\"A blade.\"]', existing_skin_id = 'old', skin_slug = 'skin', "
                     "deny_reason = 'refused', ready_at = now(), applied_at = now() "
                     "WHERE character_id = 'pending'")
     before = testing.rows("SELECT * FROM lore_item_customisations ORDER BY character_id")

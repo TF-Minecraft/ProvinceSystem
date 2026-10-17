@@ -73,7 +73,7 @@ class _CodesDb(unittest.TestCase):
         with database.connect() as conn:
             return conn.execute(
                 """
-                INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
+                INSERT INTO login_codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
                                    created_at, expires_at, revoked, minted_via)
                 VALUES (%s, 'ABCD-EFGH-IJKL', %s, %s, %s, %s, %s, false, %s)
                 RETURNING id
@@ -85,7 +85,7 @@ class _CodesDb(unittest.TestCase):
     def consume(self, code_id: int) -> None:
         testing.execute(
             """
-            INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name,
+            INSERT INTO skin_submissions (id, player_uuid, code_id, kind, slug, display_name,
                                      status, dir_path, created_at)
             VALUES (%s, %s, %s, 'handheld', 'x', 'X', 'pending', 'x', '2026-01-01T00:00:00Z')
             """,
@@ -101,7 +101,7 @@ class SiteStartTest(_CodesDb):
         session = self.codes.get_session(out["session_token"])
         assert session is not None
         self.assertEqual(session["scope"], "skin")
-        [row] = testing.rows("SELECT * FROM codes WHERE id = %s", (out["code_id"],))
+        [row] = testing.rows("SELECT * FROM login_codes WHERE id = %s", (out["code_id"],))
         self.assertEqual(row["minted_via"], "site")
         self.assertIsNone(row["code_plaintext"])
 
@@ -151,7 +151,7 @@ class SiteStartTest(_CodesDb):
         created = datetime.now(timezone.utc) - timedelta(hours=49)
         code_id = self.add_code("drink", created, via="site", expires=created + timedelta(hours=48))
         testing.execute(
-            "INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
+            "INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
             "VALUES ('h', %s, %s, %s, %s)",
             (code_id, PLAYER, _iso(datetime.now(timezone.utc) + timedelta(hours=6)), _iso(created)),
         )
@@ -203,7 +203,7 @@ class SiteStartTest(_CodesDb):
                 with self.assertRaises(self.codes.SiteStartRefused) as caught:
                     self.codes.start_site_session(PLAYER, "main", "skin")
                 self.assertEqual(caught.exception.reason, reason)
-        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 0)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM login_codes"), 0)
 
     def test_only_skins_and_drinks_can_be_started(self) -> None:
         with self.assertRaises(self.codes.CodeError):
@@ -218,7 +218,7 @@ class SignInCodeTest(_CodesDb):
         with database.connect() as conn:
             return conn.execute(
                 """
-                INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
+                INSERT INTO login_codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
                                    created_at, expires_at, revoked)
                 VALUES (%s, %s, %s, %s, 'main', %s, %s, false)
                 RETURNING id
@@ -256,7 +256,7 @@ class SignInCodeTest(_CodesDb):
         before = self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"]
         self.codes.redeem_sign_in_code("SKIN-0003")
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], before)
-        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 1)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM login_codes"), 1)
 
     def test_a_code_session_closes_once_its_code_is_used_or_revoked(self) -> None:
         code_id = self.mint("skin", "SKIN-0004")
@@ -270,7 +270,7 @@ class SignInCodeTest(_CodesDb):
         drink = self.codes.get_session(self.codes.redeem_sign_in_code("DRNK-0004")["session_token"])
         assert drink is not None
         self.assertTrue(self.codes.code_session_open(drink))
-        testing.execute("UPDATE codes SET revoked = true WHERE id = %s", (drink_id,))
+        testing.execute("UPDATE login_codes SET revoked = true WHERE id = %s", (drink_id,))
         self.assertFalse(self.codes.code_session_open(drink))
 
 

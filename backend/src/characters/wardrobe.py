@@ -408,7 +408,7 @@ def _load_pending_slots(create_id: str) -> dict[str, dict[str, Any]]:
             """
             SELECT slot, png_relpath, texture_value, texture_signature,
                    model, display_name, updated_at
-            FROM character_create_wardrobe
+            FROM character_creation_wardrobe
             WHERE create_id = %s
             """,
             (create_id,),
@@ -431,7 +431,7 @@ def _upsert_pending_slot(
     with database.connect() as conn:
         existing = conn.execute(
             """
-            SELECT png_relpath, display_name FROM character_create_wardrobe
+            SELECT png_relpath, display_name FROM character_creation_wardrobe
             WHERE create_id = %s AND slot = %s
             """,
             (create_id, slot_key),
@@ -446,7 +446,7 @@ def _upsert_pending_slot(
         assets.write_png(out, png_bytes)
         conn.execute(
             """
-            INSERT INTO character_create_wardrobe (
+            INSERT INTO character_creation_wardrobe (
                 create_id, slot, png_relpath,
                 texture_value, texture_signature, model,
                 display_name, updated_at
@@ -573,7 +573,7 @@ def _compact_pending_swappable(create_id: str) -> None:
                 _delete_png(row.get("png_relpath"))
                 conn.execute(
                     """
-                    DELETE FROM character_create_wardrobe
+                    DELETE FROM character_creation_wardrobe
                     WHERE create_id = %s AND slot = %s
                     """,
                     (create_id, key),
@@ -807,7 +807,7 @@ def _get_pending_active(create_id: str) -> str | None:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT wardrobe_active_slot FROM character_creates WHERE id = %s
+            SELECT wardrobe_active_slot FROM character_creation_requests WHERE id = %s
             """,
             (create_id,),
         ).fetchone()
@@ -826,7 +826,7 @@ def _set_pending_active(create_id: str, active: str | None) -> None:
     with database.connect() as conn:
         conn.execute(
             """
-            UPDATE character_creates
+            UPDATE character_creation_requests
             SET wardrobe_active_slot = %s
             WHERE id = %s
             """,
@@ -876,7 +876,7 @@ def enforce_pending_wardrobe_slot_limits(
             _delete_png(row.get("png_relpath"))
             conn.execute(
                 """
-                DELETE FROM character_create_wardrobe
+                DELETE FROM character_creation_wardrobe
                 WHERE create_id = %s AND slot = %s
                 """,
                 (cid, slot),
@@ -1214,7 +1214,7 @@ def set_slot_display_name(
         with database.connect() as conn:
             conn.execute(
                 """
-                UPDATE character_create_wardrobe
+                UPDATE character_creation_wardrobe
                 SET display_name = %s, updated_at = %s
                 WHERE create_id = %s AND slot = %s
                 """,
@@ -1295,7 +1295,7 @@ def clear_slot(
                 _delete_png(row.get("png_relpath"))
                 conn.execute(
                     """
-                    DELETE FROM character_create_wardrobe
+                    DELETE FROM character_creation_wardrobe
                     WHERE create_id = %s AND slot = %s
                     """,
                     (cid, slot_key),
@@ -1624,7 +1624,7 @@ def _require_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         row = conn.execute(
             """
             SELECT id, player_uuid, status, character_id, realm_id
-            FROM character_creates
+            FROM character_creation_requests
             WHERE id = %s AND player_uuid = %s
             """,
             (cid, uuid),
@@ -1756,7 +1756,7 @@ def clear_pending_create_wardrobe(
     with assets.asset_transaction() as conn:
         row = conn.execute(
             """
-            SELECT png_relpath FROM character_create_wardrobe
+            SELECT png_relpath FROM character_creation_wardrobe
             WHERE create_id = %s AND slot = %s
             """,
             (cid, slot_key),
@@ -1765,7 +1765,7 @@ def clear_pending_create_wardrobe(
             _delete_png(row["png_relpath"])
             conn.execute(
                 """
-                DELETE FROM character_create_wardrobe
+                DELETE FROM character_creation_wardrobe
                 WHERE create_id = %s AND slot = %s
                 """,
                 (cid, slot_key),
@@ -1785,7 +1785,7 @@ def delete_all_pending_create_wardrobe(create_id: str) -> int:
     with assets.asset_transaction() as conn:
         rows = conn.execute(
             """
-            SELECT png_relpath FROM character_create_wardrobe
+            SELECT png_relpath FROM character_creation_wardrobe
             WHERE create_id = %s
             """,
             (cid,),
@@ -1794,7 +1794,7 @@ def delete_all_pending_create_wardrobe(create_id: str) -> int:
             _delete_png(row["png_relpath"])
             deleted += 1
         conn.execute(
-            "DELETE FROM character_create_wardrobe WHERE create_id = %s",
+            "DELETE FROM character_creation_wardrobe WHERE create_id = %s",
             (cid,),
         )
     return deleted
@@ -1814,7 +1814,7 @@ def flush_pending_wardrobe(
     with assets.asset_transaction() as conn:
         create_row = conn.execute(
             """
-            SELECT wardrobe_active_slot FROM character_creates WHERE id = %s
+            SELECT wardrobe_active_slot FROM character_creation_requests WHERE id = %s
             """,
             (create_key,),
         ).fetchone()
@@ -1829,7 +1829,7 @@ def flush_pending_wardrobe(
             """
             SELECT slot, png_relpath, texture_value, texture_signature,
                    model, display_name
-            FROM character_create_wardrobe
+            FROM character_creation_wardrobe
             WHERE create_id = %s
             """,
             (create_key,),
@@ -1877,7 +1877,7 @@ def flush_pending_wardrobe(
             _delete_png(row["png_relpath"])
             flushed += 1
         conn.execute(
-            "DELETE FROM character_create_wardrobe WHERE create_id = %s",
+            "DELETE FROM character_creation_wardrobe WHERE create_id = %s",
             (create_key,),
         )
         active_to_set: str | None = None

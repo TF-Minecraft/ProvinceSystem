@@ -2,8 +2,8 @@
 
 Columns are timestamptz and read back as aware datetimes. Every time the area
 sends to the website or a plugin keeps the `YYYY-MM-DDTHH:MM:SSZ` form the site
-has always sent. `character_roster.created_at` is RPCharacters' own text and
-never passes through here.
+has always sent, except `character_roster.created_at`, which goes back out as
+the epoch-seconds text RPCharacters sends (roster.py).
 """
 
 from __future__ import annotations

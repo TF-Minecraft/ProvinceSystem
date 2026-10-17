@@ -294,8 +294,8 @@ def test_preview_sign_in_refuses_a_view(app, env, monkeypatch):
 
 
 def test_profile_tag_only_inside_a_view():
-    assert view_as.profile_minted_via({"acting_user_id": None, "session_id": 4}) is None
-    assert view_as.profile_minted_via({"acting_user_id": 2, "session_id": 4}) == "staff_view:4"
+    assert view_as.profile_view_session({"acting_user_id": None, "session_id": 4}) is None
+    assert view_as.profile_view_session({"acting_user_id": 2, "session_id": 4}) == 4
 
 
 def _expire_views(db):
@@ -303,8 +303,8 @@ def _expire_views(db):
 
 
 def _view_profiles(db):
-    return testing.value("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
-                         "WHERE c.minted_via LIKE %s", ("staff_view:%",))
+    return testing.value("SELECT COUNT(*) FROM code_sessions s JOIN login_codes c ON c.id = s.code_id "
+                         "WHERE c.view_session_id IS NOT NULL")
 
 
 def test_a_view_whose_cookie_the_browser_dropped_is_still_ended_and_audited(app, env):
@@ -318,7 +318,7 @@ def test_a_view_whose_cookie_the_browser_dropped_is_still_ended_and_audited(app,
     assert res.json() == {"restored": True, "return_to": f"/admin/players/{UUID}"}
     assert cookie(c, SESSION) == admin_token
     stopped = audit_rows(env)[-1]
-    assert stopped["action"] == "account.view_as.stop" and stopped["detail_json"]["expired"] is True
+    assert stopped["action"] == "account.view_as.stop" and stopped["detail"]["expired"] is True
     assert _view_profiles(env) == 0
     assert testing.value("SELECT COUNT(*) FROM user_sessions WHERE acting_user_id IS NOT NULL") == 0
 
@@ -372,10 +372,10 @@ def test_profile_is_not_opened_for_a_view_that_ended_mid_request(app, env):
     view = users.session_user(cookie(c, SESSION))
     testing.execute("DELETE FROM user_sessions WHERE id = %s", (view["session_id"],))
     with pytest.raises(codes.CodeError, match="session_ended"):
-        codes.start_linked_profile_session(UUID, minted_via=view_as.profile_minted_via(view),
+        codes.start_linked_profile_session(UUID, view_session_id=view_as.profile_view_session(view),
                                            expires_at=view["expires_at"],
                                            still_allowed=view_as.view_still_open(view["session_id"]))
-    assert testing.value("SELECT COUNT(*) FROM codes WHERE minted_via LIKE %s", ("staff_view:%",)) == 0
+    assert testing.value("SELECT COUNT(*) FROM login_codes WHERE view_session_id IS NOT NULL") == 0
 
 
 def test_signing_out_after_the_view_cookie_lapsed_still_ends_the_view(app, env):
@@ -400,7 +400,7 @@ def test_starting_a_view_from_inside_one_is_refused_and_audited(app, env):
     assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player")
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"], row["actor_name"]) == ("account.view_as.start", "conflict", "boss")
-    assert row["detail_json"]["player_uuid"] == other_uuid
+    assert row["detail"]["player_uuid"] == other_uuid
 
 
 def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
@@ -415,7 +415,7 @@ def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
     assert c.post("/characters/anything", headers=ORIGIN).json()["detail"] == "viewing_as_player"
     started = audit_rows(env)[-1]
     assert (started["action"], started["target_name"]) == ("account.view_as.start", "steve")
-    assert started["detail_json"]["placeholder"] is True
+    assert started["detail"]["placeholder"] is True
 
     # Staff still see them as having no site account.
     assert placeholders(env) == 1

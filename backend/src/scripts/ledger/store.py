@@ -94,7 +94,6 @@ _REGISTRY_COLUMNS: tuple[str, ...] = (
 _DAY_COLUMNS: tuple[str, ...] = (
     "day",
     "captured_at",
-    "captured_at_ts",
     "server_day",
     "day_progress_seconds",
     "complete",
@@ -267,13 +266,12 @@ def upsert_day(map_id: str, snapshot: dict, *, conn=None) -> None:
         conn.execute(
             """
             INSERT INTO map_ledger_days
-                (map_id, day, captured_at, captured_at_ts, server_day,
+                (map_id, day, captured_at, server_day,
                  day_progress_seconds, complete, schema_version,
                  faction_count, guild_count, globals)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (map_id, day) DO UPDATE SET
                 captured_at = excluded.captured_at,
-                captured_at_ts = excluded.captured_at_ts,
                 server_day = excluded.server_day,
                 day_progress_seconds = excluded.day_progress_seconds,
                 complete = excluded.complete,
@@ -287,7 +285,6 @@ def upsert_day(map_id: str, snapshot: dict, *, conn=None) -> None:
                 day,
                 # timestamptz keeps microseconds; Java's nanoseconds round.
                 snapshot["captured_at"],
-                int(snapshot["captured_at_ts"]),
                 snapshot.get("server_day"),
                 snapshot.get("day_progress_seconds"),
                 bool(snapshot.get("complete")),
@@ -485,7 +482,10 @@ def delete_day(map_id: str, day: str) -> None:
 
 def _day_dict(row) -> dict:
     out = {column: row[column] for column in _DAY_COLUMNS}
-    out["captured_at"] = _iso(out["captured_at"])
+    captured = out.pop("captured_at")
+    # The epoch form comes from captured_at; the key order is the one clients have always had.
+    out = {"day": out.pop("day"), "captured_at": _iso(captured),
+           "captured_at_ts": int(captured.timestamp()), **out}
     out["complete"] = bool(out["complete"])
     return out
 

@@ -49,7 +49,7 @@ def _free_archived_at(conn, map_name: str, archived_at: int) -> int:
     same second would make the archive upsert overwrite the first run's rows.
     """
     while conn.execute(
-        f"SELECT 1 FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = %s LIMIT 1",
+        f"SELECT 1 FROM {_ARCHIVE_TABLE} WHERE map_id = %s AND archived_at = to_timestamp(%s) LIMIT 1",
         (map_name, archived_at),
     ).fetchone():
         archived_at += 1
@@ -69,7 +69,7 @@ def _archive_rows(map_name: str, archived_at: int) -> int:
     with database.connect() as conn:
         return conn.execute(
             f"INSERT INTO {_ARCHIVE_TABLE} ({columns}, archived_at) "
-            f"SELECT {columns}, %s FROM {_LIVE_TABLE} WHERE map_id = %s "
+            f"SELECT {columns}, to_timestamp(%s) FROM {_LIVE_TABLE} WHERE map_id = %s "
             f"ON CONFLICT (map_id, day, archived_at) DO UPDATE SET {updates}",
             (archived_at, map_name),
         ).rowcount

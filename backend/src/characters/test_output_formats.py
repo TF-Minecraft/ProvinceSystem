@@ -33,7 +33,7 @@ def db(tmp_path, monkeypatch, postgres):
     db_mod.ensure_directories()
 
 
-def test_roster_keeps_created_at_text_and_sends_times_in_the_api_form():
+def test_roster_sends_created_at_as_epoch_text_and_times_in_the_api_form():
     sheet = {"race_name": "High Elf", "class_name": "Ranger", "age": "34", "gender": "Female",
              "description": "Quiet.", "background": "Woods.", "attributes": {"strength": 3, "dex": 2},
              "traits": [{"id": "patient", "name": "Patient"}], "clues": ["A red banner."]}
@@ -44,7 +44,7 @@ def test_roster_keeps_created_at_text_and_sends_times_in_the_api_form():
     ])
     ana, bram = list_roster(OWNER)
     assert ana["created_at"] == "1760356800"
-    assert testing.value("SELECT pg_typeof(created_at)::text FROM character_roster LIMIT 1") == "text"
+    assert testing.value("SELECT pg_typeof(created_at)::text FROM character_roster LIMIT 1") == "timestamp with time zone"
     assert bram["died_at"] == "2025-10-13T12:00:00Z"
     assert all(re.fullmatch(API_TIME, c["updated_at"]) for c in (ana, bram))
     # Sheet fields follow the roster's own keys in the order RPCharacters pushed them.
@@ -103,7 +103,7 @@ def test_catalogue_round_trips_with_its_time_in_the_api_form():
 
 def test_lore_items_send_times_and_lists_as_before():
     testing.execute(
-        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore_json, "
+        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore, "
         "state, skin_slug, ready_at, updated_at, realm_id, name_colours) VALUES (%s, 'c-ana', 'sword', 'Edge', "
         "'[\"§7Old\"]', 'ready', 'my-sword', '2026-01-02T03:04:05Z', '2026-01-02T03:04:06Z', 'main', "
         "'[\"#ff0000\"]')", (OWNER,))
@@ -113,3 +113,9 @@ def test_lore_items_send_times_and_lists_as_before():
     (mine,) = lore_items.list_player_custom_items(OWNER)
     assert (mine["updated_at"], mine["ready_at"], mine["applied_at"]) == (
         "2026-01-02T03:04:06Z", "2026-01-02T03:04:05Z", None)
+
+
+@pytest.mark.parametrize("raw", ["1789836703000", "999999999999", "253402300800", "99999999999999999999", "²", "soon", "0"])
+def test_roster_push_with_an_unreadable_created_at_stores_no_time(raw):
+    replace_roster("owner", [{"id": "c-ana", "name": "Ana", "status": "ALIVE", "created_at": raw}])
+    assert testing.value("SELECT created_at FROM character_roster") is None

@@ -161,12 +161,12 @@ def test_a_retried_create_returns_the_create_being_made(monkeypatch):
     """Two creates with one client request id: the second waits on the unique index and returns the first."""
     monkeypatch.setattr(creates, "_validate_and_normalize",
                         lambda uuid, body, realm_id: {"name": "Aldric", "client_request_id": "req-1"})
-    gate = Gate(monkeypatch, "INSERT INTO character_creates")
+    gate = Gate(monkeypatch, "INSERT INTO character_creation_requests")
     make = lambda: creates.create_character(OWNER, {"name": "Aldric"})  # noqa: E731
     one, two = race(gate, make, make, ROW)
     assert one.error is None and two.error is None
     assert one.value["id"] == two.value["id"]
-    assert testing.value("SELECT COUNT(*) FROM character_creates") == 1
+    assert testing.value("SELECT COUNT(*) FROM character_creation_requests") == 1
 
 
 def test_a_roster_push_keeps_player_meta_another_push_is_writing():

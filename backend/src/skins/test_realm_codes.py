@@ -1,4 +1,4 @@
-"""Unit tests for codes.realm_id + character_creates stamp."""
+"""Unit tests for login_codes.realm_id + character_creation_requests stamp."""
 
 from __future__ import annotations
 

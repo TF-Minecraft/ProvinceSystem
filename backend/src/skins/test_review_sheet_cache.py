@@ -148,7 +148,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
         with database.connect() as conn:
             code_id = conn.execute(
                 """
-                INSERT INTO codes (
+                INSERT INTO login_codes (
                     code_hash, player_uuid, scope, realm_id, created_at, expires_at
                 ) VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
@@ -164,7 +164,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
             ).fetchone()["id"]
             conn.execute(
                 """
-                INSERT INTO submissions (
+                INSERT INTO skin_submissions (
                     id, player_uuid, code_id, kind, slug, display_name,
                     status, dir_path, created_at, discord_user_id, staff, realm_id,
                     base_set, tiers

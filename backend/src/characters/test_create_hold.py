@@ -75,7 +75,7 @@ class CreateHoldTests(unittest.TestCase):
         self.assertEqual(self._pending_names(), [])
         with connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET held_until = '2020-01-01T00:00:00Z' WHERE id = %s",
+                "UPDATE character_creation_requests SET held_until = '2020-01-01T00:00:00Z' WHERE id = %s",
                 (held,),
             )
         self.assertEqual(self._pending_names(), ["Abandoned"])
@@ -86,7 +86,7 @@ class CreateHoldTests(unittest.TestCase):
 
         held = self._create("Applied", hold=True)
         with connect() as conn:
-            conn.execute("UPDATE character_creates SET status = 'applied' WHERE id = %s", (held,))
+            conn.execute("UPDATE character_creation_requests SET status = 'applied' WHERE id = %s", (held,))
         with self.assertRaises(CreateError):
             release_create(PLAYER, held)
 

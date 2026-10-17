@@ -36,7 +36,7 @@ def test_0002_keeps_account_data_and_clears_spent_plaintext(scratch_database, mo
                      "created_at) VALUES ('s', 'a', 5, 'book', 'b', 'B', 'pending', 'd', now())")
         conn.execute("INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, recipe_json, status, "
                      "new_texture, dir_path, created_at) VALUES ('d', 'a', 6, 'w', 'W', '{}', 'pending', false, 'd', now())")
-    migrate.migrate(url)
+    _at("0002", url, monkeypatch)
     with psycopg.connect(url, row_factory=dict_row) as conn:
         accounts = conn.execute("SELECT * FROM character_account_meta ORDER BY player_uuid").fetchall()
         entitlements = conn.execute("SELECT skin_kinds, permission_flags FROM web_entitlements").fetchone()

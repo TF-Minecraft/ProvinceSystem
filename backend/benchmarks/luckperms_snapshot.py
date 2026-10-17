@@ -54,8 +54,8 @@ def _executemany(conn, groups, tracks, users) -> None:
                         [(g["name"], g["display_name"], g["weight"]) for g, _ in groups])
         cur.executemany("INSERT INTO lp_group_nodes (group_name, key, value, contexts, expiry) VALUES (%s, %s, %s, %s, %s)",
                         [mirror._node_row(g["name"], n) for g, owned in groups for n in owned])
-        cur.executemany("INSERT INTO lp_tracks (name, groups_json) VALUES (%s, %s) ON CONFLICT (name) DO UPDATE "
-                        "SET groups_json = excluded.groups_json", [(t["name"], json.dumps(t["groups"])) for t in tracks])
+        cur.executemany("INSERT INTO lp_tracks (name, group_names) VALUES (%s, %s) ON CONFLICT (name) DO UPDATE "
+                        "SET group_names = excluded.group_names", [(t["name"], json.dumps(t["groups"])) for t in tracks])
         cur.executemany("INSERT INTO lp_users (uuid, name) VALUES (%s, %s) ON CONFLICT (uuid) DO UPDATE SET name = excluded.name",
                         [(u["uuid"], u["name"]) for u, _ in users])
         cur.executemany("INSERT INTO lp_user_nodes (uuid, key, value, contexts, expiry) VALUES (%s, %s, %s, %s, %s)",

@@ -28,7 +28,7 @@ def execute(sql: str, params: tuple = ()) -> int:
 
 
 def audit_rows() -> list[dict]:
-    """The audit log, oldest first; detail_json is the parsed object."""
+    """The audit log, oldest first; detail is the parsed object."""
     return rows("SELECT * FROM admin_audit ORDER BY id")
 
 

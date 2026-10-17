@@ -104,12 +104,12 @@ def _code_is_consumed(conn, code_id: int, scope: str) -> bool:
         return row is not None
     if normalized in REDEEMABLE_SKIN_SCOPES:
         row = conn.execute(
-            "SELECT 1 FROM submissions WHERE code_id = %s LIMIT 1",
+            "SELECT 1 FROM skin_submissions WHERE code_id = %s LIMIT 1",
             (code_id,),
         ).fetchone()
         return row is not None
     row = conn.execute(
-        "SELECT redeemed_at FROM codes WHERE id = %s",
+        "SELECT redeemed_at FROM login_codes WHERE id = %s",
         (code_id,),
     ).fetchone()
     return row is not None and row["redeemed_at"] is not None
@@ -124,7 +124,7 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
     "used"), or None. Re-check expiry after acquiring the lock, even when the
     upload session itself is still live.
     """
-    row = conn.execute("SELECT revoked, expires_at FROM codes WHERE id = %s FOR UPDATE", (int(code_id),)).fetchone()
+    row = conn.execute("SELECT revoked, expires_at FROM login_codes WHERE id = %s FOR UPDATE", (int(code_id),)).fetchone()
     if row is None:
         return "missing"
     if row["revoked"]:
@@ -140,7 +140,7 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
 
 def mark_code_consumed(conn, code_id: int) -> None:
     """Spend the held code, rechecking expiry after the submission's other writes."""
-    row = conn.execute("UPDATE codes SET redeemed_at = %s, code_plaintext = NULL WHERE id = %s RETURNING expires_at",
+    row = conn.execute("UPDATE login_codes SET redeemed_at = %s, code_plaintext = NULL WHERE id = %s RETURNING expires_at",
                        (_utcnow(), int(code_id))).fetchone()
     require_code_unexpired(row["expires_at"])
 
@@ -165,7 +165,7 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT id FROM codes
+            SELECT id FROM login_codes
             WHERE LOWER(player_uuid) = LOWER(%s)
               AND LOWER(scope) = %s
             LIMIT 1
@@ -177,7 +177,7 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
         # Two first kit uploads make one code: the second waits on the first's insert and keeps it.
         row = conn.execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 code_hash, player_uuid, scope, realm_id,
                 created_at, expires_at, redeemed_at, revoked
             ) VALUES (%s, %s, %s, %s, %s, %s, NULL, false)
@@ -187,7 +187,7 @@ def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
             (identity_hash, uuid, SCOPE_LORE_UPLOAD, realm, now, now + timedelta(days=365 * 50)),
         ).fetchone()
         if row is None:
-            row = conn.execute("SELECT id FROM codes WHERE code_hash = %s", (identity_hash,)).fetchone()
+            row = conn.execute("SELECT id FROM login_codes WHERE code_hash = %s", (identity_hash,)).fetchone()
     if row is None:
         raise CodeError("failed to create lore upload code")
     return int(row["id"])
@@ -200,9 +200,9 @@ def _prepare_skin_drink_redeem(conn, code_id: int, expires_at: datetime) -> date
     callers must hold the code row FOR UPDATE and check consumption before
     resetting the session here. Always lock codes before their sessions.
     """
-    conn.execute("DELETE FROM sessions WHERE code_id = %s", (code_id,))
+    conn.execute("DELETE FROM code_sessions WHERE code_id = %s", (code_id,))
     conn.execute(
-        "UPDATE codes SET redeemed_at = NULL WHERE id = %s",
+        "UPDATE login_codes SET redeemed_at = NULL WHERE id = %s",
         (code_id,),
     )
     # Deleting an old bearer can wait even though the code is already held.
@@ -212,6 +212,8 @@ def _prepare_skin_drink_redeem(conn, code_id: int, expires_at: datetime) -> date
 
 # A code Profile started for a skin or drink, rather than one made with /token create.
 MINTED_VIA_SITE = "site"
+# A Profile code an admin's view-as opened; view_session_id names the view's user session.
+MINTED_VIA_STAFF_VIEW = "staff_view"
 
 # Codes that lapsed unused never started anything, so they don't hold the clock,
 # whether Profile or /token create made them. A session outlives its code by up to
@@ -220,8 +222,8 @@ MINTED_VIA_SITE = "site"
 _COUNTS_TOWARD_COOLDOWN = """
     NOT (
         c.expires_at <= %(now)s
-        AND NOT EXISTS (SELECT 1 FROM sessions se WHERE se.code_id = c.id AND se.expires_at > %(now)s)
-        AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.code_id = c.id)
+        AND NOT EXISTS (SELECT 1 FROM code_sessions se WHERE se.code_id = c.id AND se.expires_at > %(now)s)
+        AND NOT EXISTS (SELECT 1 FROM skin_submissions s WHERE s.code_id = c.id)
         AND NOT EXISTS (SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id)
     )
 """
@@ -241,7 +243,7 @@ def _last_cosmetic_mint(conn, uuid: str, now: datetime) -> datetime | None:
         row = conn.execute(
             f"""
             SELECT MAX(c.created_at) AS last_at
-            FROM codes c
+            FROM login_codes c
             WHERE LOWER(c.player_uuid) = LOWER(%(uuid)s)
               AND LOWER(c.scope) IN ('skin', 'drink')
               AND c.created_at > %(reset_at)s
@@ -253,7 +255,7 @@ def _last_cosmetic_mint(conn, uuid: str, now: datetime) -> datetime | None:
         row = conn.execute(
             f"""
             SELECT MAX(c.created_at) AS last_at
-            FROM codes c
+            FROM login_codes c
             WHERE LOWER(c.player_uuid) = LOWER(%(uuid)s)
               AND LOWER(c.scope) IN ('skin', 'drink')
               AND {_COUNTS_TOWARD_COOLDOWN}
@@ -326,7 +328,7 @@ def issue_code(
         expires_at = _iso(now + timedelta(hours=_code_ttl_hours()))
         conn.execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 code_hash, code_plaintext, player_uuid, scope, realm_id,
                 created_at, expires_at, redeemed_at, revoked
             )
@@ -364,7 +366,7 @@ def list_active_codes() -> list[dict]:
                 d.minecraft_name AS minecraft_name,
                 c.created_at AS created_at,
                 c.expires_at AS expires_at
-            FROM codes c
+            FROM login_codes c
             LEFT JOIN discord_links d ON d.player_uuid = c.player_uuid
             WHERE NOT c.revoked
               AND c.expires_at > %s
@@ -374,7 +376,7 @@ def list_active_codes() -> list[dict]:
                 (
                   LOWER(c.scope) IN ('skin', 'skin_staff')
                   AND NOT EXISTS (
-                    SELECT 1 FROM submissions s WHERE s.code_id = c.id
+                    SELECT 1 FROM skin_submissions s WHERE s.code_id = c.id
                   )
                 )
                 OR (
@@ -414,7 +416,7 @@ def revoke_code(plaintext: str) -> dict:
     with database.connect() as conn:
         # Locked so a submission consuming the code meanwhile is either seen here or refused.
         row = conn.execute(
-            "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
+            "SELECT * FROM login_codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
         now = _utcnow()
@@ -430,7 +432,7 @@ def revoke_code(plaintext: str) -> dict:
             raise CodeError("Code has expired")
 
         conn.execute(
-            "UPDATE codes SET revoked = true, code_plaintext = NULL WHERE id = %s",
+            "UPDATE login_codes SET revoked = true, code_plaintext = NULL WHERE id = %s",
             (row["id"],),
         )
         require_code_unexpired(row["expires_at"])
@@ -463,7 +465,7 @@ def inspect_code(plaintext: str) -> dict:
 
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM codes WHERE code_hash = %s",
+            "SELECT * FROM login_codes WHERE code_hash = %s",
             (code_hash,),
         ).fetchone()
 
@@ -551,7 +553,7 @@ def redeem_code(plaintext: str) -> dict:
     with database.connect() as conn:
         # Locked like a submission's: a code being consumed meanwhile is seen as used.
         row = conn.execute(
-            "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
+            "SELECT * FROM login_codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
         now = _utcnow()
@@ -577,7 +579,7 @@ def redeem_code(plaintext: str) -> dict:
 
         conn.execute(
             """
-            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (
@@ -631,12 +633,12 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
 
     with database.connect() as conn:
         # The expiry decision must be made after any code-row wait has finished.
-        conn.execute("SELECT id FROM codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
+        conn.execute("SELECT id FROM login_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
         now = _utcnow()
         # Spent by the update itself: of two redeems of one code, only one gets the row back.
         row = conn.execute(
             """
-            UPDATE codes SET redeemed_at = %s, code_plaintext = NULL
+            UPDATE login_codes SET redeemed_at = %s, code_plaintext = NULL
             WHERE code_hash = %s AND NOT revoked AND redeemed_at IS NULL AND expires_at >= %s
               AND LOWER(TRIM(scope)) = 'profile'
             RETURNING *
@@ -656,7 +658,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
 
         conn.execute(
             """
-            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (
@@ -682,7 +684,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
 
 def _refuse_profile_code(conn, code_hash: str, now: datetime) -> None:
     """Why a profile code could not be spent, checked in the order clients have always seen."""
-    row = conn.execute("SELECT * FROM codes WHERE code_hash = %s", (code_hash,)).fetchone()
+    row = conn.execute("SELECT * FROM login_codes WHERE code_hash = %s", (code_hash,)).fetchone()
     if row is None:
         raise CodeError("Invalid code")
     if row["revoked"]:
@@ -705,7 +707,7 @@ def redeem_sign_in_code(plaintext: str, remember_me: bool = False) -> dict:
         raise CodeError("code is required")
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT scope FROM codes WHERE code_hash = %s",
+            "SELECT scope FROM login_codes WHERE code_hash = %s",
             (hash_secret(code),),
         ).fetchone()
     scope = str(row["scope"]).strip().lower() if row is not None else ""
@@ -722,7 +724,7 @@ def code_session_open(session: dict) -> bool:
     """True while a skin or drink code session can still submit: its code is unused and not revoked."""
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT revoked FROM codes WHERE id = %s",
+            "SELECT revoked FROM login_codes WHERE id = %s",
             (session["code_id"],),
         ).fetchone()
         if row is None or row["revoked"]:
@@ -741,7 +743,7 @@ def site_profile_realm() -> str:
 def start_linked_profile_session(
     player_uuid: str,
     *,
-    minted_via: str | None = None,
+    view_session_id: int | None = None,
     expires_at: str | None = None,
     still_allowed=None,
 ) -> dict:
@@ -749,8 +751,8 @@ def start_linked_profile_session(
 
     Sessions belong to a code, so this records a profile code that is spent at once and
     has no plaintext. The caller has already checked the Discord sign-in and the link.
-    An admin viewing as the player passes their view's tag and end, and a check
-    that the view still exists, made inside the write (src/auth/view_as.py).
+    An admin viewing as the player passes their view's session id and end, and a
+    check that the view still exists, made inside the write (src/auth/view_as.py).
     """
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -766,18 +768,18 @@ def start_linked_profile_session(
             raise CodeError("session_ended")
         code_id = conn.execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 code_hash, code_plaintext, player_uuid, scope, realm_id,
-                created_at, expires_at, redeemed_at, revoked, minted_via
-            ) VALUES (%s, NULL, %s, 'profile', %s, %s, %s, %s, false, %s)
+                created_at, expires_at, redeemed_at, revoked, minted_via, view_session_id
+            ) VALUES (%s, NULL, %s, 'profile', %s, %s, %s, %s, false, %s, %s)
             RETURNING id
             """,
             (hash_secret(f"discord-profile:{secrets.token_urlsafe(32)}"), uuid, realm,
-             now, now, now, minted_via),
+             now, now, now, None if view_session_id is None else MINTED_VIA_STAFF_VIEW, view_session_id),
         ).fetchone()["id"]
         conn.execute(
             """
-            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (hash_secret(session_token), code_id, uuid, as_time(session_expires_at), now),
@@ -804,7 +806,7 @@ def redeem_drink_code(plaintext: str) -> dict:
     code_hash = hash_secret(code)
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM codes WHERE code_hash = %s FOR UPDATE",
+            "SELECT * FROM login_codes WHERE code_hash = %s FOR UPDATE",
             (code_hash,),
         ).fetchone()
         now = _utcnow()
@@ -832,7 +834,7 @@ def redeem_drink_code(plaintext: str) -> dict:
 
         conn.execute(
             """
-            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (
@@ -884,10 +886,10 @@ class SiteStartRefused(CodeError):
 
 def _open_code(conn, uuid: str, realm: str, scope: str, now: datetime):
     """Newest unused, unexpired code of this scope, from Profile or /token create."""
-    consumed_by = "drink_submissions" if scope == "drink" else "submissions"
+    consumed_by = "drink_submissions" if scope == "drink" else "skin_submissions"
     return conn.execute(
         f"""
-        SELECT * FROM codes c
+        SELECT * FROM login_codes c
         WHERE LOWER(c.player_uuid) = LOWER(%s)
           AND LOWER(c.scope) = %s
           AND c.realm_id = %s
@@ -977,7 +979,7 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
         if row is not None:
             # Match every redemption path: code first, then sessions. Selection
             # was only a hint; revalidate after waiting, using a fresh snapshot.
-            row = conn.execute("SELECT * FROM codes WHERE id = %s FOR UPDATE", (row["id"],)).fetchone()
+            row = conn.execute("SELECT * FROM login_codes WHERE id = %s FOR UPDATE", (row["id"],)).fetchone()
             now = _utcnow()
             if (row is None or row["revoked"] or row["expires_at"] <= now
                     or _code_is_consumed(conn, row["id"], scope)):
@@ -989,7 +991,7 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
                 raise SiteStartRefused("cooldown", until)
             row = conn.execute(
                 """
-                INSERT INTO codes (
+                INSERT INTO login_codes (
                     code_hash, code_plaintext, player_uuid, scope, realm_id,
                     created_at, expires_at, redeemed_at, revoked, minted_via
                 ) VALUES (%s, NULL, %s, %s, %s, %s, %s, NULL, false, %s)
@@ -1011,7 +1013,7 @@ def start_site_session(player_uuid: str, realm_id: str | None, scope: str) -> di
                 session_expires_at = _iso(now + timedelta(hours=SESSION_TTL_HOURS))
                 conn.execute(
                     """
-                    INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+                    INSERT INTO code_sessions (token_hash, code_id, player_uuid, expires_at, created_at)
                     VALUES (%s, %s, %s, %s, %s)
                     """,
                     (hash_secret(session_token), row["id"], row["player_uuid"],
@@ -1036,7 +1038,7 @@ def revoke_session(token: str) -> dict:
 
     with database.connect() as conn:
         cur = conn.execute(
-            "DELETE FROM sessions WHERE token_hash = %s",
+            "DELETE FROM code_sessions WHERE token_hash = %s",
             (hash_secret(raw),),
         )
         deleted = cur.rowcount > 0
@@ -1062,8 +1064,8 @@ def get_session(token: str) -> dict | None:
                 s.created_at AS created_at,
                 c.scope AS scope,
                 c.realm_id AS realm_id
-            FROM sessions s
-            JOIN codes c ON c.id = s.code_id
+            FROM code_sessions s
+            JOIN login_codes c ON c.id = s.code_id
             WHERE s.token_hash = %s
             """,
             (hash_secret(raw),),

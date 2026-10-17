@@ -370,7 +370,7 @@ def main() -> None:
     with connect() as conn:
         conn.execute(
             """
-            INSERT INTO character_creates (
+            INSERT INTO character_creation_requests (
                 id, player_uuid, client_request_id, payload, status,
                 character_id, error, created_at, applied_at
             ) VALUES (%s, %s, %s, %s, 'pending', NULL, NULL, %s, NULL)
@@ -610,7 +610,7 @@ def main() -> None:
 
     with connect() as conn:
         row = conn.execute(
-            "SELECT base_set, staff, status, kind FROM submissions WHERE id = %s",
+            "SELECT base_set, staff, status, kind FROM skin_submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
     if row is None:
@@ -632,7 +632,7 @@ def main() -> None:
     lore_code_id = ensure_lore_upload_code(player, "main")
     with connect() as conn:
         sub_row = conn.execute(
-            "SELECT code_id FROM submissions WHERE id = %s",
+            "SELECT code_id FROM skin_submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
     if sub_row is None:
@@ -686,12 +686,12 @@ def main() -> None:
         fail(f"deny response should include reason: {denied}")
     with connect() as conn:
         gone = conn.execute(
-            "SELECT 1 FROM submissions WHERE id = %s",
+            "SELECT 1 FROM skin_submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
         lore_denied = conn.execute(
             """
-            SELECT state, submission_id, display_name, lore_json,
+            SELECT state, submission_id, display_name, lore,
                    ready_at, existing_skin_id, skin_slug, deny_reason
             FROM lore_item_customisations
             WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
@@ -818,7 +818,7 @@ def main() -> None:
     now = "2026-01-01T00:00:00Z"
     with connect() as conn:
         code_row = conn.execute(
-            "SELECT id FROM codes WHERE player_uuid = %s ORDER BY id DESC LIMIT 1",
+            "SELECT id FROM login_codes WHERE player_uuid = %s ORDER BY id DESC LIMIT 1",
             (player,),
         ).fetchone()
         if code_row is None:
@@ -826,7 +826,7 @@ def main() -> None:
         code_id = int(code_row["id"])
         conn.execute(
             """
-            INSERT INTO submissions (
+            INSERT INTO skin_submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 base_set, status, dir_path, created_at, applied_at, staff
             ) VALUES (%s, %s, %s, 'handheld', %s, 'Applied Knife', 'knives',
@@ -878,7 +878,7 @@ def main() -> None:
         )
         conn.execute(
             """
-            UPDATE submissions
+            UPDATE skin_submissions
             SET status = 'approved', applied_at = NULL, reviewed_at = %s
             WHERE id = %s
             """,

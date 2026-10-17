@@ -68,7 +68,7 @@ def _kit_statuses_for_character(
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT kit_status, kit_statuses_json
+            SELECT kit_status, kit_statuses
             FROM character_roster
             WHERE player_uuid = %s AND character_id = %s
             """,
@@ -77,7 +77,7 @@ def _kit_statuses_for_character(
     if row is None:
         return None
     statuses: dict[str, str] = {}
-    parsed = row["kit_statuses_json"]
+    parsed = row["kit_statuses"]
     if isinstance(parsed, dict):
         for k, v in parsed.items():
             if k is None or v is None:
@@ -195,12 +195,12 @@ def remount_character_id(
                 """
                 INSERT INTO lore_item_customisations (
                     player_uuid, character_id, kit_key, kit_id, name_colours,
-                    name_styles, display_name, lore_json, existing_skin_id,
+                    name_styles, display_name, lore, existing_skin_id,
                     submission_id, state, skin_slug, ready_at, applied_at,
                     deny_reason, updated_at, realm_id
                 )
                 SELECT player_uuid, %s, kit_key, kit_id, name_colours,
-                       name_styles, display_name, lore_json, existing_skin_id,
+                       name_styles, display_name, lore, existing_skin_id,
                        submission_id, state, skin_slug, ready_at, applied_at,
                        deny_reason, %s, realm_id
                 FROM lore_item_customisations
@@ -257,7 +257,7 @@ def claim_status(
                    LOWER(COALESCE(lore.kit_key, '')) AS kit_key,
                    lore.submission_id, sub.status AS submission_status
             FROM lore_item_customisations lore
-            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            LEFT JOIN skin_submissions sub ON sub.id = lore.submission_id
             WHERE lore.player_uuid = %s AND lore.character_id = %s
             """,
             (uuid, cid),
@@ -542,7 +542,7 @@ def _load_row(
             SELECT lore.*, sub.status AS submission_status,
                    sub.deny_reason AS submission_deny_reason
             FROM lore_item_customisations lore
-            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            LEFT JOIN skin_submissions sub ON sub.id = lore.submission_id
             WHERE lore.player_uuid = %s AND lore.character_id = %s AND lore.kit_key = %s
             """,
             (player_uuid, character_id, kit_key),
@@ -567,7 +567,7 @@ def _load_row(
         submission_status = STATE_DENIED
     return {
         "display_name": str(row["display_name"] or ""),
-        "lore": _parse_lore_json(row["lore_json"]),
+        "lore": _parse_lore_json(row["lore"]),
         "existing_skin_id": row["existing_skin_id"],
         "submission_id": submission_id,
         "submission_status": submission_status,
@@ -677,7 +677,7 @@ def _assert_pickable_skin_access(
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
-            FROM submissions
+            FROM skin_submissions
             WHERE id = %s
             """,
             (sid,),
@@ -713,7 +713,7 @@ def _namespace_for_skin_id(skin_id: str | None) -> str | None:
         return None
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT staff FROM submissions WHERE id = %s",
+            "SELECT staff FROM skin_submissions WHERE id = %s",
             (sid,),
         ).fetchone()
     if row is None:
@@ -733,7 +733,7 @@ def _list_pickable_skins(
         rows = conn.execute(
             """
             SELECT id, display_name, kind, staff, category, player_uuid
-            FROM submissions
+            FROM skin_submissions
             WHERE LOWER(COALESCE(base_set, '')) = %s
               AND LOWER(status) = 'applied'
               AND (
@@ -778,7 +778,7 @@ def _validate_existing_skin(
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
-            FROM submissions
+            FROM skin_submissions
             WHERE id = %s
             """,
             (sid,),
@@ -1379,14 +1379,14 @@ def customise_lore_item(
             """
             INSERT INTO lore_item_customisations (
                 player_uuid, character_id, kit_key,
-                display_name, lore_json,
+                display_name, lore,
                 existing_skin_id, submission_id,
                 state, skin_slug, ready_at, applied_at, kit_id,
                 name_colours, name_styles, deny_reason, realm_id, updated_at
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s)
             ON CONFLICT (player_uuid, character_id, kit_key) DO UPDATE SET
                 display_name = excluded.display_name,
-                lore_json = excluded.lore_json,
+                lore = excluded.lore,
                 existing_skin_id = excluded.existing_skin_id,
                 submission_id = excluded.submission_id,
                 state = excluded.state,
@@ -1636,7 +1636,7 @@ def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]
             WHERE LOWER(COALESCE(state, '')) = %s
               AND realm_id = %s
               AND character_id NOT IN (
-                  SELECT id FROM character_creates
+                  SELECT id FROM character_creation_requests
                   WHERE LOWER(COALESCE(status, '')) = 'pending'
               )
             ORDER BY ready_at ASC, updated_at ASC
@@ -1661,7 +1661,7 @@ def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]
             "kit_key": kit_key,
             "path": _path_for_kit_key(kit_key),
             "display_name": str(row["display_name"] or ""),
-            "lore": _parse_lore_json(row["lore_json"]),
+            "lore": _parse_lore_json(row["lore"]),
             "skin_slug": slug,
             "ia_namespace": ns or "tfmc_submissions",
             "ia_path": _ia_path(slug, ns),

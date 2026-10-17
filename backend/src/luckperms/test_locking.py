@@ -103,7 +103,7 @@ def test_a_demotion_waits_for_a_change_and_its_audit_row(app, bridge, staff, mon
     assert queued.join().value.status_code == 200 and demotion.join().value == 1
     [row] = [r for r in testing.audit_rows() if r["action"] == "luckperms.change"]
     assert (row["actor_role"], row["outcome"]) == ("admin", "ok")
-    assert row["detail_json"]["change_id"] == testing.value("SELECT id FROM lp_changes")
+    assert row["detail"]["change_id"] == testing.value("SELECT id FROM lp_changes")
 
 
 # --------------------
@@ -298,7 +298,7 @@ def test_two_snapshot_rows_for_one_player_keep_the_last_name(bridge):
     assert testing.rows("SELECT uuid, name FROM lp_users") == [{"uuid": ALICE, "name": "New"}]
     assert sorted(r["key"] for r in testing.rows("SELECT key FROM lp_user_nodes")) == ["a.b", "c.d"]
     assert testing.rows("SELECT weight FROM lp_groups") == [{"weight": 5}]
-    assert testing.rows("SELECT groups_json FROM lp_tracks") == [{"groups_json": []}]
+    assert testing.rows("SELECT group_names FROM lp_tracks") == [{"group_names": []}]
 
 
 @pytest.mark.parametrize("operation", ["demotion", "revocation"])

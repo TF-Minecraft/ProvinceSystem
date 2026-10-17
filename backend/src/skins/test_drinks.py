@@ -320,7 +320,7 @@ class DrinkApiTest(unittest.TestCase):
         )
         tex_id = first["texture_id"]
         # Simulate pack applied CMD on texture
-        testing.execute("UPDATE drink_textures SET cmd = 20001 WHERE id = %s", (tex_id,))
+        testing.execute("UPDATE drink_textures SET custom_model_data = 20001 WHERE id = %s", (tex_id,))
 
         session2 = self._issue_and_redeem()
         second = create_drink_submission(
@@ -590,10 +590,10 @@ class DrinkApiTest(unittest.TestCase):
             },
         )
         # Strip color from stored recipe and leave no texture.png
-        [row] = testing.rows("SELECT recipe_json, dir_path FROM drink_submissions WHERE id = %s", (out["id"],))
-        recipe = row["recipe_json"]
+        [row] = testing.rows("SELECT recipe, dir_path FROM drink_submissions WHERE id = %s", (out["id"],))
+        recipe = row["recipe"]
         recipe.pop("color", None)
-        testing.execute("UPDATE drink_submissions SET recipe_json = %s WHERE id = %s", (json.dumps(recipe), out["id"]))
+        testing.execute("UPDATE drink_submissions SET recipe = %s WHERE id = %s", (json.dumps(recipe), out["id"]))
         tex = Path(row["dir_path"]) / "texture.png"
         if tex.is_file():
             tex.unlink()
@@ -771,7 +771,7 @@ class DrinkApiTest(unittest.TestCase):
         r1 = revoke_drink_submission(first["id"])
         self.assertTrue(r1["deleted"])
         self.assertFalse(r1["texture_freed"])
-        [tex] = testing.rows("SELECT refcount, cmd FROM drink_textures WHERE id = %s", (tex_id,))
+        [tex] = testing.rows("SELECT refcount, custom_model_data AS cmd FROM drink_textures WHERE id = %s", (tex_id,))
         self.assertIsNotNone(tex)
         self.assertEqual(int(tex["refcount"]), 1)
         self.assertEqual(int(tex["cmd"]), 20100)

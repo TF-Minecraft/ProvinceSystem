@@ -69,7 +69,7 @@ def _roster_row(
 
 
 def _race_name(row: dict[str, Any]) -> str | None:
-    sheet = row["sheet_json"]
+    sheet = row["sheet"]
     name = sheet.get("race_name") if isinstance(sheet, dict) else None
     return str(name) if name else row["race"]
 
@@ -329,7 +329,7 @@ def search_heirs(
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT character_id, name, race, sheet_json, player_uuid FROM character_roster
+            SELECT character_id, name, race, sheet, player_uuid FROM character_roster
             WHERE realm_id = %s AND UPPER(status) = 'ALIVE'
               AND LOWER(name) LIKE %s ESCAPE '\\'
               AND character_id != %s

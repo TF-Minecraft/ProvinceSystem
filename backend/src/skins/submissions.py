@@ -204,7 +204,7 @@ def _upload_source_for_code_id(code_id: int | None) -> str:
         return "skins"
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT scope FROM codes WHERE id = %s",
+            "SELECT scope FROM login_codes WHERE id = %s",
             (int(code_id),),
         ).fetchone()
     if row is None:
@@ -404,7 +404,7 @@ def find_duplicate_texture(
         if base:
             row = conn.execute(
                 """
-                SELECT id FROM submissions
+                SELECT id FROM skin_submissions
                 WHERE LOWER(player_uuid) = LOWER(%s)
                   AND LOWER(COALESCE(texture_hash, '')) = %s
                   AND LOWER(COALESCE(base_set, '')) = %s
@@ -417,7 +417,7 @@ def find_duplicate_texture(
         else:
             row = conn.execute(
                 """
-                SELECT id FROM submissions
+                SELECT id FROM skin_submissions
                 WHERE LOWER(player_uuid) = LOWER(%s)
                   AND LOWER(COALESCE(texture_hash, '')) = %s
                   AND status IN (%s, %s, %s)
@@ -438,7 +438,7 @@ def slug_taken(slug: str, realm_id: str | None = None) -> bool:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT 1 FROM submissions
+            SELECT 1 FROM skin_submissions
             WHERE id = %s AND realm_id = %s AND status IN (%s, %s, %s)
             LIMIT 1
             """,
@@ -470,7 +470,7 @@ def staff_skin_set_key_taken(
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT id, kind, tiers FROM submissions
+            SELECT id, kind, tiers FROM skin_submissions
             WHERE status IN (%s, %s, %s)
             """,
             ACTIVE_STATUSES,
@@ -516,7 +516,7 @@ def check_player_conflicts(
         rows = conn.execute(
             """
             SELECT id, slug, display_name, status, kind
-            FROM submissions
+            FROM skin_submissions
             WHERE player_uuid = %s AND status IN (%s, %s, %s)
             """,
             (uuid, *ACTIVE_STATUSES),
@@ -556,7 +556,7 @@ def _assert_no_active_submission_for_code(code_id: int) -> None:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT 1 FROM submissions
+            SELECT 1 FROM skin_submissions
             WHERE code_id = %s AND status IN (%s, %s)
             LIMIT 1
             """,
@@ -855,7 +855,7 @@ def create_submission(
     with database.connect() as conn:
         if source_norm != "lore":
             # The insert consumes the code: hold it and check again that nothing else has.
-            refused = lock_code_for_submission(conn, int(code_id), "submissions")
+            refused = lock_code_for_submission(conn, int(code_id), "skin_submissions")
             if refused == "revoked":
                 raise SubmissionError("Code has been revoked")
             if refused == "expired":
@@ -866,7 +866,7 @@ def create_submission(
             with conn.transaction():
                 conn.execute(
                     """
-                    INSERT INTO submissions (
+                    INSERT INTO skin_submissions (
                         id, player_uuid, code_id, kind, slug, display_name,
                         grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
                         add_name, name_colours, name_styles,
@@ -965,7 +965,7 @@ def create_submission(
 
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
 
@@ -976,13 +976,13 @@ def _rollback_submission(submission_id: str, *, pending_only: bool = False) -> b
     """Delete a submission and free its code; False when there was none (or it was not pending)."""
     with database.connect() as conn:
         row = conn.execute(
-            "DELETE FROM submissions WHERE id = %s AND (NOT %s OR status = 'pending') RETURNING code_id",
+            "DELETE FROM skin_submissions WHERE id = %s AND (NOT %s OR status = 'pending') RETURNING code_id",
             (submission_id, pending_only),
         ).fetchone()
         if row is None:
             return False
         conn.execute(
-            "UPDATE codes SET redeemed_at = NULL WHERE id = %s",
+            "UPDATE login_codes SET redeemed_at = NULL WHERE id = %s",
             (row["code_id"],),
         )
     out = SKINS_DIR / submission_id
@@ -1004,11 +1004,11 @@ def rollback_pending_submission_if_unreferenced(
     with database.connect() as conn:
         row = conn.execute(
             """
-            DELETE FROM submissions
+            DELETE FROM skin_submissions
             WHERE id = %s AND status = 'pending'
               AND (%s::text IS NULL OR LOWER(player_uuid) = LOWER(%s))
               AND NOT EXISTS (
-                  SELECT 1 FROM lore_item_customisations WHERE submission_id = submissions.id
+                  SELECT 1 FROM lore_item_customisations WHERE submission_id = skin_submissions.id
               )
             RETURNING code_id
             """,
@@ -1016,7 +1016,7 @@ def rollback_pending_submission_if_unreferenced(
         ).fetchone()
         if row is None:
             return False
-        conn.execute("UPDATE codes SET redeemed_at = NULL WHERE id = %s", (row["code_id"],))
+        conn.execute("UPDATE login_codes SET redeemed_at = NULL WHERE id = %s", (row["code_id"],))
     out = SKINS_DIR / sid
     if out.exists():
         shutil.rmtree(out, ignore_errors=True)
@@ -1048,7 +1048,7 @@ def get_submission_for_owner(
 ) -> dict | None:
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
     if row is None or row["player_uuid"] != player_uuid:
@@ -1071,7 +1071,7 @@ def list_submissions_for_player(
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT * FROM submissions
+            SELECT * FROM skin_submissions
             WHERE player_uuid = %s AND realm_id = %s
             ORDER BY created_at DESC
             LIMIT %s
@@ -1084,7 +1084,7 @@ def list_submissions_for_player(
 def _get_row(submission_id: str) -> dict | None:
     with database.connect() as conn:
         return conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
 
@@ -1119,7 +1119,7 @@ def approve_submission(submission_id: str) -> dict:
         # Approved only from pending, by the update itself, so it never revives a denied one.
         row = conn.execute(
             """
-            UPDATE submissions
+            UPDATE skin_submissions
             SET status = 'approved', reviewed_at = %s, deny_reason = NULL
             WHERE id = %s AND status = 'pending'
             RETURNING *
@@ -1173,7 +1173,7 @@ def list_pending() -> list[dict]:
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT * FROM submissions
+            SELECT * FROM skin_submissions
             WHERE status = 'pending'
             ORDER BY created_at ASC
             """
@@ -1234,7 +1234,7 @@ def list_approved_pending_apply(
 
     realm = normalize_realm_id(realm_id)
     sql = """
-        SELECT * FROM submissions
+        SELECT * FROM skin_submissions
         WHERE status = 'approved' AND applied_at IS NULL AND realm_id = %s
     """
     params: list = [realm]
@@ -1294,7 +1294,7 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
         return None
     with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = %s",
+            "SELECT * FROM skin_submissions WHERE id = %s",
             (sid,),
         ).fetchone()
     if row is None:
@@ -1340,7 +1340,7 @@ def list_deletable_submissions() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, slug, display_name, kind, status, created_at, staff
-            FROM submissions
+            FROM skin_submissions
             WHERE status IN (%s, %s, %s)
             ORDER BY created_at DESC
             """,
@@ -1365,7 +1365,7 @@ def list_deletable_staff_skins() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, slug, display_name, kind, status, created_at, staff, category
-            FROM submissions
+            FROM skin_submissions
             WHERE status IN (%s, %s, %s)
             ORDER BY created_at DESC
             """,
@@ -1396,7 +1396,7 @@ def revoke_submission(submission_id: str) -> dict:
     if not sid:
         raise SubmissionError("submission id is required")
     with database.connect() as conn:
-        row = conn.execute("DELETE FROM submissions WHERE id = %s RETURNING id", (sid,)).fetchone()
+        row = conn.execute("DELETE FROM skin_submissions WHERE id = %s RETURNING id", (sid,)).fetchone()
     if row is None:
         raise SubmissionError("Submission not found")
     out = SKINS_DIR / sid
@@ -1414,7 +1414,7 @@ def mark_applied(submission_ids: list[str]) -> list[str]:
         # Lock the whole batch in one order before the caller-ordered updates.
         if targets:
             conn.execute(
-                "SELECT id FROM submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                "SELECT id FROM skin_submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
                 (targets,),
             ).fetchall()
         for sid in submission_ids:
@@ -1423,7 +1423,7 @@ def mark_applied(submission_ids: list[str]) -> list[str]:
                 continue
             cur = conn.execute(
                 """
-                UPDATE submissions
+                UPDATE skin_submissions
                 SET status = 'applied', applied_at = %s
                 WHERE id = %s AND status = 'approved' AND applied_at IS NULL
                 """,

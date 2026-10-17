@@ -62,7 +62,7 @@ def role_of(db, user_id):
 
 
 def audit_rows(db=None):
-    """The audit log, oldest first; detail_json is the parsed object."""
+    """The audit log, oldest first; detail is the parsed object."""
     return testing.audit_rows()
 
 
@@ -115,7 +115,7 @@ def test_audit_rows_cannot_change(env):
         with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
             testing.execute(statement)
     [row] = audit_rows(env)
-    assert (row["action"], row["actor_name"], row["detail_json"]) == ("test", "operator", {"a": [2], "b": 1})
+    assert (row["action"], row["actor_name"], row["detail"]) == ("test", "operator", {"a": [2], "b": 1})
 
 
 # --------------------
@@ -177,7 +177,7 @@ def test_root_can_make_admins_and_target_is_signed_out(app, env):
     assert (row["action"], row["outcome"], row["actor_user_id"], row["actor_role"], row["target_user_id"]) == (
         "account.role.change", "ok", root_id, "root", pat_id)
     assert row["reason"] == "Promoted for events" and row["target_name"] == "pat"
-    assert row["detail_json"] == {"after": "admin", "before": "player", "sessions_revoked": 1}
+    assert row["detail"] == {"after": "admin", "before": "player", "sessions_revoked": 1}
 
 
 @pytest.mark.parametrize("actor_role,target_role,new_role,status,code", [
@@ -204,7 +204,7 @@ def test_role_change_rules(app, env, actor_role, target_role, new_role, status, 
     if code:
         assert response.json()["detail"] == code
         assert role_of(env, target_id) == target_role
-        assert (row["outcome"], row["detail_json"]["error"]) in {
+        assert (row["outcome"], row["detail"]["error"]) in {
             ("denied", code), ("conflict", code)}
         assert row["actor_role"] == actor_role
     else:
@@ -351,8 +351,8 @@ def test_malformed_writes_are_audited_without_values(app, env, body, fields):
     assert response.status_code == 422
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"], row["actor_role"]) == ("account.role.change", "invalid", "root")
-    assert row["detail_json"] == {"error": "invalid_request", "fields": fields, "target_user_id": pat_id}
-    assert "x" * 50 not in json.dumps(row["detail_json"]) and row["reason"] is None
+    assert row["detail"] == {"error": "invalid_request", "fields": fields, "target_user_id": pat_id}
+    assert "x" * 50 not in json.dumps(row["detail"]) and row["reason"] is None
 
 
 def test_malformed_writes_by_strangers_are_not_audited(app, env):
@@ -365,7 +365,7 @@ def test_non_numeric_target_is_audited_without_an_id(app, env):
     _, root = account(env, "rory", "root")
     assert client(app, root).post("/admin/accounts/abc/sessions/revoke", json={"reason": "abc"},
                                   headers=ORIGIN).status_code == 422
-    assert audit_rows(env)[-1]["detail_json"]["target_user_id"] is None
+    assert audit_rows(env)[-1]["detail"]["target_user_id"] is None
 
 
 def test_staff_writes_without_an_accounts_database_are_503_and_change_nothing(app, env, monkeypatch):

@@ -61,12 +61,12 @@ def test_preview_logins_are_confined_to_their_database(clone):
     owner = login(url, credentials, "DATABASE_URL")
     studio = login(url, credentials, "DATABASE_STUDIO_URL")
     with psycopg.connect(owner) as conn:
-        assert conn.execute("SELECT count(*) FROM public.codes").fetchone() == (0,)
-        assert conn.execute("SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.codes'::regclass").fetchone() == (credentials["owner"],)
+        assert conn.execute("SELECT count(*) FROM public.login_codes").fetchone() == (0,)
+        assert conn.execute("SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.login_codes'::regclass").fetchone() == (credentials["owner"],)
     with psycopg.connect(studio) as conn:
         assert conn.execute("SELECT count(*) FROM public.admin_audit").fetchone() == (0,)
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
-            conn.execute("TRUNCATE public.codes")
+            conn.execute("TRUNCATE public.login_codes")
     for connection in (owner, studio):
         with pytest.raises(psycopg.OperationalError, match="permission denied for database"):
             psycopg.connect(make_conninfo(connection, dbname=conninfo_to_dict(url)["dbname"]))
@@ -80,11 +80,11 @@ def test_scrub_preserves_content_and_foreign_keys_without_touching_source(clone)
     migrate(url, seed=False)
     target = make_conninfo(url, dbname=credentials["database"])
     fixture = """
-        INSERT INTO codes(id,code_hash,code_plaintext,player_uuid,created_at,expires_at)
+        INSERT INTO login_codes(id,code_hash,code_plaintext,player_uuid,created_at,expires_at)
           VALUES (9,'hash','secret','player',now(),now());
-        INSERT INTO sessions(token_hash,code_id,player_uuid,created_at,expires_at)
+        INSERT INTO code_sessions(token_hash,code_id,player_uuid,created_at,expires_at)
           VALUES ('token',9,'player',now(),now());
-        INSERT INTO submissions(id,player_uuid,code_id,kind,slug,display_name,status,dir_path,created_at)
+        INSERT INTO skin_submissions(id,player_uuid,code_id,kind,slug,display_name,status,dir_path,created_at)
           VALUES ('skin','player',9,'handheld','skin','Skin','applied','skins/skin',now());
         INSERT INTO discord_link_codes(code_hash,player_uuid,created_at,expires_at)
           VALUES ('link','player',now(),now());
@@ -92,7 +92,7 @@ def test_scrub_preserves_content_and_foreign_keys_without_touching_source(clone)
         INSERT INTO patreon_oauth_states(state_hash,discord_user_id,expires_at) VALUES ('state','discord',now());
         INSERT INTO patreon_pending_links(token_hash,patreon_user_id,patreon_name,discord_user_id,target_kind,target_name,expires_at)
           VALUES ('confirm','patron','Patron','discord','discord','Name',now());
-        INSERT INTO war_declare_codes(code_hash,attacker_faction_id,defender_faction_id,goal,created_at,expires_at)
+        INSERT INTO war_declaration_codes(code_hash,attacker_faction_id,defender_faction_id,goal,created_at,expires_at)
           VALUES ('war','a','b','goal',now(),now());
     """
     for connection in (url, target):
@@ -100,16 +100,16 @@ def test_scrub_preserves_content_and_foreign_keys_without_touching_source(clone)
             conn.execute(fixture)
     preview.scrub(url, slug)
     with psycopg.connect(target) as conn:
-        assert conn.execute("SELECT revoked, code_plaintext FROM codes").fetchone() == (True, None)
-        assert conn.execute("SELECT code_id FROM submissions").fetchone() == (9,)
-        assert conn.execute("SELECT revoked FROM war_declare_codes").fetchone() == (True,)
-        for table in ("sessions", "user_sessions", "discord_oauth_states", "discord_link_codes", "preview_sign_in_tickets",
+        assert conn.execute("SELECT revoked, code_plaintext FROM login_codes").fetchone() == (True, None)
+        assert conn.execute("SELECT code_id FROM skin_submissions").fetchone() == (9,)
+        assert conn.execute("SELECT revoked FROM war_declaration_codes").fetchone() == (True,)
+        for table in ("code_sessions", "user_sessions", "discord_oauth_states", "discord_link_codes", "preview_sign_in_tickets",
                       "microsoft_link_states", "patreon_tokens", "patreon_oauth_states", "patreon_pending_links"):
             assert conn.execute(sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(table))).fetchone() == (0,)
         assert conn.execute("SELECT count(*) FROM pg_tables WHERE schemaname='public' AND "
                             "(tablename LIKE 'precedent_%' OR tablename LIKE 'patchnote_%')").fetchone() == (0,)
     with psycopg.connect(url) as conn:
-        assert conn.execute("SELECT revoked,code_plaintext FROM codes").fetchone() == (False, "secret")
+        assert conn.execute("SELECT revoked,code_plaintext FROM login_codes").fetchone() == (False, "secret")
         assert conn.execute("SELECT access_token FROM patreon_tokens").fetchone() == ("creator-secret",)
 
 
@@ -139,6 +139,6 @@ def test_site_tables_are_dev_tables_without_precedent_patch_notes_or_history(scr
     with psycopg.connect(scratch_database) as conn:
         everything = {row[0] for row in conn.execute("SELECT tablename FROM pg_tables WHERE schemaname='public'")}
     tables = preview.site_tables(scratch_database)
-    assert tables == sorted(tables) and {"codes", "users", "admin_audit"} <= set(tables)
+    assert tables == sorted(tables) and {"login_codes", "users", "admin_audit"} <= set(tables)
     assert set(everything) - set(tables) == {"schema_migrations"} | {
         name for name in everything if name.startswith(("precedent_", "patchnote_"))}

@@ -11,17 +11,17 @@ from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
 
 logger = logging.getLogger("characters.realm_wipe")
 
-# Order matters: character_wardrobe_slots and character_create_wardrobe carry no
+# Order matters: character_wardrobe_slots and character_creation_wardrobe carry no
 # realm_id, so they are scoped through roster/creates and must go first.
 WIPE_TABLES = (
     "character_wardrobe_slots",
-    "character_create_wardrobe",
+    "character_creation_wardrobe",
     "lore_item_customisations",
     "character_roster",
-    "character_creates",
+    "character_creation_requests",
 )
 
-# Tagged cleanup keeps character_creates: those are donor submissions, not the
+# Tagged cleanup keeps character_creation_requests: those are donor submissions, not the
 # in-game characters the plugin just deleted.
 DELETE_TABLES = (
     "character_wardrobe_slots",
@@ -56,7 +56,7 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
         # All batch locks precede mutations: roster, creates, then lore. Creates
         # use the acknowledgement order, even when physical insertion differs.
         create_rows = conn.execute(
-            "SELECT id, player_uuid, character_id FROM character_creates WHERE realm_id = %s "
+            "SELECT id, player_uuid, character_id FROM character_creation_requests WHERE realm_id = %s "
             "ORDER BY id FOR UPDATE",
             (realm,),
         ).fetchall()
@@ -71,7 +71,7 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
                 relpaths.append(str(row["png_relpath"]))
         for row in conn.execute(
             """
-            SELECT png_relpath FROM character_create_wardrobe
+            SELECT png_relpath FROM character_creation_wardrobe
             WHERE create_id = ANY(%s)
             """,
             (create_ids,),
@@ -83,9 +83,9 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
             f"DELETE FROM character_wardrobe_slots WHERE {_CHARACTER_KEYS}",
             slot_keys,
         ).rowcount
-        deleted["character_create_wardrobe"] = conn.execute(
+        deleted["character_creation_wardrobe"] = conn.execute(
             """
-            DELETE FROM character_create_wardrobe
+            DELETE FROM character_creation_wardrobe
             WHERE create_id = ANY(%s)
             """,
             (create_ids,),
@@ -98,8 +98,8 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
             f"DELETE FROM character_roster WHERE realm_id = %s AND {_CHARACTER_KEYS}",
             (realm, *roster_keys),
         ).rowcount
-        deleted["character_creates"] = conn.execute(
-            "DELETE FROM character_creates WHERE realm_id = %s AND id = ANY(%s)",
+        deleted["character_creation_requests"] = conn.execute(
+            "DELETE FROM character_creation_requests WHERE realm_id = %s AND id = ANY(%s)",
             (realm, create_ids),
         ).rowcount
 
@@ -152,7 +152,7 @@ def delete_characters_for_realm(
         # Tagged deletion keeps creates. Snapshot their live slot mappings too;
         # a later mapping/roster appearance must not expand this cleanup's scope.
         create_rows = conn.execute(
-            "SELECT player_uuid, character_id FROM character_creates "
+            "SELECT player_uuid, character_id FROM character_creation_requests "
             "WHERE realm_id = %s AND character_id = ANY(%s)",
             (realm, ids),
         ).fetchall()

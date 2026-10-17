@@ -214,9 +214,9 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         sub_id = (out.get("draft") or {}).get("submission_id")
         self.assertTrue(sub_id)
-        [row] = rows("SELECT code_id FROM submissions WHERE id = %s", (sub_id,))
+        [row] = rows("SELECT code_id FROM skin_submissions WHERE id = %s", (sub_id,))
         [profile_code] = rows(
-            "SELECT redeemed_at FROM codes WHERE id = %s",
+            "SELECT redeemed_at FROM login_codes WHERE id = %s",
             (int(self.profile_session["code_id"]),),
         )
         self.assertIsNotNone(row)
@@ -236,7 +236,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
                 (self.CHAR_ID,),
             )
             conn.commit()
-        execute("DELETE FROM submissions WHERE player_uuid = %s", (self.PLAYER,))
+        execute("DELETE FROM skin_submissions WHERE player_uuid = %s", (self.PLAYER,))
 
         out = customise_lore_item(
             self.profile_session,
@@ -248,7 +248,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         sub_id = (out.get("draft") or {}).get("submission_id")
         self.assertTrue(sub_id)
-        [row] = rows("SELECT code_id FROM submissions WHERE id = %s", (sub_id,))
+        [row] = rows("SELECT code_id FROM skin_submissions WHERE id = %s", (sub_id,))
         self.assertEqual(lore_code_id, int(row["code_id"]))
 
     def test_denied_resubmit_profile_only(self) -> None:
@@ -278,7 +278,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         new_sub = (second.get("draft") or {}).get("submission_id")
         self.assertTrue(new_sub)
         self.assertNotEqual(sub_id, new_sub)
-        [row] = rows("SELECT status FROM submissions WHERE id = %s", (new_sub,))
+        [row] = rows("SELECT status FROM skin_submissions WHERE id = %s", (new_sub,))
         self.assertEqual("pending", row["status"])
 
     def test_pick_applied_skin_profile_only(self) -> None:
@@ -321,7 +321,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
 
         execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 id, code_hash, player_uuid, scope, realm_id,
                 created_at, expires_at, redeemed_at, revoked
             ) VALUES (%s, %s, %s, 'skin', 'main', %s, %s, %s, false)
@@ -338,7 +338,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         execute(
             """
-            INSERT INTO submissions (
+            INSERT INTO skin_submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 status, dir_path, created_at, discord_user_id, staff, realm_id,
                 base_set
