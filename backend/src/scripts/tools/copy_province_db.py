@@ -635,7 +635,7 @@ def to_postgres(path: Path, url: str, *, verify_only: bool = False,
             if not verify_only:
                 for table in tables:
                     conn.execute(sql.SQL("ANALYZE public.{}").format(sql.Identifier(table.name)))
-            _sequences(conn, source, tables, write=not verify_only, transactional=baseline is not None)
+            _sequences(conn, source, tables, write=not verify_only, transactional=not verify_only)
     return Report(checks, _excluded(source), source.rounded_rows, source.discarded_microsoft_states)
 
 

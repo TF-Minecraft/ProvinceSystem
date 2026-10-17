@@ -269,3 +269,32 @@ def test_first_copy_failure_then_legacy_writes_can_be_migrated(data, scratch_dat
     copy.to_postgres(data / "province.db", url, verify_only=True)
     assert (data / ".postgres-authority.json").exists()
     assert not (data / ".postgres-rollback-transition.json").exists()
+
+
+def test_first_copy_terminated_before_commit_restores_identity_counters(data, scratch_database, monkeypatch):
+    url = scratch_database
+    with closing(sqlite3.connect(data / "province.db")) as conn, conn:
+        conn.execute("UPDATE sqlite_sequence SET seq=900 WHERE name='codes'")
+    original = copy._sequences
+    terminated = False
+    def terminate_before_commit(conn, source, tables, *, write, transactional=False):
+        nonlocal terminated
+        original(conn, source, tables, write=write, transactional=transactional)
+        if write and not terminated:
+            terminated = True
+            with psycopg.connect(url, autocommit=True) as other:
+                assert other.execute("SELECT pg_terminate_backend(%s)", (conn.info.backend_pid,)).fetchone() == (True,)
+    monkeypatch.setattr(copy, "_sequences", terminate_before_commit)
+    with pytest.raises(psycopg.OperationalError):
+        operations.prepare(data, url)
+    assert terminated
+    assert not (data / ".postgres-authority.json").exists()
+    with psycopg.connect(url) as conn:
+        assert conn.execute("SELECT count(*) FROM codes").fetchone() == (0,)
+        assert conn.execute("SELECT last_value,is_called FROM codes_id_seq").fetchone() == (1, False)
+    monkeypatch.setattr(copy, "_sequences", original)
+    operations.prepare(data, url)
+    copy.to_postgres(data / "province.db", url, verify_only=True)
+    with psycopg.connect(url) as conn:
+        assert conn.execute("INSERT INTO codes(code_hash,player_uuid,created_at,expires_at) "
+                            "VALUES ('next','next',now(),now()) RETURNING id").fetchone() == (901,)
