@@ -327,6 +327,23 @@ class PrecedentRoutesTest(unittest.TestCase):
         self.assertEqual(res.status_code, 503)
         self.assertNotIn("secret", res.json()["detail"])
 
+    @mock.patch(
+        "src.api.precedent_routes.get_case",
+        side_effect=routes.InvalidTextRepresentation("invalid input syntax for type uuid"),
+    )
+    def test_malformed_case_id_is_400(self, mock_get) -> None:
+        res = self.client.get("/precedent/staff/case/not-a-uuid", headers=_HEADERS)
+        self.assertEqual(res.status_code, 400)
+
+    @mock.patch(
+        "src.api.precedent_routes.delete_case",
+        side_effect=routes.database.OperationalError("canceling statement due to lock timeout"),
+    )
+    def test_database_failure_after_connecting_is_503_not_bad_input(self, mock_delete) -> None:
+        res = self.client.delete("/precedent/staff/case/1", headers=_HEADERS)
+        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.json()["detail"], "Precedent database is unavailable. Check server logs.")
+
 
 if __name__ == "__main__":
     unittest.main()

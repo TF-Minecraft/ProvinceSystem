@@ -57,6 +57,8 @@ docker/data/
 backend/src/data/skins/**
 !backend/src/data/skins/.gitkeep
 backend/src/data/plushies/
+# Wardrobe flock file, created by the backend and its tests.
+backend/src/data/wardrobe/.mutations.lock
 # Copies of the server resource pack for /diagnostic.
 backend/src/data/diagnostic/
 .claude/
