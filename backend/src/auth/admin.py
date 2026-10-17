@@ -159,7 +159,7 @@ def list_staff() -> list[dict]:
 
 
 def lookup(query: str) -> list[dict]:
-    """Exact matches only: a Discord id, or a username or display name in any case."""
+    """A Discord id or part of a Discord name, ignoring case; exact matches first."""
     text = (query or "").strip().lstrip("@")
     if not text or len(text) > _LOOKUP_MAX:
         return []
@@ -167,10 +167,13 @@ def lookup(query: str) -> list[dict]:
         rows = conn.execute(
             f"""
             {_ACCOUNTS}
-            WHERE NOT u.placeholder AND (u.discord_user_id = %s OR lower(u.discord_username) = lower(%s)
-               OR lower(u.discord_global_name) = lower(%s))
-            ORDER BY u.id LIMIT %s
+            WHERE NOT u.placeholder AND (u.discord_user_id = %s
+               OR strpos(lower(u.discord_username), lower(%s)) > 0
+               OR strpos(lower(u.discord_global_name), lower(%s)) > 0)
+            ORDER BY CASE WHEN u.discord_user_id = %s OR lower(u.discord_username) = lower(%s)
+               OR lower(u.discord_global_name) = lower(%s) THEN 0 ELSE 1 END, u.id
+            LIMIT %s
             """,
-            (text, text, text, _LOOKUP_LIMIT),
+            (text, text, text, text, text, text, _LOOKUP_LIMIT),
         ).fetchall()
     return [_account_json(row) for row in rows]
