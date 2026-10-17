@@ -1,0 +1,9 @@
+MiniSkin Generator by Christian (nirastich)
+https://github.com/nirastich/miniskin
+Upstream revision: bce0b237b16104154e56cfa15521a25c9aff6132
+
+backend/src/characters/miniskin.py adapts the head texture layout from
+index.html. It omits the carrier, browser UI and optional layouts, always
+includes the outfit layer and side arms, and composites transparent sleeves.
+That file is licensed under GNU GPL version 3; see LICENSE in this directory.
+The rest of ProvinceSystem retains its existing Artistic License 2.0.

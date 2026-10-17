@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import tempfile
 import unittest
@@ -9,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from PIL import Image
 
 from src import database
 
@@ -176,6 +178,100 @@ class PluginWornSkinTest(unittest.TestCase):
 
     def slot_url(self, slot: str) -> str:
         return URL.removesuffix("worn") + "slots/" + slot
+
+    def plushie_png(self, slot="base", colour=(100, 110, 120, 255)):
+        path = self.put_slot(slot, "v-" + slot, "s-" + slot)
+        image = Image.new("RGBA", (64, 64), colour)
+        data = io.BytesIO()
+        image.save(data, format="PNG")
+        path.write_bytes(data.getvalue())
+        return path
+
+    def plushie(self, slot="base", source=None, key=KEY):
+        return self.client.post(self.slot_url(slot) + "/plushie",
+                                json={"source": source},
+                                headers={"X-Plugin-Key": key} if key else {})
+
+    def test_plushie_starts_then_reuses_cached_texture_without_wardrobe_changes(self):
+        from src.characters import wardrobe_plushie as plushie
+
+        self.plushie_png()
+        self.plushie_png("extra_1")
+        before = self.state()
+        with mock.patch.object(plushie, "sign_wardrobe_skin", return_value=("mini", "signed")) as signer:
+            first = self.plushie()
+            self.assertEqual(first.status_code, 200)
+            self.assertEqual(first.json()["status"], "pending")
+            self.assertIsNone(first.json()["value"])
+            source = first.json()["source"]
+            ready = self.plushie(source=source)
+            self.assertEqual(ready.json(), {
+                "character_id": CHAR_ID, "slot": "base", "status": "ready",
+                "source": source, "value": "mini", "signature": "signed",
+            })
+            with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=2):
+                self.assertEqual(self.plushie("extra_1").json()["value"], "mini")
+            signer.assert_called_once()
+        self.assertEqual(self.state(), before)
+
+    def test_plushie_needs_auth_ownership_unlocked_and_signed_selected_outfit(self):
+        from src.characters import wardrobe_plushie as plushie
+
+        self.plushie_png()
+        self.plushie_png("extra_1")
+        with mock.patch.object(plushie, "sign_wardrobe_skin") as signer:
+            self.assertEqual(self.plushie(key=None).status_code, 401)
+            self.assertEqual(self.plushie(key="wrong").status_code, 401)
+            other = self.slot_url("base").replace(PLAYER, "other") + "/plushie"
+            self.assertEqual(self.client.post(other, headers={"X-Plugin-Key": KEY}).status_code, 403)
+            self.assertEqual(self.plushie("masked").status_code, 400)
+            self.assertEqual(self.plushie("extra_1").status_code, 403)
+            with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=3):
+                self.assertEqual(self.plushie("extra_2").status_code, 409)
+                with database.connect() as conn:
+                    conn.execute("UPDATE character_wardrobe_slots SET texture_signature = NULL WHERE slot = 'extra_1'")
+                self.assertEqual(self.plushie("extra_1").status_code, 409)
+            signer.assert_not_called()
+
+    def test_plushie_rejects_changed_source_and_rechecks_slot_access_when_ready(self):
+        from src.characters import wardrobe_plushie as plushie
+
+        path = self.plushie_png("extra_1")
+        with mock.patch.object(plushie, "sign_wardrobe_skin", return_value=("mini", "signed")):
+            with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=2):
+                first = self.plushie("extra_1").json()
+                self.assertEqual(first["status"], "pending")
+            self.assertEqual(self.plushie("extra_1", first["source"]).status_code, 403)
+            # Change pixels in the saved PNG after the generation snapshot.
+            image = Image.open(path).convert("RGBA")
+            image.putpixel((8, 9), (1, 2, 3, 255))
+            image.save(path)
+            with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=2):
+                self.assertEqual(self.plushie("extra_1", first["source"]).status_code, 409)
+
+    def test_plushie_signing_failure_is_reported_and_retry_is_bounded(self):
+        from src.characters import wardrobe_plushie as plushie
+
+        self.plushie_png()
+        with mock.patch.object(plushie, "sign_wardrobe_skin", side_effect=self.wardrobe.WardrobeError("Too many skin requests", status_code=429)) as signer:
+            pending = self.plushie().json()
+            self.assertEqual(pending["status"], "pending")
+            self.assertEqual(self.plushie(source=pending["source"]).status_code, 429)
+            self.assertEqual(self.plushie().status_code, 429)
+            signer.assert_called_once()
+        failed = plushie._cached(plushie._cache_path(pending["source"]))
+        with mock.patch.object(plushie.time, "time", return_value=failed["retry_at"] + 1):
+            with mock.patch.object(plushie, "sign_wardrobe_skin", return_value=("mini", "signed")):
+                self.assertEqual(self.plushie().json()["status"], "pending")
+                self.assertEqual(self.plushie().json()["status"], "ready")
+
+    def test_plushie_missing_or_invalid_png_never_borrows_another_skin(self):
+        path = self.plushie_png()
+        self.assertEqual(self.plushie(source="bad").status_code, 422)
+        path.write_bytes(b"invalid")
+        self.assertEqual(self.plushie().status_code, 409)
+        path.unlink()
+        self.assertEqual(self.plushie().status_code, 404)
 
     def test_selected_outfit_is_read_without_equipping_or_acknowledging(self) -> None:
         self.put_slot("base", "v-base", "s-base")

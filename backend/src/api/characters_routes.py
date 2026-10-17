@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
@@ -82,6 +82,7 @@ from src.skins.auth import (
     is_secondary_plugin_key,
     require_plugin_key,
 )
+from src.characters.wardrobe_plushie import generate_plushie, prepare_plushie
 from src.skins.codes import CodeError, get_session, revoke_session
 
 characters_router = APIRouter(prefix="/characters", tags=["characters"])
@@ -1168,6 +1169,30 @@ def plugin_get_wardrobe_slot_texture(
     _require_plugin(x_plugin_key)
     try:
         return wardrobe_slot_texture(player_uuid, character_id, slot)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+class PlushieBody(BaseModel):
+    source: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+@characters_router.post("/plugin/wardrobe/{player_uuid}/{character_id}/slots/{slot}/plushie")
+def plugin_prepare_plushie(
+    player_uuid: str,
+    character_id: str,
+    slot: str,
+    background_tasks: BackgroundTasks,
+    body: PlushieBody | None = None,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Start or check a cached miniature; leave the wardrobe and worn skin untouched."""
+    _require_plugin(x_plugin_key)
+    try:
+        result, png = prepare_plushie(player_uuid, character_id, slot, body.source if body else None)
+        if result["status"] == "pending":
+            background_tasks.add_task(generate_plushie, result["source"], png)
+        return result
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
 
