@@ -160,7 +160,7 @@ export function parsePlayerListing(view?: string, sort?: string, order?: string)
 }
 
 export type PlayerSummary = {
-  uuid: string;
+  uuid: string | null;
   minecraft_name: string | null;
   discord_user_id: string | null;
   /** Their Discord account handle, when known. */

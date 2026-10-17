@@ -177,7 +177,7 @@ it("opens on Activity, with the other sections behind tabs", async () => {
     within(tabs)
       .getAllByRole("link")
       .map((l) => l.textContent),
-  ).toEqual(["Activity", "Sessions", "Characters", "Discord"]);
+  ).toEqual(["Activity", "Sessions", "Characters", "Cases", "Discord"]);
   expect(within(tabs).getByRole("link", { name: "Activity" }).getAttribute("aria-current")).toBe("page");
   expect(within(tabs).getByRole("link", { name: "Sessions" }).getAttribute("href")).toBe(
     `/admin/players/${UUID}?tab=sessions`,

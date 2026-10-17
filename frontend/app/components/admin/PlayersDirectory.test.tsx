@@ -317,7 +317,9 @@ it("says when CoreProtect cannot be read, and that last seen is unknown", async 
   });
   renderDirectory();
   expect(
-    await screen.findByText(/Activity history is busy.*Only linked players and characters are listed/),
+    await screen.findByText(
+      /Activity history is busy.*Minecraft players without a known account or character may be missing/,
+    ),
   ).toBeTruthy();
   expect(within(screen.getByRole("link", { name: "Linked" }).closest("tr")!).getByText("Unknown")).toBeTruthy();
 });

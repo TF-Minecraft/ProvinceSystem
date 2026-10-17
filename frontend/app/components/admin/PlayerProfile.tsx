@@ -22,6 +22,7 @@ import { profileTab } from "./PlayerTabs";
 import AccountActions from "./AccountActions";
 import PlayerActivity from "./PlayerActivity";
 import PlayerCharacters from "./PlayerCharacters";
+import PersonCases from "./PersonCases";
 import { Retry, dayHeadingClass, moreClass, type Failure } from "./profileParts";
 import { headingClass, mutedClass, panelClass, rowClass } from "./ui";
 
@@ -43,6 +44,11 @@ export default function PlayerProfile() {
       {opened.has("sessions") ? (
         <div hidden={tab !== "sessions"}>
           <Sessions uuid={profile.uuid} movement={movement} />
+        </div>
+      ) : null}
+      {opened.has("cases") ? (
+        <div hidden={tab !== "cases"}>
+          <PersonCases key={profile.uuid} subject={{ playerUuid: profile.uuid }} />
         </div>
       ) : null}
 

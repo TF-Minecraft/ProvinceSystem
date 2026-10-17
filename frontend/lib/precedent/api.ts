@@ -1,5 +1,12 @@
 import { adminRequest } from "../admin/api";
 
+export type CaseParticipant = {
+  discord_user_id?: string | null;
+  player_uuid?: string | null;
+  name: string;
+  discord_username?: string | null;
+};
+
 export type PrecedentCase = {
   id: string;
   logged_by: string;
@@ -9,6 +16,7 @@ export type PrecedentCase = {
   ruling: string;
   punishment: string;
   created_at: string | null;
+  participants?: CaseParticipant[];
 };
 
 /** A case plus its cosine distance from the query vector. */
@@ -28,6 +36,7 @@ export type CaseInput = {
   rule: string;
   ruling: string;
   punishment: string;
+  participants?: CaseParticipant[];
 };
 
 /**

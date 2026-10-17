@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 
-import type { CaseInput, PrecedentCase } from "@/lib/precedent/api";
+import type { CaseInput, CaseParticipant, PrecedentCase } from "@/lib/precedent/api";
 import { parsePlayers } from "@/lib/precedent/filter";
 import {
   buttonClass,
@@ -24,6 +24,7 @@ type Props = {
   error: string | null;
   onClose: () => void;
   onSave: (input: CaseInput) => void;
+  subject?: CaseParticipant;
 };
 
 // Mirrors the server-side caps in LogCaseBody (precedent_routes.py).
@@ -39,7 +40,16 @@ const fieldClass = `${inputClass} w-full`;
 
 const labelClass = "text-sm text-[var(--tfmc-stone)]";
 
-export default function PrecedentCaseModal({ open, initial, knownPlayers, saving, error, onClose, onSave }: Props) {
+export default function PrecedentCaseModal({
+  open,
+  initial,
+  knownPlayers,
+  saving,
+  error,
+  onClose,
+  onSave,
+  subject,
+}: Props) {
   const titleId = useId();
   const [summary, setSummary] = useState("");
   const [rule, setRule] = useState("");
@@ -54,8 +64,8 @@ export default function PrecedentCaseModal({ open, initial, knownPlayers, saving
     setRule(initial?.rule ?? "");
     setRuling(initial?.ruling ?? "");
     setPunishment(initial?.punishment ?? "");
-    setPlayers((initial?.players ?? []).join(", "));
-  }, [open, initial]);
+    setPlayers((initial?.players ?? (subject ? [subject.name] : [])).join(", "));
+  }, [open, initial, subject]);
 
   useEffect(() => {
     if (!open) return;
@@ -69,6 +79,7 @@ export default function PrecedentCaseModal({ open, initial, knownPlayers, saving
   if (!open) return null;
 
   const canSave = summary.trim().length > 0 && !saving;
+  const participants = initial?.participants ?? (subject ? [subject] : undefined);
 
   function submit() {
     if (!canSave) return;
@@ -81,6 +92,7 @@ export default function PrecedentCaseModal({ open, initial, knownPlayers, saving
       rule: rule.trim(),
       ruling: ruling.trim(),
       punishment: punishment.trim(),
+      ...(participants !== undefined ? { participants } : {}),
     });
   }
 
@@ -102,7 +114,12 @@ export default function PrecedentCaseModal({ open, initial, knownPlayers, saving
         <h2 id={titleId} className={headingClass}>
           {initial ? "Edit case" : "Log case"}
         </h2>
-        {initial ? null : <p className={`mt-1 ${mutedClass}`}>Logged against your account.</p>}
+        {initial ? null : <p className={`mt-1 ${mutedClass}`}>Your staff account is recorded as the author.</p>}
+        {participants?.length ? (
+          <p className={`mt-2 ${mutedClass}`}>
+            Account links: {participants.map((p) => p.name || p.discord_user_id || p.player_uuid).join(", ")}
+          </p>
+        ) : null}
 
         <div className="mt-4 space-y-3">
           <div>
@@ -166,22 +183,24 @@ export default function PrecedentCaseModal({ open, initial, knownPlayers, saving
             />
           </div>
 
-          <div>
-            <label className={labelClass} htmlFor={`${titleId}-players`}>
-              Players
-            </label>
-            <div className="mt-1">
-              <PlayerAutocomplete
-                id={`${titleId}-players`}
-                className={fieldClass}
-                value={players}
-                known={knownPlayers}
-                disabled={saving}
-                onChange={setPlayers}
-                placeholder="Comma separated"
-              />
+          {subject && !initial ? null : (
+            <div>
+              <label className={labelClass} htmlFor={`${titleId}-players`}>
+                Players
+              </label>
+              <div className="mt-1">
+                <PlayerAutocomplete
+                  id={`${titleId}-players`}
+                  className={fieldClass}
+                  value={players}
+                  known={knownPlayers}
+                  disabled={saving}
+                  onChange={setPlayers}
+                  placeholder="Comma separated"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {error ? (

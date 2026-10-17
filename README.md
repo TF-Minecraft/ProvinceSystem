@@ -14,7 +14,7 @@ It connects the Minecraft world with a browser experience: players can explore t
 - **Custom skin submissions** — submit supported cosmetic skins through an in-game-code-linked workflow.
 - **Drink design** — create BreweryX recipes and submit custom drinks for staff review.
 - **Accounts and staff tools** — sign in with Discord, manage linked accounts and supporter status, and use role-controlled player, activity, rail, and permission panels.
-- **Discord moderation** — select linked Discord accounts for warnings, ban notifications, and case logs, with Minecraft UUIDs in staff records.
+- **Discord moderation** — record cases against Discord or Minecraft accounts, browse each person’s case history, and select linked accounts for Minecraft notifications.
 - **Player knowledge hub** — browse the wiki's guides to crafting, professions, equipment, economy, and other server features.
 
 ## Connected to the server
