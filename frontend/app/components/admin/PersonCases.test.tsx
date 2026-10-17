@@ -87,10 +87,32 @@ it("keeps the account IDs when editing an existing case", async () => {
   await screen.findByText("Discord harassment");
   fireEvent.click(screen.getByText("Details"));
   fireEvent.click(screen.getByRole("button", { name: "Edit case" }));
+  expect(screen.getByLabelText("Players").hasAttribute("disabled")).toBe(true);
+  expect(screen.getByText(/Player names cannot be changed here/)).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Summary"), { target: { value: "Corrected summary" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(updateCase).toHaveBeenCalledOnce());
   expect(vi.mocked(updateCase).mock.calls[0][1].participants).toEqual(PAGE.entries[0].participants);
+});
+
+it("logs an unnamed Discord account without storing its ID as a player name", async () => {
+  vi.mocked(getPersonCases).mockResolvedValue({
+    ...PAGE,
+    person: { ...PAGE.person, discord_username: null, name: "" },
+    entries: [],
+    total: 0,
+  });
+  render(<PersonCases subject={{ discordId: DISCORD }} standalone />);
+  expect(await screen.findByRole("heading", { name: "Discord account" })).toBeTruthy();
+  fireEvent.click(await screen.findByRole("button", { name: "Log case" }));
+  fireEvent.change(screen.getByLabelText("Summary"), { target: { value: "A new incident" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(createCase).toHaveBeenCalledOnce());
+  const payload = vi.mocked(createCase).mock.calls[0][0];
+  expect(payload.players).toEqual([]);
+  expect(payload.participants).toEqual([
+    { name: "", discord_user_id: DISCORD, player_uuid: null, discord_username: null },
+  ]);
 });
 
 it("labels old name matches and warns when name history is incomplete", async () => {

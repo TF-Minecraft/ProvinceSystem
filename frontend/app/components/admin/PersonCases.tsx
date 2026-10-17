@@ -85,7 +85,7 @@ export default function PersonCases({ subject, standalone = false }: { subject: 
           <h2 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
             {data?.person.discord_username
               ? `@${data.person.discord_username}`
-              : (data?.person.name ?? "Discord account")}
+              : data?.person.name || "Discord account"}
           </h2>
           <p className={`mt-1 ${mutedClass}`}>
             Discord ID {discordId}
@@ -188,7 +188,8 @@ export default function PersonCases({ subject, standalone = false }: { subject: 
                     {row.players.length ? <p className="mt-2">Involved: {row.players.join(", ")}</p> : null}
                     {row.participants?.map((p, i) => (
                       <p key={i} className="mt-2 break-all text-xs text-[var(--tfmc-stone)]">
-                        {p.name}: {p.discord_user_id ? `Discord ${p.discord_user_id}` : ""}
+                        {p.name ? `${p.name}: ` : ""}
+                        {p.discord_user_id ? `Discord ${p.discord_user_id}` : ""}
                         {p.discord_user_id && p.player_uuid ? " · " : ""}
                         {p.player_uuid ? `Minecraft ${p.player_uuid}` : ""}
                       </p>

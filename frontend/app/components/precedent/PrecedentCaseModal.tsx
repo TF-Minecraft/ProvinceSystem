@@ -194,11 +194,16 @@ export default function PrecedentCaseModal({
                   className={fieldClass}
                   value={players}
                   known={knownPlayers}
-                  disabled={saving}
+                  disabled={saving || Boolean(participants?.length)}
                   onChange={setPlayers}
                   placeholder="Comma separated"
                 />
               </div>
+              {participants?.length ? (
+                <p className={`mt-1 ${mutedClass}`}>
+                  This case is linked to the accounts above. Player names cannot be changed here.
+                </p>
+              ) : null}
             </div>
           )}
         </div>

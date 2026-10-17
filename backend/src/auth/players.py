@@ -32,7 +32,7 @@ SORTS = ("name", "last_seen")
 ORDERS = ("asc", "desc")
 
 _DIRECTORY_LOCK = threading.Lock()
-_DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
+_DIRECTORY: dict[tuple[str, str, str], tuple[float, list[dict], dict]] = {}
 
 
 class PlayerError(Exception):
@@ -196,8 +196,8 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
     return list(people.values()), _status(error)
 
 
-def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
-    key = (config.server, config.path or "")
+def _directory(config: CoreProtectConfig, view: str = "minecraft") -> tuple[list[dict], dict]:
+    key = (config.server, config.path or "", view)
     cached = _DIRECTORY.get(key)
     if cached and cached[0] > time.monotonic():
         return cached[1], cached[2]
@@ -209,6 +209,16 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         if cached and cached[0] > time.monotonic():
             return cached[1], cached[2]
         entries, status = _build_directory(config)
+        if view == "discord":
+            from .cases import discord_people
+            linked = {e["discord_user_id"] for e in entries if e["discord_user_id"]}
+            entries = [*entries, *[
+                {"uuid": None, "minecraft_name": None, "names": set(),
+                 "discord_user_id": p["discord_user_id"], "discord_username": p["discord_username"],
+                 "discord_nickname": None, "discord_global_name": p["name"], "site_role": p["role"],
+                 "characters": [], "last_seen": None, "online": False}
+                for p in discord_people() if p["discord_user_id"] not in linked
+            ]]
         # A degraded build is not cached, so the next request tries CoreProtect again.
         if status["status"] == "available" or not config.path:
             _DIRECTORY[key] = (time.monotonic() + DIRECTORY_TTL_SECONDS, entries, status)
@@ -312,17 +322,7 @@ def directory(config: CoreProtectConfig, query: str = "", view: str = "minecraft
     text = " ".join((query or "").split()).lstrip("@")
     if len(text) > QUERY_MAX:
         raise PlayerError(400, "query_too_long")
-    entries, status = _directory(config)
-    if view == "discord":
-        from .cases import discord_people
-        linked = {e["discord_user_id"] for e in entries if e["discord_user_id"]}
-        entries = [*entries, *[
-            {"uuid": None, "minecraft_name": None, "names": set(),
-             "discord_user_id": p["discord_user_id"], "discord_username": p["discord_username"],
-             "discord_nickname": None, "discord_global_name": p["name"], "site_role": p["role"],
-             "characters": [], "last_seen": None, "online": False}
-            for p in discord_people() if p["discord_user_id"] not in linked
-        ]]
+    entries, status = _directory(config, view)
     rows, omitted = _rows(view, entries, text.casefold())
     _sort(rows, view, sort, order)
     page = max(1, page)

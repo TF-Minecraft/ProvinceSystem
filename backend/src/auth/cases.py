@@ -81,14 +81,15 @@ def person(config: CoreProtectConfig, *, player_uuid: str | None = None,
         recorded = conn.execute("""
             SELECT p->>'name' AS name, p->>'discord_username' AS discord_username
             FROM precedent_cases CROSS JOIN LATERAL jsonb_array_elements(participants) p
-            WHERE p->>'discord_user_id' = %s ORDER BY created_at DESC, id DESC LIMIT 1
-        """, (discord_user_id,)).fetchone()
+            WHERE participants @> %s AND p->>'discord_user_id' = %s
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        """, (database.Jsonb([{"discord_user_id": discord_user_id}]), discord_user_id)).fetchone() if discord_user_id else None
     username = ((user or {}).get("discord_username") or (link or {}).get("discord_username")
                 or (recorded or {}).get("discord_username"))
     return {"player_uuid": player_uuid, "discord_user_id": discord_user_id,
             "minecraft_name": current, "discord_username": username,
             "name": current or username or (user or {}).get("discord_global_name")
-                    or (recorded or {}).get("name") or discord_user_id or player_uuid,
+                    or (recorded or {}).get("name") or "",
             "names": sorted(n.casefold() for n in names), "legacy_names_complete": complete}
 
 
@@ -98,8 +99,14 @@ _RECORDS = """
                summary, rule, ruling, punishment, logged_by, players, participants, created_at,
                CASE WHEN participants = '[]'::jsonb THEN 'name' ELSE 'account' END AS matched_by
         FROM precedent_cases
-        WHERE (%(uuid)s::text IS NOT NULL AND participants @> %(uuid_match)s)
-           OR (%(discord)s::text IS NOT NULL AND participants @> %(discord_match)s)
+        WHERE (((%(uuid)s::text IS NOT NULL AND participants @> %(uuid_match)s)
+             OR (%(discord)s::text IS NOT NULL AND participants @> %(discord_match)s))
+           AND EXISTS (
+               SELECT 1 FROM jsonb_array_elements(participants) p
+               WHERE (p->>'player_uuid' = %(uuid)s
+                      AND (%(uuid_view)s OR p->>'discord_user_id' IS NULL))
+                  OR (p->>'discord_user_id' = %(discord)s
+                      AND (NOT %(uuid_view)s OR p->>'player_uuid' IS NULL))))
            OR (participants = '[]'::jsonb AND EXISTS (
                SELECT 1 FROM unnest(players) name WHERE lower(name) = ANY(%(names)s::text[])))
         UNION ALL
@@ -113,9 +120,13 @@ _RECORDS = """
                '{}'::text[], '[]'::jsonb, n.created_at, 'account'
         FROM player_notifications n
         WHERE n.type IN ('ban', 'unban', 'warn')
-          AND (lower(n.player_uuid) = %(uuid)s OR n.discord_user_id = %(discord)s)
+          AND ((lower(n.player_uuid) = %(uuid)s
+                AND (%(uuid_view)s OR n.discord_user_id IS NULL))
+            OR (n.discord_user_id = %(discord)s
+                AND (NOT %(uuid_view)s OR n.player_uuid IS NULL)))
           AND NOT (n.type = 'warn' AND EXISTS (
-              SELECT 1 FROM player_warnings w WHERE w.id::text = n.payload->>'warning_id'))
+              SELECT 1 FROM player_warnings w WHERE w.id::text = n.payload->>'warning_id'
+                AND lower(w.player_uuid) = %(uuid)s))
     )
 """
 
@@ -123,7 +134,10 @@ _RECORDS = """
 def history(config: CoreProtectConfig, *, player_uuid: str | None = None,
             discord_user_id: str | None = None, limit: int = 25, offset: int = 0) -> dict:
     who = person(config, player_uuid=player_uuid, discord_user_id=discord_user_id)
+    # The requested account keeps its own records after relinking. Its current linked
+    # account contributes only records that do not name a different requested account.
     params = {"uuid": who["player_uuid"], "discord": who["discord_user_id"], "names": who["names"],
+              "uuid_view": player_uuid is not None,
               "uuid_match": database.Jsonb([{"player_uuid": who["player_uuid"]}]),
               "discord_match": database.Jsonb([{"discord_user_id": who["discord_user_id"]}]),
               "limit": limit, "offset": offset}

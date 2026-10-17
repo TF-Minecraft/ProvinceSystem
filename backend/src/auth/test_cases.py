@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from src import database
 from src.api import admin_routes, auth_routes, precedent_routes
 from src.auth import testing
+from src.auth import cases, players
 from src.auth.test_admin import client
 from src.auth.test_players import env, staff  # noqa: F401
 from src.precedent import db
@@ -84,6 +85,46 @@ def test_ids_survive_rename_unlink_and_username_reuse(app, env, coreprotect):
     assert history(app, env, f"/admin/discord/{OTHER_DISCORD}/cases")["total"] == 0
 
 
+def test_relink_does_not_transfer_history_between_minecraft_accounts(app, env):
+    links.link(PLAYER, DISCORD, "OriginalName")
+    log(participants=[person(uuid=PLAYER)], summary="Original linked case")
+    log(participants=[person()], summary="Discord-only case")
+    log(participants=[{"player_uuid": PLAYER}], summary="Original Minecraft case")
+    log(participants=[{"player_uuid": OTHER}], summary="New Minecraft case")
+    testing.execute("INSERT INTO player_notifications (type, discord_user_id, player_uuid, payload, created_at) "
+                    "VALUES ('ban', %s, %s, %s, now())", (DISCORD, PLAYER, database.Jsonb({"reason": "Original ban"})))
+    testing.execute("INSERT INTO player_warnings (id, player_uuid, reason, created_at) "
+                    "VALUES (10, %s, 'Original warning', now())", (PLAYER,))
+    testing.execute("INSERT INTO player_notifications (type, discord_user_id, player_uuid, payload, created_at) "
+                    "VALUES ('warn', %s, %s, %s, now())",
+                    (DISCORD, PLAYER, database.Jsonb({"warning_id": 10, "reason": "Original warning"})))
+    testing.execute("DELETE FROM discord_links WHERE discord_user_id = %s", (DISCORD,))
+    links.link(OTHER, DISCORD, "NewName")
+
+    def summaries(path):
+        return {r["summary"] for r in history(app, env, path)["entries"]}
+
+    assert summaries(f"/admin/players/{OTHER}/cases") == {"Discord-only case", "New Minecraft case"}
+    assert summaries(f"/admin/players/{PLAYER}/cases") == {
+        "Original linked case", "Original Minecraft case", "Original ban", "Original warning"}
+    assert summaries(f"/admin/discord/{DISCORD}/cases") == {
+        "Original linked case", "Discord-only case", "New Minecraft case", "Original ban", "Original warning"}
+
+    # A different Discord account linking the original UUID does not inherit the old Discord history.
+    links.link(PLAYER, OTHER_DISCORD, "OriginalName")
+    assert summaries(f"/admin/discord/{OTHER_DISCORD}/cases") == {"Original Minecraft case", "Original warning"}
+    assert summaries(f"/admin/players/{PLAYER}/cases") == {
+        "Original linked case", "Original Minecraft case", "Original ban", "Original warning"}
+
+
+def test_unnamed_account_keeps_identifiers_out_of_display_names(app, env, monkeypatch):
+    assert history(app, env)["person"]["name"] == ""
+    monkeypatch.delenv("COREPROTECT_DB", raising=False)
+    result = history(app, env, f"/admin/players/{PLAYER}/cases")
+    assert result["person"]["name"] == ""
+    assert result["person"]["player_uuid"] == PLAYER
+
+
 def test_legacy_names_are_exact_and_marked_as_unverified(app, env, coreprotect):
     coreprotect.user("NewName", PLAYER)
     coreprotect.execute("INSERT INTO co_username_log (time, uuid, user) VALUES (1, ?, 'OldName')", (PLAYER,))
@@ -133,6 +174,22 @@ def test_discord_directory_includes_case_participants_without_accounts(app, env)
     [entry] = response.json()["rows"]
     assert entry["uuid"] is None and entry["discord_user_id"] == DISCORD
     assert entry["discord_username"] == "account_handle"
+
+
+def test_discord_directory_caches_participant_scan_across_searches(app, env):
+    log(participants=[person()])
+    players.clear_cache()
+    api = client(app, staff(env))
+    with patch.object(cases, "discord_people", wraps=cases.discord_people) as people:
+        for query in ("", "account", DISCORD):
+            response = api.get("/admin/players", params={"view": "discord", "q": query})
+            assert response.status_code == 200
+            assert any(r["discord_user_id"] == DISCORD for r in response.json()["rows"])
+        assert people.call_count == 1
+        players.clear_cache()
+        assert api.get("/admin/players", params={"view": "discord"}).status_code == 200
+        assert people.call_count == 2
+    players.clear_cache()
 
 
 def test_case_history_needs_staff_and_valid_ids(app, env):
