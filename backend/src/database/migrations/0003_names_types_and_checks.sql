@@ -57,3 +57,50 @@ ALTER TABLE patreon_members RENAME COLUMN data_json TO data;
 
 -- The ItemsAdder custom model data number DrinkBuilder assigns.
 ALTER TABLE drink_textures RENAME COLUMN cmd TO custom_model_data;
+
+-- Times stored as epoch numbers or text become timestamptz. The API still sends
+-- the epoch seconds each one always had.
+ALTER TABLE character_roster ALTER COLUMN created_at TYPE timestamptz
+    USING CASE WHEN created_at ~ '^[0-9]{1,12}$' AND created_at::bigint > 0 THEN to_timestamp(created_at::bigint) END;
+ALTER TABLE map_chronicle_snapshots ALTER COLUMN captured_at TYPE timestamptz USING to_timestamp(captured_at);
+ALTER TABLE map_chronicle_snapshots_archive
+    ALTER COLUMN captured_at TYPE timestamptz USING to_timestamp(captured_at),
+    ALTER COLUMN archived_at TYPE timestamptz USING to_timestamp(archived_at);
+ALTER TABLE map_chronicle_wipes
+    ALTER COLUMN wiped_at TYPE timestamptz USING to_timestamp(wiped_at),
+    ALTER COLUMN restored_at TYPE timestamptz USING to_timestamp(restored_at);
+ALTER TABLE lp_state ALTER COLUMN generated_at TYPE timestamptz USING to_timestamp(generated_at);
+ALTER TABLE lp_commands ALTER COLUMN generated_at TYPE timestamptz USING to_timestamp(generated_at);
+-- The same instant as captured_at, in seconds.
+ALTER TABLE map_ledger_days DROP COLUMN captured_at_ts;
+
+-- A Profile code a view-as opened names the view's user session in its own
+-- column; minted_via says only how the code was made.
+ALTER TABLE login_codes ADD COLUMN view_session_id bigint;
+UPDATE login_codes
+SET view_session_id = substr(minted_via, length('staff_view:') + 1)::bigint, minted_via = 'staff_view'
+WHERE minted_via ~ '^staff_view:[0-9]{1,18}$';
+
+-- The values each status column takes. 'character' scope codes and 'revoked'
+-- skin submissions are no longer written but remain in the data; a denied
+-- submission is normally deleted but its status is still read.
+ALTER TABLE login_codes ADD CONSTRAINT login_codes_scope_check
+    CHECK (scope IN ('skin', 'skin_staff', 'drink', 'profile', 'lore_upload', 'character'));
+ALTER TABLE login_codes ADD CONSTRAINT login_codes_minted_via_check
+    CHECK (minted_via IN ('site', 'staff_view') AND (view_session_id IS NOT NULL) = (minted_via = 'staff_view')
+           OR minted_via IS NULL AND view_session_id IS NULL);
+ALTER TABLE skin_submissions ADD CONSTRAINT skin_submissions_status_check
+    CHECK (status IN ('pending', 'approved', 'applied', 'denied', 'revoked'));
+ALTER TABLE drink_submissions ADD CONSTRAINT drink_submissions_status_check
+    CHECK (status IN ('pending', 'pending_pack', 'approved', 'applied', 'denied', 'revoked'));
+ALTER TABLE character_creation_requests ADD CONSTRAINT character_creation_requests_status_check
+    CHECK (status IN ('pending', 'applied', 'rejected'));
+ALTER TABLE lore_item_customisations ADD CONSTRAINT lore_item_customisations_state_check
+    CHECK (state IN ('draft', 'pending_skin', 'ready', 'applied', 'denied'));
+
+-- LuckPerms keeps one node per key, context set and expiry; a timed and a
+-- permanent copy of the same group are two rows.
+ALTER TABLE lp_user_nodes ADD PRIMARY KEY (uuid, key, contexts, expiry);
+ALTER TABLE lp_group_nodes ADD PRIMARY KEY (group_name, key, contexts, expiry);
+DROP INDEX idx_lp_group_nodes_group;
+DROP INDEX idx_lp_user_nodes_uuid;

@@ -97,7 +97,7 @@ def store(payload) -> dict:
             conn.execute(
                 """
                 INSERT INTO lp_commands (id, server, hash, generated_at, received_at, payload)
-                VALUES (1, %s, %s, %s, %s, %s)
+                VALUES (1, %s, %s, to_timestamp(%s), %s, %s)
                 ON CONFLICT (id) DO UPDATE SET server = excluded.server, hash = excluded.hash,
                     generated_at = excluded.generated_at, received_at = excluded.received_at,
                     payload = excluded.payload
@@ -127,7 +127,8 @@ def view(viewer: dict) -> dict:
     now = int(time.time())
     with database.transaction(isolation="repeatable read", read_only=True) as conn:
         row = conn.execute(
-            "SELECT server, generated_at, received_at, payload FROM lp_commands WHERE id = 1").fetchone()
+            "SELECT server, extract(epoch FROM generated_at)::bigint AS generated_at, received_at, payload "
+            "FROM lp_commands WHERE id = 1").fetchone()
         if row is None:
             return {"status": None, "groups": [], "plugins": []}
         groups = mirror.load_groups(conn)

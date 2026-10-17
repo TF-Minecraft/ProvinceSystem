@@ -22,12 +22,12 @@ _TABLE = "map_chronicle_wipes"
 _COLUMNS = (
     "id",
     "map_id",
-    "wiped_at",
+    "extract(epoch FROM wiped_at)::bigint AS wiped_at",
     "wiped_by",
     "day_count",
     "backup_path",
     "reason",
-    "restored_at",
+    "extract(epoch FROM restored_at)::bigint AS restored_at",
     "restored_by",
 )
 
@@ -89,7 +89,7 @@ def record_wipe(
         row = conn.execute(
             f"INSERT INTO {_TABLE} "
             "(map_id, wiped_at, wiped_by, day_count, backup_path, reason) "
-            "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            "VALUES (%s, to_timestamp(%s), %s, %s, %s, %s) RETURNING id",
             (
                 map_id,
                 int(wiped_at),
@@ -130,7 +130,7 @@ def last_wiped_at(map_id: str, *, conn=None) -> int | None:
     leave the chronicle index with `days: []`. Pass `conn` to read it in the
     caller's snapshot.
     """
-    sql = f"SELECT MAX(wiped_at) AS stamp FROM {_TABLE} WHERE map_id = %s"
+    sql = f"SELECT extract(epoch FROM MAX(wiped_at))::bigint AS stamp FROM {_TABLE} WHERE map_id = %s"
     if conn is not None:
         row = conn.execute(sql, (map_id,)).fetchone()
     else:
@@ -145,7 +145,7 @@ def mark_restored(map_id: str, wipe_id: int, *, restored_at: int, restored_by: s
     """Stamp the restore bookkeeping. Scoped by map_id as well as id."""
     with database.connect() as conn:
         conn.execute(
-            f"UPDATE {_TABLE} SET restored_at = %s, restored_by = %s "
+            f"UPDATE {_TABLE} SET restored_at = to_timestamp(%s), restored_by = %s "
             "WHERE id = %s AND map_id = %s",
             (
                 int(restored_at),

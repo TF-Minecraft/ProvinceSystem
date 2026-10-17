@@ -137,7 +137,7 @@ def _manifest(value) -> dict:
 def _snapshot_row(conn, map_id: str, day: str) -> dict | None:
     """Read one indexed snapshot on a caller-owned connection."""
     row = conn.execute(
-        "SELECT map_id, day, realm_id, captured_at, bytes, "
+        "SELECT map_id, day, realm_id, extract(epoch FROM captured_at)::bigint AS captured_at, bytes, "
         "geometry_version, manifest FROM map_chronicle_snapshots "
         "WHERE map_id = %s AND day = %s",
         (map_id, day),
@@ -173,7 +173,7 @@ def upsert_snapshot(
             INSERT INTO map_chronicle_snapshots
                 (map_id, day, realm_id, captured_at, bytes,
                  geometry_version, manifest)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, to_timestamp(%s), %s, %s, %s)
             ON CONFLICT (map_id, day) DO UPDATE SET
                 realm_id = excluded.realm_id,
                 captured_at = excluded.captured_at,

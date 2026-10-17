@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from src import database
@@ -52,6 +53,19 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
     except (TypeError, ValueError):
         hard_cap = 10
     return max(1, min(default_max, hard_cap))
+
+
+def _created_time(raw: Any) -> datetime | None:
+    """RPCharacters sends a character's creation time as epoch seconds in a string."""
+    text = str(raw).strip() if raw is not None else ""
+    if not text.isdigit() or int(text) <= 0:
+        return None
+    return datetime.fromtimestamp(int(text), timezone.utc)
+
+
+def _epoch_text(value: datetime | None) -> str | None:
+    """The creation time in the epoch-seconds text the website has always received."""
+    return str(int(value.timestamp())) if value is not None else None
 
 
 def get_player_meta(player_uuid: str) -> dict[str, Any]:
@@ -265,7 +279,7 @@ def list_roster(
             "status": row["status"],
             "race": row["race"],
             "class": row["class"],
-            "created_at": row["created_at"],
+            "created_at": _epoch_text(row["created_at"]),
             "updated_at": api_time(row["updated_at"]),
             "realm_id": realm,
             "source": "roster",
@@ -432,7 +446,7 @@ def replace_roster(
                 status,
                 str(race).strip() if race is not None else None,
                 str(klass).strip() if klass is not None else None,
-                str(created_at).strip() if created_at is not None else None,
+                _created_time(created_at),
                 kit_status,
                 kit_statuses_json,
                 sheet_json,

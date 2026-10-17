@@ -2,7 +2,8 @@
 
 A login code keeps its plaintext only while staff may still hand it out.
 Spending or revoking a code clears it at once; the sweep clears codes that
-expired unused.
+expired unused. An expired code session can no longer sign anyone in or hold
+the cosmetic cooldown, so the sweep deletes it.
 """
 
 from __future__ import annotations
@@ -23,7 +24,9 @@ def sweep() -> dict[str, int]:
         cleared = conn.execute(
             "UPDATE login_codes SET code_plaintext = NULL WHERE code_plaintext IS NOT NULL AND expires_at < now()"
         ).rowcount
-    return {"expired_code_plaintext": cleared}
+    with database.connect() as conn:
+        sessions = conn.execute("DELETE FROM code_sessions WHERE expires_at < now()").rowcount
+    return {"expired_code_plaintext": cleared, "expired_code_sessions": sessions}
 
 
 async def housekeeping_loop(stop: asyncio.Event) -> None:

@@ -154,7 +154,7 @@ def test_view_profile_rechecks_expiry_after_every_wait(env, wait_on):
         hold = lambda c: c.execute("LOCK TABLE code_sessions IN SHARE MODE")
         kinds = {"relation"}
     run = expires_while_blocked(expiry, hold, lambda: codes.start_linked_profile_session(
-        PLAYER, minted_via=view_as.profile_minted_via(view), expires_at=codes._iso(expiry),
+        PLAYER, view_session_id=view_as.profile_view_session(view), expires_at=codes._iso(expiry),
         still_allowed=view_as.view_still_open(view["session_id"])), kinds)
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "session_ended"
     assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0

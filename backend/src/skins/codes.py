@@ -212,6 +212,8 @@ def _prepare_skin_drink_redeem(conn, code_id: int, expires_at: datetime) -> date
 
 # A code Profile started for a skin or drink, rather than one made with /token create.
 MINTED_VIA_SITE = "site"
+# A Profile code an admin's view-as opened; view_session_id names the view's user session.
+MINTED_VIA_STAFF_VIEW = "staff_view"
 
 # Codes that lapsed unused never started anything, so they don't hold the clock,
 # whether Profile or /token create made them. A session outlives its code by up to
@@ -741,7 +743,7 @@ def site_profile_realm() -> str:
 def start_linked_profile_session(
     player_uuid: str,
     *,
-    minted_via: str | None = None,
+    view_session_id: int | None = None,
     expires_at: str | None = None,
     still_allowed=None,
 ) -> dict:
@@ -749,8 +751,8 @@ def start_linked_profile_session(
 
     Sessions belong to a code, so this records a profile code that is spent at once and
     has no plaintext. The caller has already checked the Discord sign-in and the link.
-    An admin viewing as the player passes their view's tag and end, and a check
-    that the view still exists, made inside the write (src/auth/view_as.py).
+    An admin viewing as the player passes their view's session id and end, and a
+    check that the view still exists, made inside the write (src/auth/view_as.py).
     """
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -768,12 +770,12 @@ def start_linked_profile_session(
             """
             INSERT INTO login_codes (
                 code_hash, code_plaintext, player_uuid, scope, realm_id,
-                created_at, expires_at, redeemed_at, revoked, minted_via
-            ) VALUES (%s, NULL, %s, 'profile', %s, %s, %s, %s, false, %s)
+                created_at, expires_at, redeemed_at, revoked, minted_via, view_session_id
+            ) VALUES (%s, NULL, %s, 'profile', %s, %s, %s, %s, false, %s, %s)
             RETURNING id
             """,
             (hash_secret(f"discord-profile:{secrets.token_urlsafe(32)}"), uuid, realm,
-             now, now, now, minted_via),
+             now, now, now, None if view_session_id is None else MINTED_VIA_STAFF_VIEW, view_session_id),
         ).fetchone()["id"]
         conn.execute(
             """

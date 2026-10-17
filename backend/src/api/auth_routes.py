@@ -531,12 +531,12 @@ def profile_session(request: Request, response: Response):
     # During a view, the admin's opens count against the admin, not the player.
     _check_link_rate(user["acting_user_id"] or user["user_id"])
     logger.info("Profile session from Discord user_id=%s player_uuid=%s", user["user_id"], player_uuid)
-    minted_via = view_as.profile_minted_via(user)
-    if minted_via is not None:
+    view_session = view_as.profile_view_session(user)
+    if view_session is not None:
         # Tagged so the guard refuses its writes; it ends with the view.
         try:
             return start_linked_profile_session(
-                player_uuid, minted_via=minted_via, expires_at=user["expires_at"],
+                player_uuid, view_session_id=view_session, expires_at=user["expires_at"],
                 still_allowed=view_as.view_still_open(user["session_id"]),
             )
         except CodeError as exc:

@@ -18,7 +18,6 @@ from .admin import AdminError
 from .players import canonical_uuid
 from .users import (
     PLACEHOLDERS_LOCK,
-    VIEW_PROFILE_PREFIX,
     _iso,
     _utcnow,
     api_time,
@@ -241,11 +240,11 @@ def audit_refused_start(cookie_tokens: list[str], player_uuid: str) -> None:
             return
 
 
-def profile_minted_via(user: dict) -> str | None:
-    """login_codes.minted_via for a Profile session opened by this session user; None outside a view."""
+def profile_view_session(user: dict) -> int | None:
+    """The view a Profile session opened by this session user belongs to; None outside a view."""
     if user.get("acting_user_id") is None:
         return None
-    return f"{VIEW_PROFILE_PREFIX}{user['session_id']}"
+    return int(user["session_id"])
 
 
 def view_still_open(session_id: int):
@@ -278,9 +277,10 @@ def refuses_write(cookie_tokens: list[str], bearer_token: str | None) -> bool:
             return True
         if bearer is not None:
             row = conn.execute(
-                "SELECT c.minted_via FROM code_sessions s JOIN login_codes c ON c.id = s.code_id WHERE s.token_hash = %s",
+                "SELECT c.view_session_id FROM code_sessions s JOIN login_codes c ON c.id = s.code_id "
+                "WHERE s.token_hash = %s",
                 (bearer,),
             ).fetchone()
-            if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):
+            if row is not None and row["view_session_id"] is not None:
                 return True
     return False

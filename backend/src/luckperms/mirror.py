@@ -183,7 +183,7 @@ def replace_snapshot(payload) -> dict:
             _write_snapshot(conn, groups, tracks, users)
             conn.execute(
                 """
-                UPDATE lp_state SET server = %s, hash = %s, generated_at = %s, revision = %s,
+                UPDATE lp_state SET server = %s, hash = %s, generated_at = to_timestamp(%s), revision = %s,
                     received_at = %s, checked_at = %s
                 WHERE id = 1
                 """,

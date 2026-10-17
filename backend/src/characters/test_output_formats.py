@@ -33,7 +33,7 @@ def db(tmp_path, monkeypatch, postgres):
     db_mod.ensure_directories()
 
 
-def test_roster_keeps_created_at_text_and_sends_times_in_the_api_form():
+def test_roster_sends_created_at_as_epoch_text_and_times_in_the_api_form():
     sheet = {"race_name": "High Elf", "class_name": "Ranger", "age": "34", "gender": "Female",
              "description": "Quiet.", "background": "Woods.", "attributes": {"strength": 3, "dex": 2},
              "traits": [{"id": "patient", "name": "Patient"}], "clues": ["A red banner."]}
@@ -44,7 +44,7 @@ def test_roster_keeps_created_at_text_and_sends_times_in_the_api_form():
     ])
     ana, bram = list_roster(OWNER)
     assert ana["created_at"] == "1760356800"
-    assert testing.value("SELECT pg_typeof(created_at)::text FROM character_roster LIMIT 1") == "text"
+    assert testing.value("SELECT pg_typeof(created_at)::text FROM character_roster LIMIT 1") == "timestamp with time zone"
     assert bram["died_at"] == "2025-10-13T12:00:00Z"
     assert all(re.fullmatch(API_TIME, c["updated_at"]) for c in (ana, bram))
     # Sheet fields follow the roster's own keys in the order RPCharacters pushed them.

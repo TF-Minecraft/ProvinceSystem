@@ -28,8 +28,6 @@ _RETURN_MAX = 512
 _TOKEN_MAX = 256
 
 
-# login_codes.minted_via for a Profile session opened during a view: this prefix and the view's session id.
-VIEW_PROFILE_PREFIX = "staff_view:"
 # Every transaction that calls drop_view_leftovers takes this lock as its first
 # statement, so it never deletes a placeholder whose view is being committed.
 PLACEHOLDERS_LOCK = "auth:placeholders"
@@ -62,17 +60,14 @@ def drop_view_leftovers(conn) -> None:
 
     The caller's transaction must have opened with `database.transaction(lock=PLACEHOLDERS_LOCK)`.
     """
-    # A view's id is compared as text, so a malformed tag never fails the delete.
     conn.execute(
         """
         DELETE FROM code_sessions WHERE code_id IN (
             SELECT id FROM login_codes
-            WHERE starts_with(minted_via, %s)
-              AND substr(minted_via, %s) NOT IN (
-                  SELECT id::text FROM user_sessions WHERE acting_user_id IS NOT NULL)
+            WHERE view_session_id IS NOT NULL
+              AND view_session_id NOT IN (SELECT id FROM user_sessions WHERE acting_user_id IS NOT NULL)
         )
-        """,
-        (VIEW_PROFILE_PREFIX, len(VIEW_PROFILE_PREFIX) + 1),
+        """
     )
     conn.execute("DELETE FROM users WHERE placeholder AND id NOT IN (SELECT user_id FROM user_sessions)")
 

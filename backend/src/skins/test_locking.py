@@ -467,7 +467,7 @@ def test_ending_a_view_waits_for_its_profile_session_and_removes_it(env, monkeyp
     gate = Gate(monkeypatch, "acting_user_id IS NOT NULL FOR SHARE")
     opening, ending = race(
         gate,
-        lambda: codes.start_linked_profile_session(PLAYER, minted_via=view_as.profile_minted_via(view),
+        lambda: codes.start_linked_profile_session(PLAYER, view_session_id=view_as.profile_view_session(view),
                                                    expires_at=view["expires_at"],
                                                    still_allowed=view_as.view_still_open(view["session_id"])),
         lambda: view_as.end(view_token),
