@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
 
@@ -7,9 +8,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api import auth_routes as routes
-from src.auth import guild_check, preview_sign_in, users
+from src.auth import guild_check, preview_sign_in, testing, users
 from src.auth.config import AuthConfig
-from src.skins.db import connect
 
 DEV = "https://dev.tfminecraft.net"
 PREVIEW = "https://my-branch.tfminecraft.net"
@@ -27,7 +27,7 @@ def _app(base_url):
 
 
 @pytest.fixture
-def dev(database, monkeypatch):
+def dev(database, postgres, monkeypatch):
     """Dev: Discord sign-in, and tickets for previews under tfminecraft.net."""
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
@@ -44,7 +44,7 @@ def dev(database, monkeypatch):
 
 
 @pytest.fixture
-def preview(database, monkeypatch):
+def preview(database, postgres, monkeypatch):
     """A preview: no Discord settings, signs in through dev."""
     for name in ("DISCORD_AUTH_ENABLED", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "DISCORD_GUILD_ID",
                  "DISCORD_REDIRECT_URI", "PREVIEW_SIGN_IN_DOMAIN", "DISCORD_BOT_TOKEN"):
@@ -191,6 +191,17 @@ def test_preview_callback_reports_a_refused_ticket(preview, monkeypatch):
     assert SESSION not in response.cookies
 
 
+def test_preview_callback_without_an_accounts_database_keeps_the_ticket(preview, monkeypatch):
+    monkeypatch.setattr(preview_sign_in, "fetch_player", lambda *a: pytest.fail("ticket spent"))
+    preview.cookies.set(STATE, "s" * 43, domain="my-branch.tfminecraft.net")
+    with testing.no_accounts_database():
+        response = preview.get(f"/auth/preview/callback?ticket={'t' * 43}&state={'s' * 43}", follow_redirects=False)
+        started = preview.get("/auth/discord/start", follow_redirects=False)
+    assert (response.status_code, response.json()["detail"]) == (503, "accounts_unavailable")
+    assert SESSION not in response.cookies
+    assert (started.status_code, started.json()["detail"]) == (503, "accounts_unavailable")
+
+
 def test_preview_has_no_discord_callback(preview):
     assert preview.get("/auth/discord/callback?code=x&state=y").status_code == 404
 
@@ -242,6 +253,9 @@ def test_dev_start_hands_a_signed_in_player_to_the_preview(dev):
     assert redeemed.status_code == 200
     body = redeemed.json()
     assert body["discord_user_id"] == DISCORD_ID and body["role"] == "player" and body["guild_member"] is True
+    # The hand-off keeps the Z form previews parse strictly, so a preview accepts dev's answer.
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", body["guild_checked_at"])
+    assert preview_sign_in._player(body)["guild_checked_at"] == body["guild_checked_at"]
     assert dev.post("/auth/preview/redeem", json={"ticket": query["ticket"], "site": PREVIEW}).status_code == 410
 
 
@@ -264,9 +278,7 @@ def test_dev_start_refuses_a_malformed_site_without_failing(dev):
 
 def _age_check(minutes):
     stamp = users._iso(users._utcnow() - timedelta(minutes=minutes))
-    with connect() as conn:
-        conn.execute("UPDATE user_sessions SET guild_checked_at = ?", (stamp,))
-        conn.commit()
+    testing.execute("UPDATE user_sessions SET guild_checked_at = %s", (stamp,))
     return stamp
 
 
@@ -338,8 +350,7 @@ def test_tickets_are_for_one_site_and_expire(dev, monkeypatch):
 def test_tickets_are_stored_hashed(dev):
     _dev_session(dev)
     ticket = preview_sign_in.issue(PREVIEW, users.session_user(dev.cookies.get(SESSION)))
-    with connect() as conn:
-        stored = [row[0] for row in conn.execute("SELECT ticket_hash FROM preview_sign_in_tickets")]
+    stored = [row["ticket_hash"] for row in testing.rows("SELECT ticket_hash FROM preview_sign_in_tickets")]
     assert stored and ticket not in stored
 
 

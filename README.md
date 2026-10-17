@@ -38,6 +38,17 @@ and run the frontend Vitest and backend pytest suites with the same JUnit output
 (cd backend && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest -q --junitxml=../test-results/backend.xml)
 ```
 
+Backend tests that take the `postgres` fixture (`backend/src/database/testing.py`)
+need a Postgres server and a superuser URL in `TEST_DATABASE_URL`; each run creates
+and drops its own database. Without it they skip locally. CI runs them against a
+`pgvector/pgvector:pg17` service. Locally, for example:
+
+```sh
+docker run --rm -d --name ps-test-pg -p 55432:5432 -e POSTGRES_PASSWORD=test \
+  --tmpfs /var/lib/postgresql/data pgvector/pgvector:pg17 -c fsync=off
+export TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/postgres
+```
+
 CI also lints the frontend with oxlint and checks its formatting with oxfmt.
 From `frontend/`, `npm run lint` and `npm run format:check` run the same checks;
 `npm run format` rewrites files in place.

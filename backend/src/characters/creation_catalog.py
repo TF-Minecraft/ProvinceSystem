@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
 from typing import Any
+
+from src import database
+from src.characters.times import api_time, utcnow
 
 
 class CreationCatalogError(ValueError):
     """Invalid creation catalog payload."""
-
-
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _as_list(raw: Any, field: str) -> list:
@@ -304,28 +301,24 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
 
 def replace_catalog(raw: dict[str, Any]) -> dict[str, Any]:
     """Full-replace creation catalog snapshot."""
-    from src.skins.db import connect
-
     payload = _normalize_payload(raw)
-    updated_at = _iso_now()
-    body = json.dumps(payload, separators=(",", ":"))
+    updated_at = utcnow()
 
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             INSERT INTO creation_catalog (id, payload, updated_at)
-            VALUES (1, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
+            VALUES (1, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
                 payload = excluded.payload,
                 updated_at = excluded.updated_at
             """,
-            (body, updated_at),
+            (database.Jsonb(payload), updated_at),
         )
-        conn.commit()
 
     return {
         **payload,
-        "updated_at": updated_at,
+        "updated_at": api_time(updated_at),
         "stages_count": len(payload["stages"]),
         "races_count": len(payload["races"]),
         "traits_count": len(payload["traits"]),
@@ -350,9 +343,7 @@ def _empty_catalog() -> dict[str, Any]:
 
 def get_catalog() -> dict[str, Any]:
     """Return stored snapshot or empty catalog."""
-    from src.skins.db import connect
-
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT payload, updated_at FROM creation_catalog WHERE id = 1"
         ).fetchone()
@@ -360,15 +351,12 @@ def get_catalog() -> dict[str, Any]:
     if row is None:
         return _empty_catalog()
 
-    try:
-        data = json.loads(row["payload"] or "{}")
-    except json.JSONDecodeError:
-        data = {}
+    data = row["payload"]
     if not isinstance(data, dict):
         data = {}
 
     out = _empty_catalog()
-    out["updated_at"] = row["updated_at"]
+    out["updated_at"] = api_time(row["updated_at"])
     for key in (
         "stages",
         "races",

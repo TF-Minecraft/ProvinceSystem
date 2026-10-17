@@ -1,9 +1,14 @@
 """LuckPerms changes staff queue for the TFMCWeb bridge.
 
 A change is checked against the mirror and the actor's rights inside one
-immediate transaction, which also reloads the actor's session, so a demotion
-that lands first always wins. The change row and its audit row commit
-together; a refused attempt rolls back and is then logged on its own.
+transaction that holds `lp_state` FOR SHARE (so no snapshot or result changes
+the mirror meanwhile) and the actor's session and user rows FOR SHARE (so a
+demotion either lands first and is seen, or waits). The change row and its
+audit row commit together; a refused attempt rolls back and is then logged on
+its own.
+
+Lock order, in every transaction here: `lp_state`, then users and sessions,
+then `lp_changes` rows (see mirror.py).
 
 Only one unfinished change per target is allowed, so every change is checked
 against the state it will actually meet. The bridge checks the same
@@ -16,11 +21,13 @@ import os
 import time
 from datetime import datetime, timezone
 
-from src.auth import audit, roles
+import psycopg
+
+from src import database
+from src.auth import audit, roles, users
 from src.auth.admin import AdminError, clean_reason
 from src.auth.players import canonical_uuid
 from src.auth.users import session_user_in
-from src.skins.db import connect
 
 from . import mirror, nodes, policy
 
@@ -47,14 +54,6 @@ def read_only() -> bool:
 
 def _now() -> int:
     return int(time.time())
-
-
-def _iso(ts: float | None = None) -> str:
-    return datetime.fromtimestamp(ts if ts is not None else time.time(), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _parse(stamp: str) -> float:
-    return datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp()
 
 
 def _bad(code: str) -> AdminError:
@@ -236,19 +235,33 @@ def build_track_ops(conn, name: str, raw_ops: list) -> tuple[list[dict], list[st
 # --------------------
 
 
-def _linked_uuid(conn, discord_user_id: str | None) -> str | None:
-    if not discord_user_id:
+def discord_link(conn, *, discord_user_id: str | None = None, player_uuid: str | None = None) -> dict | None:
+    """The Discord link of an account (by Discord id) or of a player (by lower-case UUID)."""
+    column, value = ("discord_user_id", discord_user_id) if discord_user_id else ("lower(player_uuid)", player_uuid)
+    if not value:
         return None
-    row = conn.execute("SELECT player_uuid FROM discord_links WHERE discord_user_id = ?", (discord_user_id,)).fetchone()
-    return canonical_uuid(row["player_uuid"]) if row else None
+    row = conn.execute(
+        f"SELECT discord_user_id, player_uuid, discord_username FROM discord_links WHERE {column} = %s",
+        (value,)).fetchone()
+    return dict(row) if row else None
+
+
+def _linked_uuid(conn, discord_user_id: str | None) -> str | None:
+    link = discord_link(conn, discord_user_id=discord_user_id)
+    return canonical_uuid(link["player_uuid"]) if link else None
 
 
 def _target_account_role(conn, uuid: str) -> str | None:
-    row = conn.execute(
-        "SELECT u.role FROM discord_links dl JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0 "
-        "WHERE lower(dl.player_uuid) = ?",
-        (uuid,),
-    ).fetchone()
+    """The role of the website account linked to the player, if any.
+
+    Read without a lock: a promotion landing after the change is queued is caught when
+    `_current_actor` checks the change again before handing it out.
+    """
+    link = discord_link(conn, player_uuid=uuid)
+    if link is None:
+        return None
+    row = conn.execute("SELECT role FROM users WHERE discord_user_id = %s AND NOT placeholder",
+                       (link["discord_user_id"],)).fetchone()
     return row["role"] if row else None
 
 
@@ -314,67 +327,80 @@ def _shape(target_type, target, raw_ops) -> tuple[str, str, list[dict]]:
     return target_type, target, raw_ops
 
 
+def _reason(reason: str | None) -> str:
+    clean = clean_reason(reason)
+    if "\x00" in clean:  # Postgres text cannot hold NUL
+        raise AdminError(400, "reason_required", "invalid")
+    return clean
+
+
 def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -> dict:
     action = "luckperms.change"
     actor = None
     clean = None
-    detail_target = {"target_type": target_type if isinstance(target_type, str) else None,
-                     "target": target[:64] if isinstance(target, str) else None}
+    # The audit row is jsonb, which cannot hold NUL.
+    detail_target = {"target_type": target_type.replace("\x00", "") if isinstance(target_type, str) else None,
+                     "target": target[:64].replace("\x00", "") if isinstance(target, str) else None}
     try:
-        with connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
+        with database.connect() as conn:
+            # lp_state first: no snapshot or result changes the mirror until this commits.
+            mirror.lock_state(conn, share=True)
+            actor = session_user_in(conn, token, lock=True)
+            if actor is None:
+                raise AdminError(401, "not_signed_in", "denied")
+            if not roles.can(actor["role"], "change_luckperms"):
+                raise _forbidden()
+            clean = _reason(reason)
+            target_type, target, raw_ops = _shape(target_type, target, raw_ops)
+            detail_target = {"target_type": target_type, "target": target}
+            state = mirror.status(conn)
+            if read_only() or not state["applying"]:
+                raise AdminError(503, "bridge_offline", "unavailable")
+            settle_timeouts(conn)
+            if conn.execute(
+                    "SELECT 1 FROM lp_changes WHERE target_type = %s AND target = %s AND status IN ('pending', 'sent')",
+                    (target_type, target)).fetchone():
+                raise _conflict("change_pending")
+            now = _now()
+            target_name = target
+            if target_type == "user":
+                row = mirror.user_row(conn, target)
+                if row is None:
+                    raise AdminError(404, "player_not_found", "not_found")
+                target_name = row["name"] or target
+                check_user_target(conn, actor, target)
+                ops, words = build_user_ops(conn, target, raw_ops, now)
+            elif target_type == "group":
+                ops, words = build_group_ops(conn, target, raw_ops, now)
+            else:
+                ops, words = build_track_ops(conn, target, raw_ops)
+            check_ops_allowed(conn, actor["role"], target_type, ops)
+            if not ops:
+                raise _conflict("nothing_to_change")
+            description = "; ".join(words)[:DESCRIPTION_MAX]
             try:
-                actor = session_user_in(conn, token)
-                if actor is None:
-                    raise AdminError(401, "not_signed_in", "denied")
-                if not roles.can(actor["role"], "change_luckperms"):
-                    raise _forbidden()
-                clean = clean_reason(reason)
-                target_type, target, raw_ops = _shape(target_type, target, raw_ops)
-                detail_target = {"target_type": target_type, "target": target}
-                state = mirror.status(conn)
-                settle_timeouts(conn)
-                if read_only() or not state["applying"]:
-                    raise AdminError(503, "bridge_offline", "unavailable")
-                if conn.execute(
-                        "SELECT 1 FROM lp_changes WHERE target_type = ? AND target = ? AND status IN ('pending', 'sent')",
-                        (target_type, target)).fetchone():
-                    raise _conflict("change_pending")
-                now = _now()
-                target_name = target
-                if target_type == "user":
-                    row = mirror.user_row(conn, target)
-                    if row is None:
-                        raise AdminError(404, "player_not_found", "not_found")
-                    target_name = row["name"] or target
-                    check_user_target(conn, actor, target)
-                    ops, words = build_user_ops(conn, target, raw_ops, now)
-                elif target_type == "group":
-                    ops, words = build_group_ops(conn, target, raw_ops, now)
-                else:
-                    ops, words = build_track_ops(conn, target, raw_ops)
-                check_ops_allowed(conn, actor["role"], target_type, ops)
-                if not ops:
-                    raise _conflict("nothing_to_change")
-                description = "; ".join(words)[:DESCRIPTION_MAX]
                 change_id = conn.execute(
                     """
                     INSERT INTO lp_changes (
                         created_at, actor_user_id, actor_name, actor_role, actor_minecraft_uuid,
                         target_type, target, target_name, description, ops_json, reason
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
                     """,
-                    (_iso(), actor["user_id"], audit.display_name(actor), actor["role"],
+                    (mirror._stamp(), actor["user_id"], audit.display_name(actor), actor["role"],
                      _linked_uuid(conn, actor["discord_user_id"]), target_type, target, target_name,
-                     description, json.dumps(ops, sort_keys=True), clean),
-                ).lastrowid
-                audit.record(conn, actor=actor, action=action, outcome="ok", reason=clean,
-                             detail={**detail_target, "target_name": target_name, "change_id": change_id,
-                                     "description": description})
-                conn.commit()
-            except BaseException:
-                conn.rollback()
-                raise
+                     description, database.Jsonb(ops), clean),
+                ).fetchone()["id"]
+            except database.UniqueViolation:
+                # Another change for this target committed after the check above.
+                raise _conflict("change_pending") from None
+            audit.record(conn, actor=actor, action=action, outcome="ok", reason=clean,
+                         detail={**detail_target, "target_name": target_name, "change_id": change_id,
+                                 "description": description})
+            # All mutation waits, including the audit insert, precede this check.
+            session = conn.execute("SELECT expires_at FROM user_sessions WHERE id = %s", (actor["session_id"],)).fetchone()
+            if session is None or session["expires_at"] <= users._utcnow():
+                raise AdminError(401, "not_signed_in", "denied")
     except AdminError as exc:
         if actor is not None:
             audit.record_refusal(actor=actor, action=action, outcome=exc.outcome, reason=clean,
@@ -391,7 +417,7 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
 def _change_json(row) -> dict:
     return {
         "id": row["id"],
-        "created_at": row["created_at"],
+        "created_at": mirror._iso(row["created_at"]),
         "actor_name": row["actor_name"],
         "actor_role": row["actor_role"],
         "target_type": row["target_type"],
@@ -400,20 +426,21 @@ def _change_json(row) -> dict:
         "description": row["description"],
         "reason": row["reason"],
         "status": row["status"],
-        "finished_at": row["finished_at"],
+        "finished_at": mirror._iso(row["finished_at"]),
         "error": row["error"],
     }
 
 
 def _settled_reads(conn) -> None:
+    """Settle timed-out changes before a read, in the read's transaction."""
+    mirror.lock_state(conn, share=True)
     settle_timeouts(conn)
-    conn.commit()
 
 
 def get_change(change_id: int) -> dict:
-    with connect() as conn:
+    with database.connect() as conn:
         _settled_reads(conn)
-        row = conn.execute("SELECT * FROM lp_changes WHERE id = ?", (change_id,)).fetchone()
+        row = conn.execute("SELECT * FROM lp_changes WHERE id = %s", (change_id,)).fetchone()
     if row is None:
         raise AdminError(404, "change_not_found", "not_found")
     return _change_json(row)
@@ -422,12 +449,12 @@ def get_change(change_id: int) -> dict:
 def list_changes(target_type: str | None = None, target: str | None = None, limit: int = HISTORY_LIMIT) -> list[dict]:
     where, args = [], []
     if target_type and target:
-        where.append("target_type = ? AND target = ?")
+        where.append("target_type = %s AND target = %s")
         args += [target_type, target]
     clause = f"WHERE {' AND '.join(where)}" if where else ""
-    with connect() as conn:
+    with database.connect() as conn:
         _settled_reads(conn)
-        rows = conn.execute(f"SELECT * FROM lp_changes {clause} ORDER BY id DESC LIMIT ?",
+        rows = conn.execute(f"SELECT * FROM lp_changes {clause} ORDER BY id DESC LIMIT %s",
                             [*args, max(1, min(limit, HISTORY_LIMIT))]).fetchall()
     return [_change_json(row) for row in rows]
 
@@ -441,32 +468,60 @@ def _actor_name(row) -> str:
     return f"web:{row['actor_name'] or row['actor_user_id']}"[:100]
 
 
+def _ops(row) -> list[dict]:
+    """A change's ops as queued: stored with sorted keys, which jsonb does not keep."""
+    return json.loads(json.dumps(row["ops_json"], sort_keys=True))
+
+
+def _lock_actors(conn) -> None:
+    """Hold the users who queued pending changes FOR SHARE, in id order, before any
+    lp_changes row is locked; `_current_actor` then reads them under that lock."""
+    conn.execute(
+        "SELECT id FROM users WHERE id IN (SELECT actor_user_id FROM lp_changes WHERE status = 'pending') "
+        "ORDER BY id FOR SHARE")
+
+
 def _current_actor(conn, row) -> dict | None:
-    """The actor's rights again at collection time: a demotion since queueing cancels the change."""
-    actor = conn.execute("SELECT id AS user_id, discord_user_id, role FROM users WHERE id = ?",
+    """The actor's rights again at collection time: a demotion since queueing cancels the change.
+
+    The actor row is read FOR SHARE, so a demotion either lands first and cancels the
+    change, or waits until the change has been handed out.
+    """
+    actor = conn.execute("SELECT id AS user_id, discord_user_id, role FROM users WHERE id = %s FOR SHARE",
                          (row["actor_user_id"],)).fetchone()
     if actor is None or not roles.can(actor["role"], "change_luckperms"):
         return None
-    actor = dict(actor)
     try:
         if row["target_type"] == "user":
             check_user_target(conn, actor, row["target"])
-        check_ops_allowed(conn, actor["role"], row["target_type"], json.loads(row["ops_json"]))
+        check_ops_allowed(conn, actor["role"], row["target_type"], _ops(row))
     except AdminError:
         return None
     return actor
 
 
 def settle_timeouts(conn, now: float | None = None) -> None:
-    """Expire unfetched changes and mark unanswered ones unknown, whether or not the bridge polls."""
-    now = time.time() if now is None else now
-    for row in conn.execute("SELECT id, status, created_at, sent_at FROM lp_changes WHERE status IN ('pending', 'sent')"):
-        if row["status"] == "sent" and now - _parse(row["sent_at"]) > RESULT_WAIT_SECONDS:
-            conn.execute("UPDATE lp_changes SET status = 'unknown', finished_at = ?, error = 'no_result' WHERE id = ?",
-                         (_iso(now), row["id"]))
-        elif row["status"] == "pending" and now - _parse(row["created_at"]) > PENDING_TTL_SECONDS:
-            conn.execute("UPDATE lp_changes SET status = 'expired', finished_at = ?, error = 'expired' WHERE id = ?",
-                         (_iso(now), row["id"]))
+    """Expire unfetched changes and mark unanswered ones unknown, whether or not the bridge polls.
+
+    Each UPDATE keeps the status in its WHERE, so a change settled meanwhile is left alone,
+    and locks its rows in id order.
+    """
+    for status, column, wait, outcome, error in (
+            ("sent", "sent_at", RESULT_WAIT_SECONDS, "unknown", "no_result"),
+            ("pending", "created_at", PENDING_TTL_SECONDS, "expired", "expired")):
+        checked_at = time.time() if now is None else now
+        conn.execute(
+            f"""
+            UPDATE lp_changes SET status = %s, finished_at = %s, error = %s
+            WHERE id IN (SELECT id FROM lp_changes WHERE status = %s AND {column} < %s ORDER BY id FOR UPDATE)
+              AND status = %s
+            """,
+            (outcome, mirror._stamp(checked_at), error, status, _before(checked_at, wait), status))
+
+
+def _before(now: float, seconds: int) -> datetime:
+    """The cutoff for `now - stored > seconds`, as an exact aware datetime."""
+    return datetime.fromtimestamp(now - seconds, timezone.utc)
 
 
 def _guard(conn, row, actor: dict) -> dict | None:
@@ -491,57 +546,63 @@ def fetch_for_bridge() -> list[dict]:
     its result arrives: later changes are checked against the definitions it
     leaves behind.
     """
-    now = time.time()
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            mirror.record_poll(conn)
-            settle_timeouts(conn, now)
-            out = []
-            # Until a definition change's result arrives, or a snapshot taken after it was
-            # sent shows LuckPerms as it now is, nothing else is checked against old groups.
-            definition_sent = conn.execute(
-                """
-                SELECT 1 FROM lp_changes c
-                WHERE c.target_type != 'user'
-                  AND (c.status = 'sent' OR (c.status = 'unknown' AND NOT EXISTS (
-                      SELECT 1 FROM lp_state s WHERE s.id = 1 AND s.checked_at > c.sent_at)))
-                """).fetchone()
-            rows = [] if read_only() or definition_sent else conn.execute(
-                "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id").fetchall()
-            for row in rows:
-                if len(out) >= FETCH_LIMIT:
-                    break
-                definition = row["target_type"] != "user"
-                if definition and out:
-                    break
-                actor = _current_actor(conn, row)
-                if actor is None:
-                    conn.execute("UPDATE lp_changes SET status = 'failed', finished_at = ?, error = 'no_longer_allowed' "
-                                 "WHERE id = ?", (_iso(now), row["id"]))
-                    continue
-                conn.execute("UPDATE lp_changes SET status = 'sent', sent_at = ?, attempts = attempts + 1 "
-                             "WHERE id = ?", (_iso(now), row["id"]))
-                change = {
-                    "id": row["id"],
-                    "target_type": row["target_type"],
-                    "target": row["target"],
-                    "target_name": row["target_name"],
-                    "actor_name": _actor_name(row),
-                    "actor_uuid": row["actor_minecraft_uuid"],
-                    "description": row["description"],
-                    "ops": json.loads(row["ops_json"]),
-                }
-                guard = _guard(conn, row, actor)
-                if guard is not None:
-                    change["guard"] = guard
-                out.append(change)
-                if definition:
-                    break
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
+    with database.connect() as conn:
+        # The upsert is the first statement, so lp_state is this transaction's first lock.
+        mirror.record_poll(conn)
+        _lock_actors(conn)
+        settle_timeouts(conn)
+        out = []
+        # Until a definition change's result arrives, or a snapshot taken after it was
+        # sent shows LuckPerms as it now is, nothing else is checked against old groups.
+        definition_sent = conn.execute(
+            """
+            SELECT 1 FROM lp_changes c
+            WHERE c.target_type != 'user'
+              AND (c.status = 'sent' OR (c.status = 'unknown' AND NOT EXISTS (
+                  SELECT 1 FROM lp_state s WHERE s.id = 1 AND s.checked_at > c.sent_at)))
+            """).fetchone()
+        rows = [] if read_only() or definition_sent else conn.execute(
+            "SELECT * FROM lp_changes WHERE status = 'pending' ORDER BY id FOR UPDATE").fetchall()
+        for row in rows:
+            if len(out) >= FETCH_LIMIT:
+                break
+            # Settlement or collecting these row locks may have waited past a
+            # different pending change's TTL. No row/table write lock is left
+            # to acquire before handing this locked row out.
+            now = time.time()
+            stamp = mirror._stamp(now)
+            if row["created_at"] < _before(now, PENDING_TTL_SECONDS):
+                conn.execute("UPDATE lp_changes SET status = 'expired', finished_at = %s, error = 'expired' "
+                             "WHERE id = %s AND status = 'pending'", (stamp, row["id"]))
+                continue
+            definition = row["target_type"] != "user"
+            if definition and out:
+                break
+            actor = _current_actor(conn, row)
+            if actor is None:
+                conn.execute("UPDATE lp_changes SET status = 'failed', finished_at = %s, error = 'no_longer_allowed' "
+                             "WHERE id = %s AND status = 'pending'", (stamp, row["id"]))
+                continue
+            # Handed out once: only a change still pending is sent.
+            if conn.execute("UPDATE lp_changes SET status = 'sent', sent_at = %s, attempts = attempts + 1 "
+                            "WHERE id = %s AND status = 'pending'", (stamp, row["id"])).rowcount != 1:
+                continue
+            change = {
+                "id": row["id"],
+                "target_type": row["target_type"],
+                "target": row["target"],
+                "target_name": row["target_name"],
+                "actor_name": _actor_name(row),
+                "actor_uuid": row["actor_minecraft_uuid"],
+                "description": row["description"],
+                "ops": _ops(row),
+            }
+            guard = _guard(conn, row, actor)
+            if guard is not None:
+                change["guard"] = guard
+            out.append(change)
+            if definition:
+                break
     return out
 
 
@@ -549,29 +610,28 @@ def record_results(results) -> dict:
     if not isinstance(results, list):
         raise _bad("bad_results")
     recorded = 0
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            for result in results:
-                if not isinstance(result, dict) or not isinstance(result.get("id"), int):
-                    continue
-                row = conn.execute("SELECT * FROM lp_changes WHERE id = ?", (result["id"],)).fetchone()
-                # A late result still settles a change whose outcome was unknown.
-                if row is None or row["status"] not in ("sent", "unknown"):
-                    continue
-                ok = result.get("ok") is True
-                error = None if ok else str(result.get("error") or "failed")[:64]
-                conn.execute("UPDATE lp_changes SET status = ?, finished_at = ?, error = ? WHERE id = ?",
-                             ("applied" if ok else "failed", _iso(), error, row["id"]))
-                if ok and "state" in result:
-                    try:
+    with database.connect() as conn:
+        # lp_state before any lp_changes row, the order fetch_for_bridge takes them in.
+        mirror.lock_state(conn)
+        for result in results:
+            if not isinstance(result, dict) or not isinstance(result.get("id"), int):
+                continue
+            ok = result.get("ok") is True
+            error = None if ok else str(result.get("error") or "failed")[:64]
+            # Settled once. A late result still settles a change whose outcome was unknown.
+            row = conn.execute(
+                "UPDATE lp_changes SET status = %s, finished_at = %s, error = %s "
+                "WHERE id = %s AND status IN ('sent', 'unknown') RETURNING target_type, target",
+                ("applied" if ok else "failed", mirror._stamp(), error.replace("\x00", "") if error else None,
+                 int(result["id"]))).fetchone()
+            if row is None:
+                continue
+            if ok and "state" in result:
+                try:
+                    with conn.transaction():
                         mirror.apply_state(conn, row["target_type"], row["target"], result["state"],
                                            result.get("revision"))
-                    except mirror.SnapshotError:
-                        conn.execute("UPDATE lp_state SET hash = NULL WHERE id = 1")
-                recorded += 1
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
+                except (mirror.SnapshotError, psycopg.DataError):
+                    conn.execute("UPDATE lp_state SET hash = NULL WHERE id = 1")
+            recorded += 1
     return {"ok": True, "recorded": recorded}

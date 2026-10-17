@@ -18,7 +18,7 @@ import uuid as uuidlib
 from src.coreprotect import activity, maps as co_maps, movement, sessions
 from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode as encode_cursor
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
-from src.skins.db import connect
+from src import database
 from src.characters.roster import list_roster
 from src.characters.wardrobe import active_face_png, active_figure_png, WardrobeError
 
@@ -57,13 +57,16 @@ def _status(error: Unavailable | None) -> dict:
 # province.db
 # --------------------
 
+# Discord links with the website account of the same Discord user, if any.
 _LINKS = """
     SELECT dl.player_uuid, dl.discord_user_id, dl.discord_username, dl.discord_nickname, dl.minecraft_name,
            dl.linked_at, dl.left_guild_at, dl.grace_until,
-           u.id AS user_id, u.role, u.discord_username AS account_username,
-           u.discord_global_name, u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
-    FROM discord_links dl LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND u.placeholder = 0
+           u.id AS user_id, u.role, u.discord_username AS account_username, u.discord_global_name,
+           u.discord_avatar, u.created_at AS account_created_at, u.last_login_at
+    FROM discord_links dl
+    LEFT JOIN users u ON u.discord_user_id = dl.discord_user_id AND NOT u.placeholder
 """
+_LINK_TIMES = ("linked_at", "left_guild_at", "grace_until", "account_created_at", "last_login_at")
 _ROSTER = """
     SELECT player_uuid, realm_id, character_id, name, status, race, class, updated_at
     FROM character_roster
@@ -72,15 +75,18 @@ _ROSTER = """
 
 def _site_rows(key: str | None = None) -> tuple[list[dict], list[dict]]:
     """Discord links (with any website account) and characters, for one player or everyone."""
-    with connect() as conn:
+    with database.connect() as conn:
         if key is None:
             links = conn.execute(_LINKS).fetchall()
+        else:
+            links = conn.execute(f"{_LINKS} WHERE lower(dl.player_uuid) = %s", (key,)).fetchall()
+        if key is None:
             roster = conn.execute(f"{_ROSTER} ORDER BY realm_id, lower(name)").fetchall()
         else:
-            links = conn.execute(f"{_LINKS} WHERE lower(dl.player_uuid) = ?", (key,)).fetchall()
-            roster = conn.execute(f"{_ROSTER} WHERE lower(player_uuid) = ? ORDER BY realm_id, lower(name)",
+            roster = conn.execute(f"{_ROSTER} WHERE lower(player_uuid) = %s ORDER BY realm_id, lower(name)",
                                   (key,)).fetchall()
-    return [dict(r) for r in links], [dict(r) for r in roster]
+    links = [{**link, **{name: users.api_time(link[name]) for name in _LINK_TIMES}} for link in links]
+    return links, [{**r, "updated_at": users.api_time(r["updated_at"])} for r in roster]
 
 
 def _discord(link: dict | None) -> dict | None:
@@ -406,10 +412,10 @@ def profile(config: CoreProtectConfig, text: str) -> dict:
 
 def character_picture(text: str, realm: str, character_id: str, kind: str) -> bytes:
     key = _require(text)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT player_uuid FROM character_roster "
-            "WHERE lower(player_uuid) = ? AND realm_id = ? AND character_id = ?",
+            "WHERE lower(player_uuid) = %s AND realm_id = %s AND character_id = %s",
             (key, realm, character_id),
         ).fetchone()
     if row is None:
@@ -474,9 +480,8 @@ def _audit_messages(viewer: dict, config: CoreProtectConfig, key: str, kinds: tu
         "oldest": {"id": shown[-1]["id"], "time": shown[-1]["time"]},
     }
     try:
-        with connect() as conn:
+        with database.connect() as conn:
             audit.record(conn, actor=viewer, action="player.messages.view", outcome="ok", detail=detail)
-            conn.commit()
     except Exception:
         raise PlayerError(503, "audit_unavailable") from None
 
@@ -544,9 +549,8 @@ def _audit_movement(viewer: dict, config: CoreProtectConfig, subject: str, since
     if session is not None:
         detail["session"] = session
     try:
-        with connect() as conn:
+        with database.connect() as conn:
             audit.record(conn, actor=viewer, action="player.movement.view", outcome="ok", detail=detail)
-            conn.commit()
     except Exception:
         raise PlayerError(503, "audit_unavailable") from None
 

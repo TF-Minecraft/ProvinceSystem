@@ -120,7 +120,7 @@ def _snapshot(**overrides) -> dict:
 
 
 @pytest.fixture
-def upload_env(tmp_path, monkeypatch):
+def upload_env(tmp_path, monkeypatch, postgres):
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))
@@ -129,7 +129,6 @@ def upload_env(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
     monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
     monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
     monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
@@ -151,7 +150,7 @@ def upload_env(tmp_path, monkeypatch):
         "src.api.data_routes.create_infestation_map", lambda map_name: None
     )
 
-    skins_db.migrate()
+    skins_db.ensure_directories()
     try:
         yield {"root": tmp_path, "captures": captures}
     finally:

@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
@@ -167,6 +169,7 @@ class TraitRuleTests(unittest.TestCase):
         )
 
 
+@pytest.mark.usefixtures("postgres")
 class CreateCheckTests(unittest.TestCase):
     """The create endpoint's validation runs the shared rules."""
 
@@ -179,14 +182,13 @@ class CreateCheckTests(unittest.TestCase):
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=root / "province.db",
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
         catalog = _catalog()
         catalog.update(
             {

@@ -8,6 +8,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND = Path(__file__).resolve().parents[1]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
@@ -132,14 +136,13 @@ class CreateValidationWireTests(unittest.TestCase):
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=root / "province.db",
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
 
     def test_rejects_script_name(self) -> None:
         from src.characters.creates import CreateError, _validate_and_normalize

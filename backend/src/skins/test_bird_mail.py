@@ -7,12 +7,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
+
+# Moderation notifications live in Postgres.
+pytestmark = pytest.mark.usefixtures("postgres")
 
 
 class BirdMailModerationTest(unittest.TestCase):
@@ -21,24 +26,21 @@ class BirdMailModerationTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self.db_path = root / "province.db"
 
-        import skins.db as db_mod
+        import src.skins.db as db_mod
 
         self._db_mod = db_mod
-        sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
+
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
-        self._db_mod.DB_PATH = self._orig_db
         self._db_mod.DRINKS_DIR = self._orig_drinks
         self._db_mod.DATA_DIR = self._orig_data
         self._db_mod.SKINS_DIR = self._orig_skins

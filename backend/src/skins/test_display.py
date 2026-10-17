@@ -11,7 +11,7 @@ _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-from skins.display import (  # noqa: E402
+from src.skins.display import (  # noqa: E402
     BOUNDS_ERROR,
     ITEM_WRAPPER_ERROR,
     NO_ELEMENTS_ERROR,

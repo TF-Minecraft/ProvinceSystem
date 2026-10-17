@@ -1,4 +1,7 @@
-CREATE TABLE IF NOT EXISTS codes (
+-- Offline rollback schema for the last SQLite site version. No seed rows.
+-- Runtime site data uses Postgres; this resource belongs to the copy tool.
+
+CREATE TABLE codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code_hash TEXT NOT NULL UNIQUE,
     code_plaintext TEXT,
@@ -12,7 +15,7 @@ CREATE TABLE IF NOT EXISTS codes (
     minted_via TEXT
 );
 
-CREATE TABLE IF NOT EXISTS submissions (
+CREATE TABLE submissions (
     id TEXT PRIMARY KEY,
     player_uuid TEXT NOT NULL,
     code_id INTEGER NOT NULL,
@@ -45,7 +48,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_hash TEXT NOT NULL UNIQUE,
     code_id INTEGER NOT NULL,
@@ -55,7 +58,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
-CREATE TABLE IF NOT EXISTS discord_links (
+CREATE TABLE discord_links (
     player_uuid TEXT PRIMARY KEY,
     discord_user_id TEXT NOT NULL UNIQUE,
     minecraft_name TEXT,
@@ -69,7 +72,7 @@ CREATE TABLE IF NOT EXISTS discord_links (
     link_method TEXT
 );
 
-CREATE TABLE IF NOT EXISTS discord_link_codes (
+CREATE TABLE discord_link_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code_hash TEXT NOT NULL UNIQUE,
     player_uuid TEXT NOT NULL,
@@ -79,10 +82,7 @@ CREATE TABLE IF NOT EXISTS discord_link_codes (
     used_at TEXT
 );
 
--- One-time war declare codes. Staff mint one in Discord bound to an attacker,
--- a defender and a war goal; the plugin validates it, then redeems it only once
--- the war actually exists. No plaintext is stored: staff see the code once.
-CREATE TABLE IF NOT EXISTS war_declare_codes (
+CREATE TABLE war_declare_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code_hash TEXT NOT NULL UNIQUE,
     realm_id TEXT NOT NULL DEFAULT 'main',
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS war_declare_codes (
     revoked INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS skin_notifications (
+CREATE TABLE skin_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
     submission_id TEXT NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS skin_notifications (
     delivered_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS plugin_notices (
+CREATE TABLE plugin_notices (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
     player_uuid TEXT NOT NULL,
@@ -116,21 +116,7 @@ CREATE TABLE IF NOT EXISTS plugin_notices (
     delivered_at TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
-CREATE INDEX IF NOT EXISTS idx_submissions_slug ON submissions(slug);
-CREATE INDEX IF NOT EXISTS idx_codes_hash ON codes(code_hash);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
-CREATE INDEX IF NOT EXISTS idx_discord_links_discord ON discord_links(discord_user_id);
-CREATE INDEX IF NOT EXISTS idx_discord_link_codes_hash ON discord_link_codes(code_hash);
-CREATE INDEX IF NOT EXISTS idx_war_declare_codes_hash ON war_declare_codes(code_hash);
-CREATE INDEX IF NOT EXISTS idx_war_declare_codes_outstanding
-    ON war_declare_codes(realm_id, redeemed_at, revoked);
-CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
-    ON skin_notifications(delivered_at, created_at);
-CREATE INDEX IF NOT EXISTS idx_plugin_notices_undelivered
-    ON plugin_notices(delivered_at, created_at);
-
-CREATE TABLE IF NOT EXISTS player_warnings (
+CREATE TABLE player_warnings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_uuid TEXT NOT NULL,
     staff_uuid TEXT,
@@ -139,7 +125,7 @@ CREATE TABLE IF NOT EXISTS player_warnings (
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS moderation_notifications (
+CREATE TABLE moderation_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
     discord_user_id TEXT NOT NULL,
@@ -149,18 +135,13 @@ CREATE TABLE IF NOT EXISTS moderation_notifications (
     delivered_at TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_player_warnings_uuid
-    ON player_warnings(player_uuid, created_at);
-CREATE INDEX IF NOT EXISTS idx_moderation_notifications_undelivered
-    ON moderation_notifications(delivered_at, created_at);
-
-CREATE TABLE IF NOT EXISTS armourshop_catalog (
+CREATE TABLE armourshop_catalog (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS lore_item_customisations (
+CREATE TABLE lore_item_customisations (
     player_uuid TEXT NOT NULL,
     character_id TEXT NOT NULL,
     kit_key TEXT NOT NULL,
@@ -181,7 +162,7 @@ CREATE TABLE IF NOT EXISTS lore_item_customisations (
     PRIMARY KEY (player_uuid, character_id, kit_key)
 );
 
-CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
+CREATE TABLE character_wardrobe_slots (
     player_uuid TEXT NOT NULL,
     character_id TEXT NOT NULL,
     slot TEXT NOT NULL,
@@ -195,7 +176,7 @@ CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
     PRIMARY KEY (player_uuid, character_id, slot)
 );
 
-CREATE TABLE IF NOT EXISTS character_create_wardrobe (
+CREATE TABLE character_create_wardrobe (
     create_id TEXT NOT NULL,
     slot TEXT NOT NULL,
     png_relpath TEXT,
@@ -207,7 +188,7 @@ CREATE TABLE IF NOT EXISTS character_create_wardrobe (
     PRIMARY KEY (create_id, slot)
 );
 
-CREATE TABLE IF NOT EXISTS drink_submissions (
+CREATE TABLE drink_submissions (
     id TEXT PRIMARY KEY,
     player_uuid TEXT NOT NULL,
     code_id INTEGER NOT NULL,
@@ -227,7 +208,7 @@ CREATE TABLE IF NOT EXISTS drink_submissions (
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
-CREATE TABLE IF NOT EXISTS drink_textures (
+CREATE TABLE drink_textures (
     id TEXT PRIMARY KEY,
     owner_uuid TEXT NOT NULL,
     cmd INTEGER,
@@ -237,13 +218,13 @@ CREATE TABLE IF NOT EXISTS drink_textures (
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS drink_catalog (
+CREATE TABLE drink_catalog (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS rpc_player_meta (
+CREATE TABLE rpc_player_meta (
     player_uuid TEXT NOT NULL,
     realm_id TEXT NOT NULL DEFAULT 'main',
     name_colour_stops INTEGER NOT NULL DEFAULT 0,
@@ -260,7 +241,7 @@ CREATE TABLE IF NOT EXISTS rpc_player_meta (
     PRIMARY KEY (player_uuid, realm_id)
 );
 
-CREATE TABLE IF NOT EXISTS drink_notifications (
+CREATE TABLE drink_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
     submission_id TEXT NOT NULL,
@@ -270,25 +251,14 @@ CREATE TABLE IF NOT EXISTS drink_notifications (
     delivered_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS cosmetic_mint_resets (
+CREATE TABLE cosmetic_mint_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_uuid TEXT NOT NULL,
     reset_at TEXT NOT NULL,
     staff_uuid TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_drink_submissions_status
-    ON drink_submissions(status);
-CREATE INDEX IF NOT EXISTS idx_drink_submissions_slug
-    ON drink_submissions(slug);
-CREATE INDEX IF NOT EXISTS idx_drink_textures_owner
-    ON drink_textures(owner_uuid);
-CREATE INDEX IF NOT EXISTS idx_drink_notifications_undelivered
-    ON drink_notifications(delivered_at, created_at);
-CREATE INDEX IF NOT EXISTS idx_cosmetic_mint_resets_player
-    ON cosmetic_mint_resets(player_uuid);
-
-CREATE TABLE IF NOT EXISTS map_chronicle_snapshots (
+CREATE TABLE map_chronicle_snapshots (
     map_id      TEXT NOT NULL,
     day         TEXT NOT NULL,
     realm_id    TEXT NOT NULL DEFAULT 'main',
@@ -299,7 +269,7 @@ CREATE TABLE IF NOT EXISTS map_chronicle_snapshots (
     PRIMARY KEY (map_id, day)
 );
 
-CREATE TABLE IF NOT EXISTS map_chronicle_snapshots_archive (
+CREATE TABLE map_chronicle_snapshots_archive (
     map_id      TEXT NOT NULL,
     day         TEXT NOT NULL,
     realm_id    TEXT NOT NULL DEFAULT 'main',
@@ -311,14 +281,7 @@ CREATE TABLE IF NOT EXISTS map_chronicle_snapshots_archive (
     PRIMARY KEY (map_id, day, archived_at)
 );
 
-CREATE INDEX IF NOT EXISTS idx_map_chronicle_snapshots_archive_map
-    ON map_chronicle_snapshots_archive(map_id, archived_at);
-
--- Audit trail for staff-triggered chronicle wipes (and their restores).
--- `wiped_at` is the archive stamp the wipe used: it is both the audit clock and
--- the key that ties this row to its `map_chronicle_snapshots_archive` rows and
--- to the `chronicle.bak.<wiped_at>` directory, so a restore can find both.
-CREATE TABLE IF NOT EXISTS map_chronicle_wipes (
+CREATE TABLE map_chronicle_wipes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     map_id      TEXT NOT NULL,
     wiped_at    INTEGER NOT NULL,
@@ -331,13 +294,7 @@ CREATE TABLE IF NOT EXISTS map_chronicle_wipes (
     restored_by TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_map_chronicle_wipes_map
-    ON map_chronicle_wipes(map_id, wiped_at);
-
--- Economy ledger (SimpleFactions `chronicle` upload mode). Partitioned on the
--- captured_at UTC date; `server_day` is the in-game clock and drifts, so it is
--- carried alongside but never used as a key.
-CREATE TABLE IF NOT EXISTS map_ledger_days (
+CREATE TABLE map_ledger_days (
     map_id      TEXT NOT NULL,
     day         TEXT NOT NULL,
     captured_at TEXT NOT NULL,
@@ -353,9 +310,7 @@ CREATE TABLE IF NOT EXISTS map_ledger_days (
     PRIMARY KEY (map_id, day)
 );
 
--- Faction identity is (id, founded_at) hashed into faction_key: ids derive from
--- the faction name and are reused after deletion.
-CREATE TABLE IF NOT EXISTS map_ledger_factions (
+CREATE TABLE map_ledger_factions (
     map_id      TEXT NOT NULL,
     faction_key TEXT NOT NULL,
     faction_id  TEXT NOT NULL,
@@ -371,7 +326,7 @@ CREATE TABLE IF NOT EXISTS map_ledger_factions (
     PRIMARY KEY (map_id, faction_key)
 );
 
-CREATE TABLE IF NOT EXISTS map_ledger_faction_days (
+CREATE TABLE map_ledger_faction_days (
     map_id      TEXT NOT NULL,
     day         TEXT NOT NULL,
     faction_key TEXT NOT NULL,
@@ -411,9 +366,7 @@ CREATE TABLE IF NOT EXISTS map_ledger_faction_days (
     PRIMARY KEY (map_id, day, faction_key)
 );
 
--- No founded_at in the guild payload, so guild identity is weak: a deleted and
--- recreated guild reads as continuous. Documented limitation, no guild registry.
-CREATE TABLE IF NOT EXISTS map_ledger_guild_days (
+CREATE TABLE map_ledger_guild_days (
     map_id      TEXT NOT NULL,
     day         TEXT NOT NULL,
     guild_id    TEXT NOT NULL,
@@ -429,13 +382,7 @@ CREATE TABLE IF NOT EXISTS map_ledger_guild_days (
     PRIMARY KEY (map_id, day, guild_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_map_ledger_factions_id
-    ON map_ledger_factions(map_id, faction_id);
-CREATE INDEX IF NOT EXISTS idx_map_ledger_faction_days_key
-    ON map_ledger_faction_days(map_id, faction_key, day);
-
--- Patreon lives beside discord_links; link tombstones retain relink history.
-CREATE TABLE IF NOT EXISTS patreon_members (
+CREATE TABLE patreon_members (
     member_id TEXT PRIMARY KEY,
     patreon_user_id TEXT NOT NULL UNIQUE,
     data_json TEXT NOT NULL,
@@ -443,7 +390,8 @@ CREATE TABLE IF NOT EXISTS patreon_members (
     declined_since TEXT,
     updated_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS patreon_links (
+
+CREATE TABLE patreon_links (
     patreon_user_id TEXT PRIMARY KEY,
     discord_user_id TEXT,
     player_uuid TEXT,
@@ -452,30 +400,29 @@ CREATE TABLE IF NOT EXISTS patreon_links (
     linked_at TEXT NOT NULL,
     person_changed_at TEXT NOT NULL
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_patreon_link_discord
-    ON patreon_links(discord_user_id) WHERE active = 1;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_patreon_link_uuid
-    ON patreon_links(player_uuid) WHERE active = 1;
-CREATE TABLE IF NOT EXISTS patreon_tokens (
+
+CREATE TABLE patreon_tokens (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
     expires_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS patreon_leases (
+
+CREATE TABLE patreon_leases (
     name TEXT PRIMARY KEY,
     owner TEXT NOT NULL,
     expires_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS patreon_sync_state (
+
+CREATE TABLE patreon_sync_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     last_sync_at TEXT,
     last_sync_ok INTEGER,
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     brake_held INTEGER NOT NULL DEFAULT 0
 );
-INSERT OR IGNORE INTO patreon_sync_state(id) VALUES (1);
-CREATE TABLE IF NOT EXISTS patreon_applied (
+
+CREATE TABLE patreon_applied (
     target TEXT NOT NULL,
     subject TEXT NOT NULL,
     tiers_json TEXT NOT NULL DEFAULT '[]',
@@ -483,7 +430,8 @@ CREATE TABLE IF NOT EXISTS patreon_applied (
     dm_generation INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (target, subject)
 );
-CREATE TABLE IF NOT EXISTS patreon_desired (
+
+CREATE TABLE patreon_desired (
     target TEXT NOT NULL,
     subject TEXT NOT NULL,
     tier_key TEXT,
@@ -493,7 +441,8 @@ CREATE TABLE IF NOT EXISTS patreon_desired (
     link_event TEXT,
     PRIMARY KEY (target, subject)
 );
-CREATE TABLE IF NOT EXISTS patreon_changes (
+
+CREATE TABLE patreon_changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     target TEXT NOT NULL,
     subject TEXT NOT NULL,
@@ -508,23 +457,23 @@ CREATE TABLE IF NOT EXISTS patreon_changes (
     cancelled_at TEXT,
     dm_suppressed INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS idx_patreon_changes_pending
-    ON patreon_changes(target, acked_at, cancelled_at, subject);
-CREATE TABLE IF NOT EXISTS patreon_alerts (
+
+CREATE TABLE patreon_alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kind TEXT NOT NULL,
     message TEXT NOT NULL,
     created_at TEXT NOT NULL,
     acked_at TEXT
 );
-CREATE TABLE IF NOT EXISTS patreon_brake_approvals (
+
+CREATE TABLE patreon_brake_approvals (
     target TEXT NOT NULL,
     subject TEXT NOT NULL,
     generation INTEGER NOT NULL,
     PRIMARY KEY (target, subject)
 );
--- OAuth state is stored hashed, single-use, and bound to the subject that started it.
-CREATE TABLE IF NOT EXISTS patreon_oauth_states (
+
+CREATE TABLE patreon_oauth_states (
     state_hash TEXT PRIMARY KEY,
     discord_user_id TEXT,
     player_uuid TEXT,
@@ -534,8 +483,8 @@ CREATE TABLE IF NOT EXISTS patreon_oauth_states (
     used_at TEXT,
     CHECK ((discord_user_id IS NULL) <> (player_uuid IS NULL))
 );
--- Consent alone grants nothing; the patron must explicitly confirm this target.
-CREATE TABLE IF NOT EXISTS patreon_pending_links (
+
+CREATE TABLE patreon_pending_links (
     token_hash TEXT PRIMARY KEY,
     patreon_user_id TEXT NOT NULL,
     patreon_name TEXT NOT NULL,
@@ -547,19 +496,19 @@ CREATE TABLE IF NOT EXISTS patreon_pending_links (
     used_at TEXT,
     CHECK ((discord_user_id IS NULL) <> (player_uuid IS NULL))
 );
--- Webhook member ids waiting for an out-of-band refresh (kept if the sync lease is busy).
-CREATE TABLE IF NOT EXISTS patreon_webhook_members (
+
+CREATE TABLE patreon_webhook_members (
     member_id TEXT PRIMARY KEY,
     recorded_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS creation_catalog (
+CREATE TABLE creation_catalog (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS character_creates (
+CREATE TABLE character_creates (
     id TEXT PRIMARY KEY,
     player_uuid TEXT NOT NULL,
     client_request_id TEXT,
@@ -574,7 +523,7 @@ CREATE TABLE IF NOT EXISTS character_creates (
     held_until TEXT
 );
 
-CREATE TABLE IF NOT EXISTS character_roster (
+CREATE TABLE character_roster (
     player_uuid TEXT NOT NULL,
     realm_id TEXT NOT NULL DEFAULT 'main',
     character_id TEXT NOT NULL,
@@ -596,8 +545,7 @@ CREATE TABLE IF NOT EXISTS character_roster (
     PRIMARY KEY (player_uuid, realm_id, character_id)
 );
 
--- One row per death, from RPCharacters' roster pushes. A push never deletes these.
-CREATE TABLE IF NOT EXISTS character_estates (
+CREATE TABLE character_estates (
     realm_id TEXT NOT NULL,
     death_id TEXT NOT NULL,
     player_uuid TEXT NOT NULL,
@@ -610,11 +558,7 @@ CREATE TABLE IF NOT EXISTS character_estates (
     PRIMARY KEY (realm_id, death_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_character_estates_character
-    ON character_estates(realm_id, character_id);
-
--- Will changes made on Profile, pulled and acknowledged by RPCharacters.
-CREATE TABLE IF NOT EXISTS will_requests (
+CREATE TABLE will_requests (
     id TEXT PRIMARY KEY,
     realm_id TEXT NOT NULL,
     character_id TEXT NOT NULL,
@@ -627,13 +571,7 @@ CREATE TABLE IF NOT EXISTS will_requests (
     acked_at TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_will_requests_pending
-    ON will_requests(realm_id, status, created_at);
-
-CREATE INDEX IF NOT EXISTS idx_will_requests_character
-    ON will_requests(realm_id, character_id, created_at);
-
-CREATE TABLE IF NOT EXISTS character_player_meta (
+CREATE TABLE character_player_meta (
     player_uuid TEXT PRIMARY KEY,
     -- Age-only upserts need to leave the character limit unset.
     max_alive_characters INTEGER,
@@ -648,41 +586,7 @@ CREATE TABLE IF NOT EXISTS character_player_meta (
     wardrobe_skin_slots INTEGER
 );
 
-CREATE INDEX IF NOT EXISTS idx_discord_links_grace
-    ON discord_links(grace_until);
-
-CREATE INDEX IF NOT EXISTS idx_submissions_texture_hash
-    ON submissions(player_uuid, texture_hash);
-
-CREATE INDEX IF NOT EXISTS idx_character_creates_realm_status
-    ON character_creates(realm_id, status);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_character_creates_client_req
-    ON character_creates(player_uuid, client_request_id)
-    WHERE client_request_id IS NOT NULL AND TRIM(client_request_id) != '';
-
-CREATE INDEX IF NOT EXISTS idx_character_creates_pending
-    ON character_creates(status, created_at);
-
-CREATE INDEX IF NOT EXISTS idx_character_roster_player
-    ON character_roster(player_uuid);
-
-CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
-    ON character_roster(player_uuid, realm_id);
-
-CREATE INDEX IF NOT EXISTS idx_lore_item_customisations_realm_state
-    ON lore_item_customisations(realm_id, state);
-
-CREATE INDEX IF NOT EXISTS idx_submissions_realm_apply
-    ON submissions(realm_id, status, applied_at);
-
-CREATE INDEX IF NOT EXISTS idx_drink_submissions_realm_apply
-    ON drink_submissions(realm_id, status, applied_at);
-
--- Website accounts. Discord is the sign-in provider; the Minecraft account is
--- the discord_links row for the same discord_user_id, so links made through
--- the Discord bot appear on the website without another step.
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     discord_user_id TEXT NOT NULL UNIQUE,
     discord_username TEXT,
@@ -700,12 +604,7 @@ CREATE TABLE IF NOT EXISTS users (
     placeholder INTEGER NOT NULL DEFAULT 0
 );
 
--- Cookie sessions for users. Separate from `sessions`, which belong to
--- in-game codes and carry a scope and realm. guild_member records the TFMC
--- Discord membership seen at sign-in; linking requires a recent check.
--- acting_user_id is the admin viewing the site as this user (view only,
--- src/auth/view_as.py). Databases created before it gain it in db.migrate().
-CREATE TABLE IF NOT EXISTS user_sessions (
+CREATE TABLE user_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_hash TEXT NOT NULL UNIQUE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -716,22 +615,13 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     acting_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_expiry ON user_sessions(expires_at);
-
--- Single-use Discord OAuth states. The browser also holds the state in a
--- cookie, so a callback only completes in the browser that started it.
-CREATE TABLE IF NOT EXISTS discord_oauth_states (
+CREATE TABLE discord_oauth_states (
     state_hash TEXT PRIMARY KEY,
     return_to TEXT NOT NULL,
     expires_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_discord_link_codes_player ON discord_link_codes(player_uuid);
-
--- Single-use tickets that carry a dev sign-in to a branch preview, which
--- redeems one with dev within two minutes (src/auth/preview_sign_in.py).
-CREATE TABLE IF NOT EXISTS preview_sign_in_tickets (
+CREATE TABLE preview_sign_in_tickets (
     ticket_hash TEXT PRIMARY KEY,
     site TEXT NOT NULL,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -740,10 +630,7 @@ CREATE TABLE IF NOT EXISTS preview_sign_in_tickets (
     expires_at TEXT NOT NULL
 );
 
--- Single-use Microsoft link attempts, tied to the site session that started
--- them. The callback marks a row used and deletes it once done; unlinking
--- deletes the user's rows, which cancels any attempt still in flight.
-CREATE TABLE IF NOT EXISTS microsoft_link_states (
+CREATE TABLE microsoft_link_states (
     state_hash TEXT PRIMARY KEY,
     session_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
@@ -751,12 +638,8 @@ CREATE TABLE IF NOT EXISTS microsoft_link_states (
     expires_at TEXT NOT NULL,
     used_at TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_microsoft_link_states_user ON microsoft_link_states(user_id);
 
--- Append-only record of staff actions on website accounts, including refused
--- attempts. No foreign keys: rows outlive the accounts they mention, so each
--- row keeps the names it was written with.
-CREATE TABLE IF NOT EXISTS admin_audit (
+CREATE TABLE admin_audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TEXT NOT NULL,
     actor_type TEXT NOT NULL CHECK (actor_type IN ('user', 'system')),
@@ -773,32 +656,7 @@ CREATE TABLE IF NOT EXISTS admin_audit (
     detail_json TEXT NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX IF NOT EXISTS idx_admin_audit_target ON admin_audit(target_user_id, id);
-CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit(actor_user_id, id);
-
-CREATE TRIGGER IF NOT EXISTS admin_audit_no_update BEFORE UPDATE ON admin_audit
-BEGIN
-    SELECT RAISE(ABORT, 'admin_audit is append-only');
-END;
-
-CREATE TRIGGER IF NOT EXISTS admin_audit_no_delete BEFORE DELETE ON admin_audit
-BEGIN
-    SELECT RAISE(ABORT, 'admin_audit is append-only');
-END;
-
--- INSERT OR REPLACE on an existing id would otherwise delete the old row
--- without firing the delete trigger.
-CREATE TRIGGER IF NOT EXISTS admin_audit_no_replace BEFORE INSERT ON admin_audit
-WHEN NEW.id IS NOT NULL AND EXISTS (SELECT 1 FROM admin_audit WHERE id = NEW.id)
-BEGIN
-    SELECT RAISE(ABORT, 'admin_audit is append-only');
-END;
-
--- LuckPerms mirror for the staff panel. The TFMCWeb bridge publishes a whole
--- snapshot, which replaces these tables in one transaction; see
--- src/luckperms/README.md. Contexts are canonical JSON ({} when global) and
--- expiry is unix seconds, 0 when permanent.
-CREATE TABLE IF NOT EXISTS lp_state (
+CREATE TABLE lp_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     server TEXT,
     hash TEXT,
@@ -812,13 +670,13 @@ CREATE TABLE IF NOT EXISTS lp_state (
     polled_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS lp_groups (
+CREATE TABLE lp_groups (
     name TEXT PRIMARY KEY,
     display_name TEXT,
     weight INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS lp_group_nodes (
+CREATE TABLE lp_group_nodes (
     group_name TEXT NOT NULL,
     key TEXT NOT NULL,
     value INTEGER NOT NULL,
@@ -826,21 +684,17 @@ CREATE TABLE IF NOT EXISTS lp_group_nodes (
     expiry INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_lp_group_nodes_group ON lp_group_nodes(group_name);
-
-CREATE TABLE IF NOT EXISTS lp_tracks (
+CREATE TABLE lp_tracks (
     name TEXT PRIMARY KEY,
     groups_json TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS lp_users (
+CREATE TABLE lp_users (
     uuid TEXT PRIMARY KEY,
     name TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_lp_users_name ON lp_users(lower(name));
-
-CREATE TABLE IF NOT EXISTS lp_user_nodes (
+CREATE TABLE lp_user_nodes (
     uuid TEXT NOT NULL,
     key TEXT NOT NULL,
     value INTEGER NOT NULL,
@@ -848,12 +702,7 @@ CREATE TABLE IF NOT EXISTS lp_user_nodes (
     expiry INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_uuid ON lp_user_nodes(uuid);
-CREATE INDEX IF NOT EXISTS idx_lp_user_nodes_key ON lp_user_nodes(key);
-
--- The server's commands and each group's access, as TFMCWeb last published
--- them for the Commands tab; see src/luckperms/commands.py.
-CREATE TABLE IF NOT EXISTS lp_commands (
+CREATE TABLE lp_commands (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     server TEXT,
     hash TEXT,
@@ -862,8 +711,7 @@ CREATE TABLE IF NOT EXISTS lp_commands (
     payload TEXT NOT NULL
 );
 
--- Changes staff queued for the bridge. Rows are kept as the change history.
-CREATE TABLE IF NOT EXISTS lp_changes (
+CREATE TABLE lp_changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TEXT NOT NULL,
     actor_user_id INTEGER NOT NULL,
@@ -884,11 +732,7 @@ CREATE TABLE IF NOT EXISTS lp_changes (
     error TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_lp_changes_status ON lp_changes(status, id);
-CREATE INDEX IF NOT EXISTS idx_lp_changes_target ON lp_changes(target_type, target, id);
-
--- Reports players send from /diagnostic, looked up by code; kept 30 days.
-CREATE TABLE IF NOT EXISTS diagnostic_reports (
+CREATE TABLE diagnostic_reports (
     code TEXT PRIMARY KEY,
     created_at TEXT NOT NULL,
     user_id INTEGER,
@@ -900,4 +744,153 @@ CREATE TABLE IF NOT EXISTS diagnostic_reports (
     report_json TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_diagnostic_reports_created ON diagnostic_reports(created_at);
+CREATE INDEX idx_submissions_status ON submissions(status);
+
+CREATE INDEX idx_submissions_slug ON submissions(slug);
+
+CREATE INDEX idx_codes_hash ON codes(code_hash);
+
+CREATE INDEX idx_sessions_token ON sessions(token_hash);
+
+CREATE INDEX idx_discord_links_discord ON discord_links(discord_user_id);
+
+CREATE INDEX idx_discord_link_codes_hash ON discord_link_codes(code_hash);
+
+CREATE INDEX idx_war_declare_codes_hash ON war_declare_codes(code_hash);
+
+CREATE INDEX idx_war_declare_codes_outstanding
+    ON war_declare_codes(realm_id, redeemed_at, revoked);
+
+CREATE INDEX idx_skin_notifications_undelivered
+    ON skin_notifications(delivered_at, created_at);
+
+CREATE INDEX idx_plugin_notices_undelivered
+    ON plugin_notices(delivered_at, created_at);
+
+CREATE INDEX idx_player_warnings_uuid
+    ON player_warnings(player_uuid, created_at);
+
+CREATE INDEX idx_moderation_notifications_undelivered
+    ON moderation_notifications(delivered_at, created_at);
+
+CREATE INDEX idx_drink_submissions_status
+    ON drink_submissions(status);
+
+CREATE INDEX idx_drink_submissions_slug
+    ON drink_submissions(slug);
+
+CREATE INDEX idx_drink_textures_owner
+    ON drink_textures(owner_uuid);
+
+CREATE INDEX idx_drink_notifications_undelivered
+    ON drink_notifications(delivered_at, created_at);
+
+CREATE INDEX idx_cosmetic_mint_resets_player
+    ON cosmetic_mint_resets(player_uuid);
+
+CREATE INDEX idx_map_chronicle_snapshots_archive_map
+    ON map_chronicle_snapshots_archive(map_id, archived_at);
+
+CREATE INDEX idx_map_chronicle_wipes_map
+    ON map_chronicle_wipes(map_id, wiped_at);
+
+CREATE INDEX idx_map_ledger_factions_id
+    ON map_ledger_factions(map_id, faction_id);
+
+CREATE INDEX idx_map_ledger_faction_days_key
+    ON map_ledger_faction_days(map_id, faction_key, day);
+
+CREATE UNIQUE INDEX idx_patreon_link_discord
+    ON patreon_links(discord_user_id) WHERE active = 1;
+
+CREATE UNIQUE INDEX idx_patreon_link_uuid
+    ON patreon_links(player_uuid) WHERE active = 1;
+
+CREATE INDEX idx_patreon_changes_pending
+    ON patreon_changes(target, acked_at, cancelled_at, subject);
+
+CREATE INDEX idx_character_estates_character
+    ON character_estates(realm_id, character_id);
+
+CREATE INDEX idx_will_requests_pending
+    ON will_requests(realm_id, status, created_at);
+
+CREATE INDEX idx_will_requests_character
+    ON will_requests(realm_id, character_id, created_at);
+
+CREATE INDEX idx_discord_links_grace
+    ON discord_links(grace_until);
+
+CREATE INDEX idx_submissions_texture_hash
+    ON submissions(player_uuid, texture_hash);
+
+CREATE INDEX idx_character_creates_realm_status
+    ON character_creates(realm_id, status);
+
+CREATE UNIQUE INDEX idx_character_creates_client_req
+    ON character_creates(player_uuid, client_request_id)
+    WHERE client_request_id IS NOT NULL AND TRIM(client_request_id) != '';
+
+CREATE INDEX idx_character_creates_pending
+    ON character_creates(status, created_at);
+
+CREATE INDEX idx_character_roster_player
+    ON character_roster(player_uuid);
+
+CREATE INDEX idx_character_roster_player_realm
+    ON character_roster(player_uuid, realm_id);
+
+CREATE INDEX idx_lore_item_customisations_realm_state
+    ON lore_item_customisations(realm_id, state);
+
+CREATE INDEX idx_submissions_realm_apply
+    ON submissions(realm_id, status, applied_at);
+
+CREATE INDEX idx_drink_submissions_realm_apply
+    ON drink_submissions(realm_id, status, applied_at);
+
+CREATE INDEX idx_user_sessions_user ON user_sessions(user_id);
+
+CREATE INDEX idx_user_sessions_expiry ON user_sessions(expires_at);
+
+CREATE INDEX idx_discord_link_codes_player ON discord_link_codes(player_uuid);
+
+CREATE INDEX idx_microsoft_link_states_user ON microsoft_link_states(user_id);
+
+CREATE INDEX idx_admin_audit_target ON admin_audit(target_user_id, id);
+
+CREATE INDEX idx_admin_audit_actor ON admin_audit(actor_user_id, id);
+
+CREATE INDEX idx_lp_group_nodes_group ON lp_group_nodes(group_name);
+
+CREATE INDEX idx_lp_users_name ON lp_users(lower(name));
+
+CREATE INDEX idx_lp_user_nodes_uuid ON lp_user_nodes(uuid);
+
+CREATE INDEX idx_lp_user_nodes_key ON lp_user_nodes(key);
+
+CREATE INDEX idx_lp_changes_status ON lp_changes(status, id);
+
+CREATE INDEX idx_lp_changes_target ON lp_changes(target_type, target, id);
+
+CREATE INDEX idx_diagnostic_reports_created ON diagnostic_reports(created_at);
+
+CREATE INDEX idx_users_role ON users(role);
+
+CREATE INDEX idx_user_sessions_acting ON user_sessions(acting_user_id);
+
+CREATE TRIGGER admin_audit_no_update BEFORE UPDATE ON admin_audit
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;
+
+CREATE TRIGGER admin_audit_no_delete BEFORE DELETE ON admin_audit
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;
+
+CREATE TRIGGER admin_audit_no_replace BEFORE INSERT ON admin_audit
+WHEN NEW.id IS NOT NULL AND EXISTS (SELECT 1 FROM admin_audit WHERE id = NEW.id)
+BEGIN
+    SELECT RAISE(ABORT, 'admin_audit is append-only');
+END;

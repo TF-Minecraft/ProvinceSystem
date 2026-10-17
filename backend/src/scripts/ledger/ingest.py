@@ -9,9 +9,11 @@ import logging
 import os
 import shutil
 
+from src import database
+
 from ..util.atomic import _day_lock, _write_atomic
 from ..util.maplock import map_lock
-from .schema import is_deletion_safe, json_safe, normalize_snapshot  # noqa: F401
+from .schema import is_deletion_safe, json_safe, normalize_snapshot, scrub_snapshot  # noqa: F401
 from .store import (
     daily_path,
     daily_root,
@@ -212,10 +214,10 @@ def _snapshot_deletion_safe(snapshot: dict) -> bool:
 
 
 def index_snapshot(map_id: str, snapshot: dict) -> None:
-    """Write one canonical snapshot into SQLite. Shared with `reindex`.
+    """Write one canonical snapshot into the index. Shared with `reindex`.
 
     All five writes share one connection and one transaction. Split across five
-    connect/commit pairs they were five separately visible states, so a reader
+    transactions they were five separately visible states, so a reader
     landing between them saw the new `map_ledger_days` row against the previous
     promotion's faction rows — a day that reports 40 factions and serves 12.
 
@@ -224,33 +226,34 @@ def index_snapshot(map_id: str, snapshot: dict) -> None:
     row this day owns, inside this transaction, so a separate delete only
     published a state where the day had vanished.
     """
+    # `reindex_day` reads daily files that may predate the scrub in normalize_snapshot.
+    snapshot = scrub_snapshot(snapshot)
     day = snapshot["day"]
     factions = snapshot.get("factions") or []
     guilds = snapshot.get("guilds") or []
 
-    conn = open_connection()
-    try:
-        with conn:
-            upsert_day(map_id, snapshot, conn=conn)
-            replace_day_factions(map_id, day, factions, conn=conn)
-            replace_day_guilds(map_id, day, guilds, conn=conn)
-            touch_registry(map_id, day, snapshot["captured_at"], factions, conn=conn)
+    with open_connection() as conn:
+        # Backs up the file lock the callers hold: one index write per map at a
+        # time, whatever process or host it comes from.
+        database.advisory_lock(conn, f"ledger:index:{map_id}")
+        upsert_day(map_id, snapshot, conn=conn)
+        replace_day_factions(map_id, day, factions, conn=conn)
+        replace_day_guilds(map_id, day, guilds, conn=conn)
+        touch_registry(map_id, day, snapshot["captured_at"], factions, conn=conn)
 
-            marked = 0
-            if _snapshot_deletion_safe(snapshot):
-                # Absence means deletion only here. In a partial snapshot the
-                # plugin simply did not get to the rest of the factions, and a
-                # complete one whose faction_count disagrees with its own array
-                # is not trusted to speak for the whole server either.
-                marked = mark_deleted(
-                    map_id,
-                    day,
-                    snapshot["captured_at"],
-                    [f["key"] for f in factions],
-                    conn=conn,
-                )
-    finally:
-        conn.close()
+        marked = 0
+        if _snapshot_deletion_safe(snapshot):
+            # Absence means deletion only here. In a partial snapshot the
+            # plugin simply did not get to the rest of the factions, and a
+            # complete one whose faction_count disagrees with its own array
+            # is not trusted to speak for the whole server either.
+            marked = mark_deleted(
+                map_id,
+                day,
+                snapshot["captured_at"],
+                [f["key"] for f in factions],
+                conn=conn,
+            )
 
     if marked:
         logger.info(

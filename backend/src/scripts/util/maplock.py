@@ -8,13 +8,9 @@ live row (or a day directory) that the next step orphans or deletes with no
 archive copy. A `threading.Lock` cannot see the second uvicorn worker, and the
 CLI (`python -m src.scripts.chronicle.wipe`) is a different process entirely.
 
-Why a lock file and not SQLite `BEGIN IMMEDIATE`: `src/skins/db.py` is one
-database shared by every feature in the app, and SQLite's write lock is
-database-wide, not table-wide. Holding it for the whole of a wipe — a directory
-rename over potentially years of day folders — would block every unrelated
-writer (roster, skins, wardrobe) for that entire time. A byte-range lock on a
-file next to the tree costs nothing anyone else pays for, and `msvcrt` /
-`fcntl` cover the two platforms this runs on.
+The filesystem tree and its index must change together across processes. A
+file lock covers directory renames as well as database work without holding a
+long database transaction. `msvcrt` and `fcntl` cover the supported platforms.
 
 The lock is *reentrant per thread*: `reindex_map` holds it across its whole loop
 while each `promote_day` inside takes it again, and the staff routes take it

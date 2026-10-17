@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+import re
 from datetime import datetime, timedelta, timezone
 from unittest import mock
 
@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import src.api.characters_routes as routes
+from src.auth import testing
 from src.characters import wills
 from src.characters.roster import replace_roster
 from src.skins import db as db_mod
@@ -19,20 +20,22 @@ OWNER = "acc-owner"
 OTHER = "acc-other"
 PLUGIN = {"X-Plugin-Key": "pk"}
 DIED_MS = 1_760_356_800_000  # 2025-10-13T12:00:00Z
+DIED = datetime(2025, 10, 13, 12, tzinfo=timezone.utc)
+API_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
 
 @pytest.fixture
-def db(tmp_path, monkeypatch):
+def db(tmp_path, monkeypatch, postgres):
     for name, sub in (
         ("DATA_DIR", ""),
-        ("DB_PATH", "province.db"),
+
         ("DRINKS_DIR", "drinks"),
         ("SKINS_DIR", "skins"),
         ("WARDROBE_DIR", "wardrobe"),
     ):
         monkeypatch.setattr(db_mod, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setenv("PLUGIN_KEY", "pk")
-    db_mod.migrate()
+    db_mod.ensure_directories()
     wills._heir_rate.clear()
     return db_mod
 
@@ -62,19 +65,13 @@ def char(cid: str, name: str, status: str = "ALIVE", **extra) -> dict:
 
 
 def roster_row(cid: str, realm: str = "main") -> dict:
-    with db_mod.connect() as conn:
-        row = conn.execute(
-            "SELECT * FROM character_roster WHERE character_id = ? AND realm_id = ?", (cid, realm)
-        ).fetchone()
-    return dict(row) if row else {}
+    rows = testing.rows("SELECT * FROM character_roster WHERE character_id = %s AND realm_id = %s", (cid, realm))
+    return rows[0] if rows else {}
 
 
 def estate_row(death_id: str, realm: str = "main") -> dict:
-    with db_mod.connect() as conn:
-        row = conn.execute(
-            "SELECT * FROM character_estates WHERE death_id = ? AND realm_id = ?", (death_id, realm)
-        ).fetchone()
-    return dict(row) if row else {}
+    rows = testing.rows("SELECT * FROM character_estates WHERE death_id = %s AND realm_id = %s", (death_id, realm))
+    return rows[0] if rows else {}
 
 
 def estate(status: str = "OPEN", revision: int = 0, **extra) -> dict:
@@ -100,7 +97,7 @@ def seed_owner(realm: str = "main") -> None:
 def test_push_stores_death_fields_and_a_null_clears_them(db):
     replace_roster(OWNER, [char("c1", "Ana", "DEAD", died_at=DIED_MS, death_id="d-1")])
     row = roster_row("c1")
-    assert (row["died_at"], row["death_id"]) == ("2025-10-13T12:00:00Z", "d-1")
+    assert (row["died_at"], row["death_id"]) == (DIED, "d-1")
 
     replace_roster(OWNER, [char("c1", "Ana", "ALIVE")])
     assert roster_row("c1")["death_id"] == "d-1"  # an old plugin's push leaves them
@@ -183,7 +180,7 @@ def test_same_second_pushes_are_ordered_by_milliseconds(db):
 def test_negative_counts_and_money_read_as_zero(db):
     raw = estate("DECIDED", money_moved_cents=-5, participants={"thievery": {"outcome": "DONE", "counts": {"locks": -3}}})
     replace_roster(OWNER, [char("c1", "Ana", "DEAD", death_id="d-1", estate=raw)])
-    payload = json.loads(estate_row("d-1")["payload"])
+    payload = estate_row("d-1")["payload"]
     assert payload["money_moved_cents"] == 0
     assert payload["participants"]["thievery"]["counts"] == {"locks": 0}
 
@@ -197,8 +194,7 @@ def test_bad_estate_is_dropped_but_the_rest_of_the_push_applies(db):
             char("c3", "Cael", "DEAD", death_id="d-3", estate=estate(revision=-1)),
         ],
     )
-    with db_mod.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM character_estates").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM character_estates") == 0
     assert roster_row("c1")["death_id"] == "d-1"
 
 
@@ -227,7 +223,7 @@ def test_estate_payload_is_cleaned(db):
         },
     )
     replace_roster(OWNER, [char("c1", "Ana", "DEAD", death_id="d-1", estate=raw)])
-    payload = json.loads(estate_row("d-1")["payload"])
+    payload = estate_row("d-1")["payload"]
     assert payload["recipients"] == {
         "money": {"kind": "CHARACTER", "name": "Kira"},
         "property": {"kind": "WAITING", "name": None},
@@ -280,11 +276,9 @@ def test_refused_request_stays_on_the_card_for_a_week(api):
     api.post("/characters/plugin/wills/applied", json={"realm_id": "main", "results": [{"id": rid, "result": "stale"}]}, headers=PLUGIN)
     ana = next(c for c in api.get("/characters", headers=bearer()).json()["characters"] if c["id"] == "c-ana")
     assert ana["will_request"]["result"] == "stale"
+    assert API_TIME.fullmatch(ana["will_request"]["acked_at"])
 
-    old = (datetime.now(timezone.utc) - timedelta(days=8)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    with db_mod.connect() as conn:
-        conn.execute("UPDATE will_requests SET acked_at = ?", (old,))
-        conn.commit()
+    testing.execute("UPDATE will_requests SET acked_at = %s", (datetime.now(timezone.utc) - timedelta(days=8),))
     ana = next(c for c in api.get("/characters", headers=bearer()).json()["characters"] if c["id"] == "c-ana")
     assert "will_request" not in ana
 
@@ -298,6 +292,7 @@ def test_owner_names_an_heir_and_revokes(api):
     assert res.status_code == 200
     req = res.json()["request"]
     assert (req["heir_character_id"], req["heir_name"], req["status"], req["base_revision"]) == ("c-kira", "Kira", "pending", 2)
+    assert API_TIME.fullmatch(req["created_at"]) and req["acked_at"] is None
 
     res = api.post("/characters/c-alt/will", json={"heir_character_id": None, "base_revision": 0}, headers=bearer())
     assert res.status_code == 200
@@ -330,8 +325,7 @@ def test_will_request_refusals(api, token, cid, body, status, detail):
     assert res.status_code == status
     if detail:
         assert res.json()["detail"] == detail
-    with db_mod.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM will_requests").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM will_requests") == 0
 
 
 def test_heir_in_another_realm_is_refused(api):
@@ -352,10 +346,7 @@ def test_one_pending_request_at_a_time_until_it_is_old(api):
     res = api.post("/characters/c-ana/will", json=body, headers=bearer())
     assert (res.status_code, res.json()["detail"]) == (409, "request_pending")
 
-    old = (datetime.now(timezone.utc) - timedelta(minutes=11)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    with db_mod.connect() as conn:
-        conn.execute("UPDATE will_requests SET created_at = ?", (old,))
-        conn.commit()
+    testing.execute("UPDATE will_requests SET created_at = %s", (datetime.now(timezone.utc) - timedelta(minutes=11),))
     second = api.post("/characters/c-ana/will", json=body, headers=bearer()).json()["request"]["id"]
     pending = api.get("/characters/plugin/wills/pending?realm_id=main", headers=PLUGIN).json()["requests"]
     assert [r["id"] for r in pending] == [second]
@@ -377,6 +368,7 @@ def test_pull_requires_a_realm_and_the_plugin_key(api):
 
     (req,) = api.get("/characters/plugin/wills/pending?realm_id=main", headers=PLUGIN).json()["requests"]
     assert set(req) == {"id", "realm_id", "character_id", "account_uuid", "heir_character_id", "base_revision", "created_at"}
+    assert API_TIME.fullmatch(req["created_at"])
     assert (req["realm_id"], req["character_id"], req["account_uuid"], req["heir_character_id"], req["base_revision"]) == (
         "main",
         "c-ana",
@@ -421,8 +413,7 @@ def test_ack_records_results_and_a_replay_changes_nothing(api):
     body["results"] = [{"id": rid, "result": "stale"}]
     res = api.post("/characters/plugin/wills/applied", json=body, headers=PLUGIN).json()
     assert res["already"] == [rid]
-    with db_mod.connect() as conn:
-        assert conn.execute("SELECT result FROM will_requests WHERE id = ?", (rid,)).fetchone()[0] == "applied"
+    assert testing.value("SELECT result FROM will_requests WHERE id = %s", (rid,)) == "applied"
 
 
 @pytest.mark.parametrize("result", ["stale", "invalid heir", "invalid", "character dead"])

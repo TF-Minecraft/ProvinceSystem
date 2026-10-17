@@ -1,4 +1,4 @@
-"""Character session E2E smoke — run from backend/: python scripts/character_session_smoke.py
+"""Character session E2E smoke — run from backend/ with TEST_DATABASE_URL: python scripts/character_session_smoke.py
 
 Redeem TTLs, single-use, skin rejection, catalog access, logout revoke.
 """
@@ -19,9 +19,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.characters.creation_catalog import replace_catalog
-from src.skins.db import migrate
+from smoke_support import isolated_smoke
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
@@ -100,8 +98,11 @@ def mint(client: TestClient, player: str, scope: str) -> str:
     return code
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
+    from server import app
+    from src.characters.creation_catalog import replace_catalog
+
     replace_catalog(MINI_CATALOG)
     client = TestClient(app)
     player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"

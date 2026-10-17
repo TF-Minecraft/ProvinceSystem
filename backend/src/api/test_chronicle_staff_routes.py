@@ -40,6 +40,7 @@ from src.api.chronicle_routes import chronicle_router  # noqa: E402
 from src.api.chronicle_staff_routes import chronicle_staff_router  # noqa: E402
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.chronicle import audit, store  # noqa: E402
+from src import database  # noqa: E402
 from src.skins import db as skins_db  # noqa: E402
 
 TEST_REGISTRY = """
@@ -67,7 +68,7 @@ def staff_state():
 
 
 @pytest.fixture
-def chronicle_env(tmp_path, monkeypatch, staff_state):
+def chronicle_env(tmp_path, monkeypatch, staff_state, postgres):
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))
@@ -76,7 +77,6 @@ def chronicle_env(tmp_path, monkeypatch, staff_state):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
     monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
     monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
     monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
@@ -94,7 +94,7 @@ def chronicle_env(tmp_path, monkeypatch, staff_state):
         lambda *_args, **_kwargs: staff_state["is_staff"],
     )
 
-    skins_db.migrate()
+    skins_db.ensure_directories()
     try:
         yield tmp_path
     finally:
@@ -433,9 +433,9 @@ def test_restore_rejects_a_backup_path_outside_the_map_output_dir(client, tmp_pa
     escape = tmp_path / "elsewhere"
     escape.mkdir()
     (escape / "keep.txt").write_text("untouched", encoding="utf-8")
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         conn.execute(
-            "UPDATE map_chronicle_wipes SET backup_path = ? WHERE id = ?",
+            "UPDATE map_chronicle_wipes SET backup_path = %s WHERE id = %s",
             (str(escape), wiped["wipe_id"]),
         )
 
@@ -452,9 +452,9 @@ def test_restore_rejects_a_traversal_backup_path(client):
     _capture_day("main", "2026-01-01")
     wiped = _wipe(client).json()
 
-    with skins_db.connect() as conn:
+    with database.connect() as conn:
         conn.execute(
-            "UPDATE map_chronicle_wipes SET backup_path = ? WHERE id = ?",
+            "UPDATE map_chronicle_wipes SET backup_path = %s WHERE id = %s",
             (os.path.join(store.chronicle_root("main"), "..", "..", "dev"), wiped["wipe_id"]),
         )
 

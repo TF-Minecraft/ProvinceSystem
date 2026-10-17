@@ -7,6 +7,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -30,19 +37,22 @@ class WardrobeEntitlementsTest(unittest.TestCase):
 
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
+        from src.characters import wardrobe
 
-        from characters.rpc_player_meta import upsert_rpc_player_meta
+        paths = patch.multiple(wardrobe, DATA_DIR=root, WARDROBE_DIR=root / "wardrobe")
+        paths.start()
+        self.addCleanup(paths.stop)
+
+        from src.characters.rpc_player_meta import upsert_rpc_player_meta
 
         upsert_rpc_player_meta(
             {
@@ -58,12 +68,12 @@ class WardrobeEntitlementsTest(unittest.TestCase):
             }
         )
 
-        with db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_player_meta (
                     player_uuid, wardrobe_skin_slots, updated_at
-                ) VALUES (?, 1, ?)
+                ) VALUES (%s, 1, %s)
                 """,
                 (PLAYER, NOW),
             )
@@ -71,7 +81,7 @@ class WardrobeEntitlementsTest(unittest.TestCase):
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, updated_at
-                ) VALUES (?, 'main', ?, 'Test', 'ALIVE', ?)
+                ) VALUES (%s, 'main', %s, 'Test', 'ALIVE', %s)
                 """,
                 (PLAYER, CHAR_ID, NOW),
             )
@@ -79,15 +89,13 @@ class WardrobeEntitlementsTest(unittest.TestCase):
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{}', 'pending', ?, 'main')
+                ) VALUES (%s, %s, '{}', 'pending', %s, 'main')
                 """,
                 (CREATE_ID, PLAYER, NOW),
             )
-            conn.commit()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
@@ -96,7 +104,7 @@ class WardrobeEntitlementsTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_live_wardrobe_uses_rpc_slots_not_roster_meta(self) -> None:
-        from characters.wardrobe import get_wardrobe
+        from src.characters.wardrobe import get_wardrobe
 
         out = get_wardrobe(PLAYER, CHAR_ID)
         self.assertEqual(out["swappable_slots"], 3)
@@ -105,7 +113,7 @@ class WardrobeEntitlementsTest(unittest.TestCase):
         self.assertTrue(by_slot["extra_2"]["unlocked"])
 
     def test_pending_wardrobe_uses_rpc_slots(self) -> None:
-        from characters.wardrobe import enforce_pending_wardrobe_slot_limits
+        from src.characters.wardrobe import enforce_pending_wardrobe_slot_limits
 
         swappable = enforce_pending_wardrobe_slot_limits(PLAYER, CREATE_ID)
         self.assertEqual(swappable, 3)

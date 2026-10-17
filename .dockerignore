@@ -29,3 +29,10 @@ backend/src/scripts/tools/generate_spoof_*.py
 
 # Built inside the image from the pinned Mojang jar instead.
 backend/src/coreprotect/data
+
+# Private deployment state and retained offline copies never enter an image.
+backend/src/data/migration-rollback
+backend/src/data/postgres-migrations
+backend/src/data/.postgres-*.json
+backend/src/data/.postgres-*.part
+backend/src/data/.province.rollback.part

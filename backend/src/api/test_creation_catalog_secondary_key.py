@@ -8,10 +8,15 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -55,7 +60,6 @@ class SecondaryPluginKeyTest(unittest.TestCase):
         # either one in sys.modules, so point every loaded copy at the temp database.
         paths = {
             "DATA_DIR": root,
-            "DB_PATH": root / "province.db",
             "SKINS_DIR": root / "skins",
             "DRINKS_DIR": root / "drinks",
             "WARDROBE_DIR": root / "wardrobe",
@@ -70,7 +74,7 @@ class SecondaryPluginKeyTest(unittest.TestCase):
             self._orig.append((mod, {name: getattr(mod, name) for name in paths}))
             for name, value in paths.items():
                 setattr(mod, name, value)
-        self._orig[0][0].migrate()
+        self._orig[0][0].ensure_directories()
 
         self._env = mock.patch.dict(
             "os.environ",
@@ -150,6 +154,8 @@ class SecondaryPluginKeyTest(unittest.TestCase):
             self.assertEqual(res.status_code, 200, path)
             self.assertTrue(res.json()["ignored"], path)
 
+    # The drinks catalogue lives in Postgres.
+    @pytest.mark.usefixtures("postgres")
     def test_secondary_skins_and_drinks_catalog_pushes_are_ignored(self) -> None:
         from src.api.drinks_routes import drinks_router
         from src.api.skins_routes import skins_router

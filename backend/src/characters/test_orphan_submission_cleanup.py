@@ -9,6 +9,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+from src import database
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -85,6 +88,8 @@ MINIMAL_CATALOG = {
     ],
 }
 
+pytestmark = pytest.mark.usefixtures("postgres")
+
 
 class OrphanSubmissionCleanupTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -95,17 +100,15 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         db_mod = importlib.import_module("src.skins.db")
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         from src.characters.creation_catalog import replace_catalog
 
@@ -114,7 +117,6 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
@@ -123,41 +125,36 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _seed_pending_create(self) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{"name":"Test"}', 'pending', ?, ?)
+                ) VALUES (%s, %s, '{"name":"Test"}', 'pending', %s, %s)
                 """,
                 (CREATE_ID, PLAYER, NOW, REALM),
             )
-            conn.commit()
 
     def _insert_code(self, code_id: int) -> None:
-        from src.skins.db import connect
+        from src.auth.testing import execute
 
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO codes (
-                    id, code_hash, player_uuid, scope, realm_id,
-                    created_at, expires_at, redeemed_at, revoked
-                ) VALUES (?, ?, ?, 'profile', ?, ?, ?, ?, 0)
-                """,
-                (
-                    code_id,
-                    f"hash-{code_id}",
-                    PLAYER,
-                    REALM,
-                    NOW,
-                    "2099-01-01T00:00:00Z",
-                    NOW,
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO codes (
+                id, code_hash, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
+            ) VALUES (%s, %s, %s, 'profile', %s, %s, %s, %s, false)
+            """,
+            (
+                code_id,
+                f"hash-{code_id}",
+                PLAYER,
+                REALM,
+                NOW,
+                "2099-01-01T00:00:00Z",
+                NOW,
+            ),
+        )
 
     def _insert_submission(
         self,
@@ -166,33 +163,31 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         code_id: int,
         status: str = "pending",
     ) -> None:
-        from src.skins.db import connect
+        from src.auth.testing import execute
 
         self._insert_code(code_id)
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    status, dir_path, created_at, discord_user_id, staff, realm_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    submission_id,
-                    PLAYER,
-                    code_id,
-                    "handheld",
-                    submission_id,
-                    "Test Knife",
-                    status,
-                    f"skins/{submission_id}",
-                    NOW,
-                    "discord-1",
-                    0,
-                    REALM,
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO submissions (
+                id, player_uuid, code_id, kind, slug, display_name,
+                status, dir_path, created_at, discord_user_id, staff, realm_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                submission_id,
+                PLAYER,
+                code_id,
+                "handheld",
+                submission_id,
+                "Test Knife",
+                status,
+                f"skins/{submission_id}",
+                NOW,
+                "discord-1",
+                False,
+                REALM,
+            ),
+        )
 
     def _insert_lore_row(
         self,
@@ -201,9 +196,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         existing_skin_id: str | None = None,
         state: str = "pending_skin",
     ) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO lore_item_customisations (
@@ -211,7 +204,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
                     display_name, lore_json,
                     submission_id, existing_skin_id, state,
                     skin_slug, updated_at, realm_id
-                ) VALUES (?, ?, ?, '', '[]', ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, '', '[]', %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     PLAYER,
@@ -225,17 +218,11 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
                     REALM,
                 ),
             )
-            conn.commit()
 
     def _submission_exists(self, submission_id: str) -> bool:
-        from src.skins.db import connect
+        from src.auth.testing import rows
 
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM submissions WHERE id = ?",
-                (submission_id,),
-            ).fetchone()
-        return row is not None
+        return bool(rows("SELECT 1 FROM submissions WHERE id = %s", (submission_id,)))
 
     def test_delete_kit_draft_rolls_back_orphaned_pending_submission(self) -> None:
         from src.characters.lore_items import delete_lore_item_customise

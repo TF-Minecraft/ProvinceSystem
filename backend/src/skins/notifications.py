@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 
-from .db import connect
+from src import database
+
+from .codes import api_time
 
 
 class NotificationError(ValueError):
     """Notification not found or invalid."""
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def enqueue_submitted(
@@ -24,7 +25,7 @@ def enqueue_submitted(
     kind: str,
     slug: str,
 ) -> int:
-    payload = json.dumps(
+    payload = database.Jsonb(
         {
             "submission_id": submission_id,
             "display_name": display_name,
@@ -32,22 +33,20 @@ def enqueue_submitted(
             "slug": slug,
         }
     )
-    created_at = _iso_now()
-    with connect() as conn:
-        cur = conn.execute(
+    with database.connect() as conn:
+        return int(conn.execute(
             """
             INSERT INTO skin_notifications (
                 type, submission_id, discord_user_id, payload, created_at, delivered_at
-            ) VALUES ('submitted', ?, ?, ?, ?, NULL)
+            ) VALUES ('submitted', %s, %s, %s, %s, NULL)
+            RETURNING id
             """,
-            (submission_id, discord_user_id, payload, created_at),
-        )
-        conn.commit()
-        return int(cur.lastrowid)
+            (submission_id, discord_user_id, payload, _utcnow()),
+        ).fetchone()["id"])
 
 
 def list_undelivered() -> list[dict]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM skin_notifications
@@ -56,42 +55,30 @@ def list_undelivered() -> list[dict]:
             """
         ).fetchall()
 
-    result = []
-    for row in rows:
-        try:
-            payload = json.loads(row["payload"])
-        except (json.JSONDecodeError, TypeError):
-            payload = {}
-        result.append(
-            {
-                "id": row["id"],
-                "type": row["type"],
-                "submission_id": row["submission_id"],
-                "discord_user_id": row["discord_user_id"],
-                "payload": payload,
-                "created_at": row["created_at"],
-            }
-        )
-    return result
+    return [
+        {
+            "id": row["id"],
+            "type": row["type"],
+            "submission_id": row["submission_id"],
+            "discord_user_id": row["discord_user_id"],
+            "payload": row["payload"],
+            "created_at": api_time(row["created_at"]),
+        }
+        for row in rows
+    ]
 
 
 def ack_notification(notification_id: int) -> dict:
-    now = _iso_now()
-    with connect() as conn:
+    with database.connect() as conn:
+        # The first ack sets the time; later ones report it.
         row = conn.execute(
-            "SELECT * FROM skin_notifications WHERE id = ?",
-            (notification_id,),
+            """
+            UPDATE skin_notifications SET delivered_at = COALESCE(delivered_at, %s)
+            WHERE id = %s
+            RETURNING delivered_at
+            """,
+            (_utcnow(), notification_id),
         ).fetchone()
-        if row is None:
-            raise NotificationError("Notification not found")
-        if row["delivered_at"] is None:
-            conn.execute(
-                "UPDATE skin_notifications SET delivered_at = ? WHERE id = ?",
-                (now, notification_id),
-            )
-            conn.commit()
-            delivered_at = now
-        else:
-            delivered_at = row["delivered_at"]
-
-    return {"id": notification_id, "delivered_at": delivered_at}
+    if row is None:
+        raise NotificationError("Notification not found")
+    return {"id": notification_id, "delivered_at": api_time(row["delivered_at"])}

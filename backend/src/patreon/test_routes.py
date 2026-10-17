@@ -8,12 +8,14 @@ from src.api.prod_guard import assert_production_safe
 from src.patreon import service as s
 from src.patreon.test_service import CONFIG, member, player, sync, changes, ack
 
+pytestmark = pytest.mark.usefixtures("postgres")
+
 STAFF = {"X-Staff-Key": "staff-test"}
 PLUGIN = {"X-Plugin-Key": "plugin-test"}
 
 
 @pytest.fixture
-def api(database, monkeypatch):
+def api(database, postgres, monkeypatch):
     monkeypatch.setenv("PATREON_ENABLED", "1")
     monkeypatch.setenv("PATREON_APPLY", "1")
     monkeypatch.setenv("STAFF_KEY", "staff-test")

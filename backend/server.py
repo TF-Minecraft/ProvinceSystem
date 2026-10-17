@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -49,9 +50,13 @@ logging.getLogger("uvicorn.access").addFilter(_OAuthQueryFilter())
 # --------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from src.skins.db import migrate
+    from src.skins.db import DATA_DIR, ensure_directories
 
-    migrate()
+    ensure_directories()
+    from src.database import close_pool
+    from src.database.migrate import migrate as migrate_postgres
+
+    migrate_postgres(seed=True, retained_directory=DATA_DIR / "postgres-migrations")
     from src.patreon.config import Config
     from src.patreon.service import sync_loop
 
@@ -71,6 +76,7 @@ async def lifespan(app: FastAPI):
         if names_task is not None:
             names_stop.set()
             await names_task
+        close_pool()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -187,8 +193,10 @@ app.include_router(skins_router)
 app.include_router(profile_router)
 app.include_router(characters_router)
 app.include_router(drinks_router)
-app.include_router(precedent_router)
-app.include_router(patchnotes_router)
+# Previews clone site records only and have no external integration credentials.
+if not os.environ.get("SIGN_IN_SITE", "").strip():
+    app.include_router(precedent_router)
+    app.include_router(patchnotes_router)
 app.include_router(wars_router)
 app.include_router(patreon_router)
 app.include_router(auth_router)

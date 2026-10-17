@@ -60,14 +60,16 @@ jobs:
           # The backend signs players in through dev, as Discord only returns them to registered sites.
           build-args: ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_API_URL={0}/api', steps.slug.outputs.url) || 'SIGN_IN_SITE=https://dev.tfminecraft.net' }}
           tags: ${{ env.IS_MAIN != 'true' && format('{0}-{1}:{2}', env.IMAGE_PREFIX, matrix.service, steps.slug.outputs.slug) || '' }}
-          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           # Branches cannot read each other's Actions cache, so main keeps a registry cache they all share.
           cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:buildcache
           cache-to: ${{ env.IS_MAIN == 'true' && format('type=registry,ref={0}-{1}:buildcache,mode=max', env.IMAGE_PREFIX, matrix.service) || '' }}
 
   deploy:
     needs: build
-    if: github.ref_name != 'main'
+    if: github.ref_name != 'main' && vars.NATIVE_POSTGRES_PREVIEWS_READY == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:

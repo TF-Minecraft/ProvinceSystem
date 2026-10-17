@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+import pytest
 from PIL import Image
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
@@ -17,6 +18,11 @@ if str(_BACKEND_SRC) not in sys.path:
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
+
+from src import database  # noqa: E402
+from src.auth import testing  # noqa: E402
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 PLAYER = "11111111-2222-4333-8444-555555555555"
 
@@ -39,41 +45,22 @@ def _entitlements(days: int, synced: bool = True) -> dict:
 
 
 class _CodesDb(unittest.TestCase):
-    """A fresh skins database, with the start rules mocked."""
+    """Empty code tables, with the start rules mocked."""
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        root = Path(self.tmp.name)
+        import src.skins.codes as codes_mod
 
-        import skins.db as db_mod
-        import skins.codes as codes_mod
-
-        self.db = db_mod
         self.codes = codes_mod
-        sys.modules["src.skins.db"] = db_mod
-        sys.modules["src.skins.codes"] = codes_mod
-        self._orig = {
-            name: getattr(db_mod, name)
-            for name in ("DB_PATH", "DATA_DIR", "SKINS_DIR", "DRINKS_DIR", "WARDROBE_DIR")
-        }
-        db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
-        db_mod.SKINS_DIR = root / "skins"
-        db_mod.DRINKS_DIR = root / "drinks"
-        db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+
         self.rules(days=21)
 
     def tearDown(self) -> None:
         mock.patch.stopall()
-        for name, value in self._orig.items():
-            setattr(self.db, name, value)
-        self.tmp.cleanup()
 
     def rules(self, days: int, synced: bool = True, eligible: bool = True) -> None:
         mock.patch.stopall()
         mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": eligible},
         ).start()
         mock.patch(
@@ -83,30 +70,27 @@ class _CodesDb(unittest.TestCase):
 
     def add_code(self, scope: str, created: datetime, *, via: str | None = None,
                  expires: datetime | None = None, realm: str = "main") -> int:
-        with self.db.connect() as conn:
-            cur = conn.execute(
+        with database.connect() as conn:
+            return conn.execute(
                 """
                 INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
                                    created_at, expires_at, revoked, minted_via)
-                VALUES (?, 'ABCD-EFGH-IJKL', ?, ?, ?, ?, ?, 0, ?)
+                VALUES (%s, 'ABCD-EFGH-IJKL', %s, %s, %s, %s, %s, false, %s)
+                RETURNING id
                 """,
                 (f"hash-{created.timestamp()}-{scope}-{via}", PLAYER, scope, realm,
                  _iso(created), _iso(expires or created + timedelta(hours=48)), via),
-            )
-            conn.commit()
-            return int(cur.lastrowid)
+            ).fetchone()["id"]
 
     def consume(self, code_id: int) -> None:
-        with self.db.connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name,
-                                         status, dir_path, created_at)
-                VALUES (?, ?, ?, 'handheld', 'x', 'X', 'pending', 'x', '2026-01-01T00:00:00Z')
-                """,
-                (f"sub-{code_id}", PLAYER, code_id),
-            )
-            conn.commit()
+        testing.execute(
+            """
+            INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name,
+                                     status, dir_path, created_at)
+            VALUES (%s, %s, %s, 'handheld', 'x', 'X', 'pending', 'x', '2026-01-01T00:00:00Z')
+            """,
+            (f"sub-{code_id}", PLAYER, code_id),
+        )
 
 
 class SiteStartTest(_CodesDb):
@@ -117,8 +101,7 @@ class SiteStartTest(_CodesDb):
         session = self.codes.get_session(out["session_token"])
         assert session is not None
         self.assertEqual(session["scope"], "skin")
-        with self.db.connect() as conn:
-            row = conn.execute("SELECT * FROM codes WHERE id = ?", (out["code_id"],)).fetchone()
+        [row] = testing.rows("SELECT * FROM codes WHERE id = %s", (out["code_id"],))
         self.assertEqual(row["minted_via"], "site")
         self.assertIsNone(row["code_plaintext"])
 
@@ -167,13 +150,11 @@ class SiteStartTest(_CodesDb):
     def test_a_lapsed_site_code_counts_while_its_session_can_still_submit(self) -> None:
         created = datetime.now(timezone.utc) - timedelta(hours=49)
         code_id = self.add_code("drink", created, via="site", expires=created + timedelta(hours=48))
-        with self.db.connect() as conn:
-            conn.execute(
-                "INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
-                "VALUES ('h', ?, ?, ?, ?)",
-                (code_id, PLAYER, _iso(datetime.now(timezone.utc) + timedelta(hours=6)), _iso(created)),
-            )
-            conn.commit()
+        testing.execute(
+            "INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at) "
+            "VALUES ('h', %s, %s, %s, %s)",
+            (code_id, PLAYER, _iso(datetime.now(timezone.utc) + timedelta(hours=6)), _iso(created)),
+        )
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], _iso(created))
         with self.assertRaises(self.codes.SiteStartRefused):
             self.codes.start_site_session(PLAYER, "main", "skin")
@@ -222,8 +203,7 @@ class SiteStartTest(_CodesDb):
                 with self.assertRaises(self.codes.SiteStartRefused) as caught:
                     self.codes.start_site_session(PLAYER, "main", "skin")
                 self.assertEqual(caught.exception.reason, reason)
-        with self.db.connect() as conn:
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM codes").fetchone()[0], 0)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 0)
 
     def test_only_skins_and_drinks_can_be_started(self) -> None:
         with self.assertRaises(self.codes.CodeError):
@@ -235,18 +215,17 @@ class SignInCodeTest(_CodesDb):
 
     def mint(self, scope: str, plaintext: str) -> int:
         now = datetime.now(timezone.utc)
-        with self.db.connect() as conn:
-            cur = conn.execute(
+        with database.connect() as conn:
+            return conn.execute(
                 """
                 INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id,
                                    created_at, expires_at, revoked)
-                VALUES (?, ?, ?, ?, 'main', ?, ?, 0)
+                VALUES (%s, %s, %s, %s, 'main', %s, %s, false)
+                RETURNING id
                 """,
                 (self.codes.hash_secret(plaintext), plaintext, PLAYER, scope,
                  _iso(now), _iso(now + timedelta(hours=48))),
-            )
-            conn.commit()
-            return int(cur.lastrowid)
+            ).fetchone()["id"]
 
     def test_each_scope_redeems_by_its_own_rules(self) -> None:
         for scope, plaintext in (("profile", "PROF-0001"), ("skin", "SKIN-0001"),
@@ -277,8 +256,7 @@ class SignInCodeTest(_CodesDb):
         before = self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"]
         self.codes.redeem_sign_in_code("SKIN-0003")
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], before)
-        with self.db.connect() as conn:
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM codes").fetchone()[0], 1)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 1)
 
     def test_a_code_session_closes_once_its_code_is_used_or_revoked(self) -> None:
         code_id = self.mint("skin", "SKIN-0004")
@@ -292,16 +270,14 @@ class SignInCodeTest(_CodesDb):
         drink = self.codes.get_session(self.codes.redeem_sign_in_code("DRNK-0004")["session_token"])
         assert drink is not None
         self.assertTrue(self.codes.code_session_open(drink))
-        with self.db.connect() as conn:
-            conn.execute("UPDATE codes SET revoked = 1 WHERE id = ?", (drink_id,))
-            conn.commit()
+        testing.execute("UPDATE codes SET revoked = true WHERE id = %s", (drink_id,))
         self.assertFalse(self.codes.code_session_open(drink))
 
 
 class SkinThumbnailTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
-        import skins.thumbnail as thumb_mod
+        import src.skins.thumbnail as thumb_mod
 
         self.thumb = thumb_mod
         self._orig = thumb_mod.SKINS_DIR

@@ -11,13 +11,16 @@ from typing import Any
 
 from PIL import Image
 
+from src import database
+from src.characters import wardrobe_assets as assets
 from src.characters.wardrobe_sign import sign_wardrobe_skin
 from src.characters.pending_create import (
     PendingCreateError,
     require_living,
     resolve_player_character,
 )
-from src.skins.db import DATA_DIR, WARDROBE_DIR, connect
+from src.characters.times import api_time
+from src.skins.db import DATA_DIR, WARDROBE_DIR
 from src.skins.storage import StorageError, validate_png
 from src.text_validation import TextValidationError, assert_optional_display_name
 
@@ -163,13 +166,13 @@ def _require_owned_character(
     cid = _require_character_id(character_id)
     if not uuid:
         raise WardrobeError("player_uuid is required", status_code=400)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT player_uuid, character_id, wardrobe_active_slot, realm_id
             FROM character_roster
-            WHERE player_uuid = ? AND character_id = ?
-            """ + (" AND realm_id = ?" if realm_id is not None else ""),
+            WHERE player_uuid = %s AND character_id = %s
+            """ + (" AND realm_id = %s" if realm_id is not None else ""),
             (uuid, cid, realm_id) if realm_id is not None else (uuid, cid),
         ).fetchone()
     if row is None:
@@ -315,6 +318,7 @@ def _require_sequential_fill(
         raise WardrobeError("Upload Skin 2 before Skin 3", status_code=400)
 
 
+@assets.guarded
 def _upsert_live_slot(
     uuid: str,
     cid: str,
@@ -326,26 +330,23 @@ def _upsert_live_slot(
     model: str,
     display_name: str | None,
 ) -> None:
-    existing = _load_slots(uuid, cid).get(slot_key)
-    if existing:
-        _delete_png(existing.get("png_relpath"))
-    rel = _write_png(uuid, cid, slot_key, png_bytes)
     now = _iso_now()
-    with connect() as conn:
+    with assets.asset_transaction() as conn:
+        rel = _write_png(uuid, cid, slot_key, png_bytes)
         conn.execute(
             """
             INSERT INTO character_wardrobe_slots (
                 player_uuid, character_id, slot, png_relpath,
                 texture_value, texture_signature, model,
                 display_name, apply_pending, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, true, %s)
             ON CONFLICT(player_uuid, character_id, slot) DO UPDATE SET
                 png_relpath = excluded.png_relpath,
                 texture_value = excluded.texture_value,
                 texture_signature = excluded.texture_signature,
                 model = excluded.model,
                 display_name = excluded.display_name,
-                apply_pending = 1,
+                apply_pending = true,
                 updated_at = excluded.updated_at
             """,
             (
@@ -360,7 +361,6 @@ def _upsert_live_slot(
                 now,
             ),
         )
-        conn.commit()
 
 
 def _maybe_create_masked_from_base(
@@ -369,11 +369,9 @@ def _maybe_create_masked_from_base(
     base_png: bytes,
     *,
     pending_create_id: str | None = None,
+    prepared: tuple[bytes, str, str, str],
 ) -> None:
-    template = load_masked_template()
-    composed = compose_masked_skin(base_png, template)
-    model = detect_skin_model(composed)
-    texture_value, texture_signature = sign_wardrobe_skin(composed, model)
+    composed, model, texture_value, texture_signature = prepared
     if pending_create_id:
         _upsert_pending_slot(
             pending_create_id,
@@ -405,22 +403,20 @@ def _maybe_create_masked_from_base(
 
 
 def _load_pending_slots(create_id: str) -> dict[str, dict[str, Any]]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT slot, png_relpath, texture_value, texture_signature,
                    model, display_name, updated_at
             FROM character_create_wardrobe
-            WHERE create_id = ?
+            WHERE create_id = %s
             """,
             (create_id,),
         ).fetchall()
-    out: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        out[str(row["slot"])] = dict(row)
-    return out
+    return {str(row["slot"]): {**row, "updated_at": api_time(row["updated_at"])} for row in rows}
 
 
+@assets.guarded
 def _upsert_pending_slot(
     create_id: str,
     slot_key: str,
@@ -432,32 +428,29 @@ def _upsert_pending_slot(
     display_name: str | None,
     keep_existing_name: bool = False,
 ) -> str | None:
-    with connect() as conn:
+    with database.connect() as conn:
         existing = conn.execute(
             """
             SELECT png_relpath, display_name FROM character_create_wardrobe
-            WHERE create_id = ? AND slot = ?
+            WHERE create_id = %s AND slot = %s
             """,
             (create_id, slot_key),
         ).fetchone()
     keep_name = display_name
     if keep_existing_name and display_name is None and existing:
         keep_name = str(existing["display_name"] or "").strip() or None
-    if existing:
-        _delete_png(existing["png_relpath"])
     rel = _pending_relpath(create_id, slot_key)
     out = DATA_DIR / rel
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(png_bytes)
     now = _iso_now()
-    with connect() as conn:
+    with assets.asset_transaction() as conn:
+        assets.write_png(out, png_bytes)
         conn.execute(
             """
             INSERT INTO character_create_wardrobe (
                 create_id, slot, png_relpath,
                 texture_value, texture_signature, model,
                 display_name, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT(create_id, slot) DO UPDATE SET
                 png_relpath = excluded.png_relpath,
                 texture_value = excluded.texture_value,
@@ -477,10 +470,10 @@ def _upsert_pending_slot(
                 now,
             ),
         )
-        conn.commit()
     return keep_name
 
 
+@assets.guarded
 def _compact_swappable_slots(
     uuid: str,
     cid: str,
@@ -515,16 +508,15 @@ def _compact_swappable_slots(
     for key in SWAPPABLE_ORDER:
         row = slots.get(key)
         if row:
-            _delete_png(row.get("png_relpath"))
-            with connect() as conn:
+            with assets.asset_transaction() as conn:
+                _delete_png(row.get("png_relpath"))
                 conn.execute(
                     """
                     DELETE FROM character_wardrobe_slots
-                    WHERE player_uuid = ? AND character_id = ? AND slot = ?
+                    WHERE player_uuid = %s AND character_id = %s AND slot = %s
                     """,
                     (uuid, cid, key),
                 )
-                conn.commit()
 
     active_new: str | None = None
     for i, entry in enumerate(packed):
@@ -552,6 +544,7 @@ def _compact_swappable_slots(
         _normalize_active(uuid, cid, previous_active, slots_after, swappable)
 
 
+@assets.guarded
 def _compact_pending_swappable(create_id: str) -> None:
     slots = _load_pending_slots(create_id)
     packed: list[dict[str, Any]] = []
@@ -576,16 +569,15 @@ def _compact_pending_swappable(create_id: str) -> None:
     for key in SWAPPABLE_ORDER:
         row = slots.get(key)
         if row:
-            _delete_png(row.get("png_relpath"))
-            with connect() as conn:
+            with assets.asset_transaction() as conn:
+                _delete_png(row.get("png_relpath"))
                 conn.execute(
                     """
                     DELETE FROM character_create_wardrobe
-                    WHERE create_id = ? AND slot = ?
+                    WHERE create_id = %s AND slot = %s
                     """,
                     (create_id, key),
                 )
-                conn.commit()
 
     for i, entry in enumerate(packed):
         new_slot = SWAPPABLE_ORDER[i]
@@ -620,23 +612,23 @@ def _slot_relpath(player_uuid: str, character_id: str, slot: str) -> str:
 def _write_png(player_uuid: str, character_id: str, slot: str, data: bytes) -> str:
     rel = _slot_relpath(player_uuid, character_id, slot)
     out = DATA_DIR / rel
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(data)
+    assets.write_png(out, data)
     return rel
 
 
 def _delete_png(relpath: str | None) -> None:
     path = _png_abspath(relpath)
     if path is not None and path.is_file():
-        path.unlink(missing_ok=True)
+        assets.delete_png(path)
 
 
+@assets.guarded
 def delete_png_relpath(relpath: str | None) -> bool:
     """Realm wipe entry point: safe unlink under WARDROBE_DIR. True when a file went."""
     path = _png_abspath(relpath)
     if path is None:
         return False
-    path.unlink(missing_ok=True)
+    assets.delete_png(path)
     return True
 
 
@@ -664,35 +656,31 @@ def _effective_display_name(slot: str, row: dict[str, Any] | None) -> str:
 def _load_slots(
     player_uuid: str, character_id: str
 ) -> dict[str, dict[str, Any]]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT slot, png_relpath, texture_value, texture_signature,
                    model, display_name, apply_pending, updated_at
             FROM character_wardrobe_slots
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (player_uuid, character_id),
         ).fetchall()
-    out: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        out[str(row["slot"])] = dict(row)
-    return out
+    return {str(row["slot"]): {**row, "updated_at": api_time(row["updated_at"])} for row in rows}
 
 
 def _set_active(
     player_uuid: str, character_id: str, active: str | None
 ) -> None:
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             UPDATE character_roster
-            SET wardrobe_active_slot = ?
-            WHERE player_uuid = ? AND character_id = ?
+            SET wardrobe_active_slot = %s
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (active, player_uuid, character_id),
         )
-        conn.commit()
 
 
 def _normalize_active(
@@ -719,6 +707,7 @@ def _normalize_active(
     return None
 
 
+@assets.guarded
 def enforce_wardrobe_slot_limits(player_uuid: str, character_id: str) -> int:
     """Delete locked extra slots (and PNGs); fix active. Returns swappable count."""
     uuid = (player_uuid or "").strip()
@@ -732,25 +721,24 @@ def enforce_wardrobe_slot_limits(player_uuid: str, character_id: str) -> int:
         row = slots.get(slot)
         if not row:
             continue
-        _delete_png(row.get("png_relpath"))
-        with connect() as conn:
+        with assets.asset_transaction() as conn:
+            _delete_png(row.get("png_relpath"))
             conn.execute(
                 """
                 DELETE FROM character_wardrobe_slots
-                WHERE player_uuid = ? AND character_id = ? AND slot = ?
+                WHERE player_uuid = %s AND character_id = %s AND slot = %s
                 """,
                 (uuid, cid, slot),
             )
-            conn.commit()
         wiped = True
     if wiped:
         slots = _load_slots(uuid, cid)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT wardrobe_active_slot
             FROM character_roster
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (uuid, cid),
         ).fetchone()
@@ -759,6 +747,7 @@ def enforce_wardrobe_slot_limits(player_uuid: str, character_id: str) -> int:
     return swappable
 
 
+@assets.guarded
 def _build_wardrobe_payload(
     player_uuid: str, character_id: str, *, include_textures: bool
 ) -> dict[str, Any]:
@@ -793,7 +782,7 @@ def _build_wardrobe_payload(
             "custom_name": bool(
                 row and str(row.get("display_name") or "").strip()
             ),
-            "apply_pending": bool(row and int(row.get("apply_pending") or 0)),
+            "apply_pending": bool(row and row.get("apply_pending")),
             "has_signature": has_sig,
             "signed": has_sig,
             "updated_at": (row.get("updated_at") if row else None),
@@ -815,10 +804,10 @@ def _build_wardrobe_payload(
 
 
 def _get_pending_active(create_id: str) -> str | None:
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT wardrobe_active_slot FROM character_creates WHERE id = ?
+            SELECT wardrobe_active_slot FROM character_creates WHERE id = %s
             """,
             (create_id,),
         ).fetchone()
@@ -834,16 +823,15 @@ def _get_pending_active(create_id: str) -> str | None:
 
 
 def _set_pending_active(create_id: str, active: str | None) -> None:
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             UPDATE character_creates
-            SET wardrobe_active_slot = ?
-            WHERE id = ?
+            SET wardrobe_active_slot = %s
+            WHERE id = %s
             """,
             (active, create_id),
         )
-        conn.commit()
 
 
 def _normalize_pending_active(
@@ -868,6 +856,7 @@ def _normalize_pending_active(
     return None
 
 
+@assets.guarded
 def enforce_pending_wardrobe_slot_limits(
     player_uuid: str, create_id: str
 ) -> int:
@@ -883,16 +872,15 @@ def enforce_pending_wardrobe_slot_limits(
         row = slots.get(slot)
         if not row:
             continue
-        _delete_png(row.get("png_relpath"))
-        with connect() as conn:
+        with assets.asset_transaction() as conn:
+            _delete_png(row.get("png_relpath"))
             conn.execute(
                 """
                 DELETE FROM character_create_wardrobe
-                WHERE create_id = ? AND slot = ?
+                WHERE create_id = %s AND slot = %s
                 """,
                 (cid, slot),
             )
-            conn.commit()
         wiped = True
     if wiped:
         slots = _load_pending_slots(cid)
@@ -901,6 +889,7 @@ def enforce_pending_wardrobe_slot_limits(
     return swappable
 
 
+@assets.guarded
 def _build_pending_wardrobe_payload(
     player_uuid: str,
     create_id: str,
@@ -992,6 +981,42 @@ def get_wardrobe_for_plugin(
     )
 
 
+def _prepare_upload(
+    player_uuid: str, character_id: str, slot: str, png_bytes: bytes,
+    *, model_override: str | None, create_masked: bool, pending_only: bool = False,
+) -> tuple[tuple[str, str, str], tuple[bytes, str, str, str] | None]:
+    """Validate and sign without an asset lock or an outstanding pool borrow.
+
+    The mutation repeats the ownership, entitlement and slot checks under the
+    guard: another upload, deletion or wipe may finish while MineSkin works.
+    """
+    if pending_only:
+        row = _require_pending_create(player_uuid, character_id)
+        access = {**row, "kind": "pending", "character_id": row["id"]}
+    else:
+        access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
+    uuid, cid = access["player_uuid"], access["character_id"]
+    slot_key = _normalize_slot(slot)
+    swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
+    if not _slot_unlocked(slot_key, swappable):
+        raise WardrobeError("Slot locked for your rank", status_code=403)
+    slots = _load_pending_slots(cid) if access["kind"] == "pending" else _load_slots(uuid, cid)
+    _require_sequential_fill(slot_key, slots)
+    try:
+        validate_png(png_bytes, WARDROBE_PNG_SIZE)
+    except StorageError as e:
+        raise WardrobeError(str(e), status_code=400) from e
+    model = resolve_skin_model(png_bytes, model_override)
+    value, signature = sign_wardrobe_skin(png_bytes, model)
+    masked = None
+    if slot_key == "base" and create_masked:
+        composed = compose_masked_skin(png_bytes, load_masked_template())
+        masked_model = detect_skin_model(composed)
+        masked_value, masked_signature = sign_wardrobe_skin(composed, masked_model)
+        masked = composed, masked_model, masked_value, masked_signature
+    return (model, value, signature), masked
+
+
 def upload_slot(
     player_uuid: str,
     character_id: str,
@@ -1003,6 +1028,10 @@ def upload_slot(
     model_override: str | None = None,
 ) -> dict[str, Any]:
     try:
+        signed, masked = _prepare_upload(
+            player_uuid, character_id, slot, png_bytes,
+            model_override=model_override, create_masked=create_masked,
+        )
         return _upload_slot_impl(
             player_uuid,
             character_id,
@@ -1011,6 +1040,7 @@ def upload_slot(
             display_name=display_name,
             create_masked=create_masked,
             model_override=model_override,
+            _signed=signed, _masked=masked,
         )
     except WardrobeError as exc:
         _log_wardrobe_upload_failure(
@@ -1026,6 +1056,7 @@ def upload_slot(
         raise
 
 
+@assets.guarded
 def _upload_slot_impl(
     player_uuid: str,
     character_id: str,
@@ -1035,6 +1066,8 @@ def _upload_slot_impl(
     display_name: str | None = None,
     create_masked: bool = False,
     model_override: str | None = None,
+    _signed: tuple[str, str, str],
+    _masked: tuple[bytes, str, str, str] | None,
 ) -> dict[str, Any]:
     access = _resolve_player_wardrobe_access(player_uuid, character_id, living=True)
     if access["kind"] == "pending":
@@ -1053,8 +1086,7 @@ def _upload_slot_impl(
             validate_png(png_bytes, WARDROBE_PNG_SIZE)
         except StorageError as e:
             raise WardrobeError(str(e), status_code=400) from e
-        model = resolve_skin_model(png_bytes, model_override)
-        texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
+        model, texture_value, texture_signature = _signed
         name = _normalize_display_name(display_name)
         existing = slots_before.get(slot_key)
         keep_name = (
@@ -1077,7 +1109,7 @@ def _upload_slot_impl(
         )
         if slot_key == "base" and create_masked:
             _maybe_create_masked_from_base(
-                uuid, cid, png_bytes, pending_create_id=cid
+                uuid, cid, png_bytes, pending_create_id=cid, prepared=_masked
             )
         if slot_key in SWAPPABLE_SLOTS:
             slots_after = _load_pending_slots(cid)
@@ -1110,10 +1142,7 @@ def _upload_slot_impl(
         validate_png(png_bytes, WARDROBE_PNG_SIZE)
     except StorageError as e:
         raise WardrobeError(str(e), status_code=400) from e
-    model = resolve_skin_model(png_bytes, model_override)
-
-    # Sign before mutating disk/DB so failed MineSkin leaves the prior slot intact.
-    texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
+    model, texture_value, texture_signature = _signed
 
     name = _normalize_display_name(display_name)
     existing = slots_before.get(slot_key)
@@ -1138,7 +1167,7 @@ def _upload_slot_impl(
     )
 
     if slot_key == "base" and create_masked:
-        _maybe_create_masked_from_base(uuid, cid, png_bytes)
+        _maybe_create_masked_from_base(uuid, cid, png_bytes, prepared=_masked)
 
     # Auto-equip base on first fill if nothing active
     if slot_key in SWAPPABLE_SLOTS:
@@ -1158,6 +1187,7 @@ def _upload_slot_impl(
     return wardrobe
 
 
+@assets.guarded
 def set_slot_display_name(
     player_uuid: str,
     character_id: str,
@@ -1181,16 +1211,15 @@ def set_slot_display_name(
         if not row or not row.get("png_relpath"):
             raise WardrobeError("Wardrobe slot is empty", status_code=404)
         name = _normalize_display_name(display_name)
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 UPDATE character_create_wardrobe
-                SET display_name = ?, updated_at = ?
-                WHERE create_id = ? AND slot = ?
+                SET display_name = %s, updated_at = %s
+                WHERE create_id = %s AND slot = %s
                 """,
                 (name, _iso_now(), cid, slot_key),
             )
-            conn.commit()
         return get_wardrobe(uuid, cid)
 
     roster = _require_owned_character(player_uuid, character_id)
@@ -1208,19 +1237,19 @@ def set_slot_display_name(
     if not row or not row.get("png_relpath"):
         raise WardrobeError("Wardrobe slot is empty", status_code=404)
     name = _normalize_display_name(display_name)
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             UPDATE character_wardrobe_slots
-            SET display_name = ?, updated_at = ?
-            WHERE player_uuid = ? AND character_id = ? AND slot = ?
+            SET display_name = %s, updated_at = %s
+            WHERE player_uuid = %s AND character_id = %s AND slot = %s
             """,
             (name, _iso_now(), uuid, cid, slot_key),
         )
-        conn.commit()
     return get_wardrobe(uuid, cid)
 
 
+@assets.guarded
 def ack_wardrobe_slots(
     player_uuid: str, character_id: str, slots: list[str]
 ) -> dict[str, Any]:
@@ -1236,21 +1265,20 @@ def ack_wardrobe_slots(
             continue
     if not clean:
         return get_wardrobe_for_plugin(uuid, cid)
-    placeholders = ",".join("?" for _ in clean)
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
-            f"""
+            """
             UPDATE character_wardrobe_slots
-            SET apply_pending = 0
-            WHERE player_uuid = ? AND character_id = ?
-              AND slot IN ({placeholders})
+            SET apply_pending = false
+            WHERE player_uuid = %s AND character_id = %s
+              AND slot = ANY(%s)
             """,
-            (uuid, cid, *clean),
+            (uuid, cid, clean),
         )
-        conn.commit()
     return get_wardrobe_for_plugin(uuid, cid)
 
 
+@assets.guarded
 def clear_slot(
     player_uuid: str, character_id: str, slot: str
 ) -> dict[str, Any]:
@@ -1263,16 +1291,15 @@ def clear_slot(
         slots = _load_pending_slots(cid)
         row = slots.get(slot_key)
         if row:
-            _delete_png(row.get("png_relpath"))
-            with connect() as conn:
+            with assets.asset_transaction() as conn:
+                _delete_png(row.get("png_relpath"))
                 conn.execute(
                     """
                     DELETE FROM character_create_wardrobe
-                    WHERE create_id = ? AND slot = ?
+                    WHERE create_id = %s AND slot = %s
                     """,
                     (cid, slot_key),
                 )
-                conn.commit()
         if slot_key in SWAPPABLE_SLOTS:
             _compact_pending_swappable(cid)
         elif previous_active and previous_active == slot_key:
@@ -1293,16 +1320,15 @@ def clear_slot(
     slots = _load_slots(uuid, cid)
     row = slots.get(slot_key)
     if row:
-        _delete_png(row.get("png_relpath"))
-        with connect() as conn:
+        with assets.asset_transaction() as conn:
+            _delete_png(row.get("png_relpath"))
             conn.execute(
                 """
                 DELETE FROM character_wardrobe_slots
-                WHERE player_uuid = ? AND character_id = ? AND slot = ?
+                WHERE player_uuid = %s AND character_id = %s AND slot = %s
                 """,
                 (uuid, cid, slot_key),
             )
-            conn.commit()
     if slot_key in SWAPPABLE_SLOTS:
         _compact_swappable_slots(
             uuid, cid, previous_active=previous_active
@@ -1338,6 +1364,7 @@ def set_active_slot_for_plugin(
     )
 
 
+@assets.guarded
 def _set_active_slot(
     player_uuid: str,
     character_id: str,
@@ -1593,12 +1620,12 @@ def _require_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     cid = (create_id or "").strip()
     if not uuid or not cid:
         raise WardrobeError("player_uuid and create_id are required", status_code=400)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, player_uuid, status, character_id, realm_id
             FROM character_creates
-            WHERE id = ? AND player_uuid = ?
+            WHERE id = %s AND player_uuid = %s
             """,
             (cid, uuid),
         ).fetchone()
@@ -1624,6 +1651,10 @@ def upload_pending_create_wardrobe(
 ) -> dict[str, Any]:
     """Sign + store a wardrobe slot against a pending create (pre-roster)."""
     try:
+        signed, masked = _prepare_upload(
+            player_uuid, create_id, slot, png_bytes, pending_only=True,
+            model_override=model_override, create_masked=create_masked,
+        )
         return _upload_pending_create_wardrobe_impl(
             player_uuid,
             create_id,
@@ -1632,6 +1663,7 @@ def upload_pending_create_wardrobe(
             display_name=display_name,
             create_masked=create_masked,
             model_override=model_override,
+            _signed=signed, _masked=masked,
         )
     except WardrobeError as exc:
         _log_wardrobe_upload_failure(
@@ -1647,6 +1679,7 @@ def upload_pending_create_wardrobe(
         raise
 
 
+@assets.guarded
 def _upload_pending_create_wardrobe_impl(
     player_uuid: str,
     create_id: str,
@@ -1656,6 +1689,8 @@ def _upload_pending_create_wardrobe_impl(
     display_name: str | None = None,
     create_masked: bool = False,
     model_override: str | None = None,
+    _signed: tuple[str, str, str],
+    _masked: tuple[bytes, str, str, str] | None,
 ) -> dict[str, Any]:
     create = _require_pending_create(player_uuid, create_id)
     uuid = str(create["player_uuid"])
@@ -1670,8 +1705,7 @@ def _upload_pending_create_wardrobe_impl(
         validate_png(png_bytes, WARDROBE_PNG_SIZE)
     except StorageError as e:
         raise WardrobeError(str(e), status_code=400) from e
-    model = resolve_skin_model(png_bytes, model_override)
-    texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
+    model, texture_value, texture_signature = _signed
     name = _normalize_display_name(display_name)
 
     existing = slots_before.get(slot_key)
@@ -1696,7 +1730,7 @@ def _upload_pending_create_wardrobe_impl(
 
     if slot_key == "base" and create_masked:
         _maybe_create_masked_from_base(
-            uuid, cid, png_bytes, pending_create_id=cid
+            uuid, cid, png_bytes, pending_create_id=cid, prepared=_masked
         )
 
     return {
@@ -1712,17 +1746,18 @@ def _upload_pending_create_wardrobe_impl(
     }
 
 
+@assets.guarded
 def clear_pending_create_wardrobe(
     player_uuid: str, create_id: str, slot: str
 ) -> dict[str, Any]:
     create = _require_pending_create(player_uuid, create_id)
     cid = str(create["id"])
     slot_key = _normalize_slot(slot)
-    with connect() as conn:
+    with assets.asset_transaction() as conn:
         row = conn.execute(
             """
             SELECT png_relpath FROM character_create_wardrobe
-            WHERE create_id = ? AND slot = ?
+            WHERE create_id = %s AND slot = %s
             """,
             (cid, slot_key),
         ).fetchone()
@@ -1731,27 +1766,27 @@ def clear_pending_create_wardrobe(
             conn.execute(
                 """
                 DELETE FROM character_create_wardrobe
-                WHERE create_id = ? AND slot = ?
+                WHERE create_id = %s AND slot = %s
                 """,
                 (cid, slot_key),
             )
-            conn.commit()
     if slot_key in SWAPPABLE_SLOTS:
         _compact_pending_swappable(cid)
     return {"ok": True, "create_id": cid, "slot": slot_key, "cleared": True}
 
 
+@assets.guarded
 def delete_all_pending_create_wardrobe(create_id: str) -> int:
     """Delete all wardrobe slots and PNGs for a pending create. Returns count."""
     cid = (create_id or "").strip()
     if not cid:
         return 0
     deleted = 0
-    with connect() as conn:
+    with assets.asset_transaction() as conn:
         rows = conn.execute(
             """
             SELECT png_relpath FROM character_create_wardrobe
-            WHERE create_id = ?
+            WHERE create_id = %s
             """,
             (cid,),
         ).fetchall()
@@ -1759,13 +1794,13 @@ def delete_all_pending_create_wardrobe(create_id: str) -> int:
             _delete_png(row["png_relpath"])
             deleted += 1
         conn.execute(
-            "DELETE FROM character_create_wardrobe WHERE create_id = ?",
+            "DELETE FROM character_create_wardrobe WHERE create_id = %s",
             (cid,),
         )
-        conn.commit()
     return deleted
 
 
+@assets.guarded
 def flush_pending_wardrobe(
     player_uuid: str, create_id: str, character_id: str
 ) -> int:
@@ -1776,10 +1811,10 @@ def flush_pending_wardrobe(
     if not uuid or not create_key or not char_id:
         return 0
     pending_active: str | None = None
-    with connect() as conn:
+    with assets.asset_transaction() as conn:
         create_row = conn.execute(
             """
-            SELECT wardrobe_active_slot FROM character_creates WHERE id = ?
+            SELECT wardrobe_active_slot FROM character_creates WHERE id = %s
             """,
             (create_key,),
         ).fetchone()
@@ -1790,47 +1825,41 @@ def flush_pending_wardrobe(
                 raw_active = None
             if raw_active is not None and str(raw_active).strip():
                 pending_active = str(raw_active).strip().lower()
-    with connect() as conn:
         rows = conn.execute(
             """
             SELECT slot, png_relpath, texture_value, texture_signature,
                    model, display_name
             FROM character_create_wardrobe
-            WHERE create_id = ?
+            WHERE create_id = %s
             """,
             (create_key,),
         ).fetchall()
-    if not rows:
-        return 0
-
-    flushed = 0
-    now = _iso_now()
-    for row in rows:
-        slot_key = str(row["slot"])
-        src = _png_abspath(row["png_relpath"])
-        if src is None or not src.is_file():
-            continue
-        png_bytes = src.read_bytes()
-        rel = _slot_relpath(uuid, char_id, slot_key)
-        dest = DATA_DIR / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(png_bytes)
-        custom_name = str(row["display_name"] or "").strip() or None
-        with connect() as conn:
+        if not rows:
+            return 0
+        flushed = 0
+        now = _iso_now()
+        for row in rows:
+            slot_key = str(row["slot"])
+            src = _png_abspath(row["png_relpath"])
+            if src is None or not src.is_file():
+                continue
+            png_bytes = src.read_bytes()
+            rel = _write_png(uuid, char_id, slot_key, png_bytes)
+            custom_name = str(row["display_name"] or "").strip() or None
             conn.execute(
                 """
                 INSERT INTO character_wardrobe_slots (
                     player_uuid, character_id, slot, png_relpath,
                     texture_value, texture_signature, model,
                     display_name, apply_pending, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, true, %s)
                 ON CONFLICT(player_uuid, character_id, slot) DO UPDATE SET
                     png_relpath = excluded.png_relpath,
                     texture_value = excluded.texture_value,
                     texture_signature = excluded.texture_signature,
                     model = excluded.model,
                     display_name = excluded.display_name,
-                    apply_pending = 1,
+                    apply_pending = true,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -1845,13 +1874,10 @@ def flush_pending_wardrobe(
                     now,
                 ),
             )
-            conn.commit()
-        _delete_png(row["png_relpath"])
-        flushed += 1
-
-    with connect() as conn:
+            _delete_png(row["png_relpath"])
+            flushed += 1
         conn.execute(
-            "DELETE FROM character_create_wardrobe WHERE create_id = ?",
+            "DELETE FROM character_create_wardrobe WHERE create_id = %s",
             (create_key,),
         )
         active_to_set: str | None = None
@@ -1859,7 +1885,7 @@ def flush_pending_wardrobe(
             has_active = conn.execute(
                 """
                 SELECT 1 FROM character_wardrobe_slots
-                WHERE player_uuid = ? AND character_id = ? AND slot = ?
+                WHERE player_uuid = %s AND character_id = %s AND slot = %s
                   AND png_relpath IS NOT NULL
                 """,
                 (uuid, char_id, pending_active),
@@ -1870,7 +1896,7 @@ def flush_pending_wardrobe(
             base = conn.execute(
                 """
                 SELECT 1 FROM character_wardrobe_slots
-                WHERE player_uuid = ? AND character_id = ? AND slot = 'base'
+                WHERE player_uuid = %s AND character_id = %s AND slot = 'base'
                   AND png_relpath IS NOT NULL
                 """,
                 (uuid, char_id),
@@ -1881,7 +1907,7 @@ def flush_pending_wardrobe(
             roster = conn.execute(
                 """
                 SELECT 1 FROM character_roster
-                WHERE player_uuid = ? AND character_id = ?
+                WHERE player_uuid = %s AND character_id = %s
                 """,
                 (uuid, char_id),
             ).fetchone()
@@ -1889,8 +1915,8 @@ def flush_pending_wardrobe(
                 conn.execute(
                     """
                     UPDATE character_roster
-                    SET wardrobe_active_slot = ?
-                    WHERE player_uuid = ? AND character_id = ?
+                    SET wardrobe_active_slot = %s
+                    WHERE player_uuid = %s AND character_id = %s
                       AND (
                         wardrobe_active_slot IS NULL
                         OR TRIM(wardrobe_active_slot) = ''
@@ -1898,5 +1924,4 @@ def flush_pending_wardrobe(
                     """,
                     (active_to_set, uuid, char_id),
                 )
-        conn.commit()
     return flushed

@@ -1,60 +1,29 @@
-import sqlite3
 
 import httpx
 import pytest
 
 from src.api import skins_routes
-from src.auth import users
-from src.skins import db
+from src.auth import testing, users
 from src.skins.discord_link import remember_discord_nicknames
+from src.skins.testing import link as store_link
 
 
-def link(conn, uuid, discord_id, username, nickname=None):
-    conn.execute(
-        "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at, "
-        "discord_nickname) VALUES (?, ?, 'mc', ?, '2026-09-20T10:00:00Z', ?)",
-        (uuid, discord_id, username, nickname))
+def link(uuid, discord_id, username, nickname=None):
+    store_link(uuid, discord_id, "mc", username, linked_at="2026-09-20T10:00:00Z", discord_nickname=nickname)
 
 
 def names(discord_id):
-    with db.connect() as conn:
-        row = conn.execute("SELECT discord_username, discord_nickname FROM discord_links WHERE discord_user_id = ?",
-                           (discord_id,)).fetchone()
+    [row] = testing.rows("SELECT discord_username, discord_nickname FROM discord_links WHERE discord_user_id = %s",
+                         (discord_id,))
     return row["discord_username"], row["discord_nickname"]
 
 
-def test_upgrade_moves_old_nicknames_out_of_usernames(tmp_path, monkeypatch):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    # A database from before nicknames had a column of their own.
-    conn = sqlite3.connect(tmp_path / "province.db")
-    conn.execute("CREATE TABLE discord_links (player_uuid TEXT PRIMARY KEY, discord_user_id TEXT NOT NULL UNIQUE, "
-                 "minecraft_name TEXT, discord_username TEXT, linked_at TEXT NOT NULL, left_guild_at TEXT, "
-                 "grace_until TEXT)")
-    for uuid, discord_id, name in [("u1", "1", "Justin"), ("u2", "2", "justin_x"), ("u3", "3", "Dread Captain - Wren"),
-                                   ("u4", "4", None)]:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, discord_username, linked_at) "
-                     "VALUES (?, ?, ?, 'now')", (uuid, discord_id, name))
-    conn.commit()
-    conn.close()
-
-    db.migrate()
-    assert names("1") == (None, "Justin")
-    assert names("2") == ("justin_x", None)
-    assert names("3") == (None, "Dread Captain - Wren")
-    assert names("4") == (None, None)
-    # Only once: a second start leaves later data alone.
-    remember_discord_nicknames([{"discord_user_id": "2", "discord_nickname": "Jus"}])
-    db.migrate()
-    assert names("2") == ("justin_x", "Jus")
 
 
-def test_sign_in_stores_handle_and_server_nickname(database):
-    with database.connect() as conn:
-        link(conn, "u1", "422", "Justin")
-        conn.commit()
+
+
+def test_sign_in_stores_handle_and_server_nickname(postgres):
+    link("u1", "422", "Justin")
     identity = {"discord_user_id": "422", "discord_username": "justin_x", "discord_global_name": "Justin",
                 "discord_avatar": None}
     users.sign_in(identity, guild_member=True, member={"nick": "Justin the Bold"})
@@ -67,12 +36,10 @@ def test_sign_in_stores_handle_and_server_nickname(database):
     assert names("422") == ("justin_x", "Justin")
 
 
-def test_bot_can_send_nicknames(database, monkeypatch):
+def test_bot_can_send_nicknames(postgres, monkeypatch):
     monkeypatch.setattr(skins_routes, "_require_staff", lambda key: None)
-    with database.connect() as conn:
-        link(conn, "u1", "1", None, "Old")
-        link(conn, "u2", "2", None, "Kept")
-        conn.commit()
+    link("u1", "1", None, "Old")
+    link("u2", "2", None, "Kept")
     body = skins_routes.DiscordUsernamesBody.model_validate({"updates": [
         {"discord_user_id": "1", "discord_username": "one_handle", "discord_nickname": "  Lady   One "},
         {"discord_user_id": "2", "discord_username": "two_handle"},

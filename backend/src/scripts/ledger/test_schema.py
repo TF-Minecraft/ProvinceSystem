@@ -411,8 +411,8 @@ def test_remap_wealth_breakdown_keys_returns_how_many_changed() -> None:
 # --- int range (finding 8) ---------------------------------------------------
 
 
-def test_an_int_past_sqlite_range_is_dropped_not_stored() -> None:
-    """sqlite3 raises OverflowError past 2^63, inside the background promote.
+def test_an_int_past_bigint_range_is_dropped_not_stored() -> None:
+    """A bigint column refuses anything past 2^63, inside the background promote.
 
     That runs after the POST answered 200, so the day would be permanently and
     silently unindexed.
@@ -424,7 +424,7 @@ def test_an_int_past_sqlite_range_is_dropped_not_stored() -> None:
     assert snapshot["global"]["population"] is None
 
 
-def test_an_int_at_the_sqlite_boundary_survives() -> None:
+def test_an_int_at_the_bigint_boundary_survives() -> None:
     snapshot = normalize_snapshot(
         snapshot_payload(factions=[faction_payload(members=2**63 - 1)]), MAP
     )

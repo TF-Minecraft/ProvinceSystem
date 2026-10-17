@@ -12,7 +12,8 @@ import argparse
 import os
 import sys
 
-from src.skins.db import migrate
+from src import database
+from src.database.migrate import MigrationError, migrate
 
 from ..util.dirs import validate_map
 from ..util.maplock import MapLockBusy, map_lock
@@ -35,7 +36,6 @@ def _days_on_disk(root: str, suffix: str) -> list[str]:
 
 def reindex_map(map_name: str, *, from_raw: bool = False, dry_run: bool = False) -> int:
     validate_map(map_name)
-    migrate()
 
     if from_raw:
         days = _days_on_disk(raw_root(map_name), "")
@@ -79,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(
-        description="Rebuild one map's ledger SQLite index from stored snapshots.",
+        description="Rebuild one map's ledger index from stored snapshots.",
     )
     parser.add_argument("--map", required=True, help="Map id, e.g. dev")
     parser.add_argument(
@@ -95,7 +95,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        validate_map(args.map)
+        # A dry run changes nothing, including the schema.
+        if not args.dry_run:
+            migrate()
         return reindex_map(args.map, from_raw=args.from_raw, dry_run=args.dry_run)
+    except (database.NotConfiguredError, database.OperationalError, MigrationError) as exc:
+        parser.error(f"Database: {exc}")
+        return 2
     except MapLockBusy:
         parser.error(
             f"Another ledger wipe, ingest or reindex is running for "

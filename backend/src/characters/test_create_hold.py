@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-import sqlite3
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
@@ -24,18 +27,16 @@ class CreateHoldTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
-        self.db_path = root / "province.db"
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=self.db_path,
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
         validated = patch(
             "src.characters.creates._validate_and_normalize",
             side_effect=lambda uuid, body, realm_id=None: {"name": body["name"]},
@@ -68,48 +69,27 @@ class CreateHoldTests(unittest.TestCase):
         self.assertEqual(self._pending_names(), ["Plain", "Held", "Truthy"])
 
     def test_a_hold_nobody_releases_lapses(self) -> None:
-        from src.skins.db import connect
+        from src.database import connect
 
         held = self._create("Abandoned", hold=True)
         self.assertEqual(self._pending_names(), [])
         with connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET held_until = '2020-01-01T00:00:00Z' WHERE id = ?",
+                "UPDATE character_creates SET held_until = '2020-01-01T00:00:00Z' WHERE id = %s",
                 (held,),
             )
-            conn.commit()
         self.assertEqual(self._pending_names(), ["Abandoned"])
 
     def test_only_pending_creates_can_be_released(self) -> None:
         from src.characters.creates import CreateError, release_create
-        from src.skins.db import connect
+        from src.database import connect
 
         held = self._create("Applied", hold=True)
         with connect() as conn:
-            conn.execute("UPDATE character_creates SET status = 'applied' WHERE id = ?", (held,))
-            conn.commit()
+            conn.execute("UPDATE character_creates SET status = 'applied' WHERE id = %s", (held,))
         with self.assertRaises(CreateError):
             release_create(PLAYER, held)
 
-    def test_existing_databases_gain_the_hold_column(self) -> None:
-        from src.skins import db
-
-        with sqlite3.connect(self.db_path) as conn:
-            conn.executescript(
-                """
-                DROP TABLE character_creates;
-                CREATE TABLE character_creates (
-                    id TEXT PRIMARY KEY, player_uuid TEXT NOT NULL, client_request_id TEXT,
-                    payload TEXT NOT NULL, status TEXT NOT NULL, character_id TEXT, error TEXT,
-                    created_at TEXT NOT NULL, applied_at TEXT,
-                    realm_id TEXT NOT NULL DEFAULT 'main', wardrobe_active_slot TEXT
-                );
-                """
-            )
-        db.migrate()
-        with sqlite3.connect(self.db_path) as conn:
-            columns = {row[1] for row in conn.execute("PRAGMA table_info(character_creates)")}
-        self.assertIn("held_until", columns)
 
 
 if __name__ == "__main__":

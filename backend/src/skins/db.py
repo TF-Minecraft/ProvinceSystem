@@ -1,141 +1,15 @@
-import json
-import sqlite3
+"""On-disk asset directories. Site records are stored by src.database."""
 from pathlib import Path
 
 _SKINS_PKG = Path(__file__).resolve().parent
 DATA_DIR = _SKINS_PKG.parent / "data"
-DB_PATH = DATA_DIR / "province.db"
 SKINS_DIR = DATA_DIR / "skins"
 WARDROBE_DIR = DATA_DIR / "wardrobe"
 DRINKS_DIR = DATA_DIR / "drinks"
-SCHEMA_PATH = _SKINS_PKG / "schema.sql"
 
 
-def connect() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-
-def migrate() -> None:
-    """Initialise the current database schema and storage directories."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    SKINS_DIR.mkdir(parents=True, exist_ok=True)
-    WARDROBE_DIR.mkdir(parents=True, exist_ok=True)
-    DRINKS_DIR.mkdir(parents=True, exist_ok=True)
-    (DRINKS_DIR / "textures").mkdir(parents=True, exist_ok=True)
-    (DRINKS_DIR / "submissions").mkdir(parents=True, exist_ok=True)
-    (DRINKS_DIR / "assets").mkdir(parents=True, exist_ok=True)
-    schema = SCHEMA_PATH.read_text(encoding="utf-8")
-    with connect() as conn:
-        conn.executescript(schema)
-        conn.commit()
-        _upgrade(conn)
-
-
-_USERS_ROLE_COLUMN = (
-    "role TEXT NOT NULL DEFAULT 'player' "
-    "CHECK (role IN ('player', 'mod', 'admin', 'root'))"
-)
-
-
-def _move_nicknames_out_of_usernames(conn: sqlite3.Connection) -> None:
-    """Links made before usernames were checked hold a server nickname there ("Justin").
-
-    Move each into discord_nickname and clear the username, so the bot's next
-    fill (which only fills empty ones) or the player's next sign-in stores the handle.
-    """
-    from .discord_link import is_discord_username
-
-    for row in conn.execute("SELECT player_uuid, discord_username FROM discord_links").fetchall():
-        name = row["discord_username"]
-        if name and not is_discord_username(name):
-            conn.execute(
-                "UPDATE discord_links SET discord_nickname = ?, discord_username = NULL WHERE player_uuid = ?",
-                (name.strip(), row["player_uuid"]),
-            )
-
-
-# Player armour approved before metal lines stored bare tiers (``iron``, ``mage``).
-# These are the shop sets staff gave them, keyed by submission id (main and dev).
-_LEGACY_ARMOR_SETS = {
-    "archbishqp_crusader": {"iron": "medium steel"},
-    "estiennehavenga_priestess_armour": {"mage": "mage steel"},
-    "geofflive_thalendorian_armor": {
-        "iron": "light iron",
-        "steel": "light steel",
-        "abyssalite": "light abyssalite",
-        "mythril": "light mythril",
-        "mage": "mage steel",
-    },
-}
-
-
-def _set_legacy_armor_sets(conn: sqlite3.Connection) -> None:
-    """Store the shop sets of armour approved before metal lines.
-
-    Keeps a re-apply from writing the bare metal back over the shop. Only an
-    unset row is touched, so later edits are kept.
-    """
-    for submission_id, sets in _LEGACY_ARMOR_SETS.items():
-        conn.execute(
-            "UPDATE submissions SET tier_sets = ? WHERE id IN (?, ?) AND tier_sets IS NULL",
-            (json.dumps(sets), submission_id, f"dev_{submission_id}"),
-        )
-
-
-# Death and will fields from RPCharacters' roster push (stage 6b).
-_ROSTER_DEATH_COLUMNS = (
-    ("died_at", "TEXT"),
-    ("death_id", "TEXT"),
-    ("will_heir_id", "TEXT"),
-    ("will_heir_name", "TEXT"),
-    ("will_revision", "INTEGER"),
-)
-
-
-def _upgrade(conn: sqlite3.Connection) -> None:
-    """Add and drop columns that CREATE TABLE IF NOT EXISTS cannot change on old tables."""
-    conn.execute("BEGIN IMMEDIATE")
-    try:
-        columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
-        if "role" not in columns:
-            conn.execute(f"ALTER TABLE users ADD COLUMN {_USERS_ROLE_COLUMN}")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
-        if "placeholder" not in columns:
-            conn.execute("ALTER TABLE users ADD COLUMN placeholder INTEGER NOT NULL DEFAULT 0")
-        user_sessions = {row["name"] for row in conn.execute("PRAGMA table_info(user_sessions)")}
-        if "acting_user_id" not in user_sessions:
-            conn.execute(
-                "ALTER TABLE user_sessions ADD COLUMN acting_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
-            )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_acting ON user_sessions(acting_user_id)")
-        links = {row["name"] for row in conn.execute("PRAGMA table_info(discord_links)")}
-        if "discord_nickname" not in links:
-            conn.execute("ALTER TABLE discord_links ADD COLUMN discord_nickname TEXT")
-            _move_nicknames_out_of_usernames(conn)
-        if "link_method" not in links:
-            conn.execute("ALTER TABLE discord_links ADD COLUMN link_method TEXT")
-        codes = {row["name"] for row in conn.execute("PRAGMA table_info(codes)")}
-        if "minted_via" not in codes:
-            conn.execute("ALTER TABLE codes ADD COLUMN minted_via TEXT")
-        submissions = {row["name"] for row in conn.execute("PRAGMA table_info(submissions)")}
-        if "tier_sets" not in submissions:
-            conn.execute("ALTER TABLE submissions ADD COLUMN tier_sets TEXT")
-        creates = {row["name"] for row in conn.execute("PRAGMA table_info(character_creates)")}
-        if "held_until" not in creates:
-            conn.execute("ALTER TABLE character_creates ADD COLUMN held_until TEXT")
-        roster = {row["name"] for row in conn.execute("PRAGMA table_info(character_roster)")}
-        for column, kind in _ROSTER_DEATH_COLUMNS:
-            if column not in roster:
-                conn.execute(f"ALTER TABLE character_roster ADD COLUMN {column} {kind}")
-        rpc_meta = {row["name"] for row in conn.execute("PRAGMA table_info(rpc_player_meta)")}
-        if "donator_tier" in rpc_meta:
-            conn.execute("ALTER TABLE rpc_player_meta DROP COLUMN donator_tier")
-        _set_legacy_armor_sets(conn)
-        conn.commit()
-    except BaseException:
-        conn.rollback()
-        raise
+def ensure_directories() -> None:
+    """Prepare asset storage without opening a database."""
+    for path in (DATA_DIR, SKINS_DIR, WARDROBE_DIR, DRINKS_DIR,
+                 DRINKS_DIR / "textures", DRINKS_DIR / "submissions", DRINKS_DIR / "assets"):
+        path.mkdir(parents=True, exist_ok=True)

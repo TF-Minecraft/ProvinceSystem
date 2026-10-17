@@ -6,6 +6,9 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from src import database
+from src.characters.times import api_time
+from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
 from src.skins.submissions import (
     MAX_DISPLAY_NAME,
     SubmissionError,
@@ -55,7 +58,6 @@ def _kit_statuses_for_character(
 ) -> dict[str, str] | None:
     """Return kit_id → status for a roster character, or None if not on roster."""
     from src.characters.pending_create import fetch_owned_pending_create
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
@@ -63,34 +65,26 @@ def _kit_statuses_for_character(
         return None
     if fetch_owned_pending_create(uuid, cid) is not None:
         return {}
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT kit_status, kit_statuses_json
             FROM character_roster
-            WHERE player_uuid = ? AND character_id = ?
+            WHERE player_uuid = %s AND character_id = %s
             """,
             (uuid, cid),
         ).fetchone()
     if row is None:
         return None
     statuses: dict[str, str] = {}
-    try:
-        raw = row["kit_statuses_json"]
-    except (KeyError, IndexError):
-        raw = None
-    if raw:
-        try:
-            parsed = json.loads(raw)
-            if isinstance(parsed, dict):
-                for k, v in parsed.items():
-                    if k is None or v is None:
-                        continue
-                    kid = str(k).strip().lower()
-                    if kid:
-                        statuses[kid] = str(v).strip().lower()
-        except (TypeError, json.JSONDecodeError):
-            pass
+    parsed = row["kit_statuses_json"]
+    if isinstance(parsed, dict):
+        for k, v in parsed.items():
+            if k is None or v is None:
+                continue
+            kid = str(k).strip().lower()
+            if kid:
+                statuses[kid] = str(v).strip().lower()
     if not statuses:
         kit_status = row["kit_status"]
         if kit_status is not None and str(kit_status).strip():
@@ -171,8 +165,6 @@ def remount_character_id(
     Create-scoped rows replace any existing rows for the same kit_key on the
     real character. Returns number of rows remounted.
     """
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     from_id = (create_id or "").strip()
     to_id = (character_id or "").strip()
@@ -181,35 +173,49 @@ def remount_character_id(
 
     remounted = 0
     now = _iso_now()
-    with connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT kit_key FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ?
-            """,
-            (uuid, from_id),
-        ).fetchall()
+    # Inserts and key moves share this owner lock, including absent destinations.
+    # A remount cannot discover a new target row after taking its ordered row locks.
+    with database.transaction(lock=f"characters:lore:{uuid}") as conn:
+        rows = lock_rows(conn, "player_uuid = %s AND character_id = ANY(%s)",
+                         (uuid, [from_id, to_id]))
         for row in rows:
+            if row["character_id"] != from_id:
+                continue
             kit_key = str(row["kit_key"] or "").strip()
             if not kit_key:
                 continue
             conn.execute(
                 """
                 DELETE FROM lore_item_customisations
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
                 """,
                 (uuid, to_id, kit_key),
             )
             cur = conn.execute(
                 """
-                UPDATE lore_item_customisations
-                SET character_id = ?, updated_at = ?
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                INSERT INTO lore_item_customisations (
+                    player_uuid, character_id, kit_key, kit_id, name_colours,
+                    name_styles, display_name, lore_json, existing_skin_id,
+                    submission_id, state, skin_slug, ready_at, applied_at,
+                    deny_reason, updated_at, realm_id
+                )
+                SELECT player_uuid, %s, kit_key, kit_id, name_colours,
+                       name_styles, display_name, lore_json, existing_skin_id,
+                       submission_id, state, skin_slug, ready_at, applied_at,
+                       deny_reason, %s, realm_id
+                FROM lore_item_customisations
+                WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
                 """,
                 (to_id, now, uuid, from_id, kit_key),
             )
             remounted += int(cur.rowcount or 0)
-        conn.commit()
+            # Keep row keys immutable: a waiting ordered FOR UPDATE must skip
+            # the removed source, rather than lock its new key out of order.
+            conn.execute(
+                "DELETE FROM lore_item_customisations "
+                "WHERE player_uuid = %s AND character_id = %s AND kit_key = %s",
+                (uuid, from_id, kit_key),
+            )
     return remounted
 
 
@@ -229,8 +235,6 @@ def claim_status(
     kit (from catalog ``editable_kit`` / ``kits``) are considered. Fallback when
     kits payload is missing: for ``starter`` (default), any row for the character.
     """
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
     kit = (kit_id or "starter").strip().lower() or "starter"
@@ -246,33 +250,20 @@ def claim_status(
         }
 
     allowed_keys = _kit_editable_keys(kit)
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT LOWER(COALESCE(state, '')) AS state,
-                   LOWER(COALESCE(kit_key, '')) AS kit_key,
-                   submission_id
-            FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ?
+            SELECT LOWER(COALESCE(lore.state, '')) AS state,
+                   LOWER(COALESCE(lore.kit_key, '')) AS kit_key,
+                   lore.submission_id, sub.status AS submission_status
+            FROM lore_item_customisations lore
+            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            WHERE lore.player_uuid = %s AND lore.character_id = %s
             """,
             (uuid, cid),
         ).fetchall()
-        sub_ids = [
-            str(r["submission_id"]).strip()
-            for r in rows
-            if r["submission_id"] is not None and str(r["submission_id"]).strip()
-        ]
-        sub_status: dict[str, str] = {}
-        if sub_ids:
-            placeholders = ",".join("?" * len(sub_ids))
-            for sub in conn.execute(
-                f"SELECT id, LOWER(COALESCE(status, '')) AS status "
-                f"FROM submissions WHERE id IN ({placeholders})",
-                sub_ids,
-            ).fetchall():
-                sid = str(sub["id"] or "").strip()
-                if sid:
-                    sub_status[sid] = str(sub["status"] or "").strip().lower()
+    sub_status = {str(r["submission_id"]).strip(): str(r["submission_status"]).strip().lower()
+                  for r in rows if r["submission_status"] is not None}
 
     for row in rows:
         key = str(row["kit_key"] or "").strip().lower()
@@ -392,13 +383,7 @@ def _path_for_kit_key(kit_key: str) -> str:
         return ""
 
 
-def _parse_lore_json(raw: str | None) -> list[str]:
-    if not raw:
-        return []
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        return []
+def _parse_lore_json(data: Any) -> list[str]:
     if not isinstance(data, list):
         return []
     return [str(line) for line in data if line is not None]
@@ -551,14 +536,14 @@ def _row_keys(row: Any) -> set[str]:
 def _load_row(
     player_uuid: str, character_id: str, kit_key: str
 ) -> dict[str, Any] | None:
-    from src.skins.db import connect
-
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT *
-            FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            SELECT lore.*, sub.status AS submission_status,
+                   sub.deny_reason AS submission_deny_reason
+            FROM lore_item_customisations lore
+            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            WHERE lore.player_uuid = %s AND lore.character_id = %s AND lore.kit_key = %s
             """,
             (player_uuid, character_id, kit_key),
         ).fetchone()
@@ -573,19 +558,11 @@ def _load_row(
         raw_reason = row["deny_reason"]
         if raw_reason is not None and str(raw_reason).strip():
             deny_reason = str(raw_reason).strip()
-    if submission_id:
-        with connect() as conn:
-            sub = conn.execute(
-                "SELECT status, deny_reason FROM submissions WHERE id = ?",
-                (submission_id,),
-            ).fetchone()
-        if sub is not None:
-            submission_status = str(sub["status"] or "")
-            reason = sub["deny_reason"] if "deny_reason" in sub.keys() else None
-            if reason is not None and str(reason).strip():
-                deny_reason = str(reason).strip()
-        elif state == STATE_DENIED:
-            submission_status = STATE_DENIED
+    if submission_id and row["submission_status"] is not None:
+        submission_status = str(row["submission_status"] or "")
+        reason = row["submission_deny_reason"]
+        if reason is not None and str(reason).strip():
+            deny_reason = str(reason).strip()
     elif state == STATE_DENIED:
         submission_status = STATE_DENIED
     return {
@@ -597,8 +574,8 @@ def _load_row(
         "deny_reason": deny_reason,
         "state": state,
         "skin_slug": row["skin_slug"] if "skin_slug" in keys else None,
-        "ready_at": row["ready_at"] if "ready_at" in keys else None,
-        "applied_at": row["applied_at"] if "applied_at" in keys else None,
+        "ready_at": api_time(row["ready_at"]),
+        "applied_at": api_time(row["applied_at"]),
         "name_colours": _parse_name_colours(
             row["name_colours"] if "name_colours" in keys else None
         ),
@@ -692,18 +669,16 @@ def _assert_pickable_skin_access(
     base_set: str | None = None,
 ) -> str:
     """Verify pickable skin ACL. Returns submission id. Raises LoreItemError."""
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     sid = (submission_id or "").strip()
     if not uuid or not sid:
         raise LoreItemError("not found", status_code=404)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
             FROM submissions
-            WHERE id = ?
+            WHERE id = %s
             """,
             (sid,),
         ).fetchone()
@@ -733,14 +708,12 @@ def _namespace_for_staff(staff: bool) -> str:
 
 
 def _namespace_for_skin_id(skin_id: str | None) -> str | None:
-    from src.skins.db import connect
-
     sid = (skin_id or "").strip()
     if not sid:
         return None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT staff FROM submissions WHERE id = ?",
+            "SELECT staff FROM submissions WHERE id = %s",
             (sid,),
         ).fetchone()
     if row is None:
@@ -752,27 +725,25 @@ def _namespace_for_skin_id(skin_id: str | None) -> str | None:
 def _list_pickable_skins(
     player_uuid: str, base_set: str
 ) -> list[dict[str, Any]]:
-    from src.skins.db import connect
-
     base = (base_set or "").strip().lower()
     uuid = (player_uuid or "").strip()
     if not base or not uuid:
         return []
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, display_name, kind, staff, category, player_uuid
             FROM submissions
-            WHERE LOWER(COALESCE(base_set, '')) = ?
+            WHERE LOWER(COALESCE(base_set, '')) = %s
               AND LOWER(status) = 'applied'
               AND (
-                (COALESCE(staff, 0) = 0 AND LOWER(player_uuid) = LOWER(?))
+                (NOT staff AND LOWER(player_uuid) = LOWER(%s))
                 OR (
-                  COALESCE(staff, 0) = 1
+                  staff
                   AND LOWER(COALESCE(category, '')) = 'i_tools'
                 )
               )
-            ORDER BY display_name COLLATE NOCASE ASC, id ASC
+            ORDER BY LOWER(display_name) ASC, id ASC
             """,
             (base, uuid),
         ).fetchall()
@@ -798,19 +769,17 @@ def _validate_existing_skin(
     skin_id: str, base_set: str, player_uuid: str
 ) -> tuple[str, str]:
     """Return (skin_id, ia_namespace) if pickable for this player."""
-    from src.skins.db import connect
-
     sid = (skin_id or "").strip()
     if not sid:
         raise LoreItemError("existing_skin_id is required when provided")
     base = (base_set or "").strip().lower()
     uuid = (player_uuid or "").strip()
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
             FROM submissions
-            WHERE id = ?
+            WHERE id = %s
             """,
             (sid,),
         ).fetchone()
@@ -1228,7 +1197,6 @@ def customise_lore_item(
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     player_uuid = str(session_row.get("player_uuid") or "").strip()
     if not player_uuid:
@@ -1281,9 +1249,7 @@ def customise_lore_item(
     name = _validate_display_name(display_name)
     lore_lines = _validate_lore(lore)
     colours = _validate_name_colours(name_colours)
-    colours_json = json.dumps(colours, separators=(",", ":")) if colours else None
     styles = _validate_lore_name_styles(name_styles)
-    styles_json = json.dumps(styles, separators=(",", ":")) if styles else None
 
     flat_kind = str(editable.get("2d_template") or "").strip() or "handheld"
     three_d_kind = str(editable.get("3d_template") or "").strip() or None
@@ -1408,188 +1374,51 @@ def customise_lore_item(
             next_state = STATE_READY
             next_ready_at = now
 
-    lore_json = json.dumps(lore_lines, separators=(",", ":"))
-    with connect() as conn:
-        cols = {
-            r["name"]
-            for r in conn.execute(
-                "PRAGMA table_info(lore_item_customisations)"
-            ).fetchall()
-        }
-        if "kit_id" in cols:
-            if "name_colours" in cols and "name_styles" in cols:
-                conn.execute(
-                    """
-                    INSERT INTO lore_item_customisations (
-                        player_uuid, character_id, kit_key,
-                        display_name, lore_json,
-                        existing_skin_id, submission_id,
-                        state, skin_slug, ready_at, applied_at, kit_id,
-                        name_colours, name_styles, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
-                        display_name = excluded.display_name,
-                        lore_json = excluded.lore_json,
-                        existing_skin_id = excluded.existing_skin_id,
-                        submission_id = excluded.submission_id,
-                        state = excluded.state,
-                        skin_slug = excluded.skin_slug,
-                        ready_at = excluded.ready_at,
-                        applied_at = excluded.applied_at,
-                        kit_id = excluded.kit_id,
-                        name_colours = excluded.name_colours,
-                        name_styles = excluded.name_styles,
-                        updated_at = excluded.updated_at
-                    """,
-                    (
-                        player_uuid,
-                        cid,
-                        kit_key_norm,
-                        name,
-                        lore_json,
-                        next_existing,
-                        next_submission,
-                        next_state,
-                        next_slug,
-                        next_ready_at,
-                        next_applied_at,
-                        kit,
-                        colours_json,
-                        styles_json,
-                        now,
-                    ),
-                )
-            elif "name_colours" in cols:
-                conn.execute(
-                    """
-                    INSERT INTO lore_item_customisations (
-                        player_uuid, character_id, kit_key,
-                        display_name, lore_json,
-                        existing_skin_id, submission_id,
-                        state, skin_slug, ready_at, applied_at, kit_id,
-                        name_colours, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
-                        display_name = excluded.display_name,
-                        lore_json = excluded.lore_json,
-                        existing_skin_id = excluded.existing_skin_id,
-                        submission_id = excluded.submission_id,
-                        state = excluded.state,
-                        skin_slug = excluded.skin_slug,
-                        ready_at = excluded.ready_at,
-                        applied_at = excluded.applied_at,
-                        kit_id = excluded.kit_id,
-                        name_colours = excluded.name_colours,
-                        updated_at = excluded.updated_at
-                    """,
-                    (
-                        player_uuid,
-                        cid,
-                        kit_key_norm,
-                        name,
-                        lore_json,
-                        next_existing,
-                        next_submission,
-                        next_state,
-                        next_slug,
-                        next_ready_at,
-                        next_applied_at,
-                        kit,
-                        colours_json,
-                        now,
-                    ),
-                )
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO lore_item_customisations (
-                        player_uuid, character_id, kit_key,
-                        display_name, lore_json,
-                        existing_skin_id, submission_id,
-                        state, skin_slug, ready_at, applied_at, kit_id, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
-                        display_name = excluded.display_name,
-                        lore_json = excluded.lore_json,
-                        existing_skin_id = excluded.existing_skin_id,
-                        submission_id = excluded.submission_id,
-                        state = excluded.state,
-                        skin_slug = excluded.skin_slug,
-                        ready_at = excluded.ready_at,
-                        applied_at = excluded.applied_at,
-                        kit_id = excluded.kit_id,
-                        updated_at = excluded.updated_at
-                    """,
-                    (
-                        player_uuid,
-                        cid,
-                        kit_key_norm,
-                        name,
-                        lore_json,
-                        next_existing,
-                        next_submission,
-                        next_state,
-                        next_slug,
-                        next_ready_at,
-                        next_applied_at,
-                        kit,
-                        now,
-                    ),
-                )
-        else:
-            conn.execute(
-                """
-                INSERT INTO lore_item_customisations (
-                    player_uuid, character_id, kit_key,
-                    display_name, lore_json,
-                    existing_skin_id, submission_id,
-                    state, skin_slug, ready_at, applied_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
-                    display_name = excluded.display_name,
-                    lore_json = excluded.lore_json,
-                    existing_skin_id = excluded.existing_skin_id,
-                    submission_id = excluded.submission_id,
-                    state = excluded.state,
-                    skin_slug = excluded.skin_slug,
-                    ready_at = excluded.ready_at,
-                    applied_at = excluded.applied_at,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    player_uuid,
-                    cid,
-                    kit_key_norm,
-                    name,
-                    lore_json,
-                    next_existing,
-                    next_submission,
-                    next_state,
-                    next_slug,
-                    next_ready_at,
-                    next_applied_at,
-                    now,
-                ),
-            )
-        if "deny_reason" in cols:
-            conn.execute(
-                """
-                UPDATE lore_item_customisations
-                SET deny_reason = NULL
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
-                """,
-                (player_uuid, cid, kit_key_norm),
-            )
-        if "realm_id" in cols:
-            conn.execute(
-                """
-                UPDATE lore_item_customisations
-                SET realm_id = ?
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
-                """,
-                (lore_realm, player_uuid, cid, kit_key_norm),
-            )
-        conn.commit()
+    with database.transaction(lock=f"characters:lore:{player_uuid}") as conn:
+        conn.execute(
+            """
+            INSERT INTO lore_item_customisations (
+                player_uuid, character_id, kit_key,
+                display_name, lore_json,
+                existing_skin_id, submission_id,
+                state, skin_slug, ready_at, applied_at, kit_id,
+                name_colours, name_styles, deny_reason, realm_id, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s)
+            ON CONFLICT (player_uuid, character_id, kit_key) DO UPDATE SET
+                display_name = excluded.display_name,
+                lore_json = excluded.lore_json,
+                existing_skin_id = excluded.existing_skin_id,
+                submission_id = excluded.submission_id,
+                state = excluded.state,
+                skin_slug = excluded.skin_slug,
+                ready_at = excluded.ready_at,
+                applied_at = excluded.applied_at,
+                kit_id = excluded.kit_id,
+                name_colours = excluded.name_colours,
+                name_styles = excluded.name_styles,
+                deny_reason = NULL,
+                realm_id = excluded.realm_id,
+                updated_at = excluded.updated_at
+            """,
+            (
+                player_uuid,
+                cid,
+                kit_key_norm,
+                name,
+                database.Jsonb(lore_lines),
+                next_existing,
+                next_submission,
+                next_state,
+                next_slug,
+                next_ready_at,
+                next_applied_at,
+                kit,
+                database.Jsonb(colours) if colours else None,
+                database.Jsonb(styles) if styles else None,
+                lore_realm,
+                now,
+            ),
+        )
 
     item = _build_item(player_uuid, cid, editable)
     item["kit_id"] = kit
@@ -1606,8 +1435,6 @@ def delete_lore_item_customise(
 
     Releases orphaned pending skin uploads; does not delete applied player skins.
     """
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise LoreItemError("Invalid session", status_code=401)
@@ -1634,12 +1461,12 @@ def delete_lore_item_customise(
         )
 
     pending_submission_id: str | None = None
-    with connect() as conn:
+    with database.connect() as conn:
         lore_row = conn.execute(
             """
             SELECT submission_id, LOWER(COALESCE(state, '')) AS state
             FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (uuid, cid, kit_key_norm),
         ).fetchone()
@@ -1655,12 +1482,11 @@ def delete_lore_item_customise(
         cur = conn.execute(
             """
             DELETE FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (uuid, cid, kit_key_norm),
         )
         deleted = int(cur.rowcount or 0)
-        conn.commit()
 
     if pending_submission_id:
         from src.skins.submissions import rollback_pending_submission_if_unreferenced
@@ -1685,8 +1511,6 @@ def clear_customisations_for_kit(
     kit_id: str | None = None,
 ) -> dict[str, Any]:
     """Delete lore_item_customisations for one player/character/kit (staff resetkit)."""
-    from src.skins.db import connect
-
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
     kit = (kit_id or "starter").strip().lower() or "starter"
@@ -1698,48 +1522,35 @@ def clear_customisations_for_kit(
 
     keys = _kit_editable_keys(kit)
     deleted = 0
-    with connect() as conn:
-        cols = {
-            r["name"]
-            for r in conn.execute(
-                "PRAGMA table_info(lore_item_customisations)"
-            ).fetchall()
-        }
-        if "kit_id" in cols:
-            cur = conn.execute(
-                """
-                DELETE FROM lore_item_customisations
-                WHERE player_uuid = ? AND character_id = ?
-                  AND LOWER(COALESCE(kit_id, '')) = ?
-                """,
-                (uuid, cid, kit),
-            )
-            deleted += int(cur.rowcount or 0)
+    with database.connect() as conn:
+        locked = key_params(lock_rows(
+            conn,
+            "player_uuid = %s AND character_id = %s AND "
+            "(LOWER(COALESCE(kit_id, '')) = %s OR LOWER(kit_key) = ANY(%s))",
+            (uuid, cid, kit, sorted(keys or [])),
+        ))
+        cur = conn.execute(
+            f"""
+            DELETE FROM lore_item_customisations
+            WHERE player_uuid = %s AND character_id = %s
+              AND LOWER(COALESCE(kit_id, '')) = %s
+              AND {LOCKED_KEYS}
+            """,
+            (uuid, cid, kit, *locked),
+        )
+        deleted += int(cur.rowcount or 0)
 
-        if keys is not None and keys:
-            placeholders = ",".join("?" for _ in keys)
-            key_list = sorted(keys)
+        if keys:
             cur = conn.execute(
                 f"""
                 DELETE FROM lore_item_customisations
-                WHERE player_uuid = ? AND character_id = ?
-                  AND LOWER(COALESCE(kit_key, '')) IN ({placeholders})
+                WHERE player_uuid = %s AND character_id = %s
+                  AND LOWER(COALESCE(kit_key, '')) = ANY(%s)
+                  AND {LOCKED_KEYS}
                 """,
-                (uuid, cid, *key_list),
+                (uuid, cid, sorted(keys), *locked),
             )
             deleted += int(cur.rowcount or 0)
-        elif keys is None and "kit_id" not in cols:
-            # Untagged starter fallback: wipe all rows for this character
-            if kit == "starter":
-                cur = conn.execute(
-                    """
-                    DELETE FROM lore_item_customisations
-                    WHERE player_uuid = ? AND character_id = ?
-                    """,
-                    (uuid, cid),
-                )
-                deleted += int(cur.rowcount or 0)
-        conn.commit()
 
     return {
         "ok": True,
@@ -1752,31 +1563,30 @@ def clear_customisations_for_kit(
 
 def promote_ready_for_submissions(submission_ids: list[str]) -> int:
     """When skins reach applied, promote matching pending_skin customise rows."""
-    from src.skins.db import connect
-
     ids = [str(s).strip() for s in submission_ids if str(s or "").strip()]
     if not ids:
         return 0
     now = _iso_now()
     promoted = 0
-    with connect() as conn:
+    with database.connect() as conn:
+        locked = key_params(lock_rows(conn, "submission_id = ANY(%s)", (ids,)))
         for sid in ids:
             cur = conn.execute(
-                """
+                f"""
                 UPDATE lore_item_customisations
-                SET skin_slug = ?,
+                SET skin_slug = %s,
                     state = CASE
                         WHEN LOWER(COALESCE(state, '')) = 'applied' THEN 'applied'
-                        ELSE ?
+                        ELSE %s
                     END,
-                    ready_at = COALESCE(ready_at, ?),
-                    updated_at = ?
-                WHERE submission_id = ?
+                    ready_at = COALESCE(ready_at, %s),
+                    updated_at = %s
+                WHERE submission_id = %s
+                  AND {LOCKED_KEYS}
                 """,
-                (sid, STATE_READY, now, now, sid),
+                (sid, STATE_READY, now, now, sid, *locked),
             )
             promoted += int(cur.rowcount or 0)
-        conn.commit()
     return promoted
 
 
@@ -1787,67 +1597,44 @@ def clear_pending_submission(
 
     Stores deny_reason on the lore row (submission is purged after deny).
     """
-    from src.skins.db import connect
-
     sid = (submission_id or "").strip()
     if not sid:
         return 0
     now = _iso_now()
     reason_s = (reason or "").strip() or None
-    with connect() as conn:
-        cols = {
-            r["name"]
-            for r in conn.execute(
-                "PRAGMA table_info(lore_item_customisations)"
-            ).fetchall()
-        }
-        if "deny_reason" in cols:
-            cur = conn.execute(
-                """
-                UPDATE lore_item_customisations
-                SET state = ?,
-                    deny_reason = ?,
-                    ready_at = NULL,
-                    existing_skin_id = NULL,
-                    skin_slug = NULL,
-                    updated_at = ?
-                WHERE submission_id = ?
-                  AND LOWER(COALESCE(state, '')) = ?
-                """,
-                (STATE_DENIED, reason_s, now, sid, STATE_PENDING_SKIN),
-            )
-        else:
-            cur = conn.execute(
-                """
-                UPDATE lore_item_customisations
-                SET state = ?,
-                    ready_at = NULL,
-                    existing_skin_id = NULL,
-                    skin_slug = NULL,
-                    updated_at = ?
-                WHERE submission_id = ?
-                  AND LOWER(COALESCE(state, '')) = ?
-                """,
-                (STATE_DENIED, now, sid, STATE_PENDING_SKIN),
-            )
+    with database.connect() as conn:
+        locked = key_params(lock_rows(conn, "submission_id = %s", (sid,)))
+        cur = conn.execute(
+            f"""
+            UPDATE lore_item_customisations
+            SET state = %s,
+                deny_reason = %s,
+                ready_at = NULL,
+                existing_skin_id = NULL,
+                skin_slug = NULL,
+                updated_at = %s
+            WHERE submission_id = %s
+              AND LOWER(COALESCE(state, '')) = %s
+              AND {LOCKED_KEYS}
+            """,
+            (STATE_DENIED, reason_s, now, sid, STATE_PENDING_SKIN, *locked),
+        )
         cleared = int(cur.rowcount or 0)
-        conn.commit()
     return cleared
 
 
 def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]:
     """Rows with state=ready for RPCharacters pull (filtered by realm)."""
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT *
             FROM lore_item_customisations
-            WHERE LOWER(COALESCE(state, '')) = ?
-              AND realm_id = ?
+            WHERE LOWER(COALESCE(state, '')) = %s
+              AND realm_id = %s
               AND character_id NOT IN (
                   SELECT id FROM character_creates
                   WHERE LOWER(COALESCE(status, '')) = 'pending'
@@ -1878,8 +1665,8 @@ def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]
             "skin_slug": slug,
             "ia_namespace": ns or "tfmc_submissions",
             "ia_path": _ia_path(slug, ns),
-            "ready_at": row["ready_at"],
-            "updated_at": row["updated_at"],
+            "ready_at": api_time(row["ready_at"]),
+            "updated_at": api_time(row["updated_at"]),
             "realm_id": realm,
         }
         if colours:
@@ -1892,37 +1679,48 @@ def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]
 
 def mark_lore_items_applied(results: list) -> dict[str, Any]:
     """Ack plugin apply results → state=applied."""
-    from src.skins.db import connect
-
     if not isinstance(results, list):
         raise LoreItemError("results must be a list")
+    for i, raw in enumerate(results):
+        if not isinstance(raw, dict):
+            raise LoreItemError(f"results[{i}] must be an object")
+        if not str(raw.get("character_id") or "").strip() or not str(raw.get("kit_key") or "").strip():
+            raise LoreItemError(f"results[{i}] requires character_id and kit_key")
     now = _iso_now()
     ok_n = 0
     fail_n = 0
-    with connect() as conn:
-        for i, raw in enumerate(results):
-            if not isinstance(raw, dict):
-                raise LoreItemError(f"results[{i}] must be an object")
+    with database.connect() as conn:
+        selectors = [(str(raw.get("player_uuid") or "").strip(),
+                      str(raw.get("character_id") or "").strip(),
+                      str(raw.get("kit_key") or "").strip())
+                     for raw in results if bool(raw.get("ok"))]
+        # Missing player_uuid means every matching owner, so lock the union of
+        # all selectors once in full primary-key order, including non-ready rows.
+        locked = key_params(lock_rows(
+            conn,
+            "EXISTS (SELECT 1 FROM unnest(%s::text[], %s::text[], %s::text[]) "
+            "AS wanted(owner, cid, kit) WHERE character_id = wanted.cid "
+            "AND kit_key = wanted.kit AND (wanted.owner = '' OR player_uuid = wanted.owner))",
+            tuple([s[i] for s in selectors] for i in range(3)),
+        ))
+        for raw in results:
             cid = str(raw.get("character_id") or "").strip()
             kit_key = str(raw.get("kit_key") or "").strip()
             player_uuid = str(raw.get("player_uuid") or "").strip()
             ok = bool(raw.get("ok"))
-            if not cid or not kit_key:
-                raise LoreItemError(
-                    f"results[{i}] requires character_id and kit_key"
-                )
             if not ok:
                 fail_n += 1
                 continue
             if player_uuid:
                 cur = conn.execute(
-                    """
+                    f"""
                     UPDATE lore_item_customisations
-                    SET state = ?, applied_at = ?, updated_at = ?
-                    WHERE player_uuid = ?
-                      AND character_id = ?
-                      AND kit_key = ?
-                      AND LOWER(COALESCE(state, '')) = ?
+                    SET state = %s, applied_at = %s, updated_at = %s
+                    WHERE player_uuid = %s
+                      AND character_id = %s
+                      AND kit_key = %s
+                      AND LOWER(COALESCE(state, '')) = %s
+                      AND {LOCKED_KEYS}
                     """,
                     (
                         STATE_APPLIED,
@@ -1932,24 +1730,25 @@ def mark_lore_items_applied(results: list) -> dict[str, Any]:
                         cid,
                         kit_key,
                         STATE_READY,
+                        *locked,
                     ),
                 )
             else:
                 cur = conn.execute(
-                    """
+                    f"""
                     UPDATE lore_item_customisations
-                    SET state = ?, applied_at = ?, updated_at = ?
-                    WHERE character_id = ?
-                      AND kit_key = ?
-                      AND LOWER(COALESCE(state, '')) = ?
+                    SET state = %s, applied_at = %s, updated_at = %s
+                    WHERE character_id = %s
+                      AND kit_key = %s
+                      AND LOWER(COALESCE(state, '')) = %s
+                      AND {LOCKED_KEYS}
                     """,
-                    (STATE_APPLIED, now, now, cid, kit_key, STATE_READY),
+                    (STATE_APPLIED, now, now, cid, kit_key, STATE_READY, *locked),
                 )
             if cur.rowcount:
                 ok_n += 1
             else:
                 fail_n += 1
-        conn.commit()
     return {"ok": True, "applied": ok_n, "failed": fail_n}
 
 
@@ -1961,7 +1760,6 @@ def list_player_custom_items(
     """Compact customise rows for profile dashboard (all characters)."""
     from src.characters.roster import list_roster
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
@@ -1974,15 +1772,15 @@ def list_player_custom_items(
         for c in roster
         if c.get("id")
     }
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT *
             FROM lore_item_customisations
-            WHERE LOWER(player_uuid) = LOWER(?)
-              AND realm_id = ?
+            WHERE LOWER(player_uuid) = LOWER(%s)
+              AND realm_id = %s
             ORDER BY updated_at DESC
-            LIMIT ?
+            LIMIT %s
             """,
             (uuid, realm, cap),
         ).fetchall()
@@ -2007,7 +1805,7 @@ def list_player_custom_items(
                 "submission_status": draft.get("submission_status"),
                 "deny_reason": draft.get("deny_reason"),
                 "skin_slug": draft.get("skin_slug"),
-                "updated_at": row["updated_at"] if "updated_at" in keys else None,
+                "updated_at": api_time(row["updated_at"]),
                 "ready_at": draft.get("ready_at"),
                 "applied_at": draft.get("applied_at"),
             }

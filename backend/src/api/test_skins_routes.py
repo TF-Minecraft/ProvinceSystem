@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _BACKEND_SRC = _BACKEND_ROOT / "src"
@@ -18,7 +21,11 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
+import pytest
 from fastapi import HTTPException
+
+# Discord links, codes, sessions and submissions live in Postgres.
+pytestmark = pytest.mark.usefixtures("postgres")
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -28,33 +35,17 @@ TINY_PNG = (
 
 
 def _sync_temp_db(root: Path, db_path: Path) -> object:
-    import skins.db as db_mod
+    import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
-    db_mod.DB_PATH = db_path
     db_mod.SKINS_DIR = root / "skins"
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
-    sys.modules["src.skins.db"] = db_mod
-    for name in ("skins.db", "src.skins.db"):
-        mod = sys.modules.get(name)
-        if mod is not None:
-            mod.DATA_DIR = root
-            mod.DB_PATH = db_path
-            mod.SKINS_DIR = root / "skins"
-            mod.DRINKS_DIR = root / "drinks"
-            mod.WARDROBE_DIR = root / "wardrobe"
-    for name in (
-        "skins.codes",
-        "src.skins.codes",
-        "skins.submissions",
-        "src.skins.submissions",
-        "api.skins_routes",
-        "src.api.skins_routes",
-        "src.api.map_access",
-    ):
-        if name in sys.modules:
-            importlib.reload(sys.modules[name])
+    from src.api import skins_routes
+    from src.skins import name_preview, review_sheet, storage, submissions, thumbnail
+
+    for module in (skins_routes, name_preview, review_sheet, storage, submissions, thumbnail):
+        module.SKINS_DIR = root / "skins"
     return db_mod
 
 
@@ -66,12 +57,11 @@ class SkinsRoutesScopeTest(unittest.TestCase):
 
         db_mod = _sync_temp_db(root, self.db_path)
         self._db_mod = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         from src.api.skins_routes import _skin_session_from_auth
 
@@ -79,7 +69,6 @@ class SkinsRoutesScopeTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.DRINKS_DIR = self._orig_drinks
@@ -87,23 +76,9 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _link_player(self, uuid: str = "player-1") -> None:
-        from skins.db import connect
+        from src.skins.testing import link
 
-        with connect() as conn:
-            conn.execute(
-                "DELETE FROM discord_links WHERE player_uuid = ?",
-                (uuid,),
-            )
-            conn.execute(
-                """
-                INSERT INTO discord_links (
-                    player_uuid, discord_user_id, minecraft_name,
-                    discord_username, linked_at
-                ) VALUES (?, ?, ?, ?, ?)
-                """,
-                (uuid, "discord-1", "TestPlayer", "Tester", "2026-01-01T00:00:00Z"),
-            )
-            conn.commit()
+        link(uuid, "discord-1", "TestPlayer", "Tester")
 
     def _seed_entitlements(self, uuid: str = "player-1") -> None:
         from characters.rpc_player_meta import upsert_rpc_player_meta
@@ -246,8 +221,6 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         self.assertEqual({f"light_iron_{field}" for field in fields}, set(create.call_args.args[3]))
 
     def test_review_sheet_staff_header_and_player_omits(self) -> None:
-        import importlib
-
         from src.api.skins_routes import SHEET_RENDER_ERROR_HEADER, get_review_sheet
         from src.skins.auth import get_staff_key
         from src.skins.codes import issue_code, redeem_code
@@ -258,9 +231,9 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         db_mod.SKINS_DIR = skins_dir
         skins_dir.mkdir(parents=True, exist_ok=True)
 
-        for name in ("skins.review_sheet", "src.skins.review_sheet", "src.api.skins_routes"):
-            if name in sys.modules:
-                importlib.reload(sys.modules[name])
+        from src.skins import review_sheet
+
+        review_sheet.SKINS_DIR = skins_dir
 
         self._link_player()
         issued = issue_code("player-1", "skin")
@@ -273,34 +246,32 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         (out_dir / f"{slug}.png").write_bytes(TINY_PNG)
         (out_dir / f"{slug}.json").write_text("{}", encoding="utf-8")
 
-        from skins.db import connect
+        from src.auth.testing import execute
 
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    status, dir_path, created_at, discord_user_id, staff, realm_id,
-                    base_set
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    submission_id,
-                    "player-1",
-                    session["code_id"],
-                    "item_3d",
-                    slug,
-                    "Test 3D",
-                    "pending",
-                    str(out_dir),
-                    "2026-01-01T00:00:00Z",
-                    "discord-1",
-                    0,
-                    "main",
-                    "handhelds",
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO submissions (
+                id, player_uuid, code_id, kind, slug, display_name,
+                status, dir_path, created_at, discord_user_id, staff, realm_id,
+                base_set
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                submission_id,
+                "player-1",
+                session["code_id"],
+                "item_3d",
+                slug,
+                "Test 3D",
+                "pending",
+                str(out_dir),
+                "2026-01-01T00:00:00Z",
+                "discord-1",
+                False,
+                "main",
+                "handhelds",
+            ),
+        )
 
         os.environ["SHEET_RENDER_DISABLE"] = "1"
         try:

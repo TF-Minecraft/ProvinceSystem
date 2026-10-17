@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _BACKEND_SRC = _BACKEND_ROOT / "src"
@@ -18,7 +23,14 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
+import pytest
+
 from src.api.map_access import get_skin_session
+from src.auth.testing import execute, rows
+from src.skins.testing import link
+
+# Site records use the isolated Postgres fixture.
+pytestmark = pytest.mark.usefixtures("postgres")
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10"
@@ -87,33 +99,17 @@ CATALOG = {
 
 
 def _sync_temp_db(root: Path, db_path: Path) -> object:
-    import skins.db as db_mod
+    import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
-    db_mod.DB_PATH = db_path
     db_mod.SKINS_DIR = root / "skins"
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
-    sys.modules["src.skins.db"] = db_mod
-    for name in ("skins.db", "src.skins.db"):
-        mod = sys.modules.get(name)
-        if mod is not None:
-            mod.DATA_DIR = root
-            mod.DB_PATH = db_path
-            mod.SKINS_DIR = root / "skins"
-            mod.DRINKS_DIR = root / "drinks"
-            mod.WARDROBE_DIR = root / "wardrobe"
-    for name in (
-        "skins.codes",
-        "src.skins.codes",
-        "skins.submissions",
-        "src.skins.submissions",
-        "src.api.characters_routes",
-        "src.api.map_access",
-        "src.characters.lore_items",
-    ):
-        if name in sys.modules:
-            importlib.reload(sys.modules[name])
+    from src.api import skins_routes
+    from src.skins import name_preview, review_sheet, storage, submissions, thumbnail
+
+    for module in (skins_routes, name_preview, review_sheet, storage, submissions, thumbnail):
+        module.SKINS_DIR = root / "skins"
     return db_mod
 
 
@@ -128,12 +124,11 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         self.db_path = root / "province.db"
         db_mod = _sync_temp_db(root, self.db_path)
         self._db_mod = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         from src.characters.creation_catalog import replace_catalog
 
@@ -153,7 +148,6 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.DRINKS_DIR = self._orig_drinks
@@ -161,23 +155,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _link_player(self, uuid: str) -> None:
-        from skins.db import connect
-
-        with connect() as conn:
-            conn.execute(
-                "DELETE FROM discord_links WHERE player_uuid = ?",
-                (uuid,),
-            )
-            conn.execute(
-                """
-                INSERT INTO discord_links (
-                    player_uuid, discord_user_id, minecraft_name,
-                    discord_username, linked_at
-                ) VALUES (?, ?, ?, ?, ?)
-                """,
-                (uuid, f"discord-{uuid[:8]}", "TestPlayer", "Tester", "2026-01-01T00:00:00Z"),
-            )
-            conn.commit()
+        link(uuid, f"discord-{uuid[:8]}", "TestPlayer", "Tester")
 
     def _seed_entitlements(self, uuid: str) -> None:
         from characters.rpc_player_meta import upsert_rpc_player_meta
@@ -228,8 +206,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         self.assertTrue(out.get("ok"))
 
     def test_customise_upload_profile_only_uses_lore_slot(self) -> None:
-        from skins.codes import ensure_lore_upload_code
-        from skins.db import connect
+        from src.skins.codes import ensure_lore_upload_code
         from src.characters.lore_items import customise_lore_item
 
         lore_code_id = ensure_lore_upload_code(self.PLAYER, "main")
@@ -243,15 +220,11 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         sub_id = (out.get("draft") or {}).get("submission_id")
         self.assertTrue(sub_id)
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT code_id FROM submissions WHERE id = ?",
-                (sub_id,),
-            ).fetchone()
-            profile_code = conn.execute(
-                "SELECT redeemed_at FROM codes WHERE id = ?",
-                (int(self.profile_session["code_id"]),),
-            ).fetchone()
+        [row] = rows("SELECT code_id FROM submissions WHERE id = %s", (sub_id,))
+        [profile_code] = rows(
+            "SELECT redeemed_at FROM codes WHERE id = %s",
+            (int(self.profile_session["code_id"]),),
+        )
         self.assertIsNotNone(row)
         self.assertEqual(lore_code_id, int(row["code_id"]))
         self.assertNotEqual(int(row["code_id"]), int(self.profile_session["code_id"]))
@@ -259,18 +232,17 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         self.assertIsNotNone(profile_code["redeemed_at"])
 
     def test_customise_upload_ignores_optional_skin_header(self) -> None:
-        from skins.codes import ensure_lore_upload_code
-        from skins.db import connect
+        from src.skins.codes import ensure_lore_upload_code
         from src.characters.lore_items import customise_lore_item
 
         lore_code_id = ensure_lore_upload_code(self.PLAYER, "main")
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
-                "DELETE FROM lore_item_customisations WHERE character_id = ?",
+                "DELETE FROM lore_item_customisations WHERE character_id = %s",
                 (self.CHAR_ID,),
             )
-            conn.execute("DELETE FROM submissions WHERE player_uuid = ?", (self.PLAYER,))
             conn.commit()
+        execute("DELETE FROM submissions WHERE player_uuid = %s", (self.PLAYER,))
 
         out = customise_lore_item(
             self.profile_session,
@@ -282,16 +254,11 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         sub_id = (out.get("draft") or {}).get("submission_id")
         self.assertTrue(sub_id)
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT code_id FROM submissions WHERE id = ?",
-                (sub_id,),
-            ).fetchone()
+        [row] = rows("SELECT code_id FROM submissions WHERE id = %s", (sub_id,))
         self.assertEqual(lore_code_id, int(row["code_id"]))
 
     def test_denied_resubmit_profile_only(self) -> None:
-        from skins.db import connect
-        from skins.submissions import deny_submission
+        from src.skins.submissions import deny_submission
         from src.characters.lore_items import customise_lore_item
 
         first = customise_lore_item(
@@ -317,54 +284,14 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         new_sub = (second.get("draft") or {}).get("submission_id")
         self.assertTrue(new_sub)
         self.assertNotEqual(sub_id, new_sub)
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT status FROM submissions WHERE id = ?",
-                (new_sub,),
-            ).fetchone()
+        [row] = rows("SELECT status FROM submissions WHERE id = %s", (new_sub,))
         self.assertEqual("pending", row["status"])
 
     def test_pick_applied_skin_profile_only(self) -> None:
-        from skins.db import SKINS_DIR, connect
         from src.characters.lore_items import customise_lore_item
 
         applied_id = "testplayer-appliedknife"
-        tex_dir = SKINS_DIR / applied_id
-        tex_dir.mkdir(parents=True, exist_ok=True)
-        (tex_dir / f"{applied_id}.png").write_bytes(TINY_PNG)
-
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO codes (
-                    id, code_hash, player_uuid, scope, realm_id,
-                    created_at, expires_at, redeemed_at, revoked
-                ) VALUES (99, 'hash-applied', ?, 'skin', 'main', ?, ?, ?, 0)
-                """,
-                (
-                    self.PLAYER,
-                    "2026-01-01T00:00:00Z",
-                    "2099-01-01T00:00:00Z",
-                    "2026-01-01T00:00:00Z",
-                ),
-            )
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    status, dir_path, created_at, discord_user_id, staff, realm_id,
-                    base_set
-                ) VALUES (?, ?, 99, 'handheld', ?, 'Applied Knife', 'applied',
-                    'skins/applied', ?, 'discord-1', 0, 'main', 'knives')
-                """,
-                (
-                    applied_id,
-                    self.PLAYER,
-                    applied_id,
-                    "2026-01-01T00:00:00Z",
-                ),
-            )
-            conn.commit()
+        self._seed_applied_skin(applied_id, player_uuid=self.PLAYER)
 
         out = customise_lore_item(
             self.profile_session,
@@ -387,7 +314,7 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         with_model: bool = False,
         code_id: int = 99,
     ) -> None:
-        from skins.db import SKINS_DIR, connect
+        from src.skins.db import SKINS_DIR
 
         tex_dir = SKINS_DIR / submission_id
         tex_dir.mkdir(parents=True, exist_ok=True)
@@ -398,44 +325,43 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO codes (
-                    id, code_hash, player_uuid, scope, realm_id,
-                    created_at, expires_at, redeemed_at, revoked
-                ) VALUES (?, ?, ?, 'skin', 'main', ?, ?, ?, 0)
-                """,
-                (
-                    code_id,
-                    f"hash-{code_id}",
-                    player_uuid,
-                    "2026-01-01T00:00:00Z",
-                    "2099-01-01T00:00:00Z",
-                    "2026-01-01T00:00:00Z",
-                ),
-            )
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    status, dir_path, created_at, discord_user_id, staff, realm_id,
-                    base_set
-                ) VALUES (?, ?, ?, ?, ?, ?, 'applied',
-                    'skins/applied', ?, 'discord-1', 0, 'main', ?)
-                """,
-                (
-                    submission_id,
-                    player_uuid,
-                    code_id,
-                    kind,
-                    submission_id,
-                    f"Skin {submission_id}",
-                    "2026-01-01T00:00:00Z",
-                    base_set,
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO codes (
+                id, code_hash, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
+            ) VALUES (%s, %s, %s, 'skin', 'main', %s, %s, %s, false)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (
+                code_id,
+                f"hash-{code_id}",
+                player_uuid,
+                "2026-01-01T00:00:00Z",
+                "2099-01-01T00:00:00Z",
+                "2026-01-01T00:00:00Z",
+            ),
+        )
+        execute(
+            """
+            INSERT INTO submissions (
+                id, player_uuid, code_id, kind, slug, display_name,
+                status, dir_path, created_at, discord_user_id, staff, realm_id,
+                base_set
+            ) VALUES (%s, %s, %s, %s, %s, %s, 'applied',
+                'skins/applied', %s, 'discord-1', false, 'main', %s)
+            """,
+            (
+                submission_id,
+                player_uuid,
+                code_id,
+                kind,
+                submission_id,
+                f"Skin {submission_id}",
+                "2026-01-01T00:00:00Z",
+                base_set,
+            ),
+        )
 
     def test_resolve_pickable_model_owner_with_json(self) -> None:
         from src.characters.lore_items import (

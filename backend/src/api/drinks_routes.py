@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.skins.auth import (
     AuthError,
@@ -147,7 +148,8 @@ async def post_submission(
     existing_texture_id: str | None = Form(default=None),
     texture: UploadFile | None = File(default=None),
 ):
-    session = _require_drink_session(authorization)
+    # Database work runs off the event loop: the submission may wait on its code's row lock.
+    session = await run_in_threadpool(_require_drink_session, authorization)
     try:
         recipe_obj = json.loads(recipe)
     except json.JSONDecodeError as e:
@@ -162,7 +164,8 @@ async def post_submission(
             png_bytes = None
 
     try:
-        return create_drink_submission(
+        return await run_in_threadpool(
+            create_drink_submission,
             session,
             recipe_obj,
             png_bytes=png_bytes,

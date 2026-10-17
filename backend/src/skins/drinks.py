@@ -16,8 +16,10 @@ from src.name_colours import (
 )
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
+from src import database
+
 from . import db
-from .db import connect
+from .codes import CodeError, _parse_iso, api_time, lock_code_for_submission, mark_code_consumed
 from .discord_link import get_identity_status
 from .naming import SlugError, build_submission_id_for_realm, slugify_display_name
 
@@ -35,8 +37,12 @@ class DrinkNotificationError(ValueError):
     """Drink notification not found."""
 
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _submissions_root() -> Path:
@@ -162,39 +168,35 @@ def _normalize_catalog(raw: dict[str, Any]) -> dict[str, Any]:
 def replace_drink_catalog(raw: dict[str, Any]) -> dict[str, Any]:
     payload = _normalize_catalog(raw)
     updated_at = _iso_now()
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             INSERT INTO drink_catalog (id, payload, updated_at)
-            VALUES (1, ?, ?)
+            VALUES (1, %s, %s)
             ON CONFLICT(id) DO UPDATE SET
                 payload = excluded.payload,
                 updated_at = excluded.updated_at
             """,
-            (json.dumps(payload, separators=(",", ":")), updated_at),
+            (database.Jsonb(payload), _parse_iso(updated_at)),
         )
-        conn.commit()
     return {"catalog": payload, "updated_at": updated_at}
 
 
 def get_drink_catalog() -> dict[str, Any]:
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT payload, updated_at FROM drink_catalog WHERE id = 1"
         ).fetchone()
     if row is None:
         return {"catalog": _empty_catalog(), "updated_at": None}
-    try:
-        payload = json.loads(row["payload"])
-    except (json.JSONDecodeError, TypeError):
-        payload = _empty_catalog()
+    payload = row["payload"]
     if not isinstance(payload, dict):
         payload = _empty_catalog()
     if not isinstance(payload.get("categories"), dict):
         payload = {**payload, "categories": {}}
     if not isinstance(payload.get("ingredients"), list):
         payload = {**payload, "ingredients": []}
-    return {"catalog": payload, "updated_at": row["updated_at"]}
+    return {"catalog": payload, "updated_at": api_time(row["updated_at"])}
 
 
 def _ingredient_ids() -> set[str]:
@@ -224,28 +226,20 @@ def enqueue_drink_notification(
     discord_user_id: str,
     payload: dict[str, Any],
 ) -> int:
-    created_at = _iso_now()
-    with connect() as conn:
-        cur = conn.execute(
+    with database.connect() as conn:
+        return int(conn.execute(
             """
             INSERT INTO drink_notifications (
                 type, submission_id, discord_user_id, payload, created_at, delivered_at
-            ) VALUES (?, ?, ?, ?, ?, NULL)
+            ) VALUES (%s, %s, %s, %s, %s, NULL)
+            RETURNING id
             """,
-            (
-                type_,
-                submission_id,
-                discord_user_id,
-                json.dumps(payload, separators=(",", ":")),
-                created_at,
-            ),
-        )
-        conn.commit()
-        return int(cur.lastrowid)
+            (type_, submission_id, discord_user_id, database.Jsonb(payload), _utcnow()),
+        ).fetchone()["id"])
 
 
 def list_undelivered_drink_notifications() -> list[dict]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM drink_notifications
@@ -253,44 +247,33 @@ def list_undelivered_drink_notifications() -> list[dict]:
             ORDER BY created_at ASC, id ASC
             """
         ).fetchall()
-    result = []
-    for row in rows:
-        try:
-            payload = json.loads(row["payload"])
-        except (json.JSONDecodeError, TypeError):
-            payload = {}
-        result.append(
-            {
-                "id": row["id"],
-                "type": row["type"],
-                "submission_id": row["submission_id"],
-                "discord_user_id": row["discord_user_id"],
-                "payload": payload,
-                "created_at": row["created_at"],
-            }
-        )
-    return result
+    return [
+        {
+            "id": row["id"],
+            "type": row["type"],
+            "submission_id": row["submission_id"],
+            "discord_user_id": row["discord_user_id"],
+            "payload": row["payload"],
+            "created_at": api_time(row["created_at"]),
+        }
+        for row in rows
+    ]
 
 
 def ack_drink_notification(notification_id: int) -> dict:
-    now = _iso_now()
-    with connect() as conn:
+    with database.connect() as conn:
+        # The first ack sets the time; later ones report it.
         row = conn.execute(
-            "SELECT * FROM drink_notifications WHERE id = ?",
-            (notification_id,),
+            """
+            UPDATE drink_notifications SET delivered_at = COALESCE(delivered_at, %s)
+            WHERE id = %s
+            RETURNING delivered_at
+            """,
+            (_utcnow(), notification_id),
         ).fetchone()
-        if row is None:
-            raise DrinkNotificationError("Notification not found")
-        if row["delivered_at"] is None:
-            conn.execute(
-                "UPDATE drink_notifications SET delivered_at = ? WHERE id = ?",
-                (now, notification_id),
-            )
-            conn.commit()
-            delivered_at = now
-        else:
-            delivered_at = row["delivered_at"]
-    return {"id": notification_id, "delivered_at": delivered_at}
+    if row is None:
+        raise DrinkNotificationError("Notification not found")
+    return {"id": notification_id, "delivered_at": api_time(row["delivered_at"])}
 
 
 # --- recipe validation ---
@@ -611,10 +594,19 @@ def _validate_png(data: bytes) -> None:
 
 
 def _public_row(row) -> dict[str, Any]:
-    try:
-        recipe = json.loads(row["recipe_json"])
-    except (json.JSONDecodeError, TypeError, KeyError):
+    recipe = row.get("recipe_json")
+    if not isinstance(recipe, dict):
         recipe = {}
+    # JSONB loses object order; _validate_recipe writes these fields in this order.
+    keys = (
+        "name", "names", "name_colours", "name_bad_colours", "name_good_colours", "ingredients",
+        "cooking_time", "distill_runs", "distill_time", "wood", "barrel_type", "age", "difficulty",
+        "alcohol", "effects", "color", "lore", "drink_message", "drink_title", "drink_message_colours",
+        "drink_title_colours", "glint",
+    )
+    ordered = {key: recipe[key] for key in keys if key in recipe}
+    ordered.update(recipe)
+    recipe = ordered
     return {
         "id": row["id"],
         "player_uuid": row["player_uuid"],
@@ -625,18 +617,18 @@ def _public_row(row) -> dict[str, Any]:
         "status": row["status"],
         "deny_reason": row["deny_reason"],
         "texture_id": row["texture_id"],
-        "new_texture": bool(int(row["new_texture"] or 0)),
+        "new_texture": bool(row["new_texture"]),
         "discord_user_id": row["discord_user_id"],
-        "created_at": row["created_at"],
-        "reviewed_at": row["reviewed_at"],
-        "applied_at": row["applied_at"],
+        "created_at": api_time(row["created_at"]),
+        "reviewed_at": api_time(row["reviewed_at"]),
+        "applied_at": api_time(row["applied_at"]),
     }
 
 
 def _get_row(submission_id: str):
-    with connect() as conn:
+    with database.connect() as conn:
         return conn.execute(
-            "SELECT * FROM drink_submissions WHERE id = ?",
+            "SELECT * FROM drink_submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
 
@@ -706,16 +698,16 @@ def create_drink_submission(
     except SlugError as e:
         raise DrinkError(str(e)) from e
 
-    with connect() as conn:
+    with database.connect() as conn:
         clash = conn.execute(
             """
             SELECT id FROM drink_submissions
-            WHERE realm_id = ?
+            WHERE realm_id = %s
               AND (
-                id = ?
+                id = %s
                 OR (
-                  LOWER(player_uuid) = LOWER(?)
-                  AND LOWER(slug) = LOWER(?)
+                  LOWER(player_uuid) = LOWER(%s)
+                  AND LOWER(slug) = LOWER(%s)
                   AND status IN ('pending', 'approved', 'pending_pack', 'applied')
                 )
               )
@@ -728,7 +720,8 @@ def create_drink_submission(
             )
 
     texture_id: str | None = None
-    new_texture = 0
+    new_texture = False
+    png_rel: str | None = None
     dir_path = str(_submissions_root() / submission_id)
     sub_dir = Path(dir_path)
     if sub_dir.exists():
@@ -745,44 +738,23 @@ def create_drink_submission(
             png_abs.parent.mkdir(parents=True, exist_ok=True)
             png_abs.write_bytes(png_bytes)
             (sub_dir / "texture.png").write_bytes(png_bytes)
-            created_at = _iso_now()
-            with connect() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO drink_textures (
-                        id, owner_uuid, cmd, ia_item_id, png_path, refcount, created_at
-                    ) VALUES (?, ?, NULL, NULL, ?, 1, ?)
-                    """,
-                    (texture_id, player_uuid.lower(), png_rel, created_at),
-                )
-                conn.commit()
-            new_texture = 1
+            new_texture = True
             recipe["color"] = None
         elif existing_id:
-            with connect() as conn:
+            with database.connect() as conn:
                 tex = conn.execute(
-                    "SELECT * FROM drink_textures WHERE id = ?",
+                    "SELECT * FROM drink_textures WHERE id = %s",
                     (existing_id,),
                 ).fetchone()
-                if tex is None:
-                    raise DrinkError("existing_texture_id not found")
-                if str(tex["owner_uuid"]).lower() != player_uuid.lower():
-                    raise DrinkError("existing_texture_id is not owned by you")
-                if tex["cmd"] is None:
-                    raise DrinkError(
-                        "existing_texture_id is not applied yet (no custom model data)"
-                    )
-                conn.execute(
-                    """
-                    UPDATE drink_textures
-                    SET refcount = refcount + 1
-                    WHERE id = ?
-                    """,
-                    (existing_id,),
+            if tex is None:
+                raise DrinkError("existing_texture_id not found")
+            if str(tex["owner_uuid"]).lower() != player_uuid.lower():
+                raise DrinkError("existing_texture_id is not owned by you")
+            if tex["cmd"] is None:
+                raise DrinkError(
+                    "existing_texture_id is not applied yet (no custom model data)"
                 )
-                conn.commit()
             texture_id = existing_id
-            new_texture = 0
             recipe["color"] = None
             src = db.DRINKS_DIR / str(tex["png_path"])
             if src.is_file():
@@ -793,36 +765,69 @@ def create_drink_submission(
             encoding="utf-8",
         )
 
-        created_at = _iso_now()
-        with connect() as conn:
-            conn.execute(
+        with database.connect() as conn:
+            # The insert consumes the code: hold it and check again that nothing else has.
+            refused = lock_code_for_submission(conn, code_id, "drink_submissions")
+            if refused == "revoked":
+                raise DrinkError("Code has been revoked")
+            if refused == "expired":
+                raise DrinkError("Code has expired")
+            if refused is not None:
+                raise DrinkError("Code has already been used")
+            now = _utcnow()
+            if new_texture:
+                conn.execute(
+                    """
+                    INSERT INTO drink_textures (
+                        id, owner_uuid, cmd, ia_item_id, png_path, refcount, created_at
+                    ) VALUES (%s, %s, NULL, NULL, %s, 1, %s)
+                    """,
+                    (texture_id, player_uuid.lower(), png_rel, now),
+                )
+            elif existing_id and conn.execute(
                 """
-                INSERT INTO drink_submissions (
-                    id, player_uuid, code_id, slug, display_name, recipe_json,
-                    status, deny_reason, texture_id, new_texture, dir_path,
-                    discord_user_id, created_at, reviewed_at, applied_at, realm_id
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?, ?, NULL, NULL, ?)
+                UPDATE drink_textures
+                SET refcount = refcount + 1
+                WHERE id = %s AND cmd IS NOT NULL
+                RETURNING id
                 """,
-                (
-                    submission_id,
-                    player_uuid,
-                    code_id,
-                    slug,
-                    display,
-                    json.dumps(recipe, separators=(",", ":")),
-                    texture_id,
-                    new_texture,
-                    dir_path,
-                    discord_user_id,
-                    created_at,
-                    realm,
-                ),
-            )
-            conn.commit()
-            row = conn.execute(
-                "SELECT * FROM drink_submissions WHERE id = ?",
-                (submission_id,),
-            ).fetchone()
+                (existing_id,),
+            ).fetchone() is None:
+                raise DrinkError("existing_texture_id not found")
+            try:
+                with conn.transaction():
+                    row = conn.execute(
+                        """
+                        INSERT INTO drink_submissions (
+                            id, player_uuid, code_id, slug, display_name, recipe_json,
+                            status, deny_reason, texture_id, new_texture, dir_path,
+                            discord_user_id, created_at, reviewed_at, applied_at, realm_id
+                        ) VALUES (%s, %s, %s, %s, %s, %s, 'pending', NULL, %s, %s, %s, %s, %s, NULL, NULL, %s)
+                        RETURNING *
+                        """,
+                        (
+                            submission_id,
+                            player_uuid,
+                            code_id,
+                            slug,
+                            display,
+                            database.Jsonb(recipe),
+                            texture_id,
+                            new_texture,
+                            dir_path,
+                            discord_user_id,
+                            now,
+                            realm,
+                        ),
+                    ).fetchone()
+            except database.UniqueViolation as e:
+                raise DrinkError(
+                    "You already have an active drink with this name or id"
+                ) from e
+            try:
+                mark_code_consumed(conn, code_id)
+            except CodeError as exc:
+                raise DrinkError(str(exc)) from exc
     except Exception:
         if sub_dir.exists():
             shutil.rmtree(sub_dir, ignore_errors=True)
@@ -830,11 +835,6 @@ def create_drink_submission(
             tex_path = db.DRINKS_DIR / "textures" / f"{texture_id}.png"
             if tex_path.exists():
                 tex_path.unlink(missing_ok=True)
-            with connect() as conn:
-                conn.execute(
-                    "DELETE FROM drink_textures WHERE id = ?", (texture_id,)
-                )
-                conn.commit()
         raise
 
     if discord_user_id:
@@ -848,10 +848,6 @@ def create_drink_submission(
                 "slug": slug,
             },
         )
-
-    from src.skins.codes import mark_code_consumed
-
-    mark_code_consumed(code_id)
 
     return _public_row(row)
 
@@ -876,9 +872,9 @@ def owner_drink_texture(submission_id: str, player_uuid: str) -> Path | None:
     candidates = [_submissions_root() / submission_id / "texture.png"]
     texture_id = str(row["texture_id"] or "").strip()
     if texture_id:
-        with connect() as conn:
+        with database.connect() as conn:
             tex = conn.execute(
-                "SELECT png_path FROM drink_textures WHERE id = ?", (texture_id,)
+                "SELECT png_path FROM drink_textures WHERE id = %s", (texture_id,)
             ).fetchone()
         if tex is not None and tex["png_path"]:
             candidates.append(db.DRINKS_DIR / str(tex["png_path"]))
@@ -901,13 +897,13 @@ def list_drink_submissions_for_player(
         return []
     realm = normalize_realm_id(realm_id)
     cap = max(1, min(int(limit or 50), 100))
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM drink_submissions
-            WHERE LOWER(player_uuid) = LOWER(?) AND realm_id = ?
+            WHERE LOWER(player_uuid) = LOWER(%s) AND realm_id = %s
             ORDER BY created_at DESC
-            LIMIT ?
+            LIMIT %s
             """,
             (uuid, realm, cap),
         ).fetchall()
@@ -915,7 +911,7 @@ def list_drink_submissions_for_player(
 
 
 def list_pending_drinks() -> list[dict[str, Any]]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM drink_submissions
@@ -954,40 +950,37 @@ def resolve_drink_submission_file(
 
 
 def approve_drink_submission(submission_id: str) -> dict[str, Any]:
-    row = _get_row(submission_id)
-    if row is None:
-        raise DrinkError("Submission not found")
-    if row["status"] != "pending":
-        raise DrinkError("Only pending submissions can be approved")
+    with database.connect() as conn:
+        # Locked so a deny or a second approval meanwhile waits and then finds it decided.
+        row = conn.execute(
+            "SELECT * FROM drink_submissions WHERE id = %s FOR UPDATE",
+            (submission_id,),
+        ).fetchone()
+        if row is None:
+            raise DrinkError("Submission not found")
+        if row["status"] != "pending":
+            raise DrinkError("Only pending submissions can be approved")
 
-    new_texture = bool(int(row["new_texture"] or 0))
-    texture_id = row["texture_id"]
-    next_status = "approved"
-    if new_texture:
-        next_status = "pending_pack"
-    elif texture_id:
-        with connect() as conn:
+        texture_id = row["texture_id"]
+        next_status = "approved"
+        if row["new_texture"]:
+            next_status = "pending_pack"
+        elif texture_id:
             tex = conn.execute(
-                "SELECT cmd FROM drink_textures WHERE id = ?",
+                "SELECT cmd FROM drink_textures WHERE id = %s",
                 (texture_id,),
             ).fetchone()
-        if tex is None or tex["cmd"] is None:
-            next_status = "pending_pack"
+            if tex is None or tex["cmd"] is None:
+                next_status = "pending_pack"
 
-    reviewed_at = _iso_now()
-    with connect() as conn:
-        conn.execute(
+        row = conn.execute(
             """
             UPDATE drink_submissions
-            SET status = ?, reviewed_at = ?, deny_reason = NULL
-            WHERE id = ?
+            SET status = %s, reviewed_at = %s, deny_reason = NULL
+            WHERE id = %s
+            RETURNING *
             """,
-            (next_status, reviewed_at, submission_id),
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT * FROM drink_submissions WHERE id = ?",
-            (submission_id,),
+            (next_status, _utcnow(), submission_id),
         ).fetchone()
 
     result = _public_row(row)
@@ -1022,41 +1015,41 @@ def _release_texture(texture_id: str | None, *, was_new: bool = False) -> dict[s
     }
     if not texture_id:
         return empty
-    with connect() as conn:
+    with database.connect() as conn:
+        # One statement takes the reference, so two releases never both read the old count.
         tex = conn.execute(
-            "SELECT * FROM drink_textures WHERE id = ?",
+            """
+            UPDATE drink_textures SET refcount = GREATEST(refcount - 1, 0)
+            WHERE id = %s
+            RETURNING *
+            """,
             (texture_id,),
         ).fetchone()
         if tex is None:
             return empty
-        ia_item_id = tex["ia_item_id"]
-        cmd = tex["cmd"]
-        new_count = max(0, int(tex["refcount"] or 0) - 1)
-        if new_count <= 0:
-            conn.execute("DELETE FROM drink_textures WHERE id = ?", (texture_id,))
-            conn.commit()
-            png = db.DRINKS_DIR / str(tex["png_path"])
-            if png.is_file():
-                png.unlink(missing_ok=True)
-            return {
-                "texture_freed": True,
-                "texture_id": texture_id,
-                "ia_item_id": ia_item_id,
-                "cmd": cmd,
-                "refcount": 0,
-            }
-        conn.execute(
-            "UPDATE drink_textures SET refcount = ? WHERE id = ?",
-            (new_count, texture_id),
-        )
-        conn.commit()
+        if tex["refcount"] <= 0:
+            conn.execute("DELETE FROM drink_textures WHERE id = %s", (texture_id,))
+    ia_item_id = tex["ia_item_id"]
+    cmd = tex["cmd"]
+    new_count = int(tex["refcount"])
+    if new_count <= 0:
+        png = db.DRINKS_DIR / str(tex["png_path"])
+        if png.is_file():
+            png.unlink(missing_ok=True)
         return {
-            "texture_freed": False,
+            "texture_freed": True,
             "texture_id": texture_id,
             "ia_item_id": ia_item_id,
             "cmd": cmd,
-            "refcount": new_count,
+            "refcount": 0,
         }
+    return {
+        "texture_freed": False,
+        "texture_id": texture_id,
+        "ia_item_id": ia_item_id,
+        "cmd": cmd,
+        "refcount": new_count,
+    }
 
 
 def deny_drink_submission(submission_id: str, reason: str) -> dict[str, Any]:
@@ -1071,11 +1064,19 @@ def deny_drink_submission(submission_id: str, reason: str) -> dict[str, Any]:
     if row["status"] != "pending":
         raise DrinkError("Only pending submissions can be denied")
 
-    reviewed_at = _iso_now()
     payload = _public_row(row)
     payload["status"] = "denied"
     payload["deny_reason"] = reason
-    payload["reviewed_at"] = reviewed_at
+    payload["reviewed_at"] = _iso_now()
+
+    with database.connect() as conn:
+        # Deleted only while still pending, so an approval meanwhile is never undone.
+        deleted = conn.execute(
+            "DELETE FROM drink_submissions WHERE id = %s AND status = 'pending' RETURNING id",
+            (submission_id,),
+        ).fetchone()
+    if deleted is None:
+        raise DrinkError("Only pending submissions can be denied")
 
     discord_user_id = row["discord_user_id"]
     if discord_user_id:
@@ -1091,14 +1092,9 @@ def deny_drink_submission(submission_id: str, reason: str) -> dict[str, Any]:
             },
         )
 
-    was_new = bool(int(row["new_texture"] or 0))
+    was_new = bool(row["new_texture"])
     texture_id = row["texture_id"]
     dir_path = row["dir_path"]
-    with connect() as conn:
-        conn.execute(
-            "DELETE FROM drink_submissions WHERE id = ?", (submission_id,)
-        )
-        conn.commit()
     if dir_path:
         shutil.rmtree(dir_path, ignore_errors=True)
     _release_texture(texture_id, was_new=was_new)
@@ -1108,12 +1104,12 @@ def deny_drink_submission(submission_id: str, reason: str) -> dict[str, Any]:
 def list_player_textures(player_uuid: str) -> list[dict[str, Any]]:
     """Owned textures that already have CMD (applied / reusable)."""
     uuid = (player_uuid or "").strip().lower()
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, cmd, ia_item_id, png_path, refcount, created_at
             FROM drink_textures
-            WHERE LOWER(owner_uuid) = ?
+            WHERE LOWER(owner_uuid) = %s
               AND cmd IS NOT NULL
             ORDER BY created_at DESC
             """,
@@ -1125,7 +1121,7 @@ def list_player_textures(player_uuid: str) -> list[dict[str, Any]]:
             "cmd": row["cmd"],
             "ia_item_id": row["ia_item_id"],
             "refcount": row["refcount"],
-            "created_at": row["created_at"],
+            "created_at": api_time(row["created_at"]),
             "applied": True,
         }
         for row in rows
@@ -1133,7 +1129,7 @@ def list_player_textures(player_uuid: str) -> list[dict[str, Any]]:
 
 
 def list_deletable_drinks() -> list[dict[str, Any]]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, display_name, status, texture_id, slug
@@ -1168,9 +1164,9 @@ def get_drink_for_plugin(submission_id: str) -> dict[str, Any] | None:
     public["files"] = _list_files(sid)
     tid = str(row["texture_id"] or "").strip()
     if tid:
-        with connect() as conn:
+        with database.connect() as conn:
             tex = conn.execute(
-                "SELECT * FROM drink_textures WHERE id = ?",
+                "SELECT * FROM drink_textures WHERE id = %s",
                 (tid,),
             ).fetchone()
         public["texture"] = _texture_public(tex) if tex is not None else None
@@ -1184,33 +1180,31 @@ def revoke_drink_submission(submission_id: str) -> dict[str, Any]:
     sid = (submission_id or "").strip()
     if not sid:
         raise DrinkError("submission id is required")
-    row = _get_row(sid)
-    if row is None:
-        raise DrinkError("Submission not found")
-    status = str(row["status"] or "")
-    if status not in ("approved", "pending_pack", "applied"):
-        raise DrinkError(
-            "Only approved, pending_pack, or applied drinks can be revoked"
-        )
-
-    was_new = bool(int(row["new_texture"] or 0))
-    texture_id = row["texture_id"]
+    with database.connect() as conn:
+        # Deleted only in an active status, checked by the delete itself.
+        row = conn.execute(
+            """
+            DELETE FROM drink_submissions
+            WHERE id = %s AND status IN ('approved', 'pending_pack', 'applied')
+            RETURNING *
+            """,
+            (sid,),
+        ).fetchone()
+        if row is None:
+            if conn.execute("SELECT 1 FROM drink_submissions WHERE id = %s", (sid,)).fetchone() is None:
+                raise DrinkError("Submission not found")
+            raise DrinkError(
+                "Only approved, pending_pack, or applied drinks can be revoked"
+            )
+        texture_id = row["texture_id"]
+        # Texture meta before release (for plugin IA cleanup).
+        tex = conn.execute(
+            "SELECT * FROM drink_textures WHERE id = %s",
+            (texture_id,),
+        ).fetchone() if texture_id else None
+    tex_meta: dict[str, Any] | None = _texture_public(tex) if tex is not None else None
+    was_new = bool(row["new_texture"])
     dir_path = row["dir_path"]
-
-    # Capture texture meta before release (for plugin IA cleanup).
-    tex_meta: dict[str, Any] | None = None
-    if texture_id:
-        with connect() as conn:
-            tex = conn.execute(
-                "SELECT * FROM drink_textures WHERE id = ?",
-                (texture_id,),
-            ).fetchone()
-        if tex is not None:
-            tex_meta = _texture_public(tex)
-
-    with connect() as conn:
-        conn.execute("DELETE FROM drink_submissions WHERE id = ?", (sid,))
-        conn.commit()
     if dir_path:
         shutil.rmtree(dir_path, ignore_errors=True)
 
@@ -1236,7 +1230,7 @@ def _texture_public(row) -> dict[str, Any]:
         "ia_item_id": row["ia_item_id"],
         "png_path": row["png_path"],
         "refcount": row["refcount"],
-        "created_at": row["created_at"],
+        "created_at": api_time(row["created_at"]),
     }
 
 
@@ -1247,13 +1241,13 @@ def list_drinks_pending_apply(
     from src.skins.codes import normalize_realm_id
 
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM drink_submissions
             WHERE status IN ('approved', 'pending_pack')
               AND applied_at IS NULL
-              AND realm_id = ?
+              AND realm_id = %s
             ORDER BY reviewed_at ASC, created_at ASC
             """,
             (realm,),
@@ -1265,10 +1259,9 @@ def list_drinks_pending_apply(
             if r["texture_id"]
         ]
         if tex_ids:
-            placeholders = ",".join("?" * len(tex_ids))
             for tex in conn.execute(
-                f"SELECT * FROM drink_textures WHERE id IN ({placeholders})",
-                tex_ids,
+                "SELECT * FROM drink_textures WHERE id = ANY(%s)",
+                (tex_ids,),
             ).fetchall():
                 textures[str(tex["id"])] = tex
 
@@ -1305,60 +1298,55 @@ def assign_drink_texture_cmd(
     if not ia_id:
         raise DrinkError("ia_item_id is required")
 
-    with connect() as conn:
+    with database.connect() as conn:
+        # Set once: the update only matches a texture without a cmd, or with this one.
         row = conn.execute(
-            "SELECT * FROM drink_textures WHERE id = ?",
-            (tid,),
-        ).fetchone()
-        if row is None:
-            raise DrinkError("Texture not found")
-        existing = row["cmd"]
-        if existing is not None and int(existing) != cmd_int:
-            raise DrinkError(
-                f"Texture already has cmd {existing}; cannot set {cmd_int}"
-            )
-        conn.execute(
             """
             UPDATE drink_textures
-            SET cmd = ?, ia_item_id = ?
-            WHERE id = ?
+            SET cmd = %s, ia_item_id = %s
+            WHERE id = %s AND (cmd IS NULL OR cmd = %s)
+            RETURNING *
             """,
-            (cmd_int, ia_id, tid),
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT * FROM drink_textures WHERE id = ?",
-            (tid,),
+            (cmd_int, ia_id, tid, cmd_int),
         ).fetchone()
+        if row is None:
+            existing = conn.execute("SELECT cmd FROM drink_textures WHERE id = %s", (tid,)).fetchone()
+            if existing is None:
+                raise DrinkError("Texture not found")
+            raise DrinkError(
+                f"Texture already has cmd {existing['cmd']}; cannot set {cmd_int}"
+            )
     return _texture_public(row)
 
 
 def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
     applied: list[str] = []
     pending_notifications: list[tuple[str, str, dict[str, Any]]] = []
-    now = _iso_now()
-    with connect() as conn:
+    now = _utcnow()
+    targets = [(sid or "").strip() for sid in submission_ids if (sid or "").strip()]
+    with database.connect() as conn:
+        # Lock the whole batch in one order before the caller-ordered updates.
+        if targets:
+            conn.execute(
+                "SELECT id FROM drink_submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                (targets,),
+            ).fetchall()
         for sid in submission_ids:
             sid = (sid or "").strip()
             if not sid:
                 continue
             row = conn.execute(
-                "SELECT * FROM drink_submissions WHERE id = ?",
-                (sid,),
-            ).fetchone()
-            if row is None:
-                continue
-            cur = conn.execute(
                 """
                 UPDATE drink_submissions
-                SET status = 'applied', applied_at = ?
-                WHERE id = ?
+                SET status = 'applied', applied_at = %s
+                WHERE id = %s
                   AND status IN ('approved', 'pending_pack')
                   AND applied_at IS NULL
+                RETURNING discord_user_id, display_name, slug
                 """,
                 (now, sid),
-            )
-            if cur.rowcount:
+            ).fetchone()
+            if row is not None:
                 applied.append(sid)
                 discord_user_id = row["discord_user_id"]
                 if discord_user_id:
@@ -1373,9 +1361,7 @@ def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
                             },
                         )
                     )
-        conn.commit()
-    # Notify after commit — nested connect() inside the update transaction
-    # can sqlite-lock and roll back the status change on busy hosts.
+    # Notify after the commit, on a connection of its own.
     for sid, discord_user_id, payload in pending_notifications:
         enqueue_drink_notification("applied", sid, discord_user_id, payload)
     return applied

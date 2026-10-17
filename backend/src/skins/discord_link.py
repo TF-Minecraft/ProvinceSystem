@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import os
 import re
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
-from .codes import generate_plaintext_code, hash_secret
-from .db import connect
+from .codes import api_time, generate_plaintext_code, hash_secret
 from .plugin_notices import enqueue_link_success, enqueue_plugin_notice
+from src import database
 from src.text_validation import TextValidationError, assert_optional_display_name
 
 
@@ -56,42 +57,34 @@ def _guild_grace_minutes() -> int:
 
 
 def _row_to_link(row) -> dict:
-    grace = row["grace_until"] if "grace_until" in row.keys() else None
-    left = row["left_guild_at"] if "left_guild_at" in row.keys() else None
     return {
         "player_uuid": str(row["player_uuid"]),
         "discord_user_id": str(row["discord_user_id"]),
         "minecraft_name": row["minecraft_name"],
         "discord_username": row["discord_username"],
-        "linked_at": row["linked_at"],
-        "left_guild_at": left,
-        "grace_until": grace,
-        "link_method": row["link_method"] if "link_method" in row.keys() else None,
+        "linked_at": api_time(row["linked_at"]),
+        "left_guild_at": api_time(row.get("left_guild_at")),
+        "grace_until": api_time(row.get("grace_until")),
+        "link_method": row.get("link_method"),
     }
 
 
 def _status_from_row(row, *, now: datetime | None = None) -> dict:
     link = _row_to_link(row)
     now = now or _utcnow()
-    grace_until = link.get("grace_until")
-    in_grace = False
-    if grace_until:
-        try:
-            in_grace = _parse_iso(str(grace_until)) > now
-        except (TypeError, ValueError):
-            in_grace = False
+    grace_until = row.get("grace_until")
     return {
         "linked": True,
         "eligible": True,
-        "in_grace": in_grace,
+        "in_grace": grace_until is not None and grace_until > now,
         "player_uuid": link["player_uuid"],
         "discord_user_id": link["discord_user_id"],
         "discord_username": link["discord_username"],
         "minecraft_name": link["minecraft_name"],
         "linked_at": link["linked_at"],
-        "left_guild_at": link.get("left_guild_at"),
-        "grace_until": grace_until,
-        "link_method": link.get("link_method"),
+        "left_guild_at": link["left_guild_at"],
+        "grace_until": link["grace_until"],
+        "link_method": link["link_method"],
     }
 
 
@@ -117,11 +110,11 @@ def start_link(
     if not uuid:
         raise LinkError("player_uuid is required")
 
-    with connect() as conn:
+    with database.connect() as conn:
         existing = conn.execute(
             """
             SELECT discord_username FROM discord_links
-            WHERE player_uuid = ?
+            WHERE player_uuid = %s
             """,
             (uuid,),
         ).fetchone()
@@ -143,17 +136,15 @@ def start_link(
         plaintext = generate_plaintext_code()
         now = _utcnow()
         expires_at = _iso(now + timedelta(minutes=_link_ttl_minutes()))
-        created_at = _iso(now)
 
         conn.execute(
             """
             INSERT INTO discord_link_codes (
                 code_hash, player_uuid, minecraft_name, created_at, expires_at, used_at
-            ) VALUES (?, ?, ?, ?, ?, NULL)
+            ) VALUES (%s, %s, %s, %s, %s, NULL)
             """,
-            (hash_secret(plaintext), uuid, name, created_at, expires_at),
+            (hash_secret(plaintext), uuid, name, now, _parse_iso(expires_at)),
         )
-        conn.commit()
 
     return {"code": plaintext, "expires_at": expires_at}
 
@@ -185,24 +176,31 @@ def remember_discord_nicknames(updates: list[dict]) -> dict:
         raise LinkError("updates must be a list")
     if len(updates) > _USERNAME_UPDATES_MAX:
         raise LinkError("too many nickname updates")
+    pending = []
+    for item in updates:
+        if not isinstance(item, dict):
+            continue
+        discord_id = str(item.get("discord_user_id") or "").strip()
+        if not discord_id:
+            continue
+        raw = item.get("discord_nickname")
+        nickname = _sanitize_discord_nickname(raw)
+        if nickname is None and str(raw or "").strip():
+            continue
+        pending.append((nickname, discord_id))
     updated = 0
-    with connect() as conn:
-        for item in updates:
-            if not isinstance(item, dict):
-                continue
-            discord_id = str(item.get("discord_user_id") or "").strip()
-            if not discord_id:
-                continue
-            raw = item.get("discord_nickname")
-            nickname = _sanitize_discord_nickname(raw)
-            if nickname is None and str(raw or "").strip():
-                continue
+    with database.connect() as conn:
+        if pending:
+            conn.execute(
+                "SELECT discord_user_id FROM discord_links WHERE discord_user_id = ANY(%s) "
+                "ORDER BY discord_user_id FOR UPDATE", ([did for _, did in pending],),
+            ).fetchall()
+        for nickname, discord_id in pending:
             cur = conn.execute(
-                "UPDATE discord_links SET discord_nickname = ? WHERE discord_user_id = ?",
+                "UPDATE discord_links SET discord_nickname = %s WHERE discord_user_id = %s",
                 (nickname, discord_id),
             )
             updated += cur.rowcount
-        conn.commit()
     return {"updated": updated}
 
 
@@ -227,26 +225,34 @@ def remember_discord_usernames(
     if len(updates) > _USERNAME_UPDATES_MAX:
         raise LinkError("too many username updates")
 
+    pending = []
+    for item in updates:
+        if not isinstance(item, dict):
+            continue
+        discord_id = str(item.get("discord_user_id") or "").strip()
+        name = _sanitize_discord_username(item.get("discord_username"))
+        if not discord_id or name is None:
+            continue
+        pending.append((name, discord_id))
     updated = 0
-    with connect() as conn:
-        for item in updates:
-            if not isinstance(item, dict):
-                continue
-            discord_id = str(item.get("discord_user_id") or "").strip()
-            name = _sanitize_discord_username(item.get("discord_username"))
-            if not discord_id or name is None:
-                continue
+    with database.connect() as conn:
+        if pending:
+            conn.execute(
+                "SELECT discord_user_id FROM discord_links WHERE discord_user_id = ANY(%s) "
+                "ORDER BY discord_user_id FOR UPDATE", ([did for _, did in pending],),
+            ).fetchall()
+        for name, discord_id in pending:
             if overwrite:
                 sql = """
                     UPDATE discord_links
-                    SET discord_username = ?
-                    WHERE discord_user_id = ?
+                    SET discord_username = %s
+                    WHERE discord_user_id = %s
                 """
             else:
                 sql = """
                     UPDATE discord_links
-                    SET discord_username = ?
-                    WHERE discord_user_id = ?
+                    SET discord_username = %s
+                    WHERE discord_user_id = %s
                       AND (
                         discord_username IS NULL
                         OR trim(discord_username) = ''
@@ -254,33 +260,49 @@ def remember_discord_usernames(
                 """
             cur = conn.execute(sql, (name, discord_id))
             updated += cur.rowcount
-        conn.commit()
     return {"updated": updated}
 
 
-def _usable_code_row(conn, code: str, now: datetime):
+def _code_hash(code: str) -> str:
     plaintext = (code or "").strip()
     if not plaintext:
         raise LinkError("code is required")
-    row = conn.execute(
-        "SELECT * FROM discord_link_codes WHERE code_hash = ?",
-        (hash_secret(plaintext),),
-    ).fetchone()
+    return hash_secret(plaintext)
+
+
+@contextmanager
+def _link_write(discord_id: str, player_uuid: str | None = None):
+    """Order link writes before code, state and link row locks.
+
+    A bind spends sibling codes, and unlinking cancels Microsoft states. Locking
+    each identity first prevents those writes deadlocking with another bind.
+    """
+    with database.transaction(lock=f"discord_link:{discord_id}") as conn:
+        if player_uuid is not None:
+            database.advisory_lock(conn, f"minecraft_link:{player_uuid.lower()}")
+        yield conn
+
+
+def _refuse_code(row, now: datetime) -> None:
+    """Raise why a link code row cannot be used; return when it can."""
     if row is None:
         raise LinkError("Invalid link code")
     if row["used_at"]:
         raise LinkError("Link code has already been used")
-    if _parse_iso(row["expires_at"]) < now:
+    if row["expires_at"] < now:
         raise LinkError("Link code has expired")
-    return row
 
 
 def preview_link(code: str) -> dict:
     """Name the Minecraft account a code would link, without using the code."""
-    with connect() as conn:
-        row = _usable_code_row(conn, code, _utcnow())
+    with database.connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM discord_link_codes WHERE code_hash = %s",
+            (_code_hash(code),),
+        ).fetchone()
+        _refuse_code(row, _utcnow())
         linked = conn.execute(
-            "SELECT 1 FROM discord_links WHERE player_uuid = ?",
+            "SELECT 1 FROM discord_links WHERE player_uuid = %s",
             (row["player_uuid"],),
         ).fetchone()
     if linked is not None:
@@ -288,7 +310,7 @@ def preview_link(code: str) -> dict:
     return {
         "player_uuid": str(row["player_uuid"]),
         "minecraft_name": row["minecraft_name"],
-        "expires_at": row["expires_at"],
+        "expires_at": api_time(row["expires_at"]),
     }
 
 
@@ -303,26 +325,45 @@ def complete_link(
     so staff lookup can show it. Nicks and display names are ignored, and a
     link still succeeds when the supplied name is not a username.
 
-    Validation and the write share one immediate transaction, so two
-    redemptions of the same code cannot both succeed. A link never replaces
+    The code is spent by the update that checks it, so of two redemptions only
+    one gets it; a refused link rolls the spend back. A link never replaces
     another: an older code minted before the player linked is refused, and
     linking spends every other outstanding code for that player.
     """
     discord_id = (discord_user_id or "").strip()
-    if not (code or "").strip():
-        raise LinkError("code is required")
+    code_hash = _code_hash(code)
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
     username = _sanitize_discord_username(discord_username)
-    now = _utcnow()
+    with database.connect() as conn:
+        candidate = conn.execute("SELECT player_uuid FROM discord_link_codes WHERE code_hash = %s",
+                                 (code_hash,)).fetchone()
+    if candidate is None:
+        raise LinkError("Invalid link code")
 
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        row = _usable_code_row(conn, code, now)
+    with _link_write(discord_id, candidate["player_uuid"]) as conn:
+        conn.execute("SELECT id FROM discord_link_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
+        now = _utcnow()
+        row = conn.execute(
+            """
+            UPDATE discord_link_codes SET used_at = %s
+            WHERE code_hash = %s AND used_at IS NULL AND expires_at >= %s
+            RETURNING player_uuid, minecraft_name, expires_at
+            """,
+            (now, code_hash, now),
+        ).fetchone()
+        if row is None:
+            _refuse_code(conn.execute(
+                "SELECT used_at, expires_at FROM discord_link_codes WHERE code_hash = %s", (code_hash,)
+            ).fetchone(), now)
+            raise LinkError("Link code has already been used")
         result = _bind(conn, row["player_uuid"], row["minecraft_name"], discord_id, username, now, "code")
-        conn.commit()
-    return result
+        # Binding may wait on a link or sibling code after the original code lock.
+        # Keep all spends and the outbox insert in the rollback on expiry.
+        if row["expires_at"] < _utcnow():
+            raise LinkError("Link code has expired")
+        return result
 
 
 def link_verified_profile(
@@ -335,7 +376,8 @@ def link_verified_profile(
     """Bind a Minecraft account whose ownership Microsoft has just confirmed.
 
     Same rules as a code: never replaces an existing link in either direction.
-    `still_allowed(conn)` runs inside the write; returning False refuses the link.
+    `still_allowed(conn)` runs inside the write, holding what it read until the
+    link commits; returning False refuses the link.
     """
     uuid = (player_uuid or "").strip().lower()
     discord_id = (discord_user_id or "").strip()
@@ -349,66 +391,75 @@ def link_verified_profile(
         raise LinkError(str(exc)) from exc
 
     username = _sanitize_discord_username(discord_username)
-    with connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with _link_write(discord_id, uuid) as conn:
         if still_allowed is not None and not still_allowed(conn):
             raise LinkError("This link attempt is no longer valid")
         result = _bind(conn, uuid, name, discord_id, username, _utcnow(), "microsoft")
-        conn.commit()
-    return result
+        if still_allowed is not None and not still_allowed(conn):
+            raise LinkError("This link attempt is no longer valid")
+        return result
 
 
 def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, username: str | None, now: datetime,
           method: str) -> dict:
-    """Write the link inside the caller's immediate transaction."""
-    linked_at = _iso(now)
-    existing = conn.execute(
-        "SELECT player_uuid FROM discord_links WHERE discord_user_id = ?",
-        (discord_id,),
-    ).fetchone()
-    if existing is not None and existing["player_uuid"] != player_uuid:
-        raise LinkError(
-            "This Discord account is already linked to a different Minecraft player"
-        )
-    if existing is None and conn.execute(
-        "SELECT 1 FROM discord_links WHERE player_uuid = ?",
-        (player_uuid,),
-    ).fetchone() is not None:
-        raise LinkError(
-            "This Minecraft account is already linked to a different Discord account"
-        )
+    """Write the link inside the caller's transaction.
 
-    if existing is None:
-        conn.execute(
+    The insert does nothing when either side is already linked, waiting first for
+    a link of either side that is being committed; the existing row then says why.
+    """
+    for _attempt in range(2):
+        inserted = conn.execute(
             """
             INSERT INTO discord_links (
                 player_uuid, discord_user_id, minecraft_name,
                 discord_username, linked_at, left_guild_at, grace_until, link_method
-            ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)
+            ) VALUES (%s, %s, %s, %s, %s, NULL, NULL, %s)
+            ON CONFLICT DO NOTHING
+            RETURNING linked_at
             """,
-            (player_uuid, discord_id, minecraft_name, username, linked_at, method),
-        )
-    else:
+            (player_uuid, discord_id, minecraft_name, username, now, method),
+        ).fetchone()
+        if inserted is not None:
+            linked_at = inserted["linked_at"]
+            break
+        existing = conn.execute(
+            "SELECT player_uuid FROM discord_links WHERE discord_user_id = %s FOR UPDATE",
+            (discord_id,),
+        ).fetchone()
+        if existing is not None and existing["player_uuid"] != player_uuid:
+            raise LinkError(
+                "This Discord account is already linked to a different Minecraft player"
+            )
+        if existing is None and conn.execute(
+            "SELECT 1 FROM discord_links WHERE player_uuid = %s",
+            (player_uuid,),
+        ).fetchone() is not None:
+            raise LinkError(
+                "This Minecraft account is already linked to a different Discord account"
+            )
+        if existing is None:
+            # The link it clashed with was removed meanwhile: try once more.
+            continue
         # Same pair again: refresh names, keep the original link and grace.
-        conn.execute(
+        linked_at = conn.execute(
             """
             UPDATE discord_links
-            SET minecraft_name = COALESCE(?, minecraft_name),
-                discord_username = COALESCE(?, discord_username)
-            WHERE player_uuid = ?
+            SET minecraft_name = COALESCE(%s, minecraft_name),
+                discord_username = COALESCE(%s, discord_username)
+            WHERE player_uuid = %s
+            RETURNING linked_at
             """,
             (minecraft_name, username, player_uuid),
-        )
-        linked_at = conn.execute(
-            "SELECT linked_at FROM discord_links WHERE player_uuid = ?",
-            (player_uuid,),
         ).fetchone()["linked_at"]
+        break
+    else:
+        raise LinkError("This link could not be saved; try again")
     conn.execute(
         """
-        UPDATE discord_link_codes SET used_at = ?
-        WHERE player_uuid = ? AND used_at IS NULL
+        UPDATE discord_link_codes SET used_at = %s
+        WHERE player_uuid = %s AND used_at IS NULL
         """,
-        (_iso(now), player_uuid),
+        (now, player_uuid),
     )
     enqueue_link_success(
         player_uuid,
@@ -420,7 +471,7 @@ def _bind(conn, player_uuid: str, minecraft_name: str | None, discord_id: str, u
         "discord_user_id": discord_id,
         "discord_username": username,
         "minecraft_name": minecraft_name,
-        "linked_at": linked_at,
+        "linked_at": api_time(linked_at),
     }
 
 
@@ -428,9 +479,9 @@ def get_discord_id_for_uuid(player_uuid: str) -> str | None:
     uuid = (player_uuid or "").strip()
     if not uuid:
         return None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT discord_user_id FROM discord_links WHERE player_uuid = ?",
+            "SELECT discord_user_id FROM discord_links WHERE player_uuid = %s",
             (uuid,),
         ).fetchone()
     if row is None:
@@ -443,13 +494,13 @@ def get_link_for_uuid(player_uuid: str) -> dict | None:
     uuid = (player_uuid or "").strip()
     if not uuid:
         return None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT player_uuid, discord_user_id, minecraft_name,
                    discord_username, linked_at, left_guild_at, grace_until
             FROM discord_links
-            WHERE player_uuid = ?
+            WHERE player_uuid = %s
             """,
             (uuid,),
         ).fetchone()
@@ -464,9 +515,9 @@ def get_link_for_discord_id(discord_user_id: str) -> dict | None:
     if not discord_id:
         return None
     expire_due_graces()
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            "SELECT * FROM discord_links WHERE discord_user_id = %s",
             (discord_id,),
         ).fetchone()
     if row is None:
@@ -480,33 +531,30 @@ def record_guild_left(discord_user_id: str) -> dict:
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    now = _utcnow()
-    with connect() as conn:
+    with database.connect() as conn:
+        # Locked so two leave events start one grace and queue one notice.
         row = conn.execute(
-            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            "SELECT * FROM discord_links WHERE discord_user_id = %s FOR UPDATE",
             (discord_id,),
         ).fetchone()
+        now = _utcnow()
         if row is None:
             raise LinkError("No Minecraft link for this Discord account")
 
-        existing_grace = row["grace_until"] if "grace_until" in row.keys() else None
-        if existing_grace:
-            try:
-                if _parse_iso(str(existing_grace)) > now:
-                    return _status_from_row(row, now=now)
-            except (TypeError, ValueError):
-                pass
+        if row["grace_until"] is not None and row["grace_until"] > now:
+            return _status_from_row(row, now=now)
 
         left_at = _iso(now)
         grace_until = _iso(now + timedelta(minutes=_guild_grace_minutes()))
-        conn.execute(
+        refreshed = conn.execute(
             """
             UPDATE discord_links
-            SET left_guild_at = ?, grace_until = ?
-            WHERE discord_user_id = ?
+            SET left_guild_at = %s, grace_until = %s
+            WHERE discord_user_id = %s
+            RETURNING *
             """,
-            (left_at, grace_until, discord_id),
-        )
+            (_parse_iso(left_at), _parse_iso(grace_until), discord_id),
+        ).fetchone()
         enqueue_plugin_notice(
             "guild_left_grace",
             str(row["player_uuid"]),
@@ -517,12 +565,7 @@ def record_guild_left(discord_user_id: str) -> dict:
             },
             conn=conn,
         )
-        conn.commit()
-        refreshed = conn.execute(
-            "SELECT * FROM discord_links WHERE discord_user_id = ?",
-            (discord_id,),
-        ).fetchone()
-    return _status_from_row(refreshed, now=now)
+    return _status_from_row(refreshed)
 
 
 def record_guild_joined(discord_user_id: str) -> dict:
@@ -531,85 +574,79 @@ def record_guild_joined(discord_user_id: str) -> dict:
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    now = _utcnow()
-    with connect() as conn:
+    with database.connect() as conn:
+        # Locked so two join events queue one rejoin notice.
         row = conn.execute(
-            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            "SELECT * FROM discord_links WHERE discord_user_id = %s FOR UPDATE",
             (discord_id,),
         ).fetchone()
         if row is None:
             raise LinkError("No Minecraft link for this Discord account")
 
-        was_in_grace = False
-        grace = row["grace_until"] if "grace_until" in row.keys() else None
-        if grace:
-            was_in_grace = True
-
-        conn.execute(
+        refreshed = conn.execute(
             """
             UPDATE discord_links
             SET left_guild_at = NULL, grace_until = NULL
-            WHERE discord_user_id = ?
+            WHERE discord_user_id = %s
+            RETURNING *
             """,
             (discord_id,),
-        )
-        if was_in_grace:
+        ).fetchone()
+        if row["grace_until"] is not None:
             enqueue_plugin_notice(
                 "guild_rejoined",
                 str(row["player_uuid"]),
                 {"discord_user_id": discord_id},
                 conn=conn,
             )
-        conn.commit()
-        refreshed = conn.execute(
-            "SELECT * FROM discord_links WHERE discord_user_id = ?",
-            (discord_id,),
-        ).fetchone()
-    return _status_from_row(refreshed, now=now)
+    return _status_from_row(refreshed)
 
 
 def _cancel_microsoft_attempts(conn, discord_id: str) -> None:
     """Unlinking cancels Microsoft link attempts still open for that Discord account."""
     conn.execute(
-        "DELETE FROM microsoft_link_states WHERE user_id IN (SELECT id FROM users WHERE discord_user_id = ?)",
+        "DELETE FROM microsoft_link_states WHERE user_id IN (SELECT id FROM users WHERE discord_user_id = %s)",
         (discord_id,),
     )
 
 
 def expire_due_graces() -> int:
-    """Delete links whose grace_until has passed; enqueue grace_expired. Returns count."""
-    now = _utcnow()
-    now_iso = _iso(now)
-    expired = 0
-    with connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT player_uuid, discord_user_id, grace_until
-            FROM discord_links
-            WHERE grace_until IS NOT NULL AND grace_until <= ?
-            """,
-            (now_iso,),
+    """Delete links whose grace_until has passed; enqueue grace_expired. Returns count.
+
+    The delete returns the links it removed, so each expiry is noticed once.
+    """
+    with database.connect() as conn:
+        due = conn.execute(
+            "SELECT player_uuid, discord_user_id FROM discord_links WHERE grace_until <= %s",
+            (_utcnow(),),
         ).fetchall()
-        for row in rows:
+    expired = 0
+    for candidate in due:
+        # A Microsoft callback takes this lock before holding its state FOR SHARE.
+        with _link_write(candidate["discord_user_id"]) as conn:
+            row = conn.execute(
+                """
+                DELETE FROM discord_links
+                WHERE player_uuid = %s AND discord_user_id = %s AND grace_until <= %s
+                RETURNING player_uuid, discord_user_id, grace_until
+                """,
+                (candidate["player_uuid"], candidate["discord_user_id"], _utcnow()),
+            ).fetchone()
+            if row is None:
+                continue
             uuid = str(row["player_uuid"])
             discord_id = str(row["discord_user_id"])
-            conn.execute(
-                "DELETE FROM discord_links WHERE player_uuid = ?",
-                (uuid,),
-            )
             _cancel_microsoft_attempts(conn, discord_id)
             enqueue_plugin_notice(
                 "grace_expired",
                 uuid,
                 {
                     "discord_user_id": discord_id,
-                    "grace_until": row["grace_until"],
+                    "grace_until": api_time(row["grace_until"]),
                 },
                 conn=conn,
             )
             expired += 1
-        if expired:
-            conn.commit()
     return expired
 
 
@@ -619,9 +656,9 @@ def get_identity_status(player_uuid: str) -> dict:
     if not uuid:
         raise LinkError("player_uuid is required")
     expire_due_graces()
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM discord_links WHERE player_uuid = ?",
+            "SELECT * FROM discord_links WHERE player_uuid = %s",
             (uuid,),
         ).fetchone()
     if row is None:
@@ -634,17 +671,20 @@ def unlink_by_uuid(player_uuid: str) -> dict:
     if not uuid:
         raise LinkError("player_uuid is required")
 
-    with connect() as conn:
+    with database.connect() as conn:
+        candidate = conn.execute("SELECT discord_user_id FROM discord_links WHERE player_uuid = %s",
+                                 (uuid,)).fetchone()
+    if candidate is None:
+        raise LinkError("No Discord link for this Minecraft player")
+    with _link_write(candidate["discord_user_id"]) as conn:
         row = conn.execute(
-            "SELECT player_uuid, discord_user_id FROM discord_links WHERE player_uuid = ?",
-            (uuid,),
+            "DELETE FROM discord_links WHERE player_uuid = %s AND discord_user_id = %s RETURNING discord_user_id",
+            (uuid, candidate["discord_user_id"]),
         ).fetchone()
         if row is None:
             raise LinkError("No Discord link for this Minecraft player")
         discord_id = str(row["discord_user_id"])
-        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
         _cancel_microsoft_attempts(conn, discord_id)
-        conn.commit()
 
     return {
         "ok": True,
@@ -658,20 +698,15 @@ def unlink_by_discord_id(discord_user_id: str) -> dict:
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    with connect() as conn:
+    with _link_write(discord_id) as conn:
         row = conn.execute(
-            "SELECT player_uuid, discord_user_id FROM discord_links WHERE discord_user_id = ?",
+            "DELETE FROM discord_links WHERE discord_user_id = %s RETURNING player_uuid",
             (discord_id,),
         ).fetchone()
         if row is None:
             raise LinkError("No Minecraft link for this Discord account")
         player_uuid = str(row["player_uuid"])
-        conn.execute(
-            "DELETE FROM discord_links WHERE discord_user_id = ?",
-            (discord_id,),
-        )
         _cancel_microsoft_attempts(conn, discord_id)
-        conn.commit()
 
     return {
         "ok": True,
@@ -681,10 +716,8 @@ def unlink_by_discord_id(discord_user_id: str) -> dict:
 
 
 if __name__ == "__main__":
-    from .db import migrate
+    # Runs against DATABASE_URL.
     from .plugin_notices import ack_plugin_notices, list_undelivered_plugin_notices
-
-    migrate()
 
     assert _sanitize_discord_username("DiscordTwo") is None
     assert _sanitize_discord_username("a..b") is None
@@ -697,15 +730,14 @@ if __name__ == "__main__":
     d1 = "111111111111111111"
     d2 = "222222222222222222"
 
-    with connect() as conn:
-        conn.execute("DELETE FROM discord_links WHERE player_uuid IN (?, ?)", (u1, u2))
+    with database.connect() as conn:
+        conn.execute("DELETE FROM discord_links WHERE player_uuid IN (%s, %s)", (u1, u2))
         conn.execute(
-            "DELETE FROM discord_link_codes WHERE player_uuid IN (?, ?)", (u1, u2)
+            "DELETE FROM discord_link_codes WHERE player_uuid IN (%s, %s)", (u1, u2)
         )
         conn.execute(
-            "DELETE FROM plugin_notices WHERE player_uuid IN (?, ?)", (u1, u2)
+            "DELETE FROM plugin_notices WHERE player_uuid IN (%s, %s)", (u1, u2)
         )
-        conn.commit()
 
     started = start_link(u1, "TestPlayer")
     assert "code" in started and "expires_at" in started
@@ -743,13 +775,12 @@ if __name__ == "__main__":
 
     # Force expiry
     record_guild_left(d1)
-    past = _iso(_utcnow() - timedelta(minutes=5))
-    with connect() as conn:
+    past = _utcnow() - timedelta(minutes=5)
+    with database.connect() as conn:
         conn.execute(
-            "UPDATE discord_links SET grace_until = ? WHERE player_uuid = ?",
+            "UPDATE discord_links SET grace_until = %s WHERE player_uuid = %s",
             (past, u1),
         )
-        conn.commit()
     n = expire_due_graces()
     assert n >= 1
     assert get_link_for_uuid(u1) is None

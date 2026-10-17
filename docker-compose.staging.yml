@@ -14,7 +14,7 @@ services:
       - SKINS_DEV=1
       - STAFF_KEY=dev-staff-key
       - PLUGIN_KEY=dev-plugin-key
-      # Precedent and patch notes. Staging keeps its own database, so nothing here reaches production.
+      # All site records. Staging keeps its own database.
       - DATABASE_URL=postgresql://provincesystem:${POSTGRES_PASSWORD:-dev-postgres}@db:5432/provincesystem
     volumes:
       - ./backend/src/output:/app/src/output

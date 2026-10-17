@@ -4,24 +4,26 @@ import json
 
 import pytest
 
+from src import database as postgres_db
 from src.skins import db
 from src.skins.naming import armor_tier_base_set, armor_tier_label
 
 
 @pytest.fixture
-def database(tmp_path, monkeypatch):
+def database(postgres, tmp_path, monkeypatch):
+    """Site records use the isolated Postgres fixture."""
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
     for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
         monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
+    db.ensure_directories()
     return db
 
 
 def _insert_armor(conn, sid, tiers, *, tier_sets=None):
     conn.execute(
-        "INSERT OR IGNORE INTO codes (id, code_hash, player_uuid, created_at, expires_at) "
-        "VALUES (1, 'hash', 'player', 'now', 'later')"
+        "INSERT INTO codes (id, code_hash, player_uuid, created_at, expires_at) "
+        "VALUES (1, 'hash', 'player', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00Z') "
+        "ON CONFLICT (id) DO NOTHING"
     )
     conn.execute(
         """
@@ -29,8 +31,8 @@ def _insert_armor(conn, sid, tiers, *, tier_sets=None):
             id, player_uuid, code_id, kind, slug, display_name, tiers,
             tier_sets, status, dir_path, created_at, reviewed_at
         )
-        VALUES (?, 'player', 1, 'armor_set', ?, 'Name', ?, ?, 'approved',
-                '/tmp/x', 'now', 'now')
+        VALUES (%s, 'player', 1, 'armor_set', %s, 'Name', %s, %s, 'approved',
+                '/tmp/x', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
         """,
         (sid, sid, json.dumps(tiers), tier_sets),
     )
@@ -82,7 +84,7 @@ def test_default_set_names():
 def test_plugin_gets_base_set_per_tier(database):
     from src.skins.submissions import get_submission_for_plugin, list_approved_pending_apply
 
-    with database.connect() as conn:
+    with postgres_db.connect() as conn:
         _insert_armor(conn, "p_line", ["light_steel", "mage_steel"])
         _insert_armor(conn, "p_old", ["iron"])
         _insert_armor(conn, "p_set", ["iron"], tier_sets='{"iron": "heavy iron"}')
@@ -95,40 +97,3 @@ def test_plugin_gets_base_set_per_tier(database):
         "p_set": {"iron": "heavy iron"},
     }
     assert get_submission_for_plugin("p_set")["tier_sets"] == {"iron": "heavy iron"}
-
-
-def test_legacy_armor_gets_its_shop_sets(database):
-    from src.skins.submissions import get_submission_for_plugin
-
-    with database.connect() as conn:
-        _insert_armor(conn, "archbishqp_crusader", ["iron"])
-        _insert_armor(conn, "estiennehavenga_priestess_armour", ["mage"])
-        for sid in ("geofflive_thalendorian_armor", "dev_geofflive_thalendorian_armor"):
-            _insert_armor(conn, sid, ["iron", "steel", "abyssalite", "mythril", "mage"])
-        conn.commit()
-    database.migrate()
-
-    def sets(sid):
-        return get_submission_for_plugin(sid)["tier_sets"]
-
-    assert sets("archbishqp_crusader") == {"iron": "medium steel"}
-    assert sets("estiennehavenga_priestess_armour") == {"mage": "mage steel"}
-    thalendorian = {
-        "iron": "light iron",
-        "steel": "light steel",
-        "abyssalite": "light abyssalite",
-        "mythril": "light mythril",
-        "mage": "mage steel",
-    }
-    assert sets("geofflive_thalendorian_armor") == thalendorian
-    assert sets("dev_geofflive_thalendorian_armor") == thalendorian
-
-    # Staff edits made after the upgrade are kept on later starts.
-    with database.connect() as conn:
-        conn.execute(
-            "UPDATE submissions SET tier_sets = '{\"iron\": \"heavy steel\"}' "
-            "WHERE id = 'archbishqp_crusader'"
-        )
-        conn.commit()
-    database.migrate()
-    assert sets("archbishqp_crusader") == {"iron": "heavy steel"}

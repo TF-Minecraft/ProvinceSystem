@@ -29,7 +29,7 @@ from src.scripts.maps.archive_copy import (  # noqa: E402
     archive_map,
 )
 from src.scripts.util import dirs  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 
 COMMITTED_REGISTRY = _BACKEND_SRC / "config" / "maps.yml"
 
@@ -46,15 +46,7 @@ maps:
 
 
 @pytest.fixture
-def archive_env(tmp_path, monkeypatch):
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
-    monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
-    monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
-
+def archive_env(tmp_path, monkeypatch, postgres):
     input_dir = tmp_path / "input"
     defines_dir = tmp_path / "defines"
     output_dir = tmp_path / "output"
@@ -69,7 +61,6 @@ def archive_env(tmp_path, monkeypatch):
     monkeypatch.setenv("MAP_REGISTRY_PATH", str(registry))
     clear_map_registry_cache()
 
-    skins_db.migrate()
     committed = COMMITTED_REGISTRY.read_text(encoding="utf-8")
     try:
         yield {

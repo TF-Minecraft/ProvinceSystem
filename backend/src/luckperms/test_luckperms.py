@@ -1,13 +1,14 @@
-import json
 import time
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from src import database
 from src.api import admin_routes, auth_routes
-from src.auth import users
+from src.auth import testing, users
 from src.luckperms import changes, mirror, nodes, policy
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -68,7 +69,7 @@ def snapshot(**overrides):
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -97,13 +98,9 @@ def account(db, name, role="player", minecraft=None):
          "discord_avatar": None},
         guild_member=True,
     )
-    with db.connect() as conn:
-        conn.execute("UPDATE users SET role = ? WHERE discord_user_id = ?", (role, discord_id))
-        if minecraft:
-            conn.execute(
-                "INSERT INTO discord_links (player_uuid, discord_user_id, discord_username, minecraft_name, linked_at) "
-                "VALUES (?, ?, ?, ?, ?)", (minecraft, discord_id, name, name, "2026-10-01T00:00:00Z"))
-        conn.commit()
+    testing.set_role(discord_id, role)
+    if minecraft:
+        link(minecraft, discord_id, name, name, linked_at="2026-10-01T00:00:00Z")
     return token
 
 
@@ -137,8 +134,7 @@ def submit(app, token, target_type, target, ops, reason="Event reward"):
 
 
 def audit_rows(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute("SELECT * FROM admin_audit ORDER BY id")]
+    return testing.audit_rows()
 
 
 # --------------------
@@ -205,8 +201,8 @@ def test_snapshot_replaces_mirror_and_unchanged_checks_hash(bridge, env):
     # A delayed older snapshot cannot undo a newer one.
     late = bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(hash="old", revision=1001))
     assert late.json() == {"ok": True, "stale": True}
-    with env.connect() as conn:
-        assert [r["uuid"] for r in conn.execute("SELECT uuid FROM lp_users")] == [BOB]
+    assert [r["uuid"] for r in testing.rows("SELECT uuid FROM lp_users")] == [BOB]
+    with database.connect() as conn:
         assert mirror.status(conn)["applying"] is True
 
 
@@ -289,7 +285,7 @@ def test_admin_change_round_trip(app, bridge, staff, env):
     # And a snapshot built before the change cannot hide it again.
     assert bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=1500)).json()["stale"]
     rows = [r for r in audit_rows(env) if r["action"] == "luckperms.change"]
-    assert [(r["outcome"], json.loads(r["detail_json"]).get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
+    assert [(r["outcome"], r["detail_json"].get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
 
 
 @pytest.mark.parametrize("role,target,ops,status,code", [
@@ -388,9 +384,7 @@ def test_admins_cannot_touch_in_game_staff_even_unlinked(app, bridge, staff):
 
 def test_demotion_after_queueing_cancels_the_change(app, bridge, staff, env):
     change = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}]).json()
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'mod' WHERE discord_username = 'adam'")
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'mod' WHERE discord_username = 'adam'")
     assert changes.fetch_for_bridge() == []
     assert changes.get_change(change["id"])["error"] == "no_longer_allowed"
 
@@ -452,9 +446,7 @@ def test_timeouts_settle_without_the_bridge(app, bridge, staff, monkeypatch):
 
 def test_guard_follows_the_actors_current_role(app, bridge, staff, env):
     submit(app, staff["root"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}])
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'admin' WHERE discord_username = 'rory'")
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'admin' WHERE discord_username = 'rory'")
     sent = changes.fetch_for_bridge()
     assert len(sent) == 1 and "admin_groups" in sent[0]["guard"]
 
@@ -467,7 +459,8 @@ def test_unanswered_definition_change_holds_others_until_a_snapshot(app, bridge,
     monkeypatch.setattr(changes.time, "time", lambda: later)
     monkeypatch.setattr(mirror.time, "time", lambda: later)
     assert changes.fetch_for_bridge() == []  # unknown, and no snapshot since
-    monkeypatch.setattr(mirror, "_iso", lambda ts=None: changes._iso(later + 1))
+    stamp = mirror._stamp
+    monkeypatch.setattr(mirror, "_stamp", lambda ts=None: stamp(later + 1))
     bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=9000))
     assert [c["target"] for c in changes.fetch_for_bridge()] == [ALICE]
 
@@ -477,6 +470,18 @@ def test_a_bad_result_state_leaves_the_mirror_alone(app, bridge, staff, env):
     changes.fetch_for_bridge()
     wrong = {"uuid": BOB, "name": "Bob", "nodes": []}
     changes.record_results([{"id": change["id"], "ok": True, "revision": 7000, "state": wrong}])
-    with env.connect() as conn:
+    with database.connect() as conn:
         assert mirror.user_row(conn, ALICE) is not None
         assert conn.execute("SELECT hash FROM lp_state").fetchone()["hash"] is None
+
+
+def test_what_postgres_cannot_hold_is_refused_not_a_crash(app, bridge, staff):
+    admin = client(app, staff["admin"])
+    assert admin.get("/admin/luckperms/players", params={"q": "a\x00"}).json()["rows"] == []
+    reason = submit(app, staff["admin"], "user", ALICE, [{"op": "add_node", "node": {"key": "tips.off"}}], reason="Event\x00 reward")
+    assert reason.status_code == 400 and reason.json()["detail"] == "reason_required"
+    target = submit(app, staff["admin"], "user", "1111\x00", [{"op": "add_node", "node": {"key": "tips.off"}}])
+    assert target.status_code == 400 and target.json()["detail"] == "bad_uuid"
+    refusals = [r for r in testing.audit_rows() if r["action"] == "luckperms.change"]
+    assert [(r["outcome"], r["reason"], r["detail_json"]["target"]) for r in refusals] == [
+        ("invalid", None, ALICE), ("invalid", "Event reward", "1111")]

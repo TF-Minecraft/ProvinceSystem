@@ -6,6 +6,7 @@ import os
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.api.characters_routes import _profile_session_from_auth
 from src.skins.auth import AuthError, is_secondary_plugin_key, require_plugin_key, require_staff_key
@@ -165,7 +166,7 @@ async def patreon_webhook(request: Request, background: BackgroundTasks):
         member_id = linking.member_id_from_webhook(raw)
     except ValueError:
         raise HTTPException(400, detail="invalid_webhook") from None
-    linking.record_webhook_member(member_id)
+    await run_in_threadpool(linking.record_webhook_member, member_id)
     background.add_task(linking.refresh_webhook_member, member_id)
     return {"ok": True}
 

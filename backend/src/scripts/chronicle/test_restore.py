@@ -22,20 +22,12 @@ if str(_BACKEND_SRC) not in sys.path:
 os.environ.setdefault("SKINS_DEV", "1")
 
 from src.scripts.chronicle import restore, store, wipe  # noqa: E402
-from src.skins import db as skins_db  # noqa: E402
+from src import database  # noqa: E402
 
 
 @pytest.fixture
-def chronicle_env(tmp_path, monkeypatch):
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
-    monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
-    monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
-    monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
+def chronicle_env(tmp_path, monkeypatch, postgres):
     monkeypatch.setattr(store, "OUTPUT_DIR", str(tmp_path / "output"))
-    skins_db.migrate()
     return tmp_path
 
 

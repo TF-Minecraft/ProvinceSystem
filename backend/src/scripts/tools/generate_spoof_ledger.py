@@ -4,7 +4,7 @@ Builds a synthetic SimpleFactions "chronicle" upload season — the economy
 snapshot mode described in `docs/map/ledger.md` — and feeds every snapshot
 through the real ingest path (`ledger.schema.normalize_snapshot` +
 `ledger.ingest.store_raw` + `ledger.ingest.promote_day`) so the raw/daily
-storage layout, canonical-daily promotion, faction registry, and SQLite index
+storage layout, canonical-daily promotion, faction registry, and Postgres index
 are all genuinely exercised, the same way a real 300s-interval upload season
 would build them up. Nothing is hand-written into the database.
 
@@ -54,7 +54,6 @@ from __future__ import annotations
 
 import argparse
 import gzip
-import os
 import json
 import random
 import sys
@@ -670,7 +669,7 @@ def _summarize(payloads: list[dict]) -> None:
 
 def ingest_direct(map_id: str, payloads: list[dict]) -> None:
     """Feed every payload through the real normalize -> store_raw -> promote_day path."""
-    from src.skins.db import migrate
+    from src.database.migrate import migrate
 
     migrate()
 
@@ -702,28 +701,24 @@ class LedgerIndexUnreadable(RuntimeError):
     """The index exists but could not be read, so "has history?" is unanswered."""
 
 
-def existing_ledger_days(map_id: str) -> list[str] | None:
+def existing_ledger_days(map_id: str) -> list[str]:
     """Days this map already holds in `map_ledger_days`.
 
-    Three outcomes, kept distinct because they mean different things to the
+    Two outcomes, kept distinct because they mean different things to the
     guard:
 
-    * `None` - there is no database file at all. Nothing can be overwritten, so
-      seeding a fresh checkout stays one command with no flags.
     * `[]` - a readable index that is genuinely empty for this map.
     * a non-empty list - real history, which `--force` gates.
 
-    Anything else (a corrupt file, a migration failure, a locked database)
-    raises `LedgerIndexUnreadable`. Swallowing that into `None` failed *open*:
-    the one case where the script cannot tell whether it is about to overwrite
-    a season is the case where it must not proceed silently.
+    Anything else (no `DATABASE_URL`, an unreachable database, a migration
+    failure) raises `LedgerIndexUnreadable`. Swallowing that into "no history"
+    would fail *open*: the one case where the script cannot tell whether it is
+    about to overwrite a season is the case where it must not proceed silently.
     """
-    from src.skins import db as skins_db
+    from src.database.migrate import migrate
 
-    if not os.path.exists(skins_db.DB_PATH):
-        return None
     try:
-        skins_db.migrate()
+        migrate()
         return [row["day"] for row in ledger_list_days(map_id)]
     except Exception as exc:
         raise LedgerIndexUnreadable(
@@ -792,7 +787,7 @@ def describe_target(map_id: str, payloads: list[dict], *, post: bool) -> None:
         "public" if entry.public else "staff-only"
     )
     days = sorted({p["day"] for p in payloads})
-    destination = UPLOAD_URL_FMT.format(map=map_id) if post else "the local ledger store + SQLite index"
+    destination = UPLOAD_URL_FMT.format(map=map_id) if post else "the local ledger store + Postgres index"
     print(
         f"About to write {len(payloads)} spoof snapshot(s) covering "
         f"{len(days)} day(s) ({days[0]} .. {days[-1]}) for map {map_id!r} "

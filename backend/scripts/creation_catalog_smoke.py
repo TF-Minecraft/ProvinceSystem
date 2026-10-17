@@ -1,4 +1,4 @@
-"""Creation catalog E2E smoke — run from backend/: python scripts/creation_catalog_smoke.py
+"""Creation catalog E2E smoke — run from backend/ with TEST_DATABASE_URL: python scripts/creation_catalog_smoke.py
 
 PUT fixture → GET 401 without session → redeem character code → GET 200 with formula.
 """
@@ -18,8 +18,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.skins.db import migrate
+from smoke_support import isolated_smoke
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
@@ -128,8 +127,9 @@ def redeem_character_session(client: TestClient, player: str) -> str:
     return token
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
+    from server import app
     client = TestClient(app)
     player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
 

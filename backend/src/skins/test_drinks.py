@@ -9,6 +9,8 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -16,7 +18,11 @@ _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+from src.auth import testing  # noqa: E402
 from src.characters.rpc_player_meta import upsert_rpc_player_meta  # noqa: E402
+from src.skins.testing import link  # noqa: E402
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 # 1x1 transparent PNG
 TINY_PNG = (
@@ -34,25 +40,22 @@ class DrinkApiTest(unittest.TestCase):
         self.drinks_dir = root / "drinks"
         self.drinks_dir.mkdir(parents=True, exist_ok=True)
 
-        import skins.db as db_mod
+        import src.skins.db as db_mod
 
         self._db_mod = db_mod
-        sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
+
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = self.drinks_dir
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
@@ -60,7 +63,7 @@ class DrinkApiTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _seed_catalog(self) -> None:
-        from skins.drinks import replace_drink_catalog
+        from src.skins.drinks import replace_drink_catalog
 
         replace_drink_catalog(
             {
@@ -84,23 +87,11 @@ class DrinkApiTest(unittest.TestCase):
         )
 
     def _link_player(self, uuid: str = "player-1", name: str = "TestPlayer") -> None:
-        from skins.db import connect
-
-        with connect() as conn:
-            conn.execute("DELETE FROM discord_links WHERE player_uuid = ? OR discord_user_id = ?", (uuid, "discord-1"))
-            conn.execute(
-                """
-                INSERT INTO discord_links (
-                    player_uuid, discord_user_id, minecraft_name,
-                    discord_username, linked_at
-                ) VALUES (?, ?, ?, ?, ?)
-                """,
-                (uuid, "discord-1", name, "Tester", "2026-01-01T00:00:00Z"),
-            )
-            conn.commit()
+        testing.execute("DELETE FROM discord_links WHERE player_uuid = %s OR discord_user_id = %s", (uuid, "discord-1"))
+        link(uuid, "discord-1", name, "Tester")
 
     def _issue_and_redeem(self, scope: str = "drink", uuid: str = "player-1"):
-        from skins.codes import issue_code, redeem_drink_code, redeem_code
+        from src.skins.codes import issue_code, redeem_drink_code, redeem_code
 
         issued = issue_code(uuid, scope)
         if scope == "drink":
@@ -108,7 +99,7 @@ class DrinkApiTest(unittest.TestCase):
         return redeem_code(issued["code"])
 
     def test_redeem_drink_vs_skin(self) -> None:
-        from skins.codes import CodeError, issue_code, redeem_drink_code, redeem_code
+        from src.skins.codes import CodeError, issue_code, redeem_drink_code, redeem_code
 
         self._link_player()
         drink = issue_code("player-1", "drink")
@@ -129,7 +120,7 @@ class DrinkApiTest(unittest.TestCase):
     def test_redeem_drink_again_before_submit(self) -> None:
         from datetime import timedelta
 
-        from skins.codes import issue_code, redeem_drink_code
+        from src.skins.codes import issue_code, redeem_drink_code
 
         self._link_player()
         issued = issue_code("player-1", "drink")
@@ -141,8 +132,8 @@ class DrinkApiTest(unittest.TestCase):
         self.assertGreater(exp - now, timedelta(hours=7))
 
     def test_redeem_drink_blocked_after_submit(self) -> None:
-        from skins.codes import CodeError, issue_code, redeem_drink_code
-        from skins.drinks import create_drink_submission
+        from src.skins.codes import CodeError, issue_code, redeem_drink_code
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -162,7 +153,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("already been used", str(ctx.exception).lower())
 
     def test_noble_texture_rejected(self) -> None:
-        from skins.drinks import DrinkError, create_drink_submission
+        from src.skins.drinks import DrinkError, create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -181,8 +172,8 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("cannot use custom drink textures", str(ctx.exception))
 
     def test_drink_message_rejected_without_entitlement(self) -> None:
-        from characters.rpc_player_meta import upsert_rpc_player_meta
-        from skins.drinks import DrinkError, create_drink_submission
+        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.skins.drinks import DrinkError, create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -207,8 +198,8 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("cannot use drink messages", str(ctx.exception))
 
     def test_drink_message_allowed_with_entitlement(self) -> None:
-        from characters.rpc_player_meta import upsert_rpc_player_meta
-        from skins.drinks import create_drink_submission
+        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -234,7 +225,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(recipe.get("drink_message"), "To the stars!")
 
     def test_name_colours_respect_cap(self) -> None:
-        from skins.drinks import (
+        from src.skins.drinks import (
             DrinkError,
             create_drink_submission,
         )
@@ -263,7 +254,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("name_colours", str(ctx.exception).lower())
 
     def test_gilded_png_pending(self) -> None:
-        from skins.drinks import create_drink_submission
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -287,7 +278,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIsNotNone(out["texture_id"])
 
     def test_color_only_approve(self) -> None:
-        from skins.drinks import (
+        from src.skins.drinks import (
             approve_drink_submission,
             create_drink_submission,
         )
@@ -308,8 +299,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(approved["status"], "approved")
 
     def test_reuse_applied_texture_approves(self) -> None:
-        from skins.db import connect
-        from skins.drinks import (
+        from src.skins.drinks import (
             approve_drink_submission,
             create_drink_submission,
         )
@@ -331,12 +321,7 @@ class DrinkApiTest(unittest.TestCase):
         )
         tex_id = first["texture_id"]
         # Simulate pack applied CMD on texture
-        with connect() as conn:
-            conn.execute(
-                "UPDATE drink_textures SET cmd = 20001 WHERE id = ?",
-                (tex_id,),
-            )
-            conn.commit()
+        testing.execute("UPDATE drink_textures SET cmd = 20001 WHERE id = %s", (tex_id,))
 
         session2 = self._issue_and_redeem()
         second = create_drink_submission(
@@ -353,7 +338,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(approved["status"], "approved")
 
     def test_new_texture_approve_pending_pack(self) -> None:
-        from skins.drinks import (
+        from src.skins.drinks import (
             approve_drink_submission,
             create_drink_submission,
         )
@@ -377,7 +362,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(approved["status"], "pending_pack")
 
     def test_unknown_ingredient_rejected(self) -> None:
-        from skins.drinks import DrinkError, create_drink_submission
+        from src.skins.drinks import DrinkError, create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -395,7 +380,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("allowlist", str(ctx.exception).lower())
 
     def test_blacklisted_effect_rejected(self) -> None:
-        from skins.drinks import DrinkError, create_drink_submission
+        from src.skins.drinks import DrinkError, create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -413,7 +398,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("not allowed", str(ctx.exception).lower())
 
     def test_full_recipe_round_trip(self) -> None:
-        from skins.drinks import _validate_recipe
+        from src.skins.drinks import _validate_recipe
 
         self._seed_catalog()
         out = _validate_recipe(
@@ -449,7 +434,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(out["color"], "#C45A12")
 
     def test_wood_names_become_brewery_codes(self) -> None:
-        from skins.drinks import DrinkError, _validate_recipe
+        from src.skins.drinks import DrinkError, _validate_recipe
 
         self._seed_catalog()
         expected = {
@@ -496,8 +481,8 @@ class DrinkApiTest(unittest.TestCase):
             )
 
     def test_color_review_sheet(self) -> None:
-        from skins.drink_review_sheet import build_drink_review_sheet
-        from skins.drinks import create_drink_submission
+        from src.skins.drink_review_sheet import build_drink_review_sheet
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -518,8 +503,8 @@ class DrinkApiTest(unittest.TestCase):
         self.assertGreater(len(data), 50)
 
     def test_texture_review_sheet(self) -> None:
-        from skins.drink_review_sheet import build_drink_review_sheet
-        from skins.drinks import create_drink_submission
+        from src.skins.drink_review_sheet import build_drink_review_sheet
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -542,8 +527,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertTrue(data.startswith(b"\x89PNG"))
 
     def test_owner_drink_texture(self) -> None:
-        from skins.db import connect
-        from skins.drinks import create_drink_submission, owner_drink_texture
+        from src.skins.drinks import create_drink_submission, owner_drink_texture
 
         self._link_player()
         self._seed_catalog()
@@ -568,10 +552,7 @@ class DrinkApiTest(unittest.TestCase):
 
         # A drink reusing a texture has no upload of its own; the shared file stands in.
         path.unlink()
-        with connect() as conn:
-            texture_id = conn.execute(
-                "SELECT texture_id FROM drink_submissions WHERE id = ?", (out["id"],)
-            ).fetchone()[0]
+        texture_id = testing.value("SELECT texture_id FROM drink_submissions WHERE id = %s", (out["id"],))
         self.assertTrue(texture_id)
         shared = owner_drink_texture(out["id"], "player-1")
         self.assertIsNotNone(shared)
@@ -579,7 +560,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(f"{texture_id}.png", shared.name)
 
     def test_owner_drink_texture_colour_only(self) -> None:
-        from skins.drinks import create_drink_submission, owner_drink_texture
+        from src.skins.drinks import create_drink_submission, owner_drink_texture
 
         self._link_player()
         self._seed_catalog()
@@ -591,12 +572,11 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIsNone(owner_drink_texture(out["id"], "player-1"))
 
     def test_review_sheet_missing_appearance(self) -> None:
-        from skins.db import connect
-        from skins.drink_review_sheet import (
+        from src.skins.drink_review_sheet import (
             DrinkReviewSheetError,
             build_drink_review_sheet,
         )
-        from skins.drinks import create_drink_submission
+        from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
@@ -611,18 +591,10 @@ class DrinkApiTest(unittest.TestCase):
             },
         )
         # Strip color from stored recipe and leave no texture.png
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT recipe_json, dir_path FROM drink_submissions WHERE id = ?",
-                (out["id"],),
-            ).fetchone()
-            recipe = json.loads(row["recipe_json"])
-            recipe.pop("color", None)
-            conn.execute(
-                "UPDATE drink_submissions SET recipe_json = ? WHERE id = ?",
-                (json.dumps(recipe), out["id"]),
-            )
-            conn.commit()
+        [row] = testing.rows("SELECT recipe_json, dir_path FROM drink_submissions WHERE id = %s", (out["id"],))
+        recipe = row["recipe_json"]
+        recipe.pop("color", None)
+        testing.execute("UPDATE drink_submissions SET recipe_json = %s WHERE id = %s", (json.dumps(recipe), out["id"]))
         tex = Path(row["dir_path"]) / "texture.png"
         if tex.is_file():
             tex.unlink()
@@ -633,7 +605,7 @@ class DrinkApiTest(unittest.TestCase):
             build_drink_review_sheet(out["id"])
 
     def test_pending_apply_and_mark_applied(self) -> None:
-        from skins.drinks import (
+        from src.skins.drinks import (
             approve_drink_submission,
             assign_drink_texture_cmd,
             create_drink_submission,
@@ -708,7 +680,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(applied2, [tex["id"]])
 
     def test_reuse_requires_applied_cmd(self) -> None:
-        from skins.drinks import (
+        from src.skins.drinks import (
             DrinkError,
             create_drink_submission,
             list_player_textures,
@@ -746,8 +718,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("not applied", str(ctx.exception).lower())
 
     def test_revoke_shared_texture_refcount(self) -> None:
-        from skins.db import connect
-        from skins.drinks import (
+        from src.skins.drinks import (
             approve_drink_submission,
             assign_drink_texture_cmd,
             create_drink_submission,
@@ -801,11 +772,7 @@ class DrinkApiTest(unittest.TestCase):
         r1 = revoke_drink_submission(first["id"])
         self.assertTrue(r1["deleted"])
         self.assertFalse(r1["texture_freed"])
-        with connect() as conn:
-            tex = conn.execute(
-                "SELECT refcount, cmd FROM drink_textures WHERE id = ?",
-                (tex_id,),
-            ).fetchone()
+        [tex] = testing.rows("SELECT refcount, cmd FROM drink_textures WHERE id = %s", (tex_id,))
         self.assertIsNotNone(tex)
         self.assertEqual(int(tex["refcount"]), 1)
         self.assertEqual(int(tex["cmd"]), 20100)
@@ -815,11 +782,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertTrue(r2["texture_freed"])
         self.assertEqual(r2["cmd"], 20100)
         self.assertEqual(r2["ia_item_id"], f"tfmc_drinks:{first['id']}")
-        with connect() as conn:
-            gone = conn.execute(
-                "SELECT id FROM drink_textures WHERE id = ?",
-                (tex_id,),
-            ).fetchone()
+        gone = testing.value("SELECT id FROM drink_textures WHERE id = %s", (tex_id,))
         self.assertIsNone(gone)
         self.assertEqual(list_player_textures("player-1"), [])
 

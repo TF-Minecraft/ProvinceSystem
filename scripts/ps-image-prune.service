@@ -1,5 +1,5 @@
 [Unit]
-Description=Remove untagged ProvinceSystem website builds and week-old build cache
+Description=Remove unused ProvinceSystem images after 30 days and week-old build cache
 After=docker.service
 Requires=docker.service
 

@@ -1,4 +1,4 @@
-import sqlite3
+import re
 import uuid
 
 import pytest
@@ -7,7 +7,8 @@ from fastapi.testclient import TestClient
 
 from src.api import admin_routes, auth_routes
 from src.api.view_as_guard import ViewAsGuard
-from src.auth import roles, users, view_as
+from src.auth import roles, testing, users, view_as
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -18,7 +19,7 @@ UUID = "0f6c5a52-3b7e-4c39-9d1d-2a8f0e7b9c11"
 
 
 @pytest.fixture
-def env(database, monkeypatch):
+def env(database, postgres, monkeypatch):
     monkeypatch.setenv("DISCORD_AUTH_ENABLED", "1")
     monkeypatch.setenv("DISCORD_CLIENT_ID", "client-id")
     monkeypatch.setenv("DISCORD_CLIENT_SECRET", "client-secret")
@@ -52,16 +53,9 @@ def account(db, name, role="player", minecraft=None):
          "discord_avatar": None},
         guild_member=True,
     )
-    with db.connect() as conn:
-        conn.execute("UPDATE users SET role = ? WHERE discord_user_id = ?", (role, discord_id))
-        if minecraft:
-            conn.execute(
-                "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at)"
-                " VALUES (?, ?, ?, ?, '2026-10-01T00:00:00Z')",
-                (UUID, discord_id, minecraft, name),
-            )
-        conn.commit()
-        user_id = conn.execute("SELECT id FROM users WHERE discord_user_id = ?", (discord_id,)).fetchone()[0]
+    user_id = testing.set_role(discord_id, role)
+    if minecraft:
+        link(UUID, discord_id, minecraft, name, linked_at="2026-10-01T00:00:00Z")
     return user_id, token
 
 
@@ -77,21 +71,17 @@ def cookie(c, name):
 
 
 def audit_rows(db):
-    with db.connect() as conn:
-        return [dict(r) for r in conn.execute("SELECT * FROM admin_audit ORDER BY id")]
+    return testing.audit_rows()
 
 
 def linked_uuid(db, user_id):
     """The Minecraft UUID linked to this account, linking one first if it has none."""
-    with db.connect() as conn:
-        discord_id = conn.execute("SELECT discord_user_id FROM users WHERE id = ?", (user_id,)).fetchone()[0]
-        row = conn.execute("SELECT player_uuid FROM discord_links WHERE discord_user_id = ?", (discord_id,)).fetchone()
-        if row:
-            return row[0]
-        player_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, discord_id))
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, linked_at)"
-                     " VALUES (?, ?, '2026-10-01T00:00:00Z')", (player_uuid, discord_id))
-        conn.commit()
+    discord_id = testing.value("SELECT discord_user_id FROM users WHERE id = %s", (user_id,))
+    linked = testing.value("SELECT player_uuid FROM discord_links WHERE discord_user_id = %s", (discord_id,))
+    if linked:
+        return linked
+    player_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, discord_id))
+    link(player_uuid, discord_id, linked_at="2026-10-01T00:00:00Z")
     return player_uuid
 
 
@@ -104,17 +94,12 @@ def start(app, db, admin_token, player_id):
 def link_only(db, name, player_uuid=UUID):
     """A player linked through the Discord bot who has never signed in to the site."""
     discord_id = str(200000000000000000 + abs(hash(name)) % 10**15)
-    with db.connect() as conn:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username,"
-                     " linked_at) VALUES (?, ?, ?, ?, '2026-10-01T00:00:00Z')",
-                     (player_uuid, discord_id, name.title(), name))
-        conn.commit()
+    link(player_uuid, discord_id, name.title(), name, linked_at="2026-10-01T00:00:00Z")
     return discord_id
 
 
 def placeholders(db):
-    with db.connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM users WHERE placeholder = 1").fetchone()[0]
+    return testing.value("SELECT COUNT(*) FROM users WHERE placeholder")
 
 
 def test_only_admins_may_view_as():
@@ -128,6 +113,9 @@ def test_admin_views_the_site_as_a_player(app, env):
     c, res = start(app, env, admin_token, player_id)
     assert res.status_code == 200
     assert res.json()["return_to"] == "/profile"
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", res.json()["expires_at"])
+    view_cookie = next(h for h in res.headers.get_list("set-cookie") if h.startswith(SESSION + "="))
+    assert re.search(r"Max-Age=(17\d\d|1800);", view_cookie)
     assert cookie(c, STAFF) == admin_token
     view_token = cookie(c, SESSION)
     assert view_token and view_token != admin_token
@@ -205,10 +193,7 @@ def test_profile_opened_during_a_view_is_view_only(app, env):
 
     # Leaving the view ends its Profile session too.
     c.post("/auth/view-as/stop", headers=ORIGIN)
-    with env.connect() as conn:
-        left = conn.execute("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
-                            "WHERE c.minted_via LIKE 'staff_view:%'").fetchone()[0]
-    assert left == 0
+    assert _view_profiles(env) == 0
 
 
 def test_stop_puts_the_admin_back(app, env):
@@ -251,9 +236,7 @@ def test_a_view_that_ran_out_hands_back_on_the_next_account_load(app, env):
     _, admin_token = account(env, "boss", "admin")
     player_id, _ = account(env, "steve")
     c, _ = start(app, env, admin_token, player_id)
-    with env.connect() as conn:
-        conn.execute("UPDATE user_sessions SET expires_at = '2000-01-01T00:00:00Z' WHERE acting_user_id IS NOT NULL")
-        conn.commit()
+    testing.expire_views()
     me = c.get("/account")
     assert me.status_code == 200
     assert me.json()["user"]["discord_username"] == "boss" and me.json()["viewing_as"] is None
@@ -294,9 +277,7 @@ def test_a_view_has_no_staff_rights_even_if_the_target_is_promoted(app, env):
     _, admin_token = account(env, "boss", "admin")
     player_id, _ = account(env, "steve")
     c, _ = start(app, env, admin_token, player_id)
-    with env.connect() as conn:
-        conn.execute("UPDATE users SET role = 'mod' WHERE id = ?", (player_id,))
-        conn.commit()
+    testing.execute("UPDATE users SET role = 'mod' WHERE id = %s", (player_id,))
     assert c.get("/admin/me").status_code == 403
 
 
@@ -310,25 +291,6 @@ def test_preview_sign_in_refuses_a_view(app, env, monkeypatch):
     assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player")
 
 
-def test_migration_adds_acting_user_id(tmp_path, monkeypatch):
-    from src.skins import db
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE user_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL UNIQUE,
-            user_id INTEGER NOT NULL, guild_member INTEGER NOT NULL DEFAULT 0,
-            guild_checked_at TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
-    """)
-    old.commit()
-    old.close()
-    monkeypatch.setattr(db, "DB_PATH", path)
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
-    db.migrate()
-    with db.connect() as conn:
-        assert "acting_user_id" in {r["name"] for r in conn.execute("PRAGMA table_info(user_sessions)")}
 
 
 def test_profile_tag_only_inside_a_view():
@@ -337,15 +299,12 @@ def test_profile_tag_only_inside_a_view():
 
 
 def _expire_views(db):
-    with db.connect() as conn:
-        conn.execute("UPDATE user_sessions SET expires_at = '2000-01-01T00:00:00Z' WHERE acting_user_id IS NOT NULL")
-        conn.commit()
+    testing.expire_views()
 
 
 def _view_profiles(db):
-    with db.connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
-                            "WHERE c.minted_via LIKE 'staff_view:%'").fetchone()[0]
+    return testing.value("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
+                         "WHERE c.minted_via LIKE %s", ("staff_view:%",))
 
 
 def test_a_view_whose_cookie_the_browser_dropped_is_still_ended_and_audited(app, env):
@@ -359,10 +318,9 @@ def test_a_view_whose_cookie_the_browser_dropped_is_still_ended_and_audited(app,
     assert res.json() == {"restored": True, "return_to": f"/admin/players/{UUID}"}
     assert cookie(c, SESSION) == admin_token
     stopped = audit_rows(env)[-1]
-    assert stopped["action"] == "account.view_as.stop" and '"expired": true' in stopped["detail_json"]
+    assert stopped["action"] == "account.view_as.stop" and stopped["detail_json"]["expired"] is True
     assert _view_profiles(env) == 0
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM user_sessions WHERE acting_user_id IS NOT NULL").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM user_sessions WHERE acting_user_id IS NOT NULL") == 0
 
 
 def test_leaving_twice_is_harmless(app, env):
@@ -412,15 +370,12 @@ def test_profile_is_not_opened_for_a_view_that_ended_mid_request(app, env):
     player_id, _ = account(env, "steve", minecraft="Steve")
     c, _ = start(app, env, admin_token, player_id)
     view = users.session_user(cookie(c, SESSION))
-    with env.connect() as conn:
-        conn.execute("DELETE FROM user_sessions WHERE id = ?", (view["session_id"],))
-        conn.commit()
+    testing.execute("DELETE FROM user_sessions WHERE id = %s", (view["session_id"],))
     with pytest.raises(codes.CodeError, match="session_ended"):
         codes.start_linked_profile_session(UUID, minted_via=view_as.profile_minted_via(view),
                                            expires_at=view["expires_at"],
                                            still_allowed=view_as.view_still_open(view["session_id"]))
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM codes WHERE minted_via LIKE 'staff_view:%'").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM codes WHERE minted_via LIKE %s", ("staff_view:%",)) == 0
 
 
 def test_signing_out_after_the_view_cookie_lapsed_still_ends_the_view(app, env):
@@ -431,8 +386,7 @@ def test_signing_out_after_the_view_cookie_lapsed_still_ends_the_view(app, env):
     c.cookies.delete(SESSION, domain=DOMAIN)
     assert c.post("/auth/logout", headers=ORIGIN).status_code == 200
     assert users.session_user(admin_token) is None
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM user_sessions WHERE acting_user_id IS NOT NULL").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM user_sessions WHERE acting_user_id IS NOT NULL") == 0
     assert audit_rows(env)[-1]["action"] == "account.view_as.stop"
 
 
@@ -446,7 +400,7 @@ def test_starting_a_view_from_inside_one_is_refused_and_audited(app, env):
     assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player")
     row = audit_rows(env)[-1]
     assert (row["action"], row["outcome"], row["actor_name"]) == ("account.view_as.start", "conflict", "boss")
-    assert f'"player_uuid": "{other_uuid}"' in row["detail_json"]
+    assert row["detail_json"]["player_uuid"] == other_uuid
 
 
 def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
@@ -461,7 +415,7 @@ def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
     assert c.post("/characters/anything", headers=ORIGIN).json()["detail"] == "viewing_as_player"
     started = audit_rows(env)[-1]
     assert (started["action"], started["target_name"]) == ("account.view_as.start", "steve")
-    assert '"placeholder": true' in started["detail_json"]
+    assert started["detail_json"]["placeholder"] is True
 
     # Staff still see them as having no site account.
     assert placeholders(env) == 1
@@ -470,8 +424,7 @@ def test_a_player_who_never_signed_in_is_viewed_through_a_placeholder(app, env):
 
     assert c.post("/auth/view-as/stop", headers=ORIGIN).json()["restored"] is True
     assert placeholders(env) == 0
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM users WHERE discord_user_id = ?", (discord_id,)).fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM users WHERE discord_user_id = %s", (discord_id,)) == 0
 
 
 def test_a_placeholder_whose_view_ran_out_goes_with_it(app, env):
@@ -493,7 +446,6 @@ def test_signing_in_during_a_view_turns_the_placeholder_into_their_account(app, 
                    "discord_avatar": None}, guild_member=True)
     assert placeholders(env) == 0
     c.post("/auth/view-as/stop", headers=ORIGIN)
-    with env.connect() as conn:
-        row = conn.execute("SELECT placeholder, discord_global_name FROM users WHERE discord_user_id = ?",
-                           (discord_id,)).fetchone()
-    assert tuple(row) == (0, "Steve")
+    [row] = testing.rows("SELECT placeholder, discord_global_name FROM users WHERE discord_user_id = %s",
+                         (discord_id,))
+    assert row == {"placeholder": False, "discord_global_name": "Steve"}

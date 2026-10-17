@@ -10,7 +10,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
 from PIL import Image
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -40,7 +45,7 @@ def pixels(png: bytes) -> Image.Image:
 
 class SkinFaceTest(unittest.TestCase):
     def test_crops_the_face_under_the_hat_layer(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         face = pixels(skin_face_png(skin((200, 150, 100, 255), hat=(10, 20, 30, 255))))
         self.assertEqual(face.size, (8, 8))
@@ -48,13 +53,13 @@ class SkinFaceTest(unittest.TestCase):
         self.assertEqual(face.getpixel((5, 5)), (200, 150, 100, 255))
 
     def test_reads_legacy_64x32_skins(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         face = pixels(skin_face_png(skin((1, 2, 3, 255), height=32)))
         self.assertEqual(face.getpixel((4, 4)), (1, 2, 3, 255))
 
     def test_blank_or_odd_skins_have_no_face(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         self.assertIsNone(skin_face_png(skin((0, 0, 0, 0))))
         self.assertIsNone(skin_face_png(b"not a png"))
@@ -88,7 +93,7 @@ def body(slim_arms: bool = False) -> bytes:
 
 class SkinFigureTest(unittest.TestCase):
     def test_lays_out_the_front_with_the_outer_layer_on_top(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         png = body()
         im = Image.open(io.BytesIO(png))
@@ -107,7 +112,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((0, 0))[3], 0)
 
     def test_slim_arms_sit_against_the_body(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         figure = pixels(skin_figure_png(body(slim_arms=True)))
         self.assertEqual(figure.getpixel((0, 8))[3], 0)
@@ -116,7 +121,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((15, 8))[3], 0)
 
     def test_the_saved_model_wins_over_detection(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         figure = pixels(skin_figure_png(body(), "slim"))
         self.assertEqual(figure.getpixel((0, 8))[3], 0)
@@ -125,7 +130,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((12, 8)), ARM)
 
     def test_blank_heads_and_odd_sizes_have_no_figure(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         self.assertIsNone(skin_figure_png(skin((0, 0, 0, 0))))
         self.assertIsNone(skin_figure_png(skin((1, 2, 3, 255), height=32)))
@@ -141,13 +146,12 @@ class ActiveFaceTest(unittest.TestCase):
 
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig = {k: getattr(db_mod, k) for k in ("DB_PATH", "DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")}
+        self._orig = {k: getattr(db_mod, k) for k in ("DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")}
         db_mod.DATA_DIR = self.root
-        db_mod.DB_PATH = self.root / "province.db"
         db_mod.DRINKS_DIR = self.root / "drinks"
         db_mod.SKINS_DIR = self.root / "skins"
         db_mod.WARDROBE_DIR = self.root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         import characters.wardrobe as wardrobe
 
@@ -161,16 +165,15 @@ class ActiveFaceTest(unittest.TestCase):
         for p in self._patches:
             p.start()
 
-        with db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, updated_at, wardrobe_active_slot
-                ) VALUES (?, 'main', ?, 'Test', 'ALIVE', ?, 'extra_1')
+                ) VALUES (%s, 'main', %s, 'Test', 'ALIVE', %s, 'extra_1')
                 """,
                 (PLAYER, CHAR_ID, NOW),
             )
-            conn.commit()
 
     def tearDown(self) -> None:
         for p in self._patches:
@@ -185,15 +188,14 @@ class ActiveFaceTest(unittest.TestCase):
         path = self.root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(png)
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_wardrobe_slots (player_uuid, character_id, slot, png_relpath, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 (PLAYER, CHAR_ID, slot, rel, NOW),
             )
-            conn.commit()
         return rel
 
     def test_locked_active_slot_shows_base_and_keeps_the_wardrobe(self) -> None:
@@ -205,13 +207,13 @@ class ActiveFaceTest(unittest.TestCase):
         self.assertEqual(pixels(face).getpixel((4, 4)), (1, 1, 1, 255))
         # Unlike get_wardrobe, nothing is enforced or saved.
         self.assertTrue((self.root / extra).is_file())
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             active = conn.execute(
-                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = ?", (CHAR_ID,)
-            ).fetchone()[0]
+                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = %s", (CHAR_ID,)
+            ).fetchone()["wardrobe_active_slot"]
             slots = conn.execute(
-                "SELECT COUNT(*) FROM character_wardrobe_slots WHERE character_id = ?", (CHAR_ID,)
-            ).fetchone()[0]
+                "SELECT COUNT(*) AS n FROM character_wardrobe_slots WHERE character_id = %s", (CHAR_ID,)
+            ).fetchone()["n"]
         self.assertEqual(active, "extra_1")
         self.assertEqual(slots, 2)
 
@@ -225,9 +227,8 @@ class ActiveFaceTest(unittest.TestCase):
     def test_figure_is_the_worn_slot_with_its_saved_model(self) -> None:
         self.put_slot("base", body())
         self.put_slot("extra_1", skin((2, 2, 2, 255)))
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute("UPDATE character_wardrobe_slots SET model = 'slim' WHERE slot = 'base'")
-            conn.commit()
         # extra_1 is locked, so base is worn, with the slim arms it was saved with.
         figure = pixels(self.wardrobe.active_figure_png(PLAYER, CHAR_ID))
         self.assertEqual(figure.getpixel((6, 4)), HEAD)
@@ -237,9 +238,8 @@ class ActiveFaceTest(unittest.TestCase):
     def test_worn_skin_name_reads_without_enforcing(self) -> None:
         self.put_slot("base", skin((1, 1, 1, 255)))
         extra = self.put_slot("extra_1", skin((2, 2, 2, 255)))
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute("UPDATE character_wardrobe_slots SET display_name = 'Ranger' WHERE slot = 'extra_1'")
-            conn.commit()
 
         # extra_1 is locked: base is worn, and the locked skin is kept.
         self.assertEqual(self.wardrobe.worn_skin_name(PLAYER, CHAR_ID), "Base")

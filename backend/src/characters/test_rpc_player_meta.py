@@ -8,6 +8,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -22,34 +26,30 @@ class RpcPlayerMetaTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self.db_path = root / "province.db"
 
-        import skins.db as db_mod
+        import src.skins.db as db_mod
 
         self._db_mod = db_mod
         # Character modules import src.skins.db — keep one module identity for tests.
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
         self._sync_db_dependents(db_mod)
 
     def _sync_db_dependents(self, db_mod) -> None:
-        import skins.drinks as drinks_mod
+        import src.skins.drinks as drinks_mod
 
         drinks_mod.db = db_mod
-        drinks_mod.connect = db_mod.connect
         sys.modules["src.skins.drinks"] = drinks_mod
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
@@ -91,6 +91,19 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(row["skin_kinds"], ["armor_set", "handheld"])
         self.assertTrue(row["allow_drink_message"])
         self.assertTrue(row["meta_synced"])
+        # Times keep the API form; flags come back sorted, as they were stored before jsonb.
+        self.assertRegex(out["updated_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertEqual(row["updated_at"], out["updated_at"])
+
+    def test_permission_flags_keep_their_sorted_order(self) -> None:
+        import json
+
+        from characters.rpc_player_meta import get_rpc_player_meta, upsert_rpc_player_meta
+
+        flags = {"tfmc.map.staff": True, "a.b": False, "rulequiz.completed": True}
+        upsert_rpc_player_meta({"player_uuid": "player-2", "permission_flags": flags})
+        row = get_rpc_player_meta("player-2")
+        self.assertEqual(json.dumps(row["permission_flags"]), json.dumps(flags, sort_keys=True))
 
     def test_realm_scoped_get_upsert(self) -> None:
         from characters.rpc_player_meta import (
@@ -242,12 +255,13 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertIn("armor_set", ent["skin_kinds"])
         self.assertTrue(ent["allow_armor_3d_helmet"])
 
+    @pytest.mark.usefixtures("postgres")
     def test_redeem_drink_uses_rpc_meta(self) -> None:
         from characters.rpc_player_meta import upsert_rpc_player_meta
-        from skins.codes import issue_code, redeem_drink_code
+        from src.skins.codes import issue_code, redeem_drink_code
 
         with mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
             upsert_rpc_player_meta(

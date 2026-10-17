@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -15,6 +17,8 @@ if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
 PLAYER = "roster-ingest-player"
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 
 class RosterIngestTest(unittest.TestCase):
@@ -28,14 +32,13 @@ class RosterIngestTest(unittest.TestCase):
         sys.modules["src.skins.db"] = db_mod
         self._orig = {
             k: getattr(db_mod, k)
-            for k in ("DB_PATH", "DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")
+            for k in ("DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")
         }
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
         for k, v in self._orig.items():
@@ -43,11 +46,10 @@ class RosterIngestTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _rows(self) -> dict[str, dict]:
-        with self._db_mod.connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM character_roster WHERE player_uuid = ?", (PLAYER,)
-            ).fetchall()
-        return {r["character_id"]: dict(r) for r in rows}
+        from src.auth import testing
+
+        rows = testing.rows("SELECT * FROM character_roster WHERE player_uuid = %s", (PLAYER,))
+        return {r["character_id"]: r for r in rows}
 
     def test_push_keeps_worn_slot_and_updates_server_fields(self) -> None:
         from characters.roster import replace_roster
@@ -59,12 +61,11 @@ class RosterIngestTest(unittest.TestCase):
                 {"id": "gone", "name": "Brena", "status": "ALIVE"},
             ],
         )
-        with self._db_mod.connect() as conn:
-            conn.execute(
-                "UPDATE character_roster SET wardrobe_active_slot = 'extra_1'"
-                " WHERE character_id = 'kept'"
-            )
-            conn.commit()
+        from src.auth import testing
+
+        testing.execute(
+            "UPDATE character_roster SET wardrobe_active_slot = 'extra_1' WHERE character_id = 'kept'"
+        )
 
         replace_roster(
             PLAYER,

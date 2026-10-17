@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, postgres]
   pull_request:
-    branches: [main]
+    branches: [main, postgres]
 
 permissions:
   contents: read
@@ -13,6 +13,20 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    services:
+      # Backend tests that take the `postgres` fixture run here (src/database/testing.py).
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --tmpfs /var/lib/postgresql/data
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,6 +59,8 @@ jobs:
       - name: Test backend
         if: ${{ !cancelled() }}
         working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/postgres
         run: python -m pytest -q --junitxml=../test-results/backend.xml
       - name: Upload test reports
         if: ${{ !cancelled() && hashFiles('test-results/*.xml') != '' }}

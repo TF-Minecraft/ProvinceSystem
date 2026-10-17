@@ -1,4 +1,4 @@
-"""Share the database module and keep sandboxed threaded ASGI tests responsive."""
+"""Share asset paths and keep sandboxed threaded ASGI tests responsive."""
 from pathlib import Path
 import sys
 import asyncio
@@ -10,9 +10,10 @@ sys.path.insert(0, str(backend / "src"))
 
 import src.skins as skins
 from src.skins import db
+# Postgres fixtures (`postgres`, `scratch_database`); see src/database/testing.py.
+from src.database.testing import postgres, postgres_session, scratch_database  # noqa: F401
 
-# Fixtures replace db paths with temporary directories. All imported connect
-# functions must retain that same module's globals throughout test collection.
+# Fixtures redirect asset directories; both import spellings share those globals.
 sys.modules["skins"] = skins
 sys.modules["skins.db"] = db
 
