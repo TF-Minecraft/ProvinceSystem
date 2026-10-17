@@ -253,32 +253,17 @@ def claim_status(
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT LOWER(COALESCE(state, '')) AS state,
-                   LOWER(COALESCE(kit_key, '')) AS kit_key,
-                   submission_id
-            FROM lore_item_customisations
-            WHERE player_uuid = %s AND character_id = %s
+            SELECT LOWER(COALESCE(lore.state, '')) AS state,
+                   LOWER(COALESCE(lore.kit_key, '')) AS kit_key,
+                   lore.submission_id, sub.status AS submission_status
+            FROM lore_item_customisations lore
+            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            WHERE lore.player_uuid = %s AND lore.character_id = %s
             """,
             (uuid, cid),
         ).fetchall()
-    sub_ids = [
-        str(r["submission_id"]).strip()
-        for r in rows
-        if r["submission_id"] is not None and str(r["submission_id"]).strip()
-    ]
-    sub_status: dict[str, str] = {}
-    if sub_ids:
-        # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-        # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
-        with database.connect() as pg:
-            for sub in pg.execute(
-                "SELECT id, LOWER(COALESCE(status, '')) AS status "
-                "FROM submissions WHERE id = ANY(%s)",
-                (sub_ids,),
-            ).fetchall():
-                sid = str(sub["id"] or "").strip()
-                if sid:
-                    sub_status[sid] = str(sub["status"] or "").strip().lower()
+    sub_status = {str(r["submission_id"]).strip(): str(r["submission_status"]).strip().lower()
+                  for r in rows if r["submission_status"] is not None}
 
     for row in rows:
         key = str(row["kit_key"] or "").strip().lower()
@@ -554,9 +539,11 @@ def _load_row(
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT *
-            FROM lore_item_customisations
-            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
+            SELECT lore.*, sub.status AS submission_status,
+                   sub.deny_reason AS submission_deny_reason
+            FROM lore_item_customisations lore
+            LEFT JOIN submissions sub ON sub.id = lore.submission_id
+            WHERE lore.player_uuid = %s AND lore.character_id = %s AND lore.kit_key = %s
             """,
             (player_uuid, character_id, kit_key),
         ).fetchone()
@@ -571,21 +558,11 @@ def _load_row(
         raw_reason = row["deny_reason"]
         if raw_reason is not None and str(raw_reason).strip():
             deny_reason = str(raw_reason).strip()
-    if submission_id:
-        # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-        # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
-        with database.connect() as pg:
-            sub = pg.execute(
-                "SELECT status, deny_reason FROM submissions WHERE id = %s",
-                (submission_id,),
-            ).fetchone()
-        if sub is not None:
-            submission_status = str(sub["status"] or "")
-            reason = sub["deny_reason"] if "deny_reason" in sub.keys() else None
-            if reason is not None and str(reason).strip():
-                deny_reason = str(reason).strip()
-        elif state == STATE_DENIED:
-            submission_status = STATE_DENIED
+    if submission_id and row["submission_status"] is not None:
+        submission_status = str(row["submission_status"] or "")
+        reason = row["submission_deny_reason"]
+        if reason is not None and str(reason).strip():
+            deny_reason = str(reason).strip()
     elif state == STATE_DENIED:
         submission_status = STATE_DENIED
     return {
@@ -696,8 +673,6 @@ def _assert_pickable_skin_access(
     sid = (submission_id or "").strip()
     if not uuid or not sid:
         raise LoreItemError("not found", status_code=404)
-    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
     with database.connect() as conn:
         row = conn.execute(
             """
@@ -736,8 +711,6 @@ def _namespace_for_skin_id(skin_id: str | None) -> str | None:
     sid = (skin_id or "").strip()
     if not sid:
         return None
-    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
     with database.connect() as conn:
         row = conn.execute(
             "SELECT staff FROM submissions WHERE id = %s",
@@ -756,8 +729,6 @@ def _list_pickable_skins(
     uuid = (player_uuid or "").strip()
     if not base or not uuid:
         return []
-    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
     with database.connect() as conn:
         rows = conn.execute(
             """
@@ -803,8 +774,6 @@ def _validate_existing_skin(
         raise LoreItemError("existing_skin_id is required when provided")
     base = (base_set or "").strip().lower()
     uuid = (player_uuid or "").strip()
-    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
-    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
     with database.connect() as conn:
         row = conn.execute(
             """
@@ -1842,12 +1811,3 @@ def list_player_custom_items(
             }
         )
     return out
-
-
-def submission_is_referenced(submission_id: str) -> bool:
-    """True while any lore customise row still points at the submission."""
-    with database.connect() as conn:
-        return conn.execute(
-            "SELECT 1 FROM lore_item_customisations WHERE submission_id = %s LIMIT 1",
-            ((submission_id or "").strip(),),
-        ).fetchone() is not None

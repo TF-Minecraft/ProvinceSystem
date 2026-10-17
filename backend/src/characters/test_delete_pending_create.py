@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 import pytest
+from src import database
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -109,16 +110,11 @@ class DeletePendingCreateTests(unittest.TestCase):
             )
 
     def _count(self, table: str, **where: str) -> int:
-        from src.skins.db import connect
-
-        # PG-MIGRATION: until the Skins area converts, codes and submissions are in SQLite.
-        lite = table in ("codes", "submissions")
-        mark = "?" if lite else "%s"
-        clauses = " AND ".join(f"{k} = {mark}" for k in where)
+        clauses = " AND ".join(f"{k} = %s" for k in where)
         sql = f"SELECT COUNT(*) AS n FROM {table}"
         if clauses:
             sql += f" WHERE {clauses}"
-        with (connect() if lite else database.connect()) as conn:
+        with database.connect() as conn:
             row = conn.execute(sql, tuple(where.values())).fetchone()
         return int(row["n"])
 

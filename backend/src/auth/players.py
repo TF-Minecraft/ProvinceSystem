@@ -19,7 +19,6 @@ from src.coreprotect import activity, maps as co_maps, movement, sessions
 from src.coreprotect.cursors import BadCursor, decode as decode_cursor, encode as encode_cursor
 from src.coreprotect.reader import REQUEST_BUDGET_SECONDS, Budget, CoreProtectConfig, Reader, Unavailable
 from src import database
-from src.skins.db import connect
 from src.characters.roster import list_roster
 from src.characters.wardrobe import active_face_png, active_figure_png, WardrobeError
 
@@ -81,16 +80,13 @@ def _site_rows(key: str | None = None) -> tuple[list[dict], list[dict]]:
             links = conn.execute(_LINKS).fetchall()
         else:
             links = conn.execute(f"{_LINKS} WHERE lower(dl.player_uuid) = %s", (key,)).fetchall()
-    links = [{**link, **{name: users.api_time(link[name]) for name in _LINK_TIMES}} for link in links]
-    # PG-MIGRATION: Characters. character_roster is still in SQLite; its PR reads it here
-    # on the connection above.
-    with connect() as lite:
         if key is None:
-            roster = lite.execute(f"{_ROSTER} ORDER BY realm_id, lower(name)").fetchall()
+            roster = conn.execute(f"{_ROSTER} ORDER BY realm_id, lower(name)").fetchall()
         else:
-            roster = lite.execute(f"{_ROSTER} WHERE lower(player_uuid) = ? ORDER BY realm_id, lower(name)",
+            roster = conn.execute(f"{_ROSTER} WHERE lower(player_uuid) = %s ORDER BY realm_id, lower(name)",
                                   (key,)).fetchall()
-    return links, [dict(r) for r in roster]
+    links = [{**link, **{name: users.api_time(link[name]) for name in _LINK_TIMES}} for link in links]
+    return links, [{**r, "updated_at": users.api_time(r["updated_at"])} for r in roster]
 
 
 def _discord(link: dict | None) -> dict | None:

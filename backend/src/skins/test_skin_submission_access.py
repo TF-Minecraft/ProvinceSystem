@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from src import database
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
