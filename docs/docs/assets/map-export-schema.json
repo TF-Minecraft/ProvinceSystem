@@ -417,7 +417,7 @@
     },
     "chronicle_snapshot": {
       "type": "object",
-      "description": "Payload of the chronicle upload mode. Shipped every 300s. Stocks are absolute; the backend differences consecutive snapshots for deltas. Flow fields are full-day ledger projections and are NOT the observed stock change.",
+      "description": "Payload of the chronicle upload mode. Shipped every 300s. Ledger series contain absolute stock values; clients calculate observed changes when needed. Flow fields are full-day ledger projections and are NOT the observed stock change.",
       "required": ["schema_version", "captured_at", "complete", "global", "factions"],
       "properties": {
         "schema_version": { "type": "integer", "description": "Currently 1" },

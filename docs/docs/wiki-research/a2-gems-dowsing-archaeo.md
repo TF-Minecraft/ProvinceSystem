@@ -377,7 +377,7 @@ the dowsing stick as a proximity detector.**
 | Wiki page | Actual plugin | Evidence |
 |---|---|---|
 | **Arcane Trace Detector** (`GEIGER_COUNTER`) | `geiger_counter-1.1.2.jar` | Its `plugin.yml` declares `name: geiger_counter`, `main: net.tfminecraft.geigercounters.geiger_counter`, author Justin, command `/geiger <locate\|move\|limits\|resetlimits\|droplist\|reload>` under `geiger.admin`, plus a `geiger.limit.bypass` per-player drop limit — exactly the single-hidden-source loot race the existing page describes. |
-| **Mount Whistle** (`ANIMAL_WHISTLE`) | Not Dowsing. **GUESS:** TFMCCore or MCPets. Not investigated (out of scope), but Dowsing's bytecode contains no whistle, no glow effect, no entity scan and no 64-block radius anywhere. |
+| **Mount Whistle** (`ANIMAL_WHISTLE`) | TFMCCore | [`WhistleListener`](https://github.com/TF-Minecraft/TFMCCore/blob/main/src/main/java/net/tfminecraft/tfmccore/whistle/WhistleListener.java) highlights configured animals on right-click; [`WhistleConfig`](https://github.com/TF-Minecraft/TFMCCore/blob/main/src/main/java/net/tfminecraft/tfmccore/whistle/WhistleConfig.java) defaults to a 64-block detection radius. |
 | **Dowsing** | `dowsing-3.1.2.jar` | Guild-owned **resource-node industry**: place a node block in a chunk, pick a node type, slot production methods, run timed production cycles that consume inputs and drop outputs. It hard-depends on **SimpleFactions**, which neither of the other two does. |
 
 The only superficial overlap is the **dowsing stick**, a survey item — and on this server it is

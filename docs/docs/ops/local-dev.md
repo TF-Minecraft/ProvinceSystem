@@ -82,7 +82,7 @@ use `TEST_DATABASE_URL` and create disposable databases on a test server.
 
 ```bash
 pip install -r requirements.txt
-python -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn server:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 **Frontend** (from `frontend/`):

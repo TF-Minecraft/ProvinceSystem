@@ -221,7 +221,7 @@ The administrator installs the service from a reviewed commit on TFMCWeb
 Create the website backends' socket group and the locked service account:
 
 ```sh
-sudo groupadd --system tfmc-control
+sudo groupadd --system --gid 996 tfmc-control
 sudo useradd --system --user-group --home-dir /var/lib/tfmc-server-control \
   --no-create-home --shell /usr/sbin/nologin tfmc-server-control
 sudo passwd -l tfmc-server-control
