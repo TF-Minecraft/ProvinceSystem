@@ -61,7 +61,8 @@ ALTER TABLE drink_textures RENAME COLUMN cmd TO custom_model_data;
 -- Times stored as epoch numbers or text become timestamptz. The API still sends
 -- the epoch seconds each one always had.
 ALTER TABLE character_roster ALTER COLUMN created_at TYPE timestamptz
-    USING CASE WHEN created_at ~ '^[0-9]{1,12}$' AND created_at::bigint > 0 THEN to_timestamp(created_at::bigint) END;
+    USING CASE WHEN created_at ~ '^[0-9]{1,12}$' AND created_at::bigint BETWEEN 1 AND 253402300799
+               THEN to_timestamp(created_at::bigint) END;
 ALTER TABLE map_chronicle_snapshots ALTER COLUMN captured_at TYPE timestamptz USING to_timestamp(captured_at);
 ALTER TABLE map_chronicle_snapshots_archive
     ALTER COLUMN captured_at TYPE timestamptz USING to_timestamp(captured_at),

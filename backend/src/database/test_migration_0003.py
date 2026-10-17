@@ -25,7 +25,8 @@ def test_0003_converts_times_and_keeps_rows(scratch_database, monkeypatch):
     with psycopg.connect(url) as conn:
         conn.execute("INSERT INTO character_roster (player_uuid, realm_id, character_id, name, status, created_at, "
                      "updated_at) VALUES ('p', 'main', 'a', 'A', 'ALIVE', '1789836703', now()), "
-                     "('p', 'main', 'b', 'B', 'ALIVE', 'not a time', now()), ('p', 'main', 'c', 'C', 'ALIVE', NULL, now())")
+                     "('p', 'main', 'b', 'B', 'ALIVE', 'not a time', now()), ('p', 'main', 'c', 'C', 'ALIVE', NULL, now()), "
+                     "('p', 'main', 'd', 'D', 'ALIVE', '999999999999', now())")
         conn.execute("INSERT INTO map_chronicle_snapshots (map_id, day, realm_id, captured_at, bytes, manifest) "
                      "VALUES ('main', '2026-10-01', 'main', 1789776019, 1, '{}')")
         conn.execute("INSERT INTO map_chronicle_snapshots_archive (map_id, day, realm_id, captured_at, bytes, manifest, "
@@ -51,7 +52,7 @@ def test_0003_converts_times_and_keeps_rows(scratch_database, monkeypatch):
         day = conn.execute("SELECT * FROM map_ledger_days").fetchone()
         codes = conn.execute("SELECT id, minted_via, view_session_id FROM login_codes ORDER BY id").fetchall()
         nodes = conn.execute("SELECT count(*) AS n FROM lp_user_nodes").fetchone()["n"]
-    assert roster == {"a": _utc(1789836703), "b": None, "c": None}
+    assert roster == {"a": _utc(1789836703), "b": None, "c": None, "d": None}
     assert snapshot["captured_at"] == _utc(1789776019)
     assert archive == {"captured_at": _utc(1788296699), "archived_at": _utc(1789837545)}
     assert wipe == {"wiped_at": _utc(1789837545), "restored_at": None}

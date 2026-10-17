@@ -115,7 +115,7 @@ def test_lore_items_send_times_and_lists_as_before():
         "2026-01-02T03:04:06Z", "2026-01-02T03:04:05Z", None)
 
 
-@pytest.mark.parametrize("raw", ["1789836703000", "99999999999999999999", "²", "soon", "0"])
+@pytest.mark.parametrize("raw", ["1789836703000", "999999999999", "253402300800", "99999999999999999999", "²", "soon", "0"])
 def test_roster_push_with_an_unreadable_created_at_stores_no_time(raw):
     replace_roster("owner", [{"id": "c-ana", "name": "Ana", "status": "ALIVE", "created_at": raw}])
     assert testing.value("SELECT created_at FROM character_roster") is None

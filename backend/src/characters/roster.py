@@ -56,10 +56,14 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
     return max(1, min(default_max, hard_cap))
 
 
+_LAST_SECOND = 253402300799  # 9999-12-31T23:59:59Z
+
+
 def _created_time(raw: Any) -> datetime | None:
     """RPCharacters sends a character's creation time as epoch seconds in a string."""
     text = str(raw).strip() if raw is not None else ""
-    if not re.fullmatch(r"[0-9]{1,12}", text) or int(text) <= 0:
+    # Python's datetime, which reads the column back, stops at the year 9999.
+    if not re.fullmatch(r"[0-9]{1,12}", text) or not 0 < int(text) <= _LAST_SECOND:
         return None
     return datetime.fromtimestamp(int(text), timezone.utc)
 
