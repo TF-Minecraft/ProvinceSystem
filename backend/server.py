@@ -66,6 +66,10 @@ async def lifespan(app: FastAPI):
 
     names_stop = asyncio.Event()
     names_task = asyncio.create_task(refresh_loop(names_stop)) if BotConfig.from_env().enabled else None
+    from src.database.housekeeping import housekeeping_loop
+
+    housekeeping_stop = asyncio.Event()
+    housekeeping_task = asyncio.create_task(housekeeping_loop(housekeeping_stop))
     logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
     try:
         yield
@@ -76,6 +80,8 @@ async def lifespan(app: FastAPI):
         if names_task is not None:
             names_stop.set()
             await names_task
+        housekeeping_stop.set()
+        await housekeeping_task
         close_pool()
 
 

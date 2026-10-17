@@ -140,7 +140,7 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
 
 def mark_code_consumed(conn, code_id: int) -> None:
     """Spend the held code, rechecking expiry after the submission's other writes."""
-    row = conn.execute("UPDATE codes SET redeemed_at = %s WHERE id = %s RETURNING expires_at",
+    row = conn.execute("UPDATE codes SET redeemed_at = %s, code_plaintext = NULL WHERE id = %s RETURNING expires_at",
                        (_utcnow(), int(code_id))).fetchone()
     require_code_unexpired(row["expires_at"])
 
@@ -430,7 +430,7 @@ def revoke_code(plaintext: str) -> dict:
             raise CodeError("Code has expired")
 
         conn.execute(
-            "UPDATE codes SET revoked = true WHERE id = %s",
+            "UPDATE codes SET revoked = true, code_plaintext = NULL WHERE id = %s",
             (row["id"],),
         )
         require_code_unexpired(row["expires_at"])
@@ -636,7 +636,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
         # Spent by the update itself: of two redeems of one code, only one gets the row back.
         row = conn.execute(
             """
-            UPDATE codes SET redeemed_at = %s
+            UPDATE codes SET redeemed_at = %s, code_plaintext = NULL
             WHERE code_hash = %s AND NOT revoked AND redeemed_at IS NULL AND expires_at >= %s
               AND LOWER(TRIM(scope)) = 'profile'
             RETURNING *
