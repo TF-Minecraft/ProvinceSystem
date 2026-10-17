@@ -114,7 +114,7 @@ def _load_usable(conn, code_hash: str, attacker: str, defender: str, realm: str)
     to be theirs, because the leader typing it needs to know why it failed.
     """
     row = conn.execute(
-        "SELECT * FROM war_declare_codes WHERE code_hash = %s",
+        "SELECT * FROM war_declaration_codes WHERE code_hash = %s",
         (code_hash,),
     ).fetchone()
     _refuse_unusable(row, attacker, defender, realm)
@@ -168,7 +168,7 @@ def mint(
     with database.connect() as conn:
         code_id = int(conn.execute(
             """
-            INSERT INTO war_declare_codes (
+            INSERT INTO war_declaration_codes (
                 code_hash, realm_id, attacker_faction_id, defender_faction_id,
                 goal, created_by_discord_id, created_at, expires_at,
                 redeemed_at, redeemed_war_id, revoked
@@ -249,14 +249,14 @@ def redeem(
     code_hash = hash_secret(plaintext)
 
     with database.connect() as conn:
-        conn.execute("SELECT id FROM war_declare_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
+        conn.execute("SELECT id FROM war_declaration_codes WHERE code_hash = %s FOR UPDATE", (code_hash,)).fetchone()
         now = _utcnow()
         redeemed_at = _iso(now)
         # Spent by the update itself, which re-checks every rule: of two redeems, or a
         # redeem and a revoke, only one wins.
         row = conn.execute(
             """
-            UPDATE war_declare_codes
+            UPDATE war_declaration_codes
             SET redeemed_at = %s, redeemed_war_id = %s
             WHERE code_hash = %s AND lower(trim(realm_id)) = %s
               AND attacker_faction_id = %s AND defender_faction_id = %s
@@ -291,7 +291,7 @@ def list_outstanding(realm_id: str | None = None, limit: int | None = None) -> l
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT * FROM war_declare_codes
+            SELECT * FROM war_declaration_codes
             WHERE realm_id = %s
               AND NOT revoked
               AND redeemed_at IS NULL
@@ -320,7 +320,7 @@ def revoke(code_id: int, realm_id: str | None = None) -> dict:
         # Revoked by the update itself, so a code redeemed meanwhile is reported as used.
         row = conn.execute(
             """
-            UPDATE war_declare_codes SET revoked = true
+            UPDATE war_declaration_codes SET revoked = true
             WHERE id = %s AND realm_id = %s AND NOT revoked AND redeemed_at IS NULL
             RETURNING *
             """,
@@ -328,7 +328,7 @@ def revoke(code_id: int, realm_id: str | None = None) -> dict:
         ).fetchone()
         if row is None:
             row = conn.execute(
-                "SELECT * FROM war_declare_codes WHERE id = %s AND realm_id = %s",
+                "SELECT * FROM war_declaration_codes WHERE id = %s AND realm_id = %s",
                 (target, realm),
             ).fetchone()
             if row is None:

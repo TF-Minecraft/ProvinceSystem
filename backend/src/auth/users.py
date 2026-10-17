@@ -28,7 +28,7 @@ _RETURN_MAX = 512
 _TOKEN_MAX = 256
 
 
-# codes.minted_via for a Profile session opened during a view: this prefix and the view's session id.
+# login_codes.minted_via for a Profile session opened during a view: this prefix and the view's session id.
 VIEW_PROFILE_PREFIX = "staff_view:"
 # Every transaction that calls drop_view_leftovers takes this lock as its first
 # statement, so it never deletes a placeholder whose view is being committed.
@@ -65,8 +65,8 @@ def drop_view_leftovers(conn) -> None:
     # A view's id is compared as text, so a malformed tag never fails the delete.
     conn.execute(
         """
-        DELETE FROM sessions WHERE code_id IN (
-            SELECT id FROM codes
+        DELETE FROM code_sessions WHERE code_id IN (
+            SELECT id FROM login_codes
             WHERE starts_with(minted_via, %s)
               AND substr(minted_via, %s) NOT IN (
                   SELECT id::text FROM user_sessions WHERE acting_user_id IS NOT NULL)

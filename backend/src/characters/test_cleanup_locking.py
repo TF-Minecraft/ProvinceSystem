@@ -178,8 +178,8 @@ def test_full_wipe_and_create_ack_use_the_same_complete_lock_order(monkeypatch, 
     monkeypatch.setattr(creates.uuid_lib, "uuid4", lambda: next(ids))
     creates.create_character("owner-b", {**body, "name": "Brena"})
     creates.create_character("owner-a", body)
-    assert [r["id"] for r in testing.rows("SELECT id FROM character_creates")] == ["b", "a"]
-    releasing = Gate("release-b", "UPDATE character_creates SET held_until")
+    assert [r["id"] for r in testing.rows("SELECT id FROM character_creation_requests")] == ["b", "a"]
+    releasing = Gate("release-b", "UPDATE character_creation_requests SET held_until")
     workers = []
     with schedule(monkeypatch, postgres, releasing) as observer:
         try:
@@ -197,7 +197,7 @@ def test_full_wipe_and_create_ack_use_the_same_complete_lock_order(monkeypatch, 
             for worker in workers:
                 worker.join()
     assert all(worker.error is None for worker in workers), [w.error for w in workers]
-    assert wipe.value["deleted"]["character_creates"] == 2
+    assert wipe.value["deleted"]["character_creation_requests"] == 2
     assert ack.value == {"ok": True, "applied": [], "rejected": []}
     assert release.value == {"ok": True, "id": "b"}
 
@@ -206,7 +206,7 @@ def test_full_wipe_retains_creates_and_pending_slots_appearing_after_selection(m
     body = valid_create()
     wardrobe._upsert_pending_slot("late-create", "base", b"pending-png", texture_value="pending",
                                   texture_signature="sig", model="classic", display_name=None)
-    [slot] = testing.rows("SELECT png_relpath FROM character_create_wardrobe")
+    [slot] = testing.rows("SELECT png_relpath FROM character_creation_wardrobe")
     png = wardrobe.DATA_DIR / slot["png_relpath"]
     monkeypatch.setattr(creates.uuid_lib, "uuid4", lambda: "late-create")
     selected = Gate("cleanup", "ORDER BY id FOR UPDATE")
@@ -220,6 +220,6 @@ def test_full_wipe_retains_creates_and_pending_slots_appearing_after_selection(m
             wipe.join()
     assert wipe.error is None and created["id"] == "late-create"
     assert wipe.value["total"] == 0 and wipe.value["pngs_deleted"] == 0
-    assert testing.value("SELECT count(*) FROM character_creates") == 1
-    assert testing.value("SELECT count(*) FROM character_create_wardrobe") == 1
+    assert testing.value("SELECT count(*) FROM character_creation_requests") == 1
+    assert testing.value("SELECT count(*) FROM character_creation_wardrobe") == 1
     assert png.read_bytes() == b"pending-png"

@@ -563,7 +563,7 @@ def test_profile_session_needs_a_linked_minecraft_account(api, monkeypatch, env)
     assert body["player_uuid"] == PLAYER and body["scope"] == "profile" and body["realm_id"] == "main"
     session = codes.get_session(body["session_token"])
     assert session["player_uuid"] == PLAYER and session["scope"] == "profile"
-    [code] = testing.rows("SELECT code_plaintext FROM codes WHERE id=%s", (session["code_id"],))
+    [code] = testing.rows("SELECT code_plaintext FROM login_codes WHERE id=%s", (session["code_id"],))
     assert code["code_plaintext"] is None
 
 

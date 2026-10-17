@@ -242,7 +242,7 @@ def audit_refused_start(cookie_tokens: list[str], player_uuid: str) -> None:
 
 
 def profile_minted_via(user: dict) -> str | None:
-    """codes.minted_via for a Profile session opened by this session user; None outside a view."""
+    """login_codes.minted_via for a Profile session opened by this session user; None outside a view."""
     if user.get("acting_user_id") is None:
         return None
     return f"{VIEW_PROFILE_PREFIX}{user['session_id']}"
@@ -278,7 +278,7 @@ def refuses_write(cookie_tokens: list[str], bearer_token: str | None) -> bool:
             return True
         if bearer is not None:
             row = conn.execute(
-                "SELECT c.minted_via FROM sessions s JOIN codes c ON c.id = s.code_id WHERE s.token_hash = %s",
+                "SELECT c.minted_via FROM code_sessions s JOIN login_codes c ON c.id = s.code_id WHERE s.token_hash = %s",
                 (bearer,),
             ).fetchone()
             if row is not None and (row["minted_via"] or "").startswith(VIEW_PROFILE_PREFIX):

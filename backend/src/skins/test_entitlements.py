@@ -107,7 +107,7 @@ class MintCooldownTest(unittest.TestCase):
 
     def mint(self, scope: str, created_at: str) -> None:
         testing.execute(
-            "INSERT INTO codes (code_hash, player_uuid, scope, created_at, expires_at) "
+            "INSERT INTO login_codes (code_hash, player_uuid, scope, created_at, expires_at) "
             "VALUES (%s, 'player-1', %s, %s, '2099-01-01T00:00:00Z')",
             (f"hash-{scope}-{created_at}", scope, created_at),
         )
@@ -116,7 +116,7 @@ class MintCooldownTest(unittest.TestCase):
         result = codes.issue_code("player-1", "skin")
         self.assertEqual(result["scope"], "skin")
         self.assertIn("code", result)
-        self.assertEqual(testing.value("SELECT scope FROM codes WHERE code_plaintext = %s", (result["code"],)), "skin")
+        self.assertEqual(testing.value("SELECT scope FROM login_codes WHERE code_plaintext = %s", (result["code"],)), "skin")
 
     def test_staff_scope_still_issues(self) -> None:
         result = codes.issue_code("player-1", "skin_staff")
@@ -127,7 +127,7 @@ class MintCooldownTest(unittest.TestCase):
         self.mint("skin", "2026-01-15T12:00:00Z")
         result = codes.issue_code("player-1", "skin")
         self.assertEqual(result["scope"], "skin")
-        self.assertEqual(testing.value("SELECT COUNT(*) FROM codes"), 2)
+        self.assertEqual(testing.value("SELECT COUNT(*) FROM login_codes"), 2)
 
     def test_issue_drink_scope(self) -> None:
         result = codes.issue_code("player-1", "drink")

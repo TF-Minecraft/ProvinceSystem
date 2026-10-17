@@ -103,7 +103,7 @@ def test_catalogue_round_trips_with_its_time_in_the_api_form():
 
 def test_lore_items_send_times_and_lists_as_before():
     testing.execute(
-        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore_json, "
+        "INSERT INTO lore_item_customisations (player_uuid, character_id, kit_key, display_name, lore, "
         "state, skin_slug, ready_at, updated_at, realm_id, name_colours) VALUES (%s, 'c-ana', 'sword', 'Edge', "
         "'[\"§7Old\"]', 'ready', 'my-sword', '2026-01-02T03:04:05Z', '2026-01-02T03:04:06Z', 'main', "
         "'[\"#ff0000\"]')", (OWNER,))

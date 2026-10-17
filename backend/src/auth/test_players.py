@@ -419,11 +419,11 @@ def test_admins_see_chat_and_whole_commands_and_it_is_audited(app, env, world, c
     assert rows[0]["actor_role"] == role
     assert rows[0]["outcome"] == "ok"
     assert rows[0]["reason"] is None
-    detail = rows[0]["detail_json"]
+    detail = rows[0]["detail"]
     assert detail["player_uuid"] == HAZEL and detail["rows"] == 3 and detail["paged"] is False
     assert detail["newest"]["time"] == 180 and detail["oldest"]["time"] == 160
     # The audit records which rows were shown, never what they said.
-    assert "docks" not in json.dumps(rows[0]["detail_json"]) and "private" not in json.dumps(rows[0]["detail_json"])
+    assert "docks" not in json.dumps(rows[0]["detail"]) and "private" not in json.dumps(rows[0]["detail"])
 
 
 def test_channel_commands_are_chat_for_admins_and_a_channel_name_for_mods(app, env, world, coreprotect):
@@ -439,7 +439,7 @@ def test_channel_commands_are_chat_for_admins_and_a_channel_name_for_mods(app, e
     assert [e["target"] for e in feed["entries"] if e["kind"] == "command"] == ["/home", "/msg Bob a private thing"]
     only_chat = client(app, token).get(f"/admin/players/{HAZEL}/activity", params={"kinds": "chat"}).json()
     assert [e["channel"] for e in only_chat["entries"]] == ["Emote", "FOOC", "LOOC"]
-    assert message_audits(env)[0]["detail_json"]["rows"] == 5
+    assert message_audits(env)[0]["detail"]["rows"] == 5
 
     mod = client(app, staff(env, "mod")).get(f"/admin/players/{HAZEL}/activity").json()
     commands = [(e["target"], e["channel"]) for e in mod["entries"] if e["kind"] == "command"]
@@ -498,8 +498,8 @@ def test_movement_routes_are_audited(app, env, world, coreprotect, role):
     assert {p["minecraft_name"] for p in body["players"]} == {"MrEnzo99", "Quiet"}
 
     rows = movement_audits(env)
-    assert [r["detail_json"]["player_uuid"] for r in rows] == [HAZEL, "everyone"]
-    detail = rows[0]["detail_json"]
+    assert [r["detail"]["player_uuid"] for r in rows] == [HAZEL, "everyone"]
+    detail = rows[0]["detail"]
     assert (detail["since"], detail["until"], detail["rows"]) == (50, 300, 3)
     # Which window and how much, never where.
     assert set(detail) == {"server", "player_uuid", "since", "until", "complete_from", "rows"}
@@ -529,7 +529,7 @@ def test_session_movement(app, env, world, coreprotect):
     assert (body["since"], body["until"]) == (100, 200)
     assert [p[0] for p in body["points"]] == [100, 160, 200]
     assert body["as_of"] > 0
-    detail = movement_audits(env)[-1]["detail_json"]
+    detail = movement_audits(env)[-1]["detail"]
     assert detail["session"] == sid and detail["rows"] == 3
 
     # Another player's session id, a forged one, and a mod are all refused.

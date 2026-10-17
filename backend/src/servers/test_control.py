@@ -415,7 +415,7 @@ def test_emergency_flag_is_strict_audited_and_forwarded(app, database, monkeypat
     body = {"id": "c"*32, "reason": "emergency plugin fix", "emergency_override": True}
     assert client(app, admin).post("/admin/servers/main/start", json=body, headers=ORIGIN).status_code == 200
     assert calls[-1]["emergency_override"] is True and calls[-1]["backup_ref"] == ""
-    assert audit_rows(database)[-1]["detail_json"]["emergency_override"] is True
+    assert audit_rows(database)[-1]["detail"]["emergency_override"] is True
     assert client(app, admin).post("/admin/servers/main/start", json={**body,"emergency_override":"false"}, headers=ORIGIN).status_code == 422
     assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 400
     assert len(calls) == 1
@@ -632,7 +632,7 @@ def test_test_build_choice_is_start_only_and_forwarded(app, database, monkeypatc
     body = {"id": "d" * 32, "reason": "replace test builds", "replace_test_builds": ["Core"]}
     assert client(app, admin).post("/admin/servers/dev/start", json=body, headers=ORIGIN).status_code == 200
     assert calls[-1]["replace_test_builds"] == ["Core"]
-    assert audit_rows(database)[-1]["detail_json"]["replace_test_builds"] == ["Core"]
+    assert audit_rows(database)[-1]["detail"]["replace_test_builds"] == ["Core"]
     assert client(app, admin).post("/admin/servers/dev/start", json={**body, "replace_test_builds": []}, headers=ORIGIN).status_code == 200
     assert "replace_test_builds" not in calls[-1]
     assert client(app, admin).post("/admin/servers/dev/cancel", json=body, headers=ORIGIN).status_code == 400

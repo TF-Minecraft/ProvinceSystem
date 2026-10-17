@@ -52,7 +52,7 @@ def _enqueue(
     def _insert(c) -> int:
         return int(c.execute(
             """
-            INSERT INTO moderation_notifications (
+            INSERT INTO player_notifications (
                 type, discord_user_id, player_uuid, payload, created_at, delivered_at
             ) VALUES (%s, %s, %s, %s, %s, NULL)
             RETURNING id
@@ -232,7 +232,7 @@ def list_undelivered_moderation() -> list[dict]:
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT * FROM moderation_notifications
+            SELECT * FROM player_notifications
             WHERE delivered_at IS NULL
             ORDER BY created_at ASC, id ASC
             """
@@ -258,16 +258,16 @@ def ack_moderation(ids: list[int]) -> dict:
 
     now = _utcnow()
     with database.connect() as conn:
-        conn.execute("SELECT id FROM moderation_notifications WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+        conn.execute("SELECT id FROM player_notifications WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
                      (raw_ids,)).fetchall()
         # Already delivered notices are acked again without moving their time.
         conn.execute(
-            "UPDATE moderation_notifications SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",
+            "UPDATE player_notifications SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",
             (now, raw_ids),
         )
         known = {
             row["id"]
-            for row in conn.execute("SELECT id FROM moderation_notifications WHERE id = ANY(%s)", (raw_ids,))
+            for row in conn.execute("SELECT id FROM player_notifications WHERE id = ANY(%s)", (raw_ids,))
         }
     acked = [notice_id for notice_id in raw_ids if notice_id in known]
 
@@ -282,7 +282,7 @@ def _self_test() -> None:
     with database.connect() as conn:
         conn.execute("DELETE FROM player_warnings WHERE player_uuid = %s", (uuid,))
         conn.execute(
-            "DELETE FROM moderation_notifications WHERE player_uuid = %s", (uuid,)
+            "DELETE FROM player_notifications WHERE player_uuid = %s", (uuid,)
         )
 
     unlinked = record_warning(uuid, "test unlinked", staff_name="Tester")

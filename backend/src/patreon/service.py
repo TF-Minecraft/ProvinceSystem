@@ -85,7 +85,7 @@ def _text_times(row) -> dict | None:
 def _member(row) -> dict | None:
     if row is None:
         return None
-    return {**row["data_json"], "last_tier": row["last_tier"],
+    return {**row["data"], "last_tier": row["last_tier"],
             "declined_since": iso(row["declined_since"]) if row["declined_since"] else None}
 
 
@@ -196,9 +196,9 @@ def _store_member(conn, member: dict, now, config: Config):
     old = conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id = %s", (member["patreon_user_id"],)).fetchone()
     history = _member(old) or {}
     state = resolve({**member, "last_tier": history.get("last_tier"), "declined_since": history.get("declined_since")}, None, now, config)
-    conn.execute("INSERT INTO patreon_members (member_id, patreon_user_id, data_json, last_tier, declined_since, updated_at) "
+    conn.execute("INSERT INTO patreon_members (member_id, patreon_user_id, data, last_tier, declined_since, updated_at) "
                  "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (patreon_user_id) DO UPDATE SET member_id = excluded.member_id, "
-                 "data_json = excluded.data_json, last_tier = excluded.last_tier, declined_since = excluded.declined_since, "
+                 "data = excluded.data, last_tier = excluded.last_tier, declined_since = excluded.declined_since, "
                  "updated_at = excluded.updated_at",
                  (member["member_id"], member["patreon_user_id"], database.Jsonb(member), state["last_tier"], state["declined_since"], now))
 
@@ -231,7 +231,7 @@ def _plan(conn, target: str, subject: str, config: Config, now):
     if desired is None:
         return
     applied = conn.execute("SELECT * FROM patreon_applied WHERE target = %s AND subject = %s", (target, subject)).fetchone()
-    owned = set(applied["tiers_json"]) if applied else set()
+    owned = set(applied["tiers"]) if applied else set()
     tier = desired["tier_key"]
     remove = sorted(owned - ({tier} if tier else set()), key=config.rank)
     add = tier if tier and tier not in owned else None
@@ -255,14 +255,14 @@ def _plan(conn, target: str, subject: str, config: Config, now):
     if dispatched:
         return
     pending = conn.execute("SELECT * FROM patreon_changes WHERE target = %s AND subject = %s AND acked_at IS NULL AND cancelled_at IS NULL", (target, subject)).fetchone()
-    if pending and pending["add_tier"] == add and pending["remove_json"] == remove and pending["dm"] == dm and pending["generation"] == desired["generation"]:
+    if pending and pending["add_tier"] == add and pending["remove_tiers"] == remove and pending["dm"] == dm and pending["generation"] == desired["generation"]:
         return
     conn.execute("UPDATE patreon_changes SET cancelled_at = %s WHERE target = %s AND subject = %s AND acked_at IS NULL AND cancelled_at IS NULL", (now, target, subject))
     if add or remove or dm:
         # Keep the real dm on the row so acknowledgement marks it delivered.
         # dm_suppressed hides it from the outbox even after the env flag is cleared.
         suppressed = bool(config.suppress_dms and target == "discord" and dm)
-        conn.execute("INSERT INTO patreon_changes (target, subject, add_tier, remove_json, dm, grace_until, generation, created_at, dm_suppressed) "
+        conn.execute("INSERT INTO patreon_changes (target, subject, add_tier, remove_tiers, dm, grace_until, generation, created_at, dm_suppressed) "
                      "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                      (target, subject, add, database.Jsonb(remove), dm, desired["grace_until"] if dm == "payment_declined" else None, desired["generation"], now, suppressed))
 
@@ -285,8 +285,8 @@ def _compute(conn, config: Config, now, *, brake_check=False, link_success_user=
         _set_desired(conn, target, subject, tier, grace, link_event=event)
     if brake_check:
         granted = lowered = 0
-        for row in conn.execute("SELECT a.tiers_json,d.tier_key,d.generation,p.generation AS approved_generation FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject LEFT JOIN patreon_brake_approvals p ON p.target=a.target AND p.subject=a.subject"):
-            rank = max((config.rank(k) for k in row["tiers_json"]), default=0)
+        for row in conn.execute("SELECT a.tiers,d.tier_key,d.generation,p.generation AS approved_generation FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject LEFT JOIN patreon_brake_approvals p ON p.target=a.target AND p.subject=a.subject"):
+            rank = max((config.rank(k) for k in row["tiers"]), default=0)
             if rank:
                 granted += 1
                 lowered += config.rank(row["tier_key"]) < rank and row["generation"] != row["approved_generation"]
@@ -496,10 +496,10 @@ def list_changes(target: str, *, config=None) -> dict:
         rows = conn.execute("SELECT * FROM patreon_changes WHERE target = %s AND acked_at IS NULL AND cancelled_at IS NULL ORDER BY id", (target,)).fetchall()
         changes = []
         for row in rows:
-            if held and row["remove_json"]:
+            if held and row["remove_tiers"]:
                 continue
             conn.execute("UPDATE patreon_changes SET dispatched_at = COALESCE(dispatched_at, %s) WHERE id = %s", (utcnow(), row["id"]))
-            change = {"id": row["id"], "discord_user_id" if target == "discord" else "player_uuid": row["subject"], "add_tier": row["add_tier"], "remove_tiers": row["remove_json"]}
+            change = {"id": row["id"], "discord_user_id" if target == "discord" else "player_uuid": row["subject"], "add_tier": row["add_tier"], "remove_tiers": row["remove_tiers"]}
             if target == "discord":
                 hidden = config.suppress_dms or row["dm_suppressed"]
                 change.update(dm=None if hidden else row["dm"], tier_name=config.name(row["add_tier"]))
@@ -523,16 +523,16 @@ def ack_changes(target: str, ids: list[int], *, config=None) -> dict:
             if row["acked_at"]:
                 continue
             applied = conn.execute("SELECT * FROM patreon_applied WHERE target = %s AND subject = %s", (target, row["subject"])).fetchone()
-            tiers = set(applied["tiers_json"]) if applied else set()
-            tiers.difference_update(row["remove_json"])
+            tiers = set(applied["tiers"]) if applied else set()
+            tiers.difference_update(row["remove_tiers"])
             if row["add_tier"]:
                 tiers.add(row["add_tier"])
             dm_gen = applied["dm_generation"] if applied else 0
             if row["dm"]:
                 dm_gen = max(dm_gen, row["generation"])
             ever = bool(tiers or (applied and applied["ever_granted"]))
-            conn.execute("INSERT INTO patreon_applied (target, subject, tiers_json, ever_granted, dm_generation) VALUES (%s, %s, %s, %s, %s) "
-                         "ON CONFLICT (target, subject) DO UPDATE SET tiers_json = excluded.tiers_json, ever_granted = excluded.ever_granted, "
+            conn.execute("INSERT INTO patreon_applied (target, subject, tiers, ever_granted, dm_generation) VALUES (%s, %s, %s, %s, %s) "
+                         "ON CONFLICT (target, subject) DO UPDATE SET tiers = excluded.tiers, ever_granted = excluded.ever_granted, "
                          "dm_generation = excluded.dm_generation",
                          (target, row["subject"], database.Jsonb(sorted(tiers)), ever, dm_gen))
             conn.execute("UPDATE patreon_changes SET acked_at = %s WHERE id = %s", (utcnow(), change_id))
@@ -545,9 +545,9 @@ def roster(target: str, *, config=None) -> dict:
     with database.transaction(isolation="repeatable read", read_only=True) as conn:
         held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id = 1").fetchone()["brake_held"]
         members = []
-        for row in conn.execute("SELECT a.subject, a.tiers_json, d.tier_key FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject WHERE a.target = %s AND a.ever_granted ORDER BY a.subject", (target,)):
+        for row in conn.execute("SELECT a.subject, a.tiers, d.tier_key FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject WHERE a.target = %s AND a.ever_granted ORDER BY a.subject", (target,)):
             tier = row["tier_key"]
-            owned = list(row["tiers_json"])
+            owned = list(row["tiers"])
             if not config.apply or held:
                 tier = max(owned + ([tier] if tier and config.apply else []), key=config.rank, default=None)
             members.append({"discord_user_id" if target == "discord" else "player_uuid": row["subject"], "tier_key": tier})
@@ -561,8 +561,8 @@ def release_brake(*, config=None):
         _compute(conn, config, utcnow())
         # Persist approval for these transitions, even if appliers haven't
         # acknowledged them before the next sync or process restart.
-        for row in conn.execute("SELECT a.target,a.subject,a.tiers_json,d.tier_key,d.generation FROM patreon_applied a JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject").fetchall():
-            if config.rank(row["tier_key"]) < max((config.rank(k) for k in row["tiers_json"]), default=0):
+        for row in conn.execute("SELECT a.target,a.subject,a.tiers,d.tier_key,d.generation FROM patreon_applied a JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject").fetchall():
+            if config.rank(row["tier_key"]) < max((config.rank(k) for k in row["tiers"]), default=0):
                 conn.execute("INSERT INTO patreon_brake_approvals (target, subject, generation) VALUES (%s, %s, %s) "
                              "ON CONFLICT (target, subject) DO UPDATE SET generation = excluded.generation", (row["target"], row["subject"], row["generation"]))
     return {"released": True}
@@ -673,12 +673,12 @@ def import_links(links: list[dict], grants: list[dict], *, dry_run=True, config=
             tier = item.get("tier_key")
             if not player or tier not in {t.key for t in config.tiers}:
                 raise ServiceError("invalid_import_grant")
-            old = conn.execute("SELECT tiers_json FROM patreon_applied WHERE target = 'luckperms' AND subject = %s", (player,)).fetchone()
-            owned = set(old["tiers_json"]) if old else set()
+            old = conn.execute("SELECT tiers FROM patreon_applied WHERE target = 'luckperms' AND subject = %s", (player,)).fetchone()
+            owned = set(old["tiers"]) if old else set()
             if tier not in owned:
                 owned.add(tier)
-                conn.execute("INSERT INTO patreon_applied (target, subject, tiers_json, ever_granted) VALUES ('luckperms', %s, %s, true) "
-                             "ON CONFLICT (target, subject) DO UPDATE SET tiers_json = excluded.tiers_json, ever_granted = true", (player, database.Jsonb(sorted(owned))))
+                conn.execute("INSERT INTO patreon_applied (target, subject, tiers, ever_granted) VALUES ('luckperms', %s, %s, true) "
+                             "ON CONFLICT (target, subject) DO UPDATE SET tiers = excluded.tiers, ever_granted = true", (player, database.Jsonb(sorted(owned))))
                 report["grants_seeded"] += 1
         _compute(conn, config, utcnow())
         if dry_run:

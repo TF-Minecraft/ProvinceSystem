@@ -183,7 +183,7 @@ def build_drink_review_sheet(submission_id: str) -> bytes | None:
     if cached.is_file() and cached.stat().st_size > 0:
         return cached.read_bytes()
 
-    recipe = row["recipe_json"]
+    recipe = row["recipe"]
     if not isinstance(recipe, dict):
         recipe = {}
 

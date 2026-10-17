@@ -21,7 +21,7 @@ def sweep() -> dict[str, int]:
     """Run each clean-up once and return how many rows each changed."""
     with database.connect() as conn:
         cleared = conn.execute(
-            "UPDATE codes SET code_plaintext = NULL WHERE code_plaintext IS NOT NULL AND expires_at < now()"
+            "UPDATE login_codes SET code_plaintext = NULL WHERE code_plaintext IS NOT NULL AND expires_at < now()"
         ).rowcount
     return {"expired_code_plaintext": cleared}
 

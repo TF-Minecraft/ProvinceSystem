@@ -81,7 +81,7 @@ class DeletePendingCreateTests(unittest.TestCase):
         with database.connect() as conn:
             conn.execute(
                 """
-                INSERT INTO character_creates (
+                INSERT INTO character_creation_requests (
                     id, player_uuid, payload, status, created_at, realm_id
                 ) VALUES (%s, %s, '{"name":"Test"}', %s, %s, %s)
                 """,
@@ -89,7 +89,7 @@ class DeletePendingCreateTests(unittest.TestCase):
             )
             conn.execute(
                 """
-                INSERT INTO character_create_wardrobe (
+                INSERT INTO character_creation_wardrobe (
                     create_id, slot, png_relpath, updated_at
                 ) VALUES (%s, 'base', %s, %s)
                 """,
@@ -118,7 +118,7 @@ class DeletePendingCreateTests(unittest.TestCase):
 
         execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 id, code_hash, player_uuid, scope, realm_id,
                 created_at, expires_at, redeemed_at, revoked
             ) VALUES (%s, %s, %s, 'profile', %s, %s, %s, %s, false)
@@ -147,7 +147,7 @@ class DeletePendingCreateTests(unittest.TestCase):
         self._insert_code(code_id, player_uuid)
         execute(
             """
-            INSERT INTO submissions (
+            INSERT INTO skin_submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 status, dir_path, created_at, discord_user_id, staff, realm_id
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -191,12 +191,12 @@ class DeletePendingCreateTests(unittest.TestCase):
     def _submission_exists(self, submission_id: str) -> bool:
         from src.auth.testing import rows
 
-        return bool(rows("SELECT 1 FROM submissions WHERE id = %s", (submission_id,)))
+        return bool(rows("SELECT 1 FROM skin_submissions WHERE id = %s", (submission_id,)))
 
     def _code_redeemed_at(self, code_id: int = CODE_ID):
         from src.auth.testing import value
 
-        return value("SELECT redeemed_at FROM codes WHERE id = %s", (code_id,))
+        return value("SELECT redeemed_at FROM login_codes WHERE id = %s", (code_id,))
 
     def test_cancel_rolls_back_orphaned_pending_submission(self) -> None:
         from src.characters.creates import delete_pending_create
@@ -228,7 +228,7 @@ class DeletePendingCreateTests(unittest.TestCase):
         with database.connect() as conn:
             conn.execute(
                 """
-                INSERT INTO character_creates (
+                INSERT INTO character_creation_requests (
                     id, player_uuid, payload, status, created_at, realm_id
                 ) VALUES (%s, %s, '{"name":"Other"}', 'pending', %s, %s)
                 """,
@@ -254,9 +254,9 @@ class DeletePendingCreateTests(unittest.TestCase):
         self.assertTrue((self.root / png_rel).is_file())
         result = delete_pending_create(PLAYER, CREATE_ID)
         self.assertEqual(result, {"ok": True, "deleted": CREATE_ID})
-        self.assertEqual(self._count("character_creates", id=CREATE_ID), 0)
+        self.assertEqual(self._count("character_creation_requests", id=CREATE_ID), 0)
         self.assertEqual(
-            self._count("character_create_wardrobe", create_id=CREATE_ID), 0
+            self._count("character_creation_wardrobe", create_id=CREATE_ID), 0
         )
         self.assertEqual(
             self._count(
@@ -278,7 +278,7 @@ class DeletePendingCreateTests(unittest.TestCase):
     def test_applied_create_conflict(self) -> None:
         with database.connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET status = 'applied' WHERE id = %s",
+                "UPDATE character_creation_requests SET status = 'applied' WHERE id = %s",
                 (CREATE_ID,),
             )
 

@@ -57,7 +57,7 @@ def database_overview(request: Request, response: Response):
     _no_store(response)
     with database.connect() as conn:
         counts = {row["source"]: row["n"] for row in conn.execute(
-            "SELECT detail_json ->> 'database' AS source, count(*) AS n FROM admin_audit "
+            "SELECT detail ->> 'database' AS source, count(*) AS n FROM admin_audit "
             "WHERE action IN ('database.read', 'database.write') AND outcome IN ('ok', 'failed') "
             "GROUP BY 1")}
     return _audited(actor, "*", "list databases", False, lambda: studio.overview(counts), "database.list")

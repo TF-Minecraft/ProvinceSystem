@@ -249,7 +249,7 @@ def list_roster(
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
-                   kit_status, kit_statuses_json, sheet_json, realm_id,
+                   kit_status, kit_statuses, sheet, realm_id,
                    died_at, death_id, will_heir_id, will_heir_name, will_revision
             FROM character_roster
             WHERE player_uuid = %s AND realm_id = %s
@@ -281,14 +281,14 @@ def list_roster(
         kit_status = row["kit_status"]
         if kit_status is not None and str(kit_status).strip():
             item["kit_status"] = str(kit_status).strip().lower()
-        statuses = row["kit_statuses_json"]
+        statuses = row["kit_statuses"]
         if isinstance(statuses, dict) and statuses:
             item["kit_statuses"] = {
                 str(k).strip().lower(): str(v).strip().lower()
                 for k, v in statuses.items()
                 if k is not None and str(k).strip()
             }
-        sheet = row["sheet_json"]
+        sheet = row["sheet"]
         if isinstance(sheet, dict):
             ordered = [k for k in _SHEET_KEYS if k in sheet] + [k for k in sheet if k not in _SHEET_KEYS]
             for k in ordered:
@@ -460,7 +460,7 @@ def replace_roster(
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, race, class,
-                    created_at, kit_status, kit_statuses_json, sheet_json, updated_at
+                    created_at, kit_status, kit_statuses, sheet, updated_at
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (player_uuid, realm_id, character_id) DO UPDATE SET
@@ -470,8 +470,8 @@ def replace_roster(
                     class = excluded.class,
                     created_at = excluded.created_at,
                     kit_status = excluded.kit_status,
-                    kit_statuses_json = excluded.kit_statuses_json,
-                    sheet_json = excluded.sheet_json,
+                    kit_statuses = excluded.kit_statuses,
+                    sheet = excluded.sheet,
                     updated_at = excluded.updated_at
                 """,
                 normalized,

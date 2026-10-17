@@ -126,7 +126,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         with database.connect() as conn:
             conn.execute(
                 """
-                INSERT INTO character_creates (
+                INSERT INTO character_creation_requests (
                     id, player_uuid, payload, status, created_at, realm_id
                 ) VALUES (%s, %s, '{"name":"Test"}', 'pending', %s, %s)
                 """,
@@ -138,7 +138,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
 
         execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 id, code_hash, player_uuid, scope, realm_id,
                 created_at, expires_at, redeemed_at, revoked
             ) VALUES (%s, %s, %s, 'profile', %s, %s, %s, %s, false)
@@ -166,7 +166,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         self._insert_code(code_id)
         execute(
             """
-            INSERT INTO submissions (
+            INSERT INTO skin_submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 status, dir_path, created_at, discord_user_id, staff, realm_id
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -199,7 +199,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
                 """
                 INSERT INTO lore_item_customisations (
                     player_uuid, character_id, kit_key,
-                    display_name, lore_json,
+                    display_name, lore,
                     submission_id, existing_skin_id, state,
                     skin_slug, updated_at, realm_id
                 ) VALUES (%s, %s, %s, '', '[]', %s, %s, %s, %s, %s, %s)
@@ -220,7 +220,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
     def _submission_exists(self, submission_id: str) -> bool:
         from src.auth.testing import rows
 
-        return bool(rows("SELECT 1 FROM submissions WHERE id = %s", (submission_id,)))
+        return bool(rows("SELECT 1 FROM skin_submissions WHERE id = %s", (submission_id,)))
 
     def test_delete_kit_draft_rolls_back_orphaned_pending_submission(self) -> None:
         from src.characters.lore_items import delete_lore_item_customise

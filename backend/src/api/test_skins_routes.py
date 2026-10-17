@@ -245,7 +245,7 @@ class SkinsRoutesScopeTest(unittest.TestCase):
 
         execute(
             """
-            INSERT INTO submissions (
+            INSERT INTO skin_submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 status, dir_path, created_at, discord_user_id, staff, realm_id,
                 base_set

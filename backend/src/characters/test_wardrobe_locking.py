@@ -43,13 +43,13 @@ def setup(tmp_path, monkeypatch, postgres):
     monkeypatch.setattr(wardrobe, "sign_wardrobe_skin", signed)
     asset_paths.ensure_directories()
     replace_roster(OWNER, [{"id": LIVE, "name": "Ana", "status": "ALIVE"}])
-    testing.execute("INSERT INTO character_creates (id, player_uuid, payload, status, created_at) "
+    testing.execute("INSERT INTO character_creation_requests (id, player_uuid, payload, status, created_at) "
                     "VALUES (%s, %s, '{}', 'pending', now())", (PENDING, OWNER))
 
 
 def rows_match_files():
     rows = testing.rows("SELECT png_relpath, texture_value FROM character_wardrobe_slots "
-                        "UNION ALL SELECT png_relpath, texture_value FROM character_create_wardrobe")
+                        "UNION ALL SELECT png_relpath, texture_value FROM character_creation_wardrobe")
     for row in rows:
         path = wardrobe.DATA_DIR / row["png_relpath"]
         assert path.is_file(), row
@@ -133,7 +133,7 @@ def test_paused_png_write_serialises_every_competing_slot_mutation(monkeypatch, 
             two.join()
     assert one.error is None and two.error is None
     rows_match_files()
-    table = "character_create_wardrobe" if pending else "character_wardrobe_slots"
+    table = "character_creation_wardrobe" if pending else "character_wardrobe_slots"
     if other == "rename":
         assert testing.value(f"SELECT display_name FROM {table}") == "Renamed"
     elif other == "ack":
@@ -146,7 +146,7 @@ def test_paused_png_write_serialises_every_competing_slot_mutation(monkeypatch, 
         assert testing.rows(f"SELECT slot, texture_value FROM {table}") == [
             {"slot": "base", "texture_value": signed(B, "classic")[0]}]
     else:
-        assert testing.value("SELECT count(*) FROM character_create_wardrobe") == 0
+        assert testing.value("SELECT count(*) FROM character_creation_wardrobe") == 0
 
 
 @contextmanager
@@ -173,7 +173,7 @@ def reject(table, event, *, extra_only=False, deferred=False):
 @pytest.mark.parametrize("deferred", [False, True], ids=["statement", "commit"])
 def test_failed_slot_write_restores_old_png_or_removes_new_file(pending, existing, deferred):
     cid = PENDING if pending else LIVE
-    table = "character_create_wardrobe" if pending else "character_wardrobe_slots"
+    table = "character_creation_wardrobe" if pending else "character_wardrobe_slots"
     if existing:
         wardrobe.upload_slot(OWNER, cid, "base", OLD)
     with reject(table, "INSERT OR UPDATE", deferred=deferred):
@@ -190,7 +190,7 @@ def test_failed_slot_write_restores_old_png_or_removes_new_file(pending, existin
 @pytest.mark.parametrize("pending", [False, True])
 def test_failed_slot_deletion_restores_png_and_row(pending):
     cid = PENDING if pending else LIVE
-    table = "character_create_wardrobe" if pending else "character_wardrobe_slots"
+    table = "character_creation_wardrobe" if pending else "character_wardrobe_slots"
     wardrobe.upload_slot(OWNER, cid, "base", OLD)
     with reject(table, "DELETE"):
         with pytest.raises(psycopg.errors.CheckViolation):
@@ -208,7 +208,7 @@ def test_flush_failure_restores_both_trees_and_database_rows():
         with pytest.raises(psycopg.errors.CheckViolation):
             wardrobe.flush_pending_wardrobe(OWNER, PENDING, LIVE)
     rows_match_files()
-    assert testing.value("SELECT count(*) FROM character_create_wardrobe") == 2
+    assert testing.value("SELECT count(*) FROM character_creation_wardrobe") == 2
     assert testing.value("SELECT texture_value FROM character_wardrobe_slots") == signed(OLD, "classic")[0]
 
 

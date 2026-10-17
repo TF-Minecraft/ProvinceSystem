@@ -47,20 +47,20 @@ def test_session_replacement_rechecks_expiry_after_deletion_wait(env, scope, pat
     redeem = codes.redeem_drink_code if scope == "drink" else codes.redeem_code
     old = redeem(issued["code"])
     # Refusing the replacement must preserve both the old bearer and redemption metadata.
-    testing.execute("UPDATE codes SET redeemed_at = now() WHERE id = %s", (old["code_id"],))
-    old_redeemed = testing.value("SELECT redeemed_at FROM codes")
-    expiry = deadline("codes")
+    testing.execute("UPDATE login_codes SET redeemed_at = now() WHERE id = %s", (old["code_id"],))
+    old_redeemed = testing.value("SELECT redeemed_at FROM login_codes")
+    expiry = deadline("login_codes")
     fn = (lambda: codes.start_site_session(PLAYER, "main", scope)) if path == "site" else (
         lambda: redeem(issued["code"]))
-    run = expires_while_blocked(expiry, lambda c: c.execute("SELECT id FROM sessions FOR UPDATE"), fn)
+    run = expires_while_blocked(expiry, lambda c: c.execute("SELECT id FROM code_sessions FOR UPDATE"), fn)
     if path == "site":
         assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
         assert run.error.next_at is not None
     else:
         assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 1
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 1
     assert codes.get_session(old["session_token"]) is not None
-    assert testing.value("SELECT redeemed_at FROM codes") == old_redeemed
+    assert testing.value("SELECT redeemed_at FROM login_codes") == old_redeemed
 
 
 @pytest.mark.parametrize("scope,route", [("skin", "skins"), ("drink", "drinks")])
@@ -74,31 +74,31 @@ def test_site_expiry_returns_existing_409_bytes_after_session_wait(env, scope, r
     redeem = codes.redeem_drink_code if scope == "drink" else codes.redeem_code
     old = redeem(issued["code"])
     profile = codes.start_linked_profile_session(PLAYER)
-    expiry = deadline("codes", "id = %s", (old["code_id"],))
+    expiry = deadline("login_codes", "id = %s", (old["code_id"],))
     app = FastAPI()
     app.include_router(profile_router)
     client = TestClient(app)
     run = expires_while_blocked(expiry, lambda c: c.execute(
-        "SELECT id FROM sessions WHERE code_id = %s FOR UPDATE", (old["code_id"],)),
+        "SELECT id FROM code_sessions WHERE code_id = %s FOR UPDATE", (old["code_id"],)),
         lambda: client.post(f"/profile/{route}/start", headers={
             "Authorization": "Bearer " + profile["session_token"]}))
     assert run.error is None
     assert run.value.status_code == 409
-    next_at = codes._iso(testing.value("SELECT created_at FROM codes WHERE id = %s", (old["code_id"],))
+    next_at = codes._iso(testing.value("SELECT created_at FROM login_codes WHERE id = %s", (old["code_id"],))
                          + timedelta(days=21))
     assert run.value.content == body({"detail": {"reason": "cooldown", "next_at": next_at}})
     assert codes.get_session(old["session_token"]) is not None
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 2
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 2
 
 
 def test_profile_redemption_rechecks_expiry_after_session_insert_wait(env):
     issued = codes.issue_code(PLAYER, "profile")
-    expiry = deadline("codes")
-    run = expires_while_blocked(expiry, lambda c: c.execute("LOCK TABLE sessions IN SHARE MODE"),
+    expiry = deadline("login_codes")
+    run = expires_while_blocked(expiry, lambda c: c.execute("LOCK TABLE code_sessions IN SHARE MODE"),
                                lambda: codes.redeem_profile_code(issued["code"], remember_me=True), {"relation"})
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
-    assert testing.value("SELECT redeemed_at FROM codes") is None
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0
+    assert testing.value("SELECT redeemed_at FROM login_codes") is None
 
 
 @pytest.mark.parametrize("wait_on", ["code", "link", "sibling"])
@@ -151,57 +151,57 @@ def test_view_profile_rechecks_expiry_after_every_wait(env, wait_on):
         hold = lambda c: c.execute("SELECT id FROM user_sessions WHERE id = %s FOR UPDATE", (view["session_id"],))
         kinds = ROW
     else:
-        hold = lambda c: c.execute("LOCK TABLE sessions IN SHARE MODE")
+        hold = lambda c: c.execute("LOCK TABLE code_sessions IN SHARE MODE")
         kinds = {"relation"}
     run = expires_while_blocked(expiry, hold, lambda: codes.start_linked_profile_session(
         PLAYER, minted_via=view_as.profile_minted_via(view), expires_at=codes._iso(expiry),
         still_allowed=view_as.view_still_open(view["session_id"])), kinds)
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "session_ended"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
-    assert testing.value("SELECT COUNT(*) FROM codes") == 0
+    assert testing.value("SELECT COUNT(*) FROM code_sessions") == 0
+    assert testing.value("SELECT COUNT(*) FROM login_codes") == 0
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])
 def test_submission_rechecks_expiry_after_insert_wait(env, scope):
     drink_catalog()
     session = session_for(scope)
-    expiry = deadline("codes")
-    table = "drink_submissions" if scope == "drink" else "submissions"
+    expiry = deadline("login_codes")
+    table = "drink_submissions" if scope == "drink" else "skin_submissions"
     fn = submit_drink(session, "Late Brew") if scope == "drink" else submit_skin(session, "Late Sword")
     run = expires_while_blocked(expiry, lambda c: c.execute(f"LOCK TABLE {table} IN SHARE MODE"), fn, {"relation"})
     error = drinks.DrinkError if scope == "drink" else submissions.SubmissionError
     assert isinstance(run.error, error) and str(run.error) == "Code has expired"
     assert testing.value(f"SELECT COUNT(*) FROM {table}") == 0
-    assert testing.value("SELECT redeemed_at FROM codes") is None
+    assert testing.value("SELECT redeemed_at FROM login_codes") is None
 
 
 def test_drink_rechecks_expiry_after_texture_row_wait(env):
     drink_catalog()
     session = session_for("drink")
-    testing.execute("INSERT INTO drink_textures (id, owner_uuid, cmd, png_path, refcount, created_at) "
+    testing.execute("INSERT INTO drink_textures (id, owner_uuid, custom_model_data, png_path, refcount, created_at) "
                     "VALUES ('tex_old', %s, 7, 'textures/tex_old.png', 2, now())", (PLAYER,))
-    expiry = deadline("codes")
+    expiry = deadline("login_codes")
     recipe = {"name": "Late Brew", "ingredients": [{"id": "grape", "amount": 1}], "effects": []}
     run = expires_while_blocked(expiry, lambda c: c.execute("SELECT id FROM drink_textures FOR UPDATE"),
                                lambda: drinks.create_drink_submission(session, recipe, existing_texture_id="tex_old"))
     assert isinstance(run.error, drinks.DrinkError) and str(run.error) == "Code has expired"
     assert testing.value("SELECT COUNT(*) FROM drink_submissions") == 0
     assert testing.value("SELECT refcount FROM drink_textures") == 2
-    assert testing.value("SELECT redeemed_at FROM codes") is None
+    assert testing.value("SELECT redeemed_at FROM login_codes") is None
 
 
 @pytest.mark.parametrize("wait_on", ["row", "update"])
 def test_war_redemption_rechecks_expiry_after_every_wait(env, wait_on):
     issued = declare_codes.mint("attack", "defend", "war")
-    expiry = deadline("war_declare_codes")
-    hold = lambda c: c.execute("SELECT id FROM war_declare_codes FOR UPDATE" if wait_on == "row" else
-                               "LOCK TABLE war_declare_codes IN SHARE MODE")
+    expiry = deadline("war_declaration_codes")
+    hold = lambda c: c.execute("SELECT id FROM war_declaration_codes FOR UPDATE" if wait_on == "row" else
+                               "LOCK TABLE war_declaration_codes IN SHARE MODE")
     run = expires_while_blocked(expiry, hold,
                                lambda: declare_codes.redeem(issued["code"], "attack", "defend", war_id="war"),
                                ROW if wait_on == "row" else {"relation"})
     assert isinstance(run.error, declare_codes.WarDeclareCodeError) and str(run.error) == "This code has expired"
-    assert testing.value("SELECT redeemed_at FROM war_declare_codes") is None
-    assert testing.value("SELECT redeemed_war_id FROM war_declare_codes") is None
+    assert testing.value("SELECT redeemed_at FROM war_declaration_codes") is None
+    assert testing.value("SELECT redeemed_war_id FROM war_declaration_codes") is None
 
 
 def test_microsoft_consume_rechecks_expiry_after_update_wait(env):
@@ -215,11 +215,11 @@ def test_microsoft_consume_rechecks_expiry_after_update_wait(env):
 
 def test_revocation_rechecks_expiry_after_update_wait(env):
     issued = codes.issue_code(PLAYER, "skin")
-    expiry = deadline("codes")
-    run = expires_while_blocked(expiry, lambda c: c.execute("LOCK TABLE codes IN SHARE MODE"),
+    expiry = deadline("login_codes")
+    run = expires_while_blocked(expiry, lambda c: c.execute("LOCK TABLE login_codes IN SHARE MODE"),
                                lambda: codes.revoke_code(issued["code"]), {"relation"})
     assert isinstance(run.error, codes.CodeError) and str(run.error) == "Code has expired"
-    assert testing.value("SELECT revoked FROM codes") is False
+    assert testing.value("SELECT revoked FROM login_codes") is False
 
 
 def test_guild_leave_checks_grace_after_link_row_wait(env):

@@ -383,7 +383,7 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
                     """
                     INSERT INTO lp_changes (
                         created_at, actor_user_id, actor_name, actor_role, actor_minecraft_uuid,
-                        target_type, target, target_name, description, ops_json, reason
+                        target_type, target, target_name, description, ops, reason
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
@@ -470,7 +470,7 @@ def _actor_name(row) -> str:
 
 def _ops(row) -> list[dict]:
     """A change's ops as queued: stored with sorted keys, which jsonb does not keep."""
-    return json.loads(json.dumps(row["ops_json"], sort_keys=True))
+    return json.loads(json.dumps(row["ops"], sort_keys=True))
 
 
 def _lock_actors(conn) -> None:

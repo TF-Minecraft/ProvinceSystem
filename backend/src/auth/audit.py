@@ -30,7 +30,7 @@ def record(
         """
         INSERT INTO admin_audit (
             created_at, actor_type, actor_user_id, actor_discord_id, actor_name, actor_role,
-            action, outcome, target_user_id, target_discord_id, target_name, reason, detail_json
+            action, outcome, target_user_id, target_discord_id, target_name, reason, detail
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (

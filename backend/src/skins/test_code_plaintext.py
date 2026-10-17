@@ -16,14 +16,14 @@ NOW = datetime.now(timezone.utc)
 
 def _code(plaintext: str, scope: str, *, expires: timedelta = timedelta(hours=1)) -> int:
     return testing.value(
-        "INSERT INTO codes (code_hash, code_plaintext, player_uuid, scope, realm_id, created_at, expires_at) "
+        "INSERT INTO login_codes (code_hash, code_plaintext, player_uuid, scope, realm_id, created_at, expires_at) "
         "VALUES (%s, %s, 'player', %s, 'main', %s, %s) RETURNING id",
         (codes.hash_secret(plaintext), plaintext, scope, NOW, NOW + expires),
     )
 
 
 def _plaintext(code_id: int) -> str | None:
-    return testing.value("SELECT code_plaintext FROM codes WHERE id = %s", (code_id,))
+    return testing.value("SELECT code_plaintext FROM login_codes WHERE id = %s", (code_id,))
 
 
 def test_redeeming_a_profile_code_clears_its_plaintext():

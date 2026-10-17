@@ -112,7 +112,7 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         code_id = session["code_id"]
         testing.execute(
                 """
-                INSERT INTO submissions (
+                INSERT INTO skin_submissions (
                     id, player_uuid, code_id, kind, slug, display_name,
                     status, dir_path, created_at, discord_user_id, staff, realm_id
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -170,12 +170,12 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         created = self._submit_handheld(session, "Redeem Sword")
         code_id = session["code_id"]
 
-        [row] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (code_id,))
+        [row] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (code_id,))
         self.assertIsNotNone(row["redeemed_at"])
 
         deny_submission(created["id"], "Try again")
 
-        [row] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (code_id,))
+        [row] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (code_id,))
         self.assertIsNone(row["redeemed_at"])
 
     def test_lore_source_skips_mark_code_consumed(self) -> None:
@@ -189,7 +189,7 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         profile_code_id = int(profile_redeemed["code_id"])
         lore_code_id = ensure_lore_upload_code("player-1", "main")
 
-        [before] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (profile_code_id,))
+        [before] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (profile_code_id,))
 
         session = {
             "player_uuid": "player-1",
@@ -207,8 +207,8 @@ class SkinSubmissionAccessTest(unittest.TestCase):
                 source="lore",
             )
 
-        [lore_row] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (lore_code_id,))
-        [after] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (profile_code_id,))
+        [lore_row] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (lore_code_id,))
+        [after] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (profile_code_id,))
         self.assertIsNone(lore_row["redeemed_at"])
         self.assertEqual(before["redeemed_at"], after["redeemed_at"])
 
@@ -269,7 +269,7 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         sid = created["id"]
         code_id = session["code_id"]
 
-        [row] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (code_id,))
+        [row] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (code_id,))
         self.assertIsNotNone(row["redeemed_at"])
 
         self.assertTrue(
@@ -277,8 +277,8 @@ class SkinSubmissionAccessTest(unittest.TestCase):
                 sid, player_uuid="player-1"
             )
         )
-        row = testing.value("SELECT 1 FROM submissions WHERE id = %s", (sid,))
-        [code_row] = testing.rows("SELECT redeemed_at FROM codes WHERE id = %s", (code_id,))
+        row = testing.value("SELECT 1 FROM skin_submissions WHERE id = %s", (sid,))
+        [code_row] = testing.rows("SELECT redeemed_at FROM login_codes WHERE id = %s", (code_id,))
         self.assertIsNone(row)
         self.assertIsNone(code_row["redeemed_at"])
 
@@ -307,7 +307,7 @@ class SkinSubmissionAccessTest(unittest.TestCase):
                 sid, player_uuid="player-1"
             )
         )
-        self.assertIsNotNone(testing.value("SELECT 1 FROM submissions WHERE id = %s", (sid,)))
+        self.assertIsNotNone(testing.value("SELECT 1 FROM skin_submissions WHERE id = %s", (sid,)))
 
     def test_rollback_batch_dedupes_ids(self) -> None:
         from src.skins.submissions import rollback_pending_submissions_if_unreferenced

@@ -285,7 +285,7 @@ def test_admin_change_round_trip(app, bridge, staff, env):
     # And a snapshot built before the change cannot hide it again.
     assert bridge.put("/luckperms/plugin/snapshot", headers=PLUGIN, json=snapshot(revision=1500)).json()["stale"]
     rows = [r for r in audit_rows(env) if r["action"] == "luckperms.change"]
-    assert [(r["outcome"], r["detail_json"].get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
+    assert [(r["outcome"], r["detail"].get("error")) for r in rows] == [("ok", None), ("conflict", "change_pending")]
 
 
 @pytest.mark.parametrize("role,target,ops,status,code", [
@@ -483,5 +483,5 @@ def test_what_postgres_cannot_hold_is_refused_not_a_crash(app, bridge, staff):
     target = submit(app, staff["admin"], "user", "1111\x00", [{"op": "add_node", "node": {"key": "tips.off"}}])
     assert target.status_code == 400 and target.json()["detail"] == "bad_uuid"
     refusals = [r for r in testing.audit_rows() if r["action"] == "luckperms.change"]
-    assert [(r["outcome"], r["reason"], r["detail_json"]["target"]) for r in refusals] == [
+    assert [(r["outcome"], r["reason"], r["detail"]["target"]) for r in refusals] == [
         ("invalid", None, ALICE), ("invalid", "Event reward", "1111")]

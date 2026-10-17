@@ -43,7 +43,7 @@ class CreateError(ValueError):
         self.status_code = status_code
 
 
-# character_creates.held_until keeps a create from RPCharacters while its skins
+# character_creation_requests.held_until keeps a create from RPCharacters while its skins
 # upload. Long enough to sign and upload every wardrobe skin; a hold the browser
 # never releases (closed tab, lost connection) lapses on its own.
 HOLD_FOR_UPLOADS = timedelta(minutes=10)
@@ -184,7 +184,7 @@ def _validate_and_normalize(
             raise CreateError("name already in use on this realm")
         pending_rows = conn.execute(
             """
-            SELECT payload FROM character_creates
+            SELECT payload FROM character_creation_requests
             WHERE realm_id = %s AND status = 'pending'
             """,
             (realm,),
@@ -449,7 +449,7 @@ def count_pending(player_uuid: str, realm_id: str) -> int:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT COUNT(*) AS n FROM character_creates
+            SELECT COUNT(*) AS n FROM character_creation_requests
             WHERE player_uuid = %s AND realm_id = %s AND status = 'pending'
             """,
             (player_uuid, realm_id),
@@ -509,7 +509,7 @@ def create_character(
         if client_request_id:
             with database.connect() as conn:
                 row = conn.execute(
-                    "SELECT * FROM character_creates "
+                    "SELECT * FROM character_creation_requests "
                     "WHERE player_uuid = %s AND client_request_id = %s",
                     (uuid, client_request_id),
                 ).fetchone()
@@ -537,7 +537,7 @@ def create_character(
         if client_request_id:
             existing = conn.execute(
                 """
-                SELECT * FROM character_creates
+                SELECT * FROM character_creation_requests
                 WHERE player_uuid = %s AND client_request_id = %s
                 """,
                 (uuid, client_request_id),
@@ -553,7 +553,7 @@ def create_character(
         # A retry racing the first request finds its row through the unique index.
         row = conn.execute(
             """
-            INSERT INTO character_creates (
+            INSERT INTO character_creation_requests (
                 id, player_uuid, client_request_id, payload, status,
                 character_id, error, created_at, applied_at, realm_id, held_until
             )
@@ -576,7 +576,7 @@ def create_character(
         if row is None:
             row = conn.execute(
                 """
-                SELECT * FROM character_creates
+                SELECT * FROM character_creation_requests
                 WHERE player_uuid = %s AND client_request_id = %s
                 """,
                 (uuid, client_request_id),
@@ -591,7 +591,7 @@ def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
     with database.connect() as conn:
         rows = conn.execute(
             """
-            SELECT * FROM character_creates
+            SELECT * FROM character_creation_requests
             WHERE status = 'pending' AND realm_id = %s
               AND (held_until IS NULL OR held_until <= %s)
             ORDER BY created_at ASC
@@ -651,7 +651,7 @@ def list_for_player(
     with database.connect() as conn:
         pending_rows = conn.execute(
             """
-            SELECT * FROM character_creates
+            SELECT * FROM character_creation_requests
             WHERE player_uuid = %s AND status = 'pending' AND realm_id = %s
             ORDER BY created_at ASC
             """,
@@ -660,7 +660,7 @@ def list_for_player(
         # Recent rejects (slot full, etc.) so the website can show why a create failed.
         rejected_rows = conn.execute(
             """
-            SELECT * FROM character_creates
+            SELECT * FROM character_creation_requests
             WHERE player_uuid = %s
               AND status = 'rejected'
               AND realm_id = %s
@@ -776,7 +776,7 @@ def mark_applied_results(results: list) -> dict[str, Any]:
         # absent for this acknowledgement, even if a create arrives meanwhile.
         ids = [str(raw.get("id") or "").strip() for raw in results]
         locked_ids = {r["id"] for r in conn.execute(
-            "SELECT id FROM character_creates WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+            "SELECT id FROM character_creation_requests WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
             (ids,),
         )}
         for raw in results:
@@ -788,7 +788,7 @@ def mark_applied_results(results: list) -> dict[str, Any]:
                 character_id = str(raw.get("character_id") or cid).strip()
                 owner = conn.execute(
                     """
-                    UPDATE character_creates
+                    UPDATE character_creation_requests
                     SET status = 'applied',
                         character_id = %s,
                         error = NULL,
@@ -811,7 +811,7 @@ def mark_applied_results(results: list) -> dict[str, Any]:
                 error = str(raw.get("error") or "rejected").strip()
                 cur = conn.execute(
                     """
-                    UPDATE character_creates
+                    UPDATE character_creation_requests
                     SET status = 'rejected',
                         error = %s,
                         applied_at = %s
@@ -834,7 +834,7 @@ def release_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     with database.connect() as conn:
         released = conn.execute(
             """
-            UPDATE character_creates SET held_until = NULL
+            UPDATE character_creation_requests SET held_until = NULL
             WHERE id = %s AND player_uuid = %s AND status = 'pending'
             """,
             ((create_id or "").strip(), (player_uuid or "").strip()),
@@ -859,7 +859,7 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         with database.connect() as conn:
             row = conn.execute(
                 """
-                SELECT player_uuid, status FROM character_creates WHERE id = %s
+                SELECT player_uuid, status FROM character_creation_requests WHERE id = %s
                 """,
                 (cid,),
             ).fetchone()
@@ -902,7 +902,7 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         )
         cur = conn.execute(
             """
-            DELETE FROM character_creates
+            DELETE FROM character_creation_requests
             WHERE id = %s AND player_uuid = %s AND status = 'pending'
             """,
             (cid, uuid),

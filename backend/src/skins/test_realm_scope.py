@@ -196,7 +196,7 @@ class RealmScopeTest(unittest.TestCase):
         with database.connect() as conn:
             code_id = conn.execute(
                 """
-                INSERT INTO codes (
+                INSERT INTO login_codes (
                     code_hash, player_uuid, scope, realm_id,
                     created_at, expires_at
                 )
@@ -208,7 +208,7 @@ class RealmScopeTest(unittest.TestCase):
             for sid, realm in (("sub-main", "main"), ("sub-dev", "dev")):
                 conn.execute(
                     """
-                    INSERT INTO submissions (
+                    INSERT INTO skin_submissions (
                         id, player_uuid, code_id, kind, slug, display_name,
                         status, dir_path, created_at, reviewed_at, applied_at,
                         realm_id
@@ -238,7 +238,7 @@ class RealmScopeTest(unittest.TestCase):
         with database.connect() as conn:
             code_id = conn.execute(
                 """
-                INSERT INTO codes (
+                INSERT INTO login_codes (
                     code_hash, player_uuid, scope, realm_id,
                     created_at, expires_at
                 )
@@ -252,7 +252,7 @@ class RealmScopeTest(unittest.TestCase):
                     """
                     INSERT INTO drink_submissions (
                         id, player_uuid, code_id, slug, display_name,
-                        recipe_json, status, dir_path, created_at,
+                        recipe, status, dir_path, created_at,
                         reviewed_at, applied_at, realm_id
                     )
                     VALUES (%s, 'p-drink', %s, %s, %s, '{}',
@@ -313,7 +313,7 @@ class RealmScopeTest(unittest.TestCase):
         with database.connect() as conn:
             code_id = conn.execute(
                 """
-                INSERT INTO codes (
+                INSERT INTO login_codes (
                     code_hash, player_uuid, scope, realm_id,
                     created_at, expires_at
                 )
@@ -324,7 +324,7 @@ class RealmScopeTest(unittest.TestCase):
             ).fetchone()["id"]
             conn.execute(
                 """
-                INSERT INTO submissions (
+                INSERT INTO skin_submissions (
                     id, player_uuid, code_id, kind, slug, display_name,
                     status, dir_path, created_at, realm_id
                 )
@@ -348,7 +348,7 @@ class RealmScopeTest(unittest.TestCase):
                     """
                     INSERT INTO lore_item_customisations (
                         player_uuid, character_id, kit_key, display_name,
-                        lore_json, state, ready_at, updated_at, realm_id
+                        lore, state, ready_at, updated_at, realm_id
                     )
                     VALUES (
                         'p-lore', %s, 'starter', 'Sword', '[]',

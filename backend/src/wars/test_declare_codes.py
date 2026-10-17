@@ -41,7 +41,7 @@ class WarDeclareCodesTest(unittest.TestCase):
         past = datetime.now(timezone.utc) - timedelta(hours=1)
         with database.connect() as conn:
             conn.execute(
-                "UPDATE war_declare_codes SET expires_at = %s WHERE id = %s",
+                "UPDATE war_declaration_codes SET expires_at = %s WHERE id = %s",
                 (past, code_id),
             )
 
@@ -65,7 +65,7 @@ class WarDeclareCodesTest(unittest.TestCase):
         minted = self._mint()
         with database.connect() as conn:
             row = conn.execute(
-                "SELECT * FROM war_declare_codes WHERE id = %s",
+                "SELECT * FROM war_declaration_codes WHERE id = %s",
                 (minted["id"],),
             ).fetchone()
         # A lost code is revoked and reminted; there is nowhere to read it back from.

@@ -70,7 +70,7 @@ def save(report: dict, *, minecraft_name: str | None, country: str | None, user:
             saved = conn.execute(
                 """
                 INSERT INTO diagnostic_reports
-                    (code, created_at, user_id, discord_name, minecraft_name, country, worst, summary, report_json)
+                    (code, created_at, user_id, discord_name, minecraft_name, country, worst, summary, report)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (code) DO NOTHING
                 """,
@@ -117,11 +117,9 @@ def get(code: str) -> dict | None:
     cutoff = _now() - timedelta(days=KEEP_DAYS)
     with database.connect() as conn:
         row = conn.execute(
-            f"SELECT {_LIST_COLUMNS}, report_json FROM diagnostic_reports WHERE code = %s AND created_at >= %s",
+            f"SELECT {_LIST_COLUMNS}, report FROM diagnostic_reports WHERE code = %s AND created_at >= %s",
             (code, cutoff),
         ).fetchone()
     if row is None:
         return None
-    out = _listed(row)
-    out["report"] = out.pop("report_json")
-    return out
+    return _listed(row)

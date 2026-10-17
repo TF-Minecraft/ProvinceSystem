@@ -28,7 +28,7 @@ def fetch_owned_pending_create(
             """
             SELECT id, player_uuid, status, character_id, realm_id,
                    wardrobe_active_slot
-            FROM character_creates
+            FROM character_creation_requests
             WHERE id = %s AND player_uuid = %s
               AND LOWER(COALESCE(status, '')) = 'pending'
             """,

@@ -55,7 +55,7 @@ def body(value) -> bytes:
 def code(scope: str, plaintext: str | None = "ABCD-EFGH-IJKL", **columns) -> int:
     values = {"code_hash": hash_secret(plaintext or scope), "code_plaintext": plaintext, "player_uuid": PLAYER,
               "scope": scope, "created_at": "2026-01-15T12:00:00Z", "expires_at": "2099-01-17T12:00:00Z", **columns}
-    return testing.rows(f"INSERT INTO codes ({', '.join(values)}) VALUES ({', '.join(['%s'] * len(values))}) "
+    return testing.rows(f"INSERT INTO login_codes ({', '.join(values)}) VALUES ({', '.join(['%s'] * len(values))}) "
                         "RETURNING id", tuple(values.values()))[0]["id"]
 
 
@@ -163,7 +163,7 @@ def test_approved_skins_for_the_plugin(api):
     code_id = code("skin")
     testing.execute(
         """
-        INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, base_set, tiers, add_name,
+        INSERT INTO skin_submissions (id, player_uuid, code_id, kind, slug, display_name, base_set, tiers, add_name,
                                  status, dir_path, created_at, reviewed_at, staff, realm_id)
         VALUES ('steve_sword', %s, %s, 'handheld', 'steve_sword', 'Sword', 'swords', NULL, true,
                 'approved', 'skins/steve_sword', '2026-03-01T10:00:00Z', '2026-03-02T11:00:00.5Z', false, 'main')
@@ -190,7 +190,7 @@ def test_drinks_pending_apply(api):
     code_id = code("drink")
     testing.execute(
         """
-        INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, recipe_json, status,
+        INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, recipe, status,
                                        new_texture, dir_path, discord_user_id, created_at, reviewed_at)
         VALUES ('steve_ale', %s, %s, 'ale', 'Ale', '{"name": "Ale"}', 'approved', false, '/tmp/x',
                 '323456789012345678', '2026-03-01T10:00:00Z', '2026-03-02T11:00:00Z')
@@ -210,7 +210,7 @@ def test_drinks_pending_apply(api):
 def test_war_codes_for_staff(api):
     minted = api.post("/wars/declare-codes", json={"attacker_faction_id": "a", "defender_faction_id": "d",
                                                    "goal": "war"}, headers=STAFF).json()
-    testing.execute("UPDATE war_declare_codes SET created_at = '2026-03-01T10:00:00.9Z', "
+    testing.execute("UPDATE war_declaration_codes SET created_at = '2026-03-01T10:00:00.9Z', "
                     "expires_at = '2099-03-03T10:00:00Z'")
     response = api.get("/wars/declare-codes", headers=STAFF)
     assert response.content == body({"codes": [{

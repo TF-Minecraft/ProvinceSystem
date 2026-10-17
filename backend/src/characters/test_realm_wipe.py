@@ -114,7 +114,7 @@ class _CharacterDbFixture:
         self._seed_character(conn, realm, uuid, f"char-{realm}")
         conn.execute(
             """
-            INSERT INTO character_creates (
+            INSERT INTO character_creation_requests (
                 id, player_uuid, payload, status, created_at, realm_id
             ) VALUES (%s, %s, '{}', 'pending', %s, %s)
             """,
@@ -123,7 +123,7 @@ class _CharacterDbFixture:
         pending_rel = f"wardrobe/pending/{create_id}/base.png"
         conn.execute(
             """
-            INSERT INTO character_create_wardrobe (
+            INSERT INTO character_creation_wardrobe (
                 create_id, slot, png_relpath, updated_at
             ) VALUES (%s, 'base', %s, %s)
             """,
@@ -156,7 +156,7 @@ class _CharacterDbFixture:
     def _count(self, table: str, realm: str) -> int:
         from src.database import connect
 
-        if table in ("character_wardrobe_slots", "character_create_wardrobe"):
+        if table in ("character_wardrobe_slots", "character_creation_wardrobe"):
             raise AssertionError("table has no realm_id; count by key instead")
         with connect() as conn:
             row = conn.execute(
@@ -181,7 +181,7 @@ class _CharacterDbFixture:
 
         with connect() as conn:
             row = conn.execute(
-                "SELECT COUNT(*) AS n FROM character_create_wardrobe "
+                "SELECT COUNT(*) AS n FROM character_creation_wardrobe "
                 "WHERE create_id = %s",
                 (f"create-{realm}",),
             ).fetchone()
@@ -208,16 +208,16 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
         self.assertEqual(
             {
                 "character_wardrobe_slots": 1,
-                "character_create_wardrobe": 1,
+                "character_creation_wardrobe": 1,
                 "lore_item_customisations": 1,
                 "character_roster": 1,
-                "character_creates": 1,
+                "character_creation_requests": 1,
             },
             out["deleted"],
         )
         self.assertEqual(5, out["total"])
 
-        for table in ("character_roster", "character_creates",
+        for table in ("character_roster", "character_creation_requests",
                       "lore_item_customisations"):
             self.assertEqual(0, self._count(table, "main"), table)
             self.assertEqual(1, self._count(table, "dev"), table)
@@ -270,7 +270,7 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
 
         with connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET character_id = %s, status = 'applied' "
+                "UPDATE character_creation_requests SET character_id = %s, status = 'applied' "
                 "WHERE id = %s",
                 ("orphan-main", "create-main"),
             )
@@ -365,7 +365,7 @@ class DeleteCharactersTest(_CharacterDbFixture, unittest.TestCase):
 
         delete_characters_for_realm("main", ["char-main", "char-main-2"])
 
-        self.assertEqual(1, self._count("character_creates", "main"))
+        self.assertEqual(1, self._count("character_creation_requests", "main"))
         self.assertEqual(1, self._create_wardrobe_rows("main"))
         self.assertTrue(
             (self.root / "wardrobe/pending/create-main/base.png").is_file()

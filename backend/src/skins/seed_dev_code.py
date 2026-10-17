@@ -29,7 +29,7 @@ def main() -> None:
     with database.connect() as conn:
         row = conn.execute(
             """
-            INSERT INTO codes (
+            INSERT INTO login_codes (
                 code_hash, code_plaintext, player_uuid, scope,
                 created_at, expires_at, redeemed_at, revoked
             )

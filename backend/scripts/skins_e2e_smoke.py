@@ -625,7 +625,7 @@ def main() -> None:
         fail(f"deny-reuse response status: {r.json()}")
     with connect() as conn:
         if conn.execute(
-            "SELECT 1 FROM submissions WHERE id = %s", (reuse_id,)
+            "SELECT 1 FROM skin_submissions WHERE id = %s", (reuse_id,)
         ).fetchone():
             fail(f"deny should purge submissions row: {reuse_id}")
     reuse_tex2 = make_png(16, 16, fill=202)

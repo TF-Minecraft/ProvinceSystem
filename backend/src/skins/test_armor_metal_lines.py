@@ -21,13 +21,13 @@ def database(postgres, tmp_path, monkeypatch):
 
 def _insert_armor(conn, sid, tiers, *, tier_sets=None):
     conn.execute(
-        "INSERT INTO codes (id, code_hash, player_uuid, created_at, expires_at) "
+        "INSERT INTO login_codes (id, code_hash, player_uuid, created_at, expires_at) "
         "VALUES (1, 'hash', 'player', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00Z') "
         "ON CONFLICT (id) DO NOTHING"
     )
     conn.execute(
         """
-        INSERT INTO submissions (
+        INSERT INTO skin_submissions (
             id, player_uuid, code_id, kind, slug, display_name, tiers,
             tier_sets, status, dir_path, created_at, reviewed_at
         )

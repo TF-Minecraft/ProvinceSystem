@@ -89,7 +89,7 @@ def test_reads_cannot_write_and_are_audited(app, env):  # noqa: F811
     assert refused.status_code == 400 and "Read mode" in refused.json()["detail"]
     rows = [r for r in audit_rows(env) if r["action"].startswith("database.")]
     assert [(r["action"], r["outcome"]) for r in rows] == [("database.read", "ok"), ("database.read", "failed")]
-    assert rows[0]["detail_json"]["sql"] == "SELECT player_uuid, minecraft_name FROM discord_links ORDER BY player_uuid"
+    assert rows[0]["detail"]["sql"] == "SELECT player_uuid, minecraft_name FROM discord_links ORDER BY player_uuid"
     assert c.get("/admin/database").json()["databases"][0]["queries"] == 2
 
 
@@ -106,7 +106,7 @@ def test_root_edits_are_audited_but_the_audit_log_is_protected(app, env):  # noq
     written = [r for r in audit_rows(env) if r["action"] == "database.write"]
     # Each edit is logged as requested before it runs, then with its outcome.
     assert [r["outcome"] for r in written] == ["requested", "ok"] + ["requested", "failed"] * 4
-    assert "Renamed" in written[0]["detail_json"]["sql"]
+    assert "Renamed" in written[0]["detail"]["sql"]
 
 
 def test_writes_need_the_sites_origin(app, env):  # noqa: F811
@@ -413,12 +413,12 @@ def test_provisioning_refuses_create_on_other_persistent_schemas(postgres, studi
 @pytest.mark.parametrize("schema", ["public", "studio_other"])
 @pytest.mark.parametrize("privilege", ["TRUNCATE", "TRIGGER", "REFERENCES", "REFERENCES (player_uuid)", "MAINTAIN"])
 def test_provisioning_refuses_definition_privileges_on_ordinary_tables(postgres, studio_login, privilege, schema):
-    table = sql.Identifier(schema, "codes")
+    table = sql.Identifier(schema, "login_codes")
     with psycopg.connect(postgres, autocommit=True) as conn:
         if schema != "public":
             conn.execute("CREATE SCHEMA studio_other")
             conn.execute("GRANT USAGE ON SCHEMA studio_other TO PUBLIC")
-            conn.execute("CREATE TABLE studio_other.codes (player_uuid text)")
+            conn.execute("CREATE TABLE studio_other.login_codes (player_uuid text)")
         conn.execute(sql.SQL("GRANT {} ON {} TO PUBLIC").format(sql.SQL(privilege), table))
         try:
             with pytest.raises(StudioRoleError, match="grants.*bypass"):
