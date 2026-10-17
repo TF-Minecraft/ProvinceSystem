@@ -161,7 +161,8 @@ def _json_text(value, *, canonical: bool) -> str:
     if isinstance(value, list):
         return "[" + ",".join(_json_text(item, canonical=canonical) for item in value) + "]"
     if isinstance(value, Decimal):
-        if not value.is_finite() or value.adjusted() >= 131072 or value.as_tuple().exponent < -16383:
+        if (not value.is_finite() or (value and value.adjusted() >= 131072)
+                or value.as_tuple().exponent < -16383):
             raise ValueError("JSON number is outside Postgres numeric limits")
         text = format(value, "f")
         if canonical:
@@ -181,6 +182,14 @@ def _json(value) -> JsonValue:
     def refuse_constant(_):
         raise ValueError("non-finite JSON number")
 
+    def number(raw):
+        # Postgres bounds the written exponent before applying fractional scale,
+        # even for zero, which otherwise has no integer-digit limit.
+        exponent = raw.lower().partition("e")[2]
+        if exponent and abs(int(exponent)) >= (1 << 30):
+            raise ValueError("JSON number is outside Postgres numeric limits")
+        return Decimal(raw)
+
     def validate_member(value):
         if isinstance(value, list):
             for item in value:
@@ -196,7 +205,7 @@ def _json(value) -> JsonValue:
             validate_member(value)
         return dict(pairs)
 
-    parsed = json.loads(raw, parse_int=Decimal, parse_float=Decimal, parse_constant=refuse_constant,
+    parsed = json.loads(raw, parse_int=Decimal, parse_float=number, parse_constant=refuse_constant,
                         object_pairs_hook=object_members)
     return JsonValue(raw, _json_text(parsed, canonical=True), _json_text(parsed, canonical=False))
 

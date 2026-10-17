@@ -126,7 +126,8 @@ def test_invalid_values_fail_before_target_migrations(legacy, scratch_database, 
 
 @pytest.mark.parametrize("value", ['{"a":NaN}', '{"a":Infinity}', '{"a":-Infinity}',
                                   '{"a":"\\u0000"}', '{"\\u0000":"a"}', '{"a":"\\ud800"}',
-                                  '{"a":1e131072}', '{"a":1e-16384}', '{"a":1e9999999999999999999}', '{broken'])
+                                  '{"a":1e131072}', '{"a":1e-16384}', '{"a":1e9999999999999999999}',
+                                  '{"a":0e1073741824}', '{"a":0.0e1073741824}', '{"a":0e-16384}', '{broken'])
 def test_invalid_json_fails_before_target_migrations(legacy, scratch_database, value):
     insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
     with pytest.raises(copy.CopyError, match="admin_audit rowid 1, column detail_json:"):
@@ -383,6 +384,23 @@ def test_valid_duplicate_json_keys_keep_postgres_last_value_semantics(legacy, sc
     assert all(check.matches for check in copy.to_postgres(legacy, scratch_database).checks)
     with psycopg.connect(scratch_database) as conn:
         assert conn.execute("SELECT detail_json FROM admin_audit").fetchone() == ({"a": 2},)
+
+
+@pytest.mark.parametrize("number", ["0e131072", "-0e131072", "0e1073741823", "0.00e1073741823"])
+def test_exact_zero_json_exponents_match_postgres_and_round_trip(legacy, scratch_database, tmp_path, number):
+    value = '{"n":' + number + '}'
+    with psycopg.connect(scratch_database) as conn:
+        assert conn.execute("SELECT %s::jsonb", (value,)).fetchone() == ({"n": 0},)
+    insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
+    original = legacy.read_bytes()
+    assert all(check.matches for check in copy.to_postgres(legacy, scratch_database).checks)
+    copy.to_postgres(legacy, scratch_database, verify_only=True)
+    with psycopg.connect(scratch_database) as conn:
+        assert conn.execute("SELECT detail_json FROM admin_audit").fetchone() == ({"n": 0},)
+    rollback = tmp_path / "rollback.db"
+    assert all(check.matches for check in copy.to_sqlite(rollback, scratch_database).checks)
+    copy.to_postgres(rollback, scratch_database, verify_only=True)
+    assert legacy.read_bytes() == original
 
 
 def test_duplicate_sequence_names_fail_before_migrations(legacy, scratch_database):
