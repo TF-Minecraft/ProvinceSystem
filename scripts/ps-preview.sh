@@ -97,10 +97,10 @@ create_data() {
       low_prio sqlite3 "$src/province.db" ".timeout 30000" ".backup '$tmp/data/province.db'"
     fi
   done
-  # PG-MIGRATION: host plumbing. Accounts (user_sessions, discord_oauth_states) live in
-  # Postgres on the postgres branch, so these two deletes hit stale SQLite tables and previews
-  # of that branch have no DATABASE_URL and cannot sign in. The host-plumbing PR gives each
-  # preview its own database and moves this scrub there.
+  # PG-MIGRATION: host plumbing. Accounts (user_sessions, discord_oauth_states), Profile
+  # sessions and Discord link codes live in Postgres on the postgres branch, so these deletes hit
+  # stale SQLite tables and previews of that branch have no DATABASE_URL and cannot sign in. The
+  # host-plumbing PR gives each preview its own database and moves this scrub there.
   sqlite3 "$tmp/data/province.db" <<'SQL'
 .timeout 30000
 DELETE FROM sessions;

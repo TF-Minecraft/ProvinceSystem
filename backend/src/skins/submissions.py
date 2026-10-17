@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import shutil
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .db import SKINS_DIR, connect
-from .codes import SCOPE_LORE_UPLOAD
+from src import database
+
+from .db import SKINS_DIR, connect as sqlite_connect
+from .codes import CodeError, SCOPE_LORE_UPLOAD, api_time, lock_code_for_submission, mark_code_consumed
 from .discord_link import get_link_for_uuid
 from .naming import (
     ARMOR_METALS,
@@ -131,55 +131,41 @@ def parse_grip_y(raw: str | None) -> float | None:
         )
     return round(value, 2)
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
-def _row_base_set(row: sqlite3.Row) -> str | None:
+def _row_base_set(row: dict) -> str | None:
     if "base_set" not in row.keys():
         return None
     return row["base_set"]
 
 
-def _row_json_list(row: sqlite3.Row, key: str) -> list[str]:
-    if key not in row.keys():
-        return []
-    raw = row[key]
-    if raw is None or raw == "":
-        return []
-    if isinstance(raw, list):
-        return [str(x) for x in raw]
-    try:
-        data = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return []
+def _row_json_list(row: dict, key: str) -> list[str]:
+    """A jsonb list column as strings, without empty entries."""
+    data = row.get(key)
     if not isinstance(data, list):
         return []
     return [str(x) for x in data if x is not None and str(x).strip()]
 
 
-def _row_json_object(row: sqlite3.Row, key: str) -> dict[str, str]:
-    if key not in row.keys():
-        return {}
-    raw = row[key]
-    if raw is None or raw == "":
-        return {}
-    if isinstance(raw, dict):
-        return {str(k): str(v) for k, v in raw.items() if v is not None}
-    try:
-        data = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return {}
+def _row_json_object(row: dict, key: str) -> dict[str, str]:
+    """A jsonb object column as strings, without empty values."""
+    data = row.get(key)
     if not isinstance(data, dict):
         return {}
-    return {
+    values = {
         str(k): str(v)
         for k, v in data.items()
         if v is not None and str(v).strip()
     }
+    # Aliases, scrolls and base sets are produced in the retained tier-array order.
+    ordered = {tier: values[tier] for tier in _row_json_list(row, "tiers") if tier in values}
+    ordered.update(values)
+    return ordered
 
 
-def _row_add_name(row: sqlite3.Row) -> bool:
+def _row_add_name(row: dict) -> bool:
     if "add_name" not in row.keys():
         return False
     return bool(row["add_name"])
@@ -216,9 +202,9 @@ def _validate_name_styles(raw: list[str] | None) -> list[str]:
 def _upload_source_for_code_id(code_id: int | None) -> str:
     if code_id is None:
         return "skins"
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT scope FROM codes WHERE id = ?",
+            "SELECT scope FROM codes WHERE id = %s",
             (int(code_id),),
         ).fetchone()
     if row is None:
@@ -229,7 +215,7 @@ def _upload_source_for_code_id(code_id: int | None) -> str:
     return "skins"
 
 
-def _row_tier_sets(row: sqlite3.Row) -> dict[str, str]:
+def _row_tier_sets(row: dict) -> dict[str, str]:
     """ArmourShop base set per armour tier; a stored entry overrides the default."""
     stored = _row_json_object(row, "tier_sets")
     return {
@@ -238,7 +224,7 @@ def _row_tier_sets(row: sqlite3.Row) -> dict[str, str]:
     }
 
 
-def _public_row(row: sqlite3.Row) -> dict:
+def _public_row(row: dict) -> dict:
     is_staff = bool(row["staff"]) if "staff" in row.keys() else False
     out = {
         "id": row["id"],
@@ -256,9 +242,9 @@ def _public_row(row: sqlite3.Row) -> dict:
         "name_styles": _row_json_list(row, "name_styles"),
         "status": row["status"],
         "deny_reason": row["deny_reason"],
-        "created_at": row["created_at"],
-        "reviewed_at": row["reviewed_at"],
-        "applied_at": row["applied_at"],
+        "created_at": api_time(row["created_at"]),
+        "reviewed_at": api_time(row["reviewed_at"]),
+        "applied_at": api_time(row["applied_at"]),
         "discord_user_id": row["discord_user_id"]
         if "discord_user_id" in row.keys()
         else None,
@@ -414,20 +400,15 @@ def find_duplicate_texture(
     base = (base_set or "").strip().lower()
     if not uuid or not dig:
         return None
-    with connect() as conn:
-        cols = {
-            r[1] for r in conn.execute("PRAGMA table_info(submissions)").fetchall()
-        }
-        if "texture_hash" not in cols:
-            return None
+    with database.connect() as conn:
         if base:
             row = conn.execute(
                 """
                 SELECT id FROM submissions
-                WHERE LOWER(player_uuid) = LOWER(?)
-                  AND LOWER(COALESCE(texture_hash, '')) = ?
-                  AND LOWER(COALESCE(base_set, '')) = ?
-                  AND status IN (?, ?, ?)
+                WHERE LOWER(player_uuid) = LOWER(%s)
+                  AND LOWER(COALESCE(texture_hash, '')) = %s
+                  AND LOWER(COALESCE(base_set, '')) = %s
+                  AND status IN (%s, %s, %s)
                 ORDER BY created_at DESC
                 LIMIT 1
                 """,
@@ -437,9 +418,9 @@ def find_duplicate_texture(
             row = conn.execute(
                 """
                 SELECT id FROM submissions
-                WHERE LOWER(player_uuid) = LOWER(?)
-                  AND LOWER(COALESCE(texture_hash, '')) = ?
-                  AND status IN (?, ?, ?)
+                WHERE LOWER(player_uuid) = LOWER(%s)
+                  AND LOWER(COALESCE(texture_hash, '')) = %s
+                  AND status IN (%s, %s, %s)
                 ORDER BY created_at DESC
                 LIMIT 1
                 """,
@@ -454,11 +435,11 @@ def slug_taken(slug: str, realm_id: str | None = None) -> bool:
     from src.skins.codes import normalize_realm_id
 
     realm = normalize_realm_id(realm_id)
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT 1 FROM submissions
-            WHERE id = ? AND realm_id = ? AND status IN (?, ?, ?)
+            WHERE id = %s AND realm_id = %s AND status IN (%s, %s, %s)
             LIMIT 1
             """,
             (slug, realm, *ACTIVE_STATUSES),
@@ -486,11 +467,11 @@ def staff_skin_set_key_taken(
     if not candidate:
         return None
 
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, kind, tiers FROM submissions
-            WHERE status IN (?, ?, ?)
+            WHERE status IN (%s, %s, %s)
             """,
             ACTIVE_STATUSES,
         ).fetchall()
@@ -531,12 +512,12 @@ def check_player_conflicts(
             except SlugError:
                 pass
 
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, slug, display_name, status, kind
             FROM submissions
-            WHERE player_uuid = ? AND status IN (?, ?, ?)
+            WHERE player_uuid = %s AND status IN (%s, %s, %s)
             """,
             (uuid, *ACTIVE_STATUSES),
         ).fetchall()
@@ -572,11 +553,11 @@ def check_player_conflicts(
 
 
 def _assert_no_active_submission_for_code(code_id: int) -> None:
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT 1 FROM submissions
-            WHERE code_id = ? AND status IN (?, ?)
+            WHERE code_id = %s AND status IN (%s, %s)
             LIMIT 1
             """,
             (int(code_id), *_BLOCK_STATUSES),
@@ -679,8 +660,8 @@ def create_submission(
     want_add_name = bool(add_name)
     colours = _validate_name_colours(name_colours, max_colours=colour_cap)
     styles = _validate_name_styles(name_styles)
-    colours_json = json.dumps(colours) if colours else None
-    styles_json = json.dumps(styles) if styles else None
+    colours_json = database.Jsonb(colours) if colours else None
+    styles_json = database.Jsonb(styles) if styles else None
 
     tier_list: list[str] | None
     aliases: dict[str, str] | None
@@ -827,7 +808,7 @@ def create_submission(
     has_staff_fields = bool(category_raw or scroll_raw or tier_scrolls)
     staff_category: str | None = None
     staff_scroll: str | None = None
-    staff_tier_scrolls_json: str | None = None
+    staff_tier_scrolls_json: database.Jsonb | None = None
 
     if not is_staff:
         if has_staff_fields:
@@ -851,11 +832,11 @@ def create_submission(
         staff_category = landing["category"]
         staff_scroll = landing["scroll"]
         if landing["tier_scrolls"] is not None:
-            staff_tier_scrolls_json = json.dumps(landing["tier_scrolls"])
+            staff_tier_scrolls_json = database.Jsonb(landing["tier_scrolls"])
 
-    tiers_json = json.dumps(tier_list) if tier_list else None
-    aliases_json = json.dumps(aliases) if aliases else None
-    h3d_json = json.dumps(h3d_list) if h3d_list else None
+    tiers_json = database.Jsonb(tier_list) if tier_list else None
+    aliases_json = database.Jsonb(aliases) if aliases else None
+    h3d_json = database.Jsonb(h3d_list) if h3d_list else None
     tex_hash = texture_sha256(files_bytes)
     if not is_staff and tex_hash:
         dup_id = find_duplicate_texture(player_uuid, base, tex_hash)
@@ -865,18 +846,24 @@ def create_submission(
                 "Pick the existing skin instead of uploading again."
             )
     dir_path = f"skins/{submission_id}"
-    created_at = _iso_now()
+    created_at = _utcnow()
     code_id = session_row["code_id"]
     discord_id = str(link["discord_user_id"])
     status = "approved" if is_staff else "pending"
     reviewed_at = created_at if is_staff else None
 
-    with connect() as conn:
+    with database.connect() as conn:
+        if source_norm != "lore":
+            # The insert consumes the code: hold it and check again that nothing else has.
+            refused = lock_code_for_submission(conn, int(code_id), "submissions")
+            if refused == "revoked":
+                raise SubmissionError("Code has been revoked")
+            if refused == "expired":
+                raise SubmissionError("Code has expired")
+            if refused is not None:
+                raise SubmissionError("This code already has an active submission")
         try:
-            cols = {
-                r[1] for r in conn.execute("PRAGMA table_info(submissions)").fetchall()
-            }
-            if "texture_hash" in cols:
+            with conn.transaction():
                 conn.execute(
                     """
                     INSERT INTO submissions (
@@ -888,8 +875,8 @@ def create_submission(
                         discord_user_id, staff, category, scroll, tier_scrolls,
                         texture_hash, realm_id
                     ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
-                        ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s,
+                        %s, NULL, NULL, %s, %s, %s, %s, %s, %s, %s
                     )
                     """,
                     (
@@ -904,7 +891,7 @@ def create_submission(
                         tiers_json,
                         h3d_json,
                         aliases_json,
-                        1 if want_add_name else 0,
+                        want_add_name,
                         colours_json,
                         styles_json,
                         status,
@@ -912,7 +899,7 @@ def create_submission(
                         created_at,
                         reviewed_at,
                         discord_id,
-                        1 if is_staff else 0,
+                        is_staff,
                         staff_category,
                         staff_scroll,
                         staff_tier_scrolls_json,
@@ -920,51 +907,7 @@ def create_submission(
                         realm,
                     ),
                 )
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO submissions (
-                        id, player_uuid, code_id, kind, slug, display_name,
-                        grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
-                        add_name, name_colours, name_styles,
-                        status, deny_reason, dir_path,
-                        created_at, reviewed_at, applied_at, discord_message_id,
-                        discord_user_id, staff, category, scroll, tier_scrolls,
-                        realm_id
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
-                        ?, NULL, NULL, ?, ?, ?, ?, ?, ?
-                    )
-                    """,
-                    (
-                        submission_id,
-                        player_uuid,
-                        code_id,
-                        kind,
-                        slug,
-                        display,
-                        grip,
-                        base,
-                        tiers_json,
-                        h3d_json,
-                        aliases_json,
-                        1 if want_add_name else 0,
-                        colours_json,
-                        styles_json,
-                        status,
-                        dir_path,
-                        created_at,
-                        reviewed_at,
-                        discord_id,
-                        1 if is_staff else 0,
-                        staff_category,
-                        staff_scroll,
-                        staff_tier_scrolls_json,
-                        realm,
-                    ),
-                )
-            conn.commit()
-        except sqlite3.IntegrityError as e:
+        except database.UniqueViolation as e:
             if is_staff:
                 raise SlugConflictError(
                     f"Skin set key '{submission_id}' is invalid - already in use. "
@@ -974,6 +917,11 @@ def create_submission(
                 f"A skin with id '{submission_id}' is already in use. "
                 "Choose a different item name, or ask staff to delete the old one."
             ) from e
+        if source_norm != "lore":
+            try:
+                mark_code_consumed(conn, code_id)
+            except CodeError as exc:
+                raise SubmissionError(str(exc)) from exc
 
     try:
         write_submission_files(
@@ -1015,38 +963,32 @@ def create_submission(
             slug=slug,
         )
 
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
+            "SELECT * FROM submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
-
-    from src.skins.codes import mark_code_consumed
-
-    if source_norm != "lore":
-        mark_code_consumed(code_id)
 
     return _public_row(row)
 
 
-def _rollback_submission(submission_id: str) -> None:
-    with connect() as conn:
+def _rollback_submission(submission_id: str, *, pending_only: bool = False) -> bool:
+    """Delete a submission and free its code; False when there was none (or it was not pending)."""
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT code_id FROM submissions WHERE id = ?",
-            (submission_id,),
+            "DELETE FROM submissions WHERE id = %s AND (NOT %s OR status = 'pending') RETURNING code_id",
+            (submission_id, pending_only),
         ).fetchone()
         if row is None:
-            return
-        code_id = row["code_id"]
-        conn.execute("DELETE FROM submissions WHERE id = ?", (submission_id,))
+            return False
         conn.execute(
-            "UPDATE codes SET redeemed_at = NULL WHERE id = ?",
-            (code_id,),
+            "UPDATE codes SET redeemed_at = NULL WHERE id = %s",
+            (row["code_id"],),
         )
-        conn.commit()
     out = SKINS_DIR / submission_id
     if out.exists():
         shutil.rmtree(out, ignore_errors=True)
+    return True
 
 
 def rollback_pending_submission_if_unreferenced(
@@ -1059,23 +1001,26 @@ def rollback_pending_submission_if_unreferenced(
     if not sid:
         return False
     uuid = (player_uuid or "").strip() or None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT player_uuid, status
             FROM submissions
-            WHERE id = ?
+            WHERE id = %s
             """,
             (sid,),
         ).fetchone()
-        if row is None:
-            return False
-        if str(row["status"] or "").strip().lower() != "pending":
-            return False
-        owner = str(row["player_uuid"] or "").strip()
-        if uuid and owner.lower() != uuid.lower():
-            return False
-        ref = conn.execute(
+    if row is None:
+        return False
+    if str(row["status"] or "").strip().lower() != "pending":
+        return False
+    owner = str(row["player_uuid"] or "").strip()
+    if uuid and owner.lower() != uuid.lower():
+        return False
+    # PG-MIGRATION: Characters. lore_item_customisations is still in SQLite; its PR reads it
+    # here on the Postgres connection above.
+    with sqlite_connect() as lite:
+        ref = lite.execute(
             """
             SELECT 1 FROM lore_item_customisations
             WHERE submission_id = ?
@@ -1083,10 +1028,9 @@ def rollback_pending_submission_if_unreferenced(
             """,
             (sid,),
         ).fetchone()
-        if ref is not None:
-            return False
-    _rollback_submission(sid)
-    return True
+    if ref is not None:
+        return False
+    return _rollback_submission(sid, pending_only=True)
 
 
 def rollback_pending_submissions_if_unreferenced(
@@ -1112,9 +1056,9 @@ def rollback_pending_submissions_if_unreferenced(
 def get_submission_for_owner(
     submission_id: str, player_uuid: str
 ) -> dict | None:
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
+            "SELECT * FROM submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
     if row is None or row["player_uuid"] != player_uuid:
@@ -1134,23 +1078,23 @@ def list_submissions_for_player(
         return []
     realm = normalize_realm_id(realm_id)
     cap = max(1, min(int(limit or 50), 100))
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM submissions
-            WHERE player_uuid = ? AND realm_id = ?
+            WHERE player_uuid = %s AND realm_id = %s
             ORDER BY created_at DESC
-            LIMIT ?
+            LIMIT %s
             """,
             (uuid, realm, cap),
         ).fetchall()
     return [_public_row(row) for row in rows]
 
 
-def _get_row(submission_id: str) -> sqlite3.Row | None:
-    with connect() as conn:
+def _get_row(submission_id: str) -> dict | None:
+    with database.connect() as conn:
         return conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
+            "SELECT * FROM submissions WHERE id = %s",
             (submission_id,),
         ).fetchone()
 
@@ -1181,27 +1125,21 @@ def _list_asset_files(submission_id: str) -> list[str]:
 
 
 def approve_submission(submission_id: str) -> dict:
-    row = _get_row(submission_id)
-    if row is None:
-        raise SubmissionError("Submission not found")
-    if row["status"] != "pending":
-        raise SubmissionError("Only pending submissions can be approved")
-
-    reviewed_at = _iso_now()
-    with connect() as conn:
-        conn.execute(
+    with database.connect() as conn:
+        # Approved only from pending, by the update itself, so it never revives a denied one.
+        row = conn.execute(
             """
             UPDATE submissions
-            SET status = 'approved', reviewed_at = ?, deny_reason = NULL
-            WHERE id = ?
+            SET status = 'approved', reviewed_at = %s, deny_reason = NULL
+            WHERE id = %s AND status = 'pending'
+            RETURNING *
             """,
-            (reviewed_at, submission_id),
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
-            (submission_id,),
+            (_utcnow(), submission_id),
         ).fetchone()
+    if row is None:
+        if _get_row(submission_id) is None:
+            raise SubmissionError("Submission not found")
+        raise SubmissionError("Only pending submissions can be approved")
     return _public_row(row)
 
 
@@ -1222,11 +1160,14 @@ def deny_submission(submission_id: str, reason: str) -> dict:
     if row["status"] != "pending":
         raise SubmissionError("Only pending submissions can be denied")
 
-    reviewed_at = _iso_now()
     payload = _public_row(row)
     payload["status"] = "denied"
     payload["deny_reason"] = reason
-    payload["reviewed_at"] = reviewed_at
+    payload["reviewed_at"] = api_time(_utcnow())
+
+    # Deleted only while still pending, so an approval meanwhile is never undone.
+    if not _rollback_submission(submission_id, pending_only=True):
+        raise SubmissionError("Only pending submissions can be denied")
 
     try:
         from src.characters.lore_items import clear_pending_submission
@@ -1235,12 +1176,11 @@ def deny_submission(submission_id: str, reason: str) -> dict:
     except Exception:
         pass
 
-    _rollback_submission(submission_id)
     return payload
 
 
 def list_pending() -> list[dict]:
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM submissions
@@ -1268,7 +1208,7 @@ def list_pending() -> list[dict]:
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),
-                "created_at": row["created_at"],
+                "created_at": api_time(row["created_at"]),
                 "discord_user_id": names.get("discord_user_id")
                 or (
                     row["discord_user_id"]
@@ -1286,6 +1226,16 @@ def list_pending() -> list[dict]:
     return result
 
 
+def _since(value: str) -> datetime:
+    """The plugin's `since` filter: an ISO time, `…Z` or with an offset."""
+    text = value.strip()
+    try:
+        parsed = datetime.fromisoformat(text[:-1] + "+00:00" if text.endswith("Z") else text)
+    except ValueError as e:
+        raise SubmissionError("since must be an ISO 8601 time") from e
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
 def list_approved_pending_apply(
     since: str | None = None,
     realm_id: str | None = None,
@@ -1295,15 +1245,15 @@ def list_approved_pending_apply(
     realm = normalize_realm_id(realm_id)
     sql = """
         SELECT * FROM submissions
-        WHERE status = 'approved' AND applied_at IS NULL AND realm_id = ?
+        WHERE status = 'approved' AND applied_at IS NULL AND realm_id = %s
     """
     params: list = [realm]
     if since:
-        sql += " AND reviewed_at >= ?"
-        params.append(since.strip())
+        sql += " AND reviewed_at >= %s"
+        params.append(_since(since))
     sql += " ORDER BY reviewed_at ASC"
 
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(sql, params).fetchall()
 
     result = []
@@ -1327,7 +1277,7 @@ def list_approved_pending_apply(
             "add_name": _row_add_name(row),
             "name_colours": _row_json_list(row, "name_colours"),
             "name_styles": _row_json_list(row, "name_styles"),
-            "reviewed_at": row["reviewed_at"],
+            "reviewed_at": api_time(row["reviewed_at"]),
             "minecraft_name": names.get("minecraft_name"),
             "discord_username": names.get("discord_username"),
             "files": _list_asset_files(row["id"]),
@@ -1352,9 +1302,9 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
     sid = (submission_id or "").strip()
     if not sid:
         return None
-    with connect() as conn:
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
+            "SELECT * FROM submissions WHERE id = %s",
             (sid,),
         ).fetchone()
     if row is None:
@@ -1388,7 +1338,7 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
     return out
 
 
-def _row_is_staff(row: sqlite3.Row) -> bool:
+def _row_is_staff(row: dict) -> bool:
     if "staff" not in row.keys():
         return False
     return bool(row["staff"])
@@ -1396,12 +1346,12 @@ def _row_is_staff(row: sqlite3.Row) -> bool:
 
 def list_deletable_submissions() -> list[dict]:
     """Active player-lane submissions for /armourshop submission delete tab-complete."""
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, slug, display_name, kind, status, created_at, staff
             FROM submissions
-            WHERE status IN (?, ?, ?)
+            WHERE status IN (%s, %s, %s)
             ORDER BY created_at DESC
             """,
             ACTIVE_STATUSES,
@@ -1421,12 +1371,12 @@ def list_deletable_submissions() -> list[dict]:
 
 def list_deletable_staff_skins() -> list[dict]:
     """Active staff-lane skins for /armourshop skin delete tab-complete."""
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, slug, display_name, kind, status, created_at, staff, category
             FROM submissions
-            WHERE status IN (?, ?, ?)
+            WHERE status IN (%s, %s, %s)
             ORDER BY created_at DESC
             """,
             ACTIVE_STATUSES,
@@ -1455,13 +1405,10 @@ def revoke_submission(submission_id: str) -> dict:
     sid = (submission_id or "").strip()
     if not sid:
         raise SubmissionError("submission id is required")
-    row = _get_row(sid)
+    with database.connect() as conn:
+        row = conn.execute("DELETE FROM submissions WHERE id = %s RETURNING id", (sid,)).fetchone()
     if row is None:
         raise SubmissionError("Submission not found")
-
-    with connect() as conn:
-        conn.execute("DELETE FROM submissions WHERE id = ?", (sid,))
-        conn.commit()
     out = SKINS_DIR / sid
     if out.exists():
         shutil.rmtree(out, ignore_errors=True)
@@ -1471,8 +1418,15 @@ def revoke_submission(submission_id: str) -> dict:
 
 def mark_applied(submission_ids: list[str]) -> list[str]:
     applied: list[str] = []
-    now = _iso_now()
-    with connect() as conn:
+    now = _utcnow()
+    targets = [(sid or "").strip() for sid in submission_ids if (sid or "").strip()]
+    with database.connect() as conn:
+        # Lock the whole batch in one order before the caller-ordered updates.
+        if targets:
+            conn.execute(
+                "SELECT id FROM submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                (targets,),
+            ).fetchall()
         for sid in submission_ids:
             sid = (sid or "").strip()
             if not sid:
@@ -1480,14 +1434,13 @@ def mark_applied(submission_ids: list[str]) -> list[str]:
             cur = conn.execute(
                 """
                 UPDATE submissions
-                SET status = 'applied', applied_at = ?
-                WHERE id = ? AND status = 'approved' AND applied_at IS NULL
+                SET status = 'applied', applied_at = %s
+                WHERE id = %s AND status = 'approved' AND applied_at IS NULL
                 """,
                 (now, sid),
             )
             if cur.rowcount:
                 applied.append(sid)
-        conn.commit()
     if applied:
         try:
             from src.characters.lore_items import promote_ready_for_submissions

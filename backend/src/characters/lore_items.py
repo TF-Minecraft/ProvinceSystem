@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from src import database
 from src.skins.submissions import (
     MAX_DISPLAY_NAME,
     SubmissionError,
@@ -257,18 +258,20 @@ def claim_status(
             """,
             (uuid, cid),
         ).fetchall()
-        sub_ids = [
-            str(r["submission_id"]).strip()
-            for r in rows
-            if r["submission_id"] is not None and str(r["submission_id"]).strip()
-        ]
-        sub_status: dict[str, str] = {}
-        if sub_ids:
-            placeholders = ",".join("?" * len(sub_ids))
-            for sub in conn.execute(
-                f"SELECT id, LOWER(COALESCE(status, '')) AS status "
-                f"FROM submissions WHERE id IN ({placeholders})",
-                sub_ids,
+    sub_ids = [
+        str(r["submission_id"]).strip()
+        for r in rows
+        if r["submission_id"] is not None and str(r["submission_id"]).strip()
+    ]
+    sub_status: dict[str, str] = {}
+    if sub_ids:
+        # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+        # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+        with database.connect() as pg:
+            for sub in pg.execute(
+                "SELECT id, LOWER(COALESCE(status, '')) AS status "
+                "FROM submissions WHERE id = ANY(%s)",
+                (sub_ids,),
             ).fetchall():
                 sid = str(sub["id"] or "").strip()
                 if sid:
@@ -574,9 +577,11 @@ def _load_row(
         if raw_reason is not None and str(raw_reason).strip():
             deny_reason = str(raw_reason).strip()
     if submission_id:
-        with connect() as conn:
-            sub = conn.execute(
-                "SELECT status, deny_reason FROM submissions WHERE id = ?",
+        # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+        # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+        with database.connect() as pg:
+            sub = pg.execute(
+                "SELECT status, deny_reason FROM submissions WHERE id = %s",
                 (submission_id,),
             ).fetchone()
         if sub is not None:
@@ -698,12 +703,14 @@ def _assert_pickable_skin_access(
     sid = (submission_id or "").strip()
     if not uuid or not sid:
         raise LoreItemError("not found", status_code=404)
-    with connect() as conn:
+    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
             FROM submissions
-            WHERE id = ?
+            WHERE id = %s
             """,
             (sid,),
         ).fetchone()
@@ -738,9 +745,11 @@ def _namespace_for_skin_id(skin_id: str | None) -> str | None:
     sid = (skin_id or "").strip()
     if not sid:
         return None
-    with connect() as conn:
+    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+    with database.connect() as conn:
         row = conn.execute(
-            "SELECT staff FROM submissions WHERE id = ?",
+            "SELECT staff FROM submissions WHERE id = %s",
             (sid,),
         ).fetchone()
     if row is None:
@@ -758,21 +767,23 @@ def _list_pickable_skins(
     uuid = (player_uuid or "").strip()
     if not base or not uuid:
         return []
-    with connect() as conn:
+    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT id, display_name, kind, staff, category, player_uuid
             FROM submissions
-            WHERE LOWER(COALESCE(base_set, '')) = ?
+            WHERE LOWER(COALESCE(base_set, '')) = %s
               AND LOWER(status) = 'applied'
               AND (
-                (COALESCE(staff, 0) = 0 AND LOWER(player_uuid) = LOWER(?))
+                (NOT staff AND LOWER(player_uuid) = LOWER(%s))
                 OR (
-                  COALESCE(staff, 0) = 1
+                  staff
                   AND LOWER(COALESCE(category, '')) = 'i_tools'
                 )
               )
-            ORDER BY display_name COLLATE NOCASE ASC, id ASC
+            ORDER BY LOWER(display_name) ASC, id ASC
             """,
             (base, uuid),
         ).fetchall()
@@ -805,12 +816,14 @@ def _validate_existing_skin(
         raise LoreItemError("existing_skin_id is required when provided")
     base = (base_set or "").strip().lower()
     uuid = (player_uuid or "").strip()
-    with connect() as conn:
+    # PG-MIGRATION: Characters. submissions is in Postgres and this module's tables are still
+    # in SQLite, so it is read on its own connection; the Characters PR reads it on one.
+    with database.connect() as conn:
         row = conn.execute(
             """
             SELECT id, base_set, status, staff, category, player_uuid
             FROM submissions
-            WHERE id = ?
+            WHERE id = %s
             """,
             (sid,),
         ).fetchone()

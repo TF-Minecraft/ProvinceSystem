@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -22,7 +24,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self.db_path = root / "province.db"
 
-        import skins.db as db_mod
+        import src.skins.db as db_mod
 
         self._db_mod = db_mod
         # Character modules import src.skins.db — keep one module identity for tests.
@@ -41,7 +43,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self._sync_db_dependents(db_mod)
 
     def _sync_db_dependents(self, db_mod) -> None:
-        import skins.drinks as drinks_mod
+        import src.skins.drinks as drinks_mod
 
         drinks_mod.db = db_mod
         drinks_mod.connect = db_mod.connect
@@ -242,12 +244,13 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertIn("armor_set", ent["skin_kinds"])
         self.assertTrue(ent["allow_armor_3d_helmet"])
 
+    @pytest.mark.usefixtures("postgres")
     def test_redeem_drink_uses_rpc_meta(self) -> None:
         from characters.rpc_player_meta import upsert_rpc_player_meta
-        from skins.codes import issue_code, redeem_drink_code
+        from src.skins.codes import issue_code, redeem_drink_code
 
         with mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
             upsert_rpc_player_meta(

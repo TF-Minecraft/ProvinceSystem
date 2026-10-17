@@ -8,7 +8,7 @@ from src.patreon import service as s
 from src.patreon.config import Config
 from src.patreon.resolver import iso, utcnow
 
-# Patreon tables are in Postgres; discord_links is still in SQLite (the `database` fixture).
+# Patreon and Discord links share Postgres (the `database` fixture).
 pytestmark = pytest.mark.usefixtures("postgres")
 
 CONFIG = Config(enabled=True, apply=True)
@@ -207,7 +207,7 @@ def test_missing_half_filled_from_discord_links_at_compute(database, stored_half
     assert s.create_or_update_link("1", config=CONFIG, **args) == "ok"
     s.recompute_link("1", config=CONFIG)
     with database.connect() as conn:
-        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (?,?,?)", (player(), "111", iso(utcnow())))
+        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (%s,%s,%s)", (player(), "111", iso(utcnow())))
     s.recompute_link("1", config=CONFIG)
     assert changes("discord")[0]["discord_user_id"] == "111" and changes("luckperms")[0]["player_uuid"] == player()
     assert s.status(player_uuid=player(), config=CONFIG)["has_discord"]
@@ -217,7 +217,7 @@ def test_implicit_half_cannot_control_another_link(database):
     assert s.create_or_update_link("1", "111", config=CONFIG) == "ok"
     assert s.create_or_update_link("2", player_uuid=player(), config=CONFIG) == "ok"
     with database.connect() as conn:
-        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (?,?,?)", (player(), "111", iso(utcnow())))
+        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (%s,%s,%s)", (player(), "111", iso(utcnow())))
     sync([member("1"), member("2", tier="ascended", discord=None)])
     assert changes("discord")[0]["add_tier"] == "noble" and changes("luckperms")[0]["add_tier"] == "ascended"
 
@@ -332,11 +332,11 @@ def test_loop_leader_excluded_and_stops_cleanly(database, monkeypatch):
 
 def test_existing_discord_pair_is_dynamic_not_copied(database):
     with database.connect() as conn:
-        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (?,?,?)", (player(), "111", iso(utcnow())))
+        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (%s,%s,%s)", (player(), "111", iso(utcnow())))
     sync([member()])
     assert testing.value("SELECT player_uuid FROM patreon_links") is None
     with database.connect() as conn:
-        conn.execute("UPDATE discord_links SET player_uuid=?", (player(2),))
+        conn.execute("UPDATE discord_links SET player_uuid=%s", (player(2),))
     sync([member()])
     ranks = changes("luckperms")
     assert len(ranks) == 1 and ranks[0]["player_uuid"] == player(2)

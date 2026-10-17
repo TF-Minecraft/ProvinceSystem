@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from src.api import admin_routes, auth_routes
 from src.api.view_as_guard import ViewAsGuard
 from src.auth import roles, testing, users, view_as
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -55,13 +56,7 @@ def account(db, name, role="player", minecraft=None):
     )
     user_id = testing.set_role(discord_id, role)
     if minecraft:
-        with db.connect() as conn:
-            conn.execute(
-                "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at)"
-                " VALUES (?, ?, ?, ?, '2026-10-01T00:00:00Z')",
-                (UUID, discord_id, minecraft, name),
-            )
-            conn.commit()
+        link(UUID, discord_id, minecraft, name, linked_at="2026-10-01T00:00:00Z")
     return user_id, token
 
 
@@ -83,14 +78,11 @@ def audit_rows(db):
 def linked_uuid(db, user_id):
     """The Minecraft UUID linked to this account, linking one first if it has none."""
     discord_id = testing.value("SELECT discord_user_id FROM users WHERE id = %s", (user_id,))
-    with db.connect() as conn:
-        row = conn.execute("SELECT player_uuid FROM discord_links WHERE discord_user_id = ?", (discord_id,)).fetchone()
-        if row:
-            return row[0]
-        player_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, discord_id))
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, linked_at)"
-                     " VALUES (?, ?, '2026-10-01T00:00:00Z')", (player_uuid, discord_id))
-        conn.commit()
+    linked = testing.value("SELECT player_uuid FROM discord_links WHERE discord_user_id = %s", (discord_id,))
+    if linked:
+        return linked
+    player_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, discord_id))
+    link(player_uuid, discord_id, linked_at="2026-10-01T00:00:00Z")
     return player_uuid
 
 
@@ -103,11 +95,7 @@ def start(app, db, admin_token, player_id):
 def link_only(db, name, player_uuid=UUID):
     """A player linked through the Discord bot who has never signed in to the site."""
     discord_id = str(200000000000000000 + abs(hash(name)) % 10**15)
-    with db.connect() as conn:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username,"
-                     " linked_at) VALUES (?, ?, ?, ?, '2026-10-01T00:00:00Z')",
-                     (player_uuid, discord_id, name.title(), name))
-        conn.commit()
+    link(player_uuid, discord_id, name.title(), name, linked_at="2026-10-01T00:00:00Z")
     return discord_id
 
 
@@ -206,10 +194,7 @@ def test_profile_opened_during_a_view_is_view_only(app, env):
 
     # Leaving the view ends its Profile session too.
     c.post("/auth/view-as/stop", headers=ORIGIN)
-    with env.connect() as conn:
-        left = conn.execute("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
-                            "WHERE c.minted_via LIKE 'staff_view:%'").fetchone()[0]
-    assert left == 0
+    assert _view_profiles(env) == 0
 
 
 def test_stop_puts_the_admin_back(app, env):
@@ -338,9 +323,8 @@ def _expire_views(db):
 
 
 def _view_profiles(db):
-    with db.connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
-                            "WHERE c.minted_via LIKE 'staff_view:%'").fetchone()[0]
+    return testing.value("SELECT COUNT(*) FROM sessions s JOIN codes c ON c.id = s.code_id "
+                         "WHERE c.minted_via LIKE %s", ("staff_view:%",))
 
 
 def test_a_view_whose_cookie_the_browser_dropped_is_still_ended_and_audited(app, env):
@@ -411,8 +395,7 @@ def test_profile_is_not_opened_for_a_view_that_ended_mid_request(app, env):
         codes.start_linked_profile_session(UUID, minted_via=view_as.profile_minted_via(view),
                                            expires_at=view["expires_at"],
                                            still_allowed=view_as.view_still_open(view["session_id"]))
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM codes WHERE minted_via LIKE 'staff_view:%'").fetchone()[0] == 0
+    assert testing.value("SELECT COUNT(*) FROM codes WHERE minted_via LIKE %s", ("staff_view:%",)) == 0
 
 
 def test_signing_out_after_the_view_cookie_lapsed_still_ends_the_view(app, env):

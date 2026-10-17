@@ -9,6 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -85,6 +87,8 @@ MINIMAL_CATALOG = {
     ],
 }
 
+pytestmark = pytest.mark.usefixtures("postgres")
+
 
 class OrphanSubmissionCleanupTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -137,27 +141,25 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
             conn.commit()
 
     def _insert_code(self, code_id: int) -> None:
-        from src.skins.db import connect
+        from src.auth.testing import execute
 
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO codes (
-                    id, code_hash, player_uuid, scope, realm_id,
-                    created_at, expires_at, redeemed_at, revoked
-                ) VALUES (?, ?, ?, 'profile', ?, ?, ?, ?, 0)
-                """,
-                (
-                    code_id,
-                    f"hash-{code_id}",
-                    PLAYER,
-                    REALM,
-                    NOW,
-                    "2099-01-01T00:00:00Z",
-                    NOW,
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO codes (
+                id, code_hash, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
+            ) VALUES (%s, %s, %s, 'profile', %s, %s, %s, %s, false)
+            """,
+            (
+                code_id,
+                f"hash-{code_id}",
+                PLAYER,
+                REALM,
+                NOW,
+                "2099-01-01T00:00:00Z",
+                NOW,
+            ),
+        )
 
     def _insert_submission(
         self,
@@ -166,33 +168,31 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         code_id: int,
         status: str = "pending",
     ) -> None:
-        from src.skins.db import connect
+        from src.auth.testing import execute
 
         self._insert_code(code_id)
-        with connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    status, dir_path, created_at, discord_user_id, staff, realm_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    submission_id,
-                    PLAYER,
-                    code_id,
-                    "handheld",
-                    submission_id,
-                    "Test Knife",
-                    status,
-                    f"skins/{submission_id}",
-                    NOW,
-                    "discord-1",
-                    0,
-                    REALM,
-                ),
-            )
-            conn.commit()
+        execute(
+            """
+            INSERT INTO submissions (
+                id, player_uuid, code_id, kind, slug, display_name,
+                status, dir_path, created_at, discord_user_id, staff, realm_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                submission_id,
+                PLAYER,
+                code_id,
+                "handheld",
+                submission_id,
+                "Test Knife",
+                status,
+                f"skins/{submission_id}",
+                NOW,
+                "discord-1",
+                False,
+                REALM,
+            ),
+        )
 
     def _insert_lore_row(
         self,
@@ -228,14 +228,9 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
             conn.commit()
 
     def _submission_exists(self, submission_id: str) -> bool:
-        from src.skins.db import connect
+        from src.auth.testing import rows
 
-        with connect() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM submissions WHERE id = ?",
-                (submission_id,),
-            ).fetchone()
-        return row is not None
+        return bool(rows("SELECT 1 FROM submissions WHERE id = %s", (submission_id,)))
 
     def test_delete_kit_draft_rolls_back_orphaned_pending_submission(self) -> None:
         from src.characters.lore_items import delete_lore_item_customise

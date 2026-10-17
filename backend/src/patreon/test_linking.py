@@ -18,6 +18,7 @@ from src.patreon.client import PatreonError
 from src.patreon.resolver import iso, parse, utcnow
 from src.patreon import service as s
 from src.patreon.test_service import CONFIG, member as patron, player, sync, changes, ack
+from src.skins.testing import link as seed_link
 
 pytestmark = pytest.mark.usefixtures("postgres")
 
@@ -121,10 +122,10 @@ def redirect_query(response):
 
 
 def stored_text() -> str:
-    """Everything stored: the SQLite file and every Postgres table as text."""
+    """Everything stored: every Postgres table as text."""
     tables = [r["tablename"] for r in testing.rows("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")]
     text = "".join(testing.value(f"SELECT COALESCE(string_agg(t::text, ''), '') FROM {name} t") for name in tables)
-    return s.sqlite_db.DB_PATH.read_bytes().decode("latin-1") + text
+    return text
 
 
 def assert_clean(response, caplog, *secrets):
@@ -141,8 +142,7 @@ def test_link_happy_path_each_auth_mode(api, monkeypatch, caplog, mode):
     stub = Stub()
     monkeypatch.setattr(linking, "build_client", lambda config=None: stub)
     if mode == "profile":
-        with s.sqlite_db.connect() as conn:
-            conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,minecraft_name,linked_at) VALUES (?,?,?,?)", (player(), "222", "StoredSteve", iso(utcnow())))
+        seed_link(player(), "222", "StoredSteve", linked_at=iso(utcnow()))
     body = start(api, mode, monkeypatch, {} if mode == "profile" else None)
     parts, query = state_of(body)
     assert parts.scheme == "https" and parts.netloc == "www.patreon.com" and parts.path == "/oauth2/authorize"

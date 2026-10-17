@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -215,24 +214,24 @@ def _normalize_entitlements(raw: Any) -> dict[str, Any]:
 
 def replace_catalog(raw: dict[str, Any]) -> dict[str, Any]:
     """Full-replace catalog snapshot. Returns payload + updated_at + counts."""
-    from .db import connect
+    from src import database
+
+    from .codes import _parse_iso
 
     payload = _normalize_payload(raw)
     updated_at = _iso_now()
-    body = json.dumps(payload, separators=(",", ":"))
 
-    with connect() as conn:
+    with database.connect() as conn:
         conn.execute(
             """
             INSERT INTO armourshop_catalog (id, payload, updated_at)
-            VALUES (1, ?, ?)
+            VALUES (1, %s, %s)
             ON CONFLICT(id) DO UPDATE SET
                 payload = excluded.payload,
                 updated_at = excluded.updated_at
             """,
-            (body, updated_at),
+            (database.Jsonb(payload), _parse_iso(updated_at)),
         )
-        conn.commit()
 
     skin_sets = sum(len(c["skin_sets"]) for c in payload["categories"])
     return {
@@ -246,9 +245,11 @@ def replace_catalog(raw: dict[str, Any]) -> dict[str, Any]:
 
 def get_catalog() -> dict[str, Any]:
     """Return stored snapshot or empty catalog."""
-    from .db import connect
+    from src import database
 
-    with connect() as conn:
+    from .codes import api_time
+
+    with database.connect() as conn:
         row = conn.execute(
             "SELECT payload, updated_at FROM armourshop_catalog WHERE id = 1"
         ).fetchone()
@@ -264,10 +265,7 @@ def get_catalog() -> dict[str, Any]:
             "updated_at": None,
         }
 
-    try:
-        data = json.loads(row["payload"] or "{}")
-    except json.JSONDecodeError:
-        data = {}
+    data = row["payload"]
     if not isinstance(data, dict):
         data = {}
 
@@ -290,7 +288,7 @@ def get_catalog() -> dict[str, Any]:
         "categories": categories,
         "scrolls": scrolls,
         "entitlements": entitlements,
-        "updated_at": row["updated_at"],
+        "updated_at": api_time(row["updated_at"]),
     }
 
 

@@ -69,7 +69,7 @@ def test_plugin_and_bot_see_the_same_bytes(api, database):
         seen[name] = (response.status_code, response.content.decode())
 
     with database.connect() as conn:
-        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (?,?,?)",
+        conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (%s,%s,%s)",
                      (player(), "111", "2026-10-01T00:00:00Z"))
         conn.commit()
     s.sync_now(client=Members(member(), member("2", tier="ascended", discord="222", is_gifted=True)))

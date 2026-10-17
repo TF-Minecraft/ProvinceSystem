@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import io
 import os
 import sys
@@ -12,6 +11,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _BACKEND_SRC = _BACKEND_ROOT / "src"
 if str(_BACKEND_ROOT) not in sys.path:
@@ -20,6 +21,9 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 os.environ.setdefault("SKINS_DEV", "1")
+
+# Codes and submissions live in Postgres.
+pytestmark = pytest.mark.usefixtures("postgres")
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -39,32 +43,18 @@ def _tiny_png() -> bytes:
 
 
 def _sync_temp_db(root: Path, db_path: Path) -> object:
-    import skins.db as db_mod
+    import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
     db_mod.DB_PATH = db_path
     db_mod.SKINS_DIR = root / "skins"
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
-    sys.modules["src.skins.db"] = db_mod
-    for name in ("skins.db", "src.skins.db"):
-        mod = sys.modules.get(name)
-        if mod is not None:
-            mod.DATA_DIR = root
-            mod.DB_PATH = db_path
-            mod.SKINS_DIR = root / "skins"
-            mod.DRINKS_DIR = root / "drinks"
-            mod.WARDROBE_DIR = root / "wardrobe"
-    for name in (
-        "skins.review_sheet",
-        "src.skins.review_sheet",
-        "skins.submissions",
-        "src.skins.submissions",
-        "api.skins_routes",
-        "src.api.skins_routes",
-    ):
-        if name in sys.modules:
-            importlib.reload(sys.modules[name])
+
+    from src.skins import name_preview, review_sheet, storage, submissions, thumbnail
+
+    for module in (name_preview, review_sheet, storage, submissions, thumbnail):
+        module.SKINS_DIR = root / "skins"
     return db_mod
 
 
@@ -154,17 +144,18 @@ class ReviewSheetCacheTest(unittest.TestCase):
         base_set: str | None = None,
         tiers: str | None = None,
     ) -> Path:
-        from skins.db import connect
+        from src import database
 
         out_dir = self._submission_out_dir(submission_id)
         if base_set is None:
             base_set = "handhelds" if kind == "item_3d" else "swords"
-        with connect() as conn:
-            conn.execute(
+        with database.connect() as conn:
+            code_id = conn.execute(
                 """
                 INSERT INTO codes (
                     code_hash, player_uuid, scope, realm_id, created_at, expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
                 """,
                 (
                     f"hash-{submission_id}",
@@ -174,15 +165,14 @@ class ReviewSheetCacheTest(unittest.TestCase):
                     "2026-01-01T00:00:00Z",
                     "2099-01-01T00:00:00Z",
                 ),
-            )
-            code_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            ).fetchone()["id"]
             conn.execute(
                 """
                 INSERT INTO submissions (
                     id, player_uuid, code_id, kind, slug, display_name,
                     status, dir_path, created_at, discord_user_id, staff, realm_id,
                     base_set, tiers
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     submission_id,
@@ -195,18 +185,17 @@ class ReviewSheetCacheTest(unittest.TestCase):
                     str(out_dir),
                     "2026-01-01T00:00:00Z",
                     "discord-1",
-                    0,
+                    False,
                     "main",
                     base_set,
                     tiers,
                 ),
             )
-            conn.commit()
         return out_dir
 
     def test_cache_stale_false_when_no_3d_job(self) -> None:
-        from skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
-        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+        from src.skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 
         submission_id = "testplayer-testarmor"
         slug = "testarmor"
@@ -216,8 +205,8 @@ class ReviewSheetCacheTest(unittest.TestCase):
         self.assertFalse((out_dir / PREVIEW_RENDER_ERROR_NAME).is_file())
 
     def test_cache_stale_when_preview_render_error_exists(self) -> None:
-        from skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
-        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+        from src.skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 
         submission_id = "testplayer-testitem"
         slug = "testitem"
@@ -229,7 +218,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
         self.assertTrue(_review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir))
 
     def test_cache_stale_when_preview_newer_than_sheet(self) -> None:
-        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 
         submission_id = "testplayer-testitem"
         slug = "testitem"
@@ -244,7 +233,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
         self.assertTrue(_review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir))
 
     def test_cache_stale_when_bundle_newer_than_tiles(self) -> None:
-        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 
         submission_id = "testplayer-testitem"
         slug = "testitem"
@@ -258,13 +247,13 @@ class ReviewSheetCacheTest(unittest.TestCase):
         bundle.write_text("rebuilt", encoding="utf-8")
         time.sleep(0.05)
         (out_dir / REVIEW_SHEET_NAME).touch()
-        with mock.patch("skins.preview_3d.BUNDLE", bundle):
+        with mock.patch("src.skins.preview_3d.BUNDLE", bundle):
             self.assertTrue(
                 _review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir)
             )
 
     def test_cache_stale_when_preview_missing(self) -> None:
-        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 
         submission_id = "testplayer-testitem"
         slug = "testitem"
@@ -275,7 +264,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
         self.assertTrue(_review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir))
 
     def test_build_review_sheet_uses_cache_when_valid(self) -> None:
-        from skins.review_sheet import REVIEW_SHEET_NAME, build_review_sheet
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, build_review_sheet
 
         submission_id = "testplayer-testarmor"
         slug = "testarmor"
@@ -289,14 +278,14 @@ class ReviewSheetCacheTest(unittest.TestCase):
         cached_bytes = TINY_PNG + b"cached"
         (out_dir / REVIEW_SHEET_NAME).write_bytes(cached_bytes)
 
-        with mock.patch("skins.review_sheet._compose_full_sheet") as compose:
+        with mock.patch("src.skins.review_sheet._compose_full_sheet") as compose:
             data = build_review_sheet(submission_id)
         compose.assert_not_called()
         self.assertEqual(data, cached_bytes)
 
     def test_build_review_sheet_recomposes_when_error_file_exists(self) -> None:
-        from skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
-        from skins.review_sheet import REVIEW_SHEET_NAME, build_review_sheet
+        from src.skins.preview_3d import PREVIEW_RENDER_ERROR_NAME
+        from src.skins.review_sheet import REVIEW_SHEET_NAME, build_review_sheet
 
         submission_id = "testplayer-testitem"
         slug = "testitem"
@@ -306,7 +295,7 @@ class ReviewSheetCacheTest(unittest.TestCase):
         (out_dir / REVIEW_SHEET_NAME).write_bytes(TINY_PNG)
         (out_dir / PREVIEW_RENDER_ERROR_NAME).write_text("stale\n", encoding="utf-8")
 
-        with mock.patch("skins.review_sheet._compose_full_sheet") as compose:
+        with mock.patch("src.skins.review_sheet._compose_full_sheet") as compose:
             from PIL import Image
 
             compose.return_value = Image.new("RGB", (32, 32), (1, 2, 3))

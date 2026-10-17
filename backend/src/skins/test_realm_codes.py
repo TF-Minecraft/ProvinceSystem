@@ -8,12 +8,16 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 
 class RealmCodesTest(unittest.TestCase):
@@ -22,12 +26,12 @@ class RealmCodesTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self.db_path = root / "province.db"
 
-        import skins.db as db_mod
-        import skins.codes as codes_mod
+        import src.skins.db as db_mod
+        import src.skins.codes as codes_mod
 
         self._db_mod = db_mod
-        sys.modules["src.skins.db"] = db_mod
-        sys.modules["src.skins.codes"] = codes_mod
+
+
         self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
@@ -50,7 +54,7 @@ class RealmCodesTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_normalize_realm_id(self) -> None:
-        from skins.codes import CodeError, normalize_realm_id
+        from src.skins.codes import CodeError, normalize_realm_id
 
         self.assertEqual(normalize_realm_id(None), "main")
         self.assertEqual(normalize_realm_id(""), "main")
@@ -61,10 +65,10 @@ class RealmCodesTest(unittest.TestCase):
             normalize_realm_id("x" * 33)
 
     def test_mint_with_realm_redeem_session(self) -> None:
-        from skins.codes import get_session, issue_code, redeem_profile_code
+        from src.skins.codes import get_session, issue_code, redeem_profile_code
 
         with mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
             issued = issue_code("player-realm-1", "profile", realm_id="dev")
@@ -76,10 +80,10 @@ class RealmCodesTest(unittest.TestCase):
         self.assertEqual(loaded["realm_id"], "dev")
 
     def test_mint_omit_realm_defaults_main(self) -> None:
-        from skins.codes import issue_code, redeem_code
+        from src.skins.codes import issue_code, redeem_code
 
         with mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
             issued = issue_code("player-realm-2", "skin")
@@ -99,17 +103,17 @@ class RealmCodesTest(unittest.TestCase):
         self.assertEqual(session["realm_id"], "main")
 
     def test_invalid_realm_on_mint(self) -> None:
-        from skins.codes import CodeError, issue_code
+        from src.skins.codes import CodeError, issue_code
 
         with mock.patch(
-            "skins.discord_link.get_identity_status",
+            "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
             with self.assertRaises(CodeError):
                 issue_code("player-realm-3", "skin", realm_id="!!!")
 
     def test_create_character_stamps_realm(self) -> None:
-        from characters import creates as creates_mod
+        from src.characters import creates as creates_mod
 
         with mock.patch.object(
             creates_mod,

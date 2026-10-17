@@ -1,8 +1,11 @@
 import httpx
 import pytest
 
+from src import database
 from src.auth import discord_names
+from src.auth import testing as auth_testing
 from src.auth.discord_names import BotConfig, BotTokenRejected, NameLookup
+from src.skins import testing as skins_testing
 
 CONFIG = BotConfig(token="bot-token", guild_id="999", api_base="https://discord.test/api")
 
@@ -11,19 +14,14 @@ def lookup(handler):
     return NameLookup(CONFIG, http=httpx.Client(transport=httpx.MockTransport(handler)))
 
 
-def link(db, discord_id, username=None, nickname=None):
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at, "
-            "discord_nickname) VALUES (?, ?, 'mc', ?, '2026-09-20T10:00:00Z', ?)",
-            (f"uuid-{discord_id}", discord_id, username, nickname))
-        conn.commit()
+def link(discord_id, username=None, nickname=None):
+    skins_testing.link(f"uuid-{discord_id}", discord_id, "mc", username, linked_at="2026-09-20T10:00:00Z",
+                       discord_nickname=nickname)
 
 
-def names(db, discord_id):
-    with db.connect() as conn:
-        row = conn.execute("SELECT discord_username, discord_nickname FROM discord_links WHERE discord_user_id = ?",
-                           (discord_id,)).fetchone()
+def names(discord_id):
+    [row] = auth_testing.rows("SELECT discord_username, discord_nickname FROM discord_links WHERE discord_user_id = %s",
+                              (discord_id,))
     return row["discord_username"], row["discord_nickname"]
 
 
@@ -41,21 +39,21 @@ def discord(members: dict, users: dict, seen: list | None = None):
     return handler
 
 
-def test_member_gives_handle_and_nickname_user_gives_handle_only(database):
-    link(database, "1", None, "Justin")
-    link(database, "2", None, "Old nick")
-    link(database, "3", "stale_name", None)
+def test_member_gives_handle_and_nickname_user_gives_handle_only(postgres):
+    link("1", None, "Justin")
+    link("2", None, "Old nick")
+    link("3", "stale_name", None)
     found = lookup(discord(
         members={"1": {"user": {"id": "1", "username": "justin_x"}, "nick": "Justin the Bold"},
                  "3": {"user": {"id": "3", "username": "fresh_name"}, "nick": None}},
         users={"2": {"id": "2", "username": "left_server"}},
     ))
     assert discord_names.refresh_all(found) == 3
-    assert names(database, "1") == ("justin_x", "Justin the Bold")
+    assert names("1") == ("justin_x", "Justin the Bold")
     # Not in the server: the handle, and the last nickname we knew.
-    assert names(database, "2") == ("left_server", "Old nick")
+    assert names("2") == ("left_server", "Old nick")
     # A member with no nickname now has none.
-    assert names(database, "3") == ("fresh_name", None)
+    assert names("3") == ("fresh_name", None)
 
 
 def test_waits_out_rate_limits_and_stops_on_a_bad_token():
@@ -73,9 +71,9 @@ def test_waits_out_rate_limits_and_stops_on_a_bad_token():
     assert lookup(lambda request: httpx.Response(200, json={})).lookup("not-a-snowflake") is None
 
 
-def test_profile_looks_up_an_unknown_handle_once(database, monkeypatch):
+def test_profile_looks_up_an_unknown_handle_once(postgres, monkeypatch):
     discord_names.clear_recent()
-    link(database, "42")
+    link("42")
     seen = []
     handler = discord({"42": {"user": {"username": "found_it"}, "nick": "Fi"}}, {}, seen)
     monkeypatch.setattr(discord_names, "NameLookup",
@@ -83,7 +81,7 @@ def test_profile_looks_up_an_unknown_handle_once(database, monkeypatch):
                             CONFIG, http=httpx.Client(transport=httpx.MockTransport(handler))))
     monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
     assert discord_names.refresh_one("42") is True
-    assert names(database, "42") == ("found_it", "Fi")
+    assert names("42") == ("found_it", "Fi")
     # Asked again within the retry window: not looked up again.
     assert discord_names.refresh_one("42") is False
     assert len(seen) == 1
@@ -105,12 +103,12 @@ def test_profile_lookups_do_not_wait_out_rate_limits():
     assert len(calls) == 2
 
 
-def test_halting_stops_a_refresh_and_cuts_waits_short(database):
+def test_halting_stops_a_refresh_and_cuts_waits_short(postgres):
     import threading
     import time
 
-    link(database, "1")
-    link(database, "2")
+    link("1")
+    link("2")
     halt = threading.Event()
     calls = []
 
@@ -125,11 +123,9 @@ def test_halting_stops_a_refresh_and_cuts_waits_short(database):
     assert len(calls) == 1
 
 
-def test_a_database_error_leaves_the_profile_working(database, monkeypatch):
-    import sqlite3
-
+def test_a_database_error_leaves_the_profile_working(postgres, monkeypatch):
     discord_names.clear_recent()
-    link(database, "7")
+    link("7")
     handler = discord({"7": {"user": {"username": "seven"}, "nick": None}}, {})
     monkeypatch.setattr(discord_names, "NameLookup",
                         lambda config, timeout, max_retry_wait: NameLookup(
@@ -137,14 +133,14 @@ def test_a_database_error_leaves_the_profile_working(database, monkeypatch):
     monkeypatch.setenv("DISCORD_BOT_TOKEN", "bot-token")
 
     def broken(*args, **kwargs):
-        raise sqlite3.OperationalError("database is locked")
+        raise database.OperationalError("could not obtain lock")
     monkeypatch.setattr(discord_names, "store", broken)
     assert discord_names.refresh_one("7") is False
 
 
-def test_a_global_rate_limit_stops_the_whole_refresh(database):
-    link(database, "1")
-    link(database, "2")
+def test_a_global_rate_limit_stops_the_whole_refresh(postgres):
+    link("1")
+    link("2")
     calls = []
 
     def limited(request):
@@ -164,8 +160,8 @@ def test_a_global_rate_limit_stops_the_whole_refresh(database):
     assert len(calls) == 4
 
 
-def test_short_global_limits_that_never_lift_stop_the_refresh(database):
-    link(database, "1")
+def test_short_global_limits_that_never_lift_stop_the_refresh(postgres):
+    link("1")
     calls = []
 
     def limited(request):

@@ -12,6 +12,7 @@ from src.api import auth_routes as routes
 from src.auth import guild_check, testing, users
 from src.auth.discord import DiscordError
 from src.skins import codes, discord_link
+from src.skins.testing import link
 
 SITE = "https://www.tfminecraft.net"
 ORIGIN = {"Origin": SITE}
@@ -294,8 +295,7 @@ def test_existing_bot_link_appears_on_first_sign_in(api, monkeypatch):
 def test_sign_in_refreshes_link_username(api, monkeypatch, env):
     discord_link.complete_link(link_code(), DISCORD_ID, "old_name")
     sign_in(api, monkeypatch)
-    with env.connect() as conn:
-        assert conn.execute("SELECT discord_username FROM discord_links").fetchone()[0] == "steve_tfmc"
+    assert testing.value("SELECT discord_username FROM discord_links") == "steve_tfmc"
 
 
 def test_default_avatar_when_none():
@@ -310,16 +310,15 @@ def test_link_with_in_game_code(api, monkeypatch, env):
     preview = api.post("/account/minecraft/preview", json={"code": pasted}, headers=ORIGIN)
     assert preview.status_code == 200, preview.text
     assert preview.json()["minecraft_name"] == "SteveMC" and preview.json()["player_uuid"] == PLAYER
-    with env.connect() as conn:
-        assert conn.execute("SELECT used_at FROM discord_link_codes").fetchone()[0] is None
+    [unused] = testing.rows("SELECT used_at FROM discord_link_codes")
+    assert unused["used_at"] is None
     linked = api.post("/account/minecraft/link", json={"code": " " + code + " "}, headers=ORIGIN)
     assert linked.status_code == 200, linked.text
     assert linked.json()["minecraft"]["player_uuid"] == PLAYER
     assert discord_link.get_discord_id_for_uuid(PLAYER) == DISCORD_ID
-    with env.connect() as conn:
-        notice = conn.execute("SELECT type FROM plugin_notices WHERE player_uuid=?", (PLAYER,)).fetchone()
-        username = conn.execute("SELECT discord_username FROM discord_links").fetchone()[0]
-    assert notice[0] == "link_success" and username == "steve_tfmc"
+    notice = testing.value("SELECT type FROM plugin_notices WHERE player_uuid=%s", (PLAYER,))
+    username = testing.value("SELECT discord_username FROM discord_links")
+    assert notice == "link_success" and username == "steve_tfmc"
 
 
 def test_link_requires_guild_membership(api, monkeypatch):
@@ -451,9 +450,7 @@ def test_linking_spends_sibling_codes(env):
 
 def test_minecraft_already_linked_elsewhere_is_refused(env):
     stale = link_code()
-    with env.connect() as conn:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, linked_at) VALUES (?, ?, '2026-01-01T00:00:00Z')", (PLAYER, OTHER_ID))
-        conn.commit()
+    link(PLAYER, OTHER_ID, linked_at="2026-01-01T00:00:00Z")
     with pytest.raises(discord_link.LinkError, match="different Discord account"):
         discord_link.complete_link(stale, DISCORD_ID)
     assert discord_link.get_discord_id_for_uuid(PLAYER) == OTHER_ID
@@ -463,9 +460,7 @@ def test_same_pair_again_keeps_link_and_grace(env):
     stale = link_code()
     discord_link.complete_link(link_code(), DISCORD_ID, "first_name")
     discord_link.record_guild_left(DISCORD_ID)
-    with env.connect() as conn:
-        conn.execute("UPDATE discord_link_codes SET used_at=NULL WHERE code_hash=?", (discord_link.hash_secret(stale),))
-        conn.commit()
+    testing.execute("UPDATE discord_link_codes SET used_at=NULL WHERE code_hash=%s", (discord_link.hash_secret(stale),))
     before = discord_link.get_link_for_uuid(PLAYER)
     result = discord_link.complete_link(stale, DISCORD_ID, "second_name")
     after = discord_link.get_link_for_uuid(PLAYER)
@@ -499,16 +494,13 @@ def test_concurrent_redemption_links_once(env):
         t.join()
     assert len(results) == 1
     assert discord_link.get_discord_id_for_uuid(PLAYER) == results[0]
-    with env.connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM plugin_notices WHERE type='link_success'").fetchone()[0] == 1
+    assert testing.value("SELECT COUNT(*) FROM plugin_notices WHERE type='link_success'") == 1
 
 
 def test_get_link_for_discord_id_expires_due_graces(env):
     discord_link.complete_link(link_code(), DISCORD_ID)
     discord_link.record_guild_left(DISCORD_ID)
-    with env.connect() as conn:
-        conn.execute("UPDATE discord_links SET grace_until='2000-01-01T00:00:00Z'")
-        conn.commit()
+    testing.execute("UPDATE discord_links SET grace_until='2000-01-01T00:00:00Z'")
     assert discord_link.get_link_for_discord_id(DISCORD_ID) is None
     assert discord_link.get_link_for_discord_id("") is None
 
@@ -571,8 +563,8 @@ def test_profile_session_needs_a_linked_minecraft_account(api, monkeypatch, env)
     assert body["player_uuid"] == PLAYER and body["scope"] == "profile" and body["realm_id"] == "main"
     session = codes.get_session(body["session_token"])
     assert session["player_uuid"] == PLAYER and session["scope"] == "profile"
-    with env.connect() as conn:
-        assert conn.execute("SELECT code_plaintext FROM codes WHERE id=?", (session["code_id"],)).fetchone()[0] is None
+    [code] = testing.rows("SELECT code_plaintext FROM codes WHERE id=%s", (session["code_id"],))
+    assert code["code_plaintext"] is None
 
 
 def test_profile_session_uses_the_site_realm(api, monkeypatch):

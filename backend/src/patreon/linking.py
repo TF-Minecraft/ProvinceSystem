@@ -14,7 +14,6 @@ from datetime import timedelta
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from src import database
-from src.skins import db as sqlite_db
 from .client import PatreonClient, PatreonError
 from .config import Config
 from .resolver import iso, utcnow
@@ -80,15 +79,13 @@ def start_link(*, discord_user_id=None, player_uuid=None, discord_username=None,
 
 def _known_name(discord: str | None, player: str | None) -> str | None:
     """The name a Discord link (or, for a player, their latest link code) gives the subject."""
-    # PG-MIGRATION: Linking. discord_links and discord_link_codes are still in SQLite. The
-    # Linking PR reads them on Postgres.
     column, value = ("discord_user_id", discord) if discord else ("player_uuid", player)
     name_column = "discord_username" if discord else "minecraft_name"
-    with sqlite_db.connect() as lite:
-        known = lite.execute(f"SELECT {name_column} FROM discord_links WHERE {column}=?", (value,)).fetchone()
-        if (not known or not known[0]) and player:
-            known = lite.execute("SELECT minecraft_name FROM discord_link_codes WHERE player_uuid=? AND minecraft_name IS NOT NULL ORDER BY created_at DESC LIMIT 1", (player,)).fetchone()
-    return known[0] if known else None
+    with database.connect() as conn:
+        known = conn.execute(f"SELECT {name_column} AS name FROM discord_links WHERE {column} = %s", (value,)).fetchone()
+        if (not known or not known["name"]) and player:
+            known = conn.execute("SELECT minecraft_name AS name FROM discord_link_codes WHERE player_uuid = %s AND minecraft_name IS NOT NULL ORDER BY created_at DESC LIMIT 1", (player,)).fetchone()
+    return known["name"] if known else None
 
 
 def consume_state(token: str | None) -> dict | None:

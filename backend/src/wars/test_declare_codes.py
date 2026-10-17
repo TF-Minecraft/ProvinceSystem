@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import gc
 import sys
-import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+import pytest
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -16,48 +16,15 @@ _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+from src import database  # noqa: E402
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 ATTACKER = "faction-attacker"
 DEFENDER = "faction-defender"
 
 
 class WarDeclareCodesTest(unittest.TestCase):
-    def setUp(self) -> None:
-        # skins.db.connect() never closes, so on Windows the sqlite file stays
-        # locked until the connection is collected. Neither is this test's business.
-        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-        root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
-
-        import skins.db as db_mod
-        import skins.codes as codes_mod
-
-        self._db_mod = db_mod
-        # declare_codes imports through src.skins.*, so the temp DB only lands if
-        # both names point at the one module object.
-        sys.modules["src.skins.db"] = db_mod
-        sys.modules["src.skins.codes"] = codes_mod
-        self._orig_db = db_mod.DB_PATH
-        self._orig_drinks = db_mod.DRINKS_DIR
-        self._orig_data = db_mod.DATA_DIR
-        self._orig_skins = db_mod.SKINS_DIR
-        self._orig_wardrobe = db_mod.WARDROBE_DIR
-        db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
-        db_mod.DRINKS_DIR = root / "drinks"
-        db_mod.SKINS_DIR = root / "skins"
-        db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
-
-    def tearDown(self) -> None:
-        db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
-        db_mod.DRINKS_DIR = self._orig_drinks
-        db_mod.DATA_DIR = self._orig_data
-        db_mod.SKINS_DIR = self._orig_skins
-        db_mod.WARDROBE_DIR = self._orig_wardrobe
-        gc.collect()
-        self.tmp.cleanup()
-
     def _mint(self, **kwargs) -> dict:
         from wars.declare_codes import mint
 
@@ -72,12 +39,11 @@ class WarDeclareCodesTest(unittest.TestCase):
     def _expire(self, code_id: int) -> None:
         """Backdate expiry, since the TTL floor is one hour."""
         past = datetime.now(timezone.utc) - timedelta(hours=1)
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
-                "UPDATE war_declare_codes SET expires_at = ? WHERE id = ?",
-                (past.strftime("%Y-%m-%dT%H:%M:%SZ"), code_id),
+                "UPDATE war_declare_codes SET expires_at = %s WHERE id = %s",
+                (past, code_id),
             )
-            conn.commit()
 
     def test_mint_then_validate_then_redeem(self) -> None:
         from wars.declare_codes import redeem, validate
@@ -97,14 +63,14 @@ class WarDeclareCodesTest(unittest.TestCase):
 
     def test_mint_never_stores_plaintext(self) -> None:
         minted = self._mint()
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             row = conn.execute(
-                "SELECT * FROM war_declare_codes WHERE id = ?",
+                "SELECT * FROM war_declare_codes WHERE id = %s",
                 (minted["id"],),
             ).fetchone()
         # A lost code is revoked and reminted; there is nowhere to read it back from.
         self.assertNotIn("code_plaintext", row.keys())
-        self.assertNotIn(minted["code"], str(tuple(row)))
+        self.assertNotIn(minted["code"], str(tuple(row.values())))
 
     def test_validate_does_not_consume(self) -> None:
         from wars.declare_codes import validate
@@ -282,7 +248,7 @@ class WarDeclareCodesTest(unittest.TestCase):
         self.assertTrue(self._mint(ttl_hours=1)["expires_at"])
 
     def test_invalid_realm_refused(self) -> None:
-        from skins.codes import CodeError
+        from src.skins.codes import CodeError
 
         with self.assertRaises(CodeError):
             self._mint(realm_id="not a realm!")

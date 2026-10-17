@@ -16,14 +16,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import sqlite3
 import threading
 import time
 from dataclasses import dataclass
 
 import httpx
 
-from src.skins.db import connect
+from src import database
 from src.skins.discord_link import remember_discord_nicknames, remember_discord_usernames
 
 from .config import API_BASE_DEFAULT, SNOWFLAKE_MAX_LEN
@@ -157,8 +156,7 @@ def store(discord_id: str, found: dict) -> None:
 
 def refresh_all(lookup: NameLookup) -> int:
     """Look up every linked player once; how many Discord answered for."""
-    # PG-MIGRATION: until the Linking area converts, discord_links is in SQLite.
-    with connect() as conn:
+    with database.connect() as conn:
         ids = [row["discord_user_id"] for row in conn.execute("SELECT discord_user_id FROM discord_links")]
     answered = 0
     for discord_id in ids:
@@ -168,7 +166,7 @@ def refresh_all(lookup: NameLookup) -> int:
         if found:
             try:
                 store(str(discord_id), found)
-            except sqlite3.Error:
+            except database.Error:
                 logger.exception("Could not store a refreshed Discord name")
                 continue
             answered += 1
@@ -200,7 +198,7 @@ def refresh_one(discord_id: str) -> bool:
         return False
     try:
         store(discord_id, found)
-    except sqlite3.Error:
+    except database.Error:
         # The profile still shows what is stored.
         logger.exception("Could not store a looked-up Discord name")
         return False

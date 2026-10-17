@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from src.api import admin_routes, auth_routes
 from src.auth import players, testing
+from src.skins import testing as skins_testing
 from src.auth.test_admin import account, client
 
 HAZEL = "0615a817-8cb4-4aef-95f7-f6c9bf7611b8"
@@ -36,11 +37,7 @@ def env(database, postgres, monkeypatch):
 
 
 def link(db, player_uuid, discord_id, mc_name, discord_name):
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO discord_links (player_uuid, discord_user_id, minecraft_name, discord_username, linked_at) "
-            "VALUES (?, ?, ?, ?, '2026-09-20T10:00:00Z')", (player_uuid, discord_id, mc_name, discord_name))
-        conn.commit()
+    skins_testing.link(player_uuid, discord_id, mc_name, discord_name, linked_at="2026-09-20T10:00:00Z")
 
 
 def character(db, player_uuid, name, realm="main", status="alive", character_id=None):
@@ -334,9 +331,7 @@ def test_character_picture_without_a_skin_and_staff_catalog(app, env, world):
 def test_profile_shows_the_website_account(app, env, world):
     token = staff(env, "admin")
     staff_discord_id = testing.value("SELECT discord_user_id FROM users LIMIT 1")
-    with env.connect() as conn:
-        conn.execute("UPDATE discord_links SET discord_user_id = ? WHERE player_uuid = ?", (staff_discord_id, HAZEL))
-        conn.commit()
+    testing.execute("UPDATE discord_links SET discord_user_id = %s WHERE player_uuid = %s", (staff_discord_id, HAZEL))
     body = client(app, token).get(f"/admin/players/{HAZEL}").json()
     assert body["account"]["role"] == "admin"
     assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", body["account"]["created_at"])
@@ -602,16 +597,12 @@ def test_profile_asks_discord_for_an_unknown_handle(app, env, world, monkeypatch
 
     def refresh_one(discord_id):
         asked.append(discord_id)
-        with env.connect() as conn:
-            conn.execute("UPDATE discord_links SET discord_username = 'linky_handle', discord_nickname = 'Linky' "
-                         "WHERE discord_user_id = ?", (discord_id,))
-            conn.commit()
+        testing.execute("UPDATE discord_links SET discord_username = 'linky_handle', discord_nickname = 'Linky' "
+                        "WHERE discord_user_id = %s", (discord_id,))
         return True
 
     monkeypatch.setattr(discord_names, "refresh_one", refresh_one)
-    with env.connect() as conn:
-        conn.execute("UPDATE discord_links SET discord_username = NULL WHERE player_uuid = ?", (LINKED_ONLY,))
-        conn.commit()
+    testing.execute("UPDATE discord_links SET discord_username = NULL WHERE player_uuid = %s", (LINKED_ONLY,))
     body = client(app, staff(env)).get(f"/admin/players/{LINKED_ONLY}").json()
     assert asked == ["500000000000000001"]
     assert body["discord"]["discord_username"] == "linky_handle"

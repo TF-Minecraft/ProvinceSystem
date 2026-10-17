@@ -9,12 +9,18 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
+
+from src import database  # noqa: E402
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 
 class RealmScopeTest(unittest.TestCase):
@@ -23,10 +29,10 @@ class RealmScopeTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self.db_path = root / "province.db"
 
-        import skins.db as db_mod
+        import src.skins.db as db_mod
 
         self._db_mod = db_mod
-        sys.modules["src.skins.db"] = db_mod
+
         self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
@@ -49,7 +55,7 @@ class RealmScopeTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_list_pending_filters_by_realm(self) -> None:
-        from characters import creates as creates_mod
+        from src.characters import creates as creates_mod
 
         with mock.patch.object(
             creates_mod,
@@ -95,7 +101,7 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual(payload.get("name"), "DevChar")
 
     def test_replace_roster_does_not_wipe_other_realm(self) -> None:
-        from characters.roster import list_roster, replace_roster
+        from src.characters.roster import list_roster, replace_roster
 
         uuid = "player-scope-2"
         replace_roster(
@@ -120,8 +126,8 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([c["id"] for c in tut], ["tut-char-2"])
 
     def test_list_for_player_scopes_pending_and_roster(self) -> None:
-        from characters import creates as creates_mod
-        from characters.roster import replace_roster
+        from src.characters import creates as creates_mod
+        from src.characters.roster import replace_roster
 
         uuid = "player-scope-3"
         replace_roster(
@@ -189,11 +195,10 @@ class RealmScopeTest(unittest.TestCase):
         self.assertNotIn("MainPending", names)
 
     def test_skin_pending_apply_filtered_by_realm(self) -> None:
-        from skins.db import connect
-        from skins.submissions import list_approved_pending_apply
+        from src.skins.submissions import list_approved_pending_apply
 
-        with connect() as conn:
-            conn.execute(
+        with database.connect() as conn:
+            code_id = conn.execute(
                 """
                 INSERT INTO codes (
                     code_hash, player_uuid, scope, realm_id,
@@ -201,9 +206,9 @@ class RealmScopeTest(unittest.TestCase):
                 )
                 VALUES ('hash-skin-1', 'p-skin', 'skin', 'dev',
                         '2020-01-01T00:00:00Z', '2099-01-01T00:00:00Z')
+                RETURNING id
                 """
-            )
-            code_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            ).fetchone()["id"]
             for sid, realm in (("sub-main", "main"), ("sub-dev", "dev")):
                 conn.execute(
                     """
@@ -212,9 +217,9 @@ class RealmScopeTest(unittest.TestCase):
                         status, dir_path, created_at, reviewed_at, applied_at,
                         realm_id
                     )
-                    VALUES (?, 'p-skin', ?, 'weapon', ?, ?,
-                            'approved', ?, '2020-01-01T00:00:00Z',
-                            '2020-01-02T00:00:00Z', NULL, ?)
+                    VALUES (%s, 'p-skin', %s, 'weapon', %s, %s,
+                            'approved', %s, '2020-01-01T00:00:00Z',
+                            '2020-01-02T00:00:00Z', NULL, %s)
                     """,
                     (
                         sid,
@@ -225,7 +230,6 @@ class RealmScopeTest(unittest.TestCase):
                         realm,
                     ),
                 )
-            conn.commit()
 
         main = list_approved_pending_apply(realm_id="main")
         dev = list_approved_pending_apply(realm_id="dev")
@@ -233,11 +237,10 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in dev], ["sub-dev"])
 
     def test_drink_pending_apply_filtered_by_realm(self) -> None:
-        from skins.db import connect
-        from skins.drinks import list_drinks_pending_apply
+        from src.skins.drinks import list_drinks_pending_apply
 
-        with connect() as conn:
-            conn.execute(
+        with database.connect() as conn:
+            code_id = conn.execute(
                 """
                 INSERT INTO codes (
                     code_hash, player_uuid, scope, realm_id,
@@ -245,9 +248,9 @@ class RealmScopeTest(unittest.TestCase):
                 )
                 VALUES ('hash-drink-1', 'p-drink', 'drink', 'tutorial',
                         '2020-01-01T00:00:00Z', '2099-01-01T00:00:00Z')
+                RETURNING id
                 """
-            )
-            code_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            ).fetchone()["id"]
             for did, realm in (("drink-main", "main"), ("drink-tut", "tutorial")):
                 conn.execute(
                     """
@@ -256,9 +259,9 @@ class RealmScopeTest(unittest.TestCase):
                         recipe_json, status, dir_path, created_at,
                         reviewed_at, applied_at, realm_id
                     )
-                    VALUES (?, 'p-drink', ?, ?, ?, '{}',
-                            'approved', ?, '2020-01-01T00:00:00Z',
-                            '2020-01-02T00:00:00Z', NULL, ?)
+                    VALUES (%s, 'p-drink', %s, %s, %s, '{}',
+                            'approved', %s, '2020-01-01T00:00:00Z',
+                            '2020-01-02T00:00:00Z', NULL, %s)
                     """,
                     (
                         did,
@@ -269,7 +272,6 @@ class RealmScopeTest(unittest.TestCase):
                         realm,
                     ),
                 )
-            conn.commit()
 
         main = list_drinks_pending_apply("main")
         tut = list_drinks_pending_apply("tutorial")
@@ -277,7 +279,7 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in tut], ["drink-tut"])
 
     def test_rpc_player_meta_isolated_by_realm(self) -> None:
-        from characters.rpc_player_meta import (
+        from src.characters.rpc_player_meta import (
             get_rpc_player_meta,
             resolve_web_entitlements,
             upsert_rpc_player_meta,
@@ -310,11 +312,10 @@ class RealmScopeTest(unittest.TestCase):
         )
 
     def test_slug_taken_allows_same_slug_across_realms(self) -> None:
-        from skins.db import connect
-        from skins.submissions import slug_taken
+        from src.skins.submissions import slug_taken
 
-        with connect() as conn:
-            conn.execute(
+        with database.connect() as conn:
+            code_id = conn.execute(
                 """
                 INSERT INTO codes (
                     code_hash, player_uuid, scope, realm_id,
@@ -322,9 +323,9 @@ class RealmScopeTest(unittest.TestCase):
                 )
                 VALUES ('hash-slug-x', 'p-slug', 'skin', 'main',
                         '2020-01-01T00:00:00Z', '2099-01-01T00:00:00Z')
+                RETURNING id
                 """
-            )
-            code_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            ).fetchone()["id"]
             conn.execute(
                 """
                 INSERT INTO submissions (
@@ -332,20 +333,19 @@ class RealmScopeTest(unittest.TestCase):
                     status, dir_path, created_at, realm_id
                 )
                 VALUES (
-                    'shared_slug', 'p-slug', ?, 'weapon', 'shared_slug', 'Shared',
+                    'shared_slug', 'p-slug', %s, 'weapon', 'shared_slug', 'Shared',
                     'approved', '/tmp/shared', '2020-01-01T00:00:00Z', 'main'
                 )
                 """,
                 (code_id,),
             )
-            conn.commit()
 
         self.assertTrue(slug_taken("shared_slug", "main"))
         self.assertFalse(slug_taken("shared_slug", "dev"))
 
     def test_lore_pending_filtered_by_realm(self) -> None:
-        from characters.lore_items import list_pending_for_plugin
-        from skins.db import connect
+        from src.characters.lore_items import list_pending_for_plugin
+        from src.skins.db import connect
 
         with connect() as conn:
             for cid, realm in (("char-main", "main"), ("char-dev", "dev")):
@@ -370,8 +370,8 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([r["character_id"] for r in dev], ["char-dev"])
 
     def test_character_name_clash_only_within_realm(self) -> None:
-        from characters.roster import replace_roster
-        from skins.db import connect
+        from src.characters.roster import replace_roster
+        from src.skins.db import connect
 
         replace_roster(
             "p-name",

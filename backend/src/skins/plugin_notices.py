@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any
 
-from .db import connect
+from src import database
+
+from .codes import api_time
 
 
 class PluginNoticeError(ValueError):
     """Notice not found or invalid."""
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def enqueue_plugin_notice(
@@ -32,27 +33,24 @@ def enqueue_plugin_notice(
     if not uuid:
         raise PluginNoticeError("player_uuid is required")
 
-    body = json.dumps(payload if isinstance(payload, dict) else {})
-    created_at = _iso_now()
+    body = database.Jsonb(payload if isinstance(payload, dict) else {})
 
     def _insert(c) -> int:
-        cur = c.execute(
+        return int(c.execute(
             """
             INSERT INTO plugin_notices (
                 type, player_uuid, payload, created_at, delivered_at
-            ) VALUES (?, ?, ?, ?, NULL)
+            ) VALUES (%s, %s, %s, %s, NULL)
+            RETURNING id
             """,
-            (ntype, uuid, body, created_at),
-        )
-        return int(cur.lastrowid)
+            (ntype, uuid, body, _utcnow()),
+        ).fetchone()["id"])
 
     if conn is not None:
         return _insert(conn)
 
-    with connect() as c:
-        notice_id = _insert(c)
-        c.commit()
-        return notice_id
+    with database.connect() as c:
+        return _insert(c)
 
 
 def enqueue_link_success(
@@ -71,13 +69,27 @@ def enqueue_link_success(
     )
 
 
+def _legacy_payload(notice_type: str, payload: dict) -> dict:
+    # JSONB does not preserve insertion order. These are the outbox producers'
+    # legacy wire schemas; none currently contains a nested object.
+    keys = {
+        "link_success": ("discord_username",),
+        "guild_left_grace": ("discord_user_id", "grace_until", "left_guild_at"),
+        "guild_rejoined": ("discord_user_id",),
+        "grace_expired": ("discord_user_id", "grace_until"),
+    }.get(notice_type, ())
+    ordered = {key: payload[key] for key in keys if key in payload}
+    ordered.update(payload)
+    return ordered
+
+
 def list_undelivered_plugin_notices() -> list[dict]:
     # Expire guild-leave graces so plugins learn via grace_expired notices.
     from .discord_link import expire_due_graces
 
     expire_due_graces()
 
-    with connect() as conn:
+    with database.connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM plugin_notices
@@ -86,22 +98,16 @@ def list_undelivered_plugin_notices() -> list[dict]:
             """
         ).fetchall()
 
-    result = []
-    for row in rows:
-        try:
-            payload = json.loads(row["payload"])
-        except (json.JSONDecodeError, TypeError):
-            payload = {}
-        result.append(
-            {
-                "id": row["id"],
-                "type": row["type"],
-                "player_uuid": row["player_uuid"],
-                "payload": payload,
-                "created_at": row["created_at"],
-            }
-        )
-    return result
+    return [
+        {
+            "id": row["id"],
+            "type": row["type"],
+            "player_uuid": row["player_uuid"],
+            "payload": _legacy_payload(row["type"], row["payload"]),
+            "created_at": api_time(row["created_at"]),
+        }
+        for row in rows
+    ]
 
 
 def ack_plugin_notices(ids: list[int]) -> dict:
@@ -109,22 +115,16 @@ def ack_plugin_notices(ids: list[int]) -> dict:
     if not raw_ids:
         return {"acked": [], "delivered_at": None}
 
-    now = _iso_now()
-    acked: list[int] = []
-    with connect() as conn:
-        for notice_id in raw_ids:
-            row = conn.execute(
-                "SELECT id, delivered_at FROM plugin_notices WHERE id = ?",
-                (notice_id,),
-            ).fetchone()
-            if row is None:
-                continue
-            if row["delivered_at"] is None:
-                conn.execute(
-                    "UPDATE plugin_notices SET delivered_at = ? WHERE id = ?",
-                    (now, notice_id),
-                )
-            acked.append(notice_id)
-        conn.commit()
+    now = _utcnow()
+    with database.connect() as conn:
+        conn.execute("SELECT id FROM plugin_notices WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                     (raw_ids,)).fetchall()
+        # Already delivered notices are acked again without moving their time.
+        conn.execute(
+            "UPDATE plugin_notices SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",
+            (now, raw_ids),
+        )
+        known = {row["id"] for row in conn.execute("SELECT id FROM plugin_notices WHERE id = ANY(%s)", (raw_ids,))}
+    acked = [notice_id for notice_id in raw_ids if notice_id in known]
 
-    return {"acked": acked, "delivered_at": now if acked else None}
+    return {"acked": acked, "delivered_at": api_time(now) if acked else None}
