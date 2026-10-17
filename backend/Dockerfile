@@ -37,6 +37,7 @@ WORKDIR /app
 COPY backend/scripts/build_minecraft_names.py /tmp/
 RUN python3 /tmp/build_minecraft_names.py /app/src/coreprotect/data/minecraft_names.json
 COPY backend/ .
+COPY third_party/miniskin /app/third_party/miniskin
 # constants.py resolves ProvinceSystem/shared via parents[4] → /shared/...
 COPY shared /shared
 # Shared Three.js helpers (also synced locally via scripts/sync-skins.mjs before build).
