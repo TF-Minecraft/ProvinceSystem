@@ -177,6 +177,47 @@ class PluginWornSkinTest(unittest.TestCase):
                 "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = %s", (CHAR_ID,)
             ).fetchone()["wardrobe_active_slot"]
 
+    def slot_url(self, slot: str) -> str:
+        return URL.removesuffix("worn") + "slots/" + slot
+
+    def test_selected_outfit_is_read_without_equipping_or_acknowledging(self) -> None:
+        self.put_slot("base", "v-base", "s-base")
+        self.put_slot("extra_1", "v-extra", "s-extra")
+        self.put_slot("masked", "v-masked", "s-masked")
+        before = self.state()
+        with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=3):
+            res = self.get(self.slot_url("extra_1"))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {
+            "character_id": CHAR_ID, "slot": "extra_1", "value": "v-extra", "signature": "s-extra",
+        })
+        self.assertEqual(self.state(), before)
+
+    def test_locked_or_masked_slots_are_refused_without_changing_data(self) -> None:
+        self.put_slot("extra_1", "v-extra", "s-extra")
+        before = self.state()
+        self.assertEqual(self.get(self.slot_url("extra_1")).status_code, 403)
+        for slot in ("masked", "unknown"):
+            self.assertEqual(self.get(self.slot_url(slot)).status_code, 400)
+        self.assertEqual(self.state(), before)
+
+    def test_missing_and_unsigned_outfits_do_not_borrow_another_skin(self) -> None:
+        self.put_slot("base", "v-base", "s-base")
+        self.put_slot("extra_1", "v-extra", None)
+        with mock.patch.object(self.wardrobe, "swappable_slot_count", return_value=3):
+            for slot in ("extra_1", "extra_2"):
+                res = self.get(self.slot_url(slot))
+                self.assertEqual(res.status_code, 200)
+                self.assertEqual(res.json(), {
+                    "character_id": CHAR_ID, "slot": slot, "value": None, "signature": None,
+                })
+
+    def test_selected_slot_requires_plugin_auth_and_matching_owner(self) -> None:
+        self.assertEqual(self.get(self.slot_url("base"), key=None).status_code, 401)
+        self.assertEqual(self.get(self.slot_url("base"), key="wrong").status_code, 401)
+        self.assertEqual(self.get(self.slot_url("base").replace(PLAYER, "other")).status_code, 403)
+        self.assertEqual(self.get(self.slot_url("base").replace(CHAR_ID, "unknown")).status_code, 403)
+
 
 if __name__ == "__main__":
     unittest.main()
