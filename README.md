@@ -23,11 +23,11 @@ It connects the Minecraft world with a browser experience: players can explore t
 
 ## Documentation
 
-[Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/TFMCWeb/README.md)
+[Project documentation](docs/README.md)
 
-Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
+Technical documentation for the site lives in [`docs/`](docs/README.md). Shared platform documentation stays in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
 
-[Previews and deployment](https://github.com/TF-Minecraft/Docs/blob/main/projects/TFMCWeb/DEPLOY.md)
+[Previews and deployment](docs/DEPLOY.md)
 
 ## Tests
 

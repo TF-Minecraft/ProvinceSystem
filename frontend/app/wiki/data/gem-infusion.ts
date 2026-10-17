@@ -1,5 +1,5 @@
 ﻿import type { WikiCommandSet, WikiSection } from "./types";
-// Source: https://github.com/TF-Minecraft/Docs/blob/main/projects/TFMCWeb/docs/wiki-research/a2-gems-dowsing-archaeo.md, section 1.
+// Source: https://github.com/TF-Minecraft/TFMCWeb/blob/main/docs/docs/wiki-research/a2-gems-dowsing-archaeo.md, section 1.
 export const gemRarities = {
   columns: ["Rarity", "Display", "Weight", "Broadcast"],
   rows: [
