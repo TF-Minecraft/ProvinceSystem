@@ -11,12 +11,16 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 NOW = "2026-01-01T00:00:00Z"
 PNG = b"\x89PNG\r\n\x1a\n-not-a-real-png"
@@ -87,7 +91,7 @@ class _CharacterDbFixture:
             """
             INSERT INTO character_roster (
                 player_uuid, realm_id, character_id, name, status, updated_at
-            ) VALUES (?, ?, ?, ?, 'ALIVE', ?)
+            ) VALUES (%s, %s, %s, %s, 'ALIVE', %s)
             """,
             (uuid, realm, cid, f"Char {cid}", NOW),
         )
@@ -95,7 +99,7 @@ class _CharacterDbFixture:
             """
             INSERT INTO lore_item_customisations (
                 player_uuid, character_id, kit_key, updated_at, realm_id
-            ) VALUES (?, ?, 'kit_a', ?, ?)
+            ) VALUES (%s, %s, 'kit_a', %s, %s)
             """,
             (uuid, cid, NOW, realm),
         )
@@ -104,7 +108,7 @@ class _CharacterDbFixture:
             """
             INSERT INTO character_wardrobe_slots (
                 player_uuid, character_id, slot, png_relpath, updated_at
-            ) VALUES (?, ?, 'base', ?, ?)
+            ) VALUES (%s, %s, 'base', %s, %s)
             """,
             (uuid, cid, slot_rel, NOW),
         )
@@ -119,7 +123,7 @@ class _CharacterDbFixture:
             """
             INSERT INTO character_creates (
                 id, player_uuid, payload, status, created_at, realm_id
-            ) VALUES (?, ?, '{}', 'pending', ?, ?)
+            ) VALUES (%s, %s, '{}', 'pending', %s, %s)
             """,
             (create_id, uuid, NOW, realm),
         )
@@ -128,7 +132,7 @@ class _CharacterDbFixture:
             """
             INSERT INTO character_create_wardrobe (
                 create_id, slot, png_relpath, updated_at
-            ) VALUES (?, 'base', ?, ?)
+            ) VALUES (%s, 'base', %s, %s)
             """,
             (create_id, pending_rel, NOW),
         )
@@ -136,7 +140,7 @@ class _CharacterDbFixture:
         conn.execute(
             """
             INSERT INTO rpc_player_meta (player_uuid, realm_id, updated_at)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
             """,
             (uuid, realm, NOW),
         )
@@ -144,59 +148,58 @@ class _CharacterDbFixture:
             """
             INSERT INTO character_player_meta (
                 player_uuid, max_alive_characters, updated_at
-            ) VALUES (?, 3, ?)
+            ) VALUES (%s, 3, %s)
             """,
             (uuid, NOW),
         )
 
     def _seed(self) -> None:
-        from src.skins.db import connect
+        from src.database import connect
 
         with connect() as conn:
             self._seed_realm(conn, "main")
             self._seed_realm(conn, "dev")
-            conn.commit()
 
     def _count(self, table: str, realm: str) -> int:
-        from src.skins.db import connect
+        from src.database import connect
 
         if table in ("character_wardrobe_slots", "character_create_wardrobe"):
             raise AssertionError("table has no realm_id; count by key instead")
         with connect() as conn:
             row = conn.execute(
-                f"SELECT COUNT(*) AS n FROM {table} WHERE realm_id = ?",
+                f"SELECT COUNT(*) AS n FROM {table} WHERE realm_id = %s",
                 (realm,),
             ).fetchone()
         return int(row["n"])
 
     def _slot_rows(self, realm: str) -> int:
-        from src.skins.db import connect
+        from src.database import connect
 
         with connect() as conn:
             row = conn.execute(
                 "SELECT COUNT(*) AS n FROM character_wardrobe_slots "
-                "WHERE player_uuid = ?",
+                "WHERE player_uuid = %s",
                 (f"player-{realm}",),
             ).fetchone()
         return int(row["n"])
 
     def _create_wardrobe_rows(self, realm: str) -> int:
-        from src.skins.db import connect
+        from src.database import connect
 
         with connect() as conn:
             row = conn.execute(
                 "SELECT COUNT(*) AS n FROM character_create_wardrobe "
-                "WHERE create_id = ?",
+                "WHERE create_id = %s",
                 (f"create-{realm}",),
             ).fetchone()
         return int(row["n"])
 
     def _rows_for_character(self, table: str, character_id: str) -> int:
-        from src.skins.db import connect
+        from src.database import connect
 
         with connect() as conn:
             row = conn.execute(
-                f"SELECT COUNT(*) AS n FROM {table} WHERE character_id = ?",
+                f"SELECT COUNT(*) AS n FROM {table} WHERE character_id = %s",
                 (character_id,),
             ).fetchone()
         return int(row["n"])
@@ -232,7 +235,7 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
 
     def test_wipe_keeps_player_meta(self) -> None:
         from src.characters.realm_wipe import wipe_realm_character_data
-        from src.skins.db import connect
+        from src.database import connect
 
         wipe_realm_character_data("main")
 
@@ -270,23 +273,22 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
     def test_wipe_catches_slots_without_roster_row(self) -> None:
         """Applied create whose roster push never landed still gets wiped."""
         from src.characters.realm_wipe import wipe_realm_character_data
-        from src.skins.db import connect
+        from src.database import connect
 
         with connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET character_id = ?, status = 'applied' "
-                "WHERE id = ?",
+                "UPDATE character_creates SET character_id = %s, status = 'applied' "
+                "WHERE id = %s",
                 ("orphan-main", "create-main"),
             )
             conn.execute(
                 """
                 INSERT INTO character_wardrobe_slots (
                     player_uuid, character_id, slot, png_relpath, updated_at
-                ) VALUES ('player-main', 'orphan-main', 'base', ?, ?)
+                ) VALUES ('player-main', 'orphan-main', 'base', %s, %s)
                 """,
                 ("wardrobe/player-main/orphan-main/base.png", NOW),
             )
-            conn.commit()
 
         out = wipe_realm_character_data("main")
 
@@ -326,13 +328,12 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
 
 class DeleteCharactersTest(_CharacterDbFixture, unittest.TestCase):
     def _seed(self) -> None:
-        from src.skins.db import connect
+        from src.database import connect
 
         super()._seed()
         # Second character on the same player: the keeper in a tagged wipe.
         with connect() as conn:
             self._seed_character(conn, "main", "player-main", "char-main-2")
-            conn.commit()
 
     def _body(self, ids: list[str], realm: str | None = "main"):
         routes = importlib.import_module("src.api.characters_routes")

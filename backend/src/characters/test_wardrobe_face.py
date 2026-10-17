@@ -10,7 +10,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
 from PIL import Image
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -161,16 +166,15 @@ class ActiveFaceTest(unittest.TestCase):
         for p in self._patches:
             p.start()
 
-        with db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_roster (
                     player_uuid, realm_id, character_id, name, status, updated_at, wardrobe_active_slot
-                ) VALUES (?, 'main', ?, 'Test', 'ALIVE', ?, 'extra_1')
+                ) VALUES (%s, 'main', %s, 'Test', 'ALIVE', %s, 'extra_1')
                 """,
                 (PLAYER, CHAR_ID, NOW),
             )
-            conn.commit()
 
     def tearDown(self) -> None:
         for p in self._patches:
@@ -185,15 +189,14 @@ class ActiveFaceTest(unittest.TestCase):
         path = self.root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(png)
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_wardrobe_slots (player_uuid, character_id, slot, png_relpath, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 (PLAYER, CHAR_ID, slot, rel, NOW),
             )
-            conn.commit()
         return rel
 
     def test_locked_active_slot_shows_base_and_keeps_the_wardrobe(self) -> None:
@@ -205,13 +208,13 @@ class ActiveFaceTest(unittest.TestCase):
         self.assertEqual(pixels(face).getpixel((4, 4)), (1, 1, 1, 255))
         # Unlike get_wardrobe, nothing is enforced or saved.
         self.assertTrue((self.root / extra).is_file())
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             active = conn.execute(
-                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = ?", (CHAR_ID,)
-            ).fetchone()[0]
+                "SELECT wardrobe_active_slot FROM character_roster WHERE character_id = %s", (CHAR_ID,)
+            ).fetchone()["wardrobe_active_slot"]
             slots = conn.execute(
-                "SELECT COUNT(*) FROM character_wardrobe_slots WHERE character_id = ?", (CHAR_ID,)
-            ).fetchone()[0]
+                "SELECT COUNT(*) AS n FROM character_wardrobe_slots WHERE character_id = %s", (CHAR_ID,)
+            ).fetchone()["n"]
         self.assertEqual(active, "extra_1")
         self.assertEqual(slots, 2)
 
@@ -225,9 +228,8 @@ class ActiveFaceTest(unittest.TestCase):
     def test_figure_is_the_worn_slot_with_its_saved_model(self) -> None:
         self.put_slot("base", body())
         self.put_slot("extra_1", skin((2, 2, 2, 255)))
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute("UPDATE character_wardrobe_slots SET model = 'slim' WHERE slot = 'base'")
-            conn.commit()
         # extra_1 is locked, so base is worn, with the slim arms it was saved with.
         figure = pixels(self.wardrobe.active_figure_png(PLAYER, CHAR_ID))
         self.assertEqual(figure.getpixel((6, 4)), HEAD)
@@ -237,9 +239,8 @@ class ActiveFaceTest(unittest.TestCase):
     def test_worn_skin_name_reads_without_enforcing(self) -> None:
         self.put_slot("base", skin((1, 1, 1, 255)))
         extra = self.put_slot("extra_1", skin((2, 2, 2, 255)))
-        with self._db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute("UPDATE character_wardrobe_slots SET display_name = 'Ranger' WHERE slot = 'extra_1'")
-            conn.commit()
 
         # extra_1 is locked: base is worn, and the locked skin is kept.
         self.assertEqual(self.wardrobe.worn_skin_name(PLAYER, CHAR_ID), "Base")

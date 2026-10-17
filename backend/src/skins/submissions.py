@@ -9,7 +9,7 @@ from pathlib import Path
 
 from src import database
 
-from .db import SKINS_DIR, connect as sqlite_connect
+from .db import SKINS_DIR
 from .codes import CodeError, SCOPE_LORE_UPLOAD, api_time, lock_code_for_submission, mark_code_consumed
 from .discord_link import get_link_for_uuid
 from .naming import (
@@ -1004,33 +1004,23 @@ def rollback_pending_submission_if_unreferenced(
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT player_uuid, status
-            FROM submissions
-            WHERE id = %s
+            DELETE FROM submissions
+            WHERE id = %s AND status = 'pending'
+              AND (%s::text IS NULL OR LOWER(player_uuid) = LOWER(%s))
+              AND NOT EXISTS (
+                  SELECT 1 FROM lore_item_customisations WHERE submission_id = submissions.id
+              )
+            RETURNING code_id
             """,
-            (sid,),
+            (sid, uuid, uuid),
         ).fetchone()
-    if row is None:
-        return False
-    if str(row["status"] or "").strip().lower() != "pending":
-        return False
-    owner = str(row["player_uuid"] or "").strip()
-    if uuid and owner.lower() != uuid.lower():
-        return False
-    # PG-MIGRATION: Characters. lore_item_customisations is still in SQLite; its PR reads it
-    # here on the Postgres connection above.
-    with sqlite_connect() as lite:
-        ref = lite.execute(
-            """
-            SELECT 1 FROM lore_item_customisations
-            WHERE submission_id = ?
-            LIMIT 1
-            """,
-            (sid,),
-        ).fetchone()
-    if ref is not None:
-        return False
-    return _rollback_submission(sid, pending_only=True)
+        if row is None:
+            return False
+        conn.execute("UPDATE codes SET redeemed_at = NULL WHERE id = %s", (row["code_id"],))
+    out = SKINS_DIR / sid
+    if out.exists():
+        shutil.rmtree(out, ignore_errors=True)
+    return True
 
 
 def rollback_pending_submissions_if_unreferenced(

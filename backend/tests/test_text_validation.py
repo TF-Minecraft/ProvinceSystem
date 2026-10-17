@@ -8,6 +8,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND = Path(__file__).resolve().parents[1]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))

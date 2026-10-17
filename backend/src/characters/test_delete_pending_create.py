@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 import pytest
+from src import database
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -80,16 +81,14 @@ class DeletePendingCreateTests(unittest.TestCase):
         return path
 
     def _seed_pending(self, *, status: str = "pending", player_uuid: str = PLAYER) -> None:
-        from src.skins.db import connect
-
         png_rel = f"wardrobe/pending/{CREATE_ID}/base.png"
         self._write_png(png_rel)
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{"name":"Test"}', ?, ?, ?)
+                ) VALUES (%s, %s, '{"name":"Test"}', %s, %s, %s)
                 """,
                 (CREATE_ID, player_uuid, status, NOW, REALM),
             )
@@ -97,7 +96,7 @@ class DeletePendingCreateTests(unittest.TestCase):
                 """
                 INSERT INTO character_create_wardrobe (
                     create_id, slot, png_relpath, updated_at
-                ) VALUES (?, 'base', ?, ?)
+                ) VALUES (%s, 'base', %s, %s)
                 """,
                 (CREATE_ID, png_rel, NOW),
             )
@@ -105,20 +104,17 @@ class DeletePendingCreateTests(unittest.TestCase):
                 """
                 INSERT INTO lore_item_customisations (
                     player_uuid, character_id, kit_key, updated_at, realm_id
-                ) VALUES (?, ?, 'kit_a', ?, ?)
+                ) VALUES (%s, %s, 'kit_a', %s, %s)
                 """,
                 (player_uuid, CREATE_ID, NOW, REALM),
             )
-            conn.commit()
 
     def _count(self, table: str, **where: str) -> int:
-        from src.skins.db import connect
-
-        clauses = " AND ".join(f"{k} = ?" for k in where)
+        clauses = " AND ".join(f"{k} = %s" for k in where)
         sql = f"SELECT COUNT(*) AS n FROM {table}"
         if clauses:
             sql += f" WHERE {clauses}"
-        with connect() as conn:
+        with database.connect() as conn:
             row = conn.execute(sql, tuple(where.values())).fetchone()
         return int(row["n"])
 
@@ -185,20 +181,17 @@ class DeletePendingCreateTests(unittest.TestCase):
         player_uuid: str = PLAYER,
         kit_key: str = "kit_a",
     ) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 UPDATE lore_item_customisations
-                SET submission_id = ?,
+                SET submission_id = %s,
                     state = 'pending_skin',
-                    updated_at = ?
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                    updated_at = %s
+                WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
                 """,
                 (submission_id, NOW, player_uuid, character_id, kit_key),
             )
-            conn.commit()
 
     def _submission_exists(self, submission_id: str) -> bool:
         from src.auth.testing import rows
@@ -234,16 +227,15 @@ class DeletePendingCreateTests(unittest.TestCase):
 
     def test_cancel_keeps_submission_referenced_by_other_character(self) -> None:
         from src.characters.creates import delete_pending_create
-        from src.skins.db import connect
 
         self._insert_submission()
         self._set_lore_pending_skin(SUBMISSION_ID)
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{"name":"Other"}', 'pending', ?, ?)
+                ) VALUES (%s, %s, '{"name":"Other"}', 'pending', %s, %s)
                 """,
                 (OTHER_CREATE_ID, PLAYER, NOW, REALM),
             )
@@ -252,11 +244,10 @@ class DeletePendingCreateTests(unittest.TestCase):
                 INSERT INTO lore_item_customisations (
                     player_uuid, character_id, kit_key, submission_id,
                     state, updated_at, realm_id
-                ) VALUES (?, ?, 'kit_b', ?, 'pending_skin', ?, ?)
+                ) VALUES (%s, %s, 'kit_b', %s, 'pending_skin', %s, %s)
                 """,
                 (PLAYER, OTHER_CREATE_ID, SUBMISSION_ID, NOW, REALM),
             )
-            conn.commit()
 
         delete_pending_create(PLAYER, CREATE_ID)
         self.assertTrue(self._submission_exists(SUBMISSION_ID))
@@ -290,14 +281,11 @@ class DeletePendingCreateTests(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 404)
 
     def test_applied_create_conflict(self) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
-                "UPDATE character_creates SET status = 'applied' WHERE id = ?",
+                "UPDATE character_creates SET status = 'applied' WHERE id = %s",
                 (CREATE_ID,),
             )
-            conn.commit()
 
         from src.characters.creates import CreateError, delete_pending_create
 

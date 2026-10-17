@@ -6,11 +6,12 @@ drops a character never deletes its estate. Older revisions never replace newer 
 
 from __future__ import annotations
 
-import json
 import re
-import sqlite3
 from datetime import datetime, timezone
 from typing import Any
+
+from src import database
+from src.characters.times import utcnow
 
 ESTATE_STATUSES = frozenset({"OPEN", "HELD", "CANCELLED", "DECIDED", "REVERTED"})
 ESTATE_PARTS = ("money", "property", "guild_locks", "letters")
@@ -21,10 +22,6 @@ _MAX_PARTICIPANTS = 32
 _MAX_COUNTS = 32
 _MAX_NAME = 64
 _MAX_ID = 64
-
-
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def iso_from_epoch_ms(raw: Any) -> str | None:
@@ -97,20 +94,25 @@ def will_fields(raw: dict) -> tuple[str | None, str | None, int] | None:
 
 
 def store_will(
-    conn: sqlite3.Connection,
+    conn: database.Connection,
     player_uuid: str,
     realm: str,
     character_id: str,
     will: tuple[str | None, str | None, int],
 ) -> bool:
-    """Write a will unless the row already holds a newer revision. True when written."""
+    """Write a will unless the row already holds a newer revision. True when written.
+
+    Compare-and-set: the revision check is the UPDATE's WHERE, which Postgres checks
+    again on a row another transaction has just changed, so an older will never lands
+    over a newer one.
+    """
     heir_id, heir_name, revision = will
     cur = conn.execute(
         """
         UPDATE character_roster
-        SET will_heir_id = ?, will_heir_name = ?, will_revision = ?
-        WHERE player_uuid = ? AND realm_id = ? AND character_id = ?
-          AND (will_revision IS NULL OR will_revision <= ?)
+        SET will_heir_id = %s, will_heir_name = %s, will_revision = %s
+        WHERE player_uuid = %s AND realm_id = %s AND character_id = %s
+          AND (will_revision IS NULL OR will_revision <= %s)
         """,
         (heir_id, heir_name, revision, player_uuid, realm, character_id, revision),
     )
@@ -200,7 +202,7 @@ def parse_estate(raw: Any, death_id: str | None) -> dict[str, Any] | None:
 
 
 def store_estate(
-    conn: sqlite3.Connection,
+    conn: database.Connection,
     player_uuid: str,
     realm: str,
     character_id: str,
@@ -209,41 +211,35 @@ def store_estate(
     """Insert or replace one estate unless the stored one is newer. True when written.
 
     Newer means a higher revision, or the same revision with a later ``updated_at``.
-    An estate already stored for another character is left alone.
+    An estate already stored for another character is left alone. The check is the
+    upsert's own WHERE, so two pushes of one estate never both win.
     """
-    existing = conn.execute(
-        """
-        SELECT character_id, revision, source_updated_at
-        FROM character_estates WHERE realm_id = ? AND death_id = ?
-        """,
-        (realm, estate["death_id"]),
-    ).fetchone()
-    if existing is not None:
-        if existing["character_id"] != character_id:
-            return False
-        if estate["revision"] < existing["revision"]:
-            return False
-        stored_at = existing["source_updated_at"]
-        if (
-            estate["revision"] == existing["revision"]
-            and stored_at
-            and (estate["updated_at"] is None or estate["updated_at"] < stored_at)
-        ):
-            return False
-    conn.execute(
+    row = conn.execute(
         """
         INSERT INTO character_estates (
             realm_id, death_id, player_uuid, character_id, status, revision,
             source_updated_at, payload, received_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(realm_id, death_id) DO UPDATE SET
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (realm_id, death_id) DO UPDATE SET
             player_uuid = excluded.player_uuid,
             status = excluded.status,
             revision = excluded.revision,
             source_updated_at = excluded.source_updated_at,
             payload = excluded.payload,
             received_at = excluded.received_at
+        WHERE character_estates.character_id = excluded.character_id
+          AND (
+            excluded.revision > character_estates.revision
+            OR (
+              excluded.revision = character_estates.revision
+              AND (
+                character_estates.source_updated_at IS NULL
+                OR excluded.source_updated_at >= character_estates.source_updated_at
+              )
+            )
+          )
+        RETURNING 1
         """,
         (
             realm,
@@ -253,18 +249,15 @@ def store_estate(
             estate["status"],
             estate["revision"],
             estate["updated_at"],
-            json.dumps(estate["payload"], separators=(",", ":")),
-            _iso_now(),
+            database.Jsonb(estate["payload"]),
+            utcnow(),
         ),
-    )
-    return True
+    ).fetchone()
+    return row is not None
 
 
-def _estate_out(row: sqlite3.Row) -> dict[str, Any]:
-    try:
-        payload = json.loads(row["payload"] or "{}")
-    except (TypeError, json.JSONDecodeError):
-        payload = {}
+def _estate_out(row: dict[str, Any]) -> dict[str, Any]:
+    payload = row["payload"]
     if not isinstance(payload, dict):
         payload = {}
     return {
@@ -281,18 +274,18 @@ def _estate_out(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def estate_for(
-    conn: sqlite3.Connection, realm: str, character_id: str, death_id: str | None
+    conn: database.Connection, realm: str, character_id: str, death_id: str | None
 ) -> dict[str, Any] | None:
     """The estate of the character's current death; its latest stored one when the death id is unknown."""
     if death_id:
         row = conn.execute(
-            "SELECT * FROM character_estates WHERE realm_id = ? AND death_id = ? AND character_id = ?",
+            "SELECT * FROM character_estates WHERE realm_id = %s AND death_id = %s AND character_id = %s",
             (realm, death_id, character_id),
         ).fetchone()
     else:
         row = conn.execute(
             """
-            SELECT * FROM character_estates WHERE realm_id = ? AND character_id = ?
+            SELECT * FROM character_estates WHERE realm_id = %s AND character_id = %s
             ORDER BY received_at DESC LIMIT 1
             """,
             (realm, character_id),

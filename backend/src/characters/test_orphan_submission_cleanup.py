@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 import pytest
+from src import database
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -127,18 +128,15 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _seed_pending_create(self) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{"name":"Test"}', 'pending', ?, ?)
+                ) VALUES (%s, %s, '{"name":"Test"}', 'pending', %s, %s)
                 """,
                 (CREATE_ID, PLAYER, NOW, REALM),
             )
-            conn.commit()
 
     def _insert_code(self, code_id: int) -> None:
         from src.auth.testing import execute
@@ -201,9 +199,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         existing_skin_id: str | None = None,
         state: str = "pending_skin",
     ) -> None:
-        from src.skins.db import connect
-
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO lore_item_customisations (
@@ -211,7 +207,7 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
                     display_name, lore_json,
                     submission_id, existing_skin_id, state,
                     skin_slug, updated_at, realm_id
-                ) VALUES (?, ?, ?, '', '[]', ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, '', '[]', %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     PLAYER,
@@ -225,7 +221,6 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
                     REALM,
                 ),
             )
-            conn.commit()
 
     def _submission_exists(self, submission_id: str) -> bool:
         from src.auth.testing import rows

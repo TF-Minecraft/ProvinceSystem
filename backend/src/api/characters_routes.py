@@ -7,6 +7,7 @@ import logging
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.characters.rpc_player_meta import (
     RpcPlayerMetaError,
@@ -223,7 +224,7 @@ async def plugin_put_creation_catalog(
     _require_plugin(x_plugin_key)
     if is_secondary_plugin_key(x_plugin_key):
         # Dev/tutorial servers push on every start; only the primary server's copy is kept.
-        current = get_catalog()
+        current = await run_in_threadpool(get_catalog)
         _catalog_log.info("creation catalog push ignored (secondary plugin key)")
         return {
             "ok": True,
@@ -241,7 +242,7 @@ async def plugin_put_creation_catalog(
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="body must be a JSON object")
     try:
-        result = replace_catalog(body)
+        result = await run_in_threadpool(replace_catalog, body)
     except CreationCatalogError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return {
@@ -570,14 +571,9 @@ async def post_lore_item_customise(
             kit_id=kit_id,
         )
         if existing_provided:
-            return customise_lore_item(
-                session,
-                character_id,
-                kit_key,
-                existing_skin_id=existing_skin_id,
-                **kwargs,
-            )
-        return customise_lore_item(
+            kwargs["existing_skin_id"] = existing_skin_id
+        return await run_in_threadpool(
+            customise_lore_item,
             session,
             character_id,
             kit_key,
@@ -777,7 +773,8 @@ async def post_character_wardrobe_slot(
         str(model_raw).strip() if model_raw is not None else None
     ) or None
     try:
-        return upload_slot(
+        return await run_in_threadpool(
+            upload_slot,
             session["player_uuid"],
             character_id,
             slot,
@@ -848,7 +845,8 @@ async def post_character(
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="body must be a JSON object")
     try:
-        row = create_character(
+        row = await run_in_threadpool(
+            create_character,
             session["player_uuid"],
             body,
             realm_id=session.get("realm_id"),
@@ -903,7 +901,8 @@ async def post_pending_create_wardrobe(
         str(model_raw).strip() if model_raw is not None else None
     ) or None
     try:
-        return upload_pending_create_wardrobe(
+        return await run_in_threadpool(
+            upload_pending_create_wardrobe,
             session["player_uuid"],
             create_id,
             slot,

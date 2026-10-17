@@ -5,6 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from src import database
+from src.characters.wardrobe_assets import guarded
+from src.characters.lore_locking import LOCKED_KEYS, key_params, lock_rows
+
 logger = logging.getLogger("characters.realm_wipe")
 
 # Order matters: character_wardrobe_slots and character_create_wardrobe carry no
@@ -27,72 +31,77 @@ DELETE_TABLES = (
 
 _ID_CHUNK = 200
 
-_SLOTS_IN_REALM = """
-    EXISTS (
-        SELECT 1 FROM character_roster cr
-        WHERE cr.player_uuid = character_wardrobe_slots.player_uuid
-          AND cr.character_id = character_wardrobe_slots.character_id
-          AND cr.realm_id = ?
-    )
-    OR EXISTS (
-        SELECT 1 FROM character_creates cc
-        WHERE cc.player_uuid = character_wardrobe_slots.player_uuid
-          AND cc.character_id = character_wardrobe_slots.character_id
-          AND cc.realm_id = ?
-    )
+_CHARACTER_KEYS = """(player_uuid, character_id) IN (
+    SELECT * FROM unnest(%s::text[], %s::text[])
+)
 """
 
 
+@guarded
 def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
     """Delete this realm's character tables. Player rank/age meta is untouched."""
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     realm = normalize_realm_id(realm_id)
     deleted: dict[str, int] = {}
     relpaths: list[str] = []
 
-    with connect() as conn:
+    with database.connect() as conn:
+        roster_rows = conn.execute(
+            "SELECT player_uuid, character_id FROM character_roster WHERE realm_id = %s "
+            "ORDER BY character_id, player_uuid FOR UPDATE",
+            (realm,),
+        ).fetchall()
+        roster_keys = _character_key_params(roster_rows)
+        # All batch locks precede mutations: roster, creates, then lore. Creates
+        # use the acknowledgement order, even when physical insertion differs.
+        create_rows = conn.execute(
+            "SELECT id, player_uuid, character_id FROM character_creates WHERE realm_id = %s "
+            "ORDER BY id FOR UPDATE",
+            (realm,),
+        ).fetchall()
+        create_ids = [r["id"] for r in create_rows]
+        slot_keys = _character_key_params([*roster_rows, *create_rows])
+        locked_lore = key_params(lock_rows(conn, "realm_id = %s", (realm,)))
         for row in conn.execute(
-            f"SELECT png_relpath FROM character_wardrobe_slots WHERE {_SLOTS_IN_REALM}",
-            (realm, realm),
+            f"SELECT png_relpath FROM character_wardrobe_slots WHERE {_CHARACTER_KEYS}",
+            slot_keys,
         ).fetchall():
             if row["png_relpath"]:
                 relpaths.append(str(row["png_relpath"]))
         for row in conn.execute(
             """
             SELECT png_relpath FROM character_create_wardrobe
-            WHERE create_id IN (SELECT id FROM character_creates WHERE realm_id = ?)
+            WHERE create_id = ANY(%s)
             """,
-            (realm,),
+            (create_ids,),
         ).fetchall():
             if row["png_relpath"]:
                 relpaths.append(str(row["png_relpath"]))
 
         deleted["character_wardrobe_slots"] = conn.execute(
-            f"DELETE FROM character_wardrobe_slots WHERE {_SLOTS_IN_REALM}",
-            (realm, realm),
+            f"DELETE FROM character_wardrobe_slots WHERE {_CHARACTER_KEYS}",
+            slot_keys,
         ).rowcount
         deleted["character_create_wardrobe"] = conn.execute(
             """
             DELETE FROM character_create_wardrobe
-            WHERE create_id IN (SELECT id FROM character_creates WHERE realm_id = ?)
+            WHERE create_id = ANY(%s)
             """,
-            (realm,),
+            (create_ids,),
         ).rowcount
         deleted["lore_item_customisations"] = conn.execute(
-            "DELETE FROM lore_item_customisations WHERE realm_id = ?",
-            (realm,),
+            f"DELETE FROM lore_item_customisations WHERE realm_id = %s AND {LOCKED_KEYS}",
+            (realm, *locked_lore),
         ).rowcount
         deleted["character_roster"] = conn.execute(
-            "DELETE FROM character_roster WHERE realm_id = ?",
-            (realm,),
+            f"DELETE FROM character_roster WHERE realm_id = %s AND {_CHARACTER_KEYS}",
+            (realm, *roster_keys),
         ).rowcount
         deleted["character_creates"] = conn.execute(
-            "DELETE FROM character_creates WHERE realm_id = ?",
-            (realm,),
+            "DELETE FROM character_creates WHERE realm_id = %s AND id = ANY(%s)",
+            (realm, create_ids),
         ).rowcount
-        conn.commit()
 
     pngs_deleted = _delete_pngs(relpaths)
     total = sum(max(count, 0) for count in deleted.values())
@@ -110,13 +119,13 @@ def wipe_realm_character_data(realm_id: str | None = None) -> dict[str, Any]:
     }
 
 
+@guarded
 def delete_characters_for_realm(
     realm_id: str | None,
     character_ids: list[str] | None,
 ) -> dict[str, Any]:
     """Drop site rows for characters deleted in-game. Pending creates are kept."""
     from src.skins.codes import normalize_realm_id
-    from src.skins.db import connect
 
     realm = normalize_realm_id(realm_id)
     ids = _clean_ids(character_ids)
@@ -131,12 +140,30 @@ def delete_characters_for_realm(
         }
 
     relpaths: list[str] = []
-    with connect() as conn:
+    with database.connect() as conn:
+        # Lock the whole selection before chunking, in the ack batch's row order.
+        roster_rows = conn.execute(
+            "SELECT player_uuid, character_id FROM character_roster "
+            "WHERE realm_id = %s AND character_id = ANY(%s) "
+            "ORDER BY character_id, player_uuid FOR UPDATE",
+            (realm, ids),
+        ).fetchall()
+        roster_keys = _character_key_params(roster_rows)
+        # Tagged deletion keeps creates. Snapshot their live slot mappings too;
+        # a later mapping/roster appearance must not expand this cleanup's scope.
+        create_rows = conn.execute(
+            "SELECT player_uuid, character_id FROM character_creates "
+            "WHERE realm_id = %s AND character_id = ANY(%s)",
+            (realm, ids),
+        ).fetchall()
+        slot_keys = _character_key_params([*roster_rows, *create_rows])
+        locked_lore = key_params(lock_rows(
+            conn, "realm_id = %s AND character_id = ANY(%s)", (realm, ids),
+        ))
         for chunk in _chunks(ids, _ID_CHUNK):
-            marks = ",".join("?" * len(chunk))
             # Slots go before the roster rows that scope them to this realm.
-            slots_where = f"character_id IN ({marks}) AND ({_SLOTS_IN_REALM})"
-            slot_params = (*chunk, realm, realm)
+            slots_where = f"character_id = ANY(%s) AND {_CHARACTER_KEYS}"
+            slot_params = (chunk, *slot_keys)
             for row in conn.execute(
                 f"SELECT png_relpath FROM character_wardrobe_slots "
                 f"WHERE {slots_where}",
@@ -152,19 +179,18 @@ def delete_characters_for_realm(
             )
             deleted["lore_item_customisations"] += _rows(
                 conn.execute(
-                    f"DELETE FROM lore_item_customisations "
-                    f"WHERE realm_id = ? AND character_id IN ({marks})",
-                    (realm, *chunk),
+                    "DELETE FROM lore_item_customisations "
+                    f"WHERE realm_id = %s AND character_id = ANY(%s) AND {LOCKED_KEYS}",
+                    (realm, chunk, *locked_lore),
                 )
             )
             deleted["character_roster"] += _rows(
                 conn.execute(
-                    f"DELETE FROM character_roster "
-                    f"WHERE realm_id = ? AND character_id IN ({marks})",
-                    (realm, *chunk),
+                    "DELETE FROM character_roster "
+                    f"WHERE realm_id = %s AND character_id = ANY(%s) AND {_CHARACTER_KEYS}",
+                    (realm, chunk, *roster_keys),
                 )
             )
-        conn.commit()
 
     pngs_deleted = _delete_pngs(relpaths)
     total = sum(deleted.values())
@@ -182,6 +208,13 @@ def delete_characters_for_realm(
         "total": total,
         "pngs_deleted": pngs_deleted,
     }
+
+
+def _character_key_params(rows: list[dict]) -> tuple[list[str], list[str]]:
+    # realm_id is fixed by each caller's predicate; retain the owner as well as
+    # the character id to constrain deletes to the full captured roster keys.
+    keys = sorted({(r["player_uuid"], r["character_id"]) for r in rows if r["character_id"] is not None})
+    return [key[0] for key in keys], [key[1] for key in keys]
 
 
 def _clean_ids(character_ids: list[str] | None) -> list[str]:

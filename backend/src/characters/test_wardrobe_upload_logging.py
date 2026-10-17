@@ -9,6 +9,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
+from src import database
+
+pytestmark = pytest.mark.usefixtures("postgres")
+
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
@@ -58,16 +64,15 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
             }
         )
 
-        with db_mod.connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO character_creates (
                     id, player_uuid, payload, status, created_at, realm_id
-                ) VALUES (?, ?, '{}', 'pending', ?, 'main')
+                ) VALUES (%s, %s, '{}', 'pending', %s, 'main')
                 """,
                 (CREATE_ID, PLAYER, NOW),
             )
-            conn.commit()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod

@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from src import database
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
 if str(_BACKEND_SRC) not in sys.path:
@@ -295,17 +296,16 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         created = self._submit_handheld(session, "Referenced Sword")
         sid = created["id"]
 
-        with connect() as conn:
+        with database.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO lore_item_customisations (
                     player_uuid, character_id, kit_key, submission_id,
                     state, updated_at, realm_id
-                ) VALUES (?, ?, 'kit_a', ?, 'pending_skin', ?, 'main')
+                ) VALUES (%s, %s, 'kit_a', %s, 'pending_skin', %s, 'main')
                 """,
                 ("player-1", "char-1", sid, "2026-01-01T00:00:00Z"),
             )
-            conn.commit()
 
         self.assertFalse(
             rollback_pending_submission_if_unreferenced(
