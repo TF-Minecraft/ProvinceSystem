@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import DatabaseList from "./DatabaseList";
 import DatabaseStudio from "./DatabaseStudio";
+import ResultGrid from "./ResultGrid";
 import { AccountApiError } from "../../../../lib/account/api";
 import {
   browseTable,
@@ -13,6 +14,7 @@ import {
   getSchema,
   runQuery,
   toCsv,
+  type Cell,
   type DatabaseInfo,
   type QueryResult,
   type Table,
@@ -203,6 +205,68 @@ it("runs a read query with Ctrl + Enter and shows NULLs, blobs and errors", asyn
   expect(screen.getByRole("button", { name: "Copy value" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /Run$/ }));
   expect((await screen.findByRole("alert")).textContent).toBe("no such column: nope");
+});
+
+it.each([
+  // Native JSONB text captured from PostgreSQL 17 through the Studio response.
+  ["bigint object", '{"n": 9007199254740993}'],
+  ["decimal object", '{"n": 12345678901234567890.12345678901234567890}'],
+  [
+    "huge fractional object",
+    '{"n": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.5}',
+  ],
+  [
+    "nested array",
+    ' \n[9007199254740993, {"decimal": 12345678901234567890.12345678901234567890, "items": [null, false, "text"]}]\t ',
+  ],
+  ["object whitespace", ' \n{\t"items" : [ 1, 2 ] }\t '],
+  ["bigint scalar", "9007199254740993"],
+  ["decimal scalar", "12345678901234567890.12345678901234567890"],
+  ["huge scalar", "1e400"],
+  ["JSON null", "null"],
+  ["JSON boolean", "true"],
+  ["JSON string", '"  text\\nwith whitespace  "'],
+])("shows %s exactly as received in the value inspector", (_name, raw) => {
+  const { container } = render(<ResultGrid result={result({ columns: ["payload"], rows: [[raw]] })} />);
+  const cell = screen.getAllByRole("cell")[1];
+  expect(cell.textContent).toBe(raw);
+  fireEvent.click(cell);
+  expect(container.querySelector("pre")?.textContent).toBe(raw);
+});
+
+it.each<{ name: string; cell: Cell; displayed: string }>([
+  { name: "SQL NULL", cell: null, displayed: "NULL" },
+  { name: "blob", cell: { blob: 2, hex: "00ff" }, displayed: "x'00ff'" },
+  { name: "plain text", cell: " \n<script>alert(1)</script>\t ", displayed: " \n<script>alert(1)</script>\t " },
+  { name: "invalid JSON", cell: "{not JSON}", displayed: "{not JSON}" },
+  { name: "empty text", cell: "", displayed: "" },
+  { name: "number", cell: 42, displayed: "42" },
+  { name: "boolean", cell: false, displayed: "false" },
+])("keeps $name display in the value inspector", ({ cell, displayed }) => {
+  const { container } = render(<ResultGrid result={result({ columns: ["payload"], rows: [[cell]] })} />);
+  fireEvent.click(screen.getAllByRole("cell")[1]);
+  expect(container.querySelector("pre")?.textContent).toBe(displayed);
+  expect(container.querySelector("script")).toBeNull();
+});
+
+it("copies the exact JSON value and CSV from an inspected cell", async () => {
+  const raw = '{"n": 9007199254740993, "decimal": 12345678901234567890.12345678901234567890}';
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  vi.stubGlobal("navigator", { clipboard: { writeText } });
+  try {
+    render(<ResultGrid result={result({ columns: ["payload"], rows: [[raw]] })} />);
+    fireEvent.click(screen.getAllByRole("cell")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "Copy value" }));
+    await waitFor(() => expect(writeText).toHaveBeenLastCalledWith(raw));
+    fireEvent.click(screen.getByRole("button", { name: "Copy CSV" }));
+    await waitFor(() =>
+      expect(writeText).toHaveBeenLastCalledWith(
+        'payload\n"{""n"": 9007199254740993, ""decimal"": 12345678901234567890.12345678901234567890}"',
+      ),
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("asks before running an edit and sends it as a write", async () => {
