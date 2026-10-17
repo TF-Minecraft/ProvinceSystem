@@ -244,9 +244,12 @@ class MinecraftBan(commands.Cog):
     ) -> bool:
         try:
             user = await self.bot.fetch_user(int(discord_user_id))
-        except (ValueError, discord.HTTPException) as e:
+        except (ValueError, discord.NotFound) as e:
             logger.warning("Cannot fetch Discord user %s: %s", discord_user_id, e)
             return True  # ack to avoid stuck queue
+        except discord.HTTPException as e:
+            logger.warning("Transient Discord error fetching user %s: %s", discord_user_id, e)
+            return False
 
         mc_name = str(payload.get("minecraft_name") or "—")
         reason = str(payload.get("reason") or "—")
@@ -537,7 +540,9 @@ class MinecraftBan(commands.Cog):
         try:
             identity = await self.linked_identity(user)
             if identity["linked"]:
-                name = identity.get("minecraft_name") or identity["player_uuid"]
+                name = identity.get("minecraft_name")
+                if not name:
+                    raise ValueError("The linked account has no recorded Minecraft username. Use /minecraftwho to check the link; a Minecraft username must be recorded before sending a warning or ban notification.")
                 if username and username.strip().casefold() != name.casefold():
                     raise ValueError("That name does not match the linked Minecraft account. Omit username to use the verified link.")
                 return {**identity, "minecraft_name": name}

@@ -10,6 +10,8 @@ import unittest
 from unittest.mock import AsyncMock, Mock
 
 from aiohttp import web
+import aiohttp
+import discord
 
 sys.path.insert(0, str(Path(__file__).parent))
 from minecraftban.minecraftban import MinecraftBan
@@ -107,6 +109,18 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         self.cog._send_warn_dm.assert_not_awaited()
         self.assertIn("unavailable", event.followup.send.await_args.args[0])
 
+    async def test_linked_without_name_cannot_send_username_notifications(self):
+        self.data["minecraft_name"] = None
+        for username in (None, "GuessedSteve"):
+            event = await self.warn(username=username)
+            self.assertIn("no recorded Minecraft username", event.followup.send.await_args.args[0])
+        event = interaction()
+        await MinecraftBan.minecraftban.callback(self.cog, event, self.target, "Rule 1", "7 days")
+        self.cog._send_warn_dm.assert_not_awaited()
+        self.cog._send_ban_dm.assert_not_awaited()
+        self.cog._set_banned_role.assert_not_awaited()
+        self.cog._api_post.assert_not_awaited()
+
     async def test_timeout_never_sends_or_logs(self):
         self.cog._api_get = AsyncMock(side_effect=asyncio.TimeoutError)
         await self.warn()
@@ -171,6 +185,42 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         self.precedent.api_post.assert_not_awaited()
         self.assertEqual(self.requests, [])
 
+    async def test_case_lookup_failure_returns_full_private_draft(self):
+        modal = CaseLogModal(self.precedent, self.target)
+        values = {"summary": "evidence 🐟 " * 90, "rule": "r" * 200,
+                  "ruling": "決" * 500, "punishment": "p" * 200}
+        for name, value in values.items():
+            getattr(modal, name)._value = value
+        self.status = 503
+        event = interaction()
+        await modal.on_submit(event)
+        self.precedent.api_post.assert_not_awaited()
+        reply = event.followup.send.await_args
+        self.assertTrue(reply.kwargs["ephemeral"])
+        self.assertIn("unavailable", reply.args[0])
+        draft = reply.kwargs["file"].fp.read().decode("utf-8")
+        self.assertIn(str(DISCORD), draft)
+        for value in values.values():
+            self.assertIn(value, draft)
+
+    async def test_case_save_failures_return_manual_draft(self):
+        for failure in (None, aiohttp.ClientConnectionError("Disconnected")):
+            modal = CaseLogModal(self.precedent)
+            self.fill_modal(modal)
+            modal.players._value = "First, Second"
+            self.precedent.api_post.return_value = (503, "Unavailable", None)
+            self.precedent.api_post.side_effect = failure
+            event = interaction()
+            await modal.on_submit(event)
+            reply = event.followup.send.await_args
+            self.assertTrue(reply.kwargs["ephemeral"])
+            if failure is not None:
+                self.assertIn("Check Cases before retrying", reply.args[0])
+            draft = reply.kwargs["file"].fp.read().decode("utf-8")
+            self.assertIn("First, Second", draft)
+            self.assertIn("What happened", draft)
+            self.assertIn("a" * 300, draft)
+
     async def test_manual_case_keeps_multiple_player_workflow(self):
         modal = CaseLogModal(self.precedent)
         self.fill_modal(modal)
@@ -186,6 +236,27 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         self.assertEqual(self.requests, [])
         self.cog._send_warn_dm.assert_awaited_once_with(self.target, "ServerSteve", "Rule 1")
+
+    async def test_outbox_only_acknowledges_permanent_fetch_failures(self):
+        self.cog._api_get = AsyncMock(return_value=(200, {"notifications": [
+            {"id": 1, "type": "warn", "discord_user_id": str(DISCORD), "payload": {}}
+        ]}))
+        self.cog.bot = SimpleNamespace(fetch_user=AsyncMock(), guilds=[Mock()])
+        for failure, permanent in (
+            (discord.HTTPException(SimpleNamespace(status=503, reason="Unavailable"), "Retry"), False),
+            (discord.HTTPException(SimpleNamespace(status=429, reason="Rate limited"), "Retry"), False),
+            (discord.NotFound(SimpleNamespace(status=404, reason="Not found"), "Gone"), True),
+            (ValueError("Invalid ID"), True),
+        ):
+            self.cog.bot.fetch_user.side_effect = failure
+            self.cog._api_post.reset_mock()
+            await self.cog._poll_once()
+            if permanent:
+                self.cog._api_post.assert_awaited_once_with(
+                    "/skins/moderation/notifications/ack", {"ids": [1]})
+            else:
+                self.cog._api_post.assert_not_awaited()
+            self.cog._send_warn_dm.assert_not_awaited()
 
     def test_command_contracts_and_permissions(self):
         for name in ("minecraftban", "minecraftwarn"):

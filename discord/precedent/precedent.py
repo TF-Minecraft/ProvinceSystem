@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import os
@@ -112,6 +113,22 @@ class CaseLogModal(discord.ui.Modal, title="Log a precedent case"):
             self.remove_item(self.players)
             self.title = f"Case: {user.display_name}"[:45]
 
+    async def send_failure(self, interaction: discord.Interaction, message: str):
+        target = (
+            f"{self.selected_user.display_name} (Discord ID: {self.selected_user.id})"
+            if self.selected_user is not None else str(self.players.value)
+        )
+        draft = (
+            f"Players: {target}\n\nSummary:\n{self.summary.value}\n\n"
+            f"Rule: {self.rule.value}\n\nRuling:\n{self.ruling.value}\n\n"
+            f"Punishment: {self.punishment.value}"
+        )
+        await interaction.followup.send(
+            f"{message}\nCopy your draft from the attached file before trying again.",
+            file=discord.File(io.BytesIO(draft.encode("utf-8")), filename="case-draft.txt"),
+            ephemeral=True,
+        )
+
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         if not self.cog.member_is_staff(interaction):
@@ -123,7 +140,7 @@ class CaseLogModal(discord.ui.Modal, title="Log a precedent case"):
             try:
                 identity = await self.cog.linked_identity(self.selected_user)
             except ValueError as error:
-                await interaction.followup.send(str(error), ephemeral=True)
+                await self.send_failure(interaction, str(error))
                 return
             name = identity.get("minecraft_name") or self.selected_user.display_name
             players = [name]
@@ -132,23 +149,24 @@ class CaseLogModal(discord.ui.Modal, title="Log a precedent case"):
                              "discord_username": self.selected_user.name}]
         else:
             players = [p.strip() for p in str(self.players.value).split(",") if p.strip()]
-        status, text, data = await self.cog.api_post(
-            "/precedent/staff/log",
-            {
-                "logged_by": getattr(interaction.user, "display_name", str(interaction.user)),
-                "players": players,
-                "participants": participants,
-                "summary": str(self.summary.value).strip(),
-                "rule": str(self.rule.value).strip(),
-                "ruling": ruling,
-                "punishment": str(self.punishment.value).strip(),
-            },
-        )
-        if status != 200:
-            await interaction.followup.send(
-                f"Could not log case: {_api_detail(text, data)}",
-                ephemeral=True,
+        try:
+            status, text, data = await self.cog.api_post(
+                "/precedent/staff/log",
+                {
+                    "logged_by": getattr(interaction.user, "display_name", str(interaction.user)),
+                    "players": players,
+                    "participants": participants,
+                    "summary": str(self.summary.value).strip(),
+                    "rule": str(self.rule.value).strip(),
+                    "ruling": ruling,
+                    "punishment": str(self.punishment.value).strip(),
+                },
             )
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            await self.send_failure(interaction, "Could not confirm whether the case was saved. Check Cases before retrying.")
+            return
+        if status != 200:
+            await self.send_failure(interaction, f"Could not log case: {_api_detail(text, data)}")
             return
         case_id = data.get("id") if isinstance(data, dict) else None
         await interaction.followup.send(
