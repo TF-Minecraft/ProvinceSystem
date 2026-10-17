@@ -26,7 +26,13 @@ database() {
 record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
 native_commit() { git cat-file -e "$1:backend/src/database/operations.py" 2>/dev/null; }
 checkout() {
-  if [[ $site == www ]]; then git reset -q --hard "$1"; else git checkout -q --detach "$1"; fi
+  # Docker COPY makes these files root-owned. The runtime uid still needs to
+  # read source files and traverse directories; keep the private backup umask
+  # outside this subshell for records, environment overlays and data copies.
+  (
+    umask 022
+    if [[ $site == www ]]; then git reset -q --hard "$1"; else git checkout -q --detach "$1"; fi
+  )
 }
 select_images() {
   python3 - "$state/.site-images-$site.json" "$site" "$1" <<'PYTHON'

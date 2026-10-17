@@ -56,7 +56,10 @@ if tool=='sleep': sys.exit(0)
 if tool=='curl': sys.exit(1 if os.environ.get('FAIL_HEALTH') and head==new else 0)
 if tool=='git':
  if args[0]=='rev-parse': print(head)
- elif args[0] in ('reset','checkout'): (root/'head').write_text(args[-1])
+ elif args[0] in ('reset','checkout'):
+  (root/'head').write_text(args[-1])
+  source=root/'checkout-code'; source.mkdir(exist_ok=True)
+  (source/'server.py').write_text('public image source')
  elif args[:2]==['diff','--name-only']: print('backend/server.py' if args[-2]!=args[-1] else '')
  elif args[:2]==['diff','--quiet']: sys.exit(1 if os.environ.get('DIRTY_INPUT') else 0)
  elif args[:2]==['merge-base','--is-ancestor']: sys.exit(0 if args[-1]=='origin/main' or args[-2]<=args[-1] else 1)
@@ -359,3 +362,12 @@ def test_dev_newer_revision_shortcut_verifies_running_images(host, wrong_image):
     assert ("a newer revision is already deployed" in result.stdout) == (not wrong_image)
     assert not any(args[0] == "build" for _, args in commands(trace))
     assert (root / "head").read_text() == NEW
+
+
+def test_checkout_keeps_image_sources_readable_by_runtime_user(host):
+    root, data, run = host
+    result, _ = run()
+    assert result.returncode == 0, result.stderr
+    assert (root / "checkout-code").stat().st_mode & 0o777 == 0o755
+    assert (root / "checkout-code" / "server.py").stat().st_mode & 0o777 == 0o644
+    assert (root / ".site-images-www.json").stat().st_mode & 0o777 == 0o600
