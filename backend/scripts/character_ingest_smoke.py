@@ -373,12 +373,18 @@ def main() -> None:
         )
     print("OK list shows applied roster character")
 
-    # Per-player entitlement from roster (LP max while online)
+    # Per-player entitlement from TFMCWeb (LP max while online)
+    r = client.put(
+        "/characters/plugin/rpc-player-meta",
+        json={"player_uuid": player, "max_alive_characters": 5},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"entitlements put with max: {r.status_code} {r.text}")
     r = client.put(
         "/characters/plugin/roster",
         json={
             "player_uuid": player,
-            "max_alive_characters": 5,
             "characters": [
                 {
                     "id": create_id,
@@ -401,7 +407,7 @@ def main() -> None:
     listed = r.json()
     if listed.get("max_alive_characters") != 5:
         fail(f"list max_alive expected 5, got {listed.get('max_alive_characters')}")
-    print("OK roster max_alive_characters=5 -> list returns 5")
+    print("OK entitlement max_alive_characters=5 -> list returns 5")
 
     # Fill soft slot limit using player entitlement (5 alive)
     r = client.put(
@@ -429,7 +435,7 @@ def main() -> None:
         fail(f"over slot expected 400 slot, got {r.status_code} {r.text}")
     print("OK over soft slot limit (5) -> 400")
 
-    # Offline-style roster omit must not clear stored entitlement
+    # A later roster push leaves TFMCWeb's entitlement alone
     r = client.put(
         "/characters/plugin/roster",
         json={
@@ -451,7 +457,7 @@ def main() -> None:
     r = client.get("/characters", headers=auth)
     if r.status_code != 200 or r.json().get("max_alive_characters") != 5:
         fail(f"omit max should keep 5: {r.status_code} {r.text}")
-    print("OK roster without max_alive keeps last entitlement")
+    print("OK roster push keeps the TFMCWeb entitlement")
 
     # Clear alive slots so create soft-check passes again
     r = client.put(

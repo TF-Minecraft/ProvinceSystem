@@ -85,7 +85,7 @@ class RealmCodesTest(unittest.TestCase):
             issued = issue_code("player-realm-2", "skin")
         self.assertEqual(issued["realm_id"], "main")
         with mock.patch(
-            "src.characters.rpc_player_meta.resolve_web_entitlements",
+            "src.characters.web_entitlements.resolve_web_entitlements",
             return_value={
                 "name_colour_stops": 0,
                 "max_3d_pair_bytes": 30720,

@@ -55,15 +55,12 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
 
 
 def get_player_meta(player_uuid: str) -> dict[str, Any]:
-    """Return stored meta flags for a player (defaults if no row)."""
+    """RPCharacters' account data for a player (defaults if no row)."""
     uuid = (player_uuid or "").strip()
     empty = {
-        "max_alive_characters": None,
         "eighteen": None,
         "real_age_set": False,
         "account_created_at_epoch": None,
-        "name_colour_stops": 0,
-        "wardrobe_skin_slots": 1,
         "kit_cooldown_seconds_remaining": 0,
         "kit_cooldown_hours": None,
         "kit_cooldowns": {},
@@ -73,93 +70,34 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
     with database.connect() as conn:
         row = conn.execute(
             """
-            SELECT max_alive_characters, eighteen, real_age_set,
-                   account_created_at_epoch, name_colour_stops,
-                   wardrobe_skin_slots,
-                   kit_cooldown_seconds_remaining, kit_cooldown_hours,
-                   kit_cooldowns_json
-            FROM character_player_meta
+            SELECT is_adult, real_age_set, account_created_at,
+                   kit_cooldown_seconds_remaining, kit_cooldown_hours, kit_cooldowns
+            FROM character_account_meta
             WHERE player_uuid = %s
             """,
             (uuid,),
         ).fetchone()
     if row is None:
         return empty
-    max_alive = None
-    if row["max_alive_characters"] is not None:
-        try:
-            max_alive = max(1, int(row["max_alive_characters"]))
-        except (TypeError, ValueError):
-            max_alive = None
-    eighteen = None
-    if row["eighteen"] is not None:
-        eighteen = bool(int(row["eighteen"]))
-    real_age_set = bool(int(row["real_age_set"] or 0))
-    account_created_at_epoch = None
-    if row["account_created_at_epoch"] is not None:
-        try:
-            account_created_at_epoch = int(row["account_created_at_epoch"])
-        except (TypeError, ValueError):
-            account_created_at_epoch = None
-        if account_created_at_epoch is not None and account_created_at_epoch <= 0:
-            account_created_at_epoch = None
-    name_colour_stops = 0
-    if row["name_colour_stops"] is not None:
-        try:
-            name_colour_stops = max(0, int(row["name_colour_stops"]))
-        except (TypeError, ValueError):
-            name_colour_stops = 0
-    wardrobe_skin_slots = 1
-    try:
-        raw_slots = row["wardrobe_skin_slots"]
-    except (KeyError, IndexError):
-        raw_slots = None
-    if raw_slots is not None:
-        try:
-            wardrobe_skin_slots = max(1, min(3, int(raw_slots)))
-        except (TypeError, ValueError):
-            wardrobe_skin_slots = 1
-    kit_cooldown_seconds_remaining = 0
-    if row["kit_cooldown_seconds_remaining"] is not None:
-        try:
-            kit_cooldown_seconds_remaining = max(
-                0, int(row["kit_cooldown_seconds_remaining"])
-            )
-        except (TypeError, ValueError):
-            kit_cooldown_seconds_remaining = 0
-    kit_cooldown_hours = None
-    if row["kit_cooldown_hours"] is not None:
-        try:
-            kit_cooldown_hours = max(0, int(row["kit_cooldown_hours"]))
-        except (TypeError, ValueError):
-            kit_cooldown_hours = None
-    raw_cd = row["kit_cooldowns_json"]
-    kit_cooldowns: dict[str, Any] = raw_cd if isinstance(raw_cd, dict) else {}
+    created = row["account_created_at"]
+    kit_cooldowns = row["kit_cooldowns"]
     return {
-        "max_alive_characters": max_alive,
-        "eighteen": eighteen,
-        "real_age_set": real_age_set,
-        "account_created_at_epoch": account_created_at_epoch,
-        "name_colour_stops": name_colour_stops,
-        "wardrobe_skin_slots": wardrobe_skin_slots,
-        "kit_cooldown_seconds_remaining": kit_cooldown_seconds_remaining,
-        "kit_cooldown_hours": kit_cooldown_hours,
-        "kit_cooldowns": kit_cooldowns,
+        "eighteen": row["is_adult"],
+        "real_age_set": row["real_age_set"],
+        "account_created_at_epoch": int(created.timestamp()) if created is not None else None,
+        "kit_cooldown_seconds_remaining": max(0, row["kit_cooldown_seconds_remaining"] or 0),
+        "kit_cooldown_hours": (
+            None if row["kit_cooldown_hours"] is None else max(0, row["kit_cooldown_hours"])
+        ),
+        "kit_cooldowns": kit_cooldowns if isinstance(kit_cooldowns, dict) else {},
     }
-
-
-def get_stored_max_alive(player_uuid: str) -> int | None:
-    return get_player_meta(player_uuid)["max_alive_characters"]
 
 
 def get_max_alive(
     player_uuid: str,
     slot_limits: dict[str, Any] | None = None,
 ) -> int:
-    """Player entitlement if synced, else catalog default ∩ hard_cap."""
-    stored = get_stored_max_alive(player_uuid)
-    if stored is not None:
-        return stored
+    """Character limit for a player TFMCWeb has not synced: catalog default ∩ hard_cap."""
     return catalog_default_max_alive(slot_limits)
 
 
@@ -176,12 +114,10 @@ def set_real_age(
     else:
         conn.execute(
             """
-            INSERT INTO character_player_meta (
-                player_uuid, max_alive_characters, eighteen, real_age_set, updated_at
-            )
-            VALUES (%s, NULL, %s, true, %s)
+            INSERT INTO character_account_meta (player_uuid, is_adult, real_age_set, updated_at)
+            VALUES (%s, %s, true, %s)
             ON CONFLICT (player_uuid) DO UPDATE SET
-                eighteen = excluded.eighteen,
+                is_adult = excluded.is_adult,
                 real_age_set = true,
                 updated_at = excluded.updated_at
             """,
@@ -366,12 +302,9 @@ def list_roster(
 def replace_roster(
     player_uuid: str,
     characters: list,
-    max_alive_characters: int | None = None,
     eighteen: bool | None = None,
     real_age_set: bool | None = None,
     account_created_at_epoch: int | None = None,
-    name_colour_stops: int | None = None,
-    wardrobe_skin_slots: int | None = None,
     kit_cooldown_seconds_remaining: int | None = None,
     kit_cooldown_hours: int | None = None,
     kit_cooldowns: dict | None = None,
@@ -394,15 +327,6 @@ def replace_roster(
     except CodeError as e:
         raise RosterError(str(e)) from e
 
-    max_alive: int | None = None
-    if max_alive_characters is not None:
-        try:
-            max_alive = int(max_alive_characters)
-        except (TypeError, ValueError) as e:
-            raise RosterError("max_alive_characters must be an integer") from e
-        if max_alive < 1:
-            raise RosterError("max_alive_characters must be >= 1")
-
     if real_age_set is not None and not isinstance(real_age_set, bool):
         raise RosterError("real_age_set must be a boolean")
     if eighteen is not None and not isinstance(eighteen, bool):
@@ -421,25 +345,6 @@ def replace_roster(
             ) from e
         if next_account_epoch <= 0:
             raise RosterError("account_created_at_epoch must be > 0")
-
-    next_colour_stops: int | None = None
-    if name_colour_stops is not None:
-        try:
-            next_colour_stops = int(name_colour_stops)
-        except (TypeError, ValueError) as e:
-            raise RosterError("name_colour_stops must be an integer") from e
-        if next_colour_stops < 0:
-            raise RosterError("name_colour_stops must be >= 0")
-
-    next_wardrobe_slots: int | None = None
-    if wardrobe_skin_slots is not None:
-        try:
-            next_wardrobe_slots = int(wardrobe_skin_slots)
-        except (TypeError, ValueError) as e:
-            raise RosterError("wardrobe_skin_slots must be an integer") from e
-        if next_wardrobe_slots < 1:
-            raise RosterError("wardrobe_skin_slots must be >= 1")
-        next_wardrobe_slots = min(3, next_wardrobe_slots)
 
     next_kit_seconds: int | None = None
     if kit_cooldown_seconds_remaining is not None:
@@ -584,12 +489,9 @@ def replace_roster(
         for cid, estate in sorted(estates, key=lambda item: item[1]["death_id"]):
             store_estate(conn, uuid, realm, cid, estate)
         if (
-            max_alive is not None
-            or eighteen is not None
+            eighteen is not None
             or real_age_set is not None
             or next_account_epoch is not None
-            or next_colour_stops is not None
-            or next_wardrobe_slots is not None
             or next_kit_seconds is not None
             or next_kit_hours is not None
             or kit_cooldowns is not None
@@ -597,45 +499,34 @@ def replace_roster(
             # One upsert: a value the push leaves out keeps the stored one.
             conn.execute(
                 """
-                INSERT INTO character_player_meta (
-                    player_uuid, max_alive_characters, eighteen, real_age_set,
-                    account_created_at_epoch, name_colour_stops,
-                    wardrobe_skin_slots,
+                INSERT INTO character_account_meta (
+                    player_uuid, is_adult, real_age_set, account_created_at,
                     kit_cooldown_seconds_remaining, kit_cooldown_hours,
-                    kit_cooldowns_json, updated_at
+                    kit_cooldowns, updated_at
                 )
                 VALUES (
-                    %(uuid)s, %(max_alive)s, %(eighteen)s, COALESCE(%(real)s, false),
-                    %(epoch)s, %(stops)s, %(wardrobe)s, %(kit_seconds)s, %(kit_hours)s,
+                    %(uuid)s, %(eighteen)s, COALESCE(%(real)s, false),
+                    to_timestamp(%(epoch)s), %(kit_seconds)s, %(kit_hours)s,
                     %(kit_cooldowns)s, %(now)s
                 )
                 ON CONFLICT (player_uuid) DO UPDATE SET
-                    max_alive_characters = COALESCE(
-                        %(max_alive)s, character_player_meta.max_alive_characters),
-                    eighteen = COALESCE(%(eighteen)s, character_player_meta.eighteen),
-                    real_age_set = COALESCE(%(real)s, character_player_meta.real_age_set),
-                    account_created_at_epoch = COALESCE(
-                        %(epoch)s, character_player_meta.account_created_at_epoch),
-                    name_colour_stops = COALESCE(
-                        %(stops)s, character_player_meta.name_colour_stops),
-                    wardrobe_skin_slots = COALESCE(
-                        %(wardrobe)s, character_player_meta.wardrobe_skin_slots),
+                    is_adult = COALESCE(%(eighteen)s, character_account_meta.is_adult),
+                    real_age_set = COALESCE(%(real)s, character_account_meta.real_age_set),
+                    account_created_at = COALESCE(
+                        to_timestamp(%(epoch)s), character_account_meta.account_created_at),
                     kit_cooldown_seconds_remaining = COALESCE(
-                        %(kit_seconds)s, character_player_meta.kit_cooldown_seconds_remaining),
+                        %(kit_seconds)s, character_account_meta.kit_cooldown_seconds_remaining),
                     kit_cooldown_hours = COALESCE(
-                        %(kit_hours)s, character_player_meta.kit_cooldown_hours),
-                    kit_cooldowns_json = COALESCE(
-                        %(kit_cooldowns)s, character_player_meta.kit_cooldowns_json),
+                        %(kit_hours)s, character_account_meta.kit_cooldown_hours),
+                    kit_cooldowns = COALESCE(
+                        %(kit_cooldowns)s, character_account_meta.kit_cooldowns),
                     updated_at = excluded.updated_at
                 """,
                 {
                     "uuid": uuid,
-                    "max_alive": max_alive,
                     "eighteen": eighteen,
                     "real": real_age_set,
                     "epoch": next_account_epoch,
-                    "stops": next_colour_stops,
-                    "wardrobe": next_wardrobe_slots,
                     "kit_seconds": next_kit_seconds,
                     "kit_hours": next_kit_hours,
                     "kit_cooldowns": None if kit_cooldowns is None else database.Jsonb(kit_cooldowns),
@@ -649,18 +540,12 @@ def replace_roster(
         "realm_id": realm,
         "count": len(normalized),
     }
-    if max_alive is not None:
-        out["max_alive_characters"] = max_alive
     if eighteen is not None:
         out["eighteen"] = eighteen
     if real_age_set is not None:
         out["real_age_set"] = real_age_set
     if next_account_epoch is not None:
         out["account_created_at_epoch"] = next_account_epoch
-    if next_colour_stops is not None:
-        out["name_colour_stops"] = next_colour_stops
-    if next_wardrobe_slots is not None:
-        out["wardrobe_skin_slots"] = next_wardrobe_slots
     if next_kit_seconds is not None:
         out["kit_cooldown_seconds_remaining"] = next_kit_seconds
     if next_kit_hours is not None:

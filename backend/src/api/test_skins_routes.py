@@ -76,9 +76,9 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         link(uuid, "discord-1", "TestPlayer", "Tester")
 
     def _seed_entitlements(self, uuid: str = "player-1") -> None:
-        from characters.rpc_player_meta import upsert_rpc_player_meta
+        from characters.web_entitlements import upsert_web_entitlements
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": uuid,
                 "skin_kinds": ["handheld"],

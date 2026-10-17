@@ -1,4 +1,4 @@
-"""Unit tests for rpc_player_meta + resolve_web_entitlements."""
+"""Unit tests for web_entitlements + resolve_web_entitlements."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
 
-class RpcPlayerMetaTest(unittest.TestCase):
+class WebEntitlementsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
@@ -56,12 +56,12 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_upsert_get_round_trip(self) -> None:
-        from characters.rpc_player_meta import (
-            get_rpc_player_meta,
-            upsert_rpc_player_meta,
+        from characters.web_entitlements import (
+            get_web_entitlements,
+            upsert_web_entitlements,
         )
 
-        out = upsert_rpc_player_meta(
+        out = upsert_web_entitlements(
             {
                 "player_uuid": "Player-1",
                 "name_colour_stops": 20,
@@ -83,7 +83,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertTrue(out["allow_drink_message"])
         self.assertEqual(out["permission_flags"]["rulequiz.completed"], True)
 
-        row = get_rpc_player_meta("player-1")
+        row = get_web_entitlements("player-1")
         assert row is not None
         self.assertEqual(row["realm_id"], "main")
         self.assertEqual(row["name_colour_stops"], 8)
@@ -97,20 +97,20 @@ class RpcPlayerMetaTest(unittest.TestCase):
     def test_permission_flags_keep_their_sorted_order(self) -> None:
         import json
 
-        from characters.rpc_player_meta import get_rpc_player_meta, upsert_rpc_player_meta
+        from characters.web_entitlements import get_web_entitlements, upsert_web_entitlements
 
         flags = {"tfmc.map.staff": True, "a.b": False, "rulequiz.completed": True}
-        upsert_rpc_player_meta({"player_uuid": "player-2", "permission_flags": flags})
-        row = get_rpc_player_meta("player-2")
+        upsert_web_entitlements({"player_uuid": "player-2", "permission_flags": flags})
+        row = get_web_entitlements("player-2")
         self.assertEqual(json.dumps(row["permission_flags"]), json.dumps(flags, sort_keys=True))
 
     def test_realm_scoped_get_upsert(self) -> None:
-        from characters.rpc_player_meta import (
-            get_rpc_player_meta,
-            upsert_rpc_player_meta,
+        from characters.web_entitlements import (
+            get_web_entitlements,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "p1",
                 "realm_id": "main",
@@ -118,7 +118,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
                 "skin_kinds": ["handheld"],
             }
         )
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "p1",
                 "realm_id": "dev",
@@ -126,22 +126,22 @@ class RpcPlayerMetaTest(unittest.TestCase):
                 "skin_kinds": ["gun"],
             }
         )
-        main = get_rpc_player_meta("p1", "main")
-        dev = get_rpc_player_meta("p1", "dev")
+        main = get_web_entitlements("p1", "main")
+        dev = get_web_entitlements("p1", "dev")
         assert main is not None and dev is not None
         self.assertEqual(main["name_colour_stops"], 2)
         self.assertEqual(main["skin_kinds"], ["handheld"])
         self.assertEqual(dev["name_colour_stops"], 4)
         self.assertEqual(dev["skin_kinds"], ["gun"])
-        self.assertIsNone(get_rpc_player_meta("p1", "tutorial"))
+        self.assertIsNone(get_web_entitlements("p1", "tutorial"))
 
     def test_has_map_staff_access_true(self) -> None:
-        from characters.rpc_player_meta import (
+        from characters.web_entitlements import (
             has_map_staff_access,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "staff-map-1",
                 "realm_id": "main",
@@ -153,12 +153,12 @@ class RpcPlayerMetaTest(unittest.TestCase):
         )
 
     def test_has_map_staff_access_false_when_flag_missing(self) -> None:
-        from characters.rpc_player_meta import (
+        from characters.web_entitlements import (
             has_map_staff_access,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "staff-map-2",
                 "realm_id": "main",
@@ -170,7 +170,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         )
 
     def test_has_map_staff_access_false_when_row_missing(self) -> None:
-        from characters.rpc_player_meta import has_map_staff_access
+        from characters.web_entitlements import has_map_staff_access
 
         self.assertFalse(
             has_map_staff_access(
@@ -181,11 +181,11 @@ class RpcPlayerMetaTest(unittest.TestCase):
         )
 
     def test_resolve_uses_synced_entitlements(self) -> None:
-        from characters.rpc_player_meta import (
+        from characters.web_entitlements import (
             resolve_web_entitlements,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "abc",
                 "name_colour_stops": 2,
@@ -201,7 +201,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(ent["realm_id"], "main")
 
     def test_unsynced_entitlements_have_no_grants_in_any_realm(self) -> None:
-        from characters.rpc_player_meta import resolve_web_entitlements
+        from characters.web_entitlements import resolve_web_entitlements
 
         for realm in ("main", "dev"):
             with self.subTest(realm=realm):
@@ -215,12 +215,12 @@ class RpcPlayerMetaTest(unittest.TestCase):
                 self.assertEqual(ent["realm_id"], realm)
 
     def test_resolve_realm_row(self) -> None:
-        from characters.rpc_player_meta import (
+        from characters.web_entitlements import (
             resolve_web_entitlements,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "r1",
                 "realm_id": "dev",
@@ -236,12 +236,12 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertTrue(ent["meta_synced"])
 
     def test_staff_override(self) -> None:
-        from characters.rpc_player_meta import (
+        from characters.web_entitlements import (
             resolve_web_entitlements,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "staff-1",
                 "name_colour_stops": 0,
@@ -256,14 +256,14 @@ class RpcPlayerMetaTest(unittest.TestCase):
 
     @pytest.mark.usefixtures("postgres")
     def test_redeem_drink_uses_rpc_meta(self) -> None:
-        from characters.rpc_player_meta import upsert_rpc_player_meta
+        from characters.web_entitlements import upsert_web_entitlements
         from src.skins.codes import issue_code, redeem_drink_code
 
         with mock.patch(
             "src.skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
-            upsert_rpc_player_meta(
+            upsert_web_entitlements(
                 {
                     "player_uuid": "synced-player",
                     "name_colour_stops": 2,

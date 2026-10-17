@@ -477,7 +477,7 @@ def inspect_code(plaintext: str) -> dict:
         expired = row["expires_at"] < now
         consumed = _code_is_consumed(conn, row["id"], scope)
 
-    from src.characters.rpc_player_meta import (
+    from src.characters.web_entitlements import (
         has_map_staff_access,
         resolve_web_entitlements,
     )
@@ -595,7 +595,7 @@ def redeem_code(plaintext: str) -> dict:
 
 
 def _skin_session_payload(row, session_token: str, session_expires_at: str) -> dict:
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     scope = str(row["scope"]).strip().lower()
     entitlements = resolve_web_entitlements(
@@ -850,7 +850,7 @@ def redeem_drink_code(plaintext: str) -> dict:
 
 
 def _drink_session_payload(row, session_token: str, session_expires_at: str) -> dict:
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     entitlements = resolve_web_entitlements(
         str(row["player_uuid"]),
@@ -919,7 +919,7 @@ def _site_start_rules(uuid: str, realm: str) -> int:
     These mirror /token create: a Discord link in good standing, synced rank perks, and
     the rank's cooldown (-1 means the rank can't make skins or drinks at all).
     """
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
     from .discord_link import get_identity_status
 
     if not get_identity_status(uuid).get("eligible"):

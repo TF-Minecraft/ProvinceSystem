@@ -165,7 +165,7 @@ def test_real_create_retry_precedes_state_dependent_validation(postgres, monkeyp
     retried = creates.create_character("owner", body)
     assert retried == creates._row_to_dict(original)
     assert testing.value("SELECT count(*) FROM character_creates") == 1
-    assert testing.value("SELECT eighteen FROM character_player_meta") is False
+    assert testing.value("SELECT is_adult FROM character_account_meta") is False
 
 
 def test_create_retry_catches_a_first_request_committing_during_validation(monkeypatch):

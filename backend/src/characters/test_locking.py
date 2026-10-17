@@ -170,18 +170,18 @@ def test_a_retried_create_returns_the_create_being_made(monkeypatch):
 
 
 def test_a_roster_push_keeps_player_meta_another_push_is_writing():
-    """The player meta merge is one upsert: a push for another realm waits on the row and keeps the
+    """The account meta merge is one upsert: a push for another realm waits on the row and keeps the
     value the holder wrote, where a read-then-write would put back what it read."""
-    replace_roster(OWNER, [], max_alive_characters=2)
+    replace_roster(OWNER, [], kit_cooldown_hours=2)
     run = held(
         lambda conn: conn.execute(
-            "UPDATE character_player_meta SET max_alive_characters = 5 WHERE player_uuid = %s", (OWNER,)),
+            "UPDATE character_account_meta SET kit_cooldown_hours = 5 WHERE player_uuid = %s", (OWNER,)),
         lambda: replace_roster(OWNER, [], realm_id="dev", eighteen=True),
         ROW,
     )
     assert run.error is None
     meta = get_player_meta(OWNER)
-    assert (meta["max_alive_characters"], meta["eighteen"], meta["real_age_set"]) == (5, True, True)
+    assert (meta["kit_cooldown_hours"], meta["eighteen"], meta["real_age_set"]) == (5, True, True)
 
 
 # --------------------

@@ -38,9 +38,9 @@ def api(postgres, tmp_path, monkeypatch):
     for name in ("DATA_DIR", "SKINS_DIR", "DRINKS_DIR", "WARDROBE_DIR"):
         monkeypatch.setattr(db, name, tmp_path / name.lower())
     # Rank perks and map staff rights are Characters' to work out.
-    monkeypatch.setattr("src.characters.rpc_player_meta.resolve_web_entitlements",
+    monkeypatch.setattr("src.characters.web_entitlements.resolve_web_entitlements",
                         lambda *args, **kwargs: dict(ENTITLEMENTS))
-    monkeypatch.setattr("src.characters.rpc_player_meta.has_map_staff_access", lambda *args, **kwargs: False)
+    monkeypatch.setattr("src.characters.web_entitlements.has_map_staff_access", lambda *args, **kwargs: False)
     app = FastAPI()
     for router in (skins_router, drinks_router, wars_router):
         app.include_router(router)

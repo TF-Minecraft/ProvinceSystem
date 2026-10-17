@@ -1,4 +1,4 @@
-"""Unified web entitlements (TFMCWeb join sync → rpc_player_meta)."""
+"""Unified web entitlements (TFMCWeb join sync → web_entitlements)."""
 
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ EMERGENCY_MAX_3D_PAIR_BYTES = 30720
 DEFAULT_SKIN_TOKEN_COOLDOWN_DAYS = -1
 
 
-class RpcPlayerMetaError(ValueError):
-    """Invalid rpc_player_meta payload."""
+class WebEntitlementsError(ValueError):
+    """Invalid web_entitlements payload."""
 
 
 def _normalize_realm(realm_id: str | None) -> str:
@@ -40,16 +40,16 @@ def _normalize_realm(realm_id: str | None) -> str:
     try:
         return normalize_realm_id(realm_id)
     except CodeError as e:
-        raise RpcPlayerMetaError(str(e)) from e
+        raise WebEntitlementsError(str(e)) from e
 
 
 def _nonneg_int(raw: Any, field: str) -> int:
     try:
         value = int(raw)
     except (TypeError, ValueError) as e:
-        raise RpcPlayerMetaError(f"{field} must be an integer") from e
+        raise WebEntitlementsError(f"{field} must be an integer") from e
     if value < 0:
-        raise RpcPlayerMetaError(f"{field} must be >= 0")
+        raise WebEntitlementsError(f"{field} must be >= 0")
     return value
 
 
@@ -57,9 +57,9 @@ def _cooldown_days(raw: Any, field: str = "skin_token_cooldown_days") -> int:
     try:
         value = int(raw)
     except (TypeError, ValueError) as e:
-        raise RpcPlayerMetaError(f"{field} must be an integer") from e
+        raise WebEntitlementsError(f"{field} must be an integer") from e
     if value < -1:
-        raise RpcPlayerMetaError(f"{field} must be >= -1")
+        raise WebEntitlementsError(f"{field} must be >= -1")
     return value
 
 
@@ -74,7 +74,7 @@ def _as_bool(raw: Any, field: str) -> bool:
             return True
         if text in ("0", "false", "no", "off", ""):
             return False
-    raise RpcPlayerMetaError(f"{field} must be a boolean")
+    raise WebEntitlementsError(f"{field} must be a boolean")
 
 
 def _normalize_skin_kinds(raw: Any) -> list[str]:
@@ -84,9 +84,9 @@ def _normalize_skin_kinds(raw: Any) -> list[str]:
         try:
             raw = json.loads(raw)
         except json.JSONDecodeError as e:
-            raise RpcPlayerMetaError("skin_kinds must be a JSON array") from e
+            raise WebEntitlementsError("skin_kinds must be a JSON array") from e
     if not isinstance(raw, list):
-        raise RpcPlayerMetaError("skin_kinds must be a list")
+        raise WebEntitlementsError("skin_kinds must be a list")
     out: list[str] = []
     seen: set[str] = set()
     for item in raw:
@@ -105,11 +105,11 @@ def _normalize_permission_flags(raw: Any) -> dict[str, bool]:
         try:
             raw = json.loads(raw)
         except json.JSONDecodeError as e:
-            raise RpcPlayerMetaError(
+            raise WebEntitlementsError(
                 "permission_flags must be a JSON object"
             ) from e
     if not isinstance(raw, dict):
-        raise RpcPlayerMetaError("permission_flags must be an object")
+        raise WebEntitlementsError("permission_flags must be an object")
     out: dict[str, bool] = {}
     for key, value in raw.items():
         node = str(key or "").strip()
@@ -117,7 +117,7 @@ def _normalize_permission_flags(raw: Any) -> dict[str, bool]:
             continue
         try:
             out[node] = _as_bool(value, f"permission_flags[{node}]")
-        except RpcPlayerMetaError:
+        except WebEntitlementsError:
             out[node] = bool(value)
     return out
 
@@ -139,7 +139,7 @@ def _empty_entitlements(*, realm_id: str = "main") -> dict[str, Any]:
     }
 
 
-def get_rpc_player_meta(
+def get_web_entitlements(
     player_uuid: str,
     realm_id: str | None = None,
 ) -> dict[str, Any] | None:
@@ -152,9 +152,9 @@ def get_rpc_player_meta(
             """
             SELECT player_uuid, realm_id, name_colour_stops, allow_drink_texture,
                    allow_drink_message, max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
-                   skin_token_cooldown_days, skin_kinds_json,
-                   allow_armor_3d_helmet, permission_flags_json, updated_at
-            FROM rpc_player_meta
+                   skin_token_cooldown_days, skin_kinds,
+                   allow_armor_3d_helmet, permission_flags, updated_at
+            FROM web_entitlements
             WHERE LOWER(player_uuid) = %s AND realm_id = %s
             """,
             (uuid, realm),
@@ -169,7 +169,7 @@ def has_map_staff_access(
     realm_id: str | None,
     permission_node: str,
 ) -> bool:
-    """True when synced rpc_player_meta has permission_node in permission_flags."""
+    """True when synced web_entitlements has permission_node in permission_flags."""
     node = (permission_node or "").strip()
     if not node:
         return False
@@ -178,7 +178,7 @@ def has_map_staff_access(
     if not uuid:
         return False
 
-    meta = get_rpc_player_meta(uuid, realm_id)
+    meta = get_web_entitlements(uuid, realm_id)
     if meta is None:
         return False
 
@@ -231,8 +231,8 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     except (TypeError, ValueError, KeyError):
         cooldown = DEFAULT_SKIN_TOKEN_COOLDOWN_DAYS
     try:
-        kinds = _normalize_skin_kinds(row["skin_kinds_json"])
-    except (RpcPlayerMetaError, KeyError, TypeError):
+        kinds = _normalize_skin_kinds(row["skin_kinds"])
+    except (WebEntitlementsError, KeyError, TypeError):
         kinds = []
     try:
         allow_helmet = bool(int(row["allow_armor_3d_helmet"] or 0))
@@ -240,8 +240,8 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         allow_helmet = False
     try:
         # Sorted as they were stored before jsonb, which keeps keys in its own order.
-        flags = dict(sorted(_normalize_permission_flags(row["permission_flags_json"]).items()))
-    except (RpcPlayerMetaError, KeyError, TypeError):
+        flags = dict(sorted(_normalize_permission_flags(row["permission_flags"]).items()))
+    except (WebEntitlementsError, KeyError, TypeError):
         flags = {}
     realm = "main"
     try:
@@ -268,13 +268,13 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     }
 
 
-def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
+def upsert_web_entitlements(raw: dict[str, Any]) -> dict[str, Any]:
     """Upsert TFMCWeb-resolved web entitlements for a player."""
     if not isinstance(raw, dict):
-        raise RpcPlayerMetaError("body must be a JSON object")
+        raise WebEntitlementsError("body must be a JSON object")
     uuid = str(raw.get("player_uuid") or "").strip().lower()
     if not uuid:
-        raise RpcPlayerMetaError("player_uuid is required")
+        raise WebEntitlementsError("player_uuid is required")
     realm = _normalize_realm(raw.get("realm_id"))
 
     stops = effective_colour_cap(
@@ -310,11 +310,11 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
     with database.connect() as conn:
         conn.execute(
             """
-            INSERT INTO rpc_player_meta (
+            INSERT INTO web_entitlements (
                 player_uuid, realm_id, name_colour_stops, allow_drink_texture,
                 allow_drink_message, max_alive_characters, wardrobe_skin_slots,
-                max_3d_pair_bytes, skin_token_cooldown_days, skin_kinds_json,
-                allow_armor_3d_helmet, permission_flags_json, updated_at
+                max_3d_pair_bytes, skin_token_cooldown_days, skin_kinds,
+                allow_armor_3d_helmet, permission_flags, updated_at
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (player_uuid, realm_id) DO UPDATE SET
@@ -325,9 +325,9 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 wardrobe_skin_slots = excluded.wardrobe_skin_slots,
                 max_3d_pair_bytes = excluded.max_3d_pair_bytes,
                 skin_token_cooldown_days = excluded.skin_token_cooldown_days,
-                skin_kinds_json = excluded.skin_kinds_json,
+                skin_kinds = excluded.skin_kinds,
                 allow_armor_3d_helmet = excluded.allow_armor_3d_helmet,
-                permission_flags_json = excluded.permission_flags_json,
+                permission_flags = excluded.permission_flags,
                 updated_at = excluded.updated_at
             """,
             (
@@ -374,17 +374,17 @@ def resolve_web_entitlements(
 ) -> dict[str, Any]:
     """
     Primary reader for website gates.
-    Read rpc_player_meta for (uuid, realm). Staff overrides skin caps/kinds.
+    Read web_entitlements for (uuid, realm). Staff overrides skin caps/kinds.
     """
     uuid = (player_uuid or "").strip().lower()
     try:
         realm = _normalize_realm(realm_id)
-    except RpcPlayerMetaError:
+    except WebEntitlementsError:
         realm = "main"
     if not uuid:
         out = _empty_entitlements(realm_id=realm)
     else:
-        row = get_rpc_player_meta(uuid, realm)
+        row = get_web_entitlements(uuid, realm)
         if row is not None:
             out = {
                 "name_colour_stops": int(row["name_colour_stops"]),

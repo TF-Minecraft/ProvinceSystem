@@ -19,7 +19,7 @@ if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
 from src.auth import testing  # noqa: E402
-from src.characters.rpc_player_meta import upsert_rpc_player_meta  # noqa: E402
+from src.characters.web_entitlements import upsert_web_entitlements  # noqa: E402
 from src.skins.testing import link  # noqa: E402
 
 pytestmark = pytest.mark.usefixtures("postgres")
@@ -171,12 +171,12 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("cannot use custom drink textures", str(ctx.exception))
 
     def test_drink_message_rejected_without_entitlement(self) -> None:
-        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.characters.web_entitlements import upsert_web_entitlements
         from src.skins.drinks import DrinkError, create_drink_submission
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "player-1",
                 "allow_drink_message": False,
@@ -197,12 +197,12 @@ class DrinkApiTest(unittest.TestCase):
         self.assertIn("cannot use drink messages", str(ctx.exception))
 
     def test_drink_message_allowed_with_entitlement(self) -> None:
-        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.characters.web_entitlements import upsert_web_entitlements
         from src.skins.drinks import create_drink_submission
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "player-1",
                 "allow_drink_message": True,
@@ -231,7 +231,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "player-1",
                 "allow_drink_texture": False,
@@ -257,7 +257,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -305,7 +305,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -344,7 +344,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -507,7 +507,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -530,7 +530,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -638,7 +638,7 @@ class DrinkApiTest(unittest.TestCase):
         self.assertEqual(list_drinks_pending_apply(), [])
 
         # Textured drink: pending_pack until CMD assigned + applied
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session2 = self._issue_and_redeem()
@@ -687,7 +687,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()
@@ -729,7 +729,7 @@ class DrinkApiTest(unittest.TestCase):
 
         self._link_player()
         self._seed_catalog()
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {"player_uuid": "player-1", "allow_drink_texture": True}
         )
         session = self._issue_and_redeem()

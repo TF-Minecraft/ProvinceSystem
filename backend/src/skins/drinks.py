@@ -655,7 +655,7 @@ def create_drink_submission(
 
     player_uuid = str(session_row.get("player_uuid") or "").strip()
     code_id = int(session_row["code_id"])
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
     from src.skins.codes import normalize_realm_id
 
     try:

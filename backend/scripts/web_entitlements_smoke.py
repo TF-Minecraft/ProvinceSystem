@@ -125,7 +125,7 @@ def main() -> None:
     if flags.get("rulequiz.completed") is not True:
         fail(f"GET permission_flags: {flags}")
 
-    print("OK rpc_player_meta smoke")
+    print("OK web_entitlements smoke")
     print(f"  player={PLAYER}")
     print(f"  stops={row.get('name_colour_stops')} texture={row.get('allow_drink_texture')} message={row.get('allow_drink_message')}")
 

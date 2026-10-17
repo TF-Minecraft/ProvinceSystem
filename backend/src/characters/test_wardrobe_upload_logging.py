@@ -51,9 +51,9 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
         paths.start()
         self.addCleanup(paths.stop)
 
-        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.characters.web_entitlements import upsert_web_entitlements
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": PLAYER,
                 "name_colour_stops": 0,

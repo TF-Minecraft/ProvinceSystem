@@ -374,7 +374,7 @@ def _validate_and_normalize(
         raise CreateError(problem)
 
     # Soft slot check (per-player entitlement if synced, else catalog default)
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     entitlements = resolve_web_entitlements(player_uuid, realm_id=realm)
     if entitlements.get("max_alive_characters") is not None:
@@ -639,7 +639,7 @@ def list_for_player(
         list_roster,
     )
     from src.characters.estates import estate_for
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
     from src.characters.wills import will_requests_for
     from src.skins.codes import normalize_realm_id
 

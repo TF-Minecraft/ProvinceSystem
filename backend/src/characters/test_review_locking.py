@@ -38,8 +38,8 @@ def test_validated_create_with_attestation_uses_a_single_connection(postgres, mo
     database.open_pool(postgres, min_size=0, max_size=1)
     made = creates.create_character("owner", body)
     assert made["payload"]["eighteen"] is True
-    assert testing.rows("SELECT eighteen, real_age_set FROM character_player_meta") == [
-        {"eighteen": True, "real_age_set": True}]
+    assert testing.rows("SELECT is_adult, real_age_set FROM character_account_meta") == [
+        {"is_adult": True, "real_age_set": True}]
 
 
 def test_failed_create_rolls_back_its_attestation(postgres, monkeypatch):
@@ -52,7 +52,7 @@ def test_failed_create_rolls_back_its_attestation(postgres, monkeypatch):
     database.open_pool(postgres, min_size=0, max_size=1)
     with pytest.raises(psycopg.errors.UniqueViolation):
         creates.create_character("owner", body)
-    assert testing.value("SELECT eighteen FROM character_player_meta") is False
+    assert testing.value("SELECT is_adult FROM character_account_meta") is False
     assert testing.value("SELECT count(*) FROM character_creates") == 1
 
 
