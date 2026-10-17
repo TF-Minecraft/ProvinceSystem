@@ -63,5 +63,8 @@ live Minecraft server, companion plugins, or real external-service flows.
 Copyright (c) 2026 TF-Minecraft contributors.
 
 TF-Minecraft-authored material in this repository is licensed under the
-[Artistic License 2.0](LICENSE). Third-party dependencies and bundled material
-retain their own licenses.
+[Artistic License 2.0](LICENSE). The miniature skin converter adapts
+[MiniSkin Generator](https://github.com/nirastich/miniskin) by Christian
+(nirastich) under [GPL-3.0](third_party/miniskin/LICENSE), with
+[attribution and changes](third_party/miniskin/NOTICE). Other third-party
+dependencies and bundled material retain their own licenses.
