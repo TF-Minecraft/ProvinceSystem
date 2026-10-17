@@ -33,7 +33,7 @@ schema_fits() {
   compose up -d --wait db >&2 || return 1
   applied=$(compose exec -T db psql -U provincesystem -d provincesystem -Atc 'SELECT version FROM schema_migrations') || return 1
   known=$(git ls-tree --name-only "$1" backend/src/database/migrations/ | sed -n 's#.*/\([0-9]\{4\}\)_[a-z0-9_]*\.sql$#\1#p') || return 1
-  missing=$(comm -23 <(sort <<< "$applied") <(sort <<< "$known") | tr '\n' ' ')
+  missing=$(comm -23 <(grep . <<< "$applied" | sort) <(grep . <<< "$known" | sort) | tr '\n' ' ') || return 1
   [[ -z $missing ]] || { log "${1:0:7} predates database migration ${missing% }; fix forward"; return 1; }
 }
 checkout() {
@@ -174,7 +174,7 @@ fi
 
 log "$site failed; restoring ${old:0:7}"
 compose stop backend >&2 || { record 'failed: cannot stop backend'; exit 5; }
-if ! schema_fits "$old"; then record 'failed: database is newer than the last healthy revision; backend kept stopped'; exit 5; fi
+if ! schema_fits "$old"; then record 'failed: last healthy revision does not fit the database (see log); backend kept stopped'; exit 5; fi
 if ! checkout "$old"; then record 'failed: rollback checkout; backend kept stopped'; exit 5; fi
 if ! select_images "$old" || ! compose build backend frontend >&2; then
   record 'failed: rollback build; backend kept stopped'; exit 5

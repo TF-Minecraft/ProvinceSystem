@@ -202,7 +202,7 @@ def test_rollback_stops_when_the_failed_deploy_migrated_past_the_old_revision(ho
     assert "predates database migration 0002" in result.stderr
     assert not any(head == OLD and args[:2] == ["up", "-d"] and "backend" in args for head, args in commands(trace))
     assert operations(root) == [(NEW, "prepare"), (NEW, "studio")]
-    assert "database is newer than the last healthy revision" in (root / "site-deploy.log").read_text()
+    assert "last healthy revision does not fit the database" in (root / "site-deploy.log").read_text()
 
 
 def test_revision_older_than_the_database_is_refused_before_anything_changes(host):
