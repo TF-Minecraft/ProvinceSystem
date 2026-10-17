@@ -3,6 +3,7 @@ from contextlib import closing
 from datetime import datetime, timezone
 from decimal import Decimal
 import json
+import math
 import sqlite3
 
 import psycopg
@@ -87,6 +88,28 @@ def test_round_trip_preserves_types_duplicates_counters_and_new_writes(legacy, s
         assert sheet == '{"a":{"f":0.00000001,"n":123456789012345678901234567890},"z":1.0}'
         assert conn.execute("SELECT name FROM sqlite_master WHERE name='precedent_keep'").fetchall() == []
     copy.to_postgres(rollback, url, verify_only=True)
+
+
+@pytest.mark.parametrize("value", [-0.0, 0.0, -5e-324, 5e-324, 1.25])
+def test_rollback_verifies_later_float_writes_with_sqlite_zero_normalization(legacy, scratch_database, tmp_path, value):
+    copy.to_postgres(legacy, scratch_database)
+    with psycopg.connect(scratch_database) as conn:
+        conn.execute("INSERT INTO map_ledger_guild_days(map_id,day,guild_id,wealth) "
+                     "VALUES ('main','2026-10-17','later',%s)", (value,))
+        native = conn.execute("SELECT wealth FROM map_ledger_guild_days").fetchone()[0]
+        assert native == value and math.copysign(1.0, native) == math.copysign(1.0, value)
+    rollback = tmp_path / "rollback.db"
+    report = copy.to_sqlite(rollback, scratch_database)
+    assert len(report.checks) == 61 and all(check.matches for check in report.checks)
+    with closing(sqlite3.connect(rollback)) as conn:
+        restored = conn.execute("SELECT wealth FROM map_ledger_guild_days").fetchone()[0]
+        assert restored == value
+        if value == 0:
+            assert math.copysign(1.0, restored) == 1.0  # SQLite discards the zero sign.
+    assert all(check.matches for check in copy.to_postgres(rollback, scratch_database, verify_only=True).checks)
+    with psycopg.connect(scratch_database) as conn:
+        native = conn.execute("SELECT wealth FROM map_ledger_guild_days").fetchone()[0]
+        assert native == value and math.copysign(1.0, native) == math.copysign(1.0, value)
 
 
 @pytest.mark.parametrize(("value", "expected"), [

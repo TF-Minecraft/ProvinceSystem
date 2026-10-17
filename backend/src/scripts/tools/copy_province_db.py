@@ -441,6 +441,9 @@ def _canonical(value):
         return value.astimezone(timezone.utc).isoformat(timespec="microseconds")
     if isinstance(value, bool):
         return int(value)
+    if isinstance(value, float) and value == 0:
+        # SQLite persists both floating zero signs as positive zero.
+        return 0.0
     return value
 
 
