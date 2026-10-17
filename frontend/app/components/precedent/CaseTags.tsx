@@ -15,7 +15,7 @@ export default function CaseTags({
   row: Pick<PrecedentCase, "rule" | "ruling" | "punishment" | "players" | "participants">;
 }) {
   const ruling = visibleRuling(row.ruling);
-  if (!row.rule && !ruling && !row.punishment && !row.players?.length) return null;
+  if (!row.rule && !ruling && !row.punishment && !row.players?.length && !row.participants?.length) return null;
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
       {row.rule ? (

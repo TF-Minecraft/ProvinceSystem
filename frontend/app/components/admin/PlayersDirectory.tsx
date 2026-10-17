@@ -317,8 +317,8 @@ function countLine(data: PlayerDirectory): string {
         : `${n} characters`
       : data.view === "discord"
         ? n === 1
-          ? "1 linked player"
-          : `${n} linked players`
+          ? "1 Discord account"
+          : `${n} Discord accounts`
         : n === 1
           ? "1 player"
           : `${n} players`;

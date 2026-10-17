@@ -319,7 +319,7 @@ def directory(config: CoreProtectConfig, query: str = "", view: str = "minecraft
         entries = [*entries, *[
             {"uuid": None, "minecraft_name": None, "names": set(),
              "discord_user_id": p["discord_user_id"], "discord_username": p["discord_username"],
-             "discord_nickname": p["name"], "discord_global_name": p["name"], "site_role": p["role"],
+             "discord_nickname": None, "discord_global_name": p["name"], "site_role": p["role"],
              "characters": [], "last_seen": None, "online": False}
             for p in discord_people() if p["discord_user_id"] not in linked
         ]]
