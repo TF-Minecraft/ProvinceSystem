@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -58,7 +59,7 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
 def _created_time(raw: Any) -> datetime | None:
     """RPCharacters sends a character's creation time as epoch seconds in a string."""
     text = str(raw).strip() if raw is not None else ""
-    if not text.isdigit() or int(text) <= 0:
+    if not re.fullmatch(r"[0-9]{1,12}", text) or int(text) <= 0:
         return None
     return datetime.fromtimestamp(int(text), timezone.utc)
 

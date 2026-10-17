@@ -59,3 +59,18 @@ def test_0003_converts_times_and_keeps_rows(scratch_database, monkeypatch):
     assert "captured_at_ts" not in day
     assert [(c["minted_via"], c["view_session_id"]) for c in codes] == [(None, None), ("site", None), ("staff_view", 40)]
     assert nodes == 2
+
+
+def test_minted_via_check_ties_the_view_session_to_staff_view(scratch_database):
+    migrate.migrate(scratch_database)
+    insert = ("INSERT INTO login_codes (code_hash, player_uuid, scope, created_at, expires_at, minted_via, "
+              "view_session_id) VALUES (%s, 'p', 'profile', now(), now(), %s, %s)")
+    with psycopg.connect(scratch_database, autocommit=True) as conn:
+        for n, (minted, view) in enumerate([(None, None), ("site", None), ("staff_view", 4)]):
+            conn.execute(insert, (f"ok{n}", minted, view))
+        for n, (minted, view) in enumerate([(None, 4), ("site", 4), ("staff_view", None), ("other", None)]):
+            try:
+                conn.execute(insert, (f"bad{n}", minted, view))
+            except psycopg.errors.CheckViolation:
+                continue
+            raise AssertionError((minted, view))

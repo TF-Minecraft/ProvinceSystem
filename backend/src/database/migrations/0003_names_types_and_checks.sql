@@ -1,5 +1,5 @@
--- Names that say what each table holds, real timestamp types, CHECKs on the
--- status columns and keys on the LuckPerms node mirrors.
+-- Names that say what each table holds, real timestamp types and CHECKs on
+-- the status columns.
 
 -- In-game login codes and the sessions they open.
 ALTER TABLE codes RENAME TO login_codes;
@@ -87,8 +87,11 @@ WHERE minted_via ~ '^staff_view:[0-9]{1,18}$';
 ALTER TABLE login_codes ADD CONSTRAINT login_codes_scope_check
     CHECK (scope IN ('skin', 'skin_staff', 'drink', 'profile', 'lore_upload', 'character'));
 ALTER TABLE login_codes ADD CONSTRAINT login_codes_minted_via_check
-    CHECK (minted_via IN ('site', 'staff_view') AND (view_session_id IS NOT NULL) = (minted_via = 'staff_view')
-           OR minted_via IS NULL AND view_session_id IS NULL);
+    CHECK (CASE minted_via
+               WHEN 'staff_view' THEN view_session_id IS NOT NULL
+               WHEN 'site' THEN view_session_id IS NULL
+               ELSE minted_via IS NULL AND view_session_id IS NULL
+           END);
 ALTER TABLE skin_submissions ADD CONSTRAINT skin_submissions_status_check
     CHECK (status IN ('pending', 'approved', 'applied', 'denied', 'revoked'));
 ALTER TABLE drink_submissions ADD CONSTRAINT drink_submissions_status_check
@@ -97,10 +100,3 @@ ALTER TABLE character_creation_requests ADD CONSTRAINT character_creation_reques
     CHECK (status IN ('pending', 'applied', 'rejected'));
 ALTER TABLE lore_item_customisations ADD CONSTRAINT lore_item_customisations_state_check
     CHECK (state IN ('draft', 'pending_skin', 'ready', 'applied', 'denied'));
-
--- LuckPerms keeps one node per key, context set and expiry; a timed and a
--- permanent copy of the same group are two rows.
-ALTER TABLE lp_user_nodes ADD PRIMARY KEY (uuid, key, contexts, expiry);
-ALTER TABLE lp_group_nodes ADD PRIMARY KEY (group_name, key, contexts, expiry);
-DROP INDEX idx_lp_group_nodes_group;
-DROP INDEX idx_lp_user_nodes_uuid;
