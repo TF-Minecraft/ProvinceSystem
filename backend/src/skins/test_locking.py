@@ -581,13 +581,19 @@ def test_round1_revocation_rechecks_expiry_after_wait(env, monkeypatch):
 @pytest.mark.parametrize("scope", ["skin", "drink"])
 def test_round1_site_reuse_rechecks_expiry_after_wait(env, monkeypatch, scope):
     codes.issue_code(PLAYER, scope)
+    old_id = testing.value("SELECT id FROM codes")
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
     testing.execute("UPDATE codes SET expires_at = %s", (expiry,))
     run = after_expiry_wait(monkeypatch, codes, expiry,
                             lambda conn: conn.execute("SELECT * FROM codes FOR UPDATE"),
                             lambda: codes.start_site_session(PLAYER, "main", scope))
-    assert isinstance(run.error, codes.SiteStartRefused) and run.error.reason == "cooldown"
-    assert testing.value("SELECT COUNT(*) FROM sessions") == 0
+    # Expired unused codes no longer reserve cooldown (main #261). Recheck
+    # after the wait, then mint a fresh code instead of reusing the expired one.
+    assert run.error is None
+    assert testing.value("SELECT COUNT(*) FROM sessions") == 1
+    assert testing.value("SELECT code_id FROM sessions") != old_id
+    assert testing.value("SELECT redeemed_at FROM codes WHERE id=%s", (old_id,)) is None
+    assert testing.value("SELECT created_at FROM codes WHERE id<>%s", (old_id,)) > expiry
 
 
 @pytest.mark.parametrize("scope", ["skin", "drink"])

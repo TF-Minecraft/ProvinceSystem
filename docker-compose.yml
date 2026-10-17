@@ -21,7 +21,7 @@ services:
       - no-new-privileges:true
     restart: always
 
-  # The site's Postgres (Precedent and patch notes). backend/.env sets
+  # The site's Postgres (site records, Precedent and patch notes). backend/.env sets
   # DATABASE_URL=postgresql://provincesystem:<POSTGRES_PASSWORD>@db:5432/provincesystem;
   # the password comes from the project's .env.
   db:

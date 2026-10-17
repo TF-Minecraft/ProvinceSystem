@@ -60,7 +60,6 @@ class SecondaryPluginKeyTest(unittest.TestCase):
         # either one in sys.modules, so point every loaded copy at the temp database.
         paths = {
             "DATA_DIR": root,
-            "DB_PATH": root / "province.db",
             "SKINS_DIR": root / "skins",
             "DRINKS_DIR": root / "drinks",
             "WARDROBE_DIR": root / "wardrobe",
@@ -75,7 +74,7 @@ class SecondaryPluginKeyTest(unittest.TestCase):
             self._orig.append((mod, {name: getattr(mod, name) for name in paths}))
             for name, value in paths.items():
                 setattr(mod, name, value)
-        self._orig[0][0].migrate()
+        self._orig[0][0].ensure_directories()
 
         self._env = mock.patch.dict(
             "os.environ",

@@ -182,14 +182,13 @@ class CreateCheckTests(unittest.TestCase):
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=root / "province.db",
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
         catalog = _catalog()
         catalog.update(
             {

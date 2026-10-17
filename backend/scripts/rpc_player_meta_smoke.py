@@ -1,6 +1,6 @@
 """Smoke: PUT rpc-player-meta + GET /characters/player-meta.
 
-Run from backend/: python scripts/rpc_player_meta_smoke.py
+Run from backend/ with TEST_DATABASE_URL: python scripts/rpc_player_meta_smoke.py
 """
 
 from __future__ import annotations
@@ -18,8 +18,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.skins.db import migrate
+from smoke_support import isolated_smoke
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
@@ -60,8 +59,9 @@ def ensure_linked(client: TestClient, player: str) -> None:
         fail(f"link complete: {r.status_code} {r.text}")
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
+    from server import app
     client = TestClient(app)
     ensure_linked(client, PLAYER)
 
@@ -77,16 +77,16 @@ def main() -> None:
             "wardrobe_skin_slots": 2,
             "max_3d_pair_bytes": 40960,
             "skin_token_cooldown_days": 21,
-                "skin_kinds": ["handheld", "armor_set"],
-                "allow_armor_3d_helmet": True,
-                "permission_flags": {"rulequiz.completed": True},
-            },
-        )
-        if put.status_code != 200:
-            fail(f"PUT meta: {put.status_code} {put.text}")
-        body = put.json()
-        if body.get("name_colour_stops") != 8:
-            fail(f"expected colour cap 8, got {body.get('name_colour_stops')}")
+            "skin_kinds": ["handheld", "armor_set"],
+            "allow_armor_3d_helmet": True,
+            "permission_flags": {"rulequiz.completed": True},
+        },
+    )
+    if put.status_code != 200:
+        fail(f"PUT meta: {put.status_code} {put.text}")
+    body = put.json()
+    if body.get("name_colour_stops") != 8:
+        fail(f"expected colour cap 8, got {body.get('name_colour_stops')}")
 
     mint = client.post(
         "/skins/codes",

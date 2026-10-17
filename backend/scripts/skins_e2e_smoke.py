@@ -1,4 +1,4 @@
-"""Skins API E2E smoke — run from backend/: python scripts/skins_e2e_smoke.py
+"""Skins API E2E smoke — run from backend/ with TEST_DATABASE_URL: python scripts/skins_e2e_smoke.py
 
 Uses FastAPI TestClient (no separate uvicorn). Requires SKINS_DEV=1 or real keys.
 
@@ -26,8 +26,8 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.skins.db import SKINS_DIR, connect, migrate
+from smoke_support import isolated_smoke
+from src.database import connect
 from src.skins.naming import ARMOR_FIELDS, build_submission_id, slugify_display_name
 
 STAFF = "dev-staff-key"
@@ -93,16 +93,10 @@ def armor_tier_files(
     return files
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
-    # Idempotent re-runs (Step 11+ assumes empty submissions)
-    with connect() as conn:
-        conn.execute("DELETE FROM submissions")
-        try:
-            conn.execute("DELETE FROM notifications")
-        except Exception:
-            pass
-        conn.commit()
+    from server import app
+    from src.skins.db import SKINS_DIR
 
     client = TestClient(app)
     player = "00000000-0000-0000-0000-000000000208"
@@ -143,6 +137,20 @@ def main() -> None:
         )
         if r.status_code != 200:
             fail(f"link complete: {r.status_code} {r.text}")
+
+    meta = client.put(
+        "/characters/plugin/rpc-player-meta",
+        json={
+            "player_uuid": player,
+            "skin_kinds": ["handheld", "armor_set", "large_handheld", "book"],
+            "allow_armor_3d_helmet": True,
+            "name_colour_stops": 8,
+            "max_3d_pair_bytes": 1048576,
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if meta.status_code != 200:
+        fail(f"PUT upload entitlements: {meta.status_code} {meta.text}")
 
     # Already linked — no new code
     r = client.post(
@@ -450,6 +458,18 @@ def main() -> None:
     print("armor conflict-check (display_name only) ok")
 
     # Backward-compat: legacy unprefixed armor fields + base_set select a single tier
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue legacy armor code: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem legacy armor: {r.status_code} {r.text}")
+    auth_legacy = {"Authorization": f"Bearer {r.json()['session_token']}"}
+
     legacy_files = []
     for i, field in enumerate(ARMOR_FIELDS):
         if field in ARMOR_FIELDS[:4]:
@@ -467,7 +487,7 @@ def main() -> None:
             "base_set": "iron",
         },
         files=legacy_files,
-        headers=auth,
+        headers=auth_legacy,
     )
     if r.status_code != 200:
         fail(f"legacy armor upload: {r.status_code} {r.text}")
@@ -501,7 +521,7 @@ def main() -> None:
         fail("notification still listed after ack")
     print(f"submitted notification {nid} ok")
 
-    # New session for second submission (code already redeemed — issue another)
+    # New session for handheld (each code permits one active submission)
     r = client.post(
         "/skins/codes",
         json={"player_uuid": player},
@@ -565,6 +585,18 @@ def main() -> None:
     )
 
     # Deny purges row so the same item name/id can be reused
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue deny-reuse code: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem deny-reuse: {r.status_code} {r.text}")
+    auth_reuse = {"Authorization": f"Bearer {r.json()['session_token']}"}
+
     reuse_tex = make_png(16, 16, fill=201)
     r = client.post(
         "/skins/submissions",
@@ -574,7 +606,7 @@ def main() -> None:
             "base_set": "swords",
         },
         files=[("texture", ("deny_reuse_a.png", reuse_tex, "image/png"))],
-        headers=auth2,
+        headers=auth_reuse,
     )
     if r.status_code != 200:
         fail(f"deny-reuse upload: {r.status_code} {r.text}")
@@ -593,7 +625,7 @@ def main() -> None:
         fail(f"deny-reuse response status: {r.json()}")
     with connect() as conn:
         if conn.execute(
-            "SELECT 1 FROM submissions WHERE id = ?", (reuse_id,)
+            "SELECT 1 FROM submissions WHERE id = %s", (reuse_id,)
         ).fetchone():
             fail(f"deny should purge submissions row: {reuse_id}")
     reuse_tex2 = make_png(16, 16, fill=202)
@@ -605,7 +637,7 @@ def main() -> None:
             "base_set": "swords",
         },
         files=[("texture", ("deny_reuse_b.png", reuse_tex2, "image/png"))],
-        headers=auth2,
+        headers=auth_reuse,
     )
     if r.status_code != 200:
         fail(f"deny-reuse reupload: {r.status_code} {r.text}")
@@ -620,7 +652,7 @@ def main() -> None:
         fail(f"deny-reuse cleanup deny: {r.status_code} {r.text}")
     print("deny purge + same-id resubmit ok")
 
-    # Third session for large
+    # New session for large
     r = client.post(
         "/skins/codes",
         json={"player_uuid": player},

@@ -136,14 +136,13 @@ class CreateValidationWireTests(unittest.TestCase):
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=root / "province.db",
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
 
     def test_rejects_script_name(self) -> None:
         from src.characters.creates import CreateError, _validate_and_normalize

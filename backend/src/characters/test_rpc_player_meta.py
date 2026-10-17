@@ -31,29 +31,25 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self._db_mod = db_mod
         # Character modules import src.skins.db — keep one module identity for tests.
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
         self._sync_db_dependents(db_mod)
 
     def _sync_db_dependents(self, db_mod) -> None:
         import src.skins.drinks as drinks_mod
 
         drinks_mod.db = db_mod
-        drinks_mod.connect = db_mod.connect
         sys.modules["src.skins.drinks"] = drinks_mod
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins

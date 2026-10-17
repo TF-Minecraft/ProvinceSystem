@@ -45,7 +45,7 @@ def pixels(png: bytes) -> Image.Image:
 
 class SkinFaceTest(unittest.TestCase):
     def test_crops_the_face_under_the_hat_layer(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         face = pixels(skin_face_png(skin((200, 150, 100, 255), hat=(10, 20, 30, 255))))
         self.assertEqual(face.size, (8, 8))
@@ -53,13 +53,13 @@ class SkinFaceTest(unittest.TestCase):
         self.assertEqual(face.getpixel((5, 5)), (200, 150, 100, 255))
 
     def test_reads_legacy_64x32_skins(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         face = pixels(skin_face_png(skin((1, 2, 3, 255), height=32)))
         self.assertEqual(face.getpixel((4, 4)), (1, 2, 3, 255))
 
     def test_blank_or_odd_skins_have_no_face(self) -> None:
-        from characters.wardrobe import skin_face_png
+        from src.characters.wardrobe import skin_face_png
 
         self.assertIsNone(skin_face_png(skin((0, 0, 0, 0))))
         self.assertIsNone(skin_face_png(b"not a png"))
@@ -93,7 +93,7 @@ def body(slim_arms: bool = False) -> bytes:
 
 class SkinFigureTest(unittest.TestCase):
     def test_lays_out_the_front_with_the_outer_layer_on_top(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         png = body()
         im = Image.open(io.BytesIO(png))
@@ -112,7 +112,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((0, 0))[3], 0)
 
     def test_slim_arms_sit_against_the_body(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         figure = pixels(skin_figure_png(body(slim_arms=True)))
         self.assertEqual(figure.getpixel((0, 8))[3], 0)
@@ -121,7 +121,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((15, 8))[3], 0)
 
     def test_the_saved_model_wins_over_detection(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         figure = pixels(skin_figure_png(body(), "slim"))
         self.assertEqual(figure.getpixel((0, 8))[3], 0)
@@ -130,7 +130,7 @@ class SkinFigureTest(unittest.TestCase):
         self.assertEqual(figure.getpixel((12, 8)), ARM)
 
     def test_blank_heads_and_odd_sizes_have_no_figure(self) -> None:
-        from characters.wardrobe import skin_figure_png
+        from src.characters.wardrobe import skin_figure_png
 
         self.assertIsNone(skin_figure_png(skin((0, 0, 0, 0))))
         self.assertIsNone(skin_figure_png(skin((1, 2, 3, 255), height=32)))
@@ -146,13 +146,12 @@ class ActiveFaceTest(unittest.TestCase):
 
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig = {k: getattr(db_mod, k) for k in ("DB_PATH", "DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")}
+        self._orig = {k: getattr(db_mod, k) for k in ("DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")}
         db_mod.DATA_DIR = self.root
-        db_mod.DB_PATH = self.root / "province.db"
         db_mod.DRINKS_DIR = self.root / "drinks"
         db_mod.SKINS_DIR = self.root / "skins"
         db_mod.WARDROBE_DIR = self.root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         import characters.wardrobe as wardrobe
 

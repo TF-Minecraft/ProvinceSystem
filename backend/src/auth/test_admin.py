@@ -1,5 +1,4 @@
 import json
-import sqlite3
 
 import psycopg
 import pytest
@@ -94,35 +93,6 @@ def test_role_rules():
 # Migration
 # --------------------
 
-def test_migration_adds_role_to_existing_users(tmp_path, monkeypatch):
-    from src.skins import db
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, discord_user_id TEXT NOT NULL UNIQUE,
-            discord_username TEXT, discord_global_name TEXT, discord_avatar TEXT,
-            created_at TEXT NOT NULL, updated_at TEXT NOT NULL, last_login_at TEXT NOT NULL);
-        CREATE TABLE user_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL UNIQUE,
-            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, guild_member INTEGER NOT NULL DEFAULT 0,
-            guild_checked_at TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
-        INSERT INTO users VALUES (1, '42', 'old', NULL, NULL, 'x', 'x', 'x');
-        INSERT INTO user_sessions VALUES (1, 'h', 1, 1, 'x', 'x', '2999-01-01T00:00:00Z');
-    """)
-    old.commit()
-    old.close()
-    monkeypatch.setattr(db, "DB_PATH", path)
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
-    db.migrate()
-    with db.connect() as conn:
-        assert tuple(conn.execute("SELECT role, placeholder FROM users").fetchone()) == ("player", 0)
-        assert conn.execute("SELECT COUNT(*) FROM user_sessions").fetchone()[0] == 1
-        with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("UPDATE users SET role = 'wizard'")
-        indexes = {r[1] for r in conn.execute("PRAGMA index_list(users)")}
-    assert "idx_users_role" in indexes
 
 
 def test_fresh_database_rejects_unknown_roles(env):

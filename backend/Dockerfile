@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 
+LABEL net.tfminecraft.storage="postgres"
+
 WORKDIR /app
 
 # Node 20+ for staff review-sheet 3D renderer (backend/render/cli.mjs + Playwright).

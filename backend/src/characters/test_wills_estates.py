@@ -28,14 +28,14 @@ API_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 def db(tmp_path, monkeypatch, postgres):
     for name, sub in (
         ("DATA_DIR", ""),
-        ("DB_PATH", "province.db"),
+
         ("DRINKS_DIR", "drinks"),
         ("SKINS_DIR", "skins"),
         ("WARDROBE_DIR", "wardrobe"),
     ):
         monkeypatch.setattr(db_mod, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setenv("PLUGIN_KEY", "pk")
-    db_mod.migrate()
+    db_mod.ensure_directories()
     wills._heir_rate.clear()
     return db_mod
 

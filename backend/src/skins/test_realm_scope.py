@@ -33,21 +33,18 @@ class RealmScopeTest(unittest.TestCase):
 
         self._db_mod = db_mod
 
-        self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
@@ -345,7 +342,6 @@ class RealmScopeTest(unittest.TestCase):
 
     def test_lore_pending_filtered_by_realm(self) -> None:
         from src.characters.lore_items import list_pending_for_plugin
-        from src.skins.db import connect
 
         with database.connect() as conn:
             for cid, realm in (("char-main", "main"), ("char-dev", "dev")):
@@ -370,7 +366,6 @@ class RealmScopeTest(unittest.TestCase):
 
     def test_character_name_clash_only_within_realm(self) -> None:
         from src.characters.roster import replace_roster
-        from src.skins.db import connect
 
         replace_roster(
             "p-name",

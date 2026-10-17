@@ -1,5 +1,4 @@
 import re
-import sqlite3
 import uuid
 
 import pytest
@@ -292,25 +291,6 @@ def test_preview_sign_in_refuses_a_view(app, env, monkeypatch):
     assert (res.status_code, res.json()["detail"]) == (403, "viewing_as_player")
 
 
-def test_migration_adds_acting_user_id(tmp_path, monkeypatch):
-    from src.skins import db
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE user_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL UNIQUE,
-            user_id INTEGER NOT NULL, guild_member INTEGER NOT NULL DEFAULT 0,
-            guild_checked_at TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
-    """)
-    old.commit()
-    old.close()
-    monkeypatch.setattr(db, "DB_PATH", path)
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
-    db.migrate()
-    with db.connect() as conn:
-        assert "acting_user_id" in {r["name"] for r in conn.execute("PRAGMA table_info(user_sessions)")}
 
 
 def test_profile_tag_only_inside_a_view():

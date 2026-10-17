@@ -34,7 +34,6 @@ def _sync_temp_db(root: Path, db_path: Path) -> object:
     import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
-    db_mod.DB_PATH = db_path
     db_mod.SKINS_DIR = root / "skins"
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
@@ -57,16 +56,14 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         db_mod = _sync_temp_db(root, self.db_path)
         db_mod.SKINS_DIR = self.skins_dir
         self._db_mod = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
@@ -287,7 +284,6 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         self.assertIsNone(code_row["redeemed_at"])
 
     def test_rollback_skips_when_lore_row_still_references(self) -> None:
-        from src.skins.db import connect
         from src.skins.submissions import rollback_pending_submission_if_unreferenced
 
         self._link_player()

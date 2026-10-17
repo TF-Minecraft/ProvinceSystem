@@ -10,9 +10,8 @@ if str(BACKEND) not in sys.path:
 @pytest.fixture
 def database(tmp_path, monkeypatch):
     from src.skins import db
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
     for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
         monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
+    db.ensure_directories()
     return db

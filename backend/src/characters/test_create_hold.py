@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -28,18 +27,16 @@ class CreateHoldTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
-        self.db_path = root / "province.db"
         paths = patch.multiple(
             db,
             DATA_DIR=root,
-            DB_PATH=self.db_path,
             SKINS_DIR=root / "skins",
             DRINKS_DIR=root / "drinks",
             WARDROBE_DIR=root / "wardrobe",
         )
         paths.start()
         self.addCleanup(paths.stop)
-        db.migrate()
+        db.ensure_directories()
         validated = patch(
             "src.characters.creates._validate_and_normalize",
             side_effect=lambda uuid, body, realm_id=None: {"name": body["name"]},
@@ -93,25 +90,6 @@ class CreateHoldTests(unittest.TestCase):
         with self.assertRaises(CreateError):
             release_create(PLAYER, held)
 
-    def test_existing_databases_gain_the_hold_column(self) -> None:
-        from src.skins import db
-
-        with sqlite3.connect(self.db_path) as conn:
-            conn.executescript(
-                """
-                DROP TABLE character_creates;
-                CREATE TABLE character_creates (
-                    id TEXT PRIMARY KEY, player_uuid TEXT NOT NULL, client_request_id TEXT,
-                    payload TEXT NOT NULL, status TEXT NOT NULL, character_id TEXT, error TEXT,
-                    created_at TEXT NOT NULL, applied_at TEXT,
-                    realm_id TEXT NOT NULL DEFAULT 'main', wardrobe_active_slot TEXT
-                );
-                """
-            )
-        db.migrate()
-        with sqlite3.connect(self.db_path) as conn:
-            columns = {row[1] for row in conn.execute("PRAGMA table_info(character_creates)")}
-        self.assertIn("held_until", columns)
 
 
 if __name__ == "__main__":

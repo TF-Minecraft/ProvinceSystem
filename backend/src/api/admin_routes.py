@@ -38,7 +38,7 @@ from src.scripts.util.dirs import validate_map
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
-# Unix seconds well past any real window; keeps query values inside SQLite's integers.
+# Unix seconds well past any real window; keeps query values inside bigint range.
 MAX_TIME = 2 ** 40
 
 

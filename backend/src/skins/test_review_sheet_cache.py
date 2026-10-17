@@ -46,7 +46,6 @@ def _sync_temp_db(root: Path, db_path: Path) -> object:
     import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
-    db_mod.DB_PATH = db_path
     db_mod.SKINS_DIR = root / "skins"
     db_mod.DRINKS_DIR = root / "drinks"
     db_mod.WARDROBE_DIR = root / "wardrobe"
@@ -112,18 +111,16 @@ class ReviewSheetCacheTest(unittest.TestCase):
         db_mod = _sync_temp_db(root, self.db_path)
         db_mod.SKINS_DIR = self.skins_dir
         self._db_mod = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
-        db_mod.migrate()
+        db_mod.ensure_directories()
         os.environ["SHEET_RENDER_DISABLE"] = "1"
 
     def tearDown(self) -> None:
         os.environ.pop("SHEET_RENDER_DISABLE", None)
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.DRINKS_DIR = self._orig_drinks

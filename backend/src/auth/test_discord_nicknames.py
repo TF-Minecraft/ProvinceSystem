@@ -1,11 +1,9 @@
-import sqlite3
 
 import httpx
 import pytest
 
 from src.api import skins_routes
 from src.auth import testing, users
-from src.skins import db
 from src.skins.discord_link import remember_discord_nicknames
 from src.skins.testing import link as store_link
 
@@ -20,42 +18,8 @@ def names(discord_id):
     return row["discord_username"], row["discord_nickname"]
 
 
-def sqlite_names(discord_id):
-    """The names in an old province.db, which the upgrade below still rewrites."""
-    with db.connect() as conn:
-        row = conn.execute("SELECT discord_username, discord_nickname FROM discord_links WHERE discord_user_id = ?",
-                           (discord_id,)).fetchone()
-    return row["discord_username"], row["discord_nickname"]
 
 
-def test_upgrade_moves_old_nicknames_out_of_usernames(tmp_path, monkeypatch):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    # A database from before nicknames had a column of their own.
-    conn = sqlite3.connect(tmp_path / "province.db")
-    conn.execute("CREATE TABLE discord_links (player_uuid TEXT PRIMARY KEY, discord_user_id TEXT NOT NULL UNIQUE, "
-                 "minecraft_name TEXT, discord_username TEXT, linked_at TEXT NOT NULL, left_guild_at TEXT, "
-                 "grace_until TEXT)")
-    for uuid, discord_id, name in [("u1", "1", "Justin"), ("u2", "2", "justin_x"), ("u3", "3", "Dread Captain - Wren"),
-                                   ("u4", "4", None)]:
-        conn.execute("INSERT INTO discord_links (player_uuid, discord_user_id, discord_username, linked_at) "
-                     "VALUES (?, ?, ?, 'now')", (uuid, discord_id, name))
-    conn.commit()
-    conn.close()
-
-    db.migrate()
-    assert sqlite_names("1") == (None, "Justin")
-    assert sqlite_names("2") == ("justin_x", None)
-    assert sqlite_names("3") == (None, "Dread Captain - Wren")
-    assert sqlite_names("4") == (None, None)
-    # Only once: a second start leaves later data alone.
-    with db.connect() as conn:
-        conn.execute("UPDATE discord_links SET discord_nickname = 'Jus' WHERE discord_user_id = '2'")
-        conn.commit()
-    db.migrate()
-    assert sqlite_names("2") == ("justin_x", "Jus")
 
 
 def test_sign_in_stores_handle_and_server_nickname(postgres):

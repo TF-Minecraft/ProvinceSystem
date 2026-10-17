@@ -1,4 +1,4 @@
-"""The baseline schema: parity with schema.sql, types, collation and admin_audit."""
+"""The baseline schema: parity with the offline rollback schema, types, collation and admin_audit."""
 
 import re
 import sqlite3
@@ -56,15 +56,12 @@ def _checks(create_sql: str) -> list[str]:
 
 
 @pytest.fixture
-def sqlite_schema(tmp_path, monkeypatch):
-    from src.skins import db
+def sqlite_schema():
+    """The frozen offline rollback shape, independent of runtime storage."""
+    from pathlib import Path
 
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
-    monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
-        monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
-    conn = sqlite3.connect(tmp_path / "province.db")
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(Path(__file__).with_name("legacy_sqlite.sql").read_text())
     try:
         yield conn
     finally:

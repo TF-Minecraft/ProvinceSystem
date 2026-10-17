@@ -65,7 +65,6 @@ def archive_http_env(tmp_path, monkeypatch, postgres):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
     monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
     monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
     monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
@@ -91,7 +90,7 @@ def archive_http_env(tmp_path, monkeypatch, postgres):
         lambda *_args, **_kwargs: True,
     )
 
-    skins_db.migrate()
+    skins_db.ensure_directories()
     committed = COMMITTED_REGISTRY.read_text(encoding="utf-8")
     try:
         yield {

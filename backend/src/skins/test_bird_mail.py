@@ -30,20 +30,17 @@ class BirdMailModerationTest(unittest.TestCase):
 
         self._db_mod = db_mod
 
-        self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = self.db_path
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
-        self._db_mod.DB_PATH = self._orig_db
         self._db_mod.DRINKS_DIR = self._orig_drinks
         self._db_mod.DATA_DIR = self._orig_data
         self._db_mod.SKINS_DIR = self._orig_skins

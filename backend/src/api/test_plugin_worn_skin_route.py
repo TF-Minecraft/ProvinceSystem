@@ -39,7 +39,6 @@ class PluginWornSkinTest(unittest.TestCase):
         # Point every loaded copy of the db module at the temp database.
         paths = {
             "DATA_DIR": self.root,
-            "DB_PATH": self.root / "province.db",
             "SKINS_DIR": self.root / "skins",
             "DRINKS_DIR": self.root / "drinks",
             "WARDROBE_DIR": self.root / "wardrobe",
@@ -55,7 +54,7 @@ class PluginWornSkinTest(unittest.TestCase):
             for name, value in paths.items():
                 setattr(mod, name, value)
         self.db = self._orig[0][0]
-        self.db.migrate()
+        self.db.ensure_directories()
 
         import src.characters.wardrobe as wardrobe
         from src.api.characters_routes import characters_router

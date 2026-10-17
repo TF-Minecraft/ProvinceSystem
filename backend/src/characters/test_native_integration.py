@@ -15,10 +15,7 @@ NOW = "2026-01-01T00:00:00Z"
 
 @pytest.fixture(autouse=True)
 def native_only(tmp_path, monkeypatch, postgres):
-    def legacy_read(*args, **kwargs):
-        pytest.fail("native Characters integration must not read SQLite")
-
-    monkeypatch.setattr(db, "connect", legacy_read)
+    assert not hasattr(db, "connect")
     monkeypatch.setattr(db, "SKINS_DIR", tmp_path)
     monkeypatch.setattr(submissions, "SKINS_DIR", tmp_path)
     monkeypatch.setattr(database.connection, "POOL_TIMEOUT_SECONDS", .25)
