@@ -134,7 +134,7 @@ provision_database() {
     [[ "$table" =~ ^[a-z_]+$ ]] || return 1
     tables+=("--table=public.$table")
   done < "$dir/tables"
-  ((${#tables[@]} == 61)) || return 1
+  ((${#tables[@]} > 0)) || return 1
   container=$(preview_db_container)
   [[ -n "$container" ]] || return 1
   # Data only: schema is created by reviewed Dev migrations under the preview

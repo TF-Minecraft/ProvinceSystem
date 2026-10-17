@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import sqlite3
 import subprocess
 import sys
 
@@ -35,9 +34,7 @@ def host(tmp_path):
     (tmp_path / "tfmc-staging").mkdir()
     data = tmp_path / "provincesystem-data" / "data"
     data.mkdir(parents=True)
-    with sqlite3.connect(data / "province.db") as conn:
-        conn.execute("CREATE TABLE content(value text)")
-        conn.execute("INSERT INTO content VALUES ('preserve')")
+    (data / ".postgres-authority.json").write_text("{}")
     (tmp_path / "head").write_text(OLD)
     shim = """import hashlib, json, os, pathlib, sys
 root=pathlib.Path(os.environ['DEPLOY_TEST_ROOT']); args=sys.argv[1:]; tool=pathlib.Path(sys.argv[0]).name
@@ -63,7 +60,7 @@ if tool=='git':
  elif args[:2]==['diff','--name-only']: print('backend/server.py' if args[-2]!=args[-1] else '')
  elif args[:2]==['diff','--quiet']: sys.exit(1 if os.environ.get('DIRTY_INPUT') else 0)
  elif args[:2]==['merge-base','--is-ancestor']: sys.exit(0 if args[-1]=='origin/main' or args[-2]<=args[-1] else 1)
- elif args[0]=='cat-file': sys.exit(0 if args[-1].split(':')[0] in os.environ.get('NATIVE_REVISIONS',new).split(',') else 1)
+ elif args[0]=='cat-file': sys.exit(0 if args[-1].split(':')[0] in os.environ.get('NATIVE_REVISIONS',old+','+new).split(',') else 1)
  sys.exit(0)
 if tool=='docker':
  if args[:2]==['image','inspect']:
@@ -102,14 +99,11 @@ if tool=='ps-compose':
  if args[0]=='run':
   tag=overlay()['backend']['image']
   assert tag==image_tag('backend') and tag in images, (tag,head)
-  assert head in os.environ.get('NATIVE_REVISIONS',new).split(',')
+  assert head in os.environ.get('NATIVE_REVISIONS',old+','+new).split(',')
   with (root/'operations').open('a') as log: log.write(json.dumps([head,tag,images[tag],args[-1]])+'\\n')
   command=args[-1]
-  if command=='prepare': marker.write_text('{}')
-  if command=='studio' and os.environ.get('FAIL_STUDIO'): sys.exit(1)
-  if command=='rollback':
-   if os.environ.get('FAIL_EXPORT'): sys.exit(1)
-   marker.unlink()
+  assert command in ('prepare','studio') and marker.exists()
+  if command=='studio' and os.environ.get('FAIL_STUDIO') and head==new: sys.exit(1)
  sys.exit(0)
 raise SystemExit('unexpected host command')
 """
@@ -138,7 +132,12 @@ def commands(trace):
     return [(head, args[1:]) for tool, head, args in trace if tool == "ps-compose"]
 
 
-def test_forward_builds_before_stopping_and_copies_before_serving(host):
+def operations(root):
+    lines = (root / "operations").read_text().splitlines() if (root / "operations").exists() else []
+    return [(revision, command) for revision, _, _, command in map(json.loads, lines)]
+
+
+def test_forward_builds_before_stopping_and_migrates_before_serving(host):
     root, data, run = host
     result, trace = run()
     assert result.returncode == 0, result.stderr
@@ -150,6 +149,7 @@ def test_forward_builds_before_stopping_and_copies_before_serving(host):
     assert build < stop < prepare < serve
     assert calls[build][1] == ["build", "backend", "frontend"]
     assert calls[serve][1] == ["up", "-d", "--no-build", "--no-deps", "backend", "frontend"]
+    assert operations(root) == [(NEW, "prepare"), (NEW, "studio")]
     overlay = root / ".site-images-www.json"
     assert overlay.stat().st_mode & 0o777 == 0o600
     assert not overlay.with_suffix(".part").exists()
@@ -162,83 +162,48 @@ def test_forward_builds_before_stopping_and_copies_before_serving(host):
         assert any(tool == "docker" and args[-1] == image_tag("www", service, NEW)
                    for tool, _, args in trace)
         assert (NEW, ["ps", "-q", service]) in calls
-    assert (data / ".postgres-authority.json").exists()
     backups = list((root / "provincesystem-data" / "deploy-backups").iterdir())
-    assert len(backups) == 2 and all(path.stat().st_mode & 0o077 == 0 for path in backups)
+    assert len(backups) == 1 and backups[0].name.startswith("postgres.before-deploy-")
+    assert backups[0].stat().st_mode & 0o077 == 0
 
 
-def test_failed_cutover_exports_before_legacy_code_returns(host):
+def test_revision_from_before_postgres_is_refused(host):
+    root, data, run = host
+    (root / "head").write_text(NEW)
+    (root / ".site-deployed-www").write_text(NEW)
+    result, trace = run(target=OLD, NATIVE_REVISIONS=NEW)
+    assert result.returncode == 4
+    assert "predates the move to Postgres" in result.stderr
+    assert commands(trace) == []
+    assert (root / "head").read_text() == NEW
+
+
+def test_failed_migration_step_returns_to_the_last_healthy_revision(host):
     root, data, run = host
     result, trace = run(FAIL_STUDIO="1")
     assert result.returncode == 5
-    calls = commands(trace)
-    exported = next(i for i, (_, args) in enumerate(calls) if args[-1] == "rollback")
-    legacy_start = next(i for i, (head, args) in enumerate(calls)
-                        if head == OLD and args[:2] == ["up", "-d"] and "backend" in args)
-    assert exported < legacy_start
     assert (root / "head").read_text() == OLD
-    assert not (data / ".postgres-authority.json").exists()
+    assert operations(root) == [(NEW, "prepare"), (NEW, "studio"), (OLD, "prepare"), (OLD, "studio")]
+    assert (OLD, ["up", "-d", "--no-build", "--no-deps", "backend", "frontend"]) in commands(trace)
+    assert "rolled back" in (root / "site-deploy.log").read_text()
 
 
-def test_failed_reverse_export_keeps_backend_stopped(host):
-    root, data, run = host
-    result, trace = run(FAIL_HEALTH="1", FAIL_EXPORT="1")
-    assert result.returncode == 5
-    assert (root / "head").read_text() == NEW
-    assert (data / ".postgres-authority.json").exists()
-    calls = commands(trace)
-    assert not any(head == OLD and args[0] == "up" and "backend" in args for head, args in calls)
-    assert calls[-3][1] == ["stop", "backend"]
-    assert calls[-2][1] == ["build", "backend"]
-    assert calls[-1][1][-1] == "rollback"
-
-
-def test_explicit_legacy_downgrade_exports_using_current_native_image(host):
-    root, data, run = host
-    (root / "head").write_text(NEW)
-    (data / ".postgres-authority.json").write_text("{}")
-    result, trace = run(target=OLD)
-    assert result.returncode == 0, result.stderr
-    calls = commands(trace)
-    assert next(head for head, args in calls if args[-1] == "rollback") == NEW
-    assert calls[0] == (NEW, ["build", "backend"])
-    assert (root / "head").read_text() == OLD
-    assert not (data / ".postgres-authority.json").exists()
-
-
-def test_failed_explicit_downgrade_export_keeps_native_backend_stopped(host):
-    root, data, run = host
-    (root / "head").write_text(NEW)
-    (data / ".postgres-authority.json").write_text("{}")
-    result, trace = run(target=OLD, FAIL_EXPORT="1")
-    assert result.returncode == 5
-    assert (root / "head").read_text() == NEW
-    assert (data / ".postgres-authority.json").exists()
-    assert not any(args[0] == "up" and "backend" in args for _, args in commands(trace))
-
-
-@pytest.mark.parametrize("copied", [False, True])
-def test_interrupted_checkout_resumes_instead_of_claiming_success(host, copied):
+def test_interrupted_checkout_resumes_instead_of_claiming_success(host):
     root, data, run = host
     (root / "head").write_text(NEW)
     (root / ".site-deployed-www").write_text(OLD)
-    if copied:
-        (data / ".postgres-authority.json").write_text("{}")
     result, trace = run()
     assert result.returncode == 0, result.stderr
     assert any(args[-1] == "prepare" for _, args in commands(trace))
     assert (root / ".site-deployed-www").read_text().strip() == NEW
 
 
-@pytest.mark.parametrize("native", [False, True], ids=["legacy", "native"])
-def test_interrupted_deploy_return_to_last_healthy_revision_replaces_both_images(host, native):
+def test_interrupted_deploy_return_to_last_healthy_revision_replaces_both_images(host):
     root, data, run = host
     (root / "head").write_text(NEW)
     (root / ".site-deployed-www").write_text(OLD)
-    (data / ".postgres-authority.json").write_text("{}")
     set_running(root, NEW)
-    revisions = f"{OLD},{NEW}" if native else NEW
-    result, trace = run(target=OLD, NATIVE_REVISIONS=revisions)
+    result, trace = run(target=OLD)
     assert result.returncode == 0, result.stderr
     assert "already deployed" not in result.stdout
     calls = commands(trace)
@@ -249,11 +214,7 @@ def test_interrupted_deploy_return_to_last_healthy_revision_replaces_both_images
     assert json.loads((root / "containers-www.json").read_text()) == {
         service: image_id(image_tag("www", service, OLD)) for service in ("backend", "frontend")
     }
-    operations = [json.loads(line) for line in (root / "operations").read_text().splitlines()]
-    assert [(revision, command) for revision, _, _, command in operations] == (
-        [(OLD, "prepare"), (OLD, "studio")] if native else [(NEW, "rollback")]
-    )
-    assert (data / ".postgres-authority.json").exists() == native
+    assert operations(root) == [(OLD, "prepare"), (OLD, "studio")]
 
 
 @pytest.mark.parametrize("service", ["backend", "frontend"])
@@ -264,22 +225,17 @@ def test_successful_http_health_with_wrong_container_image_rolls_back(host, serv
     assert f"{service} is not running revision {NEW}" in result.stderr
     assert (root / "head").read_text() == OLD
     assert (root / ".site-deployed-www").read_text().strip() == OLD
-    assert not (data / ".postgres-authority.json").exists()
     assert (OLD, ["build", "backend", "frontend"]) in commands(trace)
     assert "rolled back" in (root / "site-deploy.log").read_text()
 
 
-@pytest.mark.parametrize("native", [False, True], ids=["legacy", "native"])
-def test_failed_deployment_rebuilds_both_healthy_revision_images(host, native):
+def test_failed_deployment_rebuilds_both_healthy_revision_images(host):
     root, data, run = host
-    revisions = f"{OLD},{NEW}" if native else NEW
-    if native:
-        (data / ".postgres-authority.json").write_text("{}")
-    result, trace = run(FAIL_HEALTH="1", NATIVE_REVISIONS=revisions)
+    result, trace = run(FAIL_HEALTH="1")
     assert result.returncode == 5, result.stderr
     assert (OLD, ["build", "backend", "frontend"]) in commands(trace)
     assert (root / "head").read_text() == OLD
-    assert (data / ".postgres-authority.json").exists() == native
+    assert operations(root)[-2:] == [(OLD, "prepare"), (OLD, "studio")]
     assert json.loads((root / "containers-www.json").read_text()) == {
         service: image_id(image_tag("www", service, OLD)) for service in ("backend", "frontend")
     }
@@ -291,7 +247,6 @@ def test_already_deployed_shortcut_requires_correct_container_images(host, servi
     root, data, run = host
     (root / "head").write_text(NEW)
     (root / ".site-deployed-www").write_text(NEW)
-    (data / ".postgres-authority.json").write_text("{}")
     set_running(root, NEW)
     containers = json.loads((root / "containers-www.json").read_text())
     containers[service] = "sha256:wrong"
@@ -306,7 +261,6 @@ def test_already_deployed_shortcut_checks_both_revision_tags(host):
     root, data, run = host
     (root / "head").write_text(NEW)
     (root / ".site-deployed-www").write_text(NEW)
-    (data / ".postgres-authority.json").write_text("{}")
     set_running(root, NEW)
     result, trace = run()
     assert result.returncode == 0, result.stderr
@@ -331,7 +285,7 @@ def test_dev_keeps_dirty_input_json_and_uses_separate_revision_tags(host):
     root, data, run = host
     dev_data = root / "provincesystem-dev-data" / "data"
     dev_data.mkdir(parents=True)
-    (dev_data / "province.db").write_bytes((data / "province.db").read_bytes())
+    (dev_data / ".postgres-authority.json").write_text("{}")
     dirty = root / "tfmc-staging" / "backend" / "src" / "input" / "provinces.json"
     dirty.parent.mkdir(parents=True)
     dirty.write_text('{"local": "preserve"}\n')

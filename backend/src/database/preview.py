@@ -19,7 +19,6 @@ from psycopg.conninfo import make_conninfo
 from .connection import database_url
 from .migrate import migrate
 from .studio_role import provision
-from src.scripts.tools.copy_province_db import specifications
 
 
 class PreviewError(RuntimeError):
@@ -35,6 +34,15 @@ def names(slug: str) -> tuple[str, str, str]:
 
 def tag(slug: str) -> str:
     return "provincesystem-preview:" + slug
+
+
+def site_tables(url: str) -> list[str]:
+    """Dev's tables that a preview copies: all but Precedent, patch notes and the migration history."""
+    with psycopg.connect(url) as conn:
+        names = [row[0] for row in conn.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")]
+    return [name for name in names
+            if name != "schema_migrations" and not name.startswith(("precedent_", "patchnote_"))]
 
 
 def setup(url: str) -> None:
@@ -155,7 +163,7 @@ def main() -> int:
                 names(slug)
                 print(slug)
         elif args.command == "tables":
-            print("\n".join(table.name for table in specifications()))
+            print("\n".join(site_tables(url)))
         else:
             if args.slug is None:
                 raise PreviewError("preview slug is required")
