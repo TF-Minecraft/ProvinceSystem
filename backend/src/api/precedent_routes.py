@@ -7,8 +7,9 @@ import time
 from collections import defaultdict
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
+from pydantic import BaseModel, Field, field_validator, model_validator
+from uuid import UUID
 from psycopg.errors import InvalidTextRepresentation
-from pydantic import BaseModel, Field, field_validator
 
 from src import database
 from src.api.staff_access import require_staff_account, staff_name
@@ -122,9 +123,23 @@ def _logged_by(user: dict | None, fallback: str) -> str:
     return staff_name(user)[0]
 
 
+class CaseParticipant(BaseModel):
+    discord_user_id: str | None = Field(default=None, pattern=r"^[0-9]{15,20}$")
+    player_uuid: UUID | None = None
+    name: str = Field(default="", max_length=200)
+    discord_username: str | None = Field(default=None, max_length=32)
+
+    @model_validator(mode="after")
+    def require_identity(self):
+        if not self.discord_user_id and not self.player_uuid:
+            raise ValueError("A case participant needs a Discord ID or Minecraft UUID")
+        return self
+
+
 class LogCaseBody(BaseModel):
     logged_by: str = Field(..., min_length=1, max_length=200)
     players: list[str] = Field(default_factory=list, max_length=20)
+    participants: list[CaseParticipant] | None = Field(default=None, max_length=20)
     summary: str = Field(..., min_length=1, max_length=1000)
     rule: str = Field(default="", max_length=200)
     ruling: str = Field(default="", max_length=500)
@@ -188,6 +203,8 @@ def staff_log_case(
             punishment=body.punishment,
             embedding=vector,
             actor=_audit_actor(user, body.logged_by),
+            participants=([p.model_dump(mode="json", exclude_none=True) for p in body.participants]
+                          if body.participants is not None else None),
         )
     except (PrecedentDBError, EmbeddingError) as e:
         logger.exception("staff_log_case failed")
@@ -282,6 +299,8 @@ def staff_update_case(
             punishment=body.punishment,
             embedding=vector,
             actor=_audit_actor(user, body.logged_by),
+            participants=([p.model_dump(mode="json", exclude_none=True) for p in body.participants]
+                          if body.participants is not None else None),
         )
     except InvalidTextRepresentation:
         raise HTTPException(status_code=400, detail="Invalid case id")

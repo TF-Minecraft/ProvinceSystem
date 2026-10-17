@@ -51,7 +51,10 @@ def _snapshot(row: Any) -> dict[str, Any] | None:
     """Case content as plain JSON-able data. Embedding is excluded (huge, derived)."""
     if row is None:
         return None
-    return {k: (list(row[k]) if k == "players" else row[k]) for k in _AUDIT_FIELDS}
+    result = {k: (list(row[k]) if k == "players" else row[k]) for k in _AUDIT_FIELDS}
+    if row.get("participants"):
+        result["participants"] = list(row["participants"])
+    return result
 
 
 def _write_audit(
@@ -137,22 +140,27 @@ def migrate() -> None:
         logger.warning("DATABASE_URL unset; precedent DB migration skipped")
         return
     with _connect() as conn, _cursor(conn) as cur:
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('precedent:migrate'))")
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS precedent_cases (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                logged_by TEXT NOT NULL,
+                logged_by TEXT COLLATE "C" NOT NULL,
                 players TEXT[] NOT NULL DEFAULT '{}',
-                summary TEXT NOT NULL,
-                rule TEXT NOT NULL DEFAULT '',
-                ruling TEXT NOT NULL DEFAULT '',
-                punishment TEXT NOT NULL DEFAULT '',
+                summary TEXT COLLATE "C" NOT NULL,
+                rule TEXT COLLATE "C" NOT NULL DEFAULT '',
+                ruling TEXT COLLATE "C" NOT NULL DEFAULT '',
+                punishment TEXT COLLATE "C" NOT NULL DEFAULT '',
                 embedding VECTOR(1024) NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """
         )
+        cur.execute("ALTER TABLE precedent_cases ADD COLUMN IF NOT EXISTS participants "
+                    "JSONB NOT NULL DEFAULT '[]'::jsonb")
+        cur.execute("CREATE INDEX IF NOT EXISTS precedent_cases_participants_idx "
+                    "ON precedent_cases USING gin (participants jsonb_path_ops)")
         # No foreign key to precedent_cases on purpose: deleting a case must
         # never remove the record that it was deleted, which is the entry
         # this table exists to keep.
@@ -161,10 +169,10 @@ def migrate() -> None:
             CREATE TABLE IF NOT EXISTS precedent_audit (
                 id BIGSERIAL PRIMARY KEY,
                 case_id UUID,
-                action TEXT NOT NULL,
-                source TEXT NOT NULL,
-                actor TEXT NOT NULL DEFAULT '',
-                actor_uuid TEXT NOT NULL DEFAULT '',
+                action TEXT COLLATE "C" NOT NULL,
+                source TEXT COLLATE "C" NOT NULL,
+                actor TEXT COLLATE "C" NOT NULL DEFAULT '',
+                actor_uuid TEXT COLLATE "C" NOT NULL DEFAULT '',
                 before JSONB,
                 after JSONB,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -193,16 +201,17 @@ def insert_case(
     punishment: str,
     embedding: list[float],
     actor: AuditActor | None = None,
+    participants: list[dict] | None = None,
 ) -> str:
     with _connect() as conn, _cursor(conn) as cur:
         cur.execute(
             """
             INSERT INTO precedent_cases
-                (logged_by, players, summary, rule, ruling, punishment, embedding)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (logged_by, players, summary, rule, ruling, punishment, embedding, participants)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
-            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding)),
+            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding), Jsonb(participants or [])),
         )
         row = cur.fetchone()
         case_id = str(row["id"])
@@ -218,6 +227,7 @@ def insert_case(
                 "rule": rule,
                 "ruling": ruling,
                 "punishment": punishment,
+                **({"participants": participants} if participants else {}),
             },
         )
         return case_id
@@ -269,7 +279,7 @@ def search_similar(
         vector = vector_literal(embedding)
         cur.execute(
             """
-            SELECT id, logged_by, players, summary, rule, ruling, punishment,
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants,
                    created_at, embedding <=> %s::vector AS distance
             FROM precedent_cases
             WHERE embedding <=> %s::vector < %s
@@ -329,7 +339,7 @@ def list_cases(limit: int = 500, offset: int = 0, query: str = "") -> tuple[list
     with _connect() as conn, _cursor(conn) as cur:
         cur.execute(
             f"""
-            SELECT id, logged_by, players, summary, rule, ruling, punishment, created_at
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
             FROM precedent_cases
             WHERE {where}
             ORDER BY created_at DESC
@@ -372,6 +382,7 @@ def update_case(
     embedding: list[float],
     actor: AuditActor | None = None,
     audit_action: str = "update",
+    participants: list[dict] | None = None,
 ) -> bool:
     """Full-row replace. Returns False if the id is absent.
 
@@ -389,7 +400,7 @@ def update_case(
         # between the read and the write.
         cur.execute(
             """
-            SELECT logged_by, players, summary, rule, ruling, punishment
+            SELECT logged_by, players, summary, rule, ruling, punishment, participants
             FROM precedent_cases WHERE id = %s FOR UPDATE
             """,
             (case_id,),
@@ -406,15 +417,18 @@ def update_case(
             "ruling": ruling,
             "punishment": punishment,
         }
+        identities = before.get("participants", []) if participants is None else participants
+        if identities:
+            after["participants"] = identities
         cur.execute(
             """
             UPDATE precedent_cases
             SET logged_by = %s, players = %s, summary = %s, rule = %s,
-                ruling = %s, punishment = %s, embedding = %s
+                ruling = %s, punishment = %s, embedding = %s, participants = %s
             WHERE id = %s
             RETURNING id
             """,
-            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding), case_id),
+            (logged_by, players, summary, rule, ruling, punishment, vector_literal(embedding), Jsonb(identities), case_id),
         )
         if cur.fetchone() is None:
             return False
@@ -440,7 +454,7 @@ def delete_case(case_id: str, actor: AuditActor | None = None) -> bool:
         cur.execute(
             """
             DELETE FROM precedent_cases WHERE id = %s
-            RETURNING logged_by, players, summary, rule, ruling, punishment,
+            RETURNING logged_by, players, summary, rule, ruling, punishment, participants,
                       created_at
             """,
             (case_id,),
@@ -530,9 +544,9 @@ def restore_case(
             """
             INSERT INTO precedent_cases
                 (id, logged_by, players, summary, rule, ruling, punishment,
-                 embedding, created_at)
+                 embedding, created_at, participants)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
-                    COALESCE(%s::timestamptz, now()))
+                    COALESCE(%s::timestamptz, now()), %s)
             ON CONFLICT (id) DO NOTHING
             RETURNING id
             """,
@@ -546,6 +560,7 @@ def restore_case(
                 snapshot.get("punishment", ""),
                 vector_literal(embedding),
                 snapshot.get("created_at"),
+                Jsonb(snapshot.get("participants") or []),
             ),
         )
         if cur.fetchone() is None:
@@ -561,17 +576,20 @@ def restore_case(
 
 
 def _snapshot_from_dict(snapshot: dict[str, Any]) -> dict[str, Any]:
-    return {
+    result = {
         k: (list(snapshot.get(k) or []) if k == "players" else snapshot.get(k, ""))
         for k in _AUDIT_FIELDS
     }
+    if snapshot.get("participants"):
+        result["participants"] = list(snapshot["participants"])
+    return result
 
 
 def get_case(case_id: str) -> dict[str, Any] | None:
     with _connect() as conn, _cursor(conn) as cur:
         cur.execute(
             """
-            SELECT id, logged_by, players, summary, rule, ruling, punishment, created_at
+            SELECT id, logged_by, players, summary, rule, ruling, punishment, participants, created_at
             FROM precedent_cases WHERE id = %s
             """,
             (case_id,),

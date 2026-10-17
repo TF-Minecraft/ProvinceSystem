@@ -182,7 +182,7 @@ it("leads the Discord table with the handle and counts unlinked players", async 
   expect(lead(row)).toContain("@hazelstone");
   expect(lead(row)).toContain("Enzo");
   expect(within(row).getByText("2 h ago")).toBeTruthy();
-  expect(screen.getByText("1 linked player")).toBeTruthy();
+  expect(screen.getByText("1 Discord account")).toBeTruthy();
   expect(screen.getByText(/34 players without a Discord link aren’t listed here/)).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: "See everyone under Minecraft" }));
@@ -317,7 +317,9 @@ it("says when CoreProtect cannot be read, and that last seen is unknown", async 
   });
   renderDirectory();
   expect(
-    await screen.findByText(/Activity history is busy.*Only linked players and characters are listed/),
+    await screen.findByText(
+      /Activity history is busy.*Minecraft players without a known account or character may be missing/,
+    ),
   ).toBeTruthy();
   expect(within(screen.getByRole("link", { name: "Linked" }).closest("tr")!).getByText("Unknown")).toBeTruthy();
 });
@@ -337,4 +339,27 @@ it("shows request errors without hiding the search", async () => {
   expect(await screen.findByText("Search for 64 characters or fewer.")).toBeTruthy();
   expect(screen.getByLabelText("Search players")).toBeTruthy();
   await act(async () => {});
+});
+
+it("opens a Discord-only person's cases without a Minecraft profile", async () => {
+  const id = "500000000000000001";
+  serve({
+    discord: directory("discord", [
+      player("", null, { uuid: null, discord_user_id: id, discord_username: "discord_only" }),
+    ]),
+  });
+  renderDirectory("discord");
+  const link = await screen.findByRole("link", { name: "@discord_only" });
+  expect(link.getAttribute("href")).toBe(`/admin/people/discord/${id}`);
+  expect(screen.getByText("1 Discord account")).toBeTruthy();
+  expect(screen.getAllByText("No Minecraft link").length).toBeGreaterThan(0);
+});
+
+it("opens an unknown Discord ID so staff can record its first case", async () => {
+  const id = "500000000000000001";
+  serve({ discord: directory("discord", []) });
+  renderDirectory("discord", id);
+  expect((await screen.findByRole("link", { name: `Open Discord account ${id} →` })).getAttribute("href")).toBe(
+    `/admin/people/discord/${id}`,
+  );
 });

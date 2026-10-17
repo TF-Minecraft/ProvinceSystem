@@ -18,6 +18,7 @@ afterEach(cleanup);
 it("puts each staff path under its tab, sub-pages included", () => {
   expect(adminSection("/admin")).toBe("accounts");
   expect(adminSection("/admin/players")).toBe("players");
+  expect(adminSection("/admin/people/discord/422545450919526411")).toBe("players");
   expect(adminSection("/admin/players/0448bccd-c55c-49b4-aed0-1def08302dd8")).toBe("players");
   expect(adminSection("/admin/players/0448bccd-c55c-49b4-aed0-1def08302dd8/movement")).toBe("players");
   expect(adminSection("/admin/movement")).toBe("movement");

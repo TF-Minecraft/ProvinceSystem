@@ -32,7 +32,7 @@ SORTS = ("name", "last_seen")
 ORDERS = ("asc", "desc")
 
 _DIRECTORY_LOCK = threading.Lock()
-_DIRECTORY: dict[tuple[str, str], tuple[float, list[dict], dict]] = {}
+_DIRECTORY: dict[tuple[str, str, str], tuple[float, list[dict], dict]] = {}
 
 
 class PlayerError(Exception):
@@ -196,8 +196,8 @@ def _build_directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
     return list(people.values()), _status(error)
 
 
-def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
-    key = (config.server, config.path or "")
+def _directory(config: CoreProtectConfig, view: str = "minecraft") -> tuple[list[dict], dict]:
+    key = (config.server, config.path or "", view)
     cached = _DIRECTORY.get(key)
     if cached and cached[0] > time.monotonic():
         return cached[1], cached[2]
@@ -209,6 +209,16 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
         if cached and cached[0] > time.monotonic():
             return cached[1], cached[2]
         entries, status = _build_directory(config)
+        if view == "discord":
+            from .cases import discord_people
+            linked = {e["discord_user_id"] for e in entries if e["discord_user_id"]}
+            entries = [*entries, *[
+                {"uuid": None, "minecraft_name": None, "names": set(),
+                 "discord_user_id": p["discord_user_id"], "discord_username": p["discord_username"],
+                 "discord_nickname": None, "discord_global_name": p["name"], "site_role": p["role"],
+                 "characters": [], "last_seen": None, "online": False}
+                for p in discord_people() if p["discord_user_id"] not in linked
+            ]]
         # A degraded build is not cached, so the next request tries CoreProtect again.
         if status["status"] == "available" or not config.path:
             _DIRECTORY[key] = (time.monotonic() + DIRECTORY_TTL_SECONDS, entries, status)
@@ -219,7 +229,7 @@ def _directory(config: CoreProtectConfig) -> tuple[list[dict], dict]:
 
 def _player_matches(entry: dict, needle: str) -> bool:
     """The player themselves: UUID, Discord ID, any Minecraft name they have used, their Discord names."""
-    if needle in {entry["uuid"], entry["uuid"].replace("-", ""), (entry["discord_user_id"] or "")}:
+    if needle in {entry["uuid"], (entry["uuid"] or "").replace("-", ""), (entry["discord_user_id"] or "")}:
         return True
     haystack = [*entry["names"], entry["discord_username"], entry["discord_nickname"], entry["discord_global_name"]]
     return any(needle in value.casefold() for value in haystack if value)
@@ -288,7 +298,8 @@ def _sort(rows: list[tuple[dict, dict | None]], view: str, sort: str, order: str
     def value(row):
         return name(row) if sort == "name" else row[0]["last_seen"]
 
-    rows.sort(key=lambda r: (name(r) is None, name(r) or ("", ""), r[0]["uuid"], r[1]["character_id"] if r[1] else ""))
+    rows.sort(key=lambda r: (name(r) is None, name(r) or ("", ""), r[0]["uuid"] or r[0]["discord_user_id"],
+                             r[1]["character_id"] if r[1] else ""))
     # Python's sort is stable, also when reversed, so the ties keep that order.
     rows.sort(key=lambda r: value(r) or (("", "") if sort == "name" else 0), reverse=order == "desc")
     rows.sort(key=lambda r: value(r) is None)
@@ -311,7 +322,7 @@ def directory(config: CoreProtectConfig, query: str = "", view: str = "minecraft
     text = " ".join((query or "").split()).lstrip("@")
     if len(text) > QUERY_MAX:
         raise PlayerError(400, "query_too_long")
-    entries, status = _directory(config)
+    entries, status = _directory(config, view)
     rows, omitted = _rows(view, entries, text.casefold())
     _sort(rows, view, sort, order)
     page = max(1, page)

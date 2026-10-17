@@ -10,6 +10,29 @@ permissions:
   contents: read
 
 jobs:
+  discord:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: discord/requirements-test.txt
+      - name: Install Discord test dependencies
+        run: python -m pip install -r discord/requirements-test.txt
+      - name: Test Discord commands
+        run: python -m pytest -q discord/test_identity_commands.py --junitxml=test-results/discord.xml
+      - name: Upload Discord test report
+        if: ${{ !cancelled() && hashFiles('test-results/discord.xml') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: discord-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/discord.xml
+
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

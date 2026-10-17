@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from .codes import api_time, generate_plaintext_code, hash_secret
 from .plugin_notices import enqueue_link_success, enqueue_plugin_notice
 from src import database
+from src.coreprotect.reader import CoreProtectConfig, Reader, Unavailable
 from src.text_validation import TextValidationError, assert_optional_display_name
 
 
@@ -523,6 +524,30 @@ def get_link_for_discord_id(discord_user_id: str) -> dict | None:
     if row is None:
         return None
     return _status_from_row(row)
+
+
+def get_bot_identity(discord_user_id: str) -> dict:
+    """Resolve a Discord snowflake through its verified link, never a display name."""
+    link = get_link_for_discord_id(discord_user_id)
+    if link is None:
+        return {"linked": False, "discord_user_id": discord_user_id,
+                "player_uuid": None, "minecraft_name": None, "name_source": None}
+
+    name = link["minecraft_name"]
+    source = "link" if name else None
+    # Follow the UUID across renames, using the same bounded reader as staff profiles.
+    try:
+        with Reader(CoreProtectConfig.from_env()) as reader:
+            rows = reader.rows(
+                "SELECT user FROM co_user WHERE lower(uuid) = ? ORDER BY time DESC, id DESC LIMIT 1",
+                (link["player_uuid"].lower(),),
+            )
+        if rows and rows[0]["user"]:
+            name, source = rows[0]["user"], "coreprotect"
+    except Unavailable:
+        pass
+    return {"linked": True, "discord_user_id": link["discord_user_id"],
+            "player_uuid": link["player_uuid"], "minecraft_name": name, "name_source": source}
 
 
 def record_guild_left(discord_user_id: str) -> dict:

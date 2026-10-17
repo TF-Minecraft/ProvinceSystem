@@ -1,12 +1,16 @@
-import Link from "next/link";
+"use client";
 
-export type PlayerTab = "activity" | "sessions" | "movement" | "characters" | "discord";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+
+export type PlayerTab = "activity" | "sessions" | "movement" | "characters" | "cases" | "discord";
 
 const TABS: { tab: PlayerTab; label: string }[] = [
   { tab: "activity", label: "Activity" },
   { tab: "sessions", label: "Sessions" },
   { tab: "movement", label: "Movement" },
   { tab: "characters", label: "Characters" },
+  { tab: "cases", label: "Cases" },
   { tab: "discord", label: "Discord" },
 ];
 
@@ -33,11 +37,16 @@ export default function PlayerTabs({
   current: PlayerTab;
   movement: boolean;
 }) {
+  const nav = useRef<HTMLElement>(null);
+  useEffect(() => {
+    nav.current?.querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [current]);
   return (
     // The strip sits 1px low so the current tab's underline covers the row's border. The tabs must stay
     // inside the scroll box: any overhang lets phones drag it up and down.
     <div className="mt-5 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)]">
       <nav
+        ref={nav}
         aria-label="Player"
         className="[scrollbar-width:none]! [&::-webkit-scrollbar]:hidden -mb-px flex select-none gap-1 overflow-x-auto overflow-y-hidden"
       >

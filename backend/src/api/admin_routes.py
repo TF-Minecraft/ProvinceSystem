@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
+import psycopg
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -27,6 +28,8 @@ from src.api.auth_routes import (
     staff_cookie,
 )
 from src.auth import admin, audit, players, roles, users, view_as
+from src.auth import cases as person_cases
+from src.precedent.db import PrecedentDBError
 from src.coreprotect.reader import CoreProtectConfig
 from src.rail import network as rail
 from src.servers import inventory as servers
@@ -166,6 +169,29 @@ def get_player_sessions(player_uuid: str, request: Request, response: Response, 
                         limit: int = Query(20, ge=1, le=100)):
     return _players(request, response,
                     lambda config, _viewer: players.player_sessions(config, player_uuid, before, limit))
+
+
+def _case_history(request, response, **params):
+    _capable(request, "use_precedent")
+    _no_store(response)
+    try:
+        return person_cases.history(CoreProtectConfig.from_env(), **params)
+    except players.PlayerError as exc:
+        raise HTTPException(exc.status, detail=exc.code) from None
+    except (PrecedentDBError, psycopg.Error):
+        raise HTTPException(503, detail="Case history is unavailable. Try again shortly.") from None
+
+
+@admin_router.get("/players/{player_uuid}/cases")
+def get_player_cases(player_uuid: str, request: Request, response: Response,
+                     limit: int = Query(25, ge=1, le=100), offset: int = Query(0, ge=0, le=100_000)):
+    return _case_history(request, response, player_uuid=player_uuid, limit=limit, offset=offset)
+
+
+@admin_router.get("/discord/{discord_user_id}/cases")
+def get_discord_cases(discord_user_id: str, request: Request, response: Response,
+                      limit: int = Query(25, ge=1, le=100), offset: int = Query(0, ge=0, le=100_000)):
+    return _case_history(request, response, discord_user_id=discord_user_id, limit=limit, offset=offset)
 
 
 @admin_router.get("/players/{player_uuid}/characters/{character_id:path}/{kind}")

@@ -122,6 +122,7 @@ def main() -> None:
         case_id,
         logged_by=before.get("logged_by", ""),
         players=list(before.get("players") or []),
+        participants=list(before.get("participants") or []),
         summary=before.get("summary", ""),
         rule=before.get("rule", ""),
         ruling=before.get("ruling", ""),

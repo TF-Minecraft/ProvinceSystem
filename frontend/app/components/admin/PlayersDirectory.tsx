@@ -56,7 +56,7 @@ type Load =
   | { kind: "ready"; data: PlayerDirectory };
 
 function profileHref(player: PlayerSummary): string {
-  return `/admin/players/${player.uuid}`;
+  return player.uuid ? `/admin/players/${player.uuid}` : `/admin/people/discord/${player.discord_user_id}`;
 }
 
 /** `@handle · Server nickname`, whichever of the two is known. */
@@ -76,6 +76,7 @@ function titleCase(text: string): string {
 }
 
 function MinecraftName({ player }: { player: PlayerSummary }) {
+  if (!player.uuid) return <span className="text-[var(--tfmc-stone)]">No Minecraft link</span>;
   return player.minecraft_name ?? <span className="font-mono text-xs">{player.uuid}</span>;
 }
 
@@ -182,9 +183,11 @@ function DiscordTable({ rows, known, sorting }: { rows: PlayerSummary[]; known: 
       }
     >
       {rows.map((player) => {
-        const lead = player.discord_username ? `@${player.discord_username}` : (player.discord_nickname ?? "Linked");
+        const lead = player.discord_username
+          ? `@${player.discord_username}`
+          : (player.discord_nickname ?? player.discord_user_id);
         return (
-          <tr key={player.uuid}>
+          <tr key={player.uuid ?? player.discord_user_id}>
             <td className={cellClass}>
               <Link href={profileHref(player)} className={leadClass}>
                 {lead}
@@ -314,8 +317,8 @@ function countLine(data: PlayerDirectory): string {
         : `${n} characters`
       : data.view === "discord"
         ? n === 1
-          ? "1 linked player"
-          : `${n} linked players`
+          ? "1 Discord account"
+          : `${n} Discord accounts`
         : n === 1
           ? "1 player"
           : `${n} players`;
@@ -494,10 +497,18 @@ export default function PlayersDirectory({ initialQuery, initialListing, initial
         </div>
       </div>
 
+      {view === "discord" && /^[0-9]{15,20}$/.test(query.trim()) ? (
+        <p className="mt-3 text-sm">
+          <Link href={`/admin/people/discord/${query.trim()}`} className="text-[var(--tfmc-accent)] hover:underline">
+            Open Discord account {query.trim()} →
+          </Link>
+        </p>
+      ) : null}
+
       <div id={PANEL_ID} role="tabpanel" aria-labelledby={`players-tab-${view}`}>
         {notice ? (
           <p className="mt-3 text-sm text-[#e8c48a]" role="status">
-            {notice} Only linked players and characters are listed.
+            {notice} Minecraft players without a known account or character may be missing.
           </p>
         ) : null}
         {load.kind === "failed" ? (

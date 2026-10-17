@@ -27,6 +27,7 @@ export type AdminSection = (typeof LINKS)[number]["key"];
 
 /** The tab a staff path sits under: the deepest link that is the path or one of its parents. */
 export function adminSection(pathname: string): AdminSection | null {
+  if (pathname.startsWith("/admin/people/")) return "players";
   let match: (typeof LINKS)[number] | null = null;
   for (const link of LINKS) {
     const under = pathname === link.href || pathname.startsWith(`${link.href}/`);
