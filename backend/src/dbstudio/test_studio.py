@@ -133,7 +133,27 @@ def test_jsonb_values_keep_json_format_and_secrets_stay_masked(app, env):
     body = query(c, "SELECT '{\"x\":[1,true]}'::jsonb AS payload, "
                     "'{\"secret\":\"hidden\"}'::jsonb AS token_json, "
                     "'2026-10-01T00:00:00Z'::timestamptz AS created_at").json()
-    assert body["rows"] == [['{"x":[1,true]}', studio.MASK, "2026-10-01T00:00:00+00:00"]]
+    assert body["rows"] == [['{"x": [1, true]}', studio.MASK, "2026-10-01T00:00:00+00:00"]]
+
+
+@pytest.mark.parametrize("kind", ["json", "jsonb"])
+@pytest.mark.parametrize("write", [False, True])
+@pytest.mark.parametrize("value", [
+    pytest.param('"abc"', id="string"),
+    pytest.param('null', id="null"),
+    pytest.param('true', id="boolean"),
+    pytest.param('12345678901234567890.12345678901234567890', id="decimal"),
+    pytest.param('{"n":1' + '0' * 400 + '.5}', id="large-fraction"),
+])
+def test_json_display_preserves_postgres_text_for_all_value_types(app, env, kind, write, value):
+    c = client(app, account(env, "rory", "root")[1])
+    literal = sql.Literal(value).as_string()
+    response = query(c, f"SELECT {literal}::{kind} AS payload, ({literal}::{kind})::text AS expected, "
+                        f"NULL::{kind} AS sql_null, {literal}::{kind} AS token_json", write=write)
+    assert response.status_code == 200
+    payload, expected, sql_null, masked = response.json()["rows"][0]
+    assert isinstance(payload, str) and payload == expected
+    assert sql_null is None and masked == studio.MASK
 
 
 def test_results_stop_at_the_row_limit(app, env, monkeypatch):  # noqa: F811
@@ -218,6 +238,7 @@ class FakeCursor:
 class FakeConnection:
     def __init__(self, log):
         self.log, self.read_only = log, None
+        self.adapters = psycopg.adapt.AdaptersMap(psycopg.adapters)
 
     @contextlib.contextmanager
     def pipeline(self):
@@ -389,15 +410,23 @@ def test_provisioning_refuses_create_on_other_persistent_schemas(postgres, studi
             conn.execute("DROP SCHEMA studio_other CASCADE")
 
 
-@pytest.mark.parametrize("privilege", ["TRUNCATE", "TRIGGER", "REFERENCES", "REFERENCES (player_uuid)"])
-def test_provisioning_refuses_definition_privileges_on_ordinary_tables(postgres, studio_login, privilege):
+@pytest.mark.parametrize("schema", ["public", "studio_other"])
+@pytest.mark.parametrize("privilege", ["TRUNCATE", "TRIGGER", "REFERENCES", "REFERENCES (player_uuid)", "MAINTAIN"])
+def test_provisioning_refuses_definition_privileges_on_ordinary_tables(postgres, studio_login, privilege, schema):
+    table = sql.Identifier(schema, "codes")
     with psycopg.connect(postgres, autocommit=True) as conn:
-        conn.execute(f"GRANT {privilege} ON codes TO PUBLIC")
+        if schema != "public":
+            conn.execute("CREATE SCHEMA studio_other")
+            conn.execute("GRANT USAGE ON SCHEMA studio_other TO PUBLIC")
+            conn.execute("CREATE TABLE studio_other.codes (player_uuid text)")
+        conn.execute(sql.SQL("GRANT {} ON {} TO PUBLIC").format(sql.SQL(privilege), table))
         try:
             with pytest.raises(StudioRoleError, match="grants.*bypass"):
                 provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
         finally:
-            conn.execute(f"REVOKE {privilege} ON codes FROM PUBLIC")
+            conn.execute(sql.SQL("REVOKE {} ON {} FROM PUBLIC").format(sql.SQL(privilege), table))
+            if schema != "public":
+                conn.execute("DROP SCHEMA studio_other CASCADE")
 
 
 @pytest.mark.parametrize("grantee", ["PUBLIC", "studio"])
@@ -475,7 +504,7 @@ def test_protected_descendants_stay_read_only_recursively(studio_sandbox, monkey
 
 
 @pytest.mark.parametrize("root", ["admin_audit", "schema_migrations"])
-@pytest.mark.parametrize("privilege", ["INSERT", "UPDATE (id)"])
+@pytest.mark.parametrize("privilege", ["INSERT", "UPDATE (id)", "TRUNCATE", "TRIGGER", "REFERENCES", "REFERENCES (id)", "MAINTAIN"])
 def test_provisioning_checks_effective_grants_on_descendants_in_other_schemas(studio_sandbox, root, privilege):
     db = studio_sandbox
     with psycopg.connect(db.url, autocommit=True) as conn:
@@ -485,8 +514,18 @@ def test_provisioning_checks_effective_grants_on_descendants_in_other_schemas(st
         with pytest.raises(StudioRoleError, match="grants.*bypass"):
             provision(db.url, db.role, db.password, restrict_large_objects=True)
         assert conn.execute(
-            "SELECT has_any_column_privilege(%s, '\"studio other\".leaf', 'INSERT, UPDATE')", (db.role,),
+            "SELECT has_any_column_privilege(%s, '\"studio other\".leaf', 'INSERT, UPDATE, REFERENCES') "
+            "OR has_table_privilege(%s, '\"studio other\".leaf', 'TRUNCATE, TRIGGER, REFERENCES, MAINTAIN')", (db.role, db.role),
         ).fetchone() == (True,)
+
+
+def test_provisioning_refuses_materialized_view_maintenance(studio_sandbox):
+    db = studio_sandbox
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        conn.execute("CREATE MATERIALIZED VIEW cached AS SELECT v FROM ordinary")
+        conn.execute("GRANT MAINTAIN ON cached TO PUBLIC")
+        with pytest.raises(StudioRoleError, match="grants.*bypass"):
+            provision(db.url, db.role, db.password, restrict_large_objects=True)
 
 
 @pytest.mark.parametrize(("source", "schema"), [

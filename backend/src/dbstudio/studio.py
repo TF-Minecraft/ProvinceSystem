@@ -26,6 +26,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import psycopg
+from psycopg.types.json import set_json_loads
 
 from src.coreprotect import reader as coreprotect
 
@@ -96,6 +97,11 @@ def source(source_id: str) -> Source:
 # --------------------
 # Values
 # --------------------
+
+def _json_text(value):
+    # Keep JSON scalars distinct from SQL NULL and preserve exact numeric text.
+    return value if isinstance(value, str) else bytes(value).decode("utf8")
+
 
 def _cell(column: str, value):
     if isinstance(value, (str, dict, list)) and value and SECRET.search(column):
@@ -245,6 +251,7 @@ def _postgres(sql: str, *, write: bool = False) -> Result:
     except psycopg.OperationalError:
         raise StudioError("database_unavailable", 503) from None
     try:
+        set_json_loads(_json_text, conn)
         conn.read_only = not write
         conn.execute(f"SET LOCAL statement_timeout = '{POSTGRES_TIMEOUT}'")
         if write:
