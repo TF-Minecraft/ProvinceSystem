@@ -21,10 +21,10 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
-import psycopg2  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from server import app  # noqa: E402
+from src import database  # noqa: E402
 from src.patchnotes.db import (  # noqa: E402
     BulletNotFound,
     BulletNotPending,
@@ -263,7 +263,7 @@ class PatchnotesRoutesTest(unittest.TestCase):
 
     @mock.patch(
         "src.api.patchnotes_routes.approve_bullet",
-        side_effect=psycopg2.OperationalError("connection lost"),
+        side_effect=database.OperationalError("connection lost"),
     )
     def test_database_error_during_review_is_unavailable(self, _mock_approve) -> None:
         res = self.client.post(f"/patchnotes/staff/bullets/{_BULLET_ID}/approve", headers=_HEADERS)

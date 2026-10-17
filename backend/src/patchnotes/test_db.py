@@ -1,531 +1,499 @@
-"""Unit tests for patch note storage (psycopg2 fully mocked)."""
+"""Patch note storage: week arithmetic, and every query against a real Postgres."""
 
 from __future__ import annotations
 
-import sys
-import unittest
+import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-from pathlib import Path
 from unittest import mock
+from zoneinfo import ZoneInfo
 
-_BACKEND_SRC = Path(__file__).resolve().parents[1]
-if str(_BACKEND_SRC) not in sys.path:
-    sys.path.insert(0, str(_BACKEND_SRC))
-
-import patchnotes.db as db  # noqa: E402
-
-
-def _make_conn(cursor):
-    conn = mock.MagicMock()
-    conn.__enter__.return_value = conn
-    conn.__exit__.return_value = False
-    conn.cursor.return_value.__enter__.return_value = cursor
-    conn.cursor.return_value.__exit__.return_value = False
-    return conn
-
-
-class ParseWeekTest(unittest.TestCase):
-    def test_canonical_week(self) -> None:
-        self.assertEqual(db.parse_week("2026-W39"), "2026-W39")
-
-    def test_rejects_unpadded_or_impossible_week(self) -> None:
-        with self.assertRaises(ValueError):
-            db.parse_week("2026-W3")
-        with self.assertRaises(ValueError):
-            db.parse_week("2026-W54")
-
-
-class NextWeekTest(unittest.TestCase):
-    def test_steps_into_the_next_iso_week(self) -> None:
-        self.assertEqual(db.next_week("2026-W39"), "2026-W40")
-        self.assertEqual(db.next_week("2026-W52"), "2026-W53")
-
-
-class CurrentWeekTest(unittest.TestCase):
-    def test_zone_can_move_the_friday_cutoff(self) -> None:
-        # Friday 2026-09-25 10:30 UTC is still morning in UTC and past noon in Berlin.
-        moment = datetime(2026, 9, 25, 10, 30, tzinfo=timezone.utc)
-        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "UTC"}):
-            self.assertEqual(db.current_week(moment), "2026-W39")
-        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Europe/Berlin"}):
-            self.assertEqual(db.current_week(moment), "2026-W40")
-
-    def test_friday_noon_closes_the_week(self) -> None:
-        berlin = ZoneInfo("Europe/Berlin")
-        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Europe/Berlin"}):
-            self.assertEqual(
-                db.current_week(datetime(2026, 9, 25, 11, 59, tzinfo=berlin)),
-                "2026-W39",
-            )
-            self.assertEqual(
-                db.current_week(datetime(2026, 9, 25, 12, 0, tzinfo=berlin)),
-                "2026-W40",
-            )
-            self.assertEqual(
-                db.current_week(datetime(2026, 9, 25, 17, 0, tzinfo=berlin)),
-                "2026-W40",
-            )
-            self.assertEqual(
-                db.current_week(datetime(2026, 9, 26, 9, 0, tzinfo=berlin)),
-                "2026-W40",
-            )
-
-    def test_unknown_zone_is_a_config_error(self) -> None:
-        with mock.patch.dict("os.environ", {"PATCHNOTES_TZ": "Not/AZone"}):
-            with self.assertRaises(db.PatchnotesConfigError):
-                db.current_week()
-
-
-class MigrateTest(unittest.TestCase):
-    def setUp(self) -> None:
-        db._MIGRATED = False
-
-    def tearDown(self) -> None:
-        db._MIGRATED = False
-
-    @mock.patch.dict("os.environ", {}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_migrate_skips_without_dsn(self, mock_connect) -> None:
-        db.migrate()
-        mock_connect.assert_not_called()
-        self.assertFalse(db._MIGRATED)
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_migrate_creates_table_once(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        mock_connect.return_value = _make_conn(cursor)
-
-        db.migrate()
-
-        sql = " ".join(c.args[0] for c in cursor.execute.call_args_list)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_bullets", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_sources", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_previews", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_status", sql)
-        self.assertIn("patchnote_bullets_deny_reason_chk", sql)
-        self.assertIn("status = 'pending'", sql)
-        self.assertTrue(db._MIGRATED)
-
-        db.migrate()
-        mock_connect.assert_called_once()
-
-
-class AutoApproveTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.get_week_status", return_value={"postponed": False})
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_skips_rewritten_lines(self, mock_connect, _status) -> None:
-        cursor = mock.MagicMock()
-        cursor.rowcount = 2
-        mock_connect.return_value = _make_conn(cursor)
-        self.assertEqual(db.approve_pending_week("2026-W39"), 2)
-        sql = cursor.execute.call_args.args[0]
-        self.assertIn("supersedes IS NULL", sql)
-        self.assertIn("status = 'pending'", sql)
-
-
-class PreviewTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_replace_preview_expires_in_one_hour(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = {
-            "id": "preview-1",
-            "week": "2026-W39",
-            "bullets": [{"id": "b1", "section": "new", "body": "Added a station"}],
-            "created_at": None,
-            "expires_at": None,
-        }
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.replace_preview(
-            week="2026-W39",
-            bullets=[{"id": "b1", "section": "new", "body": "  Added a station  "}],
-        )
-
-        self.assertEqual(row["week"], "2026-W39")
-        delete_sql = cursor.execute.call_args_list[0].args[0]
-        insert_sql, params = cursor.execute.call_args_list[1].args
-        self.assertIn("DELETE FROM patchnote_previews", delete_sql)
-        self.assertIn("interval '1 hour'", insert_sql)
-        self.assertEqual(params[0], "2026-W39")
-        self.assertEqual(params[1].adapted, [{"id": "b1", "section": "new", "body": "Added a station"}])
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_load_preview_deletes_expired_rows(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = None
-        mock_connect.return_value = _make_conn(cursor)
-
-        self.assertIsNone(db.load_preview())
-        sql = cursor.execute.call_args_list[0].args[0]
-        self.assertIn("expires_at <= now()", sql)
-
-
-class InsertBulletTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_insert_stores_a_pending_bullet(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = {
-            "id": "bullet-1",
-            "week": "2026-W39",
-            "section": "new",
-            "body": "Added a station",
-            "status": "pending",
-            "deny_reason": None,
-            "created_at": None,
-            "reviewed_at": None,
-        }
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.insert_bullet(section="new", body="  Added a station  ", week="2026-W39")
-
-        self.assertEqual(row["status"], "pending")
-        sql, params = cursor.execute.call_args.args
-        self.assertIn("'pending'", sql)
-        self.assertEqual(params, ("2026-W39", "new", "Added a station"))
-
-    def test_insert_rejects_unknown_section(self) -> None:
-        with self.assertRaises(ValueError):
-            db.insert_bullet(section="secret", body="nope", week="2026-W39")
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.current_week", return_value="2026-W39")
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_sourced_insert_writes_the_bullet_once(self, mock_connect, _week) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.side_effect = [
-            {"source_key": "TF-Minecraft/Gathering@abc1234"},
-            {
-                "id": "bullet-1",
-                "week": "2026-W39",
-                "section": "new",
-                "body": "Gathering: Added a node",
-                "status": "pending",
-            },
-        ]
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.insert_sourced_bullet(
-            section="new",
-            body="Gathering: Added a node",
-            source_key="TF-Minecraft/Gathering@abc1234",
-        )
-
-        self.assertEqual(row["status"], "pending")
-        source_sql, source_params = cursor.execute.call_args_list[0].args
-        self.assertIn("ON CONFLICT (source_key) DO NOTHING", source_sql)
-        self.assertEqual(source_params, ("TF-Minecraft/Gathering@abc1234",))
-        _bullet_sql, bullet_params = cursor.execute.call_args_list[1].args
-        self.assertEqual(bullet_params, ("2026-W39", "new", "Gathering: Added a node"))
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_sourced_insert_skips_a_duplicate(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = None
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.insert_sourced_bullet(
-            section="new",
-            body="Gathering: Added a node",
-            source_key="TF-Minecraft/Gathering@abc1234",
-        )
-
-        self.assertIsNone(row)
-        self.assertEqual(cursor.execute.call_count, 1)
-
-
-class ReviewTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_approve_updates_only_pending(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = {"id": "bullet-1", "status": "approved"}
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.approve_bullet("bullet-1")
-
-        self.assertEqual(row["status"], "approved")
-        sql, params = cursor.execute.call_args.args
-        self.assertIn("status = 'pending'", sql)
-        self.assertEqual(params, ("approved", None, "bullet-1"))
-        self.assertEqual(cursor.execute.call_count, 1)
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_deny_stores_the_reason(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.return_value = {
-            "id": "bullet-1",
-            "status": "denied",
-            "deny_reason": "Spoilers",
-        }
-        mock_connect.return_value = _make_conn(cursor)
-
-        row = db.deny_bullet("bullet-1", "  Spoilers  ")
-
-        self.assertEqual(row["deny_reason"], "Spoilers")
-        _sql, params = cursor.execute.call_args.args
-        self.assertEqual(params, ("denied", "Spoilers", "bullet-1"))
-
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_deny_rejects_a_blank_reason(self, mock_connect) -> None:
-        with self.assertRaises(ValueError):
-            db.deny_bullet("bullet-1", "   ")
-        mock_connect.assert_not_called()
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_missing_bullet(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.side_effect = [None, None]
-        mock_connect.return_value = _make_conn(cursor)
-
-        with self.assertRaises(db.BulletNotFound):
-            db.approve_bullet("missing")
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_already_reviewed(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchone.side_effect = [None, {"status": "denied"}]
-        mock_connect.return_value = _make_conn(cursor)
-
-        with self.assertRaises(db.BulletNotPending) as caught:
-            db.approve_bullet("bullet-1")
-        self.assertEqual(caught.exception.status, "denied")
-
-
-class ListTest(unittest.TestCase):
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_queue_is_pending_only(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchall.return_value = []
-        mock_connect.return_value = _make_conn(cursor)
-
-        db.list_pending("2026-W39")
-
-        sql, params = cursor.execute.call_args.args
-        self.assertIn("status = 'pending'", sql)
-        self.assertEqual(params, ("2026-W39", "2026-W39"))
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_published_week_is_approved_only(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchall.return_value = []
-        mock_connect.return_value = _make_conn(cursor)
-
-        db.list_approved("2026-W39")
-
-        sql, params = cursor.execute.call_args.args
-        self.assertIn("status = 'approved'", sql)
-        self.assertNotIn("deny_reason IS", sql)
-        self.assertEqual(params, ("2026-W39",))
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_published_notes_are_one_approved_query(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchall.side_effect = [
-            [("2026-W39",), ("2026-W38",), ("2026-W37",)],
-            [
-                {"week": "2026-W39", "id": "a"},
-                {"week": "2026-W39", "id": "b"},
-                {"week": "2026-W38", "id": "c"},
-            ],
-        ]
-        mock_connect.return_value = _make_conn(cursor)
-
-        notes, has_more = db.list_published_notes(limit=2, before="2026-W40")
-
-        self.assertTrue(has_more)
-        self.assertEqual(
-            [(week["week"], [bullet["id"] for bullet in week["bullets"]]) for week in notes],
-            [("2026-W39", ["a", "b"]), ("2026-W38", ["c"])],
-        )
-        key_sql, key_params = cursor.execute.call_args_list[0].args
-        self.assertIn("LIMIT %s", key_sql)
-        self.assertEqual(key_params, ("2026-W40", "2026-W40", 3))
-        bullet_sql, bullet_params = cursor.execute.call_args_list[1].args
-        self.assertIn("week = ANY(%s)", bullet_sql)
-        self.assertEqual(bullet_params, (["2026-W39", "2026-W38"],))
-        self.assertIn("status = 'approved'", bullet_sql)
-
-    @mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}, clear=True)
-    @mock.patch("patchnotes.db.psycopg2.connect")
-    def test_published_weeks_newest_first(self, mock_connect) -> None:
-        cursor = mock.MagicMock()
-        cursor.fetchall.return_value = [("2026-W39",), ("2026-W38",)]
-        mock_connect.return_value = _make_conn(cursor)
-
-        weeks = db.list_published_weeks()
-
-        self.assertEqual(weeks, ["2026-W39", "2026-W38"])
-        sql = cursor.execute.call_args.args[0]
-        self.assertIn("status = 'approved'", sql)
-        self.assertIn("ORDER BY week DESC", sql)
-
-
-class JobStorageTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.cursor = mock.MagicMock()
-        self.conn = _make_conn(self.cursor)
-        patcher = mock.patch("patchnotes.db._connect", return_value=self.conn)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-    def test_create_job_expires_and_enforces_one_active_week(self) -> None:
-        self.cursor.fetchone.return_value = {"id": "j", "status": "queued"}
-        self.assertEqual(db.create_job("2026-W40", "feedback", "Shorten it.")["status"], "queued")
-        calls = self.cursor.execute.call_args_list
-        self.assertIn("interval '90 seconds'", calls[0].args[0])
-        self.assertIn("interval '10 minutes'", calls[0].args[0])
-        self.assertIn("The rewrite agent is not running.", calls[0].args[0])
-        self.assertIn("The rewrite took too long.", calls[0].args[0])
-        self.assertIn(
-            "ON CONFLICT (week, (kind = 'compose')) WHERE status IN ('queued', 'running')",
-            calls[1].args[0],
-        )
-        self.assertEqual(calls[1].args[1], ("2026-W40", "feedback", "Shorten it."))
-        self.cursor.fetchone.return_value = None
-        with self.assertRaises(db.JobActive):
-            db.create_job("2026-W40", "sort", None)
-        self.conn.close.assert_called()
-
-    def test_claim_locks_oldest_and_stores_prompt_order(self) -> None:
-        self.cursor.fetchone.side_effect = [
-            {"id": "j", "week": "2026-W40"},
-            {"id": "j", "week": "2026-W40", "status": "running", "line_ids": ["b", "a"]},
-        ]
-        self.cursor.fetchall.return_value = [{"id": "b"}, {"id": "a"}]
-        job = db.claim_job()
-        self.assertEqual(job["status"], "running")
-        calls = self.cursor.execute.call_args_list
-        self.assertIn("FOR UPDATE SKIP LOCKED", calls[1].args[0])
-        self.assertIn("ORDER BY created_at ASC, id ASC", calls[2].args[0])
-        self.assertIn("claimed_at = now()", calls[3].args[0])
-        self.assertEqual(calls[3].args[1][0].adapted, ["b", "a"])
-
-    def test_claim_empty_queue(self) -> None:
-        self.cursor.fetchone.return_value = None
-        self.assertIsNone(db.claim_job())
-
-    def test_finish_success_and_failure_and_nonrunning(self) -> None:
-        self.cursor.fetchone.return_value = {"id": "j", "status": "done"}
-        db.finish_job("j", changed=3)
-        sql, params = self.cursor.execute.call_args.args
-        self.assertIn("status = 'running'", sql)
-        self.assertEqual(params, ("done", 3, None, "j"))
-        db.finish_job("j", error="x" * 500)
-        self.assertEqual(self.cursor.execute.call_args.args[1], ("failed", None, "x" * 300, "j"))
-        self.cursor.fetchone.return_value = None
-        with self.assertRaises(db.JobNotRunning):
-            db.finish_job("j", changed=1)
-
-    def test_reads_expire_jobs_and_latest_orders_newest_first(self) -> None:
-        self.cursor.fetchone.return_value = {"id": "j"}
-        self.assertEqual(db.get_job("j"), {"id": "j"})
-        self.assertIn("UPDATE patchnote_jobs", self.cursor.execute.call_args_list[0].args[0])
-        self.assertEqual(self.cursor.execute.call_args.args[1], ("j",))
-        self.cursor.reset_mock()
-        self.cursor.fetchone.return_value = None
-        self.assertIsNone(db.latest_job("2026-W40"))
-        self.assertIn("UPDATE patchnote_jobs", self.cursor.execute.call_args_list[0].args[0])
-        self.assertIn("ORDER BY created_at DESC", self.cursor.execute.call_args.args[0])
-
-    def test_migration_adds_jobs_and_partial_unique_index(self) -> None:
-        with mock.patch.dict("os.environ", {"DATABASE_URL": "postgres://x"}), mock.patch.object(db, "_MIGRATED", False):
-            db.migrate()
-        sql = " ".join(call.args[0] for call in self.cursor.execute.call_args_list)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_jobs", sql)
-        self.assertIn("CHECK (kind IN ('feedback', 'sort'))", sql)
-        self.assertIn("CHECK (status IN ('queued', 'running', 'done', 'failed'))", sql)
-        # Line jobs and the weekly post job each get one active slot per week.
-        self.assertIn("CHECK (kind IN ('feedback', 'sort', 'compose'))", sql)
-        self.assertIn("DROP INDEX IF EXISTS patchnote_jobs_active_week_idx", sql)
-        self.assertIn("ON patchnote_jobs (week, (kind = 'compose'))", sql)
-        self.assertNotIn("CREATE UNIQUE INDEX IF NOT EXISTS patchnote_jobs_active_week_idx", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_facts", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_posts", sql)
-        self.assertIn("CREATE TABLE IF NOT EXISTS patchnote_week_meta", sql)
-
-
-class ReviewStorageTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.cursor = mock.MagicMock()
-        patcher = mock.patch("patchnotes.db._connect", return_value=_make_conn(self.cursor))
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-    def test_patch_changes_only_requested_fields(self) -> None:
-        self.cursor.fetchone.side_effect = [{"id": "b", "status": "approved"}, {"id": "b", "topic": None}]
-        db.update_bullet("b", {"topic": None})
-        sql, params = self.cursor.execute.call_args.args
-        self.assertIn("SET topic = %s", sql)
-        self.assertNotIn("body =", sql)
-        self.assertEqual(params, (None, "b"))
-
-    def test_patch_validation(self) -> None:
-        for fields in ({"topic": "invalid"}, {"section": "invalid"}, {"body": " "},
-                       {"highlight": 1}, {"status": "approved"}):
-            with self.subTest(fields=fields), self.assertRaises(ValueError):
-                db.update_bullet("b", fields)
-
-    def test_drop_and_restore_do_not_rewrite(self) -> None:
-        for status in ("pending", "approved"):
-            self.cursor.fetchone.side_effect = [{"status": status}, {"status": "denied"}]
-            row = db.drop_bullet("b")
-            self.assertEqual(row["status"], "denied")
-            self.assertIn("Removed in review.", self.cursor.execute.call_args.args[1])
-        self.cursor.fetchone.side_effect = [{"status": "denied"}, None, {"status": "pending"}]
-        self.assertEqual(db.restore_bullet("b")["status"], "pending")
-        self.assertEqual(self.cursor.execute.call_args.args[1], ("pending", None, None, "b"))
-
-    def test_restore_is_refused_when_a_rewrite_replaced_the_line(self) -> None:
-        self.cursor.fetchone.side_effect = [{"status": "denied"}, {"?column?": 1}]
-        with self.assertRaises(db.BulletNotOpen):
-            db.restore_bullet("b")
-
-    def test_state_conflicts_and_missing_bullets(self) -> None:
-        for operation, status in ((db.drop_bullet, "denied"), (db.restore_bullet, "approved")):
-            self.cursor.fetchone.return_value = {"status": status}
-            with self.assertRaises(db.BulletNotOpen):
-                operation("b")
-        self.cursor.fetchone.return_value = None
-        for operation in (db.drop_bullet, db.restore_bullet):
-            with self.assertRaises(db.BulletNotFound):
-                operation("missing")
-        self.cursor.fetchone.return_value = {"status": "denied"}
-        with self.assertRaises(db.BulletNotOpen):
-            db.update_bullet("b", {})
-
-    def test_denied_and_review_week_selection(self) -> None:
-        self.cursor.fetchall.return_value = []
-        self.assertEqual(db.list_denied("2026-W40"), [])
-        self.assertIn("status = 'denied'", self.cursor.execute.call_args.args[0])
-        db.list_review_weeks()
-        sql = self.cursor.execute.call_args.args[0]
-        self.assertIn("pending > 0 OR week IN", sql)
-        self.assertIn("LIMIT 4", sql)
-        self.assertIn("ORDER BY week DESC", sql)
-        self.assertIn("COALESCE(state.postponed, FALSE)", sql)
-
-    def test_sort_is_one_transaction_and_keeps_wording(self) -> None:
-        self.cursor.fetchall.side_effect = [[{"id": "unchanged"}], [{"id": "b", "section": "technical"}]]
-        self.cursor.rowcount = 1
-        result = db.apply_sort("2026-W40", [{"id": "b", "section": "technical", "topic": None, "highlight": False}])
-        self.assertEqual(result["changed"], 1)
-        calls = self.cursor.execute.call_args_list
-        self.assertIn("SET highlight = FALSE", calls[1].args[0])
-        self.assertEqual(calls[2].args[1], (["unchanged"],))
-        sql, params = calls[3].args
-        self.assertNotIn("body =", sql)
-        self.assertNotIn("revision_note", sql)
-        self.assertEqual(params, ("technical", None, False, "b", "2026-W40"))
+import pytest
+
+from src import database
+from src.patchnotes import db
+
+WEEK = "2026-W39"
+NEXT = "2026-W40"
+TABLES = (
+    "patchnote_bullets, patchnote_sources, patchnote_previews, patchnote_folders, "
+    "patchnote_week_status, patchnote_jobs, patchnote_sync_tasks, patchnote_week_facts, "
+    "patchnote_posts, patchnote_week_meta"
+)
+
+
+@pytest.fixture
+def notes(postgres):
+    db._MIGRATED = False
+    db.migrate()
+    yield db
+    with database.connect() as conn:
+        conn.execute(f"DROP TABLE IF EXISTS {TABLES}")
+    db._MIGRATED = False
+
+
+def _sql(query: str, params: tuple | None = None) -> list[dict]:
+    with database.connect() as conn:
+        cur = conn.execute(query, params)
+        return cur.fetchall() if cur.description else []
+
+
+def _bullet(body: str = "Added a station", *, section: str = "new", week: str = WEEK) -> dict:
+    return db.insert_bullet(section=section, body=body, week=week)
+
+
+# Week arithmetic
+
+
+def test_parse_week_is_canonical_and_strict():
+    assert db.parse_week("2026-W39") == "2026-W39"
+    for bad in ("2026-W3", "2026-W54"):
+        with pytest.raises(ValueError):
+            db.parse_week(bad)
+
+
+def test_next_week_steps_into_the_next_iso_week():
+    assert db.next_week("2026-W39") == "2026-W40"
+    assert db.next_week("2026-W52") == "2026-W53"
+
+
+def test_zone_can_move_the_friday_cutoff(monkeypatch):
+    # Friday 2026-09-25 10:30 UTC is still morning in UTC and past noon in Berlin.
+    moment = datetime(2026, 9, 25, 10, 30, tzinfo=timezone.utc)
+    monkeypatch.setenv("PATCHNOTES_TZ", "UTC")
+    assert db.current_week(moment) == "2026-W39"
+    monkeypatch.setenv("PATCHNOTES_TZ", "Europe/Berlin")
+    assert db.current_week(moment) == "2026-W40"
+
+
+def test_friday_noon_closes_the_week(monkeypatch):
+    berlin = ZoneInfo("Europe/Berlin")
+    monkeypatch.setenv("PATCHNOTES_TZ", "Europe/Berlin")
+    assert db.current_week(datetime(2026, 9, 25, 11, 59, tzinfo=berlin)) == "2026-W39"
+    assert db.current_week(datetime(2026, 9, 25, 12, 0, tzinfo=berlin)) == "2026-W40"
+    assert db.current_week(datetime(2026, 9, 26, 9, 0, tzinfo=berlin)) == "2026-W40"
+
+
+def test_unknown_zone_is_a_config_error(monkeypatch):
+    monkeypatch.setenv("PATCHNOTES_TZ", "Not/AZone")
+    with pytest.raises(db.PatchnotesConfigError):
+        db.current_week()
+
+
+# Connection
+
+
+def test_migrate_skips_without_database_url(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(db, "_MIGRATED", False)
+    db.migrate()
+    assert db._MIGRATED is False
+
+
+def test_migrate_twice_is_harmless(notes):
+    db._MIGRATED = False
+    db.migrate()
+    assert _sql("SELECT count(*) AS n FROM pg_tables WHERE tablename LIKE 'patchnote_%'")[0]["n"] == 10
+
+
+def test_unreachable_database_is_a_patch_notes_error(monkeypatch):
+    @contextmanager
+    def refuse():
+        raise database.OperationalError("connection refused")
+        yield
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://db.invalid/site")
+    monkeypatch.setattr(database, "connect", refuse)
+    with pytest.raises(db.PatchnotesDBError, match="Could not connect"):
+        db.list_published_weeks()
+
+
+# Bullets
+
+
+def test_insert_stores_a_trimmed_pending_bullet_with_a_text_id(notes):
+    row = _bullet("  Added a station  ")
+    assert isinstance(row["id"], str)
+    uuid.UUID(row["id"])
+    assert (row["week"], row["section"], row["body"], row["status"], row["highlight"]) == (
+        WEEK, "new", "Added a station", "pending", False)
+    assert row["created_at"].tzinfo is not None
+
+
+def test_insert_rejects_unknown_section():
+    with pytest.raises(ValueError):
+        db.insert_bullet(section="secret", body="nope", week=WEEK)
+
+
+def test_sourced_insert_writes_each_source_once(notes):
+    with mock.patch.object(db, "current_week", return_value=WEEK):
+        first = db.insert_sourced_bullet(section="new", body="Gathering: Added a node",
+                                         source_key="TF-Minecraft/Gathering@abc1234")
+        again = db.insert_sourced_bullet(section="new", body="Gathering: Added a node",
+                                         source_key="TF-Minecraft/Gathering@abc1234")
+    assert first["week"] == WEEK
+    assert again is None
+    assert len(db.list_pending()) == 1
+
+
+def test_review_approves_or_denies_only_pending_bullets(notes):
+    approved = db.approve_bullet(_bullet()["id"])
+    assert approved["status"] == "approved"
+    assert approved["reviewed_at"] is not None
+
+    denied = db.deny_bullet(_bullet("Spoiler")["id"], "  Spoilers  ")
+    assert (denied["status"], denied["deny_reason"]) == ("denied", "Spoilers")
+
+    with pytest.raises(db.BulletNotPending) as caught:
+        db.approve_bullet(denied["id"])
+    assert caught.value.status == "denied"
+    with pytest.raises(db.BulletNotFound):
+        db.approve_bullet(str(uuid.uuid4()))
+
+
+def test_deny_rejects_a_blank_reason():
+    with pytest.raises(ValueError):
+        db.deny_bullet("bullet-1", "   ")
+
+
+def test_pending_queue_and_approved_week_keep_their_order(notes):
+    technical = _bullet("Tidied logs", section="technical")
+    fixed = _bullet("Fixed a crash", section="fixed")
+    other_week = _bullet("Later", week=NEXT)
+    for row in (technical, fixed):
+        db.approve_bullet(row["id"])
+    waiting = _bullet("Still waiting")
+
+    assert [row["id"] for row in db.list_pending(WEEK)] == [waiting["id"]]
+    assert [row["id"] for row in db.list_pending()] == [other_week["id"], waiting["id"]]
+    # Section order, not insertion order.
+    assert [row["id"] for row in db.list_approved(WEEK)] == [fixed["id"], technical["id"]]
+
+
+def test_published_notes_page_newest_week_first_and_hide_held_weeks(notes):
+    for week in ("2026-W37", "2026-W38", "2026-W39"):
+        db.approve_bullet(_bullet(f"Note {week}", week=week)["id"])
+    db.approve_bullet(_bullet("Second W39", section="fixed", week="2026-W39")["id"])
+    db.approve_bullet(_bullet("Held", week="2026-W41")["id"])
+    db.postpone_week("2026-W41")
+
+    notes_page, has_more = db.list_published_notes(limit=2, before="2026-W42")
+    assert has_more
+    assert [(note["week"], [b["body"] for b in note["bullets"]]) for note in notes_page] == [
+        ("2026-W39", ["Note 2026-W39", "Second W39"]),
+        ("2026-W38", ["Note 2026-W38"]),
+    ]
+    older, has_more = db.list_published_notes(limit=5, before="2026-W38")
+    assert ([note["week"] for note in older], has_more) == (["2026-W37"], False)
+    assert db.list_published_notes(limit=5, before="2026-W37") == ([], False)
+    assert db.list_published_weeks() == ["2026-W39", "2026-W38", "2026-W37"]
+    with pytest.raises(ValueError):
+        db.list_published_notes(limit=0)
+
+
+def test_patch_label_counts_published_weeks_in_the_season(notes, monkeypatch):
+    monkeypatch.setenv("PATCHNOTES_SEASON", "5")
+    monkeypatch.setenv("PATCHNOTES_SEASON_START", "2026-W39")
+    db.approve_bullet(_bullet(week="2026-W39")["id"])
+    assert db.patch_label("2026-W41") == "5.2"
+
+
+# Preview
+
+
+def test_preview_replaces_the_last_and_expires_in_an_hour(notes):
+    db.replace_preview(week=WEEK, bullets=[{"id": "old", "section": "new", "body": "Old"}])
+    row = db.replace_preview(week=WEEK, bullets=[
+        {"id": "b1", "section": "new", "body": "  Added a station  ", "topic": "Combat", "highlight": True},
+    ])
+
+    assert row["bullets"] == [
+        {"id": "b1", "section": "new", "body": "Added a station", "topic": "combat", "highlight": True}]
+    assert (row["expires_at"] - row["created_at"]).total_seconds() == pytest.approx(3600, abs=5)
+    assert db.load_preview()["id"] == row["id"]
+
+    _sql("UPDATE patchnote_previews SET expires_at = now() - interval '1 second'")
+    assert db.load_preview() is None
+    assert _sql("SELECT * FROM patchnote_previews") == []
+
+
+# Folders and sync tasks
+
+
+def test_folders_are_added_observed_given_rules_and_removed(notes):
+    repo = db.ensure_folder(name="Gathering", origin="repo", repo="TF-Minecraft/Gathering",
+                            dangerous=False, rules=["config/**"])
+    assert (repo["status"], repo["rules"]) == ("pending", ["config/**"])
+    # An existing row is left as staff set it.
+    assert db.ensure_folder(name="Gathering", origin="repo", repo=None, dangerous=True)["dangerous"] is False
+
+    added = db.request_added_folder("Cooking")
+    assert added["origin"] == "added"
+    with pytest.raises(ValueError):
+        db.request_added_folder("Cooking")
+
+    observed = db.observe_folder(name="Cooking", status="active", rules=None,
+                                 unclassified=["odd.yml"], reject_reason=None, dangerous=True)
+    assert (observed["status"], observed["rules"], observed["unclassified"], observed["dangerous"]) == (
+        "active", [], ["odd.yml"], True)
+    assert observed["verified_at"] is not None
+    assert db.add_folder_rule("Cooking", "recipes/*.yml")["rules"] == ["recipes/*.yml"]
+    assert db.add_folder_rule("Cooking", "recipes/*.yml")["rules"] == ["recipes/*.yml"]
+    with pytest.raises(ValueError):
+        db.add_folder_rule("Gathering", "x")
+
+    assert [row["name"] for row in db.list_folders()] == ["Cooking", "Gathering"]
+    with pytest.raises(ValueError):
+        db.remove_added_folder("Gathering")
+    db.remove_added_folder("Cooking")
+    assert db.get_folder("Cooking") is None
+    with pytest.raises(db.BulletNotFound):
+        db.observe_folder(name="Cooking", status="active", rules=None, unclassified=[], reject_reason=None)
+
+
+def test_one_sync_task_per_folder_per_week(notes):
+    assert db.queue_sync_task(folder_name="Gathering", repo="TF-Minecraft/Gathering", week=WEEK)
+    assert not db.queue_sync_task(folder_name="Gathering", repo="TF-Minecraft/Gathering", week=WEEK)
+    assert db.queue_sync_task(folder_name="Archaeo", repo="TF-Minecraft/Archaeo", week=WEEK)
+    assert db.list_sync_tasks(WEEK) == ["Archaeo", "Gathering"]
+
+
+# Rewrites, feedback and review edits
+
+
+def test_a_denial_is_rewritten_at_most_three_times(notes):
+    row = db.deny_bullet(_bullet("Original")["id"], "Too vague")
+    with mock.patch.object(db, "rewrite", return_value=None):
+        assert db.revise_denied_bullet(row, "Too vague") is None
+    with mock.patch.object(db, "rewrite", return_value=("fixed", "Clearer line")):
+        for _ in range(3):
+            row = db.revise_denied_bullet(row, "Again")
+            assert (row["status"], row["section"], row["body"]) == ("pending", "fixed", "Clearer line")
+            row = db.deny_bullet(row["id"], "Again")
+        assert db.revise_denied_bullet(row, "Again") is None
+
+
+def test_feedback_adds_rewrites_and_drops_lines_in_one_transaction(notes):
+    keep = _bullet("Keep me")
+    rewrite = _bullet("Rewrite me")
+    drop = _bullet("Drop me")
+
+    result = db.apply_feedback(WEEK, "Tighten the note", [
+        {"action": "add", "section": "fixed", "body": "New line", "topic": "combat", "highlight": True},
+        {"action": "rewrite", "id": rewrite["id"], "section": "adjusted", "body": "Rewritten"},
+        {"action": "drop", "id": drop["id"]},
+        {"action": "drop"},
+    ])
+
+    assert result["changed"] == 3
+    assert [b["body"] for b in result["bullets"]] == ["Keep me", "Rewritten", "New line"]
+    assert result["bullets"][1]["revision_note"] == "Tighten the note"
+    assert db.get_bullet(drop["id"])["deny_reason"] == "Tighten the note"
+    assert [b["id"] for b in db.list_open_bullets(WEEK)][0] == keep["id"]
+    with pytest.raises(ValueError):
+        db.apply_feedback(WEEK, " ", [])
+
+
+def test_reset_week_drops_rewrites_and_restores_denials(notes):
+    denied = db.deny_bullet(_bullet("Original")["id"], "Too vague")
+    with mock.patch.object(db, "rewrite", return_value=("new", "Rewrite")):
+        db.revise_denied_bullet(denied, "Too vague")
+    db.replace_preview(week=WEEK, bullets=[])
+
+    assert db.reset_week(WEEK) == {"week": WEEK, "removed": 1, "restored": 1}
+    assert [(b["body"], b["status"]) for b in db.list_open_bullets(WEEK)] == [("Original", "pending")]
+    assert db.load_preview() is None
+
+
+def test_review_edits_change_only_the_named_fields(notes):
+    row = _bullet("Wording stays")
+    db.approve_bullet(row["id"])
+    edited = db.update_bullet(row["id"], {"topic": "combat", "highlight": True})
+    assert (edited["body"], edited["topic"], edited["highlight"], edited["status"]) == (
+        "Wording stays", "combat", True, "approved")
+    for fields in ({"topic": "invalid"}, {"section": "invalid"}, {"body": " "},
+                   {"highlight": 1}, {"status": "approved"}):
+        with pytest.raises(ValueError):
+            db.update_bullet(row["id"], fields)
+
+
+def test_drop_and_restore_without_rewriting(notes):
+    row = _bullet()
+    dropped = db.drop_bullet(row["id"])
+    assert (dropped["status"], dropped["deny_reason"]) == ("denied", "Removed in review.")
+    assert [b["id"] for b in db.list_denied(WEEK)] == [row["id"]]
+    with pytest.raises(db.BulletNotOpen):
+        db.drop_bullet(row["id"])
+    with pytest.raises(db.BulletNotOpen):
+        db.update_bullet(row["id"], {})
+
+    restored = db.restore_bullet(row["id"])
+    assert (restored["status"], restored["deny_reason"], restored["reviewed_at"]) == ("pending", None, None)
+    with pytest.raises(db.BulletNotOpen):
+        db.restore_bullet(row["id"])
+    for operation in (db.drop_bullet, db.restore_bullet):
+        with pytest.raises(db.BulletNotFound):
+            operation(str(uuid.uuid4()))
+
+
+def test_restore_is_refused_when_a_rewrite_replaced_the_line(notes):
+    denied = db.deny_bullet(_bullet()["id"], "Too vague")
+    with mock.patch.object(db, "rewrite", return_value=("new", "Rewrite")):
+        db.revise_denied_bullet(denied, "Too vague")
+    with pytest.raises(db.BulletNotOpen):
+        db.restore_bullet(denied["id"])
+
+
+def test_sort_moves_sections_and_highlights_without_touching_wording(notes):
+    starred = _bullet("Starred")
+    db.update_bullet(starred["id"], {"highlight": True})
+    moved = _bullet("Move me")
+
+    result = db.apply_sort(WEEK, [{"id": moved["id"], "section": "technical", "topic": "magic", "highlight": True}])
+
+    assert result["changed"] == 1
+    by_body = {b["body"]: b for b in result["bullets"]}
+    # A line the sort did not mention keeps its highlight.
+    assert by_body["Starred"]["highlight"] is True
+    assert (by_body["Move me"]["section"], by_body["Move me"]["topic"], by_body["Move me"]["highlight"]) == (
+        "technical", "magic", True)
+
+
+def test_review_weeks_list_pending_weeks_and_the_latest_four(notes):
+    for week in ("2026-W30", "2026-W36", "2026-W37", "2026-W38", "2026-W39"):
+        db.approve_bullet(_bullet(week=week)["id"])
+    _bullet(week="2026-W30")
+    db.postpone_week("2026-W39")
+
+    weeks = db.list_review_weeks()
+    assert [row["week"] for row in weeks] == ["2026-W39", "2026-W38", "2026-W37", "2026-W36", "2026-W30"]
+    assert weeks[0]["postponed"] is True
+    assert (weeks[-1]["pending"], weeks[-1]["approved"]) == (1, 1)
+
+
+# Week status
+
+
+def test_postpone_defer_and_undo_carry_lines_and_their_review_state(notes):
+    approved = db.approve_bullet(_bullet("Approved")["id"])
+    pending = _bullet("Pending")
+
+    assert db.get_week_status(WEEK) == {"week": WEEK, "postponed": False, "deferred_to": None}
+    with pytest.raises(db.WeekNotPostponed):
+        db.defer_postponed_week(WEEK)
+    assert db.postpone_week(WEEK)["postponed"] is True
+    with pytest.raises(db.WeekPostponed):
+        db.approve_pending_week(WEEK)
+
+    assert db.defer_postponed_week(WEEK)["deferred_to"] == NEXT
+    assert db.defer_postponed_week(WEEK)["deferred_to"] == NEXT
+    carried = {b["body"]: b for b in db.list_open_bullets(NEXT)}
+    assert carried["Approved"]["status"] == "pending"
+
+    assert db.undo_postpone(WEEK) == {"week": WEEK, "postponed": False, "deferred_to": None}
+    back = {b["id"]: b["status"] for b in db.list_open_bullets(WEEK)}
+    assert back == {approved["id"]: "approved", pending["id"]: "pending"}
+
+
+def test_approve_pending_week_leaves_rewrites_for_staff(notes):
+    _bullet("Plain")
+    denied = db.deny_bullet(_bullet("Original")["id"], "Too vague")
+    with mock.patch.object(db, "rewrite", return_value=("new", "Rewrite")):
+        rewrite = db.revise_denied_bullet(denied, "Too vague")
+
+    assert db.approve_pending_week(WEEK) == 1
+    assert db.get_bullet(rewrite["id"])["status"] == "pending"
+
+
+# Jobs
+
+
+def test_one_active_line_job_and_one_post_job_per_week(notes):
+    job = db.create_job(WEEK, "feedback", "Shorten it.")
+    assert (job["status"], job["kind"], job["feedback"]) == ("queued", "feedback", "Shorten it.")
+    with pytest.raises(db.JobActive):
+        db.create_job(WEEK, "sort")
+    assert db.create_job(WEEK, "compose")["kind"] == "compose"
+    assert db.create_job(NEXT, "sort")["week"] == NEXT
+    with pytest.raises(ValueError):
+        db.create_job(WEEK, "nonsense")
+
+
+def test_claim_takes_the_oldest_job_and_stores_the_line_order(notes):
+    first = _bullet("First")
+    second = _bullet("Second")
+    job = db.create_job(WEEK, "feedback", "x")
+
+    claimed = db.claim_job()
+
+    assert (claimed["id"], claimed["status"]) == (job["id"], "running")
+    assert claimed["line_ids"] == [first["id"], second["id"]]
+    assert db.claim_job() is None
+
+
+def test_finish_records_success_or_a_short_error(notes):
+    db.create_job(WEEK, "feedback", "x")
+    job = db.claim_job()
+    done = db.finish_job(job["id"], changed=3)
+    assert (done["status"], done["changed"], done["error"]) == ("done", 3, None)
+    with pytest.raises(db.JobNotRunning):
+        db.finish_job(job["id"], changed=1)
+
+    db.create_job(WEEK, "sort")
+    job = db.claim_job()
+    failed = db.finish_job(job["id"], error="x" * 500)
+    assert (failed["status"], failed["error"]) == ("failed", "x" * 300)
+
+
+def test_stale_jobs_expire_and_the_expiry_sticks_when_a_new_job_is_refused(notes):
+    queued = db.create_job(WEEK, "feedback", "x")
+    _sql("UPDATE patchnote_jobs SET created_at = now() - interval '2 minutes'")
+    assert db.get_job(queued["id"])["error"] == "The rewrite agent is not running."
+
+    db.create_job(WEEK, "feedback", "y")
+    running = db.claim_job()
+    db.create_job(WEEK, "compose")
+    _sql("UPDATE patchnote_jobs SET claimed_at = now() - interval '11 minutes' WHERE id = %s", (running["id"],))
+    with pytest.raises(db.JobActive):
+        db.create_job(WEEK, "compose")
+    # The refused create still commits the expiry it found.
+    [row] = _sql("SELECT status, error FROM patchnote_jobs WHERE id = %s", (running["id"],))
+    assert (row["status"], row["error"]) == ("failed", "The rewrite took too long.")
+
+
+def test_latest_job_tracks_line_and_post_jobs_apart(notes):
+    line = db.create_job(WEEK, "feedback", "x")
+    post = db.create_job(WEEK, "compose")
+    assert db.latest_job(WEEK)["id"] == line["id"]
+    assert db.latest_job(WEEK, db.POST_JOB_KINDS)["id"] == post["id"]
+    assert db.latest_job(NEXT) is None
+    assert db.get_job(str(uuid.uuid4())) is None
+
+
+# Weekly post
+
+
+def test_facts_post_and_act_are_stored_per_week(notes):
+    assert db.get_facts(WEEK) is None
+    db.save_facts(WEEK, {"players": 12})
+    db.save_facts(WEEK, {"players": 14})
+    assert db.get_facts(WEEK)["facts"] == {"players": 14}
+
+    assert not db.approve_post(WEEK)
+    db.save_post(WEEK, ["Hello"], "writer")
+    assert db.approve_post(WEEK)
+    redrafted = db.save_post(WEEK, ["Hello", "again"], "fallback")
+    assert (redrafted["messages"], redrafted["source"], redrafted["status"]) == (
+        ["Hello", "again"], "fallback", "draft")
+    assert db.get_post(WEEK)["messages"] == ["Hello", "again"]
+    assert db.get_post(NEXT) is None
+    with pytest.raises(ValueError):
+        db.save_post(WEEK, [], "someone")
+
+    assert db.get_act(WEEK) is None
+    db.set_act(WEEK, "  Act II  ")
+    assert db.get_act(WEEK) == "Act II"
+    db.set_act(WEEK, " ")
+    assert db.get_act(WEEK) is None
+    with pytest.raises(ValueError):
+        db.set_act(WEEK, "x" * 61)

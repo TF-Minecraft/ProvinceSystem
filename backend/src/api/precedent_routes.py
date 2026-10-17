@@ -6,10 +6,10 @@ import logging
 import time
 from collections import defaultdict
 
-import psycopg2
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field, field_validator
 
+from src import database
 from src.api.staff_access import require_staff_account, staff_name
 from src.precedent.db import (
     MAX_RELEVANT_DISTANCE,
@@ -282,7 +282,7 @@ def staff_update_case(
             embedding=vector,
             actor=_audit_actor(user, body.logged_by),
         )
-    except psycopg2.Error:
+    except database.Error:
         raise HTTPException(status_code=400, detail="Invalid case id")
     except (PrecedentDBError, EmbeddingError) as e:
         logger.exception("staff_update_case failed")
@@ -302,7 +302,7 @@ def staff_get_case(
     try:
         migrate()
         case = get_case(case_id)
-    except psycopg2.Error:
+    except database.Error:
         raise HTTPException(status_code=400, detail="Invalid case id")
     except PrecedentDBError as e:
         logger.exception("staff_get_case failed")
@@ -322,7 +322,7 @@ def staff_delete_case(
     try:
         migrate()
         deleted = delete_case(case_id, actor=_audit_actor(user, ""))
-    except psycopg2.Error:
+    except database.Error:
         raise HTTPException(status_code=400, detail="Invalid case id")
     except PrecedentDBError as e:
         logger.exception("staff_delete_case failed")
