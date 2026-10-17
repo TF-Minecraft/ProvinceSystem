@@ -169,13 +169,13 @@ def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
 # A code Profile started for a skin or drink, rather than one made with /token create.
 MINTED_VIA_SITE = "site"
 
-# Site codes that lapsed unused never started anything, so they don't hold the clock.
-# A session outlives its code by up to SESSION_TTL_HOURS and can still submit, so the
-# code keeps counting until that session ends too.
+# Codes that lapsed unused never started anything, so they don't hold the clock,
+# whether Profile or /token create made them. A session outlives its code by up to
+# SESSION_TTL_HOURS and can still submit, so the code keeps counting until that
+# session ends too.
 _COUNTS_TOWARD_COOLDOWN = """
     NOT (
-        COALESCE(c.minted_via, '') = 'site'
-        AND c.expires_at <= :now
+        c.expires_at <= :now
         AND NOT EXISTS (SELECT 1 FROM sessions se WHERE se.code_id = c.id AND se.expires_at > :now)
         AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.code_id = c.id)
         AND NOT EXISTS (SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id)
