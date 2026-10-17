@@ -19,7 +19,6 @@ import uuid as uuidlib
 from datetime import datetime, timedelta
 
 from src import database
-from src.skins import db as sqlite_db
 from .config import Config
 from .resolver import entitled_tier, iso, parse, resolve, utcnow
 
@@ -95,24 +94,20 @@ def _members(conn) -> dict[str, dict]:
     return {row["patreon_user_id"]: _member(row) for row in conn.execute("SELECT * FROM patreon_members ORDER BY patreon_user_id")}
 
 
-def _discord_links(*, discord_user_id=None, player_uuid=None, minecraft_name=None) -> list[dict]:
+def _discord_links(conn, *, discord_user_id=None, player_uuid=None, minecraft_name=None) -> list[dict]:
     """Discord links matching any of the given values: their discord_user_id and player_uuid."""
-    # PG-MIGRATION: Linking. discord_links is still in SQLite, so it is read on its own
-    # connection (Linking does not take the patreon lock). The Linking
-    # PR reads it on the caller's connection.
     where, params = [], []
     for column, value in (("discord_user_id", discord_user_id), ("player_uuid", player_uuid)):
         if value is not None:
-            where.append(f"{column} = ?")
+            where.append(f"{column} = %s")
             params.append(value)
     if minecraft_name is not None:
-        where.append("minecraft_name = ? COLLATE NOCASE")
+        where.append("lower(minecraft_name) = lower(%s)")
         params.append(minecraft_name)
     if not where:
         return []
-    with sqlite_db.connect() as lite:
-        return [dict(r) for r in lite.execute(
-            f"SELECT discord_user_id, player_uuid FROM discord_links WHERE {' OR '.join(where)}", params)]
+    return conn.execute(
+        f"SELECT discord_user_id, player_uuid FROM discord_links WHERE {' OR '.join(where)}", params).fetchall()
 
 
 def _resolved_link(conn, row) -> dict:
@@ -122,9 +117,9 @@ def _resolved_link(conn, row) -> dict:
     discord, uuid = link["discord_user_id"], link["player_uuid"]
     other = None
     if discord and not uuid:
-        other = next(iter(_discord_links(discord_user_id=discord)), None)
+        other = next(iter(_discord_links(conn, discord_user_id=discord)), None)
     elif uuid and not discord:
-        other = next(iter(_discord_links(player_uuid=uuid)), None)
+        other = next(iter(_discord_links(conn, player_uuid=uuid)), None)
     if other:
         for key in ("discord_user_id", "player_uuid"):
             if not link[key]:
@@ -153,7 +148,7 @@ def _link(conn, user_id: str, discord: str | None, player: str | None, method: s
         return "invalid_subject"  # Postgres text cannot hold NUL
     old = _text_times(conn.execute("SELECT * FROM patreon_links WHERE patreon_user_id = %s", (user_id,)).fetchone())
     # Validate the trusted pairing but leave an unspecified half dynamic.
-    pair = _discord_links(discord_user_id=discord, player_uuid=player)
+    pair = _discord_links(conn, discord_user_id=discord, player_uuid=player)
     if pair:
         if len(pair) != 1 or (discord and pair[0]["discord_user_id"] != discord) or (player and pair[0]["player_uuid"] != player):
             return "already_linked"
@@ -614,7 +609,7 @@ def lookup(*, discord_user_id=None, player_uuid=None, email=None, minecraft_name
     discord, player = _clean_subjects(discord_user_id, player_uuid)
     with database.transaction(isolation="repeatable read", read_only=True) as conn:
         if minecraft_name:
-            pair = next(iter(_discord_links(minecraft_name=minecraft_name)), None)
+            pair = next(iter(_discord_links(conn, minecraft_name=minecraft_name)), None)
             player = pair["player_uuid"] if pair else None
         link = _find_link(conn, discord_user_id=discord, player_uuid=player)
         member = None

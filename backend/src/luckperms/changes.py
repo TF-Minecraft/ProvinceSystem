@@ -28,7 +28,6 @@ from src.auth import audit, roles, users
 from src.auth.admin import AdminError, clean_reason
 from src.auth.players import canonical_uuid
 from src.auth.users import session_user_in
-from src.skins import db as sqlite_db
 
 from . import mirror, nodes, policy
 
@@ -236,23 +235,19 @@ def build_track_ops(conn, name: str, raw_ops: list) -> tuple[list[dict], list[st
 # --------------------
 
 
-def discord_link(*, discord_user_id: str | None = None, player_uuid: str | None = None) -> dict | None:
+def discord_link(conn, *, discord_user_id: str | None = None, player_uuid: str | None = None) -> dict | None:
     """The Discord link of an account (by Discord id) or of a player (by lower-case UUID)."""
-    # PG-MIGRATION: Linking. discord_links is still in SQLite, so it is read on its own
-    # connection. The Linking PR reads it on the caller's connection and joins users:
-    #   ... FROM discord_links dl JOIN users u ON u.discord_user_id = dl.discord_user_id AND NOT u.placeholder
     column, value = ("discord_user_id", discord_user_id) if discord_user_id else ("lower(player_uuid)", player_uuid)
     if not value:
         return None
-    with sqlite_db.connect() as lite:
-        row = lite.execute(
-            f"SELECT discord_user_id, player_uuid, discord_username FROM discord_links WHERE {column} = ?",
-            (value,)).fetchone()
+    row = conn.execute(
+        f"SELECT discord_user_id, player_uuid, discord_username FROM discord_links WHERE {column} = %s",
+        (value,)).fetchone()
     return dict(row) if row else None
 
 
-def _linked_uuid(discord_user_id: str | None) -> str | None:
-    link = discord_link(discord_user_id=discord_user_id)
+def _linked_uuid(conn, discord_user_id: str | None) -> str | None:
+    link = discord_link(conn, discord_user_id=discord_user_id)
     return canonical_uuid(link["player_uuid"]) if link else None
 
 
@@ -262,7 +257,7 @@ def _target_account_role(conn, uuid: str) -> str | None:
     Read without a lock: a promotion landing after the change is queued is caught when
     `_current_actor` checks the change again before handing it out.
     """
-    link = discord_link(player_uuid=uuid)
+    link = discord_link(conn, player_uuid=uuid)
     if link is None:
         return None
     row = conn.execute("SELECT role FROM users WHERE discord_user_id = %s AND NOT placeholder",
@@ -284,7 +279,7 @@ def check_user_target(conn, actor: dict, uuid: str) -> None:
     """Admins may not change their own account, fellow admins and roots, or in-game staff."""
     if actor["role"] == "root":
         return
-    if _linked_uuid(actor["discord_user_id"]) == uuid:
+    if _linked_uuid(conn, actor["discord_user_id"]) == uuid:
         raise _forbidden("cannot_act_on_self")
     target_role = _target_account_role(conn, uuid)
     if target_role is not None and roles.rank(target_role) >= roles.rank(actor["role"]):
@@ -393,7 +388,7 @@ def queue_change(token: str, target_type, target, raw_ops, reason: str | None) -
                     RETURNING id
                     """,
                     (mirror._stamp(), actor["user_id"], audit.display_name(actor), actor["role"],
-                     _linked_uuid(actor["discord_user_id"]), target_type, target, target_name,
+                     _linked_uuid(conn, actor["discord_user_id"]), target_type, target, target_name,
                      description, database.Jsonb(ops), clean),
                 ).fetchone()["id"]
             except database.UniqueViolation:

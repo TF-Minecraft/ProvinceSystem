@@ -122,7 +122,7 @@ def _pending(target_type: str, target: str) -> dict | None:
 
 
 def _account(conn, uuid: str) -> dict | None:
-    link = changes.discord_link(player_uuid=uuid)  # PG-MIGRATION: Linking (see changes.discord_link)
+    link = changes.discord_link(conn, player_uuid=uuid)
     if link is None:
         return None
     user = conn.execute("SELECT id AS user_id, role FROM users WHERE discord_user_id = %s AND NOT placeholder",

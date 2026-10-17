@@ -122,10 +122,10 @@ def redirect_query(response):
 
 
 def stored_text() -> str:
-    """Everything stored: the SQLite file and every Postgres table as text."""
+    """Everything stored: every Postgres table as text."""
     tables = [r["tablename"] for r in testing.rows("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")]
     text = "".join(testing.value(f"SELECT COALESCE(string_agg(t::text, ''), '') FROM {name} t") for name in tables)
-    return s.sqlite_db.DB_PATH.read_bytes().decode("latin-1") + text
+    return text
 
 
 def assert_clean(response, caplog, *secrets):
