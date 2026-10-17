@@ -9,10 +9,10 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from src.characters.rpc_player_meta import (
-    RpcPlayerMetaError,
+from src.characters.web_entitlements import (
+    WebEntitlementsError,
     resolve_web_entitlements,
-    upsert_rpc_player_meta,
+    upsert_web_entitlements,
 )
 from src.characters.creation_catalog import (
     CreationCatalogError,
@@ -98,12 +98,9 @@ class AppliedResultsBody(BaseModel):
 class RosterBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     characters: list[dict] = Field(default_factory=list)
-    max_alive_characters: int | None = None
     eighteen: bool | None = None
     real_age_set: bool | None = None
     account_created_at_epoch: int | None = None
-    name_colour_stops: int | None = None
-    wardrobe_skin_slots: int | None = None
     kit_cooldown_seconds_remaining: int | None = None
     kit_cooldown_hours: int | None = None
     kit_cooldowns: dict | None = None
@@ -191,7 +188,7 @@ def _feature_session_from_auth(authorization: str | None) -> dict:
     return row
 
 
-class RpcPlayerMetaBody(BaseModel):
+class WebEntitlementsBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     realm_id: str | None = None
     name_colour_stops: int = 0
@@ -327,15 +324,15 @@ def get_player_meta_for_session(
 
 
 @characters_router.put("/plugin/rpc-player-meta")
-def plugin_put_rpc_player_meta(
-    body: RpcPlayerMetaBody,
+def plugin_put_web_entitlements(
+    body: WebEntitlementsBody,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     """TFMCWeb upsert of resolved web entitlements for a player."""
     _require_plugin(x_plugin_key)
     try:
-        return upsert_rpc_player_meta(body.model_dump())
-    except RpcPlayerMetaError as e:
+        return upsert_web_entitlements(body.model_dump())
+    except WebEntitlementsError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
@@ -1084,12 +1081,9 @@ def plugin_put_roster(
         return replace_roster(
             body.player_uuid,
             body.characters,
-            body.max_alive_characters,
             body.eighteen,
             body.real_age_set,
             body.account_created_at_epoch,
-            body.name_colour_stops,
-            body.wardrobe_skin_slots,
             body.kit_cooldown_seconds_remaining,
             body.kit_cooldown_hours,
             body.kit_cooldowns,

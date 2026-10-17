@@ -132,16 +132,16 @@ class _CharacterDbFixture:
         self._write_png(pending_rel)
         conn.execute(
             """
-            INSERT INTO rpc_player_meta (player_uuid, realm_id, updated_at)
+            INSERT INTO web_entitlements (player_uuid, realm_id, updated_at)
             VALUES (%s, %s, %s)
             """,
             (uuid, realm, NOW),
         )
         conn.execute(
             """
-            INSERT INTO character_player_meta (
-                player_uuid, max_alive_characters, updated_at
-            ) VALUES (%s, 3, %s)
+            INSERT INTO character_account_meta (
+                player_uuid, real_age_set, updated_at
+            ) VALUES (%s, true, %s)
             """,
             (uuid, NOW),
         )
@@ -232,10 +232,10 @@ class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
 
         wipe_realm_character_data("main")
 
-        self.assertEqual(1, self._count("rpc_player_meta", "main"))
+        self.assertEqual(1, self._count("web_entitlements", "main"))
         with connect() as conn:
             row = conn.execute(
-                "SELECT COUNT(*) AS n FROM character_player_meta"
+                "SELECT COUNT(*) AS n FROM character_account_meta"
             ).fetchone()
         self.assertEqual(2, int(row["n"]))
 

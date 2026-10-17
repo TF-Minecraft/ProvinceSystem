@@ -131,10 +131,10 @@ provision_database() {
   db=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["database"])' "$dir/database.json") || return 1
   dev_database tables > "$dir/tables" || return 1
   while read -r table; do
-    [[ "$table" =~ ^[a-z_]+$ ]] || return 1
+    [[ "$table" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "ps-preview: unexpected table name: $table" >&2; return 1; }
     tables+=("--table=public.$table")
   done < "$dir/tables"
-  ((${#tables[@]} == 61)) || return 1
+  ((${#tables[@]} > 0)) || return 1
   container=$(preview_db_container)
   [[ -n "$container" ]] || return 1
   # Data only: schema is created by reviewed Dev migrations under the preview

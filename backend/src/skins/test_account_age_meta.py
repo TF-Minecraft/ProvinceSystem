@@ -69,7 +69,7 @@ class AccountAgeMetaTest(unittest.TestCase):
         self.assertEqual(meta.get("account_created_at_epoch"), created_epoch)
 
         with mock.patch(
-            "src.characters.rpc_player_meta.resolve_web_entitlements",
+            "src.characters.web_entitlements.resolve_web_entitlements",
             return_value={
                 "name_colour_stops": 0,
                 "wardrobe_skin_slots": 1,

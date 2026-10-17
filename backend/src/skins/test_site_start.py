@@ -64,7 +64,7 @@ class _CodesDb(unittest.TestCase):
             return_value={"eligible": eligible},
         ).start()
         mock.patch(
-            "src.characters.rpc_player_meta.resolve_web_entitlements",
+            "src.characters.web_entitlements.resolve_web_entitlements",
             return_value=_entitlements(days, synced),
         ).start()
 

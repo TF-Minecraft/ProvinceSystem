@@ -166,7 +166,7 @@ class RealmScopeTest(unittest.TestCase):
             )
 
         with mock.patch(
-            "src.characters.rpc_player_meta.resolve_web_entitlements",
+            "src.characters.web_entitlements.resolve_web_entitlements",
             return_value={
                 "name_colour_stops": 0,
                 "wardrobe_skin_slots": 1,
@@ -274,29 +274,29 @@ class RealmScopeTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in main], ["drink-main"])
         self.assertEqual([r["id"] for r in tut], ["drink-tut"])
 
-    def test_rpc_player_meta_isolated_by_realm(self) -> None:
-        from src.characters.rpc_player_meta import (
-            get_rpc_player_meta,
+    def test_web_entitlements_isolated_by_realm(self) -> None:
+        from src.characters.web_entitlements import (
+            get_web_entitlements,
             resolve_web_entitlements,
-            upsert_rpc_player_meta,
+            upsert_web_entitlements,
         )
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "meta-player",
                 "realm_id": "main",
                 "name_colour_stops": 2,
             }
         )
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": "meta-player",
                 "realm_id": "dev",
                 "name_colour_stops": 8,
             }
         )
-        main = get_rpc_player_meta("meta-player", "main")
-        dev = get_rpc_player_meta("meta-player", "dev")
+        main = get_web_entitlements("meta-player", "main")
+        dev = get_web_entitlements("meta-player", "dev")
         assert main is not None and dev is not None
         self.assertEqual(main["name_colour_stops"], 2)
         self.assertEqual(dev["name_colour_stops"], 8)

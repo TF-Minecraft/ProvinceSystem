@@ -41,7 +41,7 @@ from .storage import (
     write_submission_files,
 )
 from src.name_colours import NameColourError, validate_name_colours
-from src.characters.rpc_player_meta import resolve_web_entitlements
+from src.characters.web_entitlements import resolve_web_entitlements
 from src.skins.size_limits import SizeLimitError, assert_3d_pair_budgets
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 

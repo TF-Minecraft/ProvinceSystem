@@ -105,8 +105,8 @@ def swappable_slot_count(
     *,
     realm_id: str | None = None,
 ) -> int:
-    """Number of swappable skins (base + extras). From TFMCWeb rpc_player_meta."""
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    """Number of swappable skins (base + extras). From TFMCWeb web_entitlements."""
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     uuid = (player_uuid or "").strip()
     ent = resolve_web_entitlements(uuid, realm_id=realm_id)

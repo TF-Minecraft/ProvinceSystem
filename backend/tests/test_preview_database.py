@@ -132,3 +132,13 @@ def test_partial_creation_cleanup_and_identity_refusal(isolated_cluster):
             assert conn.execute("SELECT 1 FROM pg_roles WHERE rolname=ANY(%s)", ([owner, studio],)).fetchall() == []
     finally:
         preview.drop(url, slug)
+
+
+def test_site_tables_are_dev_tables_without_precedent_patch_notes_or_history(scratch_database):
+    migrate(scratch_database)
+    with psycopg.connect(scratch_database) as conn:
+        everything = {row[0] for row in conn.execute("SELECT tablename FROM pg_tables WHERE schemaname='public'")}
+    tables = preview.site_tables(scratch_database)
+    assert tables == sorted(tables) and {"codes", "users", "admin_audit"} <= set(tables)
+    assert set(everything) - set(tables) == {"schema_migrations"} | {
+        name for name in everything if name.startswith(("precedent_", "patchnote_"))}

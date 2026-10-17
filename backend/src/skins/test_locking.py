@@ -54,7 +54,7 @@ def env(postgres, tmp_path, monkeypatch):
     monkeypatch.setattr(submissions, "write_submission_files", lambda *args, **kwargs: None)
     monkeypatch.setattr(submissions, "write_name_preview", lambda *args, **kwargs: None)
     monkeypatch.setattr(submissions, "resolve_web_entitlements", lambda *args, **kwargs: dict(ENTITLEMENTS))
-    monkeypatch.setattr("src.characters.rpc_player_meta.resolve_web_entitlements",
+    monkeypatch.setattr("src.characters.web_entitlements.resolve_web_entitlements",
                         lambda *args, **kwargs: dict(ENTITLEMENTS))
     link(PLAYER, DISCORD_ID, "Steve", "steve")
 

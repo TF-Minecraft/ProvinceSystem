@@ -1,6 +1,6 @@
 #!/bin/bash
 # Installed root-owned; run as tfmc through site-deploy-ssh. www is manual only.
-# Database transitions run from the reviewed target image with its backend stopped.
+# Database migrations run from the reviewed target image with its backend stopped.
 set -euo pipefail
 
 usage() { echo 'usage: deploy <www|dev> <sha>' >&2; exit 2; }
@@ -25,6 +25,17 @@ database() {
 }
 record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
 native_commit() { git cat-file -e "$1:backend/src/database/operations.py" 2>/dev/null; }
+# Migrations only go forward: a revision without a migration the database
+# already has would run against a schema it does not know. Checked here, not
+# in the revision's own code, because older revisions predate the check.
+schema_fits() {
+  local applied known missing
+  compose up -d --wait db >&2 || return 1
+  applied=$(compose exec -T db psql -U provincesystem -d provincesystem -Atc 'SELECT version FROM schema_migrations') || return 1
+  known=$(git ls-tree --name-only "$1" backend/src/database/migrations/ | sed -n 's#.*/\([0-9]\{4\}\)_[a-z0-9_]*\.sql$#\1#p') || return 1
+  missing=$(comm -23 <(grep . <<< "$applied" | sort) <(grep . <<< "$known" | sort) | tr '\n' ' ') || return 1
+  [[ -z $missing ]] || { log "${1:0:7} predates database migration ${missing% }; fix forward"; return 1; }
+}
 checkout() {
   # Docker COPY makes these files root-owned. The runtime uid still needs to
   # read source files and traverse directories; keep the private backup umask
@@ -88,19 +99,6 @@ backup() {
     rm -f "$backup.part"; return 1
   fi
   mv "$backup.part" "$backup" || return 1
-  if [[ ! -f "$data/data/.postgres-authority.json" ]]; then
-    # Also retain a consistent SQLite backup before a legacy deployment/cutover.
-    python3 - "$data/data/province.db" "$data/deploy-backups/province.db.before-deploy-${sha:0:7}-$stamp" <<'PYTHON' || return 1
-import sqlite3, sys
-from pathlib import Path
-source, target = map(Path, sys.argv[1:])
-with sqlite3.connect(f'{source.resolve().as_uri()}?mode=ro', uri=True) as src:
-    with sqlite3.connect(target) as dst:
-        src.backup(dst)
-PYTHON
-  fi
-  # SQLite cutover snapshots and legacy archives have independent retention:
-  # keep through the rollback window (at least 30 days), never newest-ten prune.
   find "$data/deploy-backups" -maxdepth 1 -name 'postgres.before-deploy-*.dump' -printf '%T@ %p\n' \
     | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
 }
@@ -122,16 +120,9 @@ try: os.fsync(fd)
 finally: os.close(fd)
 PYTHON
 }
-authority_matches() {
-  if native_commit "$sha"; then
-    [[ -f "$data/data/.postgres-authority.json" ]]
-  else
-    [[ ! -f "$data/data/.postgres-authority.json" ]]
-  fi
-}
 
 checkedout=$(git rev-parse HEAD)
-# Git moves before the copy/start sequence. Keep the last healthy revision
+# Git moves before the migrate/start sequence. Keep the last healthy revision
 # separately so an interrupted deployment can resume and still roll back safely.
 deployed_file="$state/.site-deployed-$site"
 if [[ -f "$deployed_file" ]]; then
@@ -142,7 +133,8 @@ else
   old=$checkedout
   save_deployed "$old"
 fi
-if [[ $old == "$sha" && $checkedout == "$sha" ]] && authority_matches && healthy "$sha"; then
+if ! native_commit "$sha"; then log "${sha:0:7} predates the move to Postgres"; exit 4; fi
+if [[ $old == "$sha" && $checkedout == "$sha" ]] && healthy "$sha"; then
   echo 'already deployed'; exit 0
 fi
 if [[ $site == dev && $sha != "$old" ]] && git merge-base --is-ancestor "$sha" "$old"; then
@@ -150,42 +142,19 @@ if [[ $site == dev && $sha != "$old" ]] && git merge-base --is-ancestor "$sha" "
   echo 'a newer revision is already deployed'; exit 0
 fi
 if [[ $site == www ]] && ! git diff --quiet HEAD --; then log "$site has uncommitted changes; nothing changed"; exit 1; fi
-was_native=false
-if native_commit "$old"; then was_native=true; fi
-current_native=false
-[[ ! -f "$data/data/.postgres-authority.json" ]] || current_native=true
-target_native=false
-if native_commit "$sha"; then target_native=true; fi
+schema_fits "$sha" || exit 4
 changed=$(git diff --name-only "$old" "$sha")
 summary='backend,frontend'
-stopped=false
-export_failed=false
 
 deploy_target() {
-  if $current_native && ! $target_native; then
-    # Ensure the current native tooling is available, even after an interrupted
-    # build. Never check out or start legacy code until its export succeeds.
-    native_commit "$checkedout" || return 1
-    select_images "$checkedout" || return 1
-    compose build backend >&2 || return 1
-    compose stop backend >&2 || return 1
-    stopped=true
-    backup || return 1
-    if ! database rollback; then export_failed=true; return 1; fi
-  fi
   checkout "$sha" || return 1
   select_images "$sha" || return 1
-  # Build before taking the site offline for the forward transition.
+  # Build before taking the site offline.
   compose build backend frontend >&2 || return 1
-  if ! $stopped; then
-    compose stop backend >&2 || return 1
-    stopped=true
-    backup || return 1
-  fi
-  if $target_native; then
-    database prepare || return 1
-    database studio || return 1
-  fi
+  compose stop backend >&2 || return 1
+  backup || return 1
+  database prepare || return 1
+  database studio || return 1
   compose up -d --no-build --no-deps backend frontend >&2 || return 1
   healthy "$sha"
 }
@@ -205,22 +174,12 @@ fi
 
 log "$site failed; restoring ${old:0:7}"
 compose stop backend >&2 || { record 'failed: cannot stop backend'; exit 5; }
-if $export_failed; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
-if ! $was_native && [[ -f "$data/data/.postgres-authority.json" ]]; then
-  # Includes writes accepted during the health-check window. Never start stale SQLite.
-  current=$(git rev-parse HEAD)
-  if ! native_commit "$current" || ! select_images "$current" || ! compose build backend >&2; then
-    record 'failed: reverse export image; backend kept stopped'; exit 5
-  fi
-  if ! database rollback; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
-fi
+if ! schema_fits "$old"; then record 'failed: last healthy revision does not fit the database (see log); backend kept stopped'; exit 5; fi
 if ! checkout "$old"; then record 'failed: rollback checkout; backend kept stopped'; exit 5; fi
 if ! select_images "$old" || ! compose build backend frontend >&2; then
   record 'failed: rollback build; backend kept stopped'; exit 5
 fi
-if $was_native; then
-  if ! database prepare || ! database studio; then record 'failed: rollback database; backend kept stopped'; exit 5; fi
-fi
+if ! database prepare || ! database studio; then record 'failed: rollback database; backend kept stopped'; exit 5; fi
 if compose up -d --no-build --no-deps backend frontend >&2 && healthy "$old"; then
   save_deployed "$old"
   record "rolled back ($summary)"

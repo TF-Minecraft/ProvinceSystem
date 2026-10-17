@@ -7,7 +7,7 @@ import os
 from fastapi import HTTPException
 
 from src.api.map_registry import MapEntry, get_map_entry, list_map_entries
-from src.characters.rpc_player_meta import has_map_staff_access
+from src.characters.web_entitlements import has_map_staff_access
 from src.skins.codes import REDEEMABLE_SKIN_SCOPES, get_session
 
 STAFF_MAP_FORBIDDEN_DETAIL = "Staff map access required"

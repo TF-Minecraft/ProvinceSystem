@@ -140,7 +140,7 @@ def lock_code_for_submission(conn, code_id: int, consumed_by: str) -> str | None
 
 def mark_code_consumed(conn, code_id: int) -> None:
     """Spend the held code, rechecking expiry after the submission's other writes."""
-    row = conn.execute("UPDATE codes SET redeemed_at = %s WHERE id = %s RETURNING expires_at",
+    row = conn.execute("UPDATE codes SET redeemed_at = %s, code_plaintext = NULL WHERE id = %s RETURNING expires_at",
                        (_utcnow(), int(code_id))).fetchone()
     require_code_unexpired(row["expires_at"])
 
@@ -430,7 +430,7 @@ def revoke_code(plaintext: str) -> dict:
             raise CodeError("Code has expired")
 
         conn.execute(
-            "UPDATE codes SET revoked = true WHERE id = %s",
+            "UPDATE codes SET revoked = true, code_plaintext = NULL WHERE id = %s",
             (row["id"],),
         )
         require_code_unexpired(row["expires_at"])
@@ -477,7 +477,7 @@ def inspect_code(plaintext: str) -> dict:
         expired = row["expires_at"] < now
         consumed = _code_is_consumed(conn, row["id"], scope)
 
-    from src.characters.rpc_player_meta import (
+    from src.characters.web_entitlements import (
         has_map_staff_access,
         resolve_web_entitlements,
     )
@@ -595,7 +595,7 @@ def redeem_code(plaintext: str) -> dict:
 
 
 def _skin_session_payload(row, session_token: str, session_expires_at: str) -> dict:
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     scope = str(row["scope"]).strip().lower()
     entitlements = resolve_web_entitlements(
@@ -636,7 +636,7 @@ def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
         # Spent by the update itself: of two redeems of one code, only one gets the row back.
         row = conn.execute(
             """
-            UPDATE codes SET redeemed_at = %s
+            UPDATE codes SET redeemed_at = %s, code_plaintext = NULL
             WHERE code_hash = %s AND NOT revoked AND redeemed_at IS NULL AND expires_at >= %s
               AND LOWER(TRIM(scope)) = 'profile'
             RETURNING *
@@ -850,7 +850,7 @@ def redeem_drink_code(plaintext: str) -> dict:
 
 
 def _drink_session_payload(row, session_token: str, session_expires_at: str) -> dict:
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
 
     entitlements = resolve_web_entitlements(
         str(row["player_uuid"]),
@@ -919,7 +919,7 @@ def _site_start_rules(uuid: str, realm: str) -> int:
     These mirror /token create: a Discord link in good standing, synced rank perks, and
     the rank's cooldown (-1 means the rank can't make skins or drinks at all).
     """
-    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.characters.web_entitlements import resolve_web_entitlements
     from .discord_link import get_identity_status
 
     if not get_identity_status(uuid).get("eligible"):

@@ -152,9 +152,9 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         link(uuid, f"discord-{uuid[:8]}", "TestPlayer", "Tester")
 
     def _seed_entitlements(self, uuid: str) -> None:
-        from characters.rpc_player_meta import upsert_rpc_player_meta
+        from characters.web_entitlements import upsert_web_entitlements
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": uuid,
                 "skin_kinds": ["handheld"],

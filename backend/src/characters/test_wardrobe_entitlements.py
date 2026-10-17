@@ -1,4 +1,4 @@
-"""Wardrobe slot count uses rpc_player_meta, not stale character_player_meta."""
+"""Wardrobe slot count comes from TFMCWeb's web_entitlements."""
 
 from __future__ import annotations
 
@@ -51,9 +51,9 @@ class WardrobeEntitlementsTest(unittest.TestCase):
         paths.start()
         self.addCleanup(paths.stop)
 
-        from src.characters.rpc_player_meta import upsert_rpc_player_meta
+        from src.characters.web_entitlements import upsert_web_entitlements
 
-        upsert_rpc_player_meta(
+        upsert_web_entitlements(
             {
                 "player_uuid": PLAYER,
                 "name_colour_stops": 0,
@@ -68,14 +68,6 @@ class WardrobeEntitlementsTest(unittest.TestCase):
         )
 
         with database.connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO character_player_meta (
-                    player_uuid, wardrobe_skin_slots, updated_at
-                ) VALUES (%s, 1, %s)
-                """,
-                (PLAYER, NOW),
-            )
             conn.execute(
                 """
                 INSERT INTO character_roster (

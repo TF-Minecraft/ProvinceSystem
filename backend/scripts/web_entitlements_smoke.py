@@ -1,6 +1,6 @@
 """Smoke: PUT rpc-player-meta + GET /characters/player-meta.
 
-Run from backend/ with TEST_DATABASE_URL: python scripts/rpc_player_meta_smoke.py
+Run from backend/ with TEST_DATABASE_URL: python scripts/web_entitlements_smoke.py
 """
 
 from __future__ import annotations
@@ -125,7 +125,7 @@ def main() -> None:
     if flags.get("rulequiz.completed") is not True:
         fail(f"GET permission_flags: {flags}")
 
-    print("OK rpc_player_meta smoke")
+    print("OK web_entitlements smoke")
     print(f"  player={PLAYER}")
     print(f"  stops={row.get('name_colour_stops')} texture={row.get('allow_drink_texture')} message={row.get('allow_drink_message')}")
 
