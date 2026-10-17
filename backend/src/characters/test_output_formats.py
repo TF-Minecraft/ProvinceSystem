@@ -25,12 +25,12 @@ API_TIME = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
 
 @pytest.fixture(autouse=True)
 def db(tmp_path, monkeypatch, postgres):
-    for name, sub in (("DATA_DIR", ""), ("DB_PATH", "province.db"), ("DRINKS_DIR", "drinks"),
+    for name, sub in (("DATA_DIR", ""), ("DRINKS_DIR", "drinks"),
                       ("SKINS_DIR", "skins"), ("WARDROBE_DIR", "wardrobe")):
         monkeypatch.setattr(db_mod, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setattr(wardrobe, "DATA_DIR", tmp_path)
     monkeypatch.setattr(wardrobe, "WARDROBE_DIR", tmp_path / "wardrobe")
-    db_mod.migrate()
+    db_mod.ensure_directories()
 
 
 def test_roster_keeps_created_at_text_and_sends_times_in_the_api_form():

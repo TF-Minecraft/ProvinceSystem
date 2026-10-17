@@ -49,9 +49,7 @@ def chronicle_env(tmp_path, monkeypatch, postgres):
 
     Everything the routes touch — day folders and the index table — has to live
     under tmp_path or in the emptied test database; the real src/output must
-    never be written by a test run. The app's start-up still migrates the
-    SQLite file of the areas not yet on Postgres, so that goes under tmp_path
-    too.
+    never be written by a test run.
     """
     registry = tmp_path / "maps.yml"
     registry.write_text(TEST_REGISTRY, encoding="utf-8")
@@ -61,7 +59,6 @@ def chronicle_env(tmp_path, monkeypatch, postgres):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     monkeypatch.setattr(skins_db, "DATA_DIR", data_dir)
-    monkeypatch.setattr(skins_db, "DB_PATH", data_dir / "province.db")
     monkeypatch.setattr(skins_db, "SKINS_DIR", data_dir / "skins")
     monkeypatch.setattr(skins_db, "WARDROBE_DIR", data_dir / "wardrobe")
     monkeypatch.setattr(skins_db, "DRINKS_DIR", data_dir / "drinks")
@@ -481,7 +478,7 @@ def test_index_reports_no_incomplete_days_for_a_clean_capture(client):
 # ---------------------------------------------------------------------------
 
 
-def test_marker_upload_regenerates_zoc_overlays_before_capturing(monkeypatch, tmp_path):
+def test_marker_upload_regenerates_zoc_overlays_before_capturing(monkeypatch, tmp_path, postgres):
     """capture_if_due reads zoc_overlays.json off disk, so it has to run after
     generate_zoc_overlays or every stored day holds overlays that disagree with
     the markers captured beside them."""
@@ -908,8 +905,8 @@ def test_index_flags_nothing_when_the_live_geometry_is_missing(client, monkeypat
 def test_stale_geometry_days_ignores_a_non_string_stored_version():
     """A damaged row cannot be compared, so it is unknown rather than stale.
 
-    Driven at the helper because the column has TEXT affinity: SQLite coerces an
-    int on the way in, so only in-process corruption can produce this.
+    Driven at the helper because the database enforces text values; only
+    in-process corruption can produce these types.
     """
     from src.api.chronicle_routes import _stale_geometry_days
 

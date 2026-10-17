@@ -165,13 +165,22 @@ class SiteStartTest(_CodesDb):
         self.consume(code_id)
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], _iso(created))
 
-    def test_expired_in_game_codes_still_count(self) -> None:
+    def test_an_in_game_code_that_lapsed_unused_frees_the_clock(self) -> None:
         created = datetime.now(timezone.utc) - timedelta(days=3)
         self.add_code("skin", created, expires=created + timedelta(hours=48))
+        self.assertIsNone(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"])
+        self.assertTrue(self.codes.site_start_allowance(PLAYER, "main")["drink"]["can_start"])
+
+    def test_a_used_in_game_code_still_counts_after_it_expires(self) -> None:
+        created = datetime.now(timezone.utc) - timedelta(days=3)
+        code_id = self.add_code("skin", created, expires=created + timedelta(hours=48))
+        self.consume(code_id)
         self.assertEqual(self.codes.get_cosmetic_mint_status(PLAYER)["last_mint_at"], _iso(created))
 
     def test_a_staff_reset_clears_the_clock(self) -> None:
-        self.add_code("skin", datetime.now(timezone.utc) - timedelta(days=2))
+        self.consume(self.add_code("skin", datetime.now(timezone.utc) - timedelta(days=2)))
+        with self.assertRaises(self.codes.SiteStartRefused):
+            self.codes.start_site_session(PLAYER, "main", "drink")
         self.codes.reset_cosmetic_mint_cooldowns(PLAYER, "staff")
         self.codes.start_site_session(PLAYER, "main", "drink")
 

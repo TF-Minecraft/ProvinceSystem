@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -36,19 +37,22 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
 
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
+        from src.characters import wardrobe
 
-        from characters.rpc_player_meta import upsert_rpc_player_meta
+        paths = patch.multiple(wardrobe, DATA_DIR=root, WARDROBE_DIR=root / "wardrobe")
+        paths.start()
+        self.addCleanup(paths.stop)
+
+        from src.characters.rpc_player_meta import upsert_rpc_player_meta
 
         upsert_rpc_player_meta(
             {
@@ -76,7 +80,6 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
@@ -85,14 +88,14 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_png_upload_diag_invalid_bytes(self) -> None:
-        from characters.wardrobe import _png_upload_diag
+        from src.characters.wardrobe import _png_upload_diag
 
         diag = _png_upload_diag(b"not-a-png")
         self.assertIn("magic_ok=False", diag)
         self.assertIn("len=9", diag)
 
     def test_pending_upload_logs_invalid_png(self) -> None:
-        from characters.wardrobe import WardrobeError, upload_pending_create_wardrobe
+        from src.characters.wardrobe import WardrobeError, upload_pending_create_wardrobe
 
         with self.assertLogs("characters.wardrobe", level="WARNING") as caplog:
             with self.assertRaises(WardrobeError) as ctx:

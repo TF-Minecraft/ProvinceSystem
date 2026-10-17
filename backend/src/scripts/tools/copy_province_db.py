@@ -487,14 +487,21 @@ def _high_water(source: Source, table: Table, column: Column) -> int:
     return max(old, 0, *(row[index] for _rowid, row in source.rows[table.name]))
 
 
-def _sequences(conn, source: Source, tables: list[Table], *, write: bool) -> None:
+def _sequences(conn, source: Source, tables: list[Table], *, write: bool, transactional: bool = False) -> None:
     for table in tables:
         for column in table.columns:
             if not column.identity:
                 continue
             name, current = _sequence(conn, table, column)
             wanted = _high_water(source, table, column)
-            if write:
+            if write and transactional:
+                # RESTART is transactional, unlike setval. Its new sequence
+                # storage (including nextval) rolls back with a failed copy.
+                conn.execute(sql.SQL("ALTER SEQUENCE {} RESTART WITH {}").format(
+                    sql.SQL(name), sql.Literal(max(wanted, 1))))
+                if wanted > 0:
+                    conn.execute("SELECT nextval(%s::regclass)", (name,))
+            elif write:
                 conn.execute("SELECT setval(%s::regclass, %s, %s)", (name, max(wanted, 1), wanted > 0))
             elif current != wanted:
                 raise CopyError(f"{table.name}: identity high-water mark differs")
@@ -549,9 +556,35 @@ def _sync_directory(directory: Path) -> None:
         os.close(fd)
 
 
-def to_postgres(path: Path, url: str, *, verify_only: bool = False,
-                archive_legacy: Path | None = None) -> Report:
+def validate_source(path: Path) -> None:
+    """Preflight an offline SQLite source without changing either database."""
     tables = specifications()
+    with closing(_open_sqlite(path)) as old:
+        source = _source(old, tables)
+    for table in tables:
+        for column in table.columns:
+            if column.identity:
+                _high_water(source, table, column)
+
+
+def to_postgres(path: Path, url: str, *, verify_only: bool = False,
+                archive_legacy: Path | None = None, expected_target: Path | None = None) -> Report:
+    """Import into empty tables, or replace an exactly verified offline baseline.
+
+    expected_target is reserved for stopped-backend deployment recovery. It
+    never permits overwriting an independently changed PostgreSQL database.
+    """
+    if expected_target is not None and verify_only:
+        raise CopyError("a replacement cannot be verify-only")
+    tables = specifications()
+    baseline = None
+    if expected_target is not None:
+        with closing(_open_sqlite(expected_target)) as expected:
+            baseline = _source(expected, tables)
+        for table in tables:
+            for column in table.columns:
+                if column.identity:
+                    _high_water(baseline, table, column)
     with closing(_open_sqlite(path)) as old:
         source = _source(old, tables)
         # Validate counters before any target write as well as the row values.
@@ -574,10 +607,21 @@ def to_postgres(path: Path, url: str, *, verify_only: bool = False,
                     sql.SQL(", ").join(sql.Identifier("public", table.name) for table in tables)))
             _require_current(conn, tables)
             if not verify_only:
-                for table in tables:
-                    if conn.execute(sql.SQL("SELECT EXISTS (SELECT 1 FROM public.{}) AS used").format(
-                            sql.Identifier(table.name))).fetchone()["used"]:
-                        raise CopyError(f"{table.name}: target site tables must be empty")
+                if baseline is not None:
+                    _verify(conn, baseline, tables)
+                    _sequences(conn, baseline, tables, write=False)
+                    # Disable only the copy-owned append-only truncate guard.
+                    # No CASCADE: references from unrelated tables must refuse
+                    # the replacement, leaving all data and trigger state intact.
+                    conn.execute("ALTER TABLE public.admin_audit DISABLE TRIGGER admin_audit_no_truncate")
+                    conn.execute(sql.SQL("TRUNCATE TABLE {}").format(
+                        sql.SQL(", ").join(sql.Identifier("public", table.name) for table in tables)))
+                    conn.execute("ALTER TABLE public.admin_audit ENABLE TRIGGER admin_audit_no_truncate")
+                else:
+                    for table in tables:
+                        if conn.execute(sql.SQL("SELECT EXISTS (SELECT 1 FROM public.{}) AS used").format(
+                                sql.Identifier(table.name))).fetchone()["used"]:
+                            raise CopyError(f"{table.name}: target site tables must be empty")
                 for table in tables:
                     if not source.rows[table.name]:
                         continue
@@ -591,7 +635,7 @@ def to_postgres(path: Path, url: str, *, verify_only: bool = False,
             if not verify_only:
                 for table in tables:
                     conn.execute(sql.SQL("ANALYZE public.{}").format(sql.Identifier(table.name)))
-            _sequences(conn, source, tables, write=not verify_only)
+            _sequences(conn, source, tables, write=not verify_only, transactional=not verify_only)
     return Report(checks, _excluded(source), source.rounded_rows, source.discarded_microsoft_states)
 
 

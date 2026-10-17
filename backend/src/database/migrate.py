@@ -4,7 +4,8 @@ Files are `NNNN_name.sql`, applied in order, each in its own transaction with
 its row in `schema_migrations`. A session advisory lock lets only one runner
 work at a time, so backends starting together never apply a file twice. An
 applied file must not change, every applied version must still have its file,
-and a new file must be numbered above the newest applied one.
+and a new file must be numbered above the newest applied one. Native deployments
+can retain bundled files so an older bundle can validate newer applied versions.
 
 `seeds.sql` holds rows the site needs (idempotent inserts). The backend applies
 migrations and seeds at start-up; the copy from SQLite migrates without seeding,
@@ -21,9 +22,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import re
 import sys
-from dataclasses import dataclass
+import tempfile
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -55,10 +58,18 @@ class Migration:
     version: str
     name: str
     sql: str
+    source: bytes = field(repr=False, compare=False)
 
     @property
     def checksum(self) -> str:
         return hashlib.sha256(self.sql.encode("utf-8")).hexdigest()
+
+
+def _read_migration(path: Path, match: re.Match) -> Migration:
+    source = path.read_bytes()
+    # Keep the historical read_text() checksum, but retain the original bytes.
+    sql = source.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    return Migration(match[1], match[2], sql, source)
 
 
 def discover(directory: Path | None = None) -> list[Migration]:
@@ -70,7 +81,7 @@ def discover(directory: Path | None = None) -> list[Migration]:
         match = _FILE.match(path.name)
         if not match:
             raise MigrationError(f"migration file name must be NNNN_name.sql: {path.name}")
-        migrations.append(Migration(match[1], match[2], path.read_text(encoding="utf-8")))
+        migrations.append(_read_migration(path, match))
     versions = [m.version for m in migrations]
     if len(set(versions)) != len(versions):
         raise MigrationError(f"two migration files share a number in {directory}")
@@ -83,9 +94,72 @@ def _connect(url: str | None) -> psycopg.Connection:
                            application_name="provincesystem-migrate")
 
 
-def _applied(conn: psycopg.Connection) -> dict[str, tuple[str, datetime]]:
-    rows = conn.execute("SELECT version, checksum, applied_at FROM schema_migrations").fetchall()
-    return {version: (checksum, applied_at) for version, checksum, applied_at in rows}
+def _applied(conn: psycopg.Connection) -> dict[str, tuple[str, datetime, str]]:
+    rows = conn.execute("SELECT version, checksum, applied_at, name FROM schema_migrations").fetchall()
+    return {version: (checksum, applied_at, name) for version, checksum, applied_at, name in rows}
+
+
+def _fsync_directory(directory: Path) -> None:
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _retain(migrations: list[Migration], applied: dict, directory: Path) -> list[Migration]:
+    """Retain this bundle; return only applied definitions absent from it.
+
+    The caller holds the database's migration advisory lock. Persist every file
+    before applying any SQL, including files whose migration might fail.
+    """
+    if directory.is_symlink():
+        raise MigrationError(f"retained migration directory must not be a symlink: {directory}")
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    directory.chmod(0o700)
+    _fsync_directory(directory.parent)
+    bundled = {m.version: m for m in migrations}
+    retained = {}
+    for path in sorted(directory.iterdir()):
+        match = _FILE.match(path.name)
+        if match is None or (match[1] not in bundled and match[1] not in applied):
+            continue
+        if path.is_symlink() or not path.is_file():
+            raise MigrationError(f"retained migration must be a regular file: {path.name}")
+        if match[1] in retained:
+            raise MigrationError(f"two retained migration files share a number: {match[1]}")
+        try:
+            migration = _read_migration(path, match)
+        except (OSError, UnicodeError) as exc:
+            raise MigrationError(f"cannot read retained migration {path.name}") from exc
+        current = bundled.get(migration.version)
+        if current is not None:
+            if migration.name != current.name or migration.source != current.source:
+                raise MigrationError(f"retained migration {migration.version}_{migration.name} changed")
+        elif migration.name != applied[migration.version][2]:
+            raise MigrationError(f"retained migration {migration.version}_{migration.name} changed name")
+        retained[migration.version] = migration
+        path.chmod(0o600)
+        with path.open("rb") as handle:
+            os.fsync(handle.fileno())
+
+    for migration in migrations:
+        if migration.version in retained:
+            continue
+        path = directory / f"{migration.version}_{migration.name}.sql"
+        fd, temporary = tempfile.mkstemp(prefix=".migration-", suffix=".tmp", dir=directory)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                os.fchmod(handle.fileno(), 0o600)
+                handle.write(migration.source)
+                handle.flush()
+                os.fsync(handle.fileno())
+            # Publish a complete file atomically without replacing existing history.
+            os.link(temporary, path)
+        finally:
+            os.unlink(temporary)
+    _fsync_directory(directory)
+    return [m for version, m in retained.items() if version not in bundled]
 
 
 def _check_order(migrations: list[Migration], applied: dict) -> None:
@@ -93,7 +167,7 @@ def _check_order(migrations: list[Migration], applied: dict) -> None:
     unknown = sorted(set(applied) - set(files))
     if unknown:
         raise MigrationError(f"the database has applied migrations with no file: {', '.join(unknown)}")
-    for version, (checksum, _) in applied.items():
+    for version, (checksum, _, _) in applied.items():
         if files[version].checksum != checksum:
             raise MigrationError(f"migration {version}_{files[version].name} changed after it was applied")
     newest = max(applied, default=None)
@@ -103,11 +177,14 @@ def _check_order(migrations: list[Migration], applied: dict) -> None:
             f"migration {late[0].version}_{late[0].name} is numbered below the newest applied one ({newest})")
 
 
-def migrate(url: str | None = None, *, directory: Path | None = None, seed: bool = False) -> list[str]:
+def migrate(url: str | None = None, *, directory: Path | None = None, seed: bool = False,
+            retained_directory: Path | None = None) -> list[str]:
     """Apply pending migrations to `url` (default DATABASE_URL), then `seeds.sql` if `seed`.
 
-    Returns the versions applied. Refuses to run, changing nothing, when the
-    files and the database's history disagree.
+    Returns the versions applied. Refuses to change the database when the files
+    and its history disagree. With `retained_directory`, save bundled files and
+    use retained definitions to validate applied versions missing from this
+    bundle. Unapplied retained files absent from this bundle are ignored.
     """
     migrations = discover(directory)
     done = []
@@ -116,7 +193,8 @@ def migrate(url: str | None = None, *, directory: Path | None = None, seed: bool
         try:
             conn.execute(_CREATE_TABLE)
             applied = _applied(conn)
-            _check_order(migrations, applied)
+            retained = _retain(migrations, applied, retained_directory) if retained_directory is not None else []
+            _check_order(migrations + retained, applied)
             for migration in migrations:
                 if migration.version in applied:
                     continue

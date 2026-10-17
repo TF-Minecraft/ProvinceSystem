@@ -41,17 +41,15 @@ class DeletePendingCreateTests(unittest.TestCase):
         db_mod = importlib.import_module("src.skins.db")
         self._db_mod = db_mod
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
         wardrobe_mod = importlib.import_module("src.characters.wardrobe")
         self._wardrobe_mod = wardrobe_mod
@@ -64,7 +62,6 @@ class DeletePendingCreateTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins

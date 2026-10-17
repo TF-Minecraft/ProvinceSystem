@@ -15,7 +15,7 @@ from src.characters import creates, realm_wipe, wardrobe
 from src.characters import wardrobe_assets as assets
 from src.characters.roster import replace_roster
 from src.scripts.util.maplock import MapLockBusy, map_lock
-from src.skins import db as sqlite_db
+from src.skins import db as asset_paths
 
 OWNER, LIVE, PENDING = "wardrobe-owner", "live-char", "pending-char"
 
@@ -35,13 +35,13 @@ def signed(data, model):
 
 @pytest.fixture(autouse=True)
 def setup(tmp_path, monkeypatch, postgres):
-    for name, sub in (("DATA_DIR", ""), ("DB_PATH", "province.db"), ("SKINS_DIR", "skins"),
+    for name, sub in (("DATA_DIR", ""), ("SKINS_DIR", "skins"),
                       ("DRINKS_DIR", "drinks"), ("WARDROBE_DIR", "wardrobe")):
-        monkeypatch.setattr(sqlite_db, name, tmp_path / sub if sub else tmp_path)
+        monkeypatch.setattr(asset_paths, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setattr(wardrobe, "DATA_DIR", tmp_path)
     monkeypatch.setattr(wardrobe, "WARDROBE_DIR", tmp_path / "wardrobe")
     monkeypatch.setattr(wardrobe, "sign_wardrobe_skin", signed)
-    sqlite_db.migrate()
+    asset_paths.ensure_directories()
     replace_roster(OWNER, [{"id": LIVE, "name": "Ana", "status": "ALIVE"}])
     testing.execute("INSERT INTO character_creates (id, player_uuid, payload, status, created_at) "
                     "VALUES (%s, %s, '{}', 'pending', now())", (PENDING, OWNER))

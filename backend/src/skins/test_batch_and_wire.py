@@ -24,8 +24,7 @@ STAFF = {"X-Staff-Key": "staff-key"}
 
 @pytest.fixture
 def api(env, tmp_path, monkeypatch):
-    # The Characters post-apply bridge must only open this test's SQLite file.
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
+    # The Characters post-apply bridge shares the isolated test database.
     monkeypatch.setenv("PLUGIN_KEY", "batch-key")
     monkeypatch.setenv("STAFF_KEY", "staff-key")
     app = FastAPI()

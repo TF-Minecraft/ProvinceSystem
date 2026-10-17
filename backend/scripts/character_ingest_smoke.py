@@ -1,4 +1,4 @@
-"""Character create/list ingest smoke — run from backend/: python scripts/character_ingest_smoke.py
+"""Character create/list ingest smoke — run from backend/ with TEST_DATABASE_URL: python scripts/character_ingest_smoke.py
 """
 
 from __future__ import annotations
@@ -16,8 +16,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.skins.db import connect, migrate
+from smoke_support import isolated_smoke
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
@@ -205,8 +204,9 @@ def valid_body(**overrides):
     return body
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
+    from server import app
     client = TestClient(app)
     player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
     discord_id = str(700000000000000000 + (uuid.uuid4().int % 99999999999999))

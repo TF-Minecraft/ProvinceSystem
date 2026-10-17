@@ -32,14 +32,13 @@ class RosterIngestTest(unittest.TestCase):
         sys.modules["src.skins.db"] = db_mod
         self._orig = {
             k: getattr(db_mod, k)
-            for k in ("DB_PATH", "DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")
+            for k in ("DATA_DIR", "DRINKS_DIR", "SKINS_DIR", "WARDROBE_DIR")
         }
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
 
     def tearDown(self) -> None:
         for k, v in self._orig.items():

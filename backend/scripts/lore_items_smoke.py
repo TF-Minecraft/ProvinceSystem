@@ -1,4 +1,4 @@
-"""Lore-item API smoke — run from backend/: python scripts/lore_items_smoke.py
+"""Lore-item API smoke — run from backend/ with TEST_DATABASE_URL: python scripts/lore_items_smoke.py
 
 Catalog + roster kit claimable → character session → list/customise + PNG bridge.
 Granted → 403; pending-create UUID is a valid customise target before server ack.
@@ -22,8 +22,9 @@ os.environ.setdefault("SKINS_DEV", "1")
 
 from fastapi.testclient import TestClient
 
-from server import app
-from src.skins.db import connect, migrate
+from smoke_support import isolated_smoke
+from src.database import connect
+from psycopg.types.json import Jsonb
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
@@ -186,14 +187,27 @@ def redeem_skin_session(client: TestClient, player: str) -> str:
     return token
 
 
+@isolated_smoke
 def main() -> None:
-    migrate()
+    from server import app
+    from src.skins.db import SKINS_DIR
+
     client = TestClient(app)
     suffix = uuid.uuid4().hex[:8]
     player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
     char_id = f"lore_smoke_{suffix}"
     ign = f"LoreSm{suffix[:6]}"
     discord_id = f"8{uuid.uuid4().int % 10**17:017d}"
+
+    meta = client.put(
+        "/characters/plugin/rpc-player-meta",
+        json={"player_uuid": player, "skin_kinds": ["handheld", "armor_set", "misc"],
+              "allow_armor_3d_helmet": True, "name_colour_stops": 8,
+              "max_3d_pair_bytes": 1048576},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if meta.status_code != 200:
+        fail(f"PUT upload entitlements: {meta.status_code} {meta.text}")
 
     r = client.put(
         "/characters/plugin/creation-catalog",
@@ -353,25 +367,22 @@ def main() -> None:
 
     # Pending create UUID is a valid customise target before server ack
     create_id = f"create_{suffix}"
-    # PG-MIGRATION: Scripts. character_creates is in Postgres; the smoke scripts still seed and
-    # read province.db, and the character routes they call need DATABASE_URL.
     with connect() as conn:
         conn.execute(
             """
             INSERT INTO character_creates (
                 id, player_uuid, client_request_id, payload, status,
                 character_id, error, created_at, applied_at
-            ) VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL)
+            ) VALUES (%s, %s, %s, %s, 'pending', NULL, NULL, %s, NULL)
             """,
             (
                 create_id,
                 player,
                 str(uuid.uuid4()),
-                json.dumps({"name": "Create Knife"}),
+                Jsonb({"name": "Create Knife"}),
                 "2026-01-01T00:00:00Z",
             ),
         )
-        conn.commit()
     r = client.get(
         f"/characters/lore-items?character_id={create_id}",
         headers=auth,
@@ -488,7 +499,7 @@ def main() -> None:
         row = conn.execute(
             """
             SELECT 1 FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()
@@ -599,7 +610,7 @@ def main() -> None:
 
     with connect() as conn:
         row = conn.execute(
-            "SELECT base_set, staff, status, kind FROM submissions WHERE id = ?",
+            "SELECT base_set, staff, status, kind FROM submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
     if row is None:
@@ -621,7 +632,7 @@ def main() -> None:
     lore_code_id = ensure_lore_upload_code(player, "main")
     with connect() as conn:
         sub_row = conn.execute(
-            "SELECT code_id FROM submissions WHERE id = ?",
+            "SELECT code_id FROM submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
     if sub_row is None:
@@ -639,7 +650,7 @@ def main() -> None:
         lore_row = conn.execute(
             """
             SELECT state, submission_id FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()
@@ -675,7 +686,7 @@ def main() -> None:
         fail(f"deny response should include reason: {denied}")
     with connect() as conn:
         gone = conn.execute(
-            "SELECT 1 FROM submissions WHERE id = ?",
+            "SELECT 1 FROM submissions WHERE id = %s",
             (sub_id,),
         ).fetchone()
         lore_denied = conn.execute(
@@ -683,7 +694,7 @@ def main() -> None:
             SELECT state, submission_id, display_name, lore_json,
                    ready_at, existing_skin_id, skin_slug, deny_reason
             FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()
@@ -765,11 +776,10 @@ def main() -> None:
             UPDATE lore_item_customisations
             SET submission_id = NULL, state = 'draft', skin_slug = NULL,
                 existing_skin_id = NULL, ready_at = NULL, deny_reason = NULL
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         )
-        conn.commit()
 
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
@@ -808,7 +818,7 @@ def main() -> None:
     now = "2026-01-01T00:00:00Z"
     with connect() as conn:
         code_row = conn.execute(
-            "SELECT id FROM codes WHERE player_uuid = ? ORDER BY id DESC LIMIT 1",
+            "SELECT id FROM codes WHERE player_uuid = %s ORDER BY id DESC LIMIT 1",
             (player,),
         ).fetchone()
         if code_row is None:
@@ -819,8 +829,8 @@ def main() -> None:
             INSERT INTO submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 base_set, status, dir_path, created_at, applied_at, staff
-            ) VALUES (?, ?, ?, 'handheld', ?, 'Applied Knife', 'knives',
-                      'applied', ?, ?, ?, 0)
+            ) VALUES (%s, %s, %s, 'handheld', %s, 'Applied Knife', 'knives',
+                      'applied', %s, %s, %s, false)
             """,
             (
                 applied_id,
@@ -832,7 +842,10 @@ def main() -> None:
                 now,
             ),
         )
-        conn.commit()
+
+    applied_dir = SKINS_DIR / applied_id
+    applied_dir.mkdir()
+    (applied_dir / f"{applied_id}.png").write_bytes(make_png(16, 16, fill=140))
 
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
@@ -857,21 +870,20 @@ def main() -> None:
         conn.execute(
             """
             UPDATE lore_item_customisations
-            SET state = 'pending_skin', submission_id = ?, skin_slug = NULL,
-                ready_at = NULL
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            SET state = 'pending_skin', submission_id = %s, skin_slug = NULL,
+                existing_skin_id = NULL, ready_at = NULL
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
-            (sub_id, player, char_id, "iron_hunting_knife"),
+            (retry_sub, player, char_id, "iron_hunting_knife"),
         )
         conn.execute(
             """
             UPDATE submissions
-            SET status = 'approved', applied_at = NULL, reviewed_at = ?
-            WHERE id = ?
+            SET status = 'approved', applied_at = NULL, reviewed_at = %s
+            WHERE id = %s
             """,
-            (now, sub_id),
+            (now, retry_sub),
         )
-        conn.commit()
 
     r = client.get(
         f"/characters/plugin/lore-items/claim-status"
@@ -895,21 +907,21 @@ def main() -> None:
 
     from src.skins.submissions import mark_applied
 
-    applied = mark_applied([sub_id])
-    if sub_id not in applied:
-        fail(f"mark_applied did not apply {sub_id}: {applied}")
+    applied = mark_applied([retry_sub])
+    if retry_sub not in applied:
+        fail(f"mark_applied did not apply {retry_sub}: {applied}")
     with connect() as conn:
         promoted = conn.execute(
             """
             SELECT state, skin_slug FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()
     if promoted is None or str(promoted["state"]) != "ready":
         fail(f"mark_applied should promote customise to ready: {promoted}")
-    if str(promoted["skin_slug"]) != sub_id:
-        fail(f"promoted skin_slug expected {sub_id}: {promoted}")
+    if str(promoted["skin_slug"]) != retry_sub:
+        fail(f"promoted skin_slug expected {retry_sub}: {promoted}")
     print("OK mark_applied promotes pending_skin -> ready")
 
     r = client.post(
@@ -932,7 +944,7 @@ def main() -> None:
         done = conn.execute(
             """
             SELECT state FROM lore_item_customisations
-            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            WHERE player_uuid = %s AND character_id = %s AND kit_key = %s
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()

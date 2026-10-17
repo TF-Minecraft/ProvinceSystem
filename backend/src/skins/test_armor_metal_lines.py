@@ -11,12 +11,11 @@ from src.skins.naming import armor_tier_base_set, armor_tier_label
 
 @pytest.fixture
 def database(postgres, tmp_path, monkeypatch):
-    """Codes and submissions are in Postgres; SQLite still holds the other site tables."""
+    """Site records use the isolated Postgres fixture."""
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "province.db")
     for name in ("SKINS_DIR", "WARDROBE_DIR", "DRINKS_DIR"):
         monkeypatch.setattr(db, name, tmp_path / name.lower())
-    db.migrate()
+    db.ensure_directories()
     return db
 
 
@@ -98,43 +97,3 @@ def test_plugin_gets_base_set_per_tier(database):
         "p_set": {"iron": "heavy iron"},
     }
     assert get_submission_for_plugin("p_set")["tier_sets"] == {"iron": "heavy iron"}
-
-
-def test_legacy_armor_gets_its_shop_sets(database):
-    # The SQLite upgrade still prepares legacy rows for the later copy to Postgres.
-    with database.connect() as conn:
-        conn.execute("INSERT INTO codes (id, code_hash, player_uuid, created_at, expires_at) "
-                     "VALUES (1, 'hash', 'player', '2026-01-01T00:00:00Z', '2099-01-01T00:00:00Z')")
-        for sid in ("archbishqp_crusader", "estiennehavenga_priestess_armour",
-                    "geofflive_thalendorian_armor", "dev_geofflive_thalendorian_armor"):
-            conn.execute("INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, "
-                         "status, dir_path, created_at) VALUES (?, 'player', 1, 'armor_set', ?, 'Name', "
-                         "'approved', '/tmp/x', '2026-01-01T00:00:00Z')", (sid, sid))
-        conn.commit()
-    database.migrate()
-
-    def sets(sid):
-        with database.connect() as conn:
-            return json.loads(conn.execute("SELECT tier_sets FROM submissions WHERE id = ?", (sid,)).fetchone()[0])
-
-    assert sets("archbishqp_crusader") == {"iron": "medium steel"}
-    assert sets("estiennehavenga_priestess_armour") == {"mage": "mage steel"}
-    thalendorian = {
-        "iron": "light iron",
-        "steel": "light steel",
-        "abyssalite": "light abyssalite",
-        "mythril": "light mythril",
-        "mage": "mage steel",
-    }
-    assert sets("geofflive_thalendorian_armor") == thalendorian
-    assert sets("dev_geofflive_thalendorian_armor") == thalendorian
-
-    # Staff edits made after the upgrade are kept on later starts.
-    with database.connect() as conn:
-        conn.execute(
-            "UPDATE submissions SET tier_sets = '{\"iron\": \"heavy steel\"}' "
-            "WHERE id = 'archbishqp_crusader'"
-        )
-        conn.commit()
-    database.migrate()
-    assert sets("archbishqp_crusader") == {"iron": "heavy steel"}

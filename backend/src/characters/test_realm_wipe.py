@@ -40,17 +40,15 @@ class _CharacterDbFixture:
         self._db_mod = db_mod
         # Character modules import src.skins.db - keep one module identity for tests.
         sys.modules["src.skins.db"] = db_mod
-        self._orig_db = db_mod.DB_PATH
         self._orig_data = db_mod.DATA_DIR
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_skins = db_mod.SKINS_DIR
         self._orig_wardrobe = db_mod.WARDROBE_DIR
         db_mod.DATA_DIR = root
-        db_mod.DB_PATH = root / "province.db"
         db_mod.DRINKS_DIR = root / "drinks"
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
-        db_mod.migrate()
+        db_mod.ensure_directories()
         # Other fixtures reload codes; refresh the route's exception imports.
         importlib.reload(importlib.import_module("src.api.characters_routes"))
 
@@ -67,7 +65,6 @@ class _CharacterDbFixture:
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
-        db_mod.DB_PATH = self._orig_db
         db_mod.DATA_DIR = self._orig_data
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
