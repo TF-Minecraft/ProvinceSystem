@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Install the patch note jobs' Python package from a commit on ProvinceSystem main.
+"""Install the patch note jobs' Python package from a commit on TFMCWeb main.
 
 The rewrite worker runs as root because the Codex login belongs to root, so the
 worker and the watch jobs run a root-owned copy of backend/src/patchnotes, never
@@ -26,7 +26,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-REPO = "TF-Minecraft/ProvinceSystem"
+REPO = "TF-Minecraft/TFMCWeb"
 PACKAGE = "backend/src/patchnotes"
 ROOT = Path("/usr/local/lib/tfmc-patchnotes")
 CURRENT = ROOT / "current"

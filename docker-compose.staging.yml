@@ -1,4 +1,4 @@
-name: tfmc-staging
+name: tfmcweb-staging
 
 services:
   backend:

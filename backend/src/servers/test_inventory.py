@@ -12,6 +12,18 @@ import pytest
 from src.servers import inventory
 
 
+def test_bridge_repository_matches_unchanged_runtime_name():
+    latest = inventory.Release("TFMCWebBridge", "1.0", "2026-10-17", "", "tfmcweb-1.0.jar", "published")
+    jar = inventory.Jar("custom-test.jar", "unpublished", "TFMCWeb", "DEV", False)
+    plugins, others = inventory.compare(
+        {"TFMCWebBridge": [latest]},
+        {"dev": {"jars": [jar], "startup": None, "releases_only": False}},
+    )
+    assert others == []
+    assert plugins[0]["servers"]["dev"]["state"] == "test_build"
+    assert plugins[0]["servers"]["dev"]["files"] == ["custom-test.jar"]
+
+
 def make_jar(folder, file, name, version, extra=b""):
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / file

@@ -4,7 +4,7 @@
 # Same machine as AMP + staging stack (recommended):
 #   api_base_url: "http://127.0.0.1:18001"
 #   staff_key: "dev-staff-key"
-# See TF-Minecraft/Docs: projects/ProvinceSystem/docs/integrations/discord-bot.md
+# See TF-Minecraft/Docs: projects/TFMCWeb/docs/integrations/discord-bot.md
 
 api_base_url: "http://127.0.0.1:18001"
 staff_key: "dev-staff-key"
