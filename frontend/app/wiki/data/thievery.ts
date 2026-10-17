@@ -2,7 +2,7 @@ import type { CommandRow, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Thievery ----------
 //
-// Sourced from https://github.com/TF-Minecraft/Docs/blob/main/projects/TFMCWeb/docs/wiki-research/e-adventure.md, "Thievery" section.
+// Sourced from https://github.com/TF-Minecraft/TFMCWeb/blob/main/docs/docs/wiki-research/e-adventure.md, "Thievery" section.
 // Jar: thievery-1.0.0.jar. No `permissions:` block exists in plugin.yml, so
 // every command below is open to a normal player except where noted.
 

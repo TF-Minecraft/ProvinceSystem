@@ -2,6 +2,6 @@
 
 Supporter linking, entitlement decisions, and delivery to Discord and Minecraft.
 
-[Configuration and technical reference](https://github.com/TF-Minecraft/Docs/blob/main/projects/TFMCWeb/docs/integrations/patreon-backend.md)
+[Configuration and technical reference](../../../docs/docs/integrations/patreon-backend.md)
 
-Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
+Technical documentation is maintained in this repository’s [`docs/`](../../../docs/README.md) folder.
