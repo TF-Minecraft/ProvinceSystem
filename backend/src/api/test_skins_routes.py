@@ -21,11 +21,7 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
-import pytest
 from fastapi import HTTPException
-
-# Discord links, codes, sessions and submissions live in Postgres.
-pytestmark = pytest.mark.usefixtures("postgres")
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -34,7 +30,7 @@ TINY_PNG = (
 )
 
 
-def _sync_temp_db(root: Path, db_path: Path) -> object:
+def _sync_temp_assets(root: Path) -> object:
     import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
@@ -53,9 +49,8 @@ class SkinsRoutesScopeTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
 
-        db_mod = _sync_temp_db(root, self.db_path)
+        db_mod = _sync_temp_assets(root)
         self._db_mod = db_mod
         self._orig_data = db_mod.DATA_DIR
         self._orig_skins = db_mod.SKINS_DIR

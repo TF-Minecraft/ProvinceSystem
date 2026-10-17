@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import importlib
 import sys
 import tempfile
@@ -68,7 +67,6 @@ class DeletePendingCreateTests(unittest.TestCase):
         db_mod.WARDROBE_DIR = self._orig_wardrobe
         self._wardrobe_mod.DATA_DIR = self._orig_w_data
         self._wardrobe_mod.WARDROBE_DIR = self._orig_w_dir
-        gc.collect()
         self.tmp.cleanup()
 
     def _write_png(self, relpath: str) -> Path:

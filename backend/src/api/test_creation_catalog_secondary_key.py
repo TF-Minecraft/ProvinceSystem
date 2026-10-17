@@ -16,7 +16,6 @@ _BACKEND = Path(__file__).resolve().parents[2]
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -56,8 +55,7 @@ class SecondaryPluginKeyTest(unittest.TestCase):
 
         import src.skins.db  # noqa: F401  (make sure at least one copy is loaded)
 
-        # Other test files load the db module as both "skins.db" and "src.skins.db" and leave
-        # either one in sys.modules, so point every loaded copy at the temp database.
+        # Redirect both asset-module import spellings to the temporary directories.
         paths = {
             "DATA_DIR": root,
             "SKINS_DIR": root / "skins",

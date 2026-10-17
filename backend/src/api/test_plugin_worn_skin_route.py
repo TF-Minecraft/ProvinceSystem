@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import sys
 import tempfile
 import unittest
@@ -36,7 +35,7 @@ class PluginWornSkinTest(unittest.TestCase):
 
         import src.skins.db  # noqa: F401  (make sure at least one copy is loaded)
 
-        # Point every loaded copy of the db module at the temp database.
+        # Point every loaded copy of the db module at the temporary asset directories.
         paths = {
             "DATA_DIR": self.root,
             "SKINS_DIR": self.root / "skins",
@@ -91,7 +90,6 @@ class PluginWornSkinTest(unittest.TestCase):
         for mod, values in self._orig:
             for name, value in values.items():
                 setattr(mod, name, value)
-        gc.collect()
         self.tmp.cleanup()
 
     def put_slot(self, slot: str, value: str | None, signature: str | None) -> Path:

@@ -27,7 +27,6 @@ class RealmScopeTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
 
         import src.skins.db as db_mod
 

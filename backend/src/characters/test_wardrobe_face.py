@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import io
 import sys
 import tempfile
@@ -180,7 +179,6 @@ class ActiveFaceTest(unittest.TestCase):
             p.stop()
         for k, v in self._orig.items():
             setattr(self._db_mod, k, v)
-        gc.collect()
         self.tmp.cleanup()
 
     def put_slot(self, slot: str, png: bytes) -> str:

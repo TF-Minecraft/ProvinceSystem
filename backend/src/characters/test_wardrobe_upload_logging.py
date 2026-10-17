@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import logging
 import sys
 import tempfile
@@ -84,7 +83,6 @@ class WardrobeUploadLoggingTest(unittest.TestCase):
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.WARDROBE_DIR = self._orig_wardrobe
-        gc.collect()
         self.tmp.cleanup()
 
     def test_png_upload_diag_invalid_bytes(self) -> None:

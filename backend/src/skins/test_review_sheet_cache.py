@@ -42,7 +42,7 @@ def _tiny_png() -> bytes:
     return buf.getvalue()
 
 
-def _sync_temp_db(root: Path, db_path: Path) -> object:
+def _sync_temp_assets(root: Path) -> object:
     import src.skins.db as db_mod
 
     db_mod.DATA_DIR = root
@@ -104,11 +104,10 @@ class ReviewSheetCacheTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
         self.skins_dir = root / "skins"
         self.skins_dir.mkdir(parents=True, exist_ok=True)
 
-        db_mod = _sync_temp_db(root, self.db_path)
+        db_mod = _sync_temp_assets(root)
         db_mod.SKINS_DIR = self.skins_dir
         self._db_mod = db_mod
         self._orig_data = db_mod.DATA_DIR

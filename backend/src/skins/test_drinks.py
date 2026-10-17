@@ -36,7 +36,6 @@ class DrinkApiTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
-        self.db_path = root / "province.db"
         self.drinks_dir = root / "drinks"
         self.drinks_dir.mkdir(parents=True, exist_ok=True)
 

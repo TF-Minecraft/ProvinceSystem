@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import importlib
 import sys
 import tempfile
@@ -121,7 +120,6 @@ class OrphanSubmissionCleanupTests(unittest.TestCase):
         db_mod.DRINKS_DIR = self._orig_drinks
         db_mod.SKINS_DIR = self._orig_skins
         db_mod.WARDROBE_DIR = self._orig_wardrobe
-        gc.collect()
         self.tmp.cleanup()
 
     def _seed_pending_create(self) -> None:
