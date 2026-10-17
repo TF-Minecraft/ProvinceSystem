@@ -11,14 +11,14 @@ import pytest
 
 from src.auth.test_admin import ORIGIN, account, app, audit_rows, client, env  # noqa: F401
 from src.dbstudio import studio
-from src.database.studio_role import provision, StudioRoleError
+from src.database.studio_role import main as provision_main, provision, StudioRoleError
 
 
 @pytest.fixture(scope="session")
 def studio_login(postgres_session):
     role = f"studio_test_{os.getpid()}"
     password = "studio-test-password"
-    provision(postgres_session.url, role, password)
+    provision(postgres_session.url, role, password, restrict_large_objects=True)
     try:
         yield make_conninfo(postgres_session.url, user=role, password=password)
     finally:
@@ -421,6 +421,222 @@ def test_provisioning_repairs_direct_and_refuses_public_column_grants(postgres, 
                 ).fetchone() == (False,)
         finally:
             conn.execute(sql.SQL("REVOKE {} ON {} FROM {}").format(sql.SQL(privilege), sql.Identifier(table), target))
+
+
+@pytest.fixture
+def studio_sandbox(scratch_database, monkeypatch):
+    role, password = f"studio_r2_{os.getpid()}", "studio-r2-password"
+    login = make_conninfo(scratch_database, user=role, password=password)
+    with psycopg.connect(scratch_database, autocommit=True) as conn:
+        conn.execute(sql.SQL("CREATE ROLE {} LOGIN NOINHERIT PASSWORD {}").format(
+            sql.Identifier(role), sql.Literal(password)))
+        conn.execute("CREATE TABLE admin_audit (id int, action text)")
+        conn.execute("CREATE TABLE schema_migrations (id int, checksum text)")
+        conn.execute("INSERT INTO schema_migrations VALUES (1, 'original')")
+        conn.execute("CREATE TABLE ordinary (id int GENERATED ALWAYS AS IDENTITY, v text)")
+        conn.execute('CREATE SCHEMA "studio other"')
+        conn.execute('GRANT USAGE ON SCHEMA "studio other" TO PUBLIC')
+    monkeypatch.setenv("DATABASE_STUDIO_URL", login)
+    try:
+        yield SimpleNamespace(url=scratch_database, role=role, password=password, login=login)
+    finally:
+        with psycopg.connect(scratch_database, autocommit=True) as conn:
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+
+
+@pytest.mark.parametrize("kind", ["inheritance", "partition"])
+def test_protected_descendants_stay_read_only_recursively(studio_sandbox, monkeypatch, kind):
+    db = studio_sandbox
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        if kind == "inheritance":
+            conn.execute('CREATE TABLE "studio other".audit_child () INHERITS (admin_audit)')
+            conn.execute('CREATE TABLE audit_leaf () INHERITS ("studio other".audit_child)')
+        else:
+            conn.execute("DROP TABLE admin_audit")
+            conn.execute("CREATE TABLE admin_audit (id int, action text) PARTITION BY RANGE (id)")
+            conn.execute('CREATE TABLE "studio other".audit_child PARTITION OF admin_audit '
+                         'FOR VALUES FROM (0) TO (100) PARTITION BY RANGE (id)')
+            conn.execute('CREATE TABLE audit_leaf PARTITION OF "studio other".audit_child '
+                         'FOR VALUES FROM (0) TO (100)')
+        provision(db.url, db.role, db.password, restrict_large_objects=True)
+        monkeypatch.setattr(studio, "_check", lambda *_: None)
+        for statement in ("INSERT INTO audit_leaf VALUES (1, 'forged')",
+                          "UPDATE audit_leaf SET action = 'forged'", "DELETE FROM audit_leaf"):
+            with pytest.raises(studio.StudioError) as refused:
+                studio.run("site", statement, write=True)
+            assert refused.value.status == 403
+        assert conn.execute("SELECT * FROM admin_audit").fetchall() == []
+        assert studio.run("site", "SELECT * FROM audit_leaf").rows == []
+        assert studio.run("site", "INSERT INTO ordinary(v) VALUES ('ok') RETURNING id", write=True).rows == [[1]]
+        provision(db.url, db.role, db.password)
+        assert studio.run("site", "UPDATE ordinary SET v = 'updated' RETURNING v", write=True).rows == [["updated"]]
+        assert studio.run("site", "DELETE FROM ordinary", write=True).changes == 1
+
+
+@pytest.mark.parametrize("root", ["admin_audit", "schema_migrations"])
+@pytest.mark.parametrize("privilege", ["INSERT", "UPDATE (id)"])
+def test_provisioning_checks_effective_grants_on_descendants_in_other_schemas(studio_sandbox, root, privilege):
+    db = studio_sandbox
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        conn.execute(sql.SQL('CREATE TABLE "studio other".child () INHERITS ({})').format(sql.Identifier(root)))
+        conn.execute('CREATE TABLE "studio other".leaf () INHERITS ("studio other".child)')
+        conn.execute(sql.SQL('GRANT {} ON "studio other".leaf TO PUBLIC').format(sql.SQL(privilege)))
+        with pytest.raises(StudioRoleError, match="grants.*bypass"):
+            provision(db.url, db.role, db.password, restrict_large_objects=True)
+        assert conn.execute(
+            "SELECT has_any_column_privilege(%s, '\"studio other\".leaf', 'INSERT, UPDATE')", (db.role,),
+        ).fetchone() == (True,)
+
+
+@pytest.mark.parametrize(("source", "schema"), [
+    ("schema_migrations", "public"), ("admin_audit", "public"),
+    ("descendant", "studio other"), ("ordinary", "studio other"),
+])
+@pytest.mark.parametrize("column_grant", [False, True])
+def test_provisioning_refuses_writable_user_views(studio_sandbox, source, schema, column_grant):
+    db = studio_sandbox
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        if source == "descendant":
+            conn.execute("CREATE TABLE audit_child () INHERITS (admin_audit)")
+            conn.execute("CREATE TABLE audit_leaf () INHERITS (audit_child)")
+            source = "audit_leaf"
+        conn.execute(sql.SQL("CREATE VIEW studio_base AS SELECT * FROM {}").format(sql.Identifier(source)))
+        view = sql.Identifier(schema, "studio_view")
+        conn.execute(sql.SQL("CREATE VIEW {} AS SELECT * FROM studio_base").format(view))
+        provision(db.url, db.role, db.password, restrict_large_objects=True)
+        privilege = "UPDATE (checksum)" if source == "schema_migrations" else "INSERT (id, action)"
+        if source == "ordinary":
+            privilege = "INSERT (v)"
+        if not column_grant:
+            privilege = privilege.split()[0]
+        conn.execute(sql.SQL("GRANT {} ON {} TO PUBLIC").format(sql.SQL(privilege), view))
+        # These owner-created nested views really are writable at the login
+        # boundary; provisioning must refuse them even outside public.
+        if source == "schema_migrations":
+            statement = sql.SQL("UPDATE {} SET checksum = 'tampered'").format(view)
+        elif source == "ordinary":
+            statement = sql.SQL("INSERT INTO {}(v) VALUES ('test')").format(view)
+        else:
+            statement = sql.SQL("INSERT INTO {}(id, action) VALUES (42, 'forged')").format(view)
+        assert studio.run("site", statement.as_string(conn), write=True).changes == 1
+        if source == "schema_migrations":
+            assert conn.execute("SELECT checksum FROM schema_migrations").fetchone() == ("tampered",)
+        elif source != "ordinary":
+            assert conn.execute("SELECT action FROM admin_audit").fetchone() == ("forged",)
+        with pytest.raises(StudioRoleError, match="grants.*bypass"):
+            provision(db.url, db.role, db.password)
+
+
+def test_public_views_are_read_only_and_refresh_removes_direct_column_grants(studio_sandbox):
+    db = studio_sandbox
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        conn.execute("CREATE VIEW migration_alias AS SELECT * FROM schema_migrations")
+        conn.execute("CREATE VIEW audit_alias AS SELECT * FROM admin_audit")
+        provision(db.url, db.role, db.password, restrict_large_objects=True)
+        conn.execute(sql.SQL("GRANT UPDATE (checksum) ON migration_alias TO {}").format(sql.Identifier(db.role)))
+        conn.execute(sql.SQL("GRANT INSERT (id, action) ON audit_alias TO {}").format(sql.Identifier(db.role)))
+        provision(db.url, db.role, db.password)
+        for statement in ("UPDATE migration_alias SET checksum = 'tampered'",
+                          "INSERT INTO audit_alias VALUES (1, 'forged')"):
+            with pytest.raises(studio.StudioError) as refused:
+                studio.run("site", statement, write=True)
+            assert refused.value.status == 403
+        assert studio.run("site", "SELECT checksum FROM migration_alias").rows == [["original"]]
+        assert studio.run("site", "SELECT count(*) FROM pg_catalog.pg_settings").rows[0][0] > 0
+
+
+LO_FUNCTIONS = ["lo_create(oid)", "lo_creat(integer)", "lo_from_bytea(oid,bytea)",
+                "lo_import(text)", "lo_import(text,oid)"]
+
+
+def test_stock_constructor_access_requires_explicit_setup(studio_sandbox):
+    db = studio_sandbox
+    with psycopg.connect(db.url) as conn:
+        before = conn.execute("SELECT oid, proacl FROM pg_proc ORDER BY oid").fetchall()
+        with pytest.raises(StudioRoleError, match="restrict-large-objects"):
+            provision(db.url, db.role, db.password)
+        assert conn.execute("SELECT oid, proacl FROM pg_proc ORDER BY oid").fetchall() == before
+        # The pre-existing login is still usable; refusal did not silently
+        # change PUBLIC grants for other logins.
+        with psycopg.connect(db.login) as login:
+            assert login.execute("SELECT lo_create(0) > 0").fetchone() == (True,)
+            login.rollback()
+
+
+@pytest.mark.parametrize("statement", [
+    "SELECT lo_create(0)", "SELECT lo_creat(-1)", "SELECT lo_from_bytea(0, decode('6162', 'hex'))",
+    "SELECT lo_import('/etc/hostname')", "SELECT lo_import('/etc/hostname', 0)",
+])
+def test_edit_select_cannot_create_owned_large_objects(studio_sandbox, statement):
+    db = studio_sandbox
+    provision(db.url, db.role, db.password, restrict_large_objects=True)
+    with pytest.raises(studio.StudioError) as refused:
+        studio.run("site", statement, write=True)
+    assert refused.value.status == 403
+    with psycopg.connect(db.url) as conn:
+        assert conn.execute("SELECT count(*) FROM pg_largeobject_metadata").fetchone() == (0,)
+    provision(db.url, db.role, db.password)
+
+
+@pytest.mark.parametrize("function", LO_FUNCTIONS)
+@pytest.mark.parametrize("grantee", ["PUBLIC", "studio"])
+def test_provisioning_refuses_effective_constructor_access(studio_sandbox, function, grantee):
+    db = studio_sandbox
+    provision(db.url, db.role, db.password, restrict_large_objects=True)
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        target = sql.SQL("PUBLIC") if grantee == "PUBLIC" else sql.Identifier(db.role)
+        conn.execute(sql.SQL("GRANT EXECUTE ON FUNCTION pg_catalog.{} TO {}").format(sql.SQL(function), target))
+        with pytest.raises(StudioRoleError, match="constructor grants.*bypass"):
+            provision(db.url, db.role, db.password)
+        if grantee == "studio":
+            with pytest.raises(StudioRoleError, match="constructor grants.*bypass"):
+                provision(db.url, db.role, db.password, restrict_large_objects=True)
+        assert conn.execute("SELECT has_function_privilege(%s, %s, 'EXECUTE')", (db.role, function)).fetchone() == (True,)
+
+
+def test_explicit_setup_preserves_owner_direct_grants_and_unrelated_functions(studio_sandbox, monkeypatch):
+    db = studio_sandbox
+    owner = f"studio_owner_{os.getpid()}"
+    other = f"studio_other_{os.getpid()}"
+    with psycopg.connect(db.url, autocommit=True) as conn:
+        original_owner = conn.execute("SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database()").fetchone()[0]
+        conn.execute(sql.SQL("CREATE ROLE {} LOGIN PASSWORD 'test-owner'").format(sql.Identifier(owner)))
+        conn.execute(sql.SQL("CREATE ROLE {}").format(sql.Identifier(other)))
+        conn.execute(sql.SQL("ALTER DATABASE {} OWNER TO {}").format(sql.Identifier(conn.info.dbname), sql.Identifier(owner)))
+        try:
+            conn.execute(sql.SQL("GRANT EXECUTE ON FUNCTION lo_creat(integer) TO {}").format(sql.Identifier(other)))
+            before = conn.execute("SELECT oid, proacl FROM pg_proc WHERE proname NOT IN "
+                                  "('lo_create', 'lo_creat', 'lo_from_bytea', 'lo_import') ORDER BY oid").fetchall()
+            monkeypatch.setenv("DATABASE_URL", db.url)
+            monkeypatch.setenv("DATABASE_STUDIO_PASSWORD", db.password)
+            assert provision_main(["--role", db.role, "--restrict-large-objects"]) == 0
+            assert provision_main(["--role", db.role]) == 0
+            assert conn.execute("SELECT oid, proacl FROM pg_proc WHERE proname NOT IN "
+                                "('lo_create', 'lo_creat', 'lo_from_bytea', 'lo_import') ORDER BY oid").fetchall() == before
+            with psycopg.connect(make_conninfo(db.url, user=owner, password="test-owner")) as owner_conn:
+                for statement in ("SELECT lo_create(0)", "SELECT lo_creat(-1)", "SELECT lo_from_bytea(0, 'abc')"):
+                    assert owner_conn.execute(statement).fetchone()[0] > 0
+                owner_conn.rollback()
+            assert conn.execute("SELECT has_function_privilege(%s, 'lo_import(text)', 'EXECUTE')", (owner,)).fetchone() == (False,)
+            assert conn.execute("SELECT has_function_privilege(%s, 'lo_creat(integer)', 'EXECUTE')", (other,)).fetchone() == (True,)
+        finally:
+            conn.execute(sql.SQL("ALTER DATABASE {} OWNER TO {}").format(sql.Identifier(conn.info.dbname), sql.Identifier(original_owner)))
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(owner)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(owner)))
+            conn.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(other)))
+            conn.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(other)))
+
+
+def test_existing_large_object_ownership_is_refused_and_preserved(studio_sandbox):
+    db = studio_sandbox
+    with psycopg.connect(db.login) as login:
+        oid = login.execute("SELECT lo_from_bytea(0, 'keep')").fetchone()[0]
+    for explicit in (False, True):
+        with pytest.raises(StudioRoleError, match="own nothing"):
+            provision(db.url, db.role, db.password, restrict_large_objects=explicit)
+    with psycopg.connect(db.url) as conn:
+        assert bytes(conn.execute("SELECT lo_get(%s)", (oid,)).fetchone()[0]) == b"keep"
 
 
 def test_studio_inserts_can_allocate_an_identity_without_resetting_it(app, env):
