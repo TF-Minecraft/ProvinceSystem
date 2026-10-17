@@ -1,0 +1,11 @@
+{
+    "author": ["TFMC"],
+    "bot_version": [3, 5, 0],
+    "description": "Staff precedent lookup for ProvinceSystem: /case-log stores a ruling, /precedent searches similar past cases.",
+    "hidden": true,
+    "install_msg": "Precedent installed. Copy config.example.yml to config.yml and fill values; use `/precedent-ping`.",
+    "name": "Precedent",
+    "requirements": ["PyYAML"],
+    "short": "TFMC staff precedent lookup",
+    "tags": ["moderation", "tfmc", "staff"]
+}
