@@ -40,19 +40,6 @@ function CellView({ cell }: { cell: Cell }) {
   return <>{String(cell)}</>;
 }
 
-/** Long text as written, JSON laid out. */
-function inspected(cell: Cell): string {
-  const text = cellText(cell);
-  if (typeof cell === "string" && /^\s*[[{]/.test(cell)) {
-    try {
-      return JSON.stringify(JSON.parse(cell), null, 2);
-    } catch {
-      return text;
-    }
-  }
-  return text;
-}
-
 export default function ResultGrid({ result, types, serverSort, firstRow = 1, fileName = "query" }: Props) {
   const [localSort, setLocalSort] = useState<{ index: number; descending: boolean } | null>(null);
   const [picked, setPicked] = useState<{ row: number; column: number } | null>(null);
@@ -240,7 +227,7 @@ export default function ResultGrid({ result, types, serverSort, firstRow = 1, fi
             </span>
           </div>
           <pre className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-[var(--tfmc-cream)]">
-            {pickedCell === null ? "NULL" : inspected(pickedCell)}
+            {pickedCell === null ? "NULL" : cellText(pickedCell)}
           </pre>
         </div>
       ) : null}
