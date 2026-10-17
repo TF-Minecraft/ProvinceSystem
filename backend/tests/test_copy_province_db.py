@@ -1,6 +1,7 @@
 """Copy real SQLite files into isolated PG17 databases, including failure paths."""
 from contextlib import closing
 from datetime import datetime, timezone
+from decimal import Decimal
 import json
 import sqlite3
 
@@ -131,6 +132,30 @@ def test_invalid_values_fail_before_target_migrations(legacy, scratch_database, 
 def test_invalid_json_fails_before_target_migrations(legacy, scratch_database, value):
     insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
     with pytest.raises(copy.CopyError, match="admin_audit rowid 1, column detail_json:"):
+        copy.to_postgres(legacy, scratch_database)
+    assert_unmigrated(scratch_database)
+
+
+@pytest.mark.parametrize(("mantissa", "exponent"), [
+    pytest.param("0", "1073741824", id="positive-written-limit"),
+    pytest.param("0.0", "+1073741824", id="written-limit-before-fractional-normalization"),
+    pytest.param("0", "-1073741824", id="negative-written-limit"),
+    pytest.param("1", "-1073741824", id="negative-nonzero-written-limit"),
+    pytest.param("0", "9" * 4301, id="huge-significant-zero-exponent"),
+    pytest.param("1", "+" + "9" * 4301, id="huge-significant-positive-exponent"),
+    pytest.param("0.00", "-" + "9" * 4301, id="huge-significant-negative-exponent"),
+    pytest.param("1", "+131072", id="nonzero-integer-digit-limit"),
+    pytest.param("1", "-16384", id="fractional-scale-limit"),
+])
+def test_invalid_padded_json_exponents_fail_before_migrations(legacy, scratch_database, mantissa, exponent):
+    sign = exponent[0] if exponent[0] in "+-" else ""
+    digits = exponent[1:] if sign else exponent
+    value = '{"n":' + mantissa + "e" + sign + "0" * 4301 + digits + '}'
+    with psycopg.connect(scratch_database, autocommit=True) as conn:
+        with pytest.raises(psycopg.errors.NumericValueOutOfRange):
+            conn.execute("SELECT %s::jsonb", (value,))
+    insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
+    with pytest.raises(copy.CopyError, match="column detail_json: JSON number is outside Postgres numeric limits"):
         copy.to_postgres(legacy, scratch_database)
     assert_unmigrated(scratch_database)
 
@@ -384,6 +409,46 @@ def test_valid_duplicate_json_keys_keep_postgres_last_value_semantics(legacy, sc
     assert all(check.matches for check in copy.to_postgres(legacy, scratch_database).checks)
     with psycopg.connect(scratch_database) as conn:
         assert conn.execute("SELECT detail_json FROM admin_audit").fetchone() == ({"a": 2},)
+
+
+@pytest.mark.parametrize(("mantissa", "exponent", "expected"), [
+    ("0", "1", "0"),
+    ("0", "+1", "0"),
+    ("0", "-1", "0"),
+    ("0", "0", "0"),
+    ("0", "+0", "0"),
+    ("0", "-0", "0"),
+    ("1.2345678901234567890123456789", "1", "12.345678901234567890123456789"),
+    ("1.2345678901234567890123456789", "+1", "12.345678901234567890123456789"),
+    ("1.2345678901234567890123456789", "-1", "0.12345678901234567890123456789"),
+    ("-1.2345678901234567890123456789", "-0", "-1.2345678901234567890123456789"),
+    ("0.00", "+1073741823", "0"),
+])
+def test_padded_json_exponents_match_postgres_and_round_trip(legacy, scratch_database, tmp_path,
+                                                          mantissa, exponent, expected):
+    sign = exponent[0] if exponent[0] in "+-" else ""
+    digits = exponent[1:] if sign else exponent
+    value = '{"n":' + mantissa + "e" + sign + "0" * 4301 + digits + '}'
+    expected = {"n": Decimal(expected)}
+    with psycopg.connect(scratch_database) as conn:
+        native = conn.execute("SELECT %s::jsonb::text", (value,)).fetchone()[0]
+        assert json.loads(native, parse_float=Decimal, parse_int=Decimal) == expected
+    insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
+    original = legacy.read_bytes()
+    report = copy.to_postgres(legacy, scratch_database)
+    assert len(report.checks) == 61 and all(check.matches for check in report.checks)
+    copy.to_postgres(legacy, scratch_database, verify_only=True)
+    with psycopg.connect(scratch_database) as conn:
+        imported = conn.execute("SELECT detail_json::text FROM admin_audit").fetchone()[0]
+        assert json.loads(imported, parse_float=Decimal, parse_int=Decimal) == expected
+    rollback = tmp_path / "rollback.db"
+    report = copy.to_sqlite(rollback, scratch_database)
+    assert len(report.checks) == 61 and all(check.matches for check in report.checks)
+    with closing(sqlite3.connect(rollback)) as conn:
+        exported = conn.execute("SELECT detail_json FROM admin_audit").fetchone()[0]
+        assert json.loads(exported, parse_float=Decimal, parse_int=Decimal) == expected
+    copy.to_postgres(rollback, scratch_database, verify_only=True)
+    assert legacy.read_bytes() == original
 
 
 @pytest.mark.parametrize("number", ["0e131072", "-0e131072", "0e1073741823", "0.00e1073741823"])

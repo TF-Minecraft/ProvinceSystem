@@ -185,8 +185,9 @@ def _json(value) -> JsonValue:
     def number(raw):
         # Postgres bounds the written exponent before applying fractional scale,
         # even for zero, which otherwise has no integer-digit limit.
-        exponent = raw.lower().partition("e")[2]
-        if exponent and abs(int(exponent)) >= (1 << 30):
+        # Bound significant digits before int() to allow arbitrarily zero-padded exponents.
+        exponent = raw.lower().partition("e")[2].lstrip("+-").lstrip("0")
+        if len(exponent) > 10 or (exponent and int(exponent) >= (1 << 30)):
             raise ValueError("JSON number is outside Postgres numeric limits")
         return Decimal(raw)
 
