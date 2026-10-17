@@ -483,6 +483,7 @@ class MinecraftBan(commands.Cog):
         summary: str,
         ruling: str,
         punishment: str,
+        participants: Optional[list[dict]] = None,
     ) -> None:
         """Best-effort mirror of a warn/notify into the precedent database. Never raises."""
         if not self.api_base_url or not self.staff_key:
@@ -494,6 +495,7 @@ class MinecraftBan(commands.Cog):
                 {
                     "logged_by": logged_by,
                     "players": players,
+                    "participants": participants or [],
                     "summary": summary,
                     "rule": rule_match.group(1) if rule_match else "",
                     "ruling": ruling,
@@ -624,6 +626,13 @@ class MinecraftBan(commands.Cog):
                 role_status,
                 player_uuid=identity["player_uuid"] or "",
             )
+            await self._log_precedent(
+                logged_by=getattr(interaction.user, "display_name", str(interaction.user)),
+                players=[username], summary=reason, ruling="Ban notification sent via Discord",
+                punishment=duration,
+                participants=[{"discord_user_id": str(user.id), "player_uuid": identity.get("player_uuid"),
+                               "name": username, "discord_username": user.name}],
+            )
         except Exception as e:
             logger.error("Error in /minecraftban: %s", e, exc_info=True)
             raise
@@ -679,8 +688,10 @@ class MinecraftBan(commands.Cog):
                 logged_by=getattr(interaction.user, "display_name", str(interaction.user)),
                 players=[username],
                 summary=reason,
-                ruling=f"Warning issued via Discord\nMinecraft UUID: {identity['player_uuid'] or 'unlinked'}\nDiscord ID: {user.id}",
+                ruling="Warning issued via Discord",
                 punishment="Warning",
+                participants=[{"discord_user_id": str(user.id), "player_uuid": identity.get("player_uuid"),
+                               "name": username, "discord_username": user.name}],
             )
         except Exception as e:
             logger.error("Error in /minecraftwarn: %s", e, exc_info=True)
@@ -722,12 +733,19 @@ class MinecraftBan(commands.Cog):
                 dm_status,
                 interaction.user.mention,
             )
+            try:
+                identity = await self.linked_identity(user)
+            except ValueError:
+                identity = {}
+            name = identity.get("minecraft_name") or getattr(user, "display_name", str(user))
             await self._log_precedent(
                 logged_by=getattr(interaction.user, "display_name", str(interaction.user)),
-                players=[getattr(user, "display_name", str(user))],
+                players=[name],
                 summary=message,
                 ruling="Anonymous staff notice sent via Discord",
                 punishment="None (notice only)",
+                participants=[{"discord_user_id": str(user.id), "player_uuid": identity.get("player_uuid"),
+                               "name": name, "discord_username": user.name}],
             )
         except Exception as e:
             logger.error("Error in /minecraftnotify: %s", e, exc_info=True)

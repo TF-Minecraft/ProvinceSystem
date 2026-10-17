@@ -46,7 +46,7 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         site = web.TCPSite(self.runner, "127.0.0.1", 0)
         await site.start()
         self.base = f"http://127.0.0.1:{site._server.sockets[0].getsockname()[1]}"
-        self.target = SimpleNamespace(id=DISCORD, mention=f"<@{DISCORD}>", display_name="NotTheirMcName")
+        self.target = SimpleNamespace(id=DISCORD, mention=f"<@{DISCORD}>", display_name="NotTheirMcName", name="discord_handle")
         self.cog = MinecraftBan.__new__(MinecraftBan)
         self.cog.api_base_url, self.cog.staff_key = self.base, "test-staff"
         self.cog._send_warn_dm = AsyncMock(return_value="Sent")
@@ -76,8 +76,8 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn(PLAYER, [field.value for field in log.fields])
         payload = self.cog._api_post.await_args.args[1]
         self.assertEqual(payload["players"], ["CurrentName"])
-        self.assertIn(PLAYER, payload["ruling"])
-        self.assertIn(str(DISCORD), payload["ruling"])
+        self.assertEqual(payload["participants"][0]["player_uuid"], PLAYER)
+        self.assertEqual(payload["participants"][0]["discord_user_id"], str(DISCORD))
 
     async def test_ban_resolves_without_manual_username(self):
         event = interaction()
@@ -149,16 +149,19 @@ class IdentityCommandsTest(unittest.IsolatedAsyncioTestCase):
         payload = self.precedent.api_post.await_args.args[1]
         self.assertEqual(payload["players"], ["CurrentName"])
         self.assertEqual(payload["summary"], "What happened")
-        self.assertIn(PLAYER, payload["ruling"])
-        self.assertIn(str(DISCORD), payload["ruling"])
+        self.assertEqual(payload["participants"][0]["player_uuid"], PLAYER)
+        self.assertEqual(payload["participants"][0]["discord_user_id"], str(DISCORD))
         self.assertLessEqual(len(payload["ruling"]), 500)
 
-    async def test_case_refuses_account_unlinked_before_submit(self):
+    async def test_case_still_records_discord_account_unlinked_before_submit(self):
         modal = CaseLogModal(self.precedent, self.target)
         self.fill_modal(modal)
         self.data = {"linked": False, "discord_user_id": str(DISCORD)}
         await modal.on_submit(interaction())
-        self.precedent.api_post.assert_not_awaited()
+        payload = self.precedent.api_post.await_args.args[1]
+        self.assertEqual(payload["participants"][0]["discord_user_id"], str(DISCORD))
+        self.assertIsNone(payload["participants"][0]["player_uuid"])
+        self.assertEqual(payload["players"], [self.target.display_name])
 
     async def test_case_rechecks_staff_permission(self):
         modal = CaseLogModal(self.precedent, self.target)

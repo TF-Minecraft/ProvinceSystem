@@ -123,10 +123,10 @@ def test_directory_search(app, env, world, query):
 def test_directory_views(app, env, world):
     c = client(app, staff(env))
     assert [p["minecraft_name"] for p in rows(c, view="minecraft")] == ["LinkedOnly", "MrEnzo99", "Quiet", None]
-    # Linked players only; the rest are counted.
+    # Discord accounts include people without a Minecraft link; unmatched Minecraft players are counted.
     body = c.get("/admin/players", params={"view": "discord"}).json()
-    assert [p["discord_username"] for p in body["rows"]] == ["hazelstone", "linky"]
-    assert (body["total"], body["omitted"]) == (2, 2)
+    assert [p["discord_username"] for p in body["rows"]] == ["hazelstone", "linky", "staff-mod"]
+    assert (body["total"], body["omitted"]) == (3, 2)
     body = c.get("/admin/players", params={"view": "character"}).json()
     assert [(r["character"]["name"], r["player"]["uuid"]) for r in body["rows"]] == [
         ("Aldric", ROSTER_ONLY), ("Hazel Stonebrook", HAZEL)]
@@ -161,8 +161,8 @@ def test_character_view_has_a_row_per_character(app, env, world):
     # Most recent first; never seen last, by name.
     ("minecraft", "last_seen", "desc", ["MrEnzo99", "Quiet", "LinkedOnly", None]),
     ("minecraft", "last_seen", "asc", ["Quiet", "MrEnzo99", "LinkedOnly", None]),
-    ("discord", "name", "desc", ["LinkedOnly", "MrEnzo99"]),
-    ("discord", "last_seen", "desc", ["MrEnzo99", "LinkedOnly"]),
+    ("discord", "name", "desc", [None, "LinkedOnly", "MrEnzo99"]),
+    ("discord", "last_seen", "desc", ["MrEnzo99", "LinkedOnly", None]),
 ])
 def test_directory_sorts(app, env, world, view, sort, order, expected):
     c = client(app, staff(env))
